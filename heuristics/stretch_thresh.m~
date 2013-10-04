@@ -1,0 +1,34 @@
+hfsl = sqrt(sum((Session.xyz(:,gmi(Session.Model.markers,'head_front'),:)-Session.xyz(:,gmi(Session.Model.markers,'spine_lower'),:)).^2,3));
+load([MOTION.analysis_path Session.name '/' Session.name '.ang' xyzSubsetName '.mat'])
+
+sa = ang(:,gmi(Session.Model.markers,'pelvis_root'),gmi(Session.Model.markers,'spine_middle'),2)+ang(:,gmi(Session.Model.markers,'spine_middle'),gmi(Session.Model.markers,'spine_upper'),2)+ang(:,gmi(Session.Model.markers,'spine_upper'),gmi(Session.Model.markers,'head_back'),2);
+sa(isnan(sa))=0;
+sa = sa.*hfsl;
+stretch = sa;
+stretch(hbpv>rearthresh) = 0;
+stretchthresh = 188;
+stretch(stretch<stretchthresh) =0;
+stretch(stretch>stretchthresh) =1;
+minInt = 50;
+stretchPeriods = ThreshCross(stretch,0.5,minInt);
+goodstretch = zeros(size(stretch));
+for i = 1:size(stretchPeriods,1)
+    goodstretch(stretchPeriods(i,1):stretchPeriods(i,2))=1;
+end
+
+stretching = goodstretch;
+
+if display
+
+    figure, hold on
+    plot(sa)
+    plot(goodstretch*max(sa)/2+max(sa)/8,'r');
+    plot(goodrear*max(hbpv)/2+max(hbpv)/8,'g');    
+
+    figure,hold on
+    plot(sa)
+    plot(stretch*200+10,'r');
+
+    figure,hist(sa,10000)
+
+end

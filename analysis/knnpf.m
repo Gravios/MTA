@@ -1,0 +1,151 @@
+
+
+%% Primary Goal - knn estimation of unit firing rate
+s = MTASession('jg05-20120317');
+
+Trial = MTATrial(s,{{'CluRes',s.xyzSampleRate}},'all');
+
+Trial = Trial.filter();
+
+
+klen = 13;
+kern = gausswin(klen)./sum(gausswin(klen));
+kern = ones(klen,1);
+
+div = 2;
+
+unit = 1;
+ufrs = {}
+while unit ~=-1
+myres = Trial.res(Trial.clu==unit);
+myufr = zeros(size(Trial.xyz,1),1);
+myufr(1:myres(end)) = accumarray(myres,ones(size(myres),1));
+t =         permute(reshape(myufr(1:size(myufr,1)-mod(size(myufr,1),klen)),klen,[]),[3,1,2]);
+t = cat(1,t,permute(reshape(circshift(myufr(1:size(myufr,1)-mod(size(myufr,1),klen)),-round(klen/2)),klen,[]),[3,1,2]));
+myufr = t; 
+myufr = reshape(sq(sum(repmat(permute(repmat(kern,1,size(myufr,3)),[3,1,2]),size(myufr,1),1).*myufr,2))/(klen/Trial.xyzSampleRate),[],1);
+
+try,ufrs{unit} = unique(myufr);end
+
+myxyz = sq(Trial.xyz(:,7,[1,2]));
+t =         permute(reshape(          myxyz(1:size(myxyz,1)-mod(size(myxyz,1),klen),:),klen,[],2),[4,1,2,3]);
+t = cat(1,t,permute(reshape(circshift(myxyz(1:size(myxyz,1)-mod(size(myxyz,1),klen),:),-round(klen/2)),klen,[],2),[4,1,2,3]));
+myxyz = t;
+
+myxyz = reshape(sq(sum(permute(repmat(permute(repmat(kern./sum(kern),1,size(myxyz,3)),[5,4,1,2,3]),div,size(myxyz,4)),[2,3,4,1]).*myxyz,2)),[],2);
+
+newSampleRate = 1/((size(Trial.xyz,1)-mod(size(Trial.xyz,1),klen))/Trial.xyzSampleRate/length(myufr));
+myrx = SelectPeriods(myxyz,round((Trial.Bhv.getState('rear').state+0.5*Trial.xyzSampleRate/newSampleRate)./Trial.xyzSampleRate.*newSampleRate),'c',1,1);
+mywx = SelectPeriods(myxyz,round((Trial.Bhv.getState('walk').state+0.5*Trial.xyzSampleRate/newSampleRate)./Trial.xyzSampleRate.*newSampleRate),'c',1,1);
+myru = SelectPeriods(myufr,round((Trial.Bhv.getState('rear').state+0.5*Trial.xyzSampleRate/newSampleRate)./Trial.xyzSampleRate.*newSampleRate),'c',1,1);
+mywu = SelectPeriods(myufr,round((Trial.Bhv.getState('walk').state+0.5*Trial.xyzSampleRate/newSampleRate)./Trial.xyzSampleRate.*newSampleRate),'c',1,1);
+nxbins = 50;
+nybins = 50;
+xbins = linspace(Trial.Maze.boundaries(1,1),Trial.Maze.boundaries(1,2),nxbins)';
+ybins = linspace(Trial.Maze.boundaries(2,2),Trial.Maze.boundaries(2,1),nxbins)';
+nnn = 41;
+pfknnmrw = nan(nxbins,nybins);
+pfknnmdw = nan(nxbins,nybins);
+pfknnmrr = nan(nxbins,nybins);
+pfknnmdr = nan(nxbins,nybins);
+
+for y = 1:length(ybins),
+    for x = 1:length(xbins),
+        distw = sqrt(sum((mywx-repmat([xbins(x),ybins(y)],size(mywx,1),1)).^2,2));
+        distr = sqrt(sum((myrx-repmat([xbins(x),ybins(y)],size(myrx,1),1)).^2,2));
+        [~,distIndw ] = sort(distw);        
+        [~,distIndr] = sort(distr);        
+        pfknnmdw(y,x) = median(distw(distIndw(1:nnn)));
+        pfknnmdr(y,x) = median(distr(distIndr(1:nnn)));
+        if pfknnmdw(y,x)<50,
+            %pfknnmrw(y,x) = min(mywu(distIndw(1:nnn)));
+            %pfknnmrw(y,x) = max(mywu(distIndw(1:nnn)));
+            pfknnmrw(y,x) = mean(mywu(distIndw(1:nnn)));
+        end
+        if pfknnmdr(y,x)<50,
+            %pfknnmrr(y,x) = min(myru(distIndr(1:nnn)));
+            %pfknnmrr(y,x) = max(myru(distIndr(1:nnn)));
+            pfknnmrr(y,x) = mean(myru(distIndr(1:nnn)));
+        end
+    end
+end
+
+subplot(231);
+hist(mywu,20)
+xl = xlim
+xlim([-0.05,xl(2)])
+subplot(232);
+imagescnan({xbins,ybins,pfknnmrw},[],[],1,[0,0,0]),axis xy
+title(['walk unit ' num2str(Trial.map(unit,:))])
+subplot(233);
+imagescnan({xbins,ybins,pfknnmrr},[],[],1,[0,0,0]),axis xy
+title(['rear unit ' num2str(Trial.map(unit,:))])
+subplot(234);
+bar(tbin,accg(:,unit)),axis tight,
+subplot(235);
+pfw.plot(unit,1),
+subplot(236);
+pfr.plot(unit,1),
+print(gcf,'-dpsc2',[Trial.filebase '.knnpf_100ms_50msol_walk_rear' num2str(unit) '.eps']);
+unit = figure_controls(gcf,unit)
+%unit = unit+1;
+end
+
+
+
+xyoccw = xyocc(Trial,SelectPeriods(Trial.xyz(:,7,[1,2]),Trial.Bhv.getState('walk').state,'c',1,1),50);
+xyoccr = xyocc(Trial,SelectPeriods(Trial.xyz(:,7,[1,2]),Trial.Bhv.getState('rear').state,'c',1,1),50);
+
+
+[accg,tbin] = autoccg(Trial);
+
+
+
+figure
+unit=1;
+while unit~=-1,
+tpf =pfknnmd{1}(:,:,unit);
+tpfr = pfknnmr{1}(:,:,unit);
+tpf(tpf<=200) = 1;
+tpf(tpf>200) = 0;
+subplot2(3,4,2,2)
+imagesc(xbins,ybins,tpf.*tpfr*20000),axis xy,colorbar
+
+tpf =pfknnmd{2}(:,:,unit);
+tpfr = pfknnmr{2}(:,:,unit);
+tpf(tpf<=200) = 1;
+tpf(tpf>200) = 0;
+subplot2(3,4,1,2)
+imagesc(xbins,ybins,tpf.*tpfr*20000),axis xy,colorbar
+
+subplot2(3,4,2,1)
+pfw.plot(unit,1)
+
+subplot2(3,4,1,1)
+pfr.plot(unit,1)
+
+subplot2(3,4,2,3)
+plot(spks{1}(unit).xyz(:,7,1),spks{1}(unit).xyz(:,7,2),'.')
+xlim([-500,500])
+ylim([-500,500])
+
+
+subplot2(3,4,1,3)
+plot(spks{2}(unit).xyz(:,7,1),spks{2}(unit).xyz(:,7,2),'.')
+xlim([-500,500])
+ylim([-500,500])
+
+subplot2(3,4,2,4)
+imagesc(xbins,ybins,xyoccw'),axis xy, colorbar
+
+subplot2(3,4,1,4)
+imagesc(xbins,ybins,xyoccr'),axis xy, colorbar
+
+subplot2(3,4,3,1:4)
+bar(tbin,accg(:,unit)),axis tight
+
+title(num2str(unit))
+unit = figure_controls(gcf,unit)
+end
+
+

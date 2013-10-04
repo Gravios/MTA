@@ -1,0 +1,90 @@
+function rear_pfs(Session,varargin)
+[rear_state_set,trialName,display_mode] = DefaultArgs(varargin,{{'head1.theta','pre_rear_onset','pre_peri_rear_onset' 'dia_rear_onset','post_peri_rear_onset', 'post_rear_onset','rear.theta';'rear.theta','pre_rear_offset','pre_peri_rear_offset','dia_rear_offset','post_peri_rear_offset','post_rear_offset','head1.theta'},'all','display'})
+
+
+if ~isa(Session,'MTASession'),
+    Session = MTASession(Session);
+end
+if ~isa(Session,'MTATrial'),
+    Session = MTATrial(Session,trialName);
+end
+
+
+
+
+
+
+%% Load Place Fields
+Session.Pfs = [];
+Session = Session.load_Pfs;
+
+pf_search = MTAPlaceField([]);
+pf_search.trackingMarker = 'head_front';
+pf_search.smooth = 0.03;
+
+
+%% Display Everything
+figure(102)
+set(gcf,'CurrentCharacter','l');
+unit = 1;
+while 1,
+    clf
+
+    for pf = 1:size(rsts,1),
+        for s = 1:size(rsts,2)
+            pf_search.stateLabel = rsts{pf,s};
+            Pfs = Session.getPfs(pf_search);
+            %% Rate Map
+            subplot2(size(rsts,2),size(rsts,1),s,pf);
+            ppf(Pfs.xbin,Pfs.ybin,Pfs.rateMap{unit})
+            title([Pfs.stateLabel ' ' num2str(unit)])
+        end
+    end
+
+
+    switch display_mode
+      case 'report'
+        %% ReportFig
+        set(gcf,'CurrentCharacter','n');
+        reportfig(102,[Session.filebase '.pfs'],[],['unit: ' num2str(unit)],[],0);
+        
+      case 'display'
+        %% manual controls
+        unit = figure_controls(unit)
+        if unit==-1,return,end
+    end
+end
+
+
+event_type = 'onset'
+switch event_type
+  case 'onset'
+    rsts = {'pre_rear_onset','pre_peri_rear_onset','dia_rear_onset','post_peri_rear_onset','post_rear_onset'}
+  case 'offset'
+    rsts = {'pre_rear_offset','pre_peri_rear_offset','dia_rear_offset','post_peri_rear_offset','post_rear_offset'};
+end
+
+figure(102)
+set(gcf,'CurrentCharacter','l');
+unit = 1;
+while 1,
+    clf
+    for pf = 1:numel(rsts),
+        for s = 1:numel(rsts),
+            pf_search.stateLabel = rsts{pf};
+            Pf1 = Session.getPfs(pf_search);
+            pf_search.stateLabel = rsts{s};
+            Pf2 = Session.getPfs(pf_search);
+            %% Rate Map
+            subplot2(numel(rsts),numel(rsts),s,pf);
+            ppf(Pf1.xbin,Pf1.ybin,log10((Pf1.rateMap{unit}+1)./(Pf2.rateMap{unit}+1)))
+            colorbar
+            title([Pf1.stateLabel '/' Pf2.stateLabel ' ' num2str(unit)])
+        end
+    end
+
+    unit = figure_controls(unit)
+    if unit==-1,return,end
+
+end
+

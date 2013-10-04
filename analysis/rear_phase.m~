@@ -1,0 +1,151 @@
+
+Session = MTATrial('jg05-20120317',{'CluRes',{'lfp',72}},'all');
+rper = round((Session.Bhv.getState('walk').state-1)./Session.xyzSampleRate.*Session.lfpSampleRate);
+
+[trccg tbin ] = Trains2CCG({rper(:,1),rper(:,2),Session.res},{1,2,Session.clu},100,50,Session.lfpSampleRate);
+
+
+
+uClu = unique(Session.clu);
+rccg = zeros(size(trccg,1),2,size(Session.map,1));
+rccg(:,:,uClu) = sq(trccg(:,1:2,3:end));
+gi = sum(sq(rccg(:,1,:)),1)>10;
+gccg = rccg(:,:,gi);
+
+ng = size(gccg,3);
+sgccg = [];
+for k=1:ng
+    for l=1:2
+        sgccg(:,l,k) = Filter0(gausswin(5),gccg(:,l,k));
+    end
+end
+gi = find(gi);
+
+%%Need theta phase
+[ThPh,ThAm,TotP] = myThetaPhase(Session.lfp);
+
+
+%plot phases precession during rearing
+
+RUN = Session.statePeriods('theta');
+
+
+
+
+rdur = diff(rper,1,2);
+rper = rper(rdur>1.5,:);
+
+rz = sq(Session.xyz(:,7,3));
+
+GoodPeriod{1} = IntersectRanges(RUN, dotdot(rper(:,1),'+',[-3 3]*1250));
+GoodPeriod{2} = IntersectRanges(RUN, dotdot(rper(:,2),'+',[-3 3]*1250));
+
+
+GoodPeriod{1} = IntersectRanges(RUN, dotdot(rper(:,1),'+',[-2 2]*1250));
+GoodPeriod{2} = IntersectRanges(RUN, dotdot(rper(:,2),'+',[-2 2]*1250));
+
+
+gpz{1} = IntersectRanges(RUN, dotdot(rper(:,1),'+',[-1.0 1.0]*1250));
+gpz{2} = IntersectRanges(RUN, dotdot(rper(:,2),'+',[-1.0 1.0]*1250));
+
+
+
+figure
+k = 41;
+while k~=-1,
+
+    clf
+    for s=1:2,
+
+        myph = ThPh(SelectPeriods(Session.res(Session.clu==gi(k)),GoodPeriod{s},'d',1,0));
+        myres = SelectPeriods(Session.res(Session.clu==gi(k)),GoodPeriod{s},'d',1,2);
+        myphz = ThPh(SelectPeriods(Session.res(Session.clu==gi(k)),gpz{s},'d',1,0));
+        myz = rz(round(SelectPeriods(Session.res(Session.clu==gi(k)),gpz{s},'d',1,0)./Session.lfpSampleRate.*Session.xyzSampleRate));
+
+
+        subplot2(5,2,1,s);
+try
+        [hcnt xbin ybin] =  hist2([repmat(myres,2,1)/1.250-2000,[myph*180/pi; 360+myph*180/pi]], 100, 36);
+        smimage(xbin,ybin, hcnt,5);axis xy
+        title(num2str([Session.map(gi(k),:),k]));
+end
+
+        subplot2(5,2,2,s);
+        plot(myres/1.250-2000, myph*180/pi,'k.','MarkerSize',5); hold on
+        plot(myres/1.250-2000, 360+myph*180/pi,'k.','MarkerSize',5); hold on
+        axis tight
+        set(gca,'YTick',[-180:180:540]); grid on
+
+        subplot2(5,2,3,s);
+try
+        [hcnt xbin ybin] =  hist2([repmat(myz,2,1),[myphz*180/pi; 360+myphz*180/pi]], 100, 36);
+        smimage(xbin,ybin, hcnt,5);axis xy
+        title(num2str([Session.map(gi(k),:),k]));
+end
+
+        subplot2(5,2,4,s);
+        plot(myz, myphz*180/pi,'k.','MarkerSize',5); hold on
+        plot(myz, 360+myphz*180/pi,'k.','MarkerSize',5); hold on
+        axis tight
+        set(gca,'YTick',[-180:180:540]); grid on
+
+        subplot2(5,2,5,s);
+        bar(tbin, rccg(:,s, gi(k))); axis tight
+        xlim([-3000 3000]);
+    end
+
+    k = figure_controls(gcf,k)
+
+end
+% $$$ 
+% $$$ 
+% $$$ 
+% $$$ 
+% $$$ 
+% $$$ GoodPeriod{1} = IntersectRanges(RUN, dotdot(rper(:,1),'+',[-1 .5]*1250));
+% $$$ GoodPeriod{2} = IntersectRanges(RUN, dotdot(rper(:,2),'+',[-2 2]*1250));
+% $$$ 
+% $$$ s= 1;
+% $$$ k= 68;
+% $$$ 
+% $$$ myphc = ThPh(SelectPeriods(Session.res(Session.clu==gi(k)),GoodPeriod{s},'d',1,0));
+% $$$ myresc = SelectPeriods(Session.res(Session.clu==gi(k)),GoodPeriod{s},'d',1,2);
+% $$$ 
+% $$$ 
+% $$$ 
+% $$$ gpz{1} = IntersectRanges(RUN, dotdot(rper(:,1),'+',[-1 0]*1250));
+% $$$ gpz{2} = IntersectRanges(RUN, dotdot(rper(:,2),'+',[-1.5 1.5]*1250));
+% $$$ 
+% $$$ myphzc = ThPh(SelectPeriods(Session.res(Session.clu==gi(k)),gpz{s},'d',1,0));
+% $$$ myzc = rz(round(SelectPeriods(Session.res(Session.clu==gi(k)),gpz{s},'d',1,0)./Session.lfpSampleRate.*Session.xyzSampleRate));
+% $$$ 
+% $$$ 
+% $$$ myphs = GetSegs(ThPh,rper(:,1),4*1250,0);
+% $$$ myphs = GetSegs(ThPh,rper(:,1)-2*1250,4*1250,0);
+% $$$ for i= 1:size(myphs,1),
+% $$$ pval(i) = circ_rtest(myphs(i,:));
+% $$$ end
+% $$$ figure
+% $$$ subplot2(3,1,1,1)
+% $$$ plot(circ_mean(myphs'));
+% $$$ subplot2(3,1,2,1)
+% $$$ plot(circ_var(myphs'));
+% $$$ subplot2(3,1,3,1)
+% $$$ plot(pval);
+% $$$ 
+% $$$ 
+% $$$ myphs = GetSegs(ThPh,rper(:,2)-2*1250,4*1250,1);
+% $$$ for i= 1:size(myphs,1),
+% $$$ pval(i) = circ_rtest(myphs(i,:));
+% $$$ end
+% $$$ 
+% $$$ figure
+% $$$ subplot2(3,1,1,1)
+% $$$ plot(circ_mean(myphs'));
+% $$$ subplot2(3,1,2,1)
+% $$$ plot(circ_var(myphs'));
+% $$$ subplot2(3,1,3,1)
+% $$$ plot(pval);
+% $$$ 
+% $$$ 
+% $$$ mylfps = GetSegs(Session.lfp,rper(:,2)-2*1250,4*1250,1);

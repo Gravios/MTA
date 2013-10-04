@@ -1,0 +1,101 @@
+s = MTASession('jg05-20120309',{'ang'});
+s = MTATrial(s,[],'all');
+
+
+nn = ~isnan(s.ang(:,1,2,1));
+
+swin = 7;
+lwin = 243;
+
+newser = s.ang(:,1,2,1);
+newser(~isnan(newser))=0;
+newser(isnan(newser)) =1;
+newser = ~newser;
+newper = ThreshCross(newser,0,0.5);
+
+angd = [s.ang(nn,2,3,1)-s.ang(nn,1,2,1),...
+        s.ang(nn,5,6,1)-s.ang(nn,4,5,1),...
+        s.ang(nn,5,7,1)-s.ang(nn,4,5,1)];
+
+
+angd = [s.ang(nn,4,5,1)-s.ang(nn,3,4,1),...
+        s.ang(nn,2,3,1)-s.ang(nn,1,2,1),...
+        s.ang(nn,5,7,1)-s.ang(nn,4,5,1)];
+
+
+nxyz = Filter0(gausswin(swin)./sum(gausswin(swin)),sq(s.xyz(nn,3,:)));
+hxyz = Filter0(gausswin(swin)./sum(gausswin(swin)),sq(s.xyz(nn,7,:)));
+
+angd_pc =  princomp(angd);
+
+nangd = (angd_pc*angd')';
+
+% $$$ 
+% $$$ a = [1,2;1,3;2,3]';
+% $$$ k = 1;
+% $$$ figure
+% $$$ for i = a,
+% $$$ subplotfit(k,3);
+% $$$ rangd = (angd_pc([i(1),i(2)],:)*angd')';
+% $$$ plot(rangd(:,1),rangd(:,2),'.');
+% $$$ k = k+1;
+% $$$ end
+
+
+a = [1,2;1,3;2,3]';
+for i = a,
+figure
+rangd = (angd_pc([i(1),i(2)],:)*angd')';
+plot(rangd(:,1),rangd(:,2),'.');
+end
+
+
+[xpos1,ypos1] = ginput;
+[xpos2,ypos2] = ginput;
+[xpos3,ypos3] = ginput;
+[xpos4,ypos4] = ginput;
+rin1 = inpolygon(rangd(:,1),rangd(:,2),xpos1,ypos1);
+rin2 = inpolygon(rangd(:,1),rangd(:,2),xpos2,ypos2);
+rin3 = inpolygon(rangd(:,1),rangd(:,2),xpos3,ypos3);
+rin4 = inpolygon(rangd(:,1),rangd(:,2),xpos4,ypos4);
+figure,hold on,
+plot(nxyz(:,1),nxyz(:,2),'.','markersize',4)
+plot(nxyz(rin1,1),nxyz(rin1,2),'.','color','g','markersize',5)
+plot(nxyz(rin2,1),nxyz(rin2,2),'.','color','r','markersize',5)
+plot(nxyz(rin3,1),nxyz(rin3,2),'.','color','m','markersize',5)
+plot(nxyz(rin4,1),nxyz(rin4,2),'.','color','c','markersize',5)
+figure,hold on,
+plot(nxyz(:,3),'.','markersize',4)
+plot(find(rin1),nxyz(rin1,3),'.','color','g','markersize',5)
+plot(find(rin2),nxyz(rin2,3),'.','color','r','markersize',5)
+plot(find(rin3),nxyz(rin3,3),'.','color','m','markersize',5)
+plot(find(rin4),nxyz(rin4,3),'.','color','c','markersize',5)
+
+
+Bhv = MTABhv(s,'m20130311');
+wper = SelectPeriods(Bhv.getState('walk').state,newper,'p',1,1);
+gper = SelectPeriods(Bhv.getState('groom').state,newper,'p',1,1);
+
+
+v = Filter0(gausswin(lwin)./sum(gausswin(lwin)),sqrt(sum(diff(nxyz(:,[1,2])).^2,2)));
+
+
+figure,plot(v(rin2),'.')
+figure,hist2([log10(v(rin2)*12),clip(hxyz(rin2,3),0,150)],100,100)
+xl = xlim;
+yl = ylim;
+xlim(xl);
+ylim(yl);
+figure,plot(log10(v(rin2)),clip(hxyz(rin2,3),0,150),'.')
+
+[xp,yp] = ginput;
+vin1 = inpolygon(log10(v(rin2)),clip(hxyz(rin2,3),0,150),xp,yp);
+nvin = rin2;
+nvin(rin2) = vin1;
+
+figure,hold on,
+plot(hxyz(:,3),'.','color','b','markersize',4);
+plot(find(rin2),hxyz(rin2,3),'.','color','g','markersize',4)
+plot(find(nvin),hxyz(nvin,3),'.','color','c','markersize',5)
+Lines(wper(:,1),[],'k');
+Lines(wper(:,2),[],'r');

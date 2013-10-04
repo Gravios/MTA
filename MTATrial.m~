@@ -1,0 +1,154 @@
+classdef MTATrial < MTASession
+% MTATrial(name,varargin) - Is a subclass of MTASession structured to organize 
+%   subsets of a parent session to aid in the analysis of neural and spatial data.
+%
+%   Ext: *.trl.mat
+%   Saved Trial object contain only basic information required to load subsets of
+%   a full session
+% 
+%   name - string: Same name as the directory of the session
+%   
+%   -or- 
+%
+%   name - MTASession: The Session object from which data will be copied
+%
+%
+%   varargin:
+%     [preLoadedFields,trialName,new_xyzPeriods,overwrite,mazeName]
+%    
+%     preLoadedFields: cellArray, load saved data into Trial fields
+%                      (e.g. {'ufr','ang'} or {'ufr',{'lfp',65:96},'CluRes'}
+%
+%     trialName:       string, designation of trial, the Trial representing 
+%                      the full Session has the default name 'all'
+%
+%     new_xyzPeriods:  numericArray, new Periods defined in the refrence 
+%                      frame of the MTASession objects xyzPeriods
+%
+%     overwrite:       boolean, flag to overwrite saved Trials
+%
+%     mazeName:        string, 3-4 letter name of the testing arena 
+%                      (e.g. 'rof' := rectangular open-field)
+%
+%
+%---------------------------------------------------------------------------------------------------------
+%   General Loading:
+%     
+%     Load from saved Trial,
+%     Trial = MTATrial(name,[],trialName);
+%     
+%     Create new Trial,
+%     Trial = MTATrial(name,[],trialName,new_xyzPeriods,overwrite,mazeName);
+%
+%
+%---------------------------------------------------------------------------------------------------------
+%     examples:
+%       load saved Trial,
+%         Trial = MTATrial('jg05-20120309',[],'all');
+%
+%       load saved Trial with presaved variables: lfp and Place fields
+%         Trial = MTATrial('jg05-20120309',{{'lfp',65:95},'Pfs'},'all');
+%
+%       load saved Trial with presaved variables: marker angles and Clustering data
+%         Trial = MTATrial('jg05-20120309',{'ang','CluRes'},'all');
+%
+%       Create New Trial from a subset of the total session
+%         Trial = MTATrial('jg05-20120309',[],'crt1',[1,10000;11000,21000],1,'rof','normal')
+%
+%              
+%---------------------------------------------------------------------------------------------------------
+
+    methods 
+        function Trial = MTATrial(Session,varargin)
+            [preLoadedFields,trialName,new_xyzPeriods,overwrite,mazeName,mode] = DefaultArgs(varargin,{{},'all',[],0,'cof','normal'});
+            if ~isa(Session,'MTASession'),
+                Session = MTASession(Session,{},mazeName);
+            end
+            if strcmp(trialName,'nil'),overwrite = 1;end
+            
+            Trial = Trial@MTASession(Session,{},mazeName);
+            
+            Trial.trialName = trialName;
+            Trial.filebase = [Trial.name '.' Trial.Maze.name '.' Trial.trialName];
+            Trial.Bhv = {};
+            if exist([Trial.spath.analysis Trial.filebase '.trl.mat'],'file')&~overwrite
+                ds = load([Trial.spath.analysis Trial.filebase '.trl.mat']);
+                Trial.xyzPeriods = ds.xyzPeriods;
+                if isfield(ds,'bhvmode'),
+                    if ~isempty(ds.bhvmode)&exist([Trial.spath.analysis Trial.filebase '.bhv.' ds.bhvmode '.mat'],'file');
+                        Trial = Trial.load_Bhv(ds.bhvmode);
+                    end
+                end
+                if strcmp(mode,'minimal'),
+                    Trial.xyz=[];
+                    Trial.xyzSegLength=[];
+                    return,
+                end
+            elseif ~ischar(new_xyzPeriods)
+                Trial.xyzPeriods = new_xyzPeriods;
+            else
+                switch new_xyzPeriods
+                  case 'default_height_restricted'
+                    height_violations = [];
+                    try
+                        height_violations = ThreshCross(Trial.xyz(:,1,3),300,10);
+                    end
+                    if ~isempty(height_violations),
+                        for i = 1:size(height_violations,1),
+                            for j = 1:size(Trial.xyzPeriods,1),
+                                if height_violations(i,2)>Trial.xyzPeriods(j,1)&height_violations(i,2)<(Trial.xyzPeriods(j,1)+3000),
+                                    Trial.xyzPeriods(j,1) = height_violations(i,2)+400;
+                                elseif height_violations(i,1)<Trial.xyzPeriods(j,2)&height_violations(i,1)>(Trial.xyzPeriods(j,2)-3000),
+                                    Trial.xyzPeriods(j,2) = height_violations(i,1)-400;
+                                else
+                                    continue
+                                end
+                            end
+                        end
+                    end
+                end
+            end
+
+
+            syncShift = Trial.syncPeriods(1,1);
+            Trial.syncPeriods = [];
+            Trial.syncPeriods = round((Trial.xyzPeriods-1.05)/Trial.xyzSampleRate*Trial.lfpSampleRate+syncShift);
+
+            xyz = zeros(size(Trial.xyz,1),1);            
+            for i = 1:size(Trial.xyzPeriods,1),
+                xyz(Trial.xyzPeriods(i,1):Trial.xyzPeriods(i,2))=1;               
+            end
+
+            Trial.xyz(xyz==0,:,:) = 0;            
+
+            Trial.xyz = Trial.xyz(Trial.xyzPeriods(1,1):Trial.xyzPeriods(end,end),:,:);
+
+            
+            Trial.xyzSegLength = diff(Trial.xyzPeriods,1,2)+1;
+            Trial.trackingMarker = Session.trackingMarker;
+
+% $$$ 
+% $$$             if ~isempty(Trial.Bhv),
+% $$$                 if ~isempty(Trial.Bhv.States),
+% $$$                     for i = 1:length(Trial.Bhv.States),
+% $$$                         Trial.Bhv.States{i}.state = IntersectRanges(Trial.Bhv.States{i}.state,[Trial.xyzPeriods(1,1),Trial.xyzPeriods(end,end)])-Trial.xyzPeriods(1,1);
+% $$$                     end
+% $$$                 end
+% $$$             end
+
+            Trial = Trial.loadFields(preLoadedFields);
+
+        end        
+        
+        function save(Trial)
+            bhvmode = [];
+            if ~isempty(Trial.Bhv)
+                bhvmode = Trial.Bhv.mode;
+            end
+            trialName = Trial.trialName;
+            xyzPeriods = Trial.xyzPeriods;
+            save([Trial.spath.analysis Trial.filebase '.trl.mat'],'trialName','xyzPeriods','bhvmode');            
+        end
+
+    end
+end

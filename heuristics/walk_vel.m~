@@ -1,0 +1,25 @@
+function walk_state = walk_vel(Session,varargin)
+[walkThresh,display] = DefaultArgs(varargin,{2.5,0});
+
+    % Walk - speed threshold
+    % Feature - spine_lower 
+    slv = xyzvel(Session.xyz,gmi(Session.Model.markers,'spine_lower'),[1 2])*Session.xyzSampleRate/10;
+    fslv = medfilt1(slv,20);
+
+    walk = zeros(size(fslv));
+    walk(fslv>walkThresh) = 1;
+    minInt = 60;
+    walkPeriods = ThreshCross(walk,0.5,minInt);
+
+    walk_state = zeros(size(fslv));
+    for i = 1:size(walkPeriods,1)
+        walk_state(walkPeriods(i,1):walkPeriods(i,2)) = 1;
+    end
+
+
+    if display,
+        figure, hold on
+        plot(fslv)
+        plot(walk_state*max(fslv)/2+max(fslv)/8,'r');
+
+    end

@@ -1,0 +1,94 @@
+function pf3stdView(Session,varargin)
+% function pf3viewer(Session,varargin)
+[stateLabel,display_ccg,numZslices,viewType,mazeName,trialName]=DefaultArgs(varargin,{'rear',0,1,'pf3','cof',''});
+
+if ~isa(Session,'MTASession'),
+    Session = MTASession(Session,mazeName);
+end
+
+
+load([Session.spath.analysis Session.filebase '.' viewType '.' Session.trackingMarker '.' stateLabel '.' num2str(numZslices) '.mat']);
+
+if exist([Session.spath.nlx Session.name '.NeuronQuality.mat'],'file'),
+    load([Session.spath.nlx Session.name '.NeuronQuality.mat']);
+    [~, si] = sort(nq.eDist,'descend');
+    unit=si(1);
+end
+
+if exist([Session.spath.analysis Session.filebase '.ccg.' stateLabel '.mat'])&display_ccg,
+    load([Session.spath.analysis Session.filebase '.ccg.' stateLabel '.mat']);
+end
+
+while 1
+    figure(100)
+    set(gcf,'Name',num2str(Map(unit,1)'))
+    clf
+    if display_ccg
+        ny = numZslices+2;
+    else
+        ny = numZslices;
+    end
+    nx = length(unit);
+    units = unit;
+    for u=1:nx
+        unit = units(u);
+        for slice = 1:numZslices,
+            subplot2(ny,nx,numZslices-slice+1,u);
+            imagesc(bin1{unit,slice},bin2{unit,slice},stdMap{unit,slice}')
+            colorbar
+            colormap('default')
+            cc = colormap;
+            cc(1,:) = [0 0 0];
+            colormap(cc)
+            imagesc(bin1{unit,slice},bin2{unit,slice},stdMap{unit,slice}')
+            text(-450,200,sprintf('%2.1f',max(rateMap{unit,slice}(:))),'Color','w','FontWeight','bold','FontSize',10);
+            axis xy
+        end
+
+        if display_ccg,
+            subplot2(ny,nx,numZslices+1,u);
+            bar(tbin, sgccg(:,1,unit));axis tight; grid on
+            xlim([-2500 2500]);
+            subplot2(ny,nx,numZslices+2,u);
+            bar(tbin, sgccg(:,2,unit));axis tight; grid on
+            xlim([-2500 2500]);
+        end
+
+        ForAllSubplots('set(gca,''FontSize'',10)');
+        if exist([Session.spath.nlx Session.name '.NeuronQuality.mat'],'file')
+            fprintf('Unit# %d, Electrode %d, Cluster %d\n',unit,Map(unit,2),Map(unit,3));
+            fprintf('Quality: %1.2f, Refrac: %1.3f, SpkWidthR %1.1f msec, FirRate %2.1f Hz\n',nq.eDist(unit),nq.Refrac(unit),nq.SpkWidthR(unit),nq.FirRate(unit));
+        end
+
+    end
+    if length(units)>1 unit=units(end);end    
+    wb =  waitforbuttonpress
+    whatkey = get(gcf,'CurrentCharacter');
+    if ~wb, whatkey = 'n';end
+
+    switch double(whatkey)
+      case double('i')
+        unit = input('Enter unit #');
+      case double('n')
+        unit = unit+1;
+      case double('p')
+        unit=unit-1;
+      case double('q')
+        return
+      case 30
+        sii = find(si==unit);
+        unit = si(max(1,sii-1));
+      case 31
+        sii = find(si==unit);
+        unit = si(min(size(Map,1),sii+1));
+      case double('s') %save
+        print('-dpng', '-r300', ['/tmp/plf-' num2str(units) '.png']);
+      case double('b')
+        keyboard
+    end
+
+    if unit<1  unit=1; end
+    if unit>size(Map,1) unit=size(Map,1); end
+end
+
+    

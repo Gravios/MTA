@@ -1,0 +1,10 @@
+function chattrib = getChildAttribute(c,name,attribute)
+    for i = 1:length(c)
+        ifstrcmp(c(i).Name,name)
+        for j = 1:length(c.Attributes)
+            if strcmp(c.Attributes(j).Name,attribute)
+                chattrib = c.Attributes(j);
+            end
+        end
+    end
+end

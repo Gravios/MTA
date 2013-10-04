@@ -1,0 +1,38 @@
+function sniff_state = sniff_freq(Session,varargin)
+[sniffThresh,nFFT,windowsize,freqRange,display] = DefaultArgs(varargin,{10^-3.5,2^10,2^8,[0.1,20],0});
+
+dsniff = sqrt(sum((Session.xyz(:,Session.Model.gmi('head_back'),:)-Session.xyz(:,Session.Model.gmi('spine_upper'),:)).^2,3));
+wdsniff = WhitenSignal(dsniff);
+
+[y,f,t] = mtchglong(wdsniff,1024,Session.xyzSampleRate,windowsize,round(0.75*windowsize),[],[],[],[0.1 20]);
+sniffp = mean(y(:,8<f&f<14),2);
+
+shiftedSync = Session.syncPeriods-Session.syncPeriods(1,1);
+spectralBoundaries = [ shiftedSync(1:end-1,2),shiftedSync(2:end,1)];
+[~,timeBoundaries] =  NearestNeighbour(t+windowsize/(2*Session.xyzSampleRate), spectralBoundaries/Session.lfpSampleRate,'both');
+timeBoundaries = [timeBoundaries([1:2:end-1]);timeBoundaries([2:2:end])];
+timeBoundaries = reshape(timeBoundaries,2,[])';
+
+for i = 1:size(timeBoundaries,1)
+    sniffp(timeBoundaries(i,1)-5:timeBoundaries(i,2)+5)=mean(sniffp);
+end
+
+sniff_state = zeros(size(sniffp));
+sniff_state(sniffp>sniffThresh) = 1;
+sniff_state(sniffp<sniffThresh) = 0;
+sniffPeriods = ThreshCross(sniff_state,0.5,0);
+sniff_state = zeros(size(dsniff));
+
+for i = 1:size(sniffPeriods,1)
+    sniff_state(round((t(sniffPeriods(i,1))+windowsize/(2*Session.xyzSampleRate))*Session.xyzSampleRate):round((t(sniffPeriods(i,2))+windowsize/(2*Session.xyzSampleRate))*Session.xyzSampleRate))=1;
+end
+
+if display,
+    figure
+    imagesc(t+windowsize/(2*Session.xyzSampleRate),f,log(y)');
+    axis xy
+
+    figure, hold on,
+    plot(t+windowsize/(2*Session.xyzSampleRate),sniffp*1000)
+    plot(d2t(dsniff,Session.xyzSampleRate,0),dsniff,'r')
+end

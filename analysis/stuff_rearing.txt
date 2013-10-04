@@ -1,0 +1,1373 @@
+function rearing(Session)               % 
+%,trialName)
+% $$$ 
+% $$$ trialName = 'crt1';
+% $$$ 
+% $$$ if ~isa(Session,'MTASession'),
+% $$$     Session = MTASession(Session);
+% $$$ else
+% $$$     Session = MTATrial(Session,trialName);
+% $$$ end
+
+%Session = MTASession('jg05-20120317');
+Session = MTASession('jg05-20120310');
+%Session = MTATrial(Session,'all');
+
+
+%% Load Units and rescale sampling freq
+[Res Clu Map] = LoadCluRes([Session.spath.nlx Session.name]);
+Res = round(Res*Session.lfpSampleRate/Session.sampleRate);
+[Res ind] = SelectPeriods(Res,[Session.syncPeriods(1),Session.syncPeriods(end)],'d',1,1);
+Clu = Clu(ind);
+
+%% Calculate rearing and non-rearing periods
+rper = Session.Bhv.getState('rear').state;
+wper = Session.Bhv.getState('walk').state;
+hper = Session.Bhv.getState('head').state;
+
+[~,rfet] = rear(Session,'com');
+[~,wfet] = walk(Session,'com');
+[~,hfet] = head(Session,'com');
+
+rpos = sq(Session.xyz(rper(:,1),Session.Model.gmi(Session.trackingMarker),[1,2]));
+wpos = sq(Session.xyz(wper(:,1),Session.Model.gmi(Session.trackingMarker),[1,2]));
+
+rdur = diff(rper,1,2);
+wdur = diff(wper,1,2);
+hdur = diff(hper,1,2);
+
+%% Select Walking onset and offset without previous/future walk/rear
+rbcom = zeros(size(Session.xyz,1),2,3);
+rb = Session.Model.rb({'spine_lower','pelvis_root','spine_middle','spine_upper'});
+rbcom(:,1,:) = sq(Session.com(rb));
+rb = Session.Model.rb({'head_back','head_left','head_front','head_right'});
+rbcom(:,2,:) = sq(Session.com(rb));
+
+fet = GetSegs(wfet,round(wper-3.*Session.xyzSampleRate),round(6*Session.xyzSampleRate),0);
+fet = reshape(fet,round(6*Session.xyzSampleRate),size(wper,1),2);
+hfet = rbcom(:,2,3).*Session.ang(:,Session.Model.gmi('spine_middle'),Session.Model.gmi('spine_upper'),2);
+hfet = GetSegs(hfet,round(wper-3.*Session.xyzSampleRate),round(6*Session.xyzSampleRate),0);
+hfet = reshape(hfet,round(6*Session.xyzSampleRate),size(wper,1),2);
+gwi = find(max(fet(1:300,:,1))<1&wdur'>1.5&max(hfet(:,:,1))<0);
+gwiu = find(max(fet(450:end,:,2))<1&wdur'>1.5&max(hfet(:,:,1))<0);
+
+fet = GetSegs(Session.ang(:,3,4,2),round(rper-3.*Session.xyzSampleRate),round(6*Session.xyzSampleRate),0);
+fet = reshape(fet,round(6*Session.xyzSampleRate),size(rper,1),2);
+gri = find(max(fet(1:300,:,1))<0&rdur'>1.5);
+griu = find(max(fet(450:end,:,2))<0&rdur'>1.5);
+
+
+trimLength = 120*5;%samples
+temp_non_rearing_periods = [rper(:,1)-trimLength,rper(:,2)+trimLength];
+tnrp = [[1;temp_non_rearing_periods(:,2)],[temp_non_rearing_periods(:,1);size(Session.xyz,1)]];
+nrp = tnrp(diff(tnrp,1,2)>0,:);
+nrwp = IntersectRanges(nrp,hper);
+
+
+fhp = [];
+for i = 1:length(nrwp)
+    fhp = cat(1,fhp,[nrwp(i,1):nrwp(i,2)]');
+end
+
+
+
+binSize = 100;%ms
+halfBins = 50;
+normalization = 'hz';
+
+per_on  = wper(gwi,1);
+per_off = wper(gwiu,2);
+poni  = round((per_on-1)./Session.xyzSampleRate.*Session.lfpSampleRate);
+poffi = round((per_off-1)./Session.xyzSampleRate.*Session.lfpSampleRate);
+clear('fccg')
+[fccg tbin ] = Trains2CCG({poni,poffi,Res},{1,2,Clu},binSize,halfBins,Session.lfpSampleRate,normalization);
+uClu = unique(Clu);
+sccg = zeros(size(fccg,1),2,size(Map,1));
+sccg(:,:,uClu) = sq(fccg(:,1:2,3:end));
+ffccg = zeros(size(fccg,1),2,size(Map,1));
+for k=1:size(Map,1)
+    for l=1:2
+        ffccg(:,l,k) = Filter0(gausswin(3),sccg(:,l,k));
+    end
+end
+wfccg = ffccg;
+[twon,tonw,conw] =  TrigRasters(poni,10000,Res,Clu,Session.lfpSampleRate,1,[]);
+[twoff,toffw,coffw] = TrigRasters(poffi,10000,Res,Clu,Session.lfpSampleRate,1,[]);
+
+
+per_on  = rper(gri,1);
+per_off = rper(griu,2);
+poni  = round((per_on-1)./Session.xyzSampleRate.*Session.lfpSampleRate);
+poffi = round((per_off-1)./Session.xyzSampleRate.*Session.lfpSampleRate);
+clear('fccg')
+clear('ffccg')
+[fccg tbin ] = Trains2CCG({poni,poffi,Res},{1,2,Clu},binSize,halfBins,Session.lfpSampleRate,normalization);
+uClu = unique(Clu);
+sccg = zeros(size(fccg,1),2,size(Map,1));
+sccg(:,:,uClu) = sq(fccg(:,1:2,3:end));
+ffccg = zeros(size(fccg,1),2,size(Map,1));
+for k=1:size(Map,1)
+    for l=1:2
+        ffccg(:,l,k) = Filter0(gausswin(3),sccg(:,l,k));
+    end
+end
+rfccg = ffccg;
+[tron,tonr,conr] =  TrigRasters(poni,10000,Res,Clu,Session.lfpSampleRate,1,[]);
+[troff,toffr,coffr] = TrigRasters(poffi,10000,Res,Clu,Session.lfpSampleRate,1,[]);
+
+% $$$ 
+% $$$ %Start-bootstrap-ccg
+% $$$ numIterations = 1;
+% $$$ clear('fccg')
+% $$$ for i=1:numIterations,
+% $$$     tic
+% $$$     %sprintf('Iter #: %d',i)
+% $$$     randInd = zeros(size(rper,1),1);
+% $$$     for j = 1:size(rper,1)
+% $$$         randInd(j)=round((fhp(randi(size(fhp,1)))-1)./Session.xyzSampleRate.*Session.lfpSampleRate);
+% $$$     end
+% $$$     posind(i,:) = randInd;
+% $$$     [fccg tbin ] = Trains2CCG({randInd,Res},{1,Clu},binSize,halfBins,Session.lfpSampleRate,normalization);
+% $$$     uClu = unique(Clu);
+% $$$     sgccg = zeros(size(fccg,1),1,size(Map,1));
+% $$$     sgccg(:,:,uClu) = sq(fccg(:,1,2:end));
+% $$$     for k=1:size(Map,1)
+% $$$         bfccg(i,:,1,k) = Filter0(gausswin(3),sgccg(:,1,k));
+% $$$     end
+% $$$     toc
+% $$$ end
+% $$$ %End-bootstrap-ccg
+
+
+% $$$ %% Compute main statistics
+% $$$ fconf = 0.95;
+% $$$ 
+% $$$ upbd = sq(max(rfccg,[],2));
+% $$$ supbd = sort(upbd,1);
+% $$$ upperConfidenceBoundary = sq(supbd(round(size(rfccg,1)*fconf),:,:));
+% $$$ 
+% $$$ lwbd = sq(min(rfccg,[],2));
+% $$$ slwbd = sort(lwbd,1,'descend');
+% $$$ lowerConfidenceBoundary = sq(slwbd(round(size(rfccg,1)*fconf),:,:));
+% $$$ 
+% $$$ srf = sq(sort(rfccg(:,:,3,:),1));
+% $$$ p95 = sq(srf(round(size(rfccg,1)*fconf),:,:));
+% $$$ dsrf = sq(sort(rfccg(:,:,3,:),1,'descend'));
+% $$$ p05 = sq(dsrf(round(size(rfccg,1)*fconf),:,:));
+% $$$ 
+% $$$ p_ron  = sq(sum(repmat(rfccg(1,:,1,:),size(rfccg,1),1)>rfccg(:,:,3,:),1)./size(rfccg,1));
+% $$$ p_roff = sq(sum(repmat(rfccg(1,:,1,:),size(rfccg,1),1)>rfccg(:,:,2,:),1)./size(rfccg,1));
+
+
+%% Compute Unit CCGs
+if strcmp(Session.trialName,'all'),
+[accg atbin] = autoccg(Session);
+else    
+fs = MTASession(Session.name,Session.Maze.name);
+[accg atbin] = autoccg(fs);
+clear('fs')
+end
+
+% $$$ x =1;
+% $$$ y =1;
+% $$$ gsp = 13;
+% $$$ for unit = 1:size(Map,1),
+% $$$     subplot2(round(size(Map,1)/gsp),gsp,y,x);
+% $$$     bar(atbin./1000,accg(:,unit));axis tight; grid on
+% $$$     title(num2str(unit));
+% $$$     if x==gsp,x=1;y=y+1;else,x=x+1;end
+% $$$ end
+
+
+%save([Session.spath.analysis Session.name '.' Session.Maze.name '.' Session.trialName '.REARING.mat'],'-v7.3');
+
+
+
+
+%% Load Place Fields
+Session.Pfs = [];
+Session = Session.loadPfs;
+
+pf_search.mazeName = 'cof';
+pf_search.trialName = Session.trialName;
+pf_search.trackingMarker = Session.trackingMarker;
+pf_search.stateLabel = 'head';
+pf_search.spk_shuffle = 'n';
+pf_search.pos_shuffle = 0;
+pf_search.numBSiterations = 1;
+pf_search.numZslices = 1;
+pf_search.nbins = 50;
+pf_search.smooth = 0.03;
+
+
+
+
+%% Display Everything
+figure(102)
+set(gcf,'CurrentCharacter','l');
+unit = 1;
+while 1,
+    clf
+    %% Rate Map
+    subplot2(6,2,[1,2],1);
+    pf_search.stateLabel = 'head';
+    Pfs = Session.getPfs(pf_search);
+    ppf(Pfs.bin1{unit},Pfs.bin2{unit},Pfs.rateMap{unit})
+    hold on
+    scatter(wpos(gwi,1),wpos(gwi,2),20,'m','Marker','*')
+    title(num2str(unit))
+    %
+    subplot2(6,2,[1,2],2);
+    pf_search.stateLabel = 'rear';
+    Pfs = Session.getPfs(pf_search);
+    ppf(Pfs.bin1{unit},Pfs.bin2{unit},Pfs.rateMap{unit})
+    hold on
+    scatter(rpos(gri,1),rpos(gri,2),20,'m','Marker','*')
+
+    %% CCGs
+    subplot2(6,2,3,1);
+    bar(tbin/1000,wfccg(:,2,unit));axis tight; grid on
+    %
+    subplot2(6,2,4,1);
+    bar(tbin/1000,wfccg(:,1,unit));axis tight; grid on
+    %
+    subplot2(6,2,3,2);
+    bar(tbin/1000,rfccg(:,1,unit));axis tight; grid on
+    hold on
+% $$$     Lines([],[upperConfidenceBoundary(3,unit),lowerConfidenceBoundary(3,unit)],'r')
+% $$$     Lines([],mean(mean(rfccg(:,:,3,unit),1),2),'g')
+% $$$     if max(sq(rfccg(1,:,1,unit)))<upperConfidenceBoundary(3,unit), ylim([0,1+upperConfidenceBoundary(3,unit)]);,end
+% $$$     plot(tbin,p95(:,unit),'m')
+% $$$     plot(tbin,p05(:,unit),'m')
+    subplot2(6,2,4,2);
+    bar(tbin/1000,rfccg(:,2,unit));axis tight; grid on
+% $$$     hold on
+% $$$     Lines([],[upperConfidenceBoundary(3,unit),lowerConfidenceBoundary(3,unit)],'r')
+% $$$     Lines([],mean(mean(rfccg(:,:,3,unit),1),2),'g')
+% $$$     if max(sq(rfccg(1,:,2,unit)))<upperConfidenceBoundary(3,unit), ylim([0,1+upperConfidenceBoundary(3,unit)]);,end
+% $$$     plot(tbin,p95(:,unit),'m')
+% $$$     plot(tbin,p05(:,unit),'m')
+
+    %% Rasters
+    subplot2(6,2,5,2);
+    plot(tron(conr==unit)/1000,tonr(conr==unit),'.');axis tight; grid on
+    subplot2(6,2,6,2);
+    plot(troff(coffr==unit)/1000,toffr(coffr==unit),'.');axis tight; grid on
+    subplot2(6,2,5,1);
+    plot(twoff(coffw==unit)/1000,toffw(coffw==unit),'.');axis tight; grid on
+    subplot2(6,2,6,1);
+    plot(twon(conw==unit)/1000,tonw(conw==unit),'.');axis tight; grid on
+
+    %% Figure controls
+    waitforbuttonpress
+    whatkey = get(gcf,'CurrentCharacter');
+    switch double(whatkey)
+      case double('i')
+        unit = input('Enter unit #: ');
+      case double('t')
+        thresh = input('Enter threshold: ');
+      case double('m')
+        ppf_type = input('Enter placefield plot mode: ');
+      case double('n')
+        unit = unit+1;
+      case double('p')
+        unit=unit-1;
+      case double('q')
+        return
+    end
+end
+
+figure,bar(atbin,accg(:,6))
+
+
+% $$$ %Fig - RCCG
+% $$$ x =1;
+% $$$ y =1;
+% $$$ gsp = 26;
+% $$$ for unit = 1:size(Map,1),
+% $$$     subplot2(2*round(size(Map,1)/gsp),gsp,y,x);
+% $$$     bar(tbin./1000,ffccg(:,1,unit));axis tight; grid on
+% $$$     title(num2str(unit));
+% $$$     subplot2(2*round(size(Map,1)/gsp),gsp,y+1,x);
+% $$$     bar(tbin./1000,ffccg(:,2,unit));axis tight; grid on
+% $$$     title(num2str(unit));
+% $$$     if x==gsp,x=1;y=y+2;else,x=x+1;end
+% $$$ end
+
+%% Part 2 - The TrigRaster Monster
+inter_rear_dur = [rp(1,1);abs(rp(1:end-1,2)-rp(2:end,1));size(Session.xyz,1)-rp(end)];
+rear_dur = diff(rp,1,2);
+rd_thresh = 120; % samples @ xyzSampleRate ~ 1sec
+ird_thresh = 600;% samples @ xyzSampleRate ~ 5sec
+%% Selection of Rears
+% Only onsets and offset whith out another following within 5 seconds
+
+rt_on  = rp(inter_rear_dur(1:end-1)>ird_thresh&rear_dur>rd_thresh,1);
+rt_off = rp(inter_rear_dur(2:end)>ird_thresh&rear_dur>rd_thresh,2);
+rpon_Res  = round((rt_on-1.05)/Session.xyzSampleRate*Session.lfpSampleRate);
+rpoff_Res = round((rt_off-1.05)/Session.xyzSampleRate*Session.lfpSampleRate);
+
+total_rear_count = size(rp,1);
+unit_rear_count = zeros(size(Map,1),2);
+unit_rear_firingrate = cell(size(Map,1),2);
+unit_rear_position = cell(size(Map,1),2);
+unit_rear_raster = cell(size(Map,1),2); 
+unit_rear_rtind = cell(size(Map,1),2); 
+
+frWindow1 = 2; % sec
+frWindow2 = 2; % sec
+fr_on = zeros(size(rt_on,1),size(Map,1));
+fr_off = zeros(size(rt_off,1),size(Map,1));
+for i = 1:size(rt_on,1),
+    [sRes sind] = SelectPeriods(Res,round([rpon_Res(i),rpon_Res(i)]+[-Session.lfpSampleRate*frWindow1,Session.lfpSampleRate*frWindow2]),'d',1,1);
+    sClu = Clu(sind);
+    fr_on(i,unique(sClu)) = FiringRate(sRes,sClu,[],Session.lfpSampleRate);
+end
+for i = 1:size(rt_off,1),
+    [sRes sind] = SelectPeriods(Res,round([rpoff_Res(i),rpoff_Res(i)]+[-Session.lfpSampleRate*frWindow1,Session.lfpSampleRate*frWindow2]),'d',1,1);
+    sClu = Clu(sind);
+    fr_off(i,unique(sClu)) = FiringRate(sRes,sClu,[],Session.lfpSampleRate);
+end
+fr_on(isnan(fr_on))=0;
+fr_off(isnan(fr_off))=0;
+
+for unit = 1:size(Map,1),
+    tic
+    %% Selection of rears
+    [frs_on,ifrs_on]=sort(fr_on(:,unit),'descend');
+    hspkrind_on = ifrs_on(find(frs_on~=0));
+    bins_on = prctile(fr_on(hspkrind_on,unit),[0:30:100]);
+    [count_on,ind_on] = histcI(fr_on(hspkrind_on,unit),bins_on);
+    [frs_off,ifrs_off]=sort(fr_off(:,unit),'descend');
+    hspkrind_off = ifrs_off(find(frs_off~=0));
+    bins_off = prctile(fr_off(hspkrind_off,unit),[0:30:100]);
+    [count_off,ind_off] = histcI(fr_off(hspkrind_off,unit),bins_off);
+    unit_rear_count(unit,1) = length(hspkrind_on);
+    unit_rear_count(unit,2) = length(hspkrind_off);
+    %% Raster Plot
+    if length(Res(Clu==unit))>1,
+        if size(hspkrind_on,1)>1,
+            [unit_rear_raster{unit,1},unit_rear_rtind{unit,1},~] = TrigRasters(rpon_Res(hspkrind_on)  ,10000,Res(Clu==unit),Clu(Clu==unit),Session.lfpSampleRate,0,ind_on);
+        end
+        if size(hspkrind_off,1)>1,
+            [unit_rear_raster{unit,2},unit_rear_rtind{unit,2},~] = TrigRasters(rpoff_Res(hspkrind_off),10000,Res(Clu==unit),Clu(Clu==unit),Session.lfpSampleRate,0,ind_off);
+        end
+    end
+    toc
+    unit
+end
+
+rrwindow = 125;%samples
+overlap = 62;
+
+wind = -2500:overlap:2500;
+
+
+unit = 11;
+%for unit = 1:size(Map,1),
+for i =1:length(wind),
+rrwin1 = wind(i);
+rrwin2 = wind(i)+rrwindow;
+uron = unique(unit_rear_rtind{unit,1}(unit_rear_raster{unit,1}>rrwin1&unit_rear_raster{unit,1}<rrwin2));
+uroff = unique(unit_rear_rtind{unit,2}(unit_rear_raster{unit,2}>rrwin1&unit_rear_raster{unit,2}<rrwin2));
+
+if ~isempty(uron)
+rfr_on(i,uron) = FiringRate(unit_rear_raster{unit,1}(unit_rear_raster{unit,1}>rrwin1&unit_rear_raster{unit,1}<rrwin2),unit_rear_rtind{unit,1}(unit_rear_raster{unit,1}>rrwin1&unit_rear_raster{unit,1}<rrwin2),[],Session.lfpSampleRate);
+end
+if ~isempty(uroff)
+rfr_off(i,uroff) = FiringRate(unit_rear_raster{unit,2}(unit_rear_raster{unit,2}>rrwin1&unit_rear_raster{unit,2}<rrwin2),unit_rear_rtind{unit,2}(unit_rear_raster{unit,2}>rrwin1&unit_rear_raster{unit,2}<rrwin2),[],Session.lfpSampleRate);
+end
+end
+
+rfr_on(isnan(rfr_on)) = 0;
+rfr_off(isnan(rfr_off)) = 0;
+rfr_on = abs(rfr_on);
+rfr_off = abs(rfr_off);
+
+rfr_ton  = d2t(rfr_on(:,1),size(rfr_on,1)/5,0)-2.5;
+rfr_toff = d2t(rfr_off(:,1),size(rfr_off,1)/5,0)-2.5;
+
+mrfr_on = median(rfr_on,2);
+mrfr_off = median(rfr_off,2);
+srfr_on = std(rfr_on,[],2);
+srfr_off = std(rfr_off,[],2);
+
+%hist(sum(rfr_off(1500:2500,:))/1250*(1000/1250))
+
+figure, plot(unit_rear_raster{unit,1},unit_rear_rtind{unit,1},'.')
+figure, plot(unit_rear_raster{unit,2},unit_rear_rtind{unit,2},'.') 
+
+
+figure,plot(rfr_ton,sum(rfr_on,2))
+figure,plot(rfr_ton,mean(rfr_on,2))
+figure,plot(rfr_toff,(rfr_off,2))
+
+maxroffi = find(mean(rfr_off,2)==max(mean(rfr_off,2)));
+figure,imagesc(rfr_off'),axis xy,caxis([0 20])
+figure,hist(rfr_off(maxroffi,:),100)
+
+figure,hist(sum(rfr_off(rfr_toff>-.4&rfr_toff<1,:)),100)
+figure,hist(sum(rfr_off(rfr_toff>-1.5&rfr_toff<-.5,:)),100)
+
+
+
+unit = 11;
+[tonx,tony]   = TrigRasters(rpon_Res(hspkrind_on)  ,10000,Res(Clu==unit),Clu(Clu==unit),Session.lfpSampleRate,0,ind_on);
+[toffx,toffy] = TrigRasters(rpoff_Res(hspkrind_off),10000,Res(Clu==unit),Clu(Clu==unit),Session.lfpSampleRate,0,ind_off);
+
+figure
+subplot2(2,1,1,1)
+plot(tonx,tony,'.')
+subplot2(2,1,2,1)
+plot(toffx,toffy,'.')
+
+unit = 11;
+binSize = 200;%ms
+halfBins = 25;
+normalization = 'count';
+[frccg,ftbin] = Trains2CCG({rpon_Res(hspkrind_on),rpoff_Res(hspkrind_off),Res(Clu==unit)},{1,2,Clu(Clu==unit)},binSize,halfBins,Session.lfpSampleRate,normalization);
+fsgccg = sq(frccg(:,1:2,3:end));
+frfccg = zeros(size(fsgccg));
+for l=1:2
+    frfccg(:,l) = Filter0(gausswin(3),fsgccg(:,l));
+end
+
+figure,
+subplot2(2,2,1,[1,2])
+bar(ftbin,frfccg(:,1));axis tight; grid on
+subplot2(2,2,2,[1,2])
+bar(ftbin,frfccg(:,2));axis tight; grid on
+title(num2str(unit))
+
+
+
+
+ TrigRasters(rpon_Res,10000,Res,Clu,Session.lfpSampleRate,1,[])
+ TrigRasters(rpoff_Res,10000,Res,Clu,Session.lfpSampleRate,1,[])
+
+
+
+
+
+
+%% Part 3
+% $$$ rpf = rp;
+% $$$ rpf = rp(diff(rp(:,2))>300,:);
+% $$$ rposf = rpos(diff(rp(:,2))>300,:);
+% $$$ rpon_Res  = round((rpf(:,1)-1.05)/Session.xyzSampleRate*Session.lfpSampleRate);
+% $$$ rpoff_Res = round((rpf(:,2)-1.05)/Session.xyzSampleRate*Session.lfpSampleRate);
+
+
+% $$$ %% Load Place Fields
+% $$$ Session.Pfs = {};
+% $$$ Session = Session.loadPfs;
+% $$$ pf_search.stateLabel = 'head';
+% $$$ pf_search.mazeName = 'cof';
+% $$$ pf_search.trialName = Session.trialName;
+% $$$ pf_search.trackingMarker = Session.trackingMarker;
+% $$$ pf_search.stateLabel = 'head';
+% $$$ pf_search.spk_shuffle = 'n';
+% $$$ pf_search.pos_shuffle = 0;
+% $$$ pf_search.numBSiterations = 1;
+% $$$ pf_search.numZslices = 1;
+% $$$ pf_search.nbins = 50;
+% $$$ pf_search.smooth = 0.03;
+% $$$ 
+% $$$ Pfs = Session.getPfs(pf_search);
+% $$$ 
+% $$$ unit = 11;
+% $$$ pf_search.stateLabel = 'head';
+% $$$ Pfs = Session.getPfs(pf_search);
+% $$$ 
+% $$$ pf_search.stateLabel = 'rear';
+% $$$ Pfr = Session.getPfs(pf_search);
+% $$$ 
+% $$$ 
+% $$$ subplot2(4,3,[1,2],1)
+% $$$ ppf(Pfs.bin1{unit},Pfs.bin2{unit},Pfs.rateMap{unit})
+% $$$ 
+% $$$ subplot2(4,3,[1,2],2)
+% $$$ ppf(Pfr.bin1{unit},Pfr.bin2{unit},Pfr.rateMap{unit})
+% $$$ 
+% $$$ fr = zeros(size(rposf,1),1);
+% $$$ for i = 1:size(rposf,1),
+% $$$     fr(i) = Pfs.rateMap{unit}(find(Pfs.bin1{unit}>=round(rposf(i,1)),1),find(Pfs.bin2{unit}>=round(rposf(i,1)),1));
+% $$$ end
+% $$$ fr(isnan(fr))=0;
+% $$$ 
+% $$$ bins = prctile(fr,[0:33:100]);
+% $$$ [count,rind] = histcI(fr,bins);
+% $$$ [tonx,tony] = TrigRasters(rpon_Res,10000,Res(Clu==unit),Clu(Clu==unit),Session.lfpSampleRate,0,rind);
+% $$$ [toffx,toffy] = TrigRasters(rpoff_Res,10000,Res(Clu==unit),Clu(Clu==unit),Session.lfpSampleRate,0,rind);
+% $$$ subplot2(4,3,1,3)
+% $$$ scatter(tonx,tony)
+% $$$ subplot2(4,3,2,3)
+% $$$ scatter(toffx,toffy)
+% $$$ 
+% $$$ for i = 1:3;
+% $$$ rthresh = i;
+% $$$ binSize = 100;%ms
+% $$$ halfBins = 100;
+% $$$ normalization = 'hz';
+% $$$ [frccg,ftbin] = Trains2CCG({rpon_Res(rind==rthresh),rpoff_Res(rind==rthresh),Res(Clu==unit)},{1,2,Clu(Clu==unit)},binSize,halfBins,Session.lfpSampleRate,normalization);
+% $$$ fsgccg = sq(frccg(:,1:2,3:end));
+% $$$ for l=1:2
+% $$$     frfccg(:,l) = Filter0(gausswin(5),fsgccg(:,l));
+% $$$ end
+% $$$ 
+% $$$ %% CCG
+% $$$ subplot2(4,3,3,i)
+% $$$ bar(ftbin,fsgccg(:,1));axis tight; grid on
+% $$$ subplot2(4,3,4,i)
+% $$$ bar(ftbin,fsgccg(:,2));axis tight; grid on
+% $$$ title(num2str(unit))
+% $$$ end
+
+
+%   window = 64;
+%   nbins = round(sum(diff(stsp,1,2)+1)/window);
+%   
+%   winres = round(myRes/window);
+%   subs = [winres(winres~=0),myClu(winres~=0)];
+%   vals = ones(size(subs,1),1);
+%   spkrate = accumarray(subs,vals,[nbins,size(Map,1)],@(x) sum(x)/(window/Session.lfpSampleRate));
+
+
+% $$$ 
+% $$$ figure(103)
+% $$$ set(gcf,'CurrentCharacter','l');
+% $$$ unit = 1;
+% $$$ while 1,
+% $$$     clf
+% $$$ 
+% $$$ subplot2(4,3,[1,2],1)
+% $$$ ppf(Pfs.bin1{unit},Pfs.bin2{unit},Pfs.rateMap{unit})
+% $$$ 
+% $$$ subplot2(4,3,[1,2],2)
+% $$$ ppf(Pfr.bin1{unit},Pfr.bin2{unit},Pfr.rateMap{unit})
+% $$$ 
+% $$$ fr = zeros(size(rposf,1),1);
+% $$$ for i = 1:size(rposf,1),
+% $$$     fr(i) = Pfs.rateMap{unit}(find(Pfs.bin1{unit}>=round(rposf(i,1)),1),find(Pfs.bin2{unit}>=round(rposf(i,1)),1));
+% $$$ end
+% $$$ fr(isnan(fr))=0;
+% $$$ 
+% $$$ bins = prctile(fr,[0:33:100]);
+% $$$ [count,rind] = histcI(fr,bins);
+% $$$ [tonx,tony] = TrigRasters(rpon_Res,10000,Res(Clu==unit),Clu(Clu==unit),Session.lfpSampleRate,0,rind);
+% $$$ [toffx,toffy] = TrigRasters(rpoff_Res,10000,Res(Clu==unit),Clu(Clu==unit),Session.lfpSampleRate,0,rind);
+% $$$ subplot2(4,3,1,3)
+% $$$ plot(tonx,tony,'.')
+% $$$ subplot2(4,3,2,3)
+% $$$ plot(toffx,toffy,'.')
+% $$$ 
+% $$$ for i = 1:3;
+% $$$ rthresh = i;
+% $$$ binSize = 100;%ms
+% $$$ halfBins = 100;
+% $$$ normalization = 'hz';
+% $$$ [frccg,ftbin] = Trains2CCG({rpon_Res(rind==rthresh),rpoff_Res(rind==rthresh),Res(Clu==unit)},{1,2,Clu(Clu==unit)},binSize,halfBins,Session.lfpSampleRate,normalization);
+% $$$ fsgccg = sq(frccg(:,1:2,3:end));
+% $$$ for l=1:2
+% $$$     frfccg(:,l) = Filter0(gausswin(5),fsgccg(:,l));
+% $$$ end
+% $$$ 
+% $$$ %% CCG
+% $$$ subplot2(4,3,3,i)
+% $$$ bar(ftbin,fsgccg(:,1));axis tight; grid on
+% $$$ subplot2(4,3,4,i)
+% $$$ bar(ftbin,fsgccg(:,2));axis tight; grid on
+% $$$ title(num2str(unit))
+% $$$ end
+% $$$ 
+% $$$ 
+% $$$ 
+% $$$     title(num2str(unit))
+% $$$     waitforbuttonpress
+% $$$     whatkey = get(gcf,'CurrentCharacter');
+% $$$     switch double(whatkey)
+% $$$       case double('i')
+% $$$         unit = input('Enter unit #: ');
+% $$$       case double('t')
+% $$$         thresh = input('Enter threshold: ');
+% $$$       case double('m')
+% $$$         ppf_type = input('Enter placefield plot mode: ');
+% $$$       case double('n')
+% $$$         unit = unit+1;
+% $$$       case double('p')
+% $$$         unit=unit-1;
+% $$$       case double('q')
+% $$$         return
+% $$$     end
+% $$$ end
+
+
+%% Part 4 Rearing and Theta
+
+% Load Session
+Session = MTASession('jg05-20120310');
+Session = MTATrial(Session,'all');
+
+
+% Load xyz positions of the heads center of mass
+rb = Session.Model.rb({'head_back','head_left','head_front','head_right'});
+rb_com_xyz = sq(Session.com(rb));
+
+% trim to fit window for matrix reshaping
+window = 60;%samples
+numSamplesToTrim = mod(size(rb_com_xyz,1),window);
+rb_com_xyz = rb_com_xyz(1:end-numSamplesToTrim,:);
+
+
+% Reshape and calculate first and second derivatives
+xyzsegs = reshape(rb_com_xyz,window,[],size(rb_com_xyz,2));
+distsegs = sqrt(sum(xyzsegs.^2,3));
+velsegs = abs(diff(distsegs));
+accsegs = abs(diff(velsegs));
+accsegs = diff(velsegs);
+
+average_speed_segs = mean(velsegs,1)';
+average_accel_segs = mean(accsegs,1)';
+
+%tsegs = d2t(average_speed_segs,window/Session.xyzSampleRate,0);
+
+tsegs = [1:size(average_speed_segs,1)].*window/Session.xyzSampleRate;
+tsegs = tsegs-diff(tsegs(1:2))/2;
+
+% Compute lfp and theta power
+lfp = Session.loadlfp(65:96);
+wlfp = WhitenSignal(lfp);
+nfft = 2^11;
+fft_window = 2^10;
+frange = [1,30];
+y=[];,f=[];,t=[];
+for chan = 1:32;
+[y(:,:,chan),f,t] = mtchglong(wlfp(:,chan),nfft,Session.lfpSampleRate,fft_window,0.75*fft_window,[],[],[],frange);
+end
+t = t+diff(t(1:2))/2;
+
+timeToTrim = numSamplesToTrim/Session.xyzSampleRate;
+thpow = sq(mean(y(:,f<12&f>6,:),2));
+thpow = thpow(1:(find(t<t(end)-timeToTrim,1,'last')-1),:);
+
+
+tt = t(1:(find(t<t(end)-timeToTrim,1,'last')-1));
+
+
+thp = zeros(size(average_speed_segs,1),32);
+tind = zeros(2,1);
+for i = 1:size(average_speed_segs,1)-1,
+    tind = zeros(2,1);
+    tind(1) = find(tt<tsegs(i),1,'last');
+    tind(2) = find(tt>tsegs(i),1,'first');
+    thp(i,:) = mean(thpow(tind(tind~=0),:),1);
+end
+ 
+
+% speed vs theta power
+plot(tsegs,unity(average_speed_segs),tsegs,unity(thp(:,18)),'.');
+plot(unity(average_speed_segs(average_speed_segs~=0)),unity(thp(average_speed_segs~=0,18)))
+cov(unity(average_speed_segs(average_speed_segs~=0)),unity(thp(average_speed_segs~=0,18)))
+
+rears_per = Session.Bhv.getState('rear').state/Session.xyzSampleRate;
+rthp = [];
+ravs = [];
+for i = 1:size(rears_per,1),
+    rthp = cat(1,rthp,thp(rears_per(i,1)<tsegs&rears_per(i,2)>tsegs,:));
+    ravs = cat(1,ravs,average_speed_segs(rears_per(i,1)<tsegs&rears_per(i,2)>tsegs));
+end
+
+walks_per = Session.Bhv.getState('walk').state/Session.xyzSampleRate; 
+
+walks_per = walks_per+repmat([1,-1],size(walks_per,1),1);
+
+wthp = [];
+wavs = [];
+for i = 1:size(walks_per,1),
+    wthp = cat(1,wthp,thp(walks_per(i,1)<tsegs&walks_per(i,2)>tsegs,:));
+    wavs = cat(1,wavs,average_speed_segs(walks_per(i,1)<tsegs&walks_per(i,2)>tsegs));
+end
+
+
+plot(unity(ravs(ravs~=0)),unity(rthp(ravs~=0,18)),'.',unity(wavs(wavs~=0)),unity(wthp(wavs~=0,18)),'.')
+
+
+ 
+%% Part 5 Theta rear onset offset
+Session = MTASession('jg05-20120310');
+Session = MTATrial(Session,'all');
+
+
+lfp = Session.loadlfp(65:96);
+
+wlfp = WhitenSignal(lfp,[],1);
+
+
+frange = [1,90];
+nffts = 2^10;
+windows =2^9;
+yr = [];
+tr = [];
+fr = [];
+for b = 1:2,
+    rwlfp = GetSegs(wlfp,round((rper(:,b)./Session.xyzSampleRate-3).*1250),6*1250,[]);
+    for j = 1:32;
+        for i = 1:size(rwlfp,2),
+            [yr(:,:,i,b,j),fr,tr] = mtchglong(rwlfp(:,i,j),nffts,Session.lfpSampleRate,windows,0.75*windows,[],[],[],frange);
+        end
+    end
+end
+tr = tr+diff(tr(1:2))/2;
+
+rthp = sq(median(yr(:,fr<12&fr>5,:,:,:),2));
+
+
+
+rdur = diff(rper,1,2)/Session.xyzSampleRate;
+% $$$ figure,imagesc(fr,1:32,sq(median(sum(yr(27:35,:,rdur>1,1,:),1)-sum(yr(14:23,:,rdur>1,1,:),1),3))'),colorbar
+% $$$ figure,imagesc(fr,1:32,sq(median(sum(yr(27:35,:,rdur>1,2,:),1)-sum(yr(14:23,:,rdur>1,2,:),1),3))'),colorbar
+% $$$ 
+% $$$ dyr = diff(yr,1);
+% $$$ figure,imagesc(tr(2:end),fr,sq(mean(dyr(:,fr>5&fr<12,rdur>1.5,1,18),2))')
+% $$$ 
+% $$$ imagesc(tr+diff(tr(1:2))/2-3,1:32,log10(sq(mean(rthp(:,:,1,:),2)))'),axis xy
+% $$$ 
+% $$$ 
+% $$$ 
+% $$$ 
+% $$$ imagesc(fr,1:32,log10(sq(mean(mean(yr(:,:,:,1,:),1),3)))'),axis xy
+% $$$ imagesc(log10(rthp(:,:,1,7))'),axis xy
+% $$$ imagesc(fr,1:32,log10(sq(median(rthp(17:22,:,1,:),1)))'./log10(sq(median(rthp(27:32,:,1,:),1)))'),axis xy,colorbar
+% $$$ imagesc(fr,1:32,log10(sq(median(rthp(27:32,:,1,:),1)))'),axis xy,colorbar
+
+
+
+
+rxyz = GetSegs(Session.xyz(:,7,3),rper-30,60,[]);
+rxyz = reshape(rxyz,[],size(rper,1),2);
+rvel = sq((rxyz(end,:,:)-rxyz(1,:,:))/60*Session.xyzSampleRate);
+%[~,rvi] = sort(rvel,'descend');
+%figure,imagesc(rthp(:,rvi,1,7)'),axis xy
+
+
+rxyz = GetSegs(Session.xyz,round(rper-3*Session.xyzSampleRate),round(6*Session.xyzSampleRate),[]);
+rxyz = reshape(rxyz,round(6*Session.xyzSampleRate),size(rper,1),2,size(Session.xyz,2),size(Session.xyz,3));
+
+rang = GetSegs(Session.ang(:,:,:,1:2),round(rper-3*Session.xyzSampleRate),round(6*Session.xyzSampleRate),[]);
+rang = reshape(rang,round(6*Session.xyzSampleRate),size(rper,1),2,size(Session.xyz,2),size(Session.xyz,2),2);
+rang(isnan(rang))=0;
+
+rfet = reshape(cat(4,rang(:,:,:,4,5,:),rang(:,:,:,5,7,:)),round(6*Session.xyzSampleRate),size(rper,1),2,2,2);
+%rfet = rxyz;
+
+rswin = 12;
+rspeed = zeros(size(yr,1),size(rfet,2),size(rfet,3),size(rfet,4));
+racc = zeros(size(yr,1),size(rfet,2),size(rfet,3),size(rfet,4));
+trs = [1:size(rfet,1)]/Session.xyzSampleRate;
+tind = zeros(rswin,1);
+for i = 1:size(tr,1),
+    tind = zeros(rswin,1);
+    if ~isempty(find(trs<tr(i),rswin/2,'last')),
+        tind(1:rswin/2) = find(trs<tr(i),rswin/2,'last');
+    end
+    if ~isempty(find(trs>tr(i),rswin/2,'first')),
+        tind(rswin/2+1:rswin) = find(trs>tr(i),rswin/2,'first');
+    end
+    rspeed(i,:,:,:) = median(abs(sq(sqrt(sum(diff(rfet(tind(tind~=0),:,:,:,:),1).^2,5)))),1);
+    racc(i,:,:,:) = median(diff(abs(sq(diff(sqrt(sum(rfet(tind(tind~=0),:,:,:,:).^2,5)),1))),1));
+end
+rdur = diff(rper,1,2)/Session.xyzSampleRate;
+
+
+% $$$ 
+% $$$ figure
+% $$$ hold on
+% $$$ for i=1:size(yr,1),plot(rspeed(i,rdur>1,1,7),rthp(i,rdur>1,1,18),'.',rspeed(i,rdur>1,2,7),rthp(i,rdur>1,2,18),'.'),pause(.4),end
+
+figure
+clf
+for i=20:31,
+    plot(rspeed(i,:,1,2),rthp(i,:,1,30),'.',rspeed(i,:,2,2),rthp(i,:,2,30),'.'),
+    title(num2str(i))
+    xlim([0,.14])
+    ylim([0,2000])    
+    waitforbuttonpress
+end
+
+
+% $$$ figure
+% $$$ 
+% $$$ clf
+% $$$ for i=1:size(yr,1),
+% $$$     plot(racc(i,:,1,7),rthp(i,:,1,18),'.',racc(i,:,2,7),rthp(i,:,2,18),'.')
+% $$$     title(num2str(i))
+% $$$     xlim([-0.5,0.5])
+% $$$     ylim([0,6000])
+% $$$     waitforbuttonpress
+% $$$ end
+
+
+
+inter_rear_dur = [rper(1,1);abs(rper(1:end-1,2)-rper(2:end,1));size(Session.xyz,1)-rper(end)];
+rd_thresh = 1; % samples @ xyzSampleRate ~ 1sec
+ird_thresh = 360;% samples @ xyzSampleRate ~ 3sec
+rt_on  = rper(inter_rear_dur(1:end-1)>ird_thresh&rdur>rd_thresh,1);
+rt_off = rper(inter_rear_dur(2:end)>ird_thresh&rdur>rd_thresh,2);
+
+rfitcof = zeros(size(yr,1),2,2,size(rspeed,4),32);
+rrankcof = zeros(size(yr,1),2,2,size(rspeed,4),32);
+rcorcof = zeros(size(yr,1),2,2,size(rspeed,4),32);
+rfdr = zeros(size(yr,1),2,size(rspeed,4),32);
+for chan = 1:32
+    for mar = 1:size(rspeed,4),        
+        for i=1:size(yr,1),
+            rfitcof(i,1,:,mar,chan) = polyfit(rspeed(i,inter_rear_dur(1:end-1)>ird_thresh&rdur>rd_thresh,1,mar),rthp(i,inter_rear_dur(1:end-1)>ird_thresh&rdur>rd_thresh,1,chan),1);
+            rfitcof(i,2,:,mar,chan) = polyfit(rspeed(i,inter_rear_dur(2:end)>ird_thresh&rdur>rd_thresh,2,mar),rthp(i,inter_rear_dur(2:end)>ird_thresh&rdur>rd_thresh,2,chan),1);
+            rrankcof(i,1,:,mar,chan) = RankCorrelation(rspeed(i,inter_rear_dur(1:end-1)>ird_thresh&rdur>rd_thresh,1,mar),rthp(i,inter_rear_dur(1:end-1)>ird_thresh&rdur>rd_thresh,1,chan));
+            rrankcof(i,2,:,mar,chan) = RankCorrelation(rspeed(i,inter_rear_dur(1:end-1)>ird_thresh&rdur>rd_thresh,2,mar),rthp(i,inter_rear_dur(1:end-1)>ird_thresh&rdur>rd_thresh,2,chan));
+            [tcor,pval] = corrcoef(rspeed(i,inter_rear_dur(2:end)>ird_thresh&rdur>rd_thresh,1,mar),rthp(i,inter_rear_dur(2:end)>ird_thresh&rdur>rd_thresh,1,chan));            
+            rcorcof(i,1,1,mar,chan) = tcor(2);
+            rcorcof(i,1,2,mar,chan) = pval(2);
+            [tcor,pval] = corrcoef(rspeed(i,inter_rear_dur(2:end)>ird_thresh&rdur>rd_thresh,2,mar),rthp(i,inter_rear_dur(2:end)>ird_thresh&rdur>rd_thresh,2,chan));
+            rcorcof(i,2,1,mar,chan) = tcor(2);
+            rcorcof(i,2,2,mar,chan) = pval(2);
+        end        
+        rfdr(:,1,mar,chan) = fdr_bh(rcorcof(:,1,2,mar,chan));
+        rfdr(:,2,mar,chan) = fdr_bh(rcorcof(:,2,2,mar,chan));
+    end
+end
+
+
+
+figure,imagesc(sq(rcorcof(:,2,2,2,:))'.*sq(rfdr(:,2,2,:))')
+
+
+
+figure
+hold on
+ch = 1;
+ma = 1;
+for chan = 1:2:32
+    for mar = 1:2:size(rspeed,4),
+        subplot2(5,16,ma,ch);
+        %plot(sq(rfitcof(:,1,:,mar,chan)),'.');
+        plot(sq(rcorcof(:,2,mar,chan)),'.');
+        hold on,
+        Lines(29,[],'r');
+        ma = ma+1;
+    end
+    ma = 1;
+    ch = ch+1;
+end
+%ForAllSubplots('xlim([0,55])')
+%ForAllSubplots('ylim([-1000,2500])')
+
+
+% For angles
+figure
+hold on
+ch = 1;
+ma = 1;
+for chan = 1:2:32,
+    for mar = 1:2,
+        subplot2(2,16,ma,ch);
+        %plot(sq(rfitcof(:,1,:,mar,chan)),'.');
+        plot(sq(rcorcof(:,1,mar,chan)),'.');
+        hold on,
+        Lines(29,[],'r');
+        ma = ma+1;
+    end
+    ma = 1;
+    ch = ch+1;
+end
+%ForAllSubplots('xlim([0,55])')
+%ForAllSubplots('ylim([-1000,2500])')
+
+
+
+
+%% Part 6 Theta rear vs theta walk
+
+Session = MTASession('jg05-20120310');
+Session = MTATrial(Session,'all');
+
+lfp = Session.loadlfp(65:96);
+wlfp = WhitenSignal(lfp,[],1);
+
+rper = Session.Bhv.getState('rear').state;
+wper = Session.Bhv.getState('walk').state;
+frange = [1,90];
+nffts = 2^10;
+windows =2^9;
+yr = [];
+yw = [];
+t = [];
+f = [];
+for b = 1:2,
+    rwlfp = GetSegs(wlfp,round((rper(:,b)./Session.xyzSampleRate).*1250),10*1250,[]);
+    wwlfp = GetSegs(wlfp,round((wper(:,b)./Session.xyzSampleRate).*1250),10*1250,[]);
+    for j = 1:32;
+        for i = 1:size(rwlfp,2),
+            [yr(:,:,i,b,j),f,t] = mtchglong(rwlfp(:,i,j),nffts,Session.lfpSampleRate,windows,0.75*windows,[],[],[],frange);
+        end
+        for i = 1:size(wwlfp,2),
+            [yw(:,:,i,b,j),f,t] = mtchglong(wwlfp(:,i,j),nffts,Session.lfpSampleRate,windows,0.75*windows,[],[],[],frange);
+        end        
+    end
+end
+t = t+diff(t(1:2))/2;
+
+rb_com_xyz = zeros(size(Session.xyz,1),2,3);
+rb = Session.Model.rb({'head_back','head_left','head_front','head_right'});
+rb_com_xyz(:,1,:) = sq(Session.com(rb));
+rb = Session.Model.rb({'spine_lower','pelvis_root','spine_middle','spine_upper'});
+rb_com_xyz(:,2,:) = sq(Session.com(rb));
+
+
+%% Rearing Segments
+rbcxyz = GetSegs(rb_com_xyz,rper,round(10*Session.xyzSampleRate),[]);
+rbcxyz = reshape(rbcxyz,round(10*Session.xyzSampleRate),size(rper,1),2,2,size(Session.xyz,3));
+rfet = cat(4,rbcxyz,rbcxyz(:,:,:,1,:)-rbcxyz(:,:,:,2,:));
+
+rswin = 12;
+rspeed = zeros(size(yr,1),size(rfet,2),size(rfet,3),size(rfet,4));
+racc = zeros(size(yr,1),size(rfet,2),size(rfet,3),size(rfet,4));
+trs = [1:size(rfet,1)]/Session.xyzSampleRate;
+tind = zeros(rswin,1);
+for i = 1:size(t,1),
+    tind = zeros(rswin,1);
+    if ~isempty(find(trs<t(i),rswin/2,'last')),
+        tind(1:rswin/2) = find(trs<t(i),rswin/2,'last');
+    end
+    if ~isempty(find(trs>t(i),rswin/2,'first')),
+        tind(rswin/2+1:rswin) = find(trs>t(i),rswin/2,'first');
+    end
+    rspeed(i,:,:,:) = median(abs(sq(sqrt(sum(diff(rfet(tind(tind~=0),:,:,:,:),1).^2,5)))),1);
+    racc(i,:,:,:) = median(diff(abs(sq(diff(sqrt(sum(rfet(tind(tind~=0),:,:,:,:).^2,5)),1))),1));
+end
+rdur = diff(rper,1,2)/Session.xyzSampleRate;
+
+goodRearInd = ones(size(rper,1),1);
+
+% Rear quick select
+% $$$ rearPerInd = 1;
+% $$$ figure
+% $$$ while 1,
+% $$$     clf
+% $$$     plot(rbcxyz(:,rearPerInd,1,1,3));    
+% $$$     title(num2str(rearPerInd))
+% $$$     waitforbuttonpress
+% $$$     whatkey = get(gcf,'CurrentCharacter');
+% $$$     switch double(whatkey)
+% $$$       case double('y')
+% $$$         goodRearInd(rearPerInd) = 1;
+% $$$         rearPerInd = rearPerInd+1;
+% $$$       case double('n')
+% $$$         goodRearInd(rearPerInd) = 0;
+% $$$         rearPerInd = rearPerInd+1;
+% $$$       case double('q')
+% $$$         return
+% $$$     end
+% $$$ end
+
+% Rear length select
+goodRearInd(rdur<1) = 0;
+
+
+
+
+wfet = cat(4,rbcxyz,rbcxyz(:,:,:,1,:)-rbcxyz(:,:,:,2,:));
+
+wswin = 12;
+wspeed = zeros(size(yw,1),size(wfet,2),size(wfet,3),size(wfet,4));
+wacc = zeros(size(yw,1),size(wfet,2),size(wfet,3),size(wfet,4));
+tws = [1:size(wfet,1)]/Session.xyzSampleRate;
+tind = zeros(wswin,1);
+for i = 1:size(t,1),
+    tind = zeros(wswin,1);
+    if ~isempty(find(trs<t(i),wswin/2,'last')),
+        tind(1:wswin/2) = find(tws<t(i),rswin/2,'last');
+    end
+    if ~isempty(find(tws>t(i),wswin/2,'first')),
+        tind(wswin/2+1:wswin) = find(tws>t(i),wswin/2,'first');
+    end
+    wspeed(i,:,:,:) = median(abs(sq(sqrt(sum(diff(wfet(tind(tind~=0),:,:,:,:),1).^2,5)))),1);
+    wacc(i,:,:,:) = median(diff(abs(sq(diff(sqrt(sum(wfet(tind(tind~=0),:,:,:,:).^2,5)),1))),1));
+end
+wdur = diff(wper,1,2)/Session.xyzSampleRate;
+
+goodWalkInd = ones(size(wper,1),1);
+goodWalkInd(wdur<1) = 0;
+
+
+rper = rper(goodRearInd==1,:);
+rdur = rdur(goodRearInd==1);
+
+wper = wper(goodWalkInd==1,:);
+wdur = wdur(goodWalkInd==1);
+
+rthp = sq(median(yr(:,f<12&f>5,:,:,:),2));
+wthp = sq(median(yw(:,f<12&f>5,:,:,:),2));
+
+
+wthp = sq(wthp(:,goodWalkInd==1,1,:));
+yw = sq(yw(:,:,goodWalkInd==1,1,:));
+wgmp = sq(median(yw(:,f<80&f>60,:,:),2));
+wspeed = sq(wspeed(:,goodWalkInd==1,1,:));
+wacc = sq(wacc(:,goodWalkInd==1,1,:));
+
+rthp = sq(rthp(:,goodRearInd==1,1,:));
+yr = sq(yr(:,:,goodRearInd==1,1,:));
+rgmp = sq(median(yr(:,f<80&f>60,:,:),2));
+rspeed = sq(rspeed(:,goodRearInd==1,1,:));
+racc = sq(racc(:,goodRearInd==1,1,:));
+
+%% start here fix indexing error
+
+for i = 1:size(wper,1),
+    wthp(t>=wdur(i),i,:) = 0;
+    yw(t>=wdur(i),:,i,:) = 0;
+    wgmp(t>=wdur(i),i,:) = 0;
+    wspeed(t>=wdur(i),i,:) = 0;
+    wacc(t>=wdur(i),i,:) = 0;
+end     
+
+for i = 1:size(rper,1),
+    rthp(t>=rdur(i),i,:) = 0;
+    yr(t>=rdur(i),:,i,:) = 0;
+    rgmp(t>=rdur(i),i,:) = 0;
+    rspeed(t>=rdur(i),i,:) = 0;
+    racc(t>=rdur(i),i,:) = 0;
+end     
+
+figure
+hold on
+for i = 1:size(rspeed,2)
+    if size(wspeed(wspeed(:,i,1)~=0,i,1),1)~=size(wthp(wthp(:,i,18)~=0,i,18),1),continue,end
+    plot(rspeed(rspeed(:,i,1)~=0,i,1),rthp(rthp(:,i,18)~=0,i,18),'.',wspeed(wspeed(:,i,1)~=0,i,1),wthp(wthp(:,i,18)~=0,i,18),'.')
+end
+
+figure
+hold on
+for i = 1:size(rspeed,2)
+    if size(wspeed(wspeed(:,i,2)~=0,i,2),1)~=size(wthp(wthp(:,i,18)~=0,i,18),1),continue,end
+    plot(rspeed(rspeed(:,i,2)~=0,i,2),rthp(rthp(:,i,18)~=0,i,18),'.',wspeed(wspeed(:,i,2)~=0,i,2),wthp(wthp(:,i,18)~=0,i,18),'.')
+end
+
+
+figure
+hold on
+for i = 1:size(rspeed,2)
+    if size(wspeed(wspeed(:,i,3)~=0,i,3),1)~=size(wthp(wthp(:,i,18)~=0,i,18),1),continue,end
+    plot(rspeed(rspeed(:,i,3)~=0,i,3),rthp(rthp(:,i,18)~=0,i,18),'.',wspeed(wspeed(:,i,3)~=0,i,3),wthp(wthp(:,i,18)~=0,i,18),'.')
+end
+
+
+
+figure
+hold on
+for i = 1:size(rspeed,2)
+    if size(wspeed(wspeed(:,i,1)~=0,i,1),1)~=size(wgmp(wgmp(:,i,18)~=0,i,18),1),continue,end
+    plot(rspeed(rspeed(:,i,1)~=0,i,1),rgmp(rgmp(:,i,18)~=0,i,18),'.',wspeed(wspeed(:,i,1)~=0,i,1),wgmp(wgmp(:,i,18)~=0,i,18),'.')
+end
+
+
+
+figure
+hold on
+for i = 1:size(rspeed,2)
+    if size(wspeed(wspeed(:,i,3)~=0,i,3),1)~=size(wgmp(wgmp(:,i,18)~=0,i,18),1),continue,end
+    plot(rspeed(rspeed(:,i,3)~=0,i,3),rgmp(rgmp(:,i,18)~=0,i,18),'.',wspeed(wspeed(:,i,3)~=0,i,3),wgmp(wgmp(:,i,18)~=0,i,18),'.')
+end
+
+
+
+plot(rspeed(rspeed~=0),rthp(rthp~=0),'.',wspeed(wspeed~=0),wgmp(wgmp~=0),'.')
+
+
+
+
+
+
+
+
+rcorcof = zeros(size(yr,1),2,size(rspeed,3),32);
+rfdr = zeros(size(yr,1),size(rspeed,3),32);
+for chan = 1:32
+    for mar = 1:size(rspeed,3),        
+        for i=1:size(t,1),
+            [tcor,pval] = corrcoef(rspeed(i,:,mar),rthp(i,:,chan));            
+            rcorcof(i,1,mar,chan) = tcor(2);
+            rcorcof(i,2,mar,chan) = pval(2);
+        end        
+        rfdr(:,mar,chan) = fdr_bh(rcorcof(:,2,mar,chan));
+    end
+end
+
+
+figure,imagesc(sq(rcorcof(:,2,3,:))')
+
+
+%rfitcof = zeros(size(yr,1),2,size(rspeed,3),32);
+%rfitcof(i,:,mar,chan) = polyfit(rspeed(i,:,mar),rthp(i,:,chan),1);
+
+
+
+
+%% Part 5 walk onset/offset related to rearing onset/offset
+
+
+Session = MTASession('jg05-20120309');
+%Session = MTATrial(Session,'all');
+
+lfp = Session.loadlfp(65:96);
+wlfp = WhitenSignal(lfp,[],1);
+
+rper = Session.Bhv.getState('rear').state;
+rdur = diff(rper,1,2)/Session.xyzSampleRate;
+wper = Session.Bhv.getState('walk').state;
+wdur = diff(wper,1,2)/Session.xyzSampleRate;
+
+
+frange = [1,90];
+nffts = 2^12;
+windows =2^11;
+yr = [];
+yw = [];
+t = [];
+f = [];
+for b = 1:2,
+    rwlfp = GetSegs(wlfp,round(((rper(:,b)./Session.xyzSampleRate)-3).*1250),8*1250,0);
+    %    wwlfp = GetSegs(wlfp,round(((wper(:,b)./Session.xyzSampleRate)-3).*1250),8*1250,0);
+    for j = 1:32;
+        for i = 1:size(rwlfp,2),
+            [yr(:,:,i,b,j),f,t] = mtchglong(rwlfp(:,i,j),nffts,Session.lfpSampleRate,windows,0.875*windows,[],[],[],frange);
+        end
+% $$$         for i = 1:size(wwlfp,2),
+% $$$             [yw(:,:,i,b,j),f,t] = mtchglong(wwlfp(:,i,j),nffts,Session.lfpSampleRate,windows,0.875*windows,[],[],[],frange);
+% $$$         end        
+    end
+end
+t = t+diff(t(1:2))/2;
+
+rb_com_xyz = zeros(size(Session.xyz,1),2,3);
+rb = Session.Model.rb({'head_back','head_left','head_front','head_right'});
+rb_com_xyz(:,1,:) = sq(Session.com(rb));
+rb = Session.Model.rb({'spine_lower','pelvis_root','spine_middle','spine_upper'});
+rb_com_xyz(:,2,:) = sq(Session.com(rb));
+rbcxyz = GetSegs(rb_com_xyz,round(wper-3*Session.xyzSampleRate),round(6*Session.xyzSampleRate),0);
+rbcxyz = reshape(rbcxyz,round(6*Session.xyzSampleRate),size(wper,1),2,2,size(Session.xyz,3));
+wfet = cat(4,rbcxyz,rbcxyz(:,:,:,1,:)-rbcxyz(:,:,:,2,:));
+rbcxyz = GetSegs(rb_com_xyz,round(rper-3.*Session.xyzSampleRate),round(6*Session.xyzSampleRate),0);
+rbcxyz = reshape(rbcxyz,round(6*Session.xyzSampleRate),size(rper,1),2,2,size(Session.xyz,3));
+rfet = cat(4,rbcxyz,rbcxyz(:,:,:,1,:)-rbcxyz(:,:,:,2,:));
+
+rang = GetSegs(Session.ang(:,3,4,2),round(rper-3.*Session.xyzSampleRate),round(6*Session.xyzSampleRate),0);
+rang = reshape(rang,round(6*Session.xyzSampleRate),size(rper,1),2);
+fet = rang(:,:,1).*sq(rfet(:,:,1,1,3));
+gri = find(max(fet(1:300,:))<0&rdur'>1.5);
+off_fet = rang(:,:,2).*sq(rfet(:,:,2,1,3));
+griu = find(max(off_fet(450:end,:))<0&rdur'>1.5);
+
+
+
+
+%% Averaged Spectral Time-series centered on Rearing onset
+
+figure,imagesc(t,f,log10(sq(median(yr(:,:,gri,1,18),3)))'),axis xy
+figure,imagesc(t,f,log10(sq(median(yr(:,:,griu,2,18),3)))'),axis xy
+
+yrtd = median(sq(sum(yr(t<3.75&t>3,:,gri,1,:),1))-sq(sum(yr(t<3&t>2.25,:,gri,1,:),1)),3);
+yrsds = sq(sum(std(yr(t<3.75&t>3,:,gri,1,:),0,3),1));
+yrsdf = sq(sum(std(yr(t<3&t>2.25,:,gri,1,:),0,3),1));
+yrsd = sq(sum(std(yr(t<3.75&t>3,:,gri,1,:),0,3),1))-sq(sum(std(yr(t<3&t>2.25,:,gri,1,:),0,3),1));
+
+figure,imagesc(f,1:32,(log10(abs(yrtd)).*sign(yrtd))'),colorbar
+figure,imagesc(f,1:32,(log10(abs(yrsds)).*sign(yrsds))'),colorbar
+figure,imagesc(f,1:32,(log10(abs(yrsdf)).*sign(yrsdf))'),colorbar
+figure,imagesc(f,1:32,(log10(abs(yrsd)).*sign(yrsd))'),colorbar
+
+rlfp = GetSegs(lfp,round(((rper(:,1)./Session.xyzSampleRate)-3).*1250),6*1250,0);
+frlfp = ButFilter(rlfp,3,[6,12]/(Session.lfpSampleRate/2),'bandpass');
+figure,imagesc([-3249:3250],1:size(gri),frlfp(:,gri)'),caxis([-6000,6000]),
+rth = frlfp(:,gri);
+[~,si] = sort(rth(3559,:),'descend');
+grfet = sq(rfet(:,gri,1,1,3));
+dgrfet = diff(grfet([340,370],:));
+[~,di] = sort(dgrfet);
+figure,imagesc(rth(:,di)')
+plot(1:10:7190,grfet(:,si)./150+ones(size(grfet,1),1)*[1:size(grfet,2)]-ones(size(grfet)).*0.5)
+figure,imagesc(rth(:,si)')
+
+
+
+
+unit = 88;
+
+[ton,trigon] =  TrigRasters(rper(gri,1)/Session.xyzSampleRate*Session.lfpSampleRate,7500,Res(Clu==unit),Clu(Clu==unit),Session.lfpSampleRate,1,[]);
+rlfp = GetSegs(lfp,round(((rper(:,1)./Session.xyzSampleRate)-3).*1250),6*1250,0);
+frlfp = ButFilter(rlfp,3,[6,12]/(Session.lfpSampleRate/2),'bandpass');
+figure,imagesc([-3249:3250],1:size(gri),frlfp(:,gri)'),caxis([-6000,6000]),
+hold on,plot(ton,trigon,'.')
+
+
+[toff,trigoff] = TrigRasters(rper(griu,2)/Session.xyzSampleRate*Session.lfpSampleRate,7500,Res(Clu==unit),Clu(Clu==unit),Session.lfpSampleRate,1,[]);
+rlfp = GetSegs(lfp,round(((rper(:,2)./Session.xyzSampleRate)-3).*1250),6*1250,0);
+frlfp = ButFilter(rlfp,3,[6,12]/(Session.lfpSampleRate/2),'bandpass');
+figure,imagesc([-3249:3250],1:size(griu),frlfp(:,griu)'),caxis([-6000,6000]),
+hold on,plot(toff,trigoff,'.')
+
+for i = 1:size(gri,2),rspkc(i) = sum(trigoff(toff<1000&toff>-1000)==i);end
+[~,gInd] = sort(rspkc,'descend');
+
+figure,imagesc(Session.Pfs{1}.bin1{unit},Session.Pfs{1}.bin2{unit},Session.Pfs{1}.rateMap{unit}'),axis xy,colorbar,
+
+hold on
+c = cat(2,ones(size(gInd,2),1)./exp([1:size(gInd,2)]'./(ones(size(gInd,2),1).*20)),zeros(size(gInd,2),1),zeros(size(gInd,2),1));
+scatter(Session.xyz(rper(gri(gInd),1),7,1),Session.xyz(rper(gri(gInd),1),7,2),30,'filled','cdata',c)
+
+% $$$ figure,hold on,plot(ton,trigon,'.')
+% $$$ plot([1:10:7190]-3750,rfet(:,gri,1,1,3)./150+ones(size(rfet(:,gri,1,1,3),1),1)*[1:size(rfet(:,gri,1,1,3),2)]-ones(size(rfet(:,gri,1,1,3))).*0.5)
+% $$$ 
+% $$$ thph = Shilbert(frlfp);
+% $$$ thph = angle(thph);
+
+trmon = zeros(7500,size(gri,2));
+trpos = zeros(7500,size(gri,2));
+for i = 1:size(trigon,1)
+    trpos(round((ton(i)+1000*3750/Session.lfpSampleRate)*1000/Session.lfpSampleRate),trigon(i)) = rfet(round((ton(i)+1000*3750/Session.lfpSampleRate)/1000*Session.xyzSampleRate),trigon(i),1,1,3);
+    trmon(round((ton(i)+1000*3750/Session.lfpSampleRate)*1000/Session.lfpSampleRate),trigon(i)) = 1;
+end
+
+figure,for i=1:size(gri,2),plot(trpos(trmon(:,i)==1,i),thph(trmon(:,i)==1,i),'.'),pause(.5),end
+
+
+
+wang = GetSegs(Session.ang(:,3,4,2),round(wper-3.*Session.xyzSampleRate),round(6*Session.xyzSampleRate),0);
+wang = reshape(wang,round(6*Session.xyzSampleRate),size(wper,1),2);
+
+fet = wang(:,:,1).*sq(wfet(:,:,1,1,3));
+gwi = find(max(fet(1:300,:))<0&wdur'>1.5);
+
+off_fet = wang(:,:,2).*sq(wfet(:,:,2,1,3));
+gwiu = find(max(off_fet(450:end,:))<0&wdur'>1.5);
+
+
+[ton,trigon] =  TrigRasters(wper(gwi,1)/Session.xyzSampleRate*Session.lfpSampleRate,7500,Res(Clu==unit),Clu(Clu==unit),Session.lfpSampleRate,1,[]);
+wklfp = GetSegs(lfp,round(((wper(:,1)./Session.xyzSampleRate)-3).*1250),6*1250,0);
+fwklfp = ButFilter(wklfp,3,[6,12]/(Session.lfpSampleRate/2),'bandpass');
+figure,imagesc([-3249:3250],1:size(gwi),fwklfp(:,gwi)'),caxis([-6000,6000]),
+hold on,plot(ton,trigon,'.')
+
+
+[toff,trigoff] = TrigRasters(wper(gwiu,2)/Session.xyzSampleRate*Session.lfpSampleRate,7500,Res(Clu==unit),Clu(Clu==unit),Session.lfpSampleRate,1,[]);
+wklfp = GetSegs(lfp,round(((wper(:,2)./Session.xyzSampleRate)-3).*1250),6*1250,0);
+fwklfp = ButFilter(wklfp,3,[6,12]/(Session.lfpSampleRate/2),'bandpass');
+figure,imagesc([-3249:3250],1:size(gwiu),fwklfp(:,gwiu)'),caxis([-6000,6000]),
+hold on,plot(toff,trigoff,'.')
+
+TrigRasters(rper(:,1)/Session.xyzSampleRate*Session.lfpSampleRate,10000,Res,Clu,Session.lfpSampleRate,1,[])
+TrigRasters(rper(:,2)/Session.xyzSampleRate*Session.lfpSampleRate,10000,Res,Clu,Session.lfpSampleRate,1,[])
+
+for unit=1:112,
+imagesc(Session.Pfs{1}.bin1{unit},Session.Pfs{1}.bin2{unit},Session.Pfs{1}.rateMap{unit}')
+axis xy,
+colorbar,
+title(num2str(unit)),
+pause(1),
+
+
+
+
+%% rearing Spk Sig
+
+
+time_bins = [-1500,0;-750,750;0,1500];
+
+
+for unit = 1:size(Map,1),
+    for b = 1:2,
+        RearSpkSig(unit,b,1,1) = sum(rfccg(tbin<time_bins(1,2)&tbin>time_bins(1,1),b,unit)<lowerConfidenceBoundary(unit));
+        RearSpkSig(unit,b,1,2) = sum(rfccg(tbin<time_bins(2,2)&tbin>time_bins(2,1),b,unit)<lowerConfidenceBoundary(unit));
+        RearSpkSig(unit,b,1,3) = sum(rfccg(tbin<time_bins(3,2)&tbin>time_bins(3,1),b,unit)<lowerConfidenceBoundary(unit));
+
+        RearSpkSig(unit,b,2,1) = sum((rfccg(tbin<time_bins(1,2)&tbin>time_bins(1,1),b,unit)<upperConfidenceBoundary(unit))&(rfccg(tbin<time_bins(1,2)&tbin>time_bins(1,1),b,unit)>lowerConfidenceBoundary(unit)));
+        RearSpkSig(unit,b,2,2) = sum((rfccg(tbin<time_bins(2,2)&tbin>time_bins(2,1),b,unit)<upperConfidenceBoundary(unit))&(rfccg(tbin<time_bins(2,2)&tbin>time_bins(2,1),b,unit)>lowerConfidenceBoundary(unit)));
+        RearSpkSig(unit,b,2,3) = sum((rfccg(tbin<time_bins(3,2)&tbin>time_bins(3,1),b,unit)<upperConfidenceBoundary(unit))&(rfccg(tbin<time_bins(3,2)&tbin>time_bins(3,1),b,unit)>lowerConfidenceBoundary(unit)));
+
+        RearSpkSig(unit,b,3,1) = sum(rfccg(tbin<time_bins(1,2)&tbin>time_bins(1,1),b,unit)>upperConfidenceBoundary(unit));
+        RearSpkSig(unit,b,3,2) = sum(rfccg(tbin<time_bins(2,2)&tbin>time_bins(2,1),b,unit)>upperConfidenceBoundary(unit));
+        RearSpkSig(unit,b,3,3) = sum(rfccg(tbin<time_bins(3,2)&tbin>time_bins(3,1),b,unit)>upperConfidenceBoundary(unit));
+    end
+end
+
+
+
+%% Ripple Crap 
+frip_ccg = zeros(size(rip_ccg));
+frip_ccg_poff = zeros(size(Map,1),size(Map,1),6);
+for i = 1:size(Map,1),
+    for j = 1:size(Map,1),
+        frip_ccg(:,i,j) = Filter0(gausswin(3),rip_ccg(:,i,j));
+        zrip_ccg = zscore(frip_ccg(:,i,j));
+        [frip_ccg_poff(i,j,2),frccgInd] = max(frip_ccg(:,i,j),[],1);
+        frip_ccg_poff(i,j,1) = rip_tbin(frccgInd);
+        frip_ccg_poff(i,j,3) = mean(frip_ccg(:,i,j));
+        frip_ccg_poff(i,j,4) = var(diff(zrip_ccg));
+        frip_ccg_poff(i,j,5) = sum(zrip_ccg((end-halfBins):end))-sum(zrip_ccg(1:halfBins));
+        frip_ccg_poff(i,j,6) = sum(rip_tbin.*(frip_ccg(:,i,j)'/sum(frip_ccg(:,i,j))));
+    
+    end        
+end
+
+
+
+
+rip_map = zeros(size(Map,1),size(Map,1));
+for unit = 1:size(Map,1),
+rip_pca = [unity(frip_ccg_poff(unit,:,3)./(frip_ccg_poff(unit,:,4)+1))',frip_ccg_poff(unit,:,6)'];
+rip_pc = princomp(rip_pca);
+rip_pca_trans = rip_pca*rip_pc;
+[~,ssrccgi] = sort(rip_pca_trans(:,1),'descend');
+rip_map(unit,:) = ssrccgi;
+end
+
+
+figure,
+spfi=1;
+indexing = 1:1:80;
+for i = indexing
+    subplotfit(spfi,length(indexing));
+    bar(rip_tbin,frip_ccg(:,11,rip_map(11,i)))
+    spfi = spfi+1;
+end
+
+
+rip_cvar = zeros(size(Map,1),2);
+for unit = 1:size(Map,1),
+   rip_cvar(unit,:) = [log10(frip_ccg_poff(unit,unit,3)./(frip_ccg_poff(unit,unit,4)+1)),log10(sum(frip_ccg(:,unit,unit)))];
+end
+rip_cvar_pc = princomp(rip_cvar);
+rip_cvar_trans = rip_cvar*rip_cvar_pc;
+plot(rip_cvar_trans(:,1),rip_cvar_trans(:,2))
+[rip_cvar_sort,rip_cvar_sind] = sort(rip_cvar_trans(:,1),'descend');
+
+rcvp = prctile(rip_cvar_trans(:,1),[10,90]);
+
+rcvpi = [];
+rcvpi(1) = find(rip_cvar_sort<=rcvp(2),1);
+rcvpi(2) = find(rip_cvar_sort>=rcvp(1),1,'last');
+
+
+seqCluSel = rip_cvar_sind(rcvpi(1):rcvpi(2));
+
+figure,
+spfi=1;
+indexing = 10:2:110;
+for i = indexing
+    subplotfit(spfi,length(indexing));
+    bar(rip_tbin,frip_ccg(:,rip_cvar_sind(i),rip_cvar_sind(i)))
+    spfi = spfi+1;
+end
+
+TrigRasters(rt(1:10),100,ripRes,ripClu,Session.lfpSampleRate,0,1)

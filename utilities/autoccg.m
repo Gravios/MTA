@@ -1,0 +1,18 @@
+function [accg,tbin] = autoccg(Session,varargin)
+% function [accg,tbin] = autoccg(Session,varargin)
+% [binSize,halfBins,normalization] = DefaultArgs(varargin,{16,60,'count'});
+[units,binSize,halfBins,normalization] = DefaultArgs(varargin,{[],16,60,'count'});
+
+if ~isa(Session,'MTASession'),
+    Session = MTASession(Session);
+end
+
+Session = Session.load_CluRes(Session.sampleRate,units);
+
+accg = zeros(1+2*halfBins,size(Session.map,1));
+for i = 1:size(Session.map),
+    uRes = Session.res(Session.clu==i);
+    [tccg,tbin] = CCG(uRes,i,binSize,halfBins,Session.sampleRate,[],normalization,[]);
+    accg(:,i) = tccg;
+end
+

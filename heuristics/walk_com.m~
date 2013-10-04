@@ -1,0 +1,33 @@
+function walk_state = walk_com(Session,varargin)
+[walkThresh,display] = DefaultArgs(varargin,{0.6,0});
+    % Walk - speed threshold
+    % Feature - center of mass of the body markers
+    comb = com(Session,xyzSubsetName,'B4');
+    comv = sqrt(sum(diff(comb(:,:,[1 2]),1).^2,3));
+    fcomv = medfilt1(comv,32);
+
+    cwalk = zeros(size(fcomv));
+    cwalk(fcomv>cwalkthresh) =1;
+    minInt = 64;
+    cwalkPeriods = ThreshCross(cwalk,0.5,minInt);
+
+    walk_state = zeros(size(cwalk));
+    for i = 1:size(cwalkPeriods,1)
+        walk_state(cwalkPeriods(i,1):cwalkPeriods(i,2)) = 1;
+    end
+
+
+    if display
+        figure, hold on
+        plot(fcomv)
+        plot(walk_state*max(fcomv)/2+max(fcomv)/8,'r');
+        hline(walkThresh,'k')
+
+        figure,
+        hist(log10(fcomv(fcomv~=0)),10000)
+
+        figure,hold on
+        plot(1:length(fcomv),fcomv)
+        plot(comv,'r')
+    end
+

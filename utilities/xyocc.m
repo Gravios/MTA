@@ -1,0 +1,21 @@
+function occ = xyocc(Trial,pos,Nbin)
+Xmin = Trial.Maze.boundaries(1,1);
+Xmax = Trial.Maze.boundaries(1,2);
+Ymin = Trial.Maze.boundaries(2,1);
+Ymax = Trial.Maze.boundaries(2,2);
+%% scaling factor for rounding position
+dx = Xmax - Xmin; 
+dy = Ymax - Ymin; 
+k = [Nbin/dx Nbin/dy];
+%% matrix size
+msize = round([sum(abs([Xmin,Xmax]))*k(1) sum(abs([Ymin,Ymax]))*k(2)]);
+Bin1 = ([1:msize(1)]-1)/k(1) + Xmin+round(k(1)^-1/2);
+Bin2 = ([1:msize(2)]-1)/k(2) + Ymin+round(k(2)^-1/2);
+%% rounded position
+X = round((pos(:,1)-Xmin)*k(1))+1;
+Y = round((pos(:,2)-Ymin)*k(2))+1;
+%% Push back in any stray bins
+X(X>Nbin) = Nbin;
+Y(Y>Nbin) = Nbin;
+%% Occupancy
+occ = Accumulate([X Y],1,msize)./Trial.xyzSampleRate;

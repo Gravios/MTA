@@ -1,0 +1,61 @@
+function [ output_args ] = processC3D( sessionName, destPath, subjectName, username, password, server, sourcePath )
+%PROCESSC3D Summary of this function goes here
+%   Detailed explanation goes here
+%subjectName = 'rat-kenny';
+%sessionName = '2010-10-27';
+%'C:\Vicon_Data\Vicon_Down\Top Level 2\'
+[ destPath,server,sourcePath ] = ...
+    DefaultArgs(varargin,{'x:\data\xyz\','172.25.9.20','x:\vicon\Vicon_Data\Vicon_Down\Top Level 2\'})
+
+password = 'i#D6SpH0';
+username = 'gravio';
+
+if (nargin < 3)||isempty(subjectName),
+    subjectName = 'jg03';
+end
+if (nargin < 2)||isempty(destPath),
+    system('net use x: /DELETE');
+    system(['net use x: \\' server '\' username ' ' password ' /USER:' username ]); 
+    destPath = 'x:\data\xyz\';
+%     if ~exist([destPath subjectName],'dir'),
+%         mkdir([destPath subjectName]);
+%         mkdir([destPath '\' subjectName '\' sessionName]);
+%     end
+    if ~exist([destPath '\'  sessionName],'dir');
+        mkdir([destPath '\'  sessionName]);
+    end
+    destPath = [destPath '\'];
+end
+
+if ~exist(sourcePath,'dir'),
+    error('Path does not exist')
+    return
+elseif ~exist([sourcePath subjectName],'dir'),
+    error('Subject does not exist')
+    return
+elseif ~exist([sourcePath  subjectName '\' sessionName],'dir'),
+    error('Session does not exist')
+    return
+elseif ~exist(destPath,'dir'),
+    error('Destination path does not exist')
+    return
+elseif ~exist(destPath,'dir'),
+    mkdir(destPath);
+end
+    
+
+% Open a c3dserver to conver from C3D to MAT
+itf = c3dserver;
+fileList = dir([sourcePath subjectName '\' sessionName '\' '*.c3d']);
+% Convert all available C3D files and save each as a .mat file.
+for i = 1:length(fileList),
+    openc3d(itf,0,[sourcePath subjectName '\' sessionName '\' fileList(i).name]);
+    [xyzpos,markers] = getAll3dTargets(itf);
+    closec3d(itf);
+    fileName = [destPath sessionName '\' sessionName '-' fileList(i).name '.mat'];
+    save(fileName,'xyzpos','markers');
+end
+
+% Close Network Drive
+system('net use x: /DELETE');
+

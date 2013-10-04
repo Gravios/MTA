@@ -1,0 +1,139 @@
+function pf3bootstrap(Session,varargin)
+[states,numBSiterations,numZslices,display,nbins,mazeName,trialName,constrained_to_maze]=DefaultArgs(varargin,{'rear',100000,0,0,100,'cof','',1});
+
+%% Load MTASession object if Session is type char
+if ~isa(Session,'MTASession'),Session = MTASession(Session,mazeName);end
+
+%% Load State specific periods
+[stsp stateLabel] = Session.statePeriods(states);
+
+%% Load Units and rescale sampling freq
+Par = LoadPar([Session.spath.nlx Session.name '.xml']);
+[Res Clu Map] = LoadCluRes([Session.spath.nlx Session.name]);
+Res = round(Res*Par.lfpSampleRate/Par.SampleRate);
+
+%% Constrain the computational volume
+if ~constrained_to_maze,
+    maxz = max(sq(Session.xyz(:,Session.Model.gmi(Session.trackingMarker),3)));
+    minz = min(sq(Session.xyz(:,Session.Model.gmi(Session.trackingMarker),3)));
+else
+    minz = Session.Maze.boundaries(3,1);
+    maxz = Session.Maze.boundaries(3,2);
+end
+
+%% Calculate Slice Intervals
+if ~numZslices,
+    numZslices = 1;
+elseif length(numZslices)>1
+    sliceIntervals=numZslices;
+    numZslices = length(numZslices)-1;
+else
+    sliceIntervals = minz+((maxz-minz)/numZslices).*[0:numZslices];
+end
+
+%% Create dummy pf3 file for instances where a particular state(s) was never occupied
+
+if isempty(stsp),
+    maxRate    = cell(max(Clu),numZslices);
+    maxRateMax = cell(max(Clu),numZslices);
+    maxRateInd = cell(max(Clu),numZslices);
+    maxRatePos = cell(max(Clu),numZslices);
+    rateMap    = cell(max(Clu),numZslices);
+    bin1       = cell(max(Clu),numZslices);
+    bin2       = cell(max(Clu),numZslices);
+    save([ Session.spath.analysis Session.filebase '.pf3.' Session.trackingMarker '.' stateLabel '.' num2str(numZslices) '.mat'], ...
+       'rateMap','bin1','bin2','Map','numZslices', ...
+       'maxRate','maxRateMax','maxRateInd','maxRatePos','-v7.3');        
+    return
+end
+
+
+pos = sq(Session.xyz(:,Session.Model.gmi(Session.trackingMarker),[1 2]));
+
+for slice=1:numZslices,
+    % $$$ Select Segments Constrained to State and/or Height
+if numZslices>1
+        posSlice=Session.xyz(:,Session.Model.gmi(Session.trackingMarker),3);
+        posSlice(Session.xyz(:,Session.Model.gmi(Session.trackingMarker),3)>sliceIntervals(slice)&Session.xyz(:,Session.Model.gmi(Session.trackingMarker),3)<sliceIntervals(slice+1))=1;
+        posSlice(posSlice~=1)=0;
+        slicePosPeriods = [];
+        slicePosPeriods = ThreshCross(posSlice,0.5,1);
+        slicePosPeriods = round(slicePosPeriods*Session.lfpSampleRate/Session.xyzSampleRate+Session.syncPeriods(1,1));
+        stspz = IntersectRanges(stsp,slicePosPeriods);
+    else
+        stspz = stsp;
+    end
+    [myRes{slice} ind{slice}] = SelectPeriods(Res,stspz,'d',1,1);
+    myClu{slice} = Clu(ind{slice});
+
+    stspos{slice} = SelectPeriods(pos,round((stspz-Session.syncPeriods(1,1))/Session.lfpSampleRate*Session.xyzSampleRate)+1, 'c', 1);
+end
+
+
+rateMap    = cell(max(Clu),numZslices);
+meanMap    = cell(max(Clu),numZslices);
+stdMap     = cell(max(Clu),numZslices);
+bsMap      = zeros(numBSiterations,nbins,nbins);
+bin1       = cell(max(Clu),numZslices);
+bin2       = cell(max(Clu),numZslices);
+maxRate    = cell(max(Clu),numZslices);
+maxRateMax = cell(max(Clu),numZslices);
+maxRateInd = cell(max(Clu),numZslices);
+maxRatePos = cell(max(Clu),numZslices);
+weightMat = ones(nbins,nbins);
+
+%% If terminal error occurred during a previous run
+%% pick up from the last unit.
+files = dir([Session.spath.analysis '/tmp/' Session.filebase '.pf3stats.' Session.trackingMarker '.' stateLabel '.' num2str(numZslices) '-*.mat']);
+startAtUnit = 1;
+if length(files)~=0,
+    [~,leftOffAt] = max(sq([files(:).datenum]));
+    unitTag = files(leftOffAt).name(end-10:end-4);
+    unitTagDelimiter = '\d-';
+    clipTagAt = regexpi(unitTag,unitTagDelimiter);
+    startAtUnit = str2num(unitTag(clipTagAt+length(unitTagDelimiter)-1:end))+1;
+end
+
+for unit=startAtUnit:max(Clu)
+    fprintf('unit: %d',unit)
+tic
+    for slice = 1:numZslices,
+        rateMap{unit,slice} = zeros(nbins,nbins);
+        stdMap{unit,slice} = zeros(nbins,nbins);
+        mySpk = myRes{slice}(myClu{slice}==unit);
+        nSpk = length(mySpk);
+        if nSpk>3,
+            weightMat = ones(nbins,nbins);
+            randSpkInd = randi(nSpk,nSpk,1);
+            [bsMap(1,:,:) bin1{unit,slice} bin2{unit,slice}] =  PlotPF(Session,mySpk(randSpkInd),stspos{slice}(:,1),stspos{slice}(:,2),nbins,0.05,display,constrained_to_maze);
+            for bsi = 2:numBSiterations,
+
+                %weightMat = ones(nbins,nbins);
+                randSpkInd = randi(nSpk,nSpk,1);
+                bsMap(bsi,:,:) =  PlotPF(Session,mySpk(randSpkInd),stspos{slice}(:,1),stspos{slice}(:,2), ...
+                                            nbins,0.05,display,constrained_to_maze);
+                %rateMap{unit,slice} = (rateMap{unit,slice}+bsi^-1*bsMap)./(weightMat+bsi^-1);
+                %stdMap{unit,slice}  = (stdMap{unit,slice} +bsi^-1*bsMap)./(weightMat+bsi^-1);
+
+            end
+toc
+            rateMap{unit,slice} = sq(mean(bsMap,1));
+            stdMap{unit,slice} = sq(std(bsMap,0,1));
+            rateMap{unit,slice}(isnan(rateMap{unit,slice})) = 0;
+
+            if isempty(rateMap{unit,slice}), continue, end,
+            maxRateInd{unit,slice} = LocalMinima2(-rateMap{unit,slice},-0.2,12);
+            if isempty(maxRateInd{unit,slice}), continue, end,
+            maxRatePos{unit,slice} = [bin2{unit,slice}(maxRateInd{unit,slice}(:,2));bin1{unit,slice}(maxRateInd{unit,slice}(:,1))]'*[0 1; 1 0];
+            maxRate{unit,slice} = rateMap{unit,slice}(round(size(rateMap{unit,slice},1)*[maxRateInd{unit,slice}(:,2)-1]+maxRateInd{unit,slice}(:,1)));
+            [~,maxRateMax{unit,slice}] = max(maxRate{unit,slice});
+        end
+    end
+save([ Session.spath.analysis '/tmp/' Session.filebase '.pf3stats.' Session.trackingMarker '.' stateLabel '.' num2str(numZslices) '-' num2str(unit) '.mat'], ...
+       'rateMap','stdMap','bin1','bin2','Map','numZslices', ...
+       'maxRate','maxRateMax','maxRateInd','maxRatePos','-v7.3');
+
+end
+
+
+    

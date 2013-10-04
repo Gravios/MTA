@@ -1,0 +1,7 @@
+Trial = MTATrial('jg05-20120310');
+
+pfw = MTAPlaceField(Trial,[],'walk');
+pfr = MTAPlaceField(Trial,[],'rear');
+
+
+subplot(4,

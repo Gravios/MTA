@@ -1,0 +1,13 @@
+classdef MTAAnalysis
+% Oh god here we go again
+%
+
+
+    properties (SetAccess = public)
+
+        %path - struct: holds all paths of the constructed data tree created by MTAConfiguration.m
+        path           
+
+
+end
+end

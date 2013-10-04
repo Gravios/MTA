@@ -1,0 +1,190 @@
+function pfviewer(Session,varargin)
+% function pf3viewer(Session,varargin)
+%[pf_search,mode,ppf_type,sgrid,thresh,display_ccg,mazeName] = DefaultArgs(varargin,{struct(),'','snt',struct('x','trialName','y','stateLabel','state',{{'rear','rear.theta','walk','walk.theta'}},'trial',{{'crt1','alt1','crt2','alt2'}}),1,0,'cof'});
+[pf_search,mode,ppf_type,sgrid,thresh,display_ccg,mazeName] = DefaultArgs(varargin,{struct('mazeName','cof','trialName','all','trackingMarker','head_front','stateLabel','head','spk_shuffle','n','pos_shuffle',0,'numBSiterations',1,'numZslices',1,'nbins',100,'smooth',0.03),'','raw',struct('x','trialName','y','stateLabel','stateLabel',{{'head'}},'trialName',{{'all'}}),1,0,'cof'});
+if ~isa(Session,'MTASession'),
+    Session = MTASession(Session,mazeName);
+end
+
+numZslices = pf_search.numZslices;
+
+
+pf_field.mazeName = pf_search.mazeName;
+pf_field.trialName = pf_search.trialName;
+pf_field.trackingMarker = pf_search.trackingMarker;
+pf_field.stateLabel = pf_search.stateLabel;
+pf_field.spk_shuffle = 'n';
+pf_field.pos_shuffle = 0;
+pf_field.numBSiterations = 1;
+pf_field.numZslices = pf_search.numZslices;
+pf_field.nbins = pf_search.nbins;
+pf_field.smooth = pf_search.smooth;
+
+statefield = {};
+stateCCG = {};
+
+
+numXticks = length(getfield(sgrid,sgrid.x));
+numYticks = length(getfield(sgrid,sgrid.y));
+
+for x = 1:numXticks,
+    for y = 1:numYticks,                     
+        pf_search.(sgrid.x) = sgrid.(sgrid.x){x};
+        pf_search.(sgrid.y) = sgrid.(sgrid.y){y};
+
+        pf_field.(sgrid.x) = sgrid.(sgrid.x){x};
+        pf_field.(sgrid.y) = sgrid.(sgrid.y){y};
+        
+        switch mode 
+          case 'compare boostraps'
+            pf_field.spk_shuffle = 'n';
+            pf_field.pos_shuffle = 0;
+            pf_field.numBSiterations = 1;
+        end   
+
+
+        statefield{x,y,1} = Session.getPfs(pf_field);
+        statefield{x,y,2} = Session.getPfs(pf_search);        
+
+
+        if display_ccg,
+            stateCCG{x,y} = load([Trial.spath.analysis Trial.filebase '.ccg.' sgrid.state{sn} '.mat']);
+        end
+    end
+end
+
+if exist([Session.spath.nlx Session.name '.NeuronQuality.mat'],'file'),
+    load([Session.spath.nlx Session.name '.NeuronQuality.mat']);
+
+    [~, si] = sort(nq.eDist,'descend');
+    unit=si(1);
+else
+unit = 1;
+end
+
+
+
+
+while 1
+    figure(100)
+    set(gcf,'Name',num2str(statefield{1,1}.cluMap(unit,1)'))
+    clf
+    if display_ccg
+        ny = (numZslices-1+numYticks)*2+numYticks;
+    else
+        ny = (numZslices-1+numYticks)*2;
+    end
+    nx = length(unit)*numXticks*2;
+    if nq.FirRate(unit)>0.2,
+        units = unit;
+
+        for i = 0:length(getfield(sgrid,sgrid.x))-1
+            for t = 0:length(getfield(sgrid,sgrid.y))-1
+                x = i+1;
+                y = t+1;
+                for u= 1:1,
+                    unit = units(1);
+
+                    if statefield{x,y,1}.calculation_completion_map(unit)&statefield{x,y,2}.calculation_completion_map(unit),
+                        for slice = 1:numZslices,
+                            switch ppf_type
+                              case 'raw'
+                                subplot2(ny,nx,[t*ny/numYticks+1,t*ny/numYticks+2],[i*2+u*2-1,i*2+u*2]);
+                                ppf(statefield{x,y}.bin1{unit,slice},statefield{x,y}.bin2{unit,slice},statefield{x,y,1}.rateMap{unit,slice}')
+                              case 'snt'
+                                subplot2(ny,nx,[t*ny/numYticks+1,t*ny/numYticks+2],[i*2+u*2-1,i*2+u*2]);
+                                ppf(statefield{x,y}.bin1{unit,slice},statefield{x,y}.bin2{unit,slice},(statefield{x,y,1}.rateMap{unit,slice}.*(ones(statefield{x,y,2}.nbins,statefield{x,y,2}.nbins)*thresh<(statefield{x,y,2}.rateMap{unit,slice}./statefield{x,y,2}.stdMap{unit,slice})))')
+                            end
+
+
+                        end
+
+                        if display_ccg,
+                            subplot2(ny,nx,t*3+3,i*2+u*2-1);
+                            bar(stateCCG{x,y}.tbin, stateCCG{x,y}.sgccg(:,1,unit));axis tight; grid on
+                            xlim([-2500 2500]);
+                            subplot2(ny,nx,t*3+3,i*2+u*2);
+                            bar(stateCCG{x,y}.tbin, stateCCG{x,y}.sgccg(:,2,unit));axis tight; grid on
+                            xlim([-2500 2500]);
+                        end
+                        ForAllSubplots('set(gca,''FontSize'',10)');
+                    end
+
+                    if y==1&x==1,
+                        fprintf('Unit# %d, Electrode %d, Cluster %d\n',unit,statefield{1,1}.cluMap(unit,2),statefield{1,1}.cluMap(unit,3));
+                        fprintf('Quality: %1.2f, Refrac: %1.3f, SpkWidthR %1.1f msec, FirRate %2.1f Hz\n',nq.eDist(unit),nq.Refrac(unit),nq.SpkWidthR(unit),nq.FirRate(unit));
+                    end
+                end
+            end
+        end
+
+        if length(units)>1 unit=units(end);end    
+        wb =  waitforbuttonpress;
+        whatkey = get(gcf,'CurrentCharacter');
+    end
+    if ~wb, whatkey = 'n';end
+
+    switch double(whatkey)
+      case double('i')
+        unit = input('Enter unit #: ');
+      case double('t')
+        thresh = input('Enter threshold: ');
+      case double('m')
+        ppf_type = input('Enter placefield plot mode: ');
+      case double('n')
+        unit = unit+1;
+      case double('p')
+        unit=unit-1;
+      case double('q')
+        return
+      case 30
+        sii = find(si==unit);
+        unit = si(max(1,sii-1));
+      case 31
+        sii = find(si==unit);
+        unit = si(min(size(statefield{1,1}.cluMap,1),sii+1));
+      case double('s') %save
+        print('-dpng', '-r300', ['/tmp/plf-' num2str(units) '.png']);
+      case double('b')
+        keyboard
+    end
+
+    if unit<1  unit=1; end
+    if unit>size(statefield{1,1}.cluMap,1) unit=1; end
+end
+% $$$ 
+% $$$     
+% $$$ %% Test search struct
+% $$$ % $$$ 
+% $$$ 
+% $$$ pf_search.mazeName = 'cof';
+% $$$ pf_search.trialName = 'crt1';
+% $$$ pf_search.trackingMarker = 'head_front';
+% $$$ pf_search.stateLabel = 'walk';
+% $$$ pf_search.spk_shuffle = 'n';
+% $$$ pf_search.pos_shuffle = 10000;
+% $$$ pf_search.numBSiterations = 100000;
+% $$$ pf_search.numZslices = 1;
+% $$$ pf_search.nbins = 100;
+% $$$ pf_search.smooth = 0.03;
+
+
+%sgrid.y = 'trialName';
+%sgrid.x = 'stateLabel';
+%sgrid.stateLabel = {'rear','walk','head'};
+%sgrid.trialName = {'crt1'};
+% $$$ 
+% $$$ struct('x','trialName','y','stateLabel','stateLabel',{{'rear', ...
+% $$$                     'head'}},'trialName',{{'crt1'}})
+% $$$ 
+
+% $$$ pf_search.mazeName = 'cof';
+% $$$ pf_search.trialName = 'all';
+% $$$ pf_search.trackingMarker = 'head_front';
+% $$$ pf_search.stateLabel = 'walk';
+% $$$ pf_search.spk_shuffle = 'n';
+% $$$ pf_search.pos_shuffle = 0;
+% $$$ pf_search.numBSiterations = 1;
+% $$$ pf_search.numZslices = 1;
+% $$$ pf_search.nbins = 100;
+% $$$ pf_search.smooth = 0.03;

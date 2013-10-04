@@ -1,0 +1,14 @@
+function index = figure_controls(hfig,index)
+
+waitforbuttonpress
+whatkey = get(hfig,'CurrentCharacter');
+switch double(whatkey)
+  case double('i')
+    index = input('Enter index #: ');
+  case double('n')
+    index = index+1;
+  case double('p')
+    index=index-1;
+  case double('q')
+    index = -1;
+end
