@@ -8,8 +8,6 @@ classdef MTAAnalysis
         
         parameters
         
-        
-        
         data
 
     end

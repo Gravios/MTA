@@ -1,3 +1,0 @@
-function shake_state = shake_freq(Session,varargin)
-[shakeThresh,display] = DefaultArgs(varargin,{0,0});
-
