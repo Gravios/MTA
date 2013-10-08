@@ -70,13 +70,13 @@ classdef MTATrial < MTASession
             
             Trial.trialName = trialName;
             Trial.filebase = [Trial.name '.' Trial.Maze.name '.' Trial.trialName];
-            Trial.Bhv = {};
+            Trial.Stc = {};
             if exist(fullfile(Trial.spath, [Trial.filebase '.trl.mat']),'file')&&~overwrite
                 ds = load(fullfile(Trial.spath, [Trial.filebase '.trl.mat']));
                 Trial.xyzPeriods = ds.xyzPeriods;
                 if isfield(ds,'bhvmode'),
-                    if ~isempty(ds.bhvmode)&&exist(fullfile(Trial.spath, [Trial.filebase '.bhv.' ds.bhvmode '.mat']),'file')
-                        Trial = Trial.load_Bhv(ds.bhvmode);
+                    if ~isempty(ds.bhvmode)&&exist(fullfile(Trial.spath, [Trial.filebase '.Stc.' ds.bhvmode '.mat']),'file')
+                        Trial.Stc.load(ds.bhvmode);
                     end
                 end
                 if strcmp(mode,'minimal'),
@@ -109,24 +109,41 @@ classdef MTATrial < MTASession
                 end
             end
 
-
+            % Reset other properties with new xyzPeriods            
+            Trial.xyzSegLength = diff(Trial.xyzPeriods,1,2)+1;
+            Trial.trackingMarker = Session.trackingMarker;
             syncShift = Trial.syncPeriods(1,1);
             Trial.syncPeriods = [];
             Trial.syncPeriods = round((Trial.xyzPeriods-1.05)/Trial.xyz.sampleRate*Trial.lfpSampleRate+syncShift);
 
-            xyz = zeros(Trial.xyz.size(1),1);            
+            xyz = false(Trial.xyz.size(1),1);            
             for i = 1:size(Trial.xyzPeriods,1),
-                xyz(Trial.xyzPeriods(i,1):Trial.xyzPeriods(i,2))=1;               
+                xyz(Trial.xyzPeriods(i,1):Trial.xyzPeriods(i,2))=true;               
             end
-
             Trial.xyz.data(xyz==0,:,:) = 0;            
+            Trial.xyz.data = Trial.xyz(Trial.xyzPeriods(1):Trial.xyzPeriods(end),:,:);
 
-            Trial.xyz.data = Trial.xyz(Trial.xyzPeriods(1,1):Trial.xyzPeriods(end,end),:,:);
-
+            % resync all non-empty fields
+            props = properties(Trial);
+            for p = 1:numel(props),
+                if isa(Trial.(props{p}),'MTAData'),
+                    if Trial.(props{p}).isempty||strcmp(props{p},'xyz'),
+                        continue,
+                    else
+                        if Trial.(props{p}).sampleRate==Trial.xyz.sampleRate,
+                            Trial.(props{p}).data(xyz==0,:,:,:,:) = 0;
+                            Trial.(props{p}).data = Trial.(props{p})(Trial.xyzPeriods(1):Trial.xyzPeriods(end),:,:,:,:);
+                        elseif Trial.(props{p}).sampleRate==Trial.lfp.sampleRate,
+                            Trial.(props{p}).data = Trial.(props{p}).data(Trial.syncPeriods(1):Trial.syncPeriods(end),:,:,:,:);
+                        end
+                    end
+                end
+            end
             
-            Trial.xyzSegLength = diff(Trial.xyzPeriods,1,2)+1;
-            Trial.trackingMarker = Session.trackingMarker;
-
+            % resync the stc.states
+            %for s=numel(s.stc.states)
+            
+            
             
             %Load fields such as ang,lpf,spk,...ect. within the new time
             %periods.
@@ -149,9 +166,9 @@ classdef MTATrial < MTASession
                             Trial.(field).load;
                             if ~isempty(Trial.(field).data),
                                 if Trial.xyz.sampleRate==Trial.(field).sampleRate
-                                    Period = Trial.xyzPeriods(1,end);
+                                    Period = Trial.xyzPeriods([1,end]);
                                 else
-                                    Period = Trial.syncPeriods(1,end);
+                                    Period = Trial.syncPeriods([1,end]);
                                 end
                                 Trial.(field).data = Trial.(field).data(Period);
                             end

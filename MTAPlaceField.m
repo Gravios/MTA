@@ -112,7 +112,7 @@ classdef MTAPlaceField
                [units,states,overwrite,name,trialName,type,spk_shuffle,pos_shuffle,numBSiterations,smooth,nbins,mazeName,constrained_to_maze]=DefaultArgs(varargin,{[],'walk',0,[],'all','xy','n',0,1,0.03,50,'cof',1});
 
                 %% Load MTASession object if Session is type char
-                if ischar(Session)|~isa(Session,'MTATrial')&isa(Session,'MTASession'),
+                if ischar(Session)||~isa(Session,'MTATrial')&&isa(Session,'MTASession'),
                     Session = MTATrial(Session,{},trialName,[],[],mazeName);
                 end
 
@@ -130,13 +130,13 @@ classdef MTAPlaceField
                 if exist(pf_tmpfile,'file')&overwrite~=1,
                     load(pf_tmpfile);                    
                     if isempty(units)
-                        %% if no units were spcified and overwrite
-                        %% was not selected, return PlaceField
+                        % if no units were spcified and overwrite
+                        % was not selected, return PlaceField
                         return
                     elseif min(ismember(find(PlaceField.calculation_completion_map),units)),
-                        %% if all specified units have already been
-                        %% computed then return the loaded
-                        %% PlaceField object
+                        % if all specified units have already been
+                        % computed then return the loaded
+                        % PlaceField object
                         return
                     end
                     %% Load Units and rescale sampling freq

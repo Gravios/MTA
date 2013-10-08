@@ -1,46 +1,17 @@
 classdef MTAData < hgsetget
 
-    properties (Abstract)
+    properties 
+        filename
         path        % path to file containing object
         data        % data
         type        % TimeSeries,TimePeriods,TimePoints,SpatialBins
         ext
-        sampleRate  % Sampling rate of data
-
-        %xyz 
-        %    path - '/data/homes/gravio/data/analysis/jg05-20120317/jg05-20120317.cof.all.xyz.mat'
-        %    data - xyz(TimeSeries,marker,xyzdim)
-        %    type - TimeSeries
-        %    sampleRate - ~119.881035 sample/sec
-
-        %ang 
-        %    data - ang(TimeSeries,marker,marker,sphdim)
-        %    type - TimeSeries
-        %    sampleRate - ~119.881035 sample/sec
-
-        %Pfs
-        %    data - rateMap{unit}(xbins,ybins)
-        %    type - SpatialBins
-        %    sampleRate - 1/diff(bin1(1:2)) sample/mm
-
-        %Bhv.States
-        %Fet.Features
-        %lfp
-        %ccg
-        %ufr
-        %Clusters.res
-        %Ripples
-
-        %Clusters
-        %    data       - ResClu(timepoints,clusterId)
-        %    type       - TimePoints
-        %    sampleRate - 1250,32000 or 32552 sample/sec
-        
-
+        sampleRate  % Sampling rate of data        
     end
 
     methods
-        function Data = MTAData(path,data,type,ext,sampleRate)
+        function Data = MTAData(path,filename,data,sampleRate,type,ext)
+            Data.filename = filename;
             Data.path = path;
             Data.data = data;
             Data.type = type;
@@ -62,14 +33,26 @@ classdef MTAData < hgsetget
         end
         function Data = load(Data,varargin)
             if isempty(varargin),
-                load(Data.path)
+                load(Data.fpath)
                 Data.data = data;
             else
-                Data.path = varargin{1};
-                load(Data.path)
+                Data.filename = varargin{1};
+                load(Data.fpath)
                 Data.data = data;
             end
         end
+        
+        function fpath = fpath(Data)
+            fpath = fullfile(Data.path,Data.filename);
+        end
+        
+        function Data = updatePath(Data,path)
+            Data.path = path;
+        end
+        function Data = updateFilename(Data,path)
+            Data.path = path;
+        end
+        
         function sdim = size(Data,varargin)
             if ~isempty(varargin),
                 sdim = size(Data.data,cell2mat(varargin));
@@ -78,15 +61,45 @@ classdef MTAData < hgsetget
             end
         end
 
+        function Data = clear(Data)
+            Data.data = [];
+        end
+        
+        function out = isempty(Data)
+            out = isempty(Data.data);
+        end
+        
+        function Data = subsref(Data,S)
+            ni = numel(S);
+            if strcmp(S(1).type,'()')&&ni==1,
+                if numel(S.subs)==1,
+                    Data = Data.data(S.subs);
+                elseif size(S.subs{1},1)==1&&size(S.subs{1},2)>2||...
+                       size(S.subs{1},2)==1&&size(S.subs{1},1)>2||...
+                       strcmp(S.subs{1},':'),
+                    Data = builtin('subsref',Data.data,S);
+                else                    
+                    Data = SelectPeriods(builtin('subsref',Data.data,S),S.subs{1},'c');
+                end
+                return
+            end
+            for n = 1:ni,
+                if isa(Data,'MTAData'),
+                    dbreak = false;
+                    if ismethod(Data,S(n).subs),dbreak = true;end
+                    Data = builtin('subsref',Data,S(n:end));
+                    if dbreak,break,end
+                else
+                    Data = subsref(Data,S(n));
+                end
+            end
+        end
+
     end
 
     methods (Abstract)        
-        Data = create(Data,varargin);
-        Data = updatePath(Data,path);
-        Data = filter(Data,win);
+        Data = create(Data,varargin);      
         Data = resample(data,newSampleRate);
-        Data = embed(Data,win,overlap);
-
     end
 
 end

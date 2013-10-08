@@ -1,22 +1,17 @@
-classdef MTAAnalysis
+classdef MTAAnalysis < hgsetget
 % Oh god here we go again
 %
 
-    properties (SetAccess = public)
-        
+    properties (Abstract)
         path
-        
+        ext
         parameters
-        
+        mdata
         data
-
     end
 
-    methods
-
-        function Anal = MTAAnalysis(FuncName,FuncParameters)
-        end
-
+    methods (Abstract)
+        Anal = MTAAnalysis(parameters, funcHandle, varargin)
+        Anal= genPath(Anal)
     end
-        
 end

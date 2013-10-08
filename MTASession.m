@@ -89,9 +89,6 @@ classdef MTASession < hgsetget
         %sampleRate - double: Sample Rate of electrophysiological recording system
         sampleRate     
 
-        %lfpSampleRate - double: Sample Rate of lfp signal
-        lfpSampleRate  
-
         %trackingMarker - string: Marker name used for place field calculations
         trackingMarker = 'head_front';
 
@@ -99,7 +96,7 @@ classdef MTASession < hgsetget
         ang = [];
 
         %Bhv - MTABhv: Object containing behavioral states
-        Bhv
+        Stc = {};
 
         %Fet - MTAFet: Object containing behavioral features
         Fet
@@ -215,7 +212,7 @@ classdef MTASession < hgsetget
             if isempty(propList)
                 return
             else
-                for i = 1:numel(propList),
+                for i = 1:numel(propList),                   
                     propPath = Session.(propList{i}).path;
                     fileNameStartIndex = regexp(fliplr(propPath),{'\\','\/'},'once');
                     fileNameStartIndex = fileNameStartIndex(~cellfun(@isempty,fileNameStartIndex));
@@ -263,7 +260,7 @@ classdef MTASession < hgsetget
         %Output: 
         %  diffMat - numericArray: (index,marker1,marker2,dim)
         %
-            xl = length(Session.xyz);
+            xl = Session.xyz.size(1);
             diffMat = zeros(xl,Session.Model.N,Session.Model.N,3);
             for i=1:Session.Model.N,
                 for j=1:Session.Model.N,

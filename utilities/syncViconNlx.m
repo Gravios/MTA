@@ -19,7 +19,7 @@ catch
 end
 
 if exist('Par','var'),
-    Session.lfpSampleRate = Par.lfpSampleRate;
+    Session.lfp = MTADlfp(fullfile(Session.spath,[Session.name '.lfp']),[],Par.lfpSampleRate);
     Session.sampleRate = Par.SampleRate;
 end
 
@@ -117,7 +117,8 @@ Session.xyzSegLength = cellfun(@length,xyzData);
 %Session.Bhv = MTABhv(Session);
 
 
-Session.xyz = MTADxyz(fullfile(Session.spath, [Session.filebase '.xyz.mat']),xyz,'TimeSeries','xyz',viconSampleRate);
+Session.xyz = MTADxyz(Session.spath,Session.filebase,...
+                      xyz,viconSampleRate);
 Session.xyz.save;
 % $$$ if size(Session.xyz,2)>1,
 % $$$     Session = Session.load_ang(1);
