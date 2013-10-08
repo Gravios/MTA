@@ -3,12 +3,15 @@ classdef MTAData < hgsetget
     properties 
         filename
         path        % path to file containing object
-        data        % data
         type        % TimeSeries,TimePeriods,TimePoints,SpatialBins
         ext
         sampleRate  % Sampling rate of data        
     end
-
+    
+    properties (Abstract)
+        data        % data
+    end
+    
     methods
         function Data = MTAData(path,filename,data,sampleRate,type,ext)
             Data.filename = filename;

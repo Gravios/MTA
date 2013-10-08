@@ -93,10 +93,10 @@ classdef MTASession < hgsetget
         trackingMarker = 'head_front';
 
         %ang - numericArray: (time,marker1,marker2,[direction,pitch,distance]) angles and distances between each marker combination
-        ang = [];
+        ang 
 
         %Bhv - MTABhv: Object containing behavioral states
-        Stc = {};
+        stc
 
         %Fet - MTAFet: Object containing behavioral features
         Fet

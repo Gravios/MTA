@@ -19,7 +19,7 @@ catch
 end
 
 if exist('Par','var'),
-    Session.lfp = MTADlfp(fullfile(Session.spath,[Session.name '.lfp']),[],Par.lfpSampleRate);
+    Session.lfp = MTADlfp(Session.spath,[Session.name '.lfp'],[],Par.lfpSampleRate);
     Session.sampleRate = Par.SampleRate;
 end
 
