@@ -54,7 +54,7 @@ classdef MTASession < hgsetget
     properties (SetAccess = public)
         
         %path - struct: holds all paths of the constructed data tree created by MTAConfiguration.m
-        path           
+        path          
 
         %spath - struct: same as path but with Session name appended to the end
         spath
@@ -76,15 +76,8 @@ classdef MTASession < hgsetget
 
         %xyz - numericArray: (time,marker,dimension) XYZ position of each marker 
         xyz 
-
-        %xyzSegLength - numericArray: length of each XYZ segment in xyz where recording occured
-        xyzSegLength   
-
-        %xyzPeriods - numericArray: (time_segment_start,time_segment_end) XYZ segment index in xyz
-        xyzPeriods     
-
-        %syncPeriods - numericArray: (time_lfp_segment_start,time_lfp_segment_end) time in lfp sample rate where xyz recording occured
-        syncPeriods    
+        
+        sync
 
         %sampleRate - double: Sample Rate of electrophysiological recording system
         sampleRate     
@@ -92,10 +85,9 @@ classdef MTASession < hgsetget
         %trackingMarker - string: Marker name used for place field calculations
         trackingMarker = 'head_front';
 
-        %ang - numericArray: (time,marker1,marker2,[direction,pitch,distance]) angles and distances between each marker combination
+
         ang 
 
-        %Bhv - MTABhv: Object containing behavioral states
         stc
 
         %Fet - MTAFet: Object containing behavioral features
@@ -144,7 +136,11 @@ classdef MTASession < hgsetget
             elseif isa(name,'MTASession')
                 prop = properties('MTASession');
                     for i = 1:length(prop)
+                        if ismethod(name.(prop{i}),'copy')
+                            Session.(prop{i})=name.(prop{i}).copy;
+                        else
                         Session.(prop{i})=name.(prop{i});
+                        end
                     end
             else
                 Session.name = name;
@@ -206,28 +202,20 @@ classdef MTASession < hgsetget
         %Session = updatePaths(Session)
         % Change Session.path & Session.spath to the current
         % MTAPath.mat configuration found in the matlab path.
-            [propList] = DefaultArgs(varargin,{{}});
             Session.path = load('MTAPaths.mat');
             Session.spath = fullfile(Session.path.data, Session.name);
-            if isempty(propList)
-                return
-            else
-                for i = 1:numel(propList),                   
-                    propPath = Session.(propList{i}).path;
-                    fileNameStartIndex = regexp(fliplr(propPath),{'\\','\/'},'once');
-                    fileNameStartIndex = fileNameStartIndex(~cellfun(@isempty,fileNameStartIndex));
-                    fileNameStartIndex = length(propPath)-fileNameStartIndex+2;
-                    Session.(propList{i}).updatePath(fullfile(Session.spath,propPath(fileNameStartIndex:end)));
-                    Session.(propList{i}).load;
+            propList = properties(Session);
+            for i = 1:numel(propList),
+                if isa(Session.(propList{i}),'MTAData')||isa(Session.(propList{i}),'MTAStateCollection')
+                    Session.(propList{i}).updatePath(Session.spath);
                 end
             end
         end
 
         %%---------------------------------------------------------------------------------%
-
-
-
-
+        
+        
+        
         %% Save and Load-------------------------------------------------------------------%
 
         function save(Session,varargin)
@@ -251,7 +239,6 @@ classdef MTASession < hgsetget
 
 
         %% Variables from XYZ -------------------------------------------------------------%        
-
         function diffMat = markerDiffMatrix(Session)
         %diffMat = markerDiffMatrix(Session)
         %create a time series where the position of every marker
@@ -300,48 +287,6 @@ classdef MTASession < hgsetget
         end
         
         
-        %% Create MTADang.m
-        function Session = load_ang(Session,ang)
-            if isnumeric(ang)
-                Session.ang = ang;
-            elseif ischar(ang)
-                switch ang
-                    case 'load'
-                        load([Session.spath Session.name '.' Session.Maze.name '.all.ang.mat'])
-                        Session.ang = ang(Session.xyzPeriods(1):Session.xyzPeriods(end),:,:,:);
-                        
-                    case 'overwrite'
-                        if ~exist([Session.spath Session.name '.' Session.Maze.name '.all.ang.mat'],'file')&&isa(Session,'MTASession')||~isempty(varargin),
-                            ang = zeros(size(Session.xyz,1),Session.Model.N,Session.Model.N,5);
-                            diffMat = Session.markerDiffMatrix();
-                            for i=1:Session.Model.N,
-                                for j=1:Session.Model.N,
-                                    if i==j,
-                                        continue
-                                    end
-                                    [rz,~,direction] = rotZAxis(squeeze(diffMat(:,i,j,:)));
-                                    [ry,~,pitch ] = rotYAxis(rz);
-                                    ang(:,i,j,1) = direction;
-                                    ang(:,i,j,2) = pitch;
-                                    ang(:,i,j,3:5) = ry;
-                                end
-                            end
-                            if isa(Session,'MTASession')&&~isa(Session,'MTATrial'),
-                                save([Session.spath Session.name '.' Session.Maze.name '.all.ang.mat'],'ang','-v7.3')
-                            end
-                            Session.ang = ang;
-                        else
-                            load([Session.spath Session.name '.' Session.Maze.name '.all.ang.mat'])
-                            Session.ang = ang(Session.xyzPeriods(1):Session.xyzPeriods(end),:,:,:);
-                        end
-                    otherwise
-                        ds = load([Session.spath ang]);
-                        Session.ang = ds.ang;
-                end
-            end
-        end
-
-
         function v = vel(Session,varargin)
         %v = vel(Session,varargin)
         %calculate the speed of marker(s)
@@ -391,99 +336,6 @@ classdef MTASession < hgsetget
         end
 
 
-        function [Session] = autoLabelBhv(Session,varargin)
-        %[Session,Features] = autoLabelBhv(Session,label_mode)
-        %automatically label various behaviors 
-        %behaviors and their selection parameters
-        %are defined in an xml file found in the 
-        %analysis directory. An xml template can 
-        %be found in the xml directory
-        %
-        %Expected XML Path:
-        %  [Session.spath Session.filebase '.bhv.' mode '.xml']
-        %
-        %Example:
-        %  Session = Session.autoLabelBhv();
-        %
-            [label_mode] = DefaultArgs(varargin,{'default'});
-            if ~isempty(Session.Bhv),
-                Session.Bhv.save(Session,1);
-            end
-            
-            Session.Bhv = MTABhv(Session,label_mode,1);
-            Session.Bhv.mode = label_mode;
-
-            if strcmp(Session.Bhv.mode,'default'),
-                rxml = xmltools([Session.path.data 'config/xml/bhv.' Session.Bhv.mode '.xml']);
-            else
-                rxml = xmltools([Session.spath Session.filebase '.bhv.' Session.Bhv.mode '.xml']);
-            end
-
-            keys = '';
-            labels = {};
-            method = {};
-            variables = {0};
-            rxml = xmltools(rxml,'get','parameters','child');
-
-            for i = 1:length(rxml.child)
-                if str2double(xmltools(rxml.child(i),'get-attrib','selected')) 
-                    variables{end+1,1} = 0;
-                    labels(end+1) = {rxml.child(i).tag};
-                    keys = strcat(keys,xmltools(rxml.child(i),'get-attrib','key'));
-                    for j = 1:length(rxml.child(i).child)
-                        if str2double(xmltools(rxml.child(i).child(j),'get-attrib','selected'))
-                            method(end+1) = {rxml.child(i).child(j).tag};                           
-                            if isempty(rxml.child(i).child(j).child), variables{end,1}={};continue,end
-                            for k = 1:length(rxml.child(i).child(j).child)
-                                variables{end,k} = str2double(rxml.child(i).child(j).child(k).value);
-                            end
-                        end
-                    end
-                end
-            end
-
-
-            variables = variables(2:end,:);
-            varind = zeros(size(variables));
-            for i = 1:size(variables,1)
-                for j = 1:size(variables,2)
-                    varind(i,j) = ~isempty(variables{i,j});
-                end
-
-                heuristic = eval(['@' labels{1,i}]);
-
-                if ~isempty(variables{i,1}),
-                    [state] = heuristic(Session,method{1,i},variables{i,varind(i,:)==1});
-                else
-                    [state] = heuristic(Session,method{1,i});
-                end
-                Session.Bhv = Session.Bhv.addState(keys(i),labels{1,i},state);
-            end
-
-% $$$             % Quick fix remove when exclusion heuristic is writen
-% $$$             hp = Session.Bhv.getState('head').state;
-% $$$             rp = Session.Bhv.getState('rear').state;
-% $$$             hts = zeros(size(Session.xyz,1),1);
-% $$$             for i = 1:length(hp)
-% $$$                 hts(hp(i,1):hp(i,2)) = 1;
-% $$$             end
-% $$$             hprp = IntersectRanges(hp,rp);
-% $$$             hrts = zeros(size(Session.xyz,1),1);
-% $$$             for i = 1:length(hprp)
-% $$$                 hrts(hprp(i,1):hprp(i,2)) = 1;
-% $$$             end
-% $$$             hts(hrts==1)=0;
-% $$$             newhp = ThreshCross(hts,0.5,60);
-% $$$             for i = 1:length(Session.Bhv.States),
-% $$$                 if strcmp('head',Session.Bhv.States{i}.label),
-% $$$                     Session.Bhv.States{i}.state = newhp;
-% $$$                 end
-% $$$             end                    
-% $$$             % End Quick fix
-
-
-            Session.Bhv.save(Session,1);
-        end
 
         function [stsp, stateLabel] = statePeriods(Session,states,varargin)
         %[stsp stateLabel] = statePeriods(Session,states,sampleRate)
@@ -500,7 +352,7 @@ classdef MTASession < hgsetget
         %  [stsp stateLabel = Session.statePeriods({'theta',{'random_surrogate','nrhp',67,1250}});
         %  [stsp stateLabel = Session.statePeriods({'theta',{'onset','rear',0,1250}});
         %  [stsp stateLabel = Session.statePeriods({'theta',{'onset','rear',0,1250}});
-            [newSampleRate] = DefaultArgs(varargin,{Session.lfpSampleRate});
+            [newSampleRate] = DefaultArgs(varargin,{Session.lpf.sampleRate});
             stateLabel = '';
             stsp = Session.syncPeriods;
             if isempty(states),return,end
@@ -521,27 +373,27 @@ classdef MTASession < hgsetget
                         states{i} = [states{i}{1} '_' states{i}{2}];
 
                       case 'onset'
-                        sts = Session.Bhv.getState(states{i}{2}).state(:,1)+1;
-                        sts = round((sts-1)./Session.xyz.sampleRate.*Session.lfpSampleRate+Session.syncPeriods(1,1));
+                        sts = Session.stc.getState(states{i}{2}).state(:,1)+1;
+                        sts = round((sts-1)./Session.xyz.sampleRate.*Session.lpf.sampleRate+Session.syncPeriods(1,1));
                         sts = repmat(sts,1,2)+repmat([states{i}{3}-states{i}{4},states{i}{3}+states{i}{4}],length(sts),1);
                         if states{i}{3}<0,
                             shiftsign = 'n';
                         else 
                             shiftsign = 'p';
                         end
-                        states{i} = [states{i}{1} '_' num2str(round(states{i}{4}/Session.lfpSampleRate.*1000)) '_' ...
+                        states{i} = [states{i}{1} '_' num2str(round(states{i}{4}/Session.lfp.sampleRate.*1000)) '_' ...
                             shiftsign num2str(states{i}{3}) '_' states{i}{2}];
 
                       case 'offset'
                         sts = Session.Bhv.getState(states{i}{2}).state(:,2)+1;
-                        sts = round((sts-1)./Session.xyz.sampleRate.*Session.lfpSampleRate+Session.syncPeriods(1,1));
+                        sts = round((sts-1)./Session.xyz.sampleRate.*Session.lpf.sampleRate+Session.syncPeriods(1,1));
                         sts = repmat(sts,1,2)+repmat([states{i}{3}-states{i}{4},states{i}{3}+states{i}{4}],length(sts),1);
                         if states{i}{3}<0,
                             shiftsign = 'n';
                         else 
                             shiftsign = 'p';
                         end
-                        states{i} = [states{i}{1} '_' num2str(round(states{i}{4}/Session.lfpSampleRate.*1000)) '_' ...
+                        states{i} = [states{i}{1} '_' num2str(round(states{i}{4}/Session.lfp.sampleRate.*1000)) '_' ...
                             shiftsign num2str(states{i}{3}) '_' states{i}{2}];
                     end
 
@@ -550,7 +402,7 @@ classdef MTASession < hgsetget
                 else
                     %% States in the Bhv have a fs of xyzSampleRate
                     sts = Session.Bhv.getState(states{i}).state+1;
-                    sts = round((sts-1)./Session.xyz.sampleRate.*Session.lfpSampleRate+Session.syncPeriods(1,1));
+                    sts = round((sts-1)./Session.xyz.sampleRate.*Session.lpf.sampleRate+Session.syncPeriods(1,1));
                 end
 
                 stsp = IntersectRanges(sts,stsp);
@@ -562,7 +414,7 @@ classdef MTASession < hgsetget
                 end
             end
             stsp = stsp-Session.syncPeriods(1,1);
-            stsp = round(stsp./Session.lfpSampleRate.*newSampleRate);
+            stsp = round(stsp./Session.lpf.sampleRate.*newSampleRate);
             stsp(stsp==0)=1; 
         end
 
@@ -573,19 +425,6 @@ classdef MTASession < hgsetget
 
         %% Load NLX Related data ---------------------------------------------------------%
 
-        function Session = load_lfp(Session,channels)
-        %Session = load_lfp(Session,channels)
-        %load Local Field Potential data
-        %channels - int/array: desired electrode channels from which
-        %                      lfp data is loaded
-        %
-        %Examples: 
-        %  Session = Session.load_lfp(1);
-        %  Session = Session.load_lfp(65:96);
-        %
-            Par = LoadPar(fullfile(Session.spath, [Session.name '.xml']));
-            Session.lfp = LoadBinary(fullfile(Session.spath, [Session.name '.lfp']),channels,Par.nChannels,[],[],[],[Session.syncPeriods(1,1), Session.syncPeriods(end,2)])';
-        end
 
         function Session = load_nq(Session)
         %Session = load_nq(Session)
@@ -652,77 +491,77 @@ classdef MTASession < hgsetget
             units = find(unit_status);
         end
 
-        function Session = load_ufr(Session,varargin) 
-        %Session = load_ufr(Session,varargin) 
-        %load Unit Firing Rate 
-        %twin - double: time window for rate calculation
-        %  Default: 0.05 - seconds
-        %
-            [newSampleRate,flength,twin] = DefaultArgs(varargin,{Session.lfpSampleRate,Session.xyzPeriods(end)-Session.xyzPeriods(1)+1,0.05});
-            if ~exist([Session.spath Session.name '.ufr'],'file'),
-                [Res,Clu,Map] = LoadCluRes(fullfile(Session.spath,Session.name));
+%         function Session = load_ufr(Session,varargin) 
+%         %Session = load_ufr(Session,varargin) 
+%         %load Unit Firing Rate 
+%         %twin - double: time window for rate calculation
+%         %  Default: 0.05 - seconds
+%         %
+%             [newSampleRate,flength,twin] = DefaultArgs(varargin,{Session.lpf.sampleRate,Session.xyzPeriods(end)-Session.xyzPeriods(1)+1,0.05});
+%             if ~exist([Session.spath Session.name '.ufr'],'file'),
+%                 [Res,Clu,Map] = LoadCluRes(fullfile(Session.spath,Session.name));
+% 
+%                 gwin = gausswin(round(twin*Session.sampleRate))/sum(gausswin(round(twin*Session.sampleRate)));
+%                 spks = zeros(max(Res),1);
+%                 ufr = [];
+%                 for unit = 1:size(Map,1),
+%                     uRes = Res(Clu==unit);
+%                     uClu = Clu(Clu==unit);
+%                     spks(:)=0;
+%                     spks(uRes) = 1;
+%                     ufr(:,unit) =resample(conv(spks,gwin),Session.lpf.sampleRate,Session.sampleRate);
+%                 end
+%                 
+%                 save([Session.spath Session.name '.ufr'],'ufr','-v7.3','-mat');
+%                 ufr = ufr(Session.syncPeriods(1):Session.syncPeriods(end),:);
+%             else 
+%                 load([Session.spath Session.name '.ufr'],'-mat')
+%                 ufr = ufr(Session.syncPeriods(1):Session.syncPeriods(end),:);
+%             end
+%             
+%             if newSampleRate == Session.lpf.sampleRate,
+%                 Session.ufr = ufr;
+%             else
+%                 uind = round(linspace(round(Session.lpf.sampleRate/newSampleRate),size(ufr,1),flength));
+%                 Session.ufr = ufr(uind,:);
+%             end
+%         end
 
-                gwin = gausswin(round(twin*Session.sampleRate))/sum(gausswin(round(twin*Session.sampleRate)));
-                spks = zeros(max(Res),1);
-                ufr = [];
-                for unit = 1:size(Map,1),
-                    uRes = Res(Clu==unit);
-                    uClu = Clu(Clu==unit);
-                    spks(:)=0;
-                    spks(uRes) = 1;
-                    ufr(:,unit) =resample(conv(spks,gwin),Session.lfpSampleRate,Session.sampleRate);
-                end
-                
-                save([Session.spath Session.name '.ufr'],'ufr','-v7.3','-mat');
-                ufr = ufr(Session.syncPeriods(1):Session.syncPeriods(end),:);
-            else 
-                load([Session.spath Session.name '.ufr'],'-mat')
-                ufr = ufr(Session.syncPeriods(1):Session.syncPeriods(end),:);
-            end
-            
-            if newSampleRate == Session.lfpSampleRate,
-                Session.ufr = ufr;
-            else
-                uind = round(linspace(round(Session.lfpSampleRate/newSampleRate),size(ufr,1),flength));
-                Session.ufr = ufr(uind,:);
-            end
-        end
-
-        function Session = load_CluRes(Session,varargin)
-        %Session = load_CluRes(Session,varargin)
-        %load unit timing
-        %sampleRate - double: sample rate to which res is to be resampled
-        %  Default: 1250 - lfpSampleRate
-        %
-        %units - int: the unit id's you wish to load.
-        %states - string/cellArray(string): specify a state or a
-        %         union/intersection of states
-        %  note: only use single states for the moment!!
-        %  Default: {} 
-        %
-        %sets:
-        %    Session.res = Res;
-        %    Session.clu = Clu;
-        %    Session.map = Map;
-
-            [sampleRate,units,states] = DefaultArgs(varargin,{Session.lfpSampleRate,[],{}});
-            [Res Clu Map] = LoadCluRes([Session.spath Session.name]);
-            Res = round(Res*sampleRate/Session.sampleRate);
-            [Res ind] = SelectPeriods(Res,round([Session.syncPeriods(1),Session.syncPeriods(end)]./Session.lfpSampleRate.*sampleRate),'d',1,1);
-            Clu = Clu(ind);            
-            if isempty(units),
-                cind = true(numel(Res),1);
-            else
-                cind = find(ismember(Clu,units));
-            end
-            Session.res = Res(cind);
-            Session.clu = Clu(cind);
-            Session.map = Map;
-            if ~isempty(states);
-                [Session.res sind] = SelectPeriods(Session.res,Session.statePeriods(states,sampleRate),'d',1,0);
-                Session.clu = Session.clu(sind);            
-            end
-        end
+%         function Session = load_CluRes(Session,varargin)
+%         %Session = load_CluRes(Session,varargin)
+%         %load unit timing
+%         %sampleRate - double: sample rate to which res is to be resampled
+%         %  Default: 1250 - lfpSampleRate
+%         %
+%         %units - int: the unit id's you wish to load.
+%         %states - string/cellArray(string): specify a state or a
+%         %         union/intersection of states
+%         %  note: only use single states for the moment!!
+%         %  Default: {} 
+%         %
+%         %sets:
+%         %    Session.res = Res;
+%         %    Session.clu = Clu;
+%         %    Session.map = Map;
+% 
+%             [sampleRate,units,states] = DefaultArgs(varargin,{Session.lpf.sampleRate,[],{}});
+%             [Res Clu Map] = LoadCluRes([Session.spath Session.name]);
+%             Res = round(Res*sampleRate/Session.sampleRate);
+%             [Res ind] = SelectPeriods(Res,round([Session.syncPeriods(1),Session.syncPeriods(end)]./Session.lpf.sampleRate.*sampleRate),'d',1,1);
+%             Clu = Clu(ind);            
+%             if isempty(units),
+%                 cind = true(numel(Res),1);
+%             else
+%                 cind = find(ismember(Clu,units));
+%             end
+%             Session.res = Res(cind);
+%             Session.clu = Clu(cind);
+%             Session.map = Map;
+%             if ~isempty(states);
+%                 [Session.res sind] = SelectPeriods(Session.res,Session.statePeriods(states,sampleRate),'d',1,0);
+%                 Session.clu = Session.clu(sind);            
+%             end
+%         end
 
         function Session = load_ripples(Session,channels,varargin)
         %Session = load_ripples(Session,channels,varargin)

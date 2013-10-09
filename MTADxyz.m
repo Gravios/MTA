@@ -4,10 +4,13 @@ classdef MTADxyz < MTAData
         data        % data
     end
     methods
-        function Data = MTADxyz(path,filename,data,sampleRate,varargin)
-            [type,ext] = DefaultArgs(varargin,{'TimeSeries','pos'});
-            if ~strcmp(filename(end-3:end),'.mat'),
-                filename= [filename'.' ext '.mat'];
+        function Data = MTADxyz(varargin)
+            [path,filename,data,sampleRate,type,ext] = ...
+                DefaultArgs(varargin,{[],[],[],[],'TimeSeries','pos'});
+            if ~isempty(filename),
+                if ~strcmp(filename(end-3:end),'.mat'),
+                    filename= [filename '.' ext '.mat'];
+                end
             end
             Data = Data@MTAData(path,filename,data,sampleRate,type,ext);
         end

@@ -13,7 +13,9 @@ classdef MTAData < hgsetget
     end
     
     methods
-        function Data = MTAData(path,filename,data,sampleRate,type,ext)
+        function Data = MTAData(varargin)
+            [path,filename,data,sampleRate,type,ext] = ...
+                DefaultArgs(varargin,{[],[],[],[],[],[]});
             Data.filename = filename;
             Data.path = path;
             Data.data = data;
@@ -35,12 +37,11 @@ classdef MTAData < hgsetget
             end
         end
         function Data = load(Data,varargin)
-            if isempty(varargin),
-                load(Data.fpath)
-                Data.data = data;
+            [periods] = DefaultArgs(varargin,{[]});
+            load(Data.fpath)
+            if ~isempty(periods),
+                Data.data = data(periods(1):periods(2),:,:,:,:);
             else
-                Data.filename = varargin{1};
-                load(Data.fpath)
                 Data.data = data;
             end
         end
@@ -75,29 +76,46 @@ classdef MTAData < hgsetget
         function Data = subsref(Data,S)
             ni = numel(S);
             if strcmp(S(1).type,'()')&&ni==1,
-                if numel(S.subs)==1,
+                if numel(S.subs)==0,
+                    Data = Data.data;
+                elseif numel(S.subs)==1,
                     Data = Data.data(S.subs);
                 elseif size(S.subs{1},1)==1&&size(S.subs{1},2)>2||...
-                       size(S.subs{1},2)==1&&size(S.subs{1},1)>2||...
-                       strcmp(S.subs{1},':'),
+                        size(S.subs{1},2)==1&&size(S.subs{1},1)>2||...
+                        strcmp(S.subs{1},':'),
                     Data = builtin('subsref',Data.data,S);
-                else                    
-                    Data = SelectPeriods(builtin('subsref',Data.data,S),S.subs{1},'c');
+                else
+                    Sa = S;
+                    Sa.subs{1} = ':';
+                    Data = SelectPeriods(builtin('subsref',Data.data,Sa),S.subs{1},'c');
                 end
                 return
             end
             for n = 1:ni,
                 if isa(Data,'MTAData'),
-                    dbreak = false;
-                    if ismethod(Data,S(n).subs),dbreak = true;end
+%                     dbreak = false;
+%                     if ismethod(Data,S(n).subs),dbreak = true;end
                     Data = builtin('subsref',Data,S(n:end));
-                    if dbreak,break,end
+%                     if dbreak,break,end
+                    break
                 else
                     Data = subsref(Data,S(n));
                 end
             end
         end
 
+        
+        function DataCopy = copy(Data)
+        % Make a copy of a handle object.
+        % Instantiate new object of the same class.
+            DataCopy = feval(class(Data),[]);
+            % Copy all non-hidden properties.
+            p = properties(Data);
+            for i = 1:length(p)
+                DataCopy.(p{i}) = Data.(p{i});
+            end
+        end
+        
     end
 
     methods (Abstract)        

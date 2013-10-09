@@ -96,33 +96,29 @@ assert(~isempty(syncPeriods),ERR.type,ERR.msg,TTLValue);
 
 xyzData = xyzData(xyzDataInd);
 
+Session.sync = MTASync(Session.spath,Session.name,syncPeriods./1000);
+Session.stc = MTAStateCollection(Session.spath,Session.filebase,'default');
 
-Session.syncPeriods = round(syncPeriods/1000*Par.lfpSampleRate);
+
 nSessions = length(xyzData);
 xyz = [];
-syncShift = [0;round(diff([Session.syncPeriods(1:end-1,2) Session.syncPeriods(2:end,1)],1,2)/Par.lfpSampleRate*viconSampleRate)];
+syncShift = [0;round(diff([Session.sync(1:end-1,2) Session.sync(2:end,1)],1,2)*viconSampleRate)];
 for s=1:nSessions,
     if syncShift(s),
         xyz = cat(1,xyz,zeros(syncShift(s),size(xyzData{s},2),size(xyzData{s},3)));
     end
     xyz = cat(1,xyz,xyzData{s});
 end
-
 xyz = double(xyz);
-Session.xyzPeriods = round((Session.syncPeriods-Session.syncPeriods(1))./Par.lfpSampleRate.*viconSampleRate);%ifPar
-Session.xyzPeriods(1) = Session.xyzPeriods(1)+1;
-Session.xyzPeriods(end) = size(xyz,1);
-Session.xyzSegLength = cellfun(@length,xyzData);                        
-
-%Session.Bhv = MTABhv(Session);
 
 
-Session.xyz = MTADxyz(Session.spath,Session.filebase,...
-                      xyz,viconSampleRate);
+
+
+Session.xyz = MTADxyz(Session.spath,Session.filebase,xyz,viconSampleRate);
 Session.xyz.save;
-% $$$ if size(Session.xyz,2)>1,
-% $$$     Session = Session.load_ang(1);
-% $$$ end
+
+Session.ang = MTADang(Session.spath,Session.filebase,[],viconSampleRate);
+Session.ang.save;
 
 Session.save();
 

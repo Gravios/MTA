@@ -70,13 +70,15 @@ classdef MTATrial < MTASession
             
             Trial.trialName = trialName;
             Trial.filebase = [Trial.name '.' Trial.Maze.name '.' Trial.trialName];
-            Trial.Stc = {};
+            Trial.stc.updateFilename(Trial.filebase);
+            
+            
             if exist(fullfile(Trial.spath, [Trial.filebase '.trl.mat']),'file')&&~overwrite
                 ds = load(fullfile(Trial.spath, [Trial.filebase '.trl.mat']));
                 Trial.xyzPeriods = ds.xyzPeriods;
                 if isfield(ds,'bhvmode'),
-                    if ~isempty(ds.bhvmode)&&exist(fullfile(Trial.spath, [Trial.filebase '.Stc.' ds.bhvmode '.mat']),'file')
-                        Trial.Stc.load(ds.bhvmode);
+                    if ~isempty(ds.bhvmode)&&exist(fullfile(Trial.spath, [Trial.filebase '.stc.' ds.bhvmode '.mat']),'file')
+                        Trial.stc.load(ds.bhvmode);
                     end
                 end
                 if strcmp(mode,'minimal'),
@@ -87,95 +89,62 @@ classdef MTATrial < MTASession
             elseif ~ischar(new_xyzPeriods)
                 Trial.xyzPeriods = new_xyzPeriods;
             else
-                switch new_xyzPeriods
-                  case 'default_height_restricted'
-                    height_violations = [];
-                    try
-                        height_violations = ThreshCross(Trial.xyz(:,1,3),300,10);
-                    end
-                    if ~isempty(height_violations),
-                        for i = 1:size(height_violations,1),
-                            for j = 1:size(Trial.xyzPeriods,1),
-                                if height_violations(i,2)>Trial.xyzPeriods(j,1)&height_violations(i,2)<(Trial.xyzPeriods(j,1)+3000),
-                                    Trial.xyzPeriods(j,1) = height_violations(i,2)+400;
-                                elseif height_violations(i,1)<Trial.xyzPeriods(j,2)&height_violations(i,1)>(Trial.xyzPeriods(j,2)-3000),
-                                    Trial.xyzPeriods(j,2) = height_violations(i,1)-400;
-                                else
-                                    continue
-                                end
-                            end
-                        end
-                    end
-                end
+%                 switch new_xyzPeriods
+%                   case 'default_height_restricted'
+%                     height_violations = [];
+%                     try
+%                         height_violations = ThreshCross(Trial.xyz(:,1,3),300,10);
+%                     end
+%                     if ~isempty(height_violations),
+%                         for i = 1:size(height_violations,1),
+%                             for j = 1:size(Trial.xyzPeriods,1),
+%                                 if height_violations(i,2)>Trial.xyzPeriods(j,1)&height_violations(i,2)<(Trial.xyzPeriods(j,1)+3000),
+%                                     Trial.xyzPeriods(j,1) = height_violations(i,2)+400;
+%                                 elseif height_violations(i,1)<Trial.xyzPeriods(j,2)&height_violations(i,1)>(Trial.xyzPeriods(j,2)-3000),
+%                                     Trial.xyzPeriods(j,2) = height_violations(i,1)-400;
+%                                 else
+%                                     continue
+%                                 end
+%                             end
+%                         end
+%                     end
+%                 end
             end
-
-            % Reset other properties with new xyzPeriods            
-            Trial.xyzSegLength = diff(Trial.xyzPeriods,1,2)+1;
+            
             Trial.trackingMarker = Session.trackingMarker;
-            syncShift = Trial.syncPeriods(1,1);
-            Trial.syncPeriods = [];
-            Trial.syncPeriods = round((Trial.xyzPeriods-1.05)/Trial.xyz.sampleRate*Trial.lfpSampleRate+syncShift);
-
-            xyz = false(Trial.xyz.size(1),1);            
-            for i = 1:size(Trial.xyzPeriods,1),
-                xyz(Trial.xyzPeriods(i,1):Trial.xyzPeriods(i,2))=true;               
-            end
-            Trial.xyz.data(xyz==0,:,:) = 0;            
-            Trial.xyz.data = Trial.xyz(Trial.xyzPeriods(1):Trial.xyzPeriods(end),:,:);
-
-            % resync all non-empty fields
+            Trial.sync.resync(Trial.xyz,new_xyzPeriods);
             props = properties(Trial);
             for p = 1:numel(props),
-                if isa(Trial.(props{p}),'MTAData'),
-                    if Trial.(props{p}).isempty||strcmp(props{p},'xyz'),
+                prop = Trial.(props{p});
+                if isa(prop,'MTAData'),
+                    if prop.isempty||strcmp(props{p},'xyz'),
                         continue,
                     else
-                        if Trial.(props{p}).sampleRate==Trial.xyz.sampleRate,
-                            Trial.(props{p}).data(xyz==0,:,:,:,:) = 0;
-                            Trial.(props{p}).data = Trial.(props{p})(Trial.xyzPeriods(1):Trial.xyzPeriods(end),:,:,:,:);
-                        elseif Trial.(props{p}).sampleRate==Trial.lfp.sampleRate,
-                            Trial.(props{p}).data = Trial.(props{p}).data(Trial.syncPeriods(1):Trial.syncPeriods(end),:,:,:,:);
+                        Trial.sync.resync(prop);
+                    end
+                elseif isa(prop,'MTAStateCollection')
+                    if ~prop.isempty
+                        for s = numel(prop(:)),
+                            Trial.sync.resync(prop{s});
                         end
                     end
                 end
             end
             
-            % resync the stc.states
-            %for s=numel(s.stc.states)
-            
-            
-            
-            %Load fields such as ang,lpf,spk,...ect. within the new time
-            %periods.
             if numel(preLoadedFields)>0;
                 for f = 1:numel(preLoadedFields),
                     field = preLoadedFields{f};
-                    %Why is this try here?
-                    try
-                        if iscell(field)
-                            Trial.(field{1}).load(field(2:end))
-                            if ~isempty(Trial.(field{1}).data),
-                                if Trial.xyz.sampleRate==Trial.(field{1}).sampleRate
-                                    Period = Trial.xyzPeriods(1,end);
-                                else
-                                    Period = Trial.syncPeriods(1,end);
-                                end
-                                Trial.(field{1}).data = Trial.(field{1}).data(Period);
-                            end
-                        else
-                            Trial.(field).load;
-                            if ~isempty(Trial.(field).data),
-                                if Trial.xyz.sampleRate==Trial.(field).sampleRate
-                                    Period = Trial.xyzPeriods([1,end]);
-                                else
-                                    Period = Trial.syncPeriods([1,end]);
-                                end
-                                Trial.(field).data = Trial.(field).data(Period);
-                            end
+                    if iscell(field)
+                        Trial.(field{1}).load(field(2:end))
+                        if ~Trial.(field{1}).isempty,
+                            Trial.sync.resync(Trial.(field{1}));
                         end
-                    catch
-                        
-                    end                    
+                    else
+                        Trial.(field).load;
+                        if ~Trial.(field).isempty,
+                            Trial.sync.resync(Trial.(field));
+                        end
+                    end
                 end
             end
         end
