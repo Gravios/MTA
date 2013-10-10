@@ -85,6 +85,7 @@ classdef MTAData < hgsetget
                         strcmp(S.subs{1},':'),
                     Data = builtin('subsref',Data.data,S);
                 else
+                    S.subs = S.subs(~cellfun(@isempty,S.subs));
                     Sa = S;
                     Sa.subs{1} = ':';
                     Data = SelectPeriods(builtin('subsref',Data.data,Sa),S.subs{1},'c');
