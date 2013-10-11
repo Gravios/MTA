@@ -85,7 +85,6 @@ classdef MTASession < hgsetget
         %trackingMarker - string: Marker name used for place field calculations
         trackingMarker = 'head_front';
 
-
         ang 
 
         stc
@@ -108,14 +107,7 @@ classdef MTASession < hgsetget
         %nq - struct: containing information about individual units
         nq = {};
 
-        %res - numericArray: (time_index) unit event index in sampleRate or lfpSampleRate
-        res
-
-        %clu - numericArray: (res_index) unit cluster group associated with each index of res
-        clu
-
-        %map - numericArray: (clu,electrode_clu,eletrode) mapping of unit clusters to electrode cluster and electrode
-        map
+        spk
 
         %ripples - numericArray: (time_index,ripple_power,ripple_duration) time_index in lfp sample rate
         ripples        

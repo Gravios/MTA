@@ -112,7 +112,7 @@ end
 xyz = double(xyz);
 
 
-
+Session.spk = MTASpk;
 
 Session.xyz = MTADxyz(Session.spath,Session.filebase,xyz,viconSampleRate);
 Session.xyz.save;
