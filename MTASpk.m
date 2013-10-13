@@ -46,7 +46,7 @@ classdef MTASpk < hgsetget
             
             %% Select specific states
             if ~isempty(states);
-                [Res,sind] = SelectPeriods(Res,Session.stc{states,Spk.sampleRate},'d',1,0);
+                [Res,sind] = SelectPeriods(Res,[Session.stc{states,Spk.sampleRate}],'d',1,0);
                 Clu = Clu(sind);
             end
             

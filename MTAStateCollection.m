@@ -85,6 +85,9 @@ classdef MTAStateCollection < hgsetget
         %           in which the state occurs @ xyzSampleRate
         %
             if isa(path,'MTADepoch'),
+                 if ~isempty(Stc.gsi(path.label))&&~isempty(Stc.gsi(path.key)),
+                     return
+                 end                                      
                 Stc.states(end+1) = {path};                
                 path.save;
                 return
@@ -126,9 +129,9 @@ classdef MTAStateCollection < hgsetget
                                 stci = Stc.gsi(stsNames{i});
                                 if isempty(stci)
                                     if numel(stsNames{i})==1,
-                                        sts(i) = MTADepoch(Stc.path,[],[],[],[],S(n).subs{1},[],[]);
+                                        sts{i} = MTADepoch(Stc.path,[],[],[],[],S(n).subs{1},[],[]);
                                     else
-                                        sts(i) = MTADepoch(Stc.path,[],[],[],S(n).subs{1},[],[],[]);
+                                        sts{i} = MTADepoch(Stc.path,[],[],[],S(n).subs{1},[],[],[]);
                                     end
                                     sts(i) = sts(i).load;
                                     Stc.addState(sts(i));

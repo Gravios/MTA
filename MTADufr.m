@@ -1,11 +1,11 @@
        
-classdef MTADang < MTAData
+classdef MTADufr < MTAData
 
     properties(Transient=true)
         data        % data
     end
     methods
-        function Data = MTADang(varargin)
+        function Data = MTADufr(varargin)
             [path,filename,data,sampleRate,type,ext] = ...
                 DefaultArgs(varargin,{[],[],[],[],'TimeSeries','ufr'});
             if ~isempty(filename),
@@ -16,9 +16,13 @@ classdef MTADang < MTAData
             Data = Data@MTAData(path,filename,data,sampleRate,type,ext);
         end
         
-        function Data = create(Data,Session)
-            [newSampleRate,flength,twin] = DefaultArgs(varargin,{Session.lpf.sampleRate,Session.xyzPeriods(end)-Session.xyzPeriods(1)+1,0.05});
-            if ~exist([Session.spath Session.name '.ufr'],'file'),
+        function Data = create(Data,Session,varargin)
+            
+            [DataObj,twin] = DefaultArgs(varargin,{Session.lfp,0.05});
+           
+            lfpSyncPeriods = Session.sync.periods(Session.lfp.sampleRate);
+            
+            if ~exist(Data.fpath,'file'),
                 [Res,Clu,Map] = LoadCluRes(fullfile(Session.spath,Session.name));
 
                 gwin = gausswin(round(twin*Session.sampleRate))/sum(gausswin(round(twin*Session.sampleRate)));
@@ -29,30 +33,35 @@ classdef MTADang < MTAData
                     uClu = Clu(Clu==unit);
                     spks(:)=0;
                     spks(uRes) = 1;
-                    ufr(:,unit) =resample(conv(spks,gwin),Session.lpf.sampleRate,Session.sampleRate);
+                    ufr(:,unit) = resample(conv(spks,gwin),Session.lfp.sampleRate,Session.sampleRate);
                 end
                 
-                save([Session.spath Session.name '.ufr'],'ufr','-v7.3','-mat');
-                ufr = ufr(Session.syncPeriods(1):Session.syncPeriods(end),:);
+                save(Data.fpath,'ufr','-v7.3','-mat');
             else 
                 load([Session.spath Session.name '.ufr'],'-mat')
-                ufr = ufr(Session.syncPeriods(1):Session.syncPeriods(end),:);
             end
             
-            if newSampleRate == Session.lpf.sampleRate,
-                Session.ufr = ufr;
-            else
-                uind = round(linspace(round(Session.lpf.sampleRate/newSampleRate),size(ufr,1),flength));
-                Session.ufr = ufr(uind,:);
+            ufr = ufr(lfpSyncPeriods(1):lfpSyncPeriods(end),:);
+            
+            if DataObj.sampleRate < Session.lpf.sampleRate,
+                Data.resample(DataObj);
             end
+
         end
         
-        function Data = filter(Data,win)
+        function Data = load(Data)
         end
-        function Data = resample(Data,newSampleRate,varargin)
-            [interp_type] = DefaultArgs(varargin,{'linear'});
+        
+        function Data = filter(Data)
         end
-        function Data = embed(Data,win,overlap)
+        function Data = resample(Data,DataObj)
+            if DataObj.isepmty, DataObj.load; dlen = DataObj.size(1); end
+            uind = round(linspace(round(Data.sampleRate/DataObj.sampleRate),Data.size(1),DataObj.size(1)));
+            Data.data = Data.data(uind,:);
+            Data.sampleRate = DataObj.sampleRate;
+            DataObj.clear;
+        end
+        function Data = embed(Data)
         end
 
     end

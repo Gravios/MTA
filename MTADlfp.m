@@ -14,7 +14,8 @@ classdef MTADlfp < MTAData
             Data = Data@MTAData(path,filename,data,sampleRate,type,ext);
         end        
         function Data = load(Data,Session,varargin)
-            [channels,periods] = DefaultArgs(varargin,{1,Session.syncPeriods([1,end])});
+            lfpSync = Session.sync.periods(Session.lfp.sampleRate);
+            [channels,periods] = DefaultArgs(varargin,{1,lfpSync([1,end])});
             Par = LoadPar(fullfile(Session.spath, [Session.name '.xml']));
             Data.data = LoadBinary(Data.fpath,channels,...
                                    Par.nChannels,[],[],[],periods)';

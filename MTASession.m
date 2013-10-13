@@ -685,52 +685,52 @@ classdef MTASession < hgsetget
         end
 
 
-        function Session = correctRigidBody(Session,varargin)
-        %Session = correctRigidBody(Session,markerSubset,depth,modelIndex,display)
-        %find rigid body errors and correct them, if possible  
-        %uses model frame as a basis for the geometrical
-        %organization of the rigid body
-        %
-        %  markerSubset - cellArray: group of markers included in
-        %                            the rigid body
-        %                            
-        %    (e.g. {'head_back','head_left','head_front','head_right','head_top'})
-        %
-        %  depth - int: just leave this alone, since the default works fine
-        %  modelIndex - int: xyz index which contains an ideal constellation
-        %                    of markers in the rigid body 
-        %  display - boolean: display rb errors (only for head)
-        %
-
-            [markerSubset,depth,modelIndex,display] = DefaultArgs(varargin,{{'head_back','head_left','head_front','head_right','head_top'},3,[],0});
-            if size(Session.Model.imdMean,3)~=3|Session.Model.index==0,
-                Session = Session.updateModel(depth);
-            end
-            rb = Session.Model.rb(markerSubset);
-            if ~isempty(modelIndex), Session.Model.index = modelIndex; end
-            pose = sq(Session.xyz(Session.Model.index,Session.Model.gmi(markerSubset),:));
-            for i = 1:size(Session.xyzPeriods,1),
-                Temp = MTATrial(Session,{},[],Session.xyzPeriods(i,:));
-                Temp = CorrectRigidBody(Temp,rb,pose);
-                Session.xyz(Temp.xyzPeriods(1,1):Temp.xyzPeriods(1,2),:,:) = Temp.xyz;
-            end
-            Session.ang = Session.load_ang(1);
-            if display, PlotSessionErrors(Session),end
-        end
-
-        function Session = correctPointErrors(Session,varargin)
-        %Session = correctPointErrors(Session,varargin)
-        %
-
-            [markerSubset] = DefaultArgs(varargin,{{'head_back','head_left','head_front','head_right','head_top'}});
-            rb = Session.Model.rb(markerSubset);
-            for i = 1:size(Session.xyzPeriods,1),
-                Temp = MTATrial(Session,{},[],Session.xyzPeriods(i,:));
-                Temp = CorrectPointErrors(Temp,rb);
-                Session.xyz(Temp.xyzPeriods(1,1):Temp.xyzPeriods(1,2),:,:) = Temp.xyz;
-            end
-            Session.ang = Session.load_ang(1);
-        end
+%         function Session = correctRigidBody(Session,varargin)
+%         %Session = correctRigidBody(Session,markerSubset,depth,modelIndex,display)
+%         %find rigid body errors and correct them, if possible  
+%         %uses model frame as a basis for the geometrical
+%         %organization of the rigid body
+%         %
+%         %  markerSubset - cellArray: group of markers included in
+%         %                            the rigid body
+%         %                            
+%         %    (e.g. {'head_back','head_left','head_front','head_right','head_top'})
+%         %
+%         %  depth - int: just leave this alone, since the default works fine
+%         %  modelIndex - int: xyz index which contains an ideal constellation
+%         %                    of markers in the rigid body 
+%         %  display - boolean: display rb errors (only for head)
+%         %
+% 
+%             [markerSubset,depth,modelIndex,display] = DefaultArgs(varargin,{{'head_back','head_left','head_front','head_right','head_top'},3,[],0});
+%             if size(Session.Model.imdMean,3)~=3|Session.Model.index==0,
+%                 Session = Session.updateModel(depth);
+%             end
+%             rb = Session.Model.rb(markerSubset);
+%             if ~isempty(modelIndex), Session.Model.index = modelIndex; end
+%             pose = sq(Session.xyz(Session.Model.index,Session.Model.gmi(markerSubset),:));
+%             for i = 1:size(Session.xyzPeriods,1),
+%                 Temp = MTATrial(Session,{},[],Session.xyzPeriods(i,:));
+%                 Temp = CorrectRigidBody(Temp,rb,pose);
+%                 Session.xyz(Temp.xyzPeriods(1,1):Temp.xyzPeriods(1,2),:,:) = Temp.xyz;
+%             end
+%             Session.ang = Session.load_ang(1);
+%             if display, PlotSessionErrors(Session),end
+%         end
+% 
+%         function Session = correctPointErrors(Session,varargin)
+%         %Session = correctPointErrors(Session,varargin)
+%         %
+% 
+%             [markerSubset] = DefaultArgs(varargin,{{'head_back','head_left','head_front','head_right','head_top'}});
+%             rb = Session.Model.rb(markerSubset);
+%             for i = 1:size(Session.xyzPeriods,1),
+%                 Temp = MTATrial(Session,{},[],Session.xyzPeriods(i,:));
+%                 Temp = CorrectPointErrors(Temp,rb);
+%                 Session.xyz(Temp.xyzPeriods(1,1):Temp.xyzPeriods(1,2),:,:) = Temp.xyz;
+%             end
+%             Session.ang = Session.load_ang(1);
+%         end
 
         function Session = addMarker(Session,name,color,sticks,xyz)
         %Session = addMarker(Session,name,color,sticks,xyz)
@@ -954,47 +954,47 @@ classdef MTASession < hgsetget
             end
             Session = tempSession;;
         end
-
-        function Trial = consolidateTrials(Session,varargin)
-            if ~isa(Session,'MTASession')&isa(Session,'MTATrial'),
-                Session = MTASession(Session.name,{},Session.Maze.name);
-            end
-            [newTrialName,trialnames] = DefaultArgs(varargin,{'cnsldtd',Session.list_trialNames});
-            re = 'all';
-            allInd = find(~cellfun(@isempty,regexp(trialnames,re)));
-            if ~isempty(allInd),
-                trialnames(allInd) = [];                        
-            end
-            re = newTrialName;
-            allInd = find(~cellfun(@isempty,regexp(trialnames,re)));
-            if ~isempty(allInd),
-                trialnames(allInd) = [];                        
-            end
-            Bhv = MTABhv([],'cnsldtd');
-            newXYZPeriods = [];
-            for i = 1:length(trialnames),
-                Trial = MTATrial(Session,{},trialnames{i},[],0,Session.Maze.name,'minimal');
-                newXYZPeriods = cat(1,newXYZPeriods,Trial.xyzPeriods);
-                if i==1,
-                    Bhv.States = Trial.Bhv.States;
-                    for j = 1:length(Bhv.States),
-                        Bhv.States{j}.state = Bhv.States{j}.state+Trial.xyzPeriods(1);
-                    end
-                else
-                    for j = 1:length(Bhv.States),
-                        Bhv.States{j}.state = cat(1,Bhv.States{j}.state,Trial.Bhv.getState(Bhv.States{j}.label).state+Trial.xyzPeriods(1));
-                        if i==length(trialnames),
-                            Bhv.States{j}.state = sort(Bhv.States{j}.state)-min(newXYZPeriods(:));
-                        end
-                    end
-                end                                
-            end
-            newXYZPeriods = sort(newXYZPeriods);
-            Trial = MTATrial(Session,{},newTrialName,newXYZPeriods,1,Session.Maze.name,'minimal');            
-            Trial.Bhv = Bhv;
-            Bhv.save(Trial,1);
-            Trial.save
-        end
+% 
+%         function Trial = consolidateTrials(Session,varargin)
+%             if ~isa(Session,'MTASession')&isa(Session,'MTATrial'),
+%                 Session = MTASession(Session.name,{},Session.Maze.name);
+%             end
+%             [newTrialName,trialnames] = DefaultArgs(varargin,{'cnsldtd',Session.list_trialNames});
+%             re = 'all';
+%             allInd = find(~cellfun(@isempty,regexp(trialnames,re)));
+%             if ~isempty(allInd),
+%                 trialnames(allInd) = [];                        
+%             end
+%             re = newTrialName;
+%             allInd = find(~cellfun(@isempty,regexp(trialnames,re)));
+%             if ~isempty(allInd),
+%                 trialnames(allInd) = [];                        
+%             end
+%             Bhv = MTABhv([],'cnsldtd');
+%             newXYZPeriods = [];
+%             for i = 1:length(trialnames),
+%                 Trial = MTATrial(Session,{},trialnames{i},[],0,Session.Maze.name,'minimal');
+%                 newXYZPeriods = cat(1,newXYZPeriods,Trial.xyzPeriods);
+%                 if i==1,
+%                     Bhv.States = Trial.Bhv.States;
+%                     for j = 1:length(Bhv.States),
+%                         Bhv.States{j}.state = Bhv.States{j}.state+Trial.xyzPeriods(1);
+%                     end
+%                 else
+%                     for j = 1:length(Bhv.States),
+%                         Bhv.States{j}.state = cat(1,Bhv.States{j}.state,Trial.Bhv.getState(Bhv.States{j}.label).state+Trial.xyzPeriods(1));
+%                         if i==length(trialnames),
+%                             Bhv.States{j}.state = sort(Bhv.States{j}.state)-min(newXYZPeriods(:));
+%                         end
+%                     end
+%                 end                                
+%             end
+%             newXYZPeriods = sort(newXYZPeriods);
+%             Trial = MTATrial(Session,{},newTrialName,newXYZPeriods,1,Session.Maze.name,'minimal');            
+%             Trial.Bhv = Bhv;
+%             Bhv.save(Trial,1);
+%             Trial.save
+%         end
         
         function Session = filter(Session,varargin)
         %Session = filter(Session,field_name,kernel)       

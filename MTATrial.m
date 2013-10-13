@@ -75,40 +75,17 @@ classdef MTATrial < MTASession
             
             if exist(fullfile(Trial.spath, [Trial.filebase '.trl.mat']),'file')&&~overwrite
                 ds = load(fullfile(Trial.spath, [Trial.filebase '.trl.mat']));
-                Trial.xyzPeriods = ds.xyzPeriods;
+                %Trial.xyzPeriods = ds.xyzPeriods;
+                new_xyzPeriods = ds.xyzPeriods;
                 if isfield(ds,'bhvmode'),
                     if ~isempty(ds.bhvmode)&&exist(fullfile(Trial.spath, [Trial.filebase '.stc.' ds.bhvmode '.mat']),'file')
                         Trial.stc.load(ds.bhvmode);
                     end
                 end
                 if strcmp(mode,'minimal'),
-                    Trial.xyz=[];
-                    Trial.xyzSegLength=[];
+                    Trial.xyz = MTADxyz(Trial.spath,Trial.name,[],[]);
                     return,
                 end
-            elseif ~ischar(new_xyzPeriods)
-                Trial.xyzPeriods = new_xyzPeriods;
-            else
-%                 switch new_xyzPeriods
-%                   case 'default_height_restricted'
-%                     height_violations = [];
-%                     try
-%                         height_violations = ThreshCross(Trial.xyz(:,1,3),300,10);
-%                     end
-%                     if ~isempty(height_violations),
-%                         for i = 1:size(height_violations,1),
-%                             for j = 1:size(Trial.xyzPeriods,1),
-%                                 if height_violations(i,2)>Trial.xyzPeriods(j,1)&height_violations(i,2)<(Trial.xyzPeriods(j,1)+3000),
-%                                     Trial.xyzPeriods(j,1) = height_violations(i,2)+400;
-%                                 elseif height_violations(i,1)<Trial.xyzPeriods(j,2)&height_violations(i,1)>(Trial.xyzPeriods(j,2)-3000),
-%                                     Trial.xyzPeriods(j,2) = height_violations(i,1)-400;
-%                                 else
-%                                     continue
-%                                 end
-%                             end
-%                         end
-%                     end
-%                 end
             end
             
             Trial.trackingMarker = Session.trackingMarker;
@@ -152,11 +129,11 @@ classdef MTATrial < MTASession
 
         function save(Trial)
             bhvmode = [];
-            if ~isempty(Trial.Bhv)
-                bhvmode = Trial.Bhv.mode;
+            if ~isempty(Trial.stc)
+                bhvmode = Trial.stc.mode;
             end
             trialName = Trial.trialName;
-            xyzPeriods = Trial.xyzPeriods;
+            xyzPeriods = Trial.sync.periods(Trial.xyz.sampleRate);
             save(fullfile(Trial.spath,[Trial.filebase '.trl.mat']),'trialName','xyzPeriods','bhvmode');            
         end
 
