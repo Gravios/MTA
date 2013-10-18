@@ -1,18 +1,22 @@
 classdef MTADang < MTAData
+    properties 
+        model
+    end
 
     properties(Transient=true)
         data        % data
     end
     methods
         function Data = MTADang(varargin)
-            [path,filename,data,sampleRate,type,ext] = ...
-                DefaultArgs(varargin,{[],[],[],[],'TimeSeries','ang'});
+            [path,filename,data,sampleRate,model,type,ext] = ...
+                DefaultArgs(varargin,{[],[],[],[],[],'TimeSeries','ang'});
             if ~isempty(filename),
                 if ~strcmp(filename(end-3:end),'.mat'),
                     filename = [filename '.' ext '.mat'];
                 end
             end
             Data = Data@MTAData(path,filename,data,sampleRate,type,ext);
+            Data.model = model;
         end
         
         function Data = create(Data,Session)

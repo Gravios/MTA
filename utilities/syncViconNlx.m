@@ -33,14 +33,15 @@ end
 [xyzData, markers] = concatViconFiles(Session);            
 
 %% Load VSK if possible 
-vsk_path = fullfile(Session.spath, [Session.name '-' Session.Maze.name '.vsk']);
+vsk_path = fullfile(Session.spath, [Session.name '-' Session.maze.name '.vsk']);
 if exist(vsk_path,'file'),
-    Session.Model = MTAModel(vsk_path,'-vsk');
+    model = MTAModel(vsk_path,'-vsk');
 else
     warning(['VSK file associated with this session was ' ...
              'not found. \nCreating a general marker model.']);
-    Session.Model = MTAModel(markers,'-mar');
+    model = MTAModel(markers,'-mar');
 end
+Session.model = model;
 
 %assert(exist([Session.spath Session.name '.all.evt'],'file'))
 % Load events
@@ -114,10 +115,10 @@ xyz = double(xyz);
 
 Session.spk = MTASpk;
 
-Session.xyz = MTADxyz(Session.spath,Session.filebase,xyz,viconSampleRate);
+Session.xyz = MTADxyz(Session.spath,Session.filebase,xyz,viconSampleRate,model);
 Session.xyz.save;
 
-Session.ang = MTADang(Session.spath,Session.filebase,[],viconSampleRate);
+Session.ang = MTADang(Session.spath,Session.filebase,[],viconSampleRate,model);
 Session.ang.save;
 
 Session.save();

@@ -2,7 +2,7 @@ function [xyzData,markers] = concatViconFiles(Session)
 %[xyzData,markers] = concat(Session)
 % Determine number of position tracking 
 % trials and concantenates parts
-dirArray = dir(fullfile(Session.spath, Session.Maze.name));
+dirArray = dir(fullfile(Session.spath, Session.maze.name));
 trialArray = {};
 trialPartSize = {};
 lastTrial = 0;
@@ -28,7 +28,7 @@ xyzData = cell(1,lastTrial);
 number_of_markers = 0;
 for j = 1:lastTrial,
     for k = 1:trialPartSize{j},
-        load(fullfile(Session.spath, Session.Maze.name, trialArray{j,k}));
+        load(fullfile(Session.spath, Session.maze.name, trialArray{j,k}));
         % Check if all parts have the same number of
         % markers as the first part
         if length(markers)~=number_of_markers&&j~=1&&k~=1,

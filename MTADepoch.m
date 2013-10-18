@@ -3,7 +3,6 @@ classdef MTADepoch < MTAData
         data 
         label
         key
-        isComposite = false;
     end
     
     methods
@@ -43,18 +42,18 @@ classdef MTADepoch < MTAData
         function out = save(Data,varargin)
             [overwrite] = DefaultArgs(varargin,{0});
             out = false;
-            if ~Data.isComposite,
-                if ~exist(Data.fpath,'file'),
-                    save( Data.fpath,'Data','-v7.3');
-                    out = true;
-                elseif exist(Data.fpath,'file')&&overwrite,
-                    warning(['Overwriting: ' Data.fpath]);
-                    out = true;
-                    save( Data.fpath,'Data','-v7.3');
-                else
-                    warning(['File exists: ' Data.fpath, ' - flag the overwrite option  to save']);
-                end
+            
+            if ~exist(Data.fpath,'file'),
+                save( Data.fpath,'Data','-v7.3');
+                out = true;
+            elseif exist(Data.fpath,'file')&&overwrite,
+                warning(['Overwriting: ' Data.fpath]);
+                out = true;
+                save( Data.fpath,'Data','-v7.3');
+            else
+                warning(['File exists: ' Data.fpath, ' - flag the overwrite option  to save']);
             end
+            
         end
 
         function Data = create(Data,varargin)
@@ -107,18 +106,17 @@ classdef MTADepoch < MTAData
                     DataCell{i}.resample(msr);
                 end
             end
-            newLabel = ['i' upper(DataCell{1}.key)];
+            newLabel = ['i_' DataCell{1}.key];
             newKey = num2str(randi([0,9],1));
             newData = DataCell{1}.data;
             DataCell(1) = [];
             while ~isempty(DataCell),
-                newLabel = [newLabel upper(DataCell{1}.key)];
+                newLabel = [newLabel DataCell{1}.key];
                 newData = IntersectRanges(newData,DataCell{1}.data);
                 DataCell(1) = [];
             end            
             
             Data = MTADepoch([],[],newData,msr,newLabel,newKey);
-            Data.isComposite = true;
         end
         function join(DataCell)
         end

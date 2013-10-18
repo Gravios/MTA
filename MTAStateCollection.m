@@ -89,7 +89,6 @@ classdef MTAStateCollection < hgsetget
                      return
                  end                                      
                 Stc.states(end+1) = {path};                
-                path.save;
                 return
             end
             [label,key,type,ext] = DefaultArgs(varargin,{[],[],[],[]});
@@ -129,13 +128,12 @@ classdef MTAStateCollection < hgsetget
                                 stci = Stc.gsi(stsNames{i});
                                 if isempty(stci)
                                     if numel(stsNames{i})==1,
-                                        sts{i} = MTADepoch(Stc.path,[],[],[],[],S(n).subs{1},[],[]);
+                                        sts{i} = MTADepoch(Stc.path,[],[],[],[],stsNames{i},[],[]);
                                     else
-                                        sts{i} = MTADepoch(Stc.path,[],[],[],S(n).subs{1},[],[],[]);
+                                        sts{i} = MTADepoch(Stc.path,[],[],[],stsNames{i},[],[],[]);
                                     end
-                                    sts(i) = sts(i).load;
-                                    Stc.addState(sts(i));
-                                    Stc = sts;
+                                    sts{i} = sts{i}.load;
+                                    Stc.addState(sts{i});
                                 else
                                     sts{i} =  Stc.states{stci};
                                 end

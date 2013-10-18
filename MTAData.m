@@ -47,18 +47,51 @@ classdef MTAData < hgsetget
         end
         
         function fpath = fpath(Data)
+        %fpath = fpath(Data)
+        % Concatenate the path and filename fields to create the full path
+        % to the file containing the object's data
+        %
             fpath = fullfile(Data.path,Data.filename);
         end
-        
         function Data = updatePath(Data,path)
+        %Data = updatePath(Data,path)        
+        %
+        % Inputs:
+        %   path - string: new path to the directory where the Objects data
+        %                  should be stored
+        %
+        % Outputs:
+        %   Data - MTAData: Original object passed to this function with an
+        %                   updated path
+        %
             Data.path = path;
         end
-        function Data = updateFilename(Data,path)
-            Data.path = path;
+        function Data = updateFilename(Data,filename)
+        %Data = updateFilename(Data,filename)        
+        %
+        % Inputs:
+        %   filename - string: new filename for the passed object
+        %
+        % Outputs:
+        %   Data - MTAData: Original object passed to this function with an
+        %                   updated filename
+        %
+            Data.filename = filename;
         end
         
         function sdim = size(Data,varargin)
-            if ~isempty(varargin),
+        %sdim = size(Data,dimInd)
+        % Returns the size of the MTAData object's "data" field
+        %
+        % Inputs:
+        %   dimInd - numericArray: indicies of the dimensions. If v 
+        %                            empty all dimesion sizes are
+        %                            returned.
+        %
+        % Outputs:
+        %   sdim - numericArray: contains the size of each dimension
+        %
+            if ~isempty(varargin)&&isempty(cell2mat(varargin)),
                 sdim = size(Data.data,cell2mat(varargin));
             else
                 sdim = size(Data.data);
@@ -66,6 +99,8 @@ classdef MTAData < hgsetget
         end
 
         function Data = clear(Data)
+        %Data = clear(Data)
+        % Clear an MTAData object's data field.
             Data.data = [];
         end
         
@@ -79,7 +114,17 @@ classdef MTAData < hgsetget
                 if numel(S.subs)==0,
                     Data = Data.data;
                 elseif numel(S.subs)==1,
-                    Data = Data.data(S.subs);
+                    if size(S.subs{1},1)==1&&size(S.subs{1},2)>2||...
+                       size(S.subs{1},2)==1&&size(S.subs{1},1)>2||...
+                       strcmp(S.subs{1},':'),
+                   
+                        Data = Data.data(S.subs{1});
+                    else
+                        S.subs = S.subs(~cellfun(@isempty,S.subs));
+                        Sa = S;
+                        Sa.subs{1} = ':';
+                        Data = SelectPeriods(builtin('subsref',Data.data,Sa),S.subs{1},'c');
+                    end
                 elseif size(S.subs{1},1)==1&&size(S.subs{1},2)>2||...
                         size(S.subs{1},2)==1&&size(S.subs{1},1)>2||...
                         strcmp(S.subs{1},':'),

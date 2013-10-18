@@ -69,10 +69,10 @@ classdef MTASession < hgsetget
         trialName      
 
         %Maze - MTAMaze: Object containing all maze information
-        Maze           
+        maze           
 
         %Model - MTAModel: Object contianing all marker information
-        Model          
+        model          
 
         %xyz - numericArray: (time,marker,dimension) XYZ position of each marker 
         xyz 
@@ -90,13 +90,13 @@ classdef MTASession < hgsetget
         stc
 
         %Fet - MTAFet: Object containing behavioral features
-        Fet
+        fet
 
         %lfp - numericArray: (time,channel) local field potential
         lfp
 
         %Pfs - cellArray: MTAPlaceField objects containing all information af a place field
-        Pfs = {};
+        pfs = {};
 
         %ccg - cellArray: MTAccg objects containing all information af a ccg
         ccg = {};
@@ -138,8 +138,8 @@ classdef MTASession < hgsetget
                 Session.name = name;
                 Session.spath = fullfile(Session.path.data,Session.name);
                 Session.trialName = 'all';
-                Session.Maze = MTAMaze(mazeName);
-                Session.filebase = [Session.name '.' Session.Maze.name '.' Session.trialName];
+                Session.maze = MTAMaze(mazeName);
+                Session.filebase = [Session.name '.' Session.maze.name '.' Session.trialName];
                 if exist(fullfile(Session.spath, [Session.filebase, '.ses.mat']),'file')&&~overwrite
                     Session = Session.load();
                     Session = Session.updatePaths();
@@ -147,7 +147,7 @@ classdef MTASession < hgsetget
                     warning(['Overwriting Session: ' fullfile(Session.spath, [Session.filebase, '.ses.mat'])])
                     Session.create(xyzSampleRate,TTLValue,xyzSystem,ephySystem);
                 else
-                    warning(['Subsession with maze, ' Session.Maze.name ', does not exist: creating session']);
+                    warning(['Subsession with maze, ' Session.maze.name ', does not exist: creating session']);
                     Session.create(xyzSampleRate,TTLValue,xyzSystem,ephySystem);
                 end  
                 
@@ -240,9 +240,9 @@ classdef MTASession < hgsetget
         %  diffMat - numericArray: (index,marker1,marker2,dim)
         %
             xl = Session.xyz.size(1);
-            diffMat = zeros(xl,Session.Model.N,Session.Model.N,3);
-            for i=1:Session.Model.N,
-                for j=1:Session.Model.N,
+            diffMat = zeros(xl,Session.model.N,Session.model.N,3);
+            for i=1:Session.model.N,
+                for j=1:Session.model.N,
                     diffMat(:,i,j,:) = Session.xyz(:,j,:)-Session.xyz(:,i,:);
                 end
             end
@@ -252,8 +252,8 @@ classdef MTASession < hgsetget
             %angles = transformOrigin(Session, origin, orientationVector, vectorTranSet)   
             diffMat = Session.markerDiffMatrix();
             mdvlen = size(diffMat,1);
-            origin = Session.Model.gmi(origin);
-            orientationVector = Session.Model.gmi(orientationVector);
+            origin = Session.model.gmi(origin);
+            orientationVector = Session.model.gmi(orientationVector);
             
             % Get transformation Matricies
             [rz,     rzMat, direction] = rotZAxis(squeeze(diffMat(:,origin,orientationVector,:)));
@@ -267,10 +267,10 @@ classdef MTASession < hgsetget
             if ~isempty(vectorTranSet),
                 vecTSet = zeros(mdvlen,length(vectorTranSet),3);
                 for i = 1:length(vectorTranSet),
-                    rztrans = sum(rzMat.* repmat(permute(shiftdim(squeeze(diffMat(:,origin,Session.Model.gmi(vectorTranSet(i)),:)),-1),[2 1 3]),[1 3 1]),3);
+                    rztrans = sum(rzMat.* repmat(permute(shiftdim(squeeze(diffMat(:,origin,Session.model.gmi(vectorTranSet(i)),:)),-1),[2 1 3]),[1 3 1]),3);
                     rytrans = sum(ryMat.* repmat(permute(shiftdim(rztrans,-1),[2 1 3]),[1 3 1]),3);
                     vecTSet(:,i,:) = rytrans;
-                    tCMarkers(end+1) = Session.Model.gmi(vectorTranSet(i)); %#ok<*AGROW>
+                    tCMarkers(end+1) = Session.model.gmi(vectorTranSet(i)); %#ok<*AGROW>
                 end
                 % detect head roll and remove by transformation
                 [tCoordinates, roll] = detectRoll(vecTSet);
@@ -282,16 +282,16 @@ classdef MTASession < hgsetget
         function v = vel(Session,varargin)
         %v = vel(Session,varargin)
         %calculate the speed of marker(s)
-        %[marker,dim] = DefaultArgs(varargin,{[1:Session.Model.N],[1:size(Session.xyz,3)]});
-            [marker,dim] = DefaultArgs(varargin,{1:Session.Model.N, 1:size(Session.xyz,3)});
+        %[marker,dim] = DefaultArgs(varargin,{[1:Session.model.N],[1:size(Session.xyz,3)]});
+            [marker,dim] = DefaultArgs(varargin,{1:Session.model.N, 1:size(Session.xyz,3)});
             v = sqrt(sum(diff(Session.xyz(:,marker,dim),1).^2,3));
         end            
 
         function a = acc(Session,varargin)
         %a = acc(Session,varargin)
         %calculate the acceleration of marker(s)
-        %[marker,dim] = DefaultArgs(varargin,{[1:Session.Model.N],[1:size(Session.xyz,3)]});
-            [marker,dim,padded] = DefaultArgs(varargin,{1:Session.Model.N, 1:size(Session.xyz,3),1});
+        %[marker,dim] = DefaultArgs(varargin,{[1:Session.model.N],[1:size(Session.xyz,3)]});
+            [marker,dim,padded] = DefaultArgs(varargin,{1:Session.model.N, 1:size(Session.xyz,3),1});
             a = diff(Session.vel(marker,dim),1);
             if padded==1
                 a = cat(1,a(1,:),a,a(end,:));
@@ -305,13 +305,13 @@ classdef MTASession < hgsetget
         %
         %Examples:
         %  Find the center of mass of the session model
-        %    center_of_mass = Session.com(Session.Model);
+        %    center_of_mass = Session.com(Session.model);
         %
         %  Select a model based on a subset of markers from a larger model
-        %    Model = Session.Model.rb({'head_back','head_left','head_front','head_right'});
+        %    Model = Session.model.rb({'head_back','head_left','head_front','head_right'});
         %    center_of_mass = Session.com(Model);
         %
-            center_of_mass = mean(Session.xyz(:,Session.Model.gmi(Model.ml()),:),2);
+            center_of_mass = mean(Session.xyz(:,Session.model.gmi(Model.ml()),:),2);
         end
 
         %%---------------------------------------------------------------------------------%
@@ -652,13 +652,13 @@ classdef MTASession < hgsetget
             [depth] = DefaultArgs(varargin,{3});
             
             dist = Session.ang(:,:,:,3);
-            dist_std = zeros(Session.Model.N,Session.Model.N,depth);
-            dist_mean = zeros(Session.Model.N,Session.Model.N,depth);
-            dist_error = zeros(size(Session.xyz,1),Session.Model.N,Session.Model.N,depth);
+            dist_std = zeros(Session.model.N,Session.model.N,depth);
+            dist_mean = zeros(Session.model.N,Session.model.N,depth);
+            dist_error = zeros(size(Session.xyz,1),Session.model.N,Session.model.N,depth);
             fdist = sum(sum(dist,2),3);
             zdist = (fdist-mean(fdist(~isnan(fdist))))/std(fdist(~isnan(fdist)));
-            for i = 1:Session.Model.N,
-                for j = 1:Session.Model.N,
+            for i = 1:Session.model.N,
+                for j = 1:Session.model.N,
                     tdist = sq(dist(:,i,j));
                     dist_std(i,j,1)  =  std(tdist(~dist_error(:,i,j,1)&~isnan(tdist)&zdist<1));
                     dist_mean(i,j,1) = mean(tdist(~dist_error(:,i,j,1)&~isnan(tdist)&zdist<1));
@@ -670,8 +670,8 @@ classdef MTASession < hgsetget
                     end
                 end
             end
-            Session.Model.imdMean = dist_mean;
-            Session.Model.imdStd = dist_std;
+            Session.model.imdMean = dist_mean;
+            Session.model.imdStd = dist_std;
 
             % Find Index within the Session with Best Fit - Though
             % best to select it by eye
@@ -681,7 +681,7 @@ classdef MTASession < hgsetget
                 model_index = model_index(randi(length(model_index)));
                 if model_index, break, end
             end    
-            Session.Model.index = model_index;                    
+            Session.model.index = model_index;                    
         end
 
 
@@ -703,12 +703,12 @@ classdef MTASession < hgsetget
 %         %
 % 
 %             [markerSubset,depth,modelIndex,display] = DefaultArgs(varargin,{{'head_back','head_left','head_front','head_right','head_top'},3,[],0});
-%             if size(Session.Model.imdMean,3)~=3|Session.Model.index==0,
+%             if size(Session.model.imdMean,3)~=3|Session.model.index==0,
 %                 Session = Session.updateModel(depth);
 %             end
-%             rb = Session.Model.rb(markerSubset);
-%             if ~isempty(modelIndex), Session.Model.index = modelIndex; end
-%             pose = sq(Session.xyz(Session.Model.index,Session.Model.gmi(markerSubset),:));
+%             rb = Session.model.rb(markerSubset);
+%             if ~isempty(modelIndex), Session.model.index = modelIndex; end
+%             pose = sq(Session.xyz(Session.model.index,Session.model.gmi(markerSubset),:));
 %             for i = 1:size(Session.xyzPeriods,1),
 %                 Temp = MTATrial(Session,{},[],Session.xyzPeriods(i,:));
 %                 Temp = CorrectRigidBody(Temp,rb,pose);
@@ -723,7 +723,7 @@ classdef MTASession < hgsetget
 %         %
 % 
 %             [markerSubset] = DefaultArgs(varargin,{{'head_back','head_left','head_front','head_right','head_top'}});
-%             rb = Session.Model.rb(markerSubset);
+%             rb = Session.model.rb(markerSubset);
 %             for i = 1:size(Session.xyzPeriods,1),
 %                 Temp = MTATrial(Session,{},[],Session.xyzPeriods(i,:));
 %                 Temp = CorrectPointErrors(Temp,rb);
@@ -749,10 +749,10 @@ classdef MTASession < hgsetget
         %
 
             Marker = MTAMarker(name,color);
-            Session.Model.Markers{end+1} = Marker;
-            Session.Model.N = Session.Model.N + 1;
+            Session.model.Markers{end+1} = Marker;
+            Session.model.N = Session.model.N + 1;
             for i = 1:length(sticks),
-                Session.Model.Connections{end+1} = MTAStick(sticks{i}{1},sticks{i}{2},sticks{i}{3});
+                Session.model.Connections{end+1} = MTAStick(sticks{i}{1},sticks{i}{2},sticks{i}{3});
             end
             Session.xyz = cat(2,Session.xyz,xyz);
         end
@@ -880,7 +880,7 @@ classdef MTASession < hgsetget
                     if objFileSize{i}>100000000,continue,end
                     obj = load([Session.spath objFileList{i}]);
                     type = fieldnames(obj);
-                    if strcmp(obj.(type{1}).mazeName,Session.Maze.name),
+                    if strcmp(obj.(type{1}).mazeName,Session.maze.name),
                         Session.(Object_File_Tag){end+1} = obj.(type{1});
                     end
                 end
@@ -932,11 +932,11 @@ classdef MTASession < hgsetget
             tempSession = Session;
             for i = 1:length(triallist),
                 if ~strcmp(Session.trialName,triallist{i})
-                    Session = MTATrial(Session.name,{},triallist{i},[],0,Session.Maze.name);
+                    Session = MTATrial(Session.name,{},triallist{i},[],0,Session.maze.name);
                 end
                 bhvModeNames = {};
                 files = dir(Session.spath);
-                re = [Session.name '\.' Session.Maze.name '\.' Session.trialName '\.bhv\.'];
+                re = [Session.name '\.' Session.maze.name '\.' Session.trialName '\.bhv\.'];
                 bhvFileList = {files(~cellfun(@isempty,regexp({files.name},re))).name};
                 bhvDnumList = {files(~cellfun(@isempty,regexp({files.name},re))).datenum};
                 re = ['\.mat']; 
@@ -957,7 +957,7 @@ classdef MTASession < hgsetget
 % 
 %         function Trial = consolidateTrials(Session,varargin)
 %             if ~isa(Session,'MTASession')&isa(Session,'MTATrial'),
-%                 Session = MTASession(Session.name,{},Session.Maze.name);
+%                 Session = MTASession(Session.name,{},Session.maze.name);
 %             end
 %             [newTrialName,trialnames] = DefaultArgs(varargin,{'cnsldtd',Session.list_trialNames});
 %             re = 'all';
@@ -973,7 +973,7 @@ classdef MTASession < hgsetget
 %             Bhv = MTABhv([],'cnsldtd');
 %             newXYZPeriods = [];
 %             for i = 1:length(trialnames),
-%                 Trial = MTATrial(Session,{},trialnames{i},[],0,Session.Maze.name,'minimal');
+%                 Trial = MTATrial(Session,{},trialnames{i},[],0,Session.maze.name,'minimal');
 %                 newXYZPeriods = cat(1,newXYZPeriods,Trial.xyzPeriods);
 %                 if i==1,
 %                     Bhv.States = Trial.Bhv.States;
@@ -990,7 +990,7 @@ classdef MTASession < hgsetget
 %                 end                                
 %             end
 %             newXYZPeriods = sort(newXYZPeriods);
-%             Trial = MTATrial(Session,{},newTrialName,newXYZPeriods,1,Session.Maze.name,'minimal');            
+%             Trial = MTATrial(Session,{},newTrialName,newXYZPeriods,1,Session.maze.name,'minimal');            
 %             Trial.Bhv = Bhv;
 %             Bhv.save(Trial,1);
 %             Trial.save

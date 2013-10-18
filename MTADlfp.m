@@ -15,8 +15,11 @@ classdef MTADlfp < MTAData
         end        
         function Data = load(Data,Session,varargin)
             lfpSync = Session.sync.periods(Session.lfp.sampleRate);
-            [channels,periods] = DefaultArgs(varargin,{1,lfpSync([1,end])});
+            [channels,gselect,periods] = DefaultArgs(varargin,{[],{'AnatGrps',1,1},lfpSync([1,end])});
             Par = LoadPar(fullfile(Session.spath, [Session.name '.xml']));
+            if isempty(channels)
+                channels = Par.(gselect{1})(gselect{2}).Channels(gselect{3});
+            end
             Data.data = LoadBinary(Data.fpath,channels,...
                                    Par.nChannels,[],[],[],periods)';
         end
