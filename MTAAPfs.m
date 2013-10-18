@@ -31,19 +31,18 @@ classdef MTAApfs < MTAAnalysis
             
             Pfs.ext = 'pfs';
             
-            [units,states,overwrite,name,type,spkShuffle,posShuffle,numIter,smooth,binDims,constrained_to_maze]=DefaultArgs(varargin,{[],'walk',0,'all','xy','n',0,1,0.03,[20,20,40],1});
+            [units,states,overwrite,tag,type,spkShuffle,posShuffle,numIter,smooth,binDims,constrained_to_maze]=DefaultArgs(varargin,{[],'walk',0,'all','xy','n',0,1,0.03,[20,20,40],1});
             % Use parameters to populate database            
-            Pfs.genPath;
-
-            Pfs.mdata.sessionName = SessionName;
-            Pfs.mdata.trialName   = TrialName;
-            Pfs.mdata.mazeName    = MazeName;
-            Pfs.mdata.name        = name;
             
+            Pfs.path = Session.spath;
+            Pfs.tag        = tag;
+            
+            Pfs.session.name = SessionName;
+            Pfs.session.trialName   = TrialName;
+            Pfs.session.mazeName    = MazeName;
 
             pfsState = Session.stc{states,s.xyz.sampleRate};
-            
-            
+
             Pfs.parameters.states = pfsState.label;
             Pfs.parameters.type   = type;
             Pfs.parameters.spkShuffle = spkShuffle;
@@ -53,26 +52,34 @@ classdef MTAApfs < MTAAnalysis
             Pfs.parameters.binDims = binDims;
             Pfs.parameters.constrained_to_maze = constrained_to_maze;
 
-
+            Pfs.adata.bins = [];
+                        
+            Pfs.updateFileName(tag);
             
-            %% Load State specific periods
-            pfsState = Session.stc{states,s.xyz.sampleRate};
-            if isempty(name)
-                pf_tmpfile = [Session.spath.analysis Session.filebase ...
-                    '.pfs.' type '.' Session.trackingMarker '.' pfsState.label '.' ...
-                    spkShuffle num2str(posShuffle) 'bs' num2str(numIter) 'sm' num2str(smooth*100) 'bn' num2str(nbins) '.mat'];
-            else
-                pf_tmpfile = [Session.spath.analysis Session.filebase '.Pfs.' name '.mat'];
+            % load existing data
+            if exist(pf_tmpfile,'file')&&overwrite~=1,
+                load(pf_tmpfile);
+                return
             end
-
+            Session.spk.create(Session.xyz.sampleRaet,pfsState.label,units);
             
-            
-            % Pre-process data
-
         end
         
-        function Pfs = genPath(Pfs)
-        end
+
+        function Pfs = updateFilename(Pfs,Session,varargin)
+            Pfs.tag= varargin{1};
+
+            pfsState = Session.stc{states,s.xyz.sampleRate};
+            if isempty(Pfs.tag)
+                binDimTag = num2str(binDims);
+                binDimTag(isspace(binDimTag)) = '_';
+                pf_tmpfile = fullfile(Pfs.path, [Session.filebase ...
+                    '.pfs.' type '.' Session.trackingMarker '.' pfsState.label '.' ...
+                    spkShuffle num2str(posShuffle) 'bs' num2str(numIter) 'sm' num2str(smooth*100) 'bd' binDimTag '.mat']);
+            else
+                pf_tmpfile = fullfile(Session.spath.analysis, [Session.filebase '.Pfs.' Pfs.tag '.mat']);
+            end
+
     end
     
 end
