@@ -10,8 +10,8 @@ classdef MTAAnalysis < hgsetget
         data
     end
 
-    methods (Abstract)
-        Anal = MTAAnalysis(parameters, funcHandle, varargin)
-        Anal= genPath(Anal)
+    methods 
+        function Anal = MTAAnalysis(parameters)
+        end
     end
 end

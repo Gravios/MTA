@@ -1,4 +1,7 @@
 classdef MTADlfp < MTAData
+    properties 
+        model = [];
+    end
     properties(Transient=true)
         data        % data
     end

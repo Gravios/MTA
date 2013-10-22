@@ -5,11 +5,12 @@ classdef MTAData < hgsetget
         path        % path to file containing object
         type        % TimeSeries,TimePeriods,TimePoints,SpatialBins
         ext
-        sampleRate  % Sampling rate of data        
+        sampleRate  % Sampling rate of data
     end
     
     properties (Abstract)
         data        % data
+        model
     end
     
     methods
@@ -111,6 +112,14 @@ classdef MTAData < hgsetget
         function Data = subsref(Data,S)
             ni = numel(S);
             if strcmp(S(1).type,'()')&&ni==1,
+                modelRef = (cellfun(@numel,S(1).subs(2:end))>1).*cellfun(@ischar,S(1).subs(2:end));
+                if sum(modelRef)>0&&~isempty(Data.model),
+                    mri = find(modelRef)+1;
+                    for  i = mri,
+                        S(1).subs{i} = Data.model.gmi(S(1).subs{i});
+                    end
+                end
+                
                 if numel(S.subs)==0,
                     Data = Data.data;
                 elseif numel(S.subs)==1,
@@ -139,10 +148,7 @@ classdef MTAData < hgsetget
             end
             for n = 1:ni,
                 if isa(Data,'MTAData'),
-%                     dbreak = false;
-%                     if ismethod(Data,S(n).subs),dbreak = true;end
                     Data = builtin('subsref',Data,S(n:end));
-%                     if dbreak,break,end
                     break
                 else
                     Data = subsref(Data,S(n));

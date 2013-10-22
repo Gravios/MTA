@@ -115,10 +115,10 @@ xyz = double(xyz);
 
 Session.spk = MTASpk;
 
-Session.xyz = MTADxyz(Session.spath,Session.filebase,xyz,viconSampleRate,model);
+Session.xyz = MTADxyz(Session.spath,Session.filebase,xyz,viconSampleRate,Session.model);
 Session.xyz.save;
 
-Session.ang = MTADang(Session.spath,Session.filebase,[],viconSampleRate,model);
+Session.ang = MTADang(Session.spath,Session.filebase,[],viconSampleRate,Session.model);
 Session.ang.save;
 
 Session.save();

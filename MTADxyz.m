@@ -4,7 +4,6 @@ classdef MTADxyz < MTAData
         model
     end
     properties(Transient=true)
-        
         data        % data
     end
     methods

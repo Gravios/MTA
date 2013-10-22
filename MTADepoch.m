@@ -3,6 +3,7 @@ classdef MTADepoch < MTAData
         data 
         label
         key
+        model = [];
     end
     
     methods
