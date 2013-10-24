@@ -67,6 +67,12 @@ classdef MTASpk < hgsetget
             Data = builtin('subsref',Data,S);
         end
         
+        function Data = clear(Data)
+            Data.res = [];
+            Data.clu = [];
+            Data.sampleRate = [];
+        end
+        
         
     end
 end

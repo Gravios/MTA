@@ -120,11 +120,21 @@ classdef MTAData < hgsetget
                     end
                 end
                 
+                % Convert MTAepoch to nx2 matrix and resample if necessary
+                epicDataInd = find(cellfun(@isa,S(1).subs,repmat({'MTADepoch'},1,numel(S(1).subs))));                
+                for i = epicDataInd,
+                    epoch = S(1).subs{i}.copy;
+                    if Data.sampleRate~=epoch.sampleRate,
+                        epoch.resample(Data.sampleRate);
+                    end
+                    S(1).subs{i} = epoch.data;
+                end
+                
                 if numel(S.subs)==0,
                     Data = Data.data;
                 elseif numel(S.subs)==1,
-                    if size(S.subs{1},1)==1&&size(S.subs{1},2)>2||...
-                       size(S.subs{1},2)==1&&size(S.subs{1},1)>2||...
+                    if (size(S.subs{1},1)==1&&size(S.subs{1},2)>2)||...
+                       (size(S.subs{1},2)==1&&size(S.subs{1},1)>2)||...
                        strcmp(S.subs{1},':'),
                    
                         Data = Data.data(S.subs{1});
@@ -134,8 +144,8 @@ classdef MTAData < hgsetget
                         Sa.subs{1} = ':';
                         Data = SelectPeriods(builtin('subsref',Data.data,Sa),S.subs{1},'c');
                     end
-                elseif size(S.subs{1},1)==1&&size(S.subs{1},2)>2||...
-                        size(S.subs{1},2)==1&&size(S.subs{1},1)>2||...
+                elseif (size(S.subs{1},1)==1&&size(S.subs{1},2)>2)||...
+                        (size(S.subs{1},2)==1&&size(S.subs{1},1)>=2)||...
                         strcmp(S.subs{1},':'),
                     Data = builtin('subsref',Data.data,S);
                 else
