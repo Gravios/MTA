@@ -1,122 +1,82 @@
 function [RateMap, Bins, MRate, SI, Spar] = PlotPF(Session,spkpos,pos,varargin)
-[binDims,Smooth,type] = DefaultArgs(varargin,{50,[],'xy'});
+[binDims,SmoothingWeights,type] = DefaultArgs(varargin,{50,[],'xy'});
 
-Nbin = diff(Session.maze.boundaries(1:numel(binDims),:),1,2)./binDims';
+ndims = numel(binDims);
+bound_lims = Session.maze.boundaries(1:ndims,:);
+Nbin = diff(bound_lims,1,2)./binDims';
+
+if isempty(SmoothingWeights)
+  SmoothingWeights = Nbin./30;
+end
 
 %% Constraint to maze is forced
 switch type
-  case 'xy'
-    Xmin = Session.maze.boundaries(1,1);
-    Xmax = Session.maze.boundaries(1,2);
-    Ymin = Session.maze.boundaries(2,1);
-    Ymax = Session.maze.boundaries(2,2);
-
-    %% scaling factor for rounding position
-    dx = Xmax - Xmin; 
-    dy = Ymax - Ymin; 
-    k = [Nbin(1)/dx Nbin(2)/dy];
-
-    %% matrix size
-    msize = round([sum(abs([Xmin,Xmax]))*k(1) sum(abs([Ymin,Ymax]))*k(2)]);
-
-    Bin1 = ([1:msize(1)]-1)/k(1) + Xmin+round(k(1)^-1/2);
-    Bin2 = ([1:msize(2)]-1)/k(2) + Ymin+round(k(2)^-1/2);    
-    Bins = [Bin1(:),Bin2(:)];
-
-   case 'xyz'
-     Xmin = Session.Maze.boundaries(1,1);
-     Xmax = Session.Maze.boundaries(1,2);
-     Ymin = Session.Maze.boundaries(2,1);
-     Ymax = Session.Maze.boundaries(2,2);
-     Zmin = Session.Maze.boundaries(2,1);
-     Zmax = Session.Maze.boundaries(2,2);
- 
-     %% scaling factor for rounding position
-     dx = Xmax - Xmin; 
-     dy = Ymax - Ymin; 
-     dz = Zmax - Zmin; 
-     k = Nbin./[dx;dy;dz];
- 
-     %% matrix size
-     msize = round(sum(abs([Xmin,Xmax;Ymin,Ymax;Zmin,Zmax]))'.*k);
- 
-     Bin1 = ([1:msize(1)]-1)/k(1) + Xmin+round(k(1)^-1/2);
-     Bin2 = ([1:msize(2)]-1)/k(2) + Ymin+round(k(2)^-1/2);    
-     Bin3 = ([1:msize(2)]-1)/k(3) + Ymin+round(k(3)^-1/2);    
-     Bins = [Bin1(:),Bin2(:),Bin3(:)];    
-
-  case 'pfcrz'
-    switch Session.Maze.shape
-      case 'circle'
-        Xmin = 0;
-        Xmax = Session.Maze.boundaries(1,2)-Session.Maze.boundaries(1,1);
-        Ymin = Session.Maze.boundaries(3,1);
-        Ymax = Session.Maze.boundaries(3,2);
-
-        %% scaling factor for rounding position
-        dx = Xmax - Xmin; 
-        dy = Ymax - Ymin; 
-        k = [Nbin/dx Nbin/dy];
-
-        %% matrix size
-        msize = round([sum(abs([Xmin,Xmax]))*k(1) sum(abs([Ymin,Ymax]))*k(2)]);
-
-        Bin1 = ([1:msize(1)]-1)/k(1);
-        Bin2 = ([1:msize(2)]-1)/k(2);
-        Bins = [Bin1(:),Bin2(:)];
-
-      case 'square'
-    end
-
+    case 'pfcrz'
+        switch Session.Maze.shape
+            case 'circle'
+                Xmin = 0;
+                Xmax = Session.Maze.boundaries(1,2)-Session.Maze.boundaries(1,1);
+                Ymin = Session.Maze.boundaries(3,1);
+                Ymax = Session.Maze.boundaries(3,2);
+                %% scaling factor for rounding position
+                dx = Xmax - Xmin;
+                dy = Ymax - Ymin;
+                k = [Nbin/dx Nbin/dy];
+                %% matrix size
+                msize = round([sum(abs([Xmin,Xmax]))*k(1) sum(abs([Ymin,Ymax]))*k(2)]);
+                Bin1 = ([1:msize(1)]-1)/k(1);
+                Bin2 = ([1:msize(2)]-1)/k(2);
+                Bins = [Bin1(:),Bin2(:)];
+            case 'square'
+        end
+        
+    otherwise
+        Bins = cell(1,ndims);
+        k = Nbin./diff(bound_lims,1,2);
+        msize = round(sum(abs(bound_lims),2).*k);
+        for i = 1:ndims
+            Bins{i} = ([1:msize(i)]'-1)./repmat(k(i)',msize(i),1)+repmat(bound_lims(i,1),msize(i),1)+round(repmat(k(i)',msize(i),1).^-1/2);
+        end
 end
 
 
 
 %% rounded position
-X = round((pos(:,1)-Xmin)*k(1))+1;
-Y = round((pos(:,2)-Ymin)*k(2))+1;
+Pos = round((pos-repmat(bound_lims(:,1)',size(pos,1),1)).*repmat(k',size(pos,1),1))+1;
 
 %% Push back in any stray bins
-X(X>Nbin(1)) = Nbin(1);
-Y(Y>Nbin(2)) = Nbin(2);
-X(X<1) = 1;
-Y(Y<1) = 1;
-
-
-%% Occupancy
-Occ = Accumulate([X Y],1,msize)./Session.xyz.sampleRate;
-
-%% spike count
-spikep(:,1) = round((spkpos(:,1)-Xmin)*k(1))+1;
-spikep(:,2) = round((spkpos(:,2)-Ymin)*k(2))+1;
-Count = Accumulate(spikep,1,msize);
-
-%% smooth
-if isempty(Smooth)
-  Smooth = Nbin/3000;
+for i = 1:ndims
+    Pos(Pos(:,i)>Nbin(i),i) = Nbin(i);
+    Pos(Pos(:,i)<1,i) = 1;
 end
-
-r1 = (-msize(1):msize(1))/msize(1);
-r2 = (-msize(2):msize(2))/msize(2);
+Occupancy = Accumulate(Pos,1,msize')./Session.xyz.sampleRate;
 
 
-% $$$ [x,y,z] = meshgrid(-msize(1):msize(1),-msize(2):msize(2),-msize(3):msize(3));
-% $$$ [x,y,z] = meshgrid([-25:25]);
-% $$$ Smoother = exp(-x.^2/Smooth^2/2-y.^2/Smooth^2/2-z.^2/Smooth^2/2);
-% $$$ Smoother = Smoother./sum(Smoother(:));
+spkpos = round((spkpos-repmat(bound_lims(:,1)',size(spkpos,1),1)).*repmat(k',size(spkpos,1),1))+1;
+for i = 1:ndims
+    spkpos(spkpos(:,i)>Nbin(i),i) = Nbin(i);
+    spkpos(spkpos(:,i)<1,i) = 1;
+end
+SpikeCount = Accumulate(spkpos,1,msize');
 
 
+sind = cell(1,ndims);
+for i = 1:ndims,
+    sind{i} = linspace(-round(msize(i)/2),round(msize(i)/2),msize(i));
+end
+[sind{:}] = meshgrid(sind{:});
+for i = 1:ndims,
+    sind{i} = sind{i}.^2/SmoothingWeights(i)^2/2;
+end
+Smoother = exp(sum(-cat(ndims+1,sind{:}),ndims+1));
+Smoother = Smoother./sum(Smoother(:));
 
-Smoother1 = exp(-r1.^2/Smooth^2/2);
-Smoother1 = Smoother1/sum(Smoother1);
-Smoother2 = exp(-r2.^2/Smooth^2/2);
-Smoother2 = Smoother2/sum(Smoother2);
 
-SCount = conv2(Smoother1,Smoother2,Count,'same');
-SOcc = conv2(Smoother1,Smoother2,Occ,'same');
+SOcc = convn(Occupancy,Smoother,'same');
+SCount = convn(SpikeCount,Smoother,'same');
 
 
-OccThresh = 0.06;
+OccThresh = 0.01;
 %% Find the total occupancy and each pixels 
 %% probability of occupancy
 gtind = SOcc>OccThresh;

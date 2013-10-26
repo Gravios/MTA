@@ -36,7 +36,7 @@ classdef MTAApfs < hgsetget %< MTAAnalysis
             
             Pfs.ext = 'pfs';
             
-            [units,states,overwrite,tag,type,spkShuffle,posShuffle,numIter,smooth,binDims]=DefaultArgs(varargin,{[],'walk',0,[],'xy','n',0,1,0.03,[20,20]});
+            [units,states,overwrite,tag,binDims,type,spkShuffle,posShuffle,numIter,smooth]=DefaultArgs(varargin,{[],'walk',0,[],[20,20],'xy','n',0,1,[]});
             % Use parameters to populate database            
             
             Pfs.path = Session.spath;
@@ -126,10 +126,10 @@ classdef MTAApfs < hgsetget %< MTAAnalysis
                                      'meanRate',   zeros(1,numNewUnits),...
                                      'si',         zeros(1,numNewUnits),...
                                      'spar',       zeros(1,numNewUnits));
-                end
-                field = fieldnames(newdata);
-                for f = 1:numel(field);
-                    Pfs.data.(field{f}) = cat(2,Pfs.data.(field{f}),newdata.(field{f}));
+                    field = fieldnames(newdata);
+                    for f = 1:numel(field);
+                        Pfs.data.(field{f}) = cat(2,Pfs.data.(field{f}),newdata.(field{f}));
+                    end
                 end
                 dind = [oldUnitInds(:)',[tnumUnits-numNewUnits+1:tnumUnits]];
             end
@@ -194,14 +194,20 @@ classdef MTAApfs < hgsetget %< MTAAnalysis
             [ifColorbar,colorLimits] = DefaultArgs(varargin,{0,[]});
             switch Pfs.parameters.type
                 case 'xy'
-                    bin1 = Pfs.adata.bins(:,1);
-                    bin2 = Pfs.adata.bins(:,2);
+                    bin1 = Pfs.adata.bins{1};
+                    bin2 = Pfs.adata.bins{2};
                     rateMap = reshape(Pfs.data.rateMap(:,Pfs.data.clu==unit,1),numel(bin1),numel(bin2));
                     imagescnan({bin1,bin2,rateMap'},colorLimits,[],ifColorbar,[0,0,0]);
                     if ~isempty(rateMap)&&~isempty(bin1)&&~isempty(bin2),
                         text(bin1(1)+30,bin2(end)-50,sprintf('%2.1f',max(rateMap(:))),'Color','w','FontWeight','bold','FontSize',10)
                     end
                     axis xy
+                case 'xyz'
+                    var = cat(2,Pfs.adata.bins,{reshape(Pfs.data.rateMap(:,Pfs.data.clu==unit,1),cellfun(@numel,Pfs.adata.bins))},{max(Pfs.data.rateMap(:,Pfs.data.clu==unit,1))/2});
+                    isosurface(var{:});
+                    xlim([min(Pfs.adata.bins{1}),max(Pfs.adata.bins{1})]);
+                    ylim([min(Pfs.adata.bins{2}),max(Pfs.adata.bins{2})]);
+                    zlim([min(Pfs.adata.bins{3}),max(Pfs.adata.bins{3})]);
             end
         end
 
