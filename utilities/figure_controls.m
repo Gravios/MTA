@@ -1,7 +1,8 @@
 function index = figure_controls(hfig,index)
 
-waitforbuttonpress
+B = waitforbuttonpress;
 whatkey = get(hfig,'CurrentCharacter');
+if ~B,return,end
 switch double(whatkey)
   case double('i')
     index = input('Enter index #: ');

@@ -69,7 +69,7 @@ classdef MTATrial < MTASession
             Trial = Trial@MTASession(Session,{},mazeName);
             
             Trial.trialName = trialName;
-            Trial.filebase = [Trial.name '.' Trial.Maze.name '.' Trial.trialName];
+            Trial.filebase = [Trial.name '.' Trial.maze.name '.' Trial.trialName];
             Trial.stc.updateFilename(Trial.filebase);
             
             
@@ -79,7 +79,9 @@ classdef MTATrial < MTASession
                 new_xyzPeriods = ds.xyzPeriods;
                 if isfield(ds,'bhvmode'),
                     if ~isempty(ds.bhvmode)&&exist(fullfile(Trial.spath, [Trial.filebase '.stc.' ds.bhvmode '.mat']),'file')
-                        Trial.stc.load(ds.bhvmode);
+                        Trial.stc.updateFilename([Trial.filebase '.stc.' ds.bhvmode '.mat']);
+                        Trial.stc.load;
+                        Trial.stc.updateSync(Trial.sync);
                     end
                 end
                 if strcmp(mode,'minimal'),

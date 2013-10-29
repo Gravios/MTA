@@ -92,7 +92,7 @@ classdef MTAData < hgsetget
         % Outputs:
         %   sdim - numericArray: contains the size of each dimension
         %
-            if ~isempty(varargin)&&isempty(cell2mat(varargin)),
+            if ~isempty(cell2mat(varargin)),
                 sdim = size(Data.data,cell2mat(varargin));
             else
                 sdim = size(Data.data);

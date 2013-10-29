@@ -16,6 +16,7 @@ classdef MTAStateCollection < hgsetget
         mode = [];
         filename = [];
         path = [];
+        sync = [];
         ext = [];        
     end
     
@@ -71,6 +72,10 @@ classdef MTAStateCollection < hgsetget
             fpath = fullfile(Stc.path,Stc.filename);
         end
         
+        function Stc = updateSync(Stc,sync)
+            Stc.sync = sync;
+        end
+        
         function Stc = addState(Stc,path,filename,data,sampleRate,varargin)            
         %Stc = addState(Stsc,key,label,state)
         %
@@ -112,10 +117,11 @@ classdef MTAStateCollection < hgsetget
                         if ischar(S(n).subs{1}),
                             
                             stsSampleRate = [];
-                            if numel(S(n).subs)==2,
+                            if numel(S(n).subs)>=2
                                 stsSampleRate = S(n).subs{2};
                                 S(n).subs(2) = [];
                             end
+                            
                             stsFuncs = regexp(S(n).subs{1},'\&*\^*\|*\+*','match');
                             stsNames = regexp(S(n).subs{1},'\&*\^*\|*\+*','split');
                             assert(numel(stsFuncs)+1==numel(stsNames),...
@@ -133,6 +139,7 @@ classdef MTAStateCollection < hgsetget
                                         sts{i} = MTADepoch(Stc.path,[],[],[],stsNames{i},[],[],[]);
                                     end
                                     sts{i} = sts{i}.load;
+                                    Stc.sync.resync(sts{i});
                                     Stc.addState(sts{i});
                                 else
                                     sts{i} =  Stc.states{stci};

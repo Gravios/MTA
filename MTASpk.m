@@ -1,16 +1,16 @@
 classdef MTASpk < hgsetget
-    properties
+    properties(Transient=true)
         
         clu
         
         res
-        
+
+        sampleRate    
+    end
+    properties
         map
-        
-        sampleRate
-        
+
         type
-        
     end
     methods
         

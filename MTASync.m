@@ -38,9 +38,10 @@ classdef MTASync < hgsetget
         end
         
         function per = periods(Sync,varargin)
-            [sampleRate] = DefaultArgs(varargin,{1});
+            [sampleRate,ind] = DefaultArgs(varargin,{1,':'});
             per = round((Sync.data-Sync.origin).*sampleRate);
             per(per<=0)=1;
+            per = per(ind,:);
         end   
         function Sync = resync(Sync,Data,varargin)
         % Sync - MTASync
@@ -62,6 +63,8 @@ classdef MTASync < hgsetget
                     Data.data = round(IntersectRanges(Data.data,...
                                                 Sync.periods(Data.sampleRate))...
                                                 -(Sync.data(1)-Sync.origin)*Data.sampleRate);
+                case 'TimePoints'
+                    %Data.data = SelectPeriods
             end
         end
         

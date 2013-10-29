@@ -21,18 +21,18 @@ classdef MTAApfs < hgsetget %< MTAAnalysis
                 Pfs.(prop{i})=[];
             end
             
-            %if isempty(Session_args),return,end
+            if isempty(Session_args),return,end
             
-            %if isa(Session_args,'MTATrial'),
+            if isa(Session_args,'MTATrial'),
                 Session = Session_args;
                 SessionName = Session.name;
                 MazeName    = Session.maze.name;
                 TrialName   = Session.trialName;
-%             elseif iscell(Session_args)
-%                 [SessionName,MazeName,TrialName] = DefaultArgs(Session_args,{'jg05-20120317','cof','all'});
-%                 Session = MTASession(SessionName,[],MazeName);
-%                 Session = MTATrial(Session,{{'Spk',S}},TrialName);
-%             end
+            elseif iscell(Session_args)
+                [SessionName,MazeName,TrialName] = DefaultArgs(Session_args,{'jg05-20120317','cof','all'});
+                Session = MTASession(SessionName,[],MazeName);
+                Session = MTATrial(Session,{{'Spk',S}},TrialName);
+            end
             
             Pfs.ext = 'pfs';
             
@@ -58,7 +58,7 @@ classdef MTAApfs < hgsetget %< MTAAnalysis
 
             Pfs.adata.trackingMarker = Session.trackingMarker;
             Pfs.adata.bins = [];
-            Pfs.adata.binSizes = diff(Session.maze.boundaries(1:numel(binDims),:),1,2)./binDims';
+            Pfs.adata.binSizes = round(diff(Session.maze.boundaries(1:numel(binDims),:),1,2)./binDims');
                         
             Pfs.data =struct( 'clu',        [],...
                               'elClu',      [],...
@@ -75,6 +75,10 @@ classdef MTAApfs < hgsetget %< MTAAnalysis
             Pfs.updateFilename(Session,tag);
             
             numUnits = numel(units);
+            if numUnits ==0
+                numUnits = size(Session.spk.map,1);
+                units    = 1:size(Session.spk.map,1);
+            end
             
             
             pf_tmpfile = Pfs.fpath;
@@ -138,14 +142,15 @@ classdef MTAApfs < hgsetget %< MTAAnalysis
             Session.spk.create(Session,Session.xyz.sampleRate,pfsState.label,units);
             
             %% Get State Positions
-            sstpos = Session.xyz(pfsState,Session.trackingMarker,:);
+            sstpos = Session.xyz(pfsState,Session.trackingMarker,1:numel(binDims));
 
             i = 1;
             for unit=units,
                 Pfs.data.clu(dind(i)) = Session.spk.map(unit,1);
                 Pfs.data.el(dind(i)) = Session.spk.map(unit,2);
                 Pfs.data.elClu(dind(i)) = Session.spk.map(unit,3);
-                mySpkPos = Session.xyz(Session.spk(unit),Session.trackingMarker,:);
+                mySpkPos = Session.xyz(Session.spk(unit),Session.trackingMarker,1:numel(binDims));
+                
                 nSpk = size(mySpkPos,1);
                 
                 %% Skip unit if too few spikes
@@ -159,7 +164,8 @@ classdef MTAApfs < hgsetget %< MTAAnalysis
                             shuffled_Spk = @(nSpk) mySpkPos(randi(nSpk,1,nSpk),:);
                     end
                     
-                    [Pfs.data.rateMap(:,dind(i),1), Pfs.adata.bins, Pfs.data.meanRate, Pfs.data.si, Pfs.data.spar] =  PlotPF(Session,shuffled_Spk(nSpk),shuffled_Pos(posShuffle,sstpos),binDims,smooth,type);
+                    [Pfs.data.rateMap(:,dind(i),1), Pfs.adata.bins, Pfs.data.meanRate(dind(i)), Pfs.data.si(dind(i)), Pfs.data.spar(dind(i))] =  ...
+                        PlotPF(Session,shuffled_Spk(nSpk),shuffled_Pos(posShuffle,sstpos),binDims,smooth,type);
 %                     if numBSiterations>1,
 %                         for bsi = 2:numBSiterations,
 %                             bsMap(:,:,bsi) = PlotPF(Session,shuffled_Spk(nSpk),shuffled_Pos(pos_shuffle,pos),binDims,smooth,type);
@@ -203,11 +209,19 @@ classdef MTAApfs < hgsetget %< MTAAnalysis
                     end
                     axis xy
                 case 'xyz'
-                    var = cat(2,Pfs.adata.bins,{reshape(Pfs.data.rateMap(:,Pfs.data.clu==unit,1),cellfun(@numel,Pfs.adata.bins))},{max(Pfs.data.rateMap(:,Pfs.data.clu==unit,1))/2});
-                    isosurface(var{:});
+                    c = eye(3);
+                    r = [1.2,3,6];
+                    var = cat(2,Pfs.adata.bins,{permute(reshape(Pfs.data.rateMap(:,Pfs.data.clu==unit,1),Pfs.adata.binSizes'),[2,1,3])},{[]});
+                    for i = 1:3,
+                        var(end) = {max(Pfs.data.rateMap(:,Pfs.data.clu==unit,1))/r(i)};
+                        fv = isosurface(var{:});
+                        patch(fv,'facecolor',c(i,:),'edgecolor','none');
+                        alpha(1/r(i)*r(1));
+                    end
                     xlim([min(Pfs.adata.bins{1}),max(Pfs.adata.bins{1})]);
                     ylim([min(Pfs.adata.bins{2}),max(Pfs.adata.bins{2})]);
                     zlim([min(Pfs.adata.bins{3}),max(Pfs.adata.bins{3})]);
+                    view(3)
             end
         end
 
@@ -229,6 +243,8 @@ classdef MTAApfs < hgsetget %< MTAAnalysis
             end
         end
         
+        
+
         function path = fpath(Pfs)
             path = fullfile(Pfs.path,Pfs.filename);
         end

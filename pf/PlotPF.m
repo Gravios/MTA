@@ -3,7 +3,7 @@ function [RateMap, Bins, MRate, SI, Spar] = PlotPF(Session,spkpos,pos,varargin)
 
 ndims = numel(binDims);
 bound_lims = Session.maze.boundaries(1:ndims,:);
-Nbin = diff(bound_lims,1,2)./binDims';
+Nbin = round(diff(bound_lims,1,2)./binDims');
 
 if isempty(SmoothingWeights)
   SmoothingWeights = Nbin./30;
@@ -41,30 +41,26 @@ end
 
 
 
-%% rounded position
+%% rounded position and removal of bins outside the computational volume 
 Pos = round((pos-repmat(bound_lims(:,1)',size(pos,1),1)).*repmat(k',size(pos,1),1))+1;
-
-%% Push back in any stray bins
-for i = 1:ndims
-    Pos(Pos(:,i)>Nbin(i),i) = Nbin(i);
-    Pos(Pos(:,i)<1,i) = 1;
+for i = 1:ndims   
+    Pos(Pos(:,i)<1|Pos(:,i)>Nbin(i),:) = [];
 end
 Occupancy = Accumulate(Pos,1,msize')./Session.xyz.sampleRate;
 
-
 spkpos = round((spkpos-repmat(bound_lims(:,1)',size(spkpos,1),1)).*repmat(k',size(spkpos,1),1))+1;
 for i = 1:ndims
-    spkpos(spkpos(:,i)>Nbin(i),i) = Nbin(i);
-    spkpos(spkpos(:,i)<1,i) = 1;
+    spkpos(spkpos(:,i)<1|spkpos(:,i)>Nbin(i),:) = [];
 end
 SpikeCount = Accumulate(spkpos,1,msize');
+
 
 
 sind = cell(1,ndims);
 for i = 1:ndims,
     sind{i} = linspace(-round(msize(i)/2),round(msize(i)/2),msize(i));
 end
-[sind{:}] = meshgrid(sind{:});
+[sind{:}] = ndgrid(sind{:});
 for i = 1:ndims,
     sind{i} = sind{i}.^2/SmoothingWeights(i)^2/2;
 end
@@ -76,7 +72,7 @@ SOcc = convn(Occupancy,Smoother,'same');
 SCount = convn(SpikeCount,Smoother,'same');
 
 
-OccThresh = 0.01;
+OccThresh = 0.06;
 %% Find the total occupancy and each pixels 
 %% probability of occupancy
 gtind = SOcc>OccThresh;
