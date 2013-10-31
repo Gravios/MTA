@@ -14,107 +14,128 @@ classdef MTAApfs < hgsetget %< MTAAnalysis
 
     methods
 
-        function Pfs = MTAApfs(Session_args, parameters, varargin)     
-            %Pfs = MTAAnalysis();
-            prop = properties('MTAAPfs');
-            for i = 1:length(prop)
-                Pfs.(prop{i})=[];
+        function Pfs = MTAApfs(Obj, varargin)     
+            [units,states,overwrite,tag,binDims,SmoothingWeights,type,spkShuffle,posShuffle,numIter]=...
+            DefaultArgs(varargin,{[],'walk',0,[],[20,20],[],'xy','n',0,1,});
+            
+            switch class(Obj)
+                case 'MTATrial'
+                    Session = Obj;
+                    SessionName = Session.name;
+                    MazeName    = Session.maze.name;
+                    TrialName   = Session.trialName;
+                    
+                    Pfs.path = Session.spath;
+                    Pfs.tag  = tag;
+                    
+                    Pfs.session.name = SessionName;
+                    Pfs.session.trialName   = TrialName;
+                    Pfs.session.mazeName    = MazeName;
+                    
+                    pfsState = Session.stc{states,Session.xyz.sampleRate}.copy;
+                    
+                    Pfs.parameters.states = states;
+                    Pfs.parameters.type   = type;
+                    Pfs.parameters.spkShuffle = spkShuffle;
+                    Pfs.parameters.posShuffle = posShuffle;
+                    Pfs.parameters.numIter  = numIter;
+                    if isempty(SmoothingWeights)&&numel(binDims)==numel(SmoothingWeights)
+                        SmoothingWeights = Nbin./30;
+                    end
+                    Pfs.parameters.smoothingWeights   = SmoothingWeights;
+                    Pfs.parameters.binDims = binDims;
+                    
+                    Pfs.adata.trackingMarker = Session.trackingMarker;
+                    Pfs.adata.bins = [];
+                    Pfs.adata.binSizes = round(diff(Session.maze.boundaries(1:numel(binDims),:),1,2)./binDims');
+                    
+                    Pfs.data =struct( 'clu',        [],...
+                        'elClu',      [],...
+                        'el',         [],...
+                        'maxRate',    [],...
+                        'maxRateInd', [],...
+                        'maxRatePos', [],...
+                        'rateMap',    [],...
+                        'meanRate',   [],...
+                        'si',         [],...
+                        'spar',       []);
+                    Pfs.updateFilename(Session,tag);
+                    Pfs.ext = 'pfs';
+                    
+                case 'MTAApfs'
+                    Pfs = Obj;
+                    Session = MTASession(Obj.session.name,Obj.session.mazeName);
+                    Session = MTATrial(Session,Obj.session.trialName);
+                    pfsState = Session.stc{Pfs.states,Session.xyz.sampleRate}.copy;
+                    
+                otherwise
+                    prop = properties('MTAAPfs');
+                    for i = 1:length(prop)
+                        Pfs.(prop{i})=[];
+                    end
+                    return
             end
             
-            if isempty(Session_args),return,end
-            
-            if isa(Session_args,'MTATrial'),
-                Session = Session_args;
-                SessionName = Session.name;
-                MazeName    = Session.maze.name;
-                TrialName   = Session.trialName;
-            elseif iscell(Session_args)
-                [SessionName,MazeName,TrialName] = DefaultArgs(Session_args,{'jg05-20120317','cof','all'});
-                Session = MTASession(SessionName,[],MazeName);
-                Session = MTATrial(Session,{{'Spk',S}},TrialName);
-            end
-            
-            Pfs.ext = 'pfs';
-            
-            [units,states,overwrite,tag,binDims,type,spkShuffle,posShuffle,numIter,smooth]=DefaultArgs(varargin,{[],'walk',0,[],[20,20],'xy','n',0,1,[]});
-            % Use parameters to populate database            
-            
-            Pfs.path = Session.spath;
-            Pfs.tag  = tag;
-            
-            Pfs.session.name = SessionName;
-            Pfs.session.trialName   = TrialName;
-            Pfs.session.mazeName    = MazeName;
 
-            pfsState = Session.stc{states,Session.xyz.sampleRate}.copy;
-
-            Pfs.parameters.states = pfsState.label;
-            Pfs.parameters.type   = type;
-            Pfs.parameters.spkShuffle = spkShuffle;
-            Pfs.parameters.posShuffle = posShuffle;
-            Pfs.parameters.numIter  = numIter;
-            Pfs.parameters.smooth   = smooth;
-            Pfs.parameters.binDims = binDims;
-
-            Pfs.adata.trackingMarker = Session.trackingMarker;
-            Pfs.adata.bins = [];
-            Pfs.adata.binSizes = round(diff(Session.maze.boundaries(1:numel(binDims),:),1,2)./binDims');
-                        
-            Pfs.data =struct( 'clu',        [],...
-                              'elClu',      [],...
-                              'el',         [],...
-                              'maxRate',    [],...
-                              'maxRateInd', [],...
-                              'maxRatePos', [],...
-                              'rateMap',    [],...
-                              'meanRate',   [],...
-                              'si',         [],...
-                              'spar',       []);
-
-            
-            Pfs.updateFilename(Session,tag);
-            
             numUnits = numel(units);
-            if numUnits ==0
-                numUnits = size(Session.spk.map,1);
-                units    = 1:size(Session.spk.map,1);
-            end
-            
+            selected_units = units;
             
             pf_tmpfile = Pfs.fpath;
             %% load existing data
             epftmp = exist(pf_tmpfile,'file');
+
             if epftmp&&overwrite~=1,
-                load(pf_tmpfile);
+                if isempty(Pfs.data.clu),
+                    load(pf_tmpfile);
+                end
                 % Load specific units
                 if isempty(units)
                     return
                 else
-                    selected_units = ismember(Pfs.data.clu,units);
-                    field = fieldnames(Pfs.data);
-                    for f = 1:numel(field);
-                        Pfs.data.(field{f}) = Pfs.data.(field{f})(:,selected_units,:,:,:);
+                    unprocessed_units = ~ismember(units,Pfs.data.clu);
+                    if sum(unprocessed_units)==0
+                        selected_units_ind = ismember(Pfs.data.clu,units);
+                        field = fieldnames(Pfs.data);
+                        for f = 1:numel(field);
+                            Pfs.data.(field{f}) = Pfs.data.(field{f})(:,selected_units_ind,:,:,:);
+                        end
+                        return
+                    else
+                        oldUnitInds = find(ismember(Pfs.data.clu,units));
+                        numOldUnits = numel(oldUnitInds);
+                        numNewUnits = numUnits - numOldUnits;
+                        tnumUnits = numNewUnits + numel(Pfs.data.clu);
+                        if numNewUnits>0,
+                            newdata =struct( 'clu',        zeros(1,numNewUnits),...
+                                'elClu',      zeros(1,numNewUnits),...
+                                'el',         zeros(1,numNewUnits),...
+                                'maxRate',    zeros(5,numNewUnits),...
+                                'maxRateInd', zeros(5,numNewUnits,numel(binDims)),...
+                                'maxRatePos', zeros(5,numNewUnits,numel(binDims)),...
+                                'rateMap',    zeros(prod(Pfs.adata.binSizes),numNewUnits,numIter),...
+                                'meanRate',   zeros(1,numNewUnits),...
+                                'si',         zeros(1,numNewUnits),...
+                                'spar',       zeros(1,numNewUnits));
+                            field = fieldnames(newdata);
+                            for f = 1:numel(field);
+                                Pfs.data.(field{f}) = cat(2,Pfs.data.(field{f}),newdata.(field{f}));
+                            end
+                        end
+                        selected_units = units(~ismember(units,Pfs.data.clu));
+                        dind = [tnumUnits-numNewUnits+1:tnumUnits];
                     end
-                    return
                 end
-                
-            elseif ~epftmp
-            %% Instantiate Pfs Data Variables if DeNovoCalc
-                dind = 1:numUnits;
-                Pfs.data =struct('clu',        zeros(1,numUnits),...
-                                 'elClu',      zeros(1,numUnits),...
-                                 'el',         zeros(1,numUnits),...
-                                 'maxRate',    zeros(5,numUnits),...
-                                 'maxRateInd', zeros(5,numUnits,numel(binDims)),...
-                                 'maxRatePos', zeros(5,numUnits,numel(binDims)),...
-                                 'rateMap',    zeros(prod(Pfs.adata.binSizes),numUnits,numIter),...
-                                 'meanRate',   zeros(1,numUnits),...
-                                 'si',         zeros(1,numUnits),...
-                                 'spar',       zeros(1,numUnits));
-                
+
             elseif epftmp&&overwrite==1,
             %% Extend Pfs data for additional units
-                load(pf_tmpfile);
+                numUnits = numel(units);
+                if numUnits ==0
+                    numUnits = size(Session.spk.map,1);
+                    units    = 1:size(Session.spk.map,1);
+                end
+                if isempty(Pfs.data.clu),
+                    load(pf_tmpfile);
+                end
                 oldUnitInds = find(ismember(Pfs.data.clu,units));
                 numOldUnits = numel(oldUnitInds);
                 numNewUnits = numUnits - numOldUnits;
@@ -135,7 +156,27 @@ classdef MTAApfs < hgsetget %< MTAAnalysis
                         Pfs.data.(field{f}) = cat(2,Pfs.data.(field{f}),newdata.(field{f}));
                     end
                 end
-                dind = [oldUnitInds(:)',[tnumUnits-numNewUnits+1:tnumUnits]];
+                selected_units = [units(ismember(units,Pfs.data.clu)),units(~ismember(units,Pfs.data.clu))];
+                dind = [oldUnitInds(:)',[tnumUnits-numNewUnits+1:tnumUnits]];                
+            elseif ~epftmp
+            %% Instantiate Pfs Data Variables if DeNovoCalc
+                numUnits = numel(units);
+                if numUnits ==0
+                    numUnits = size(Session.spk.map,1);
+                    units    = 1:size(Session.spk.map,1);
+                end
+                dind = 1:numUnits;
+                Pfs.data =struct('clu',        zeros(1,numUnits),...
+                                 'elClu',      zeros(1,numUnits),...
+                                 'el',         zeros(1,numUnits),...
+                                 'maxRate',    zeros(5,numUnits),...
+                                 'maxRateInd', zeros(5,numUnits,numel(binDims)),...
+                                 'maxRatePos', zeros(5,numUnits,numel(binDims)),...
+                                 'rateMap',    zeros(prod(Pfs.adata.binSizes),numUnits,numIter),...
+                                 'meanRate',   zeros(1,numUnits),...
+                                 'si',         zeros(1,numUnits),...
+                                 'spar',       zeros(1,numUnits));
+
             end
             
             %% load Units into spk object;
@@ -145,7 +186,7 @@ classdef MTAApfs < hgsetget %< MTAAnalysis
             sstpos = Session.xyz(pfsState,Session.trackingMarker,1:numel(binDims));
 
             i = 1;
-            for unit=units,
+            for unit=selected_units,
                 Pfs.data.clu(dind(i)) = Session.spk.map(unit,1);
                 Pfs.data.el(dind(i)) = Session.spk.map(unit,2);
                 Pfs.data.elClu(dind(i)) = Session.spk.map(unit,3);
@@ -165,7 +206,7 @@ classdef MTAApfs < hgsetget %< MTAAnalysis
                     end
                     
                     [Pfs.data.rateMap(:,dind(i),1), Pfs.adata.bins, Pfs.data.meanRate(dind(i)), Pfs.data.si(dind(i)), Pfs.data.spar(dind(i))] =  ...
-                        PlotPF(Session,shuffled_Spk(nSpk),shuffled_Pos(posShuffle,sstpos),binDims,smooth,type);
+                        PlotPF(Session,shuffled_Spk(nSpk),shuffled_Pos(posShuffle,sstpos),binDims,SmoothingWeights,type);
 %                     if numBSiterations>1,
 %                         for bsi = 2:numBSiterations,
 %                             bsMap(:,:,bsi) = PlotPF(Session,shuffled_Spk(nSpk),shuffled_Pos(pos_shuffle,pos),binDims,smooth,type);
@@ -192,8 +233,11 @@ classdef MTAApfs < hgsetget %< MTAAnalysis
                 i = i+1;
                 save(pf_tmpfile,'Pfs','-v7.3')
             end
-            
-            
+            field = fieldnames(Pfs.data);
+            Clu = Pfs.data.clu;
+            for f = 1:numel(field);
+                Pfs.data.(field{f}) = Pfs.data.(field{f})(:,ismember(Clu,units),:,:,:);
+            end
         end
         
         function plot(Pfs,unit,varargin)
@@ -233,17 +277,20 @@ classdef MTAApfs < hgsetget %< MTAAnalysis
                 binDimTag = num2str(Pfs.parameters.binDims);
                 binDimTag(isspace(binDimTag)&isspace(circshift(binDimTag',1)'))=[];
                 binDimTag(isspace(binDimTag)) = '_';
+                smwTag = num2str(Pfs.parameters.smoothingWeights*100);
+                smwTag(isspace(smwTag)&isspace(circshift(smwTag',1)'))=[];
+                smwTag(isspace(smwTag)) = '_';
                 Pfs.filename = [Session.filebase ...
                     '.pfs.' Pfs.parameters.type '.' Session.trackingMarker '.' pfsState.label '.' ...
                     Pfs.parameters.spkShuffle 'ps' num2str(Pfs.parameters.posShuffle) ...
-                    'bs' num2str(Pfs.parameters.numIter) 'sm' num2str(Pfs.parameters.smooth*100)...
+                    'bs' num2str(Pfs.parameters.numIter) 'sm' smwTag...
                     'bd' binDimTag '.mat'];
             else
                 Pfs.filename = [Session.filebase '.Pfs.' Pfs.tag '.mat'];
             end
         end
         
-        
+
 
         function path = fpath(Pfs)
             path = fullfile(Pfs.path,Pfs.filename);

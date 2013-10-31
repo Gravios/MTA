@@ -20,35 +20,52 @@ classdef MTADufr < MTAData
         
         function Data = create(Data,Session,varargin)
             
-            [DataObj,twin] = DefaultArgs(varargin,{Session.lfp,0.05});
-           
-            lfpSyncPeriods = Session.sync.periods(Session.lfp.sampleRate);
+            [DataObj,units,twin] = DefaultArgs(varargin,{Session.lfp,[],0.05});
             
-            if ~exist(Data.fpath,'file'),
-                [Res,Clu,Map] = LoadCluRes(fullfile(Session.spath,Session.name));
-
-                gwin = gausswin(round(twin*Session.sampleRate))/sum(gausswin(round(twin*Session.sampleRate)));
-                spks = zeros(max(Res),1);
-                ufr = [];
-                for unit = 1:size(Map,1),
-                    uRes = Res(Clu==unit);
-                    uClu = Clu(Clu==unit);
-                    spks(:)=0;
-                    spks(uRes) = 1;
-                    ufr(:,unit) = resample(conv(spks,gwin),Session.lfp.sampleRate,Session.sampleRate);
+            if isa(DataObj,'MTAApfs'),
+                %nv units
+                ind = repmat({zeros(Session.xyz.size(1),1)},1,Session.xyz.size(3));
+                for n = 1:numel(DataObj.adata.bins),
+                    [~,ind{n}] = NearestNeighbour(DataObj.adata.bins{n}',Session.xyz(:,Session.trackingMarker,n)');
                 end
                 
-                save(Data.fpath,'ufr','-v7.3','-mat');
-            else 
-                load([Session.spath Session.name '.ufr'],'-mat')
+                Data.data = zeros(Session.xyz.size(1),numel(units));
+                c = 1;
+                for u = units,
+                    rateMap = DataObj.data.rateMap(:,ismember(DataObj.data.clu,units),1);
+                    Data.data(:,c) = rateMap(sub2ind(DataObj.adata.binSizes',ind{:}));
+                    c = c+1;
+                end
+                Data.sampleRate = Session.xyz.sampleRate;
+                
+            else
+                lfpSyncPeriods = Session.sync.periods(Session.lfp.sampleRate);
+                if ~exist(Data.fpath,'file'),
+                    [Res,Clu,Map] = LoadCluRes(fullfile(Session.spath,Session.name));
+                    
+                    gwin = gausswin(round(twin*Session.sampleRate))/sum(gausswin(round(twin*Session.sampleRate)));
+                    spks = zeros(max(Res),1);
+                    data = [];
+                    for unit = 1:size(Map,1),
+                        uRes = Res(Clu==unit);
+                        uClu = Clu(Clu==unit);
+                        spks(:)=0;
+                        spks(uRes) = 1;
+                        data(:,unit) = resample(conv(spks,gwin),Session.lfp.sampleRate,Session.sampleRate);
+                    end
+                    
+                    save(Data.fpath,'data','-v7.3','-mat');
+                else
+                    load(Data.fpath);
+                end
+                
+                if isempty(units),units = ':';end
+                Data.data = data(lfpSyncPeriods(1):lfpSyncPeriods(end),units);
+             
+                if DataObj.sampleRate < Session.lfp.sampleRate,
+                    Data.resample(DataObj);
+                end
             end
-            
-            ufr = ufr(lfpSyncPeriods(1):lfpSyncPeriods(end),:);
-            
-            if DataObj.sampleRate < Session.lpf.sampleRate,
-                Data.resample(DataObj);
-            end
-
         end
         
         function Data = load(Data)
@@ -57,7 +74,7 @@ classdef MTADufr < MTAData
         function Data = filter(Data)
         end
         function Data = resample(Data,DataObj)
-            if DataObj.isepmty, DataObj.load; dlen = DataObj.size(1); end
+            if DataObj.isempty, DataObj.load; dlen = DataObj.size(1); end
             uind = round(linspace(round(Data.sampleRate/DataObj.sampleRate),Data.size(1),DataObj.size(1)));
             Data.data = Data.data(uind,:);
             Data.sampleRate = DataObj.sampleRate;

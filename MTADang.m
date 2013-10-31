@@ -1,4 +1,14 @@
 classdef MTADang < MTAData
+%MTADang(varargin)
+%MTADang(path,filename,data,sampleRate,model,type,ext)
+%
+%  varargin:
+%    
+%    path:     string, the directory where the object's data is stored
+%
+%    filename: string, the file name of the .mat file which contains the 
+%                      objects data
+%
     properties 
         model
     end

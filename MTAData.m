@@ -1,15 +1,59 @@
 classdef MTAData < hgsetget
+%MTAData(varargin)
+%MTAData(path,filename,data,sampleRate,type,ext)
+%
+%  MTAData is a superclass of most MTA data types. It is a container for 
+%  general data types, which alows dynamic refrencing and the use of a set
+%  of common functions.
+%
+%  Current Data Types: 
+%    TimeSeries, TimePeriods, TimePoints, SpatialMap
+%
+%  Current Subclasses:
+%    MTADang, MTADepoch, MTADlfp, MTADufr, MTADxyz
+%
+%  varargin:
+%    
+%    path:       string, the directory where the object's data is stored
+%
+%    filename:   string, the file name of the .mat file which contains the 
+%                        objects data
+%
+%    type:       string, a short string which denotes the type of data held
+%                        by the object
+%
+%    ext:        string, a short, unique string which will be the primary
+%                        file identifier
+%
+%    sampleRate: double, the sampling rate of the associated data
+%
+%
+
 
     properties 
+
+        %path - string: the directory where the object's data is stored
+        path        
+
+        %filename - string: the file name of the .mat file which contains the objects data
         filename
-        path        % path to file containing object
-        type        % TimeSeries,TimePeriods,TimePoints,SpatialBins
+
+        %type - string: a short string which denotes the type of data held by the object
+        type        
+        
+        %ext - string: a short, unique string which will be the primary file identifier
         ext
-        sampleRate  % Sampling rate of data
+
+        %sampleRate - double: Sampling rate of the associated data
+        sampleRate  
+
     end
     
     properties (Abstract)
-        data        % data
+        %data - numericArray: (TimeIndex,Feature,Dimension)
+        data        
+        
+        %model - MTAModel: holds the names of the features for indexing purposes
         model
     end
     
@@ -24,7 +68,7 @@ classdef MTAData < hgsetget
             Data.ext = ext;
             Data.sampleRate = sampleRate;
         end
-        function out = save(Data,varargin)
+        function out = save(Data,varargin)        
             out = false;
             data = Data.data;
             if isempty(varargin),
@@ -38,10 +82,13 @@ classdef MTAData < hgsetget
             end
         end
         function Data = load(Data,varargin)
-            [periods] = DefaultArgs(varargin,{[]});
+            [sync,periods] = DefaultArgs(varargin,{[],[]});
             load(Data.fpath)
             if ~isempty(periods),
                 Data.data = data(periods(1):periods(2),:,:,:,:);
+            elseif ~isempty(sync)
+                Data.data = data;
+                sync.resync(Data);
             else
                 Data.data = data;
             end
@@ -93,7 +140,16 @@ classdef MTAData < hgsetget
         %   sdim - numericArray: contains the size of each dimension
         %
             if ~isempty(cell2mat(varargin)),
-                sdim = size(Data.data,cell2mat(varargin));
+                dim = cell2mat(varargin);
+                ndim = numel(dim);
+                if ndim>1,
+                    sdim = zeros(1,ndim);
+                    for i = 1:ndim,
+                        sdim(i) = size(Data.data,dim(i));
+                    end
+                else
+                    sdim = size(Data.data,dim);
+                end
             else
                 sdim = size(Data.data);
             end
@@ -166,7 +222,6 @@ classdef MTAData < hgsetget
             end
         end
 
-        
         function DataCopy = copy(Data)
         % Make a copy of a handle object.
         % Instantiate new object of the same class.

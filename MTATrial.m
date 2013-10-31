@@ -15,9 +15,6 @@ classdef MTATrial < MTASession
 %
 %   varargin:
 %     [preLoadedFields,trialName,new_xyzPeriods,overwrite,mazeName]
-%    
-%     preLoadedFields: cellArray, load saved data into Trial fields
-%                      (e.g. {'ufr','ang'} or {'ufr',{'lfp',65:96},'CluRes'}
 %
 %     trialName:       string, designation of trial, the Trial representing 
 %                      the full Session has the default name 'all'
@@ -35,38 +32,30 @@ classdef MTATrial < MTASession
 %   General Loading:
 %     
 %     Load from saved Trial,
-%     Trial = MTATrial(name,[],trialName);
+%     Trial = MTATrial(name,trialName);
 %     
 %     Create new Trial,
-%     Trial = MTATrial(name,[],trialName,new_xyzPeriods,overwrite,mazeName);
-%
+%     Trial = MTATrial(name,trialName,new_xyzPeriods,overwrite,mazeName);
 %
 %---------------------------------------------------------------------------------------------------------
 %     examples:
 %       load saved Trial,
-%         Trial = MTATrial('jg05-20120309',[],'all');
-%
-%       load saved Trial with presaved variables: lfp and Place fields
-%         Trial = MTATrial('jg05-20120309',{{'lfp',65:95},'Pfs'},'all');
-%
-%       load saved Trial with presaved variables: marker angles and Clustering data
-%         Trial = MTATrial('jg05-20120309',{'ang','CluRes'},'all');
+%         Trial = MTATrial('jg05-20120309','all');
 %
 %       Create New Trial from a subset of the total session
-%         Trial = MTATrial('jg05-20120309',[],'crt1',[1,10000;11000,21000],1,'rof','normal')
-%
+%         Trial = MTATrial('jg05-20120309','crt1',[1,10000;11000,21000],1,'rof','normal')
 %              
 %---------------------------------------------------------------------------------------------------------
 
     methods 
         function Trial = MTATrial(Session,varargin)
-            [preLoadedFields,trialName,new_xyzPeriods,overwrite,mazeName,mode] = DefaultArgs(varargin,{{},'all',[],0,'cof','normal'});
+            [trialName,new_xyzPeriods,overwrite,mazeName,mode] = DefaultArgs(varargin,{'all',[],0,'cof','normal'});
             if ~isa(Session,'MTASession'),
-                Session = MTASession(Session,{},mazeName);
+                Session = MTASession(Session,mazeName);
             end
             if strcmp(trialName,'nil'),overwrite = 1;end
             
-            Trial = Trial@MTASession(Session,{},mazeName);
+            Trial = Trial@MTASession(Session,mazeName);
             
             Trial.trialName = trialName;
             Trial.filebase = [Trial.name '.' Trial.maze.name '.' Trial.trialName];
@@ -105,23 +94,6 @@ classdef MTATrial < MTASession
                     if ~prop.isempty
                         for s = numel(prop(:)),
                             Trial.sync.resync(prop{s});
-                        end
-                    end
-                end
-            end
-            
-            if numel(preLoadedFields)>0;
-                for f = 1:numel(preLoadedFields),
-                    field = preLoadedFields{f};
-                    if iscell(field)
-                        Trial.(field{1}).load(field(2:end))
-                        if ~Trial.(field{1}).isempty,
-                            Trial.sync.resync(Trial.(field{1}));
-                        end
-                    else
-                        Trial.(field).load;
-                        if ~Trial.(field).isempty,
-                            Trial.sync.resync(Trial.(field));
                         end
                     end
                 end

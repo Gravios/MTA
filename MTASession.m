@@ -6,9 +6,6 @@ classdef MTASession < hgsetget
 %   varargin:
 %     [preLoadedFields,mazeName,overwrite,TTLValue,xyzSampleRate,trackingMarker,spath,sampleRate]
 %
-%     preLoadedFields: cellArray, load saved data into Session fields
-%                      (e.g. {'ufr','ang'} or {'ufr',{'lfp',65:96},'CluRes'}
-%
 %     mazeName:        string, 3-4 letter name of the testing arena 
 %                      (e.g. 'rof' := rectangular open-field)
 %
@@ -74,9 +71,6 @@ classdef MTASession < hgsetget
         %Model - MTAModel: Object contianing all marker information
         model          
 
-        %xyz - numericArray: (time,marker,dimension) XYZ position of each marker 
-        xyz 
-        
         sync
 
         %sampleRate - double: Sample Rate of electrophysiological recording system
@@ -85,9 +79,14 @@ classdef MTASession < hgsetget
         %trackingMarker - string: Marker name used for place field calculations
         trackingMarker = 'head_front';
 
+        %xyz - numericArray: (time,marker,dimension) XYZ position of each marker 
+        xyz 
+        
         ang 
 
         stc
+        
+        spk
 
         %Fet - MTAFet: Object containing behavioral features
         fet
@@ -95,22 +94,12 @@ classdef MTASession < hgsetget
         %lfp - numericArray: (time,channel) local field potential
         lfp
 
-        %Pfs - cellArray: MTAPlaceField objects containing all information af a place field
-        pfs = {};
-
-        %ccg - cellArray: MTAccg objects containing all information af a ccg
-        ccg = {};
-
         %ufr - numericArray: (time,cluster) unit firing rates with lfpSampleRate
         ufr = [];      
 
         %nq - struct: containing information about individual units
         nq = {};
 
-        spk
-
-        %ripples - numericArray: (time_index,ripple_power,ripple_duration) time_index in lfp sample rate
-        ripples        
     end
 
     methods
@@ -118,8 +107,8 @@ classdef MTASession < hgsetget
         %% Session Constructor - Creation & Loading-----------------------------------------------------%
 
         function Session = MTASession(name,varargin)
-            [preLoadedFields,mazeName,overwrite,TTLValue,xyzSampleRate,xyzSystem,ephySystem] = ...
-             DefaultArgs(varargin,{{'xyz'},'cof',0,'0x0040',119.881035,'vicon','nlx'});
+            [mazeName,overwrite,TTLValue,xyzSampleRate,xyzSystem,ephySystem] = ...
+             DefaultArgs(varargin,{'cof',0,'0x0040',119.881035,'vicon','nlx'});
             Session.path = load('MTAPaths.mat');
             
             if isempty(name),
@@ -143,6 +132,7 @@ classdef MTASession < hgsetget
                 if exist(fullfile(Session.spath, [Session.filebase, '.ses.mat']),'file')&&~overwrite
                     Session = Session.load();
                     Session = Session.updatePaths();
+                    Session.xyz.load(Session.sync);
                 elseif overwrite
                     warning(['Overwriting Session: ' fullfile(Session.spath, [Session.filebase, '.ses.mat'])])
                     Session.create(xyzSampleRate,TTLValue,xyzSystem,ephySystem);
@@ -150,21 +140,6 @@ classdef MTASession < hgsetget
                     warning(['Subsession with maze, ' Session.maze.name ', does not exist: creating session']);
                     Session.create(xyzSampleRate,TTLValue,xyzSystem,ephySystem);
                 end  
-                
-                if numel(preLoadedFields)>0;
-                    for f = 1:numel(preLoadedFields),
-                        field = preLoadedFields{f};
-                        try
-                        if iscell(field)
-                            Session.(field{1}).load(field(2:end))
-                        else
-                            Session.(field).load;
-                        end
-                        catch
-                            
-                        end
-                    end
-                end
             end
         end
 
@@ -205,9 +180,8 @@ classdef MTASession < hgsetget
         end
 
         %%---------------------------------------------------------------------------------%
-        
-        
-        
+
+
         %% Save and Load-------------------------------------------------------------------%
 
         function save(Session,varargin)
@@ -226,8 +200,6 @@ classdef MTASession < hgsetget
         end
 
         %%---------------------------------------------------------------------------------%
-  
-
 
 
         %% Variables from XYZ -------------------------------------------------------------%        
@@ -248,6 +220,7 @@ classdef MTASession < hgsetget
             end
         end
 
+% CHECK IF STILL FUNCTIONAL
         function angles = transformOrigin(Session, origin, orientationVector, vectorTranSet)   
             %angles = transformOrigin(Session, origin, orientationVector, vectorTranSet)   
             diffMat = Session.markerDiffMatrix();
@@ -283,7 +256,7 @@ classdef MTASession < hgsetget
         %v = vel(Session,varargin)
         %calculate the speed of marker(s)
         %[marker,dim] = DefaultArgs(varargin,{[1:Session.model.N],[1:size(Session.xyz,3)]});
-            [marker,dim] = DefaultArgs(varargin,{1:Session.model.N, 1:size(Session.xyz,3)});
+            [marker,dim] = DefaultArgs(varargin,{1:Session.model.N, 1:Session.xyz.size(3)});
             v = sqrt(sum(diff(Session.xyz(:,marker,dim),1).^2,3));
         end            
 
@@ -291,7 +264,7 @@ classdef MTASession < hgsetget
         %a = acc(Session,varargin)
         %calculate the acceleration of marker(s)
         %[marker,dim] = DefaultArgs(varargin,{[1:Session.model.N],[1:size(Session.xyz,3)]});
-            [marker,dim,padded] = DefaultArgs(varargin,{1:Session.model.N, 1:size(Session.xyz,3),1});
+            [marker,dim,padded] = DefaultArgs(varargin,{1:Session.model.N, 1:Session.xyz.size(3),1});
             a = diff(Session.vel(marker,dim),1);
             if padded==1
                 a = cat(1,a(1,:),a,a(end,:));
@@ -319,102 +292,6 @@ classdef MTASession < hgsetget
         
 
 
-        %% Bhv - Behavior Object Function -------------------------------------------------%
-
-        function Session = load_Bhv(Session,mode)
-        %Session = load_Bhv(Session,mode)
-        %load MTABhv object
-            Session.Bhv = MTABhv(Session,mode);
-        end
-
-
-
-        function [stsp, stateLabel] = statePeriods(Session,states,varargin)
-        %[stsp stateLabel] = statePeriods(Session,states,sampleRate)
-        %creates state periods of individual states or their intersections
-        %states - cellarray: individual state labels
-        %         e.g. states = {'head','theta'};
-        % 
-        %
-        %Examples:
-        %  [stsp stateLabel = Session.statePeriods('theta');
-        %  [stsp stateLabel = Session.statePeriods({'theta','rear'});
-        %
-        %Special message passing:
-        %  [stsp stateLabel = Session.statePeriods({'theta',{'random_surrogate','nrhp',67,1250}});
-        %  [stsp stateLabel = Session.statePeriods({'theta',{'onset','rear',0,1250}});
-        %  [stsp stateLabel = Session.statePeriods({'theta',{'onset','rear',0,1250}});
-            [newSampleRate] = DefaultArgs(varargin,{Session.lpf.sampleRate});
-            stateLabel = '';
-            stsp = Session.syncPeriods;
-            if isempty(states),return,end
-            if ~iscell(states), states = {states}; end
-            for i = 1:length(states),
-                if length(states{i})>1&&iscell(states{i}),
-                    %% Extra Special Options
-                    switch states{i}{1}
-
-                      case 'random_surrogate'
-                        tp = Session.statePeriods(states{i}{2})+Session.syncPeriods(1,1);
-                        surrogateIndex = [];
-                        for j = 1:size(tp,1),
-                            surrogateIndex = cat(1,surrogateIndex,[tp(j,1):tp(j,2)]');  %#ok<NBRAK>
-                        end
-                        rpi = randi(size(surrogateIndex,1),states{i}{3},1);
-                        sts = repmat(rpi,1,2)+repmat([-states{i}{4},states{i}{4}],length(rpi),1);
-                        states{i} = [states{i}{1} '_' states{i}{2}];
-
-                      case 'onset'
-                        sts = Session.stc.getState(states{i}{2}).state(:,1)+1;
-                        sts = round((sts-1)./Session.xyz.sampleRate.*Session.lpf.sampleRate+Session.syncPeriods(1,1));
-                        sts = repmat(sts,1,2)+repmat([states{i}{3}-states{i}{4},states{i}{3}+states{i}{4}],length(sts),1);
-                        if states{i}{3}<0,
-                            shiftsign = 'n';
-                        else 
-                            shiftsign = 'p';
-                        end
-                        states{i} = [states{i}{1} '_' num2str(round(states{i}{4}/Session.lfp.sampleRate.*1000)) '_' ...
-                            shiftsign num2str(states{i}{3}) '_' states{i}{2}];
-
-                      case 'offset'
-                        sts = Session.Bhv.getState(states{i}{2}).state(:,2)+1;
-                        sts = round((sts-1)./Session.xyz.sampleRate.*Session.lpf.sampleRate+Session.syncPeriods(1,1));
-                        sts = repmat(sts,1,2)+repmat([states{i}{3}-states{i}{4},states{i}{3}+states{i}{4}],length(sts),1);
-                        if states{i}{3}<0,
-                            shiftsign = 'n';
-                        else 
-                            shiftsign = 'p';
-                        end
-                        states{i} = [states{i}{1} '_' num2str(round(states{i}{4}/Session.lfp.sampleRate.*1000)) '_' ...
-                            shiftsign num2str(states{i}{3}) '_' states{i}{2}];
-                    end
-
-                elseif exist(fullfile(Session.spath, [Session.name '.sts.' states{i}]),'file');
-                    sts = load(fullfile(Session.spath, [Session.name '.sts.' states{i}]));
-                else
-                    %% States in the Bhv have a fs of xyzSampleRate
-                    sts = Session.Bhv.getState(states{i}).state+1;
-                    sts = round((sts-1)./Session.xyz.sampleRate.*Session.lpf.sampleRate+Session.syncPeriods(1,1));
-                end
-
-                stsp = IntersectRanges(sts,stsp);
-                
-                if i>1,
-                    stateLabel = [stateLabel '.' states{i}];
-                else
-                    stateLabel = states{i};
-                end
-            end
-            stsp = stsp-Session.syncPeriods(1,1);
-            stsp = round(stsp./Session.lpf.sampleRate.*newSampleRate);
-            stsp(stsp==0)=1; 
-        end
-
-        %%--------------------------------------------------------------------------------%
-
-
-
-
         %% Load NLX Related data ---------------------------------------------------------%
 
 
@@ -424,7 +301,7 @@ classdef MTASession < hgsetget
             ds = load(fullfile(Session.spath, [Session.name '.NeuronQuality.mat']));
             Session.nq = ds.nq;
         end
-
+% UPDATE %
         function units = selectUnits(Session,query) %#ok<INUSL>
         %units = selectUnits(Session,query)
         %Return unit ids based on a query   
@@ -483,208 +360,57 @@ classdef MTASession < hgsetget
             units = find(unit_status);
         end
 
-%         function Session = load_ufr(Session,varargin) 
-%         %Session = load_ufr(Session,varargin) 
-%         %load Unit Firing Rate 
-%         %twin - double: time window for rate calculation
-%         %  Default: 0.05 - seconds
-%         %
-%             [newSampleRate,flength,twin] = DefaultArgs(varargin,{Session.lpf.sampleRate,Session.xyzPeriods(end)-Session.xyzPeriods(1)+1,0.05});
-%             if ~exist([Session.spath Session.name '.ufr'],'file'),
-%                 [Res,Clu,Map] = LoadCluRes(fullfile(Session.spath,Session.name));
-% 
-%                 gwin = gausswin(round(twin*Session.sampleRate))/sum(gausswin(round(twin*Session.sampleRate)));
-%                 spks = zeros(max(Res),1);
-%                 ufr = [];
-%                 for unit = 1:size(Map,1),
-%                     uRes = Res(Clu==unit);
-%                     uClu = Clu(Clu==unit);
-%                     spks(:)=0;
-%                     spks(uRes) = 1;
-%                     ufr(:,unit) =resample(conv(spks,gwin),Session.lpf.sampleRate,Session.sampleRate);
-%                 end
-%                 
-%                 save([Session.spath Session.name '.ufr'],'ufr','-v7.3','-mat');
-%                 ufr = ufr(Session.syncPeriods(1):Session.syncPeriods(end),:);
-%             else 
-%                 load([Session.spath Session.name '.ufr'],'-mat')
-%                 ufr = ufr(Session.syncPeriods(1):Session.syncPeriods(end),:);
-%             end
-%             
-%             if newSampleRate == Session.lpf.sampleRate,
-%                 Session.ufr = ufr;
-%             else
-%                 uind = round(linspace(round(Session.lpf.sampleRate/newSampleRate),size(ufr,1),flength));
-%                 Session.ufr = ufr(uind,:);
-%             end
-%         end
-
-%         function Session = load_CluRes(Session,varargin)
-%         %Session = load_CluRes(Session,varargin)
-%         %load unit timing
-%         %sampleRate - double: sample rate to which res is to be resampled
-%         %  Default: 1250 - lfpSampleRate
-%         %
-%         %units - int: the unit id's you wish to load.
-%         %states - string/cellArray(string): specify a state or a
-%         %         union/intersection of states
-%         %  note: only use single states for the moment!!
-%         %  Default: {} 
-%         %
-%         %sets:
-%         %    Session.res = Res;
-%         %    Session.clu = Clu;
-%         %    Session.map = Map;
-% 
-%             [sampleRate,units,states] = DefaultArgs(varargin,{Session.lpf.sampleRate,[],{}});
-%             [Res Clu Map] = LoadCluRes([Session.spath Session.name]);
-%             Res = round(Res*sampleRate/Session.sampleRate);
-%             [Res ind] = SelectPeriods(Res,round([Session.syncPeriods(1),Session.syncPeriods(end)]./Session.lpf.sampleRate.*sampleRate),'d',1,1);
-%             Clu = Clu(ind);            
-%             if isempty(units),
-%                 cind = true(numel(Res),1);
-%             else
-%                 cind = find(ismember(Clu,units));
-%             end
-%             Session.res = Res(cind);
-%             Session.clu = Clu(cind);
-%             Session.map = Map;
-%             if ~isempty(states);
-%                 [Session.res sind] = SelectPeriods(Session.res,Session.statePeriods(states,sampleRate),'d',1,0);
-%                 Session.clu = Session.clu(sind);            
-%             end
-%         end
-
-        function Session = load_ripples(Session,channels,varargin)
-        %Session = load_ripples(Session,channels,varargin)
-        %load ripple detection file '.spw'
-        %channels - int/array: channels to use to detect ripples
-        %overwrite - boolean: flag to overwrite spw file
-        %  Default: 0 - do not overwrite
-        %thresh - int: cut off threshold of ripple power based on
-        %              standard deviations from the mean
-        %  Default: 3 - std
-        %
-        [overwrite,thresh] = DefaultArgs(varargin,{0,3});
-            if ~exist([Session.spath Session.name '.spw'],'file')|overwrite,
-                DetectRipples([Session.spath Session.name],channels,[],thresh);
-            end
-            Rips = load([Session.spath Session.name '.spw'],'file');
-            [~,rpind] = SelectPeriods(Rips(:,1),[Session.syncPeriods(1),Session.syncPeriods(end)],'d',1,1);
-            Rips = Rips(rpind,:);
-            Session.ripples = Rips;
-        end
-
-        %% Spike features, xyz, ang, vel, acc, ufr
-        function spks = spkFeatures(Session,varargin)
-        %spks = spkFeatures(Session,varargin)
-        %map unit timing to postion and head direction
-        %
-        %states   - cellarray: individual state labels
-        %           e.g. states = {'head','theta'} or 'head';
-        %
-        %features - cellarray: individual feature labels
-        %           corresponding to properties of MTASession
-
-            [states,features] = DefaultArgs(varargin,{{'walk'},{'xyz'}});
-            
-            %% Load MTASession object if Session is type char
-            if ~isa(Session,'MTASession'),Session = MTASession(Session,mazeName);end
-           
-            %% Load State specific periods
-            [stsp stateLabel] = Session.statePeriods(states,Session.xyz.sampleRate);
-
-            %% Load Units and rescale sampling freq
-            if isempty(Session.clu),
-                Session = Session.load_CluRes(Session.xyz.sampleRate);
-            end
-            [myRes ind] = SelectPeriods(Session.res,stsp,'d',1,1);
-            myClu = Session.clu(ind);
-
-            for i = 1:length(features),
-                if ~iscell(features{i}),
-                    features{i} = {features{i}};
-                end
-
-                fets.(features{i}{1})=[];
-                spks.(features{i}{1})=[];
-
-                if isprop(Session,features{i}{1}),
-                    if isempty(Session.(features{i}{1})),
-                        Session = Session.loadFields(features(i));
-                    end
-                    fets.(features{i}{1}) = Session.(features{i}{1});
-                elseif ismethod(Session,features{i}{1})
-                    fets.(features{i}{1}) = Session.(features{i}{1});
-                end
-                
-                tfet = SelectPeriods(fets.(features{i}{1}),stsp,'c', 1,1);
-                fets.(features{i}{1}) = reshape(tfet,[],size(fets.(features{i}{1}),2),size(fets.(features{i}{1}),3),size(fets.(features{i}{1}),4));             
-            end
-
-            for g=1:size(Session.map,1)
-                myspk = myRes(myClu==g);
-                for i = 1:length(features),
-                    switch features{i}{1},
-                      case 'ufr'
-                        spks(g).(features{i}{1}) = fets.(features{i}{1})(myspk,g); 
-                      otherwise
-                        spks(g).(features{i}{1}) = fets.(features{i}{1})(myspk,:,:,:); 
-                    end
-                end
-            end
-            
-        end
 
         %%---------------------------------------------------------------------------------%
 
 
 
-
         %% Model Statistics and Corrections based on Session Data--------------------------%
 
-        function Session = updateModel(Session,varargin)
-        %Session = updateModel(Session,depth)
-        %update or create model, used for error correction
-        %
-        %  depth - int: default is 3, leave it alone
-        %
-            [depth] = DefaultArgs(varargin,{3});
-            
-            dist = Session.ang(:,:,:,3);
-            dist_std = zeros(Session.model.N,Session.model.N,depth);
-            dist_mean = zeros(Session.model.N,Session.model.N,depth);
-            dist_error = zeros(size(Session.xyz,1),Session.model.N,Session.model.N,depth);
-            fdist = sum(sum(dist,2),3);
-            zdist = (fdist-mean(fdist(~isnan(fdist))))/std(fdist(~isnan(fdist)));
-            for i = 1:Session.model.N,
-                for j = 1:Session.model.N,
-                    tdist = sq(dist(:,i,j));
-                    dist_std(i,j,1)  =  std(tdist(~dist_error(:,i,j,1)&~isnan(tdist)&zdist<1));
-                    dist_mean(i,j,1) = mean(tdist(~dist_error(:,i,j,1)&~isnan(tdist)&zdist<1));
-                    dist_error((tdist(~isnan(tdist))>(dist_std(i,j,1)+dist_mean(i,j,1)))|(tdist(~isnan(tdist))<(-dist_std(i,j,1)+dist_mean(i,j,1))),i,j,1)=1;
-                    for k = 2:depth,
-                        dist_std(i,j,k)  =  std(tdist(~dist_error(:,i,j,k-1)&~isnan(tdist)&zdist<1));
-                        dist_mean(i,j,k) = mean(tdist(~dist_error(:,i,j,k-1)&~isnan(tdist)&zdist<1));
-                        dist_error((tdist(~isnan(tdist))>(dist_std(i,j,k)+dist_mean(i,j,k)))|(tdist(~isnan(tdist))<(-dist_std(i,j,k)+dist_mean(i,j,k))),i,j,k)=1;
-                    end
-                end
-            end
-            Session.model.imdMean = dist_mean;
-            Session.model.imdStd = dist_std;
+%% REDO %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+%         function Session = updateModel(Session,varargin)
+%         %Session = updateModel(Session,depth)
+%         %update or create model, used for error correction
+%         %
+%         %  depth - int: default is 3, leave it alone
+%         %
+%             [depth] = DefaultArgs(varargin,{3});
+%             
+%             dist = Session.ang(:,:,:,3);
+%             dist_std = zeros(Session.model.N,Session.model.N,depth);
+%             dist_mean = zeros(Session.model.N,Session.model.N,depth);
+%             dist_error = zeros(size(Session.xyz,1),Session.model.N,Session.model.N,depth);
+%             fdist = sum(sum(dist,2),3);
+%             zdist = (fdist-mean(fdist(~isnan(fdist))))/std(fdist(~isnan(fdist)));
+%             for i = 1:Session.model.N,
+%                 for j = 1:Session.model.N,
+%                     tdist = sq(dist(:,i,j));
+%                     dist_std(i,j,1)  =  std(tdist(~dist_error(:,i,j,1)&~isnan(tdist)&zdist<1));
+%                     dist_mean(i,j,1) = mean(tdist(~dist_error(:,i,j,1)&~isnan(tdist)&zdist<1));
+%                     dist_error((tdist(~isnan(tdist))>(dist_std(i,j,1)+dist_mean(i,j,1)))|(tdist(~isnan(tdist))<(-dist_std(i,j,1)+dist_mean(i,j,1))),i,j,1)=1;
+%                     for k = 2:depth,
+%                         dist_std(i,j,k)  =  std(tdist(~dist_error(:,i,j,k-1)&~isnan(tdist)&zdist<1));
+%                         dist_mean(i,j,k) = mean(tdist(~dist_error(:,i,j,k-1)&~isnan(tdist)&zdist<1));
+%                         dist_error((tdist(~isnan(tdist))>(dist_std(i,j,k)+dist_mean(i,j,k)))|(tdist(~isnan(tdist))<(-dist_std(i,j,k)+dist_mean(i,j,k))),i,j,k)=1;
+%                     end
+%                 end
+%             end
+%             Session.model.imdMean = dist_mean;
+%             Session.model.imdStd = dist_std;
+% 
+%             % Find Index within the Session with Best Fit - Though
+%             % best to select it by eye
+%             model_index = 0;
+%             for i = 0:depth-1,
+%                 model_index = find(sum(sum(dist_error(:,:,:,depth-i),2),3)==0);
+%                 model_index = model_index(randi(length(model_index)));
+%                 if model_index, break, end
+%             end    
+%             Session.model.index = model_index;                    
+%         end
+% 
 
-            % Find Index within the Session with Best Fit - Though
-            % best to select it by eye
-            model_index = 0;
-            for i = 0:depth-1,
-                model_index = find(sum(sum(dist_error(:,:,:,depth-i),2),3)==0);
-                model_index = model_index(randi(length(model_index)));
-                if model_index, break, end
-            end    
-            Session.model.index = model_index;                    
-        end
-
-
+%% REDO %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%5
 %         function Session = correctRigidBody(Session,varargin)
 %         %Session = correctRigidBody(Session,markerSubset,depth,modelIndex,display)
 %         %find rigid body errors and correct them, if possible  
@@ -732,38 +458,37 @@ classdef MTASession < hgsetget
 %             Session.ang = Session.load_ang(1);
 %         end
 
-        function Session = addMarker(Session,name,color,sticks,xyz)
-        %Session = addMarker(Session,name,color,sticks,xyz)
-        %modify Model and xyz by adding an additional marker
-        %
-        %  name - string: marker descriptor (e.g.'bodypart_position')
-        %  color - numericArray: rgb values range - [0,1] (e.g.[0.4,1,0])
-        %  sticks - cellArray: information used to visualize connections/spatial
-        %                      organizations of markers
-        %                      {'marker_name1','marker_name2',[stick_color]}
-        %                      (e.g. {'head_front','head_back',[0,0,1]})
-        %
-        %             marker_name1 - string: marker descriptor (e.g.'bodypart_position')
-        %             marker_name2 - string: marker descriptor (e.g.'bodypart_position')
-        %             stick_color - numericArray: rgb values range - [0,1] (e.g.[0.4,1,0])
-        %
-
-            Marker = MTAMarker(name,color);
-            Session.model.Markers{end+1} = Marker;
-            Session.model.N = Session.model.N + 1;
-            for i = 1:length(sticks),
-                Session.model.Connections{end+1} = MTAStick(sticks{i}{1},sticks{i}{2},sticks{i}{3});
-            end
-            Session.xyz = cat(2,Session.xyz,xyz);
-        end
+%% REDO %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+%         function Session = addMarker(Session,name,color,sticks,xyz)
+%         %Session = addMarker(Session,name,color,sticks,xyz)
+%         %modify Model and xyz by adding an additional marker
+%         %
+%         %  name - string: marker descriptor (e.g.'bodypart_position')
+%         %  color - numericArray: rgb values range - [0,1] (e.g.[0.4,1,0])
+%         %  sticks - cellArray: information used to visualize connections/spatial
+%         %                      organizations of markers
+%         %                      {'marker_name1','marker_name2',[stick_color]}
+%         %                      (e.g. {'head_front','head_back',[0,0,1]})
+%         %
+%         %             marker_name1 - string: marker descriptor (e.g.'bodypart_position')
+%         %             marker_name2 - string: marker descriptor (e.g.'bodypart_position')
+%         %             stick_color - numericArray: rgb values range - [0,1] (e.g.[0.4,1,0])
+%         %
+% 
+%             Marker = MTAMarker(name,color);
+%             Session.model.Markers{end+1} = Marker;
+%             Session.model.N = Session.model.N + 1;
+%             for i = 1:length(sticks),
+%                 Session.model.Connections{end+1} = MTAStick(sticks{i}{1},sticks{i}{2},sticks{i}{3});
+%             end
+%             Session.xyz = cat(2,Session.xyz,xyz);
+%         end
 
         %%---------------------------------------------------------------------------------%
 
 
-
-
         %% Place Fields -------------------------------------------------------------------%
-
+% CHECK IF STILL FUNCTIONAL
         function Session = load_Pfs(Session,varargin)
         %Session = load_Pfs(Session,pf_search)
         %
@@ -776,7 +501,7 @@ classdef MTASession < hgsetget
         %pf_search - cellArray: contains PlaceField states as found
         %                       in the third varargin option of the
         %                       MTAPlaceField Class
-        %            e.g. {'rear',{'rear','theta'}};
+        %            e.g. 'rear', {'rear','theta'}
         %
         %-----------------------------------------------------------
         %
@@ -831,7 +556,7 @@ classdef MTASession < hgsetget
                 return
             end
         end
-
+% CHECK IF STILL FUNCTIONAL
         function Pfs = getPfs(Session,Pfs_search)            
         %Pfs = getPfs(Session,pf_search)       
         %returns existing place fields loaded in Session
@@ -868,6 +593,7 @@ classdef MTASession < hgsetget
 
         %%---------------------------------------------------------------------------------%
 
+% CHECK IF STILL FUNCTIONAL
         function Session = load_MTAObject(Session,Object_File_Tag,varargin)
             [MTAObject_search,safe_load]=DefaultArgs(varargin,{{},true});
             Session.(Object_File_Tag) = {};
@@ -889,7 +615,7 @@ classdef MTASession < hgsetget
                 Session.(Object_File_Tag) = Session.findObj(MTAObject_search);
             end
         end
-
+% CHECK IF STILL FUNCTIONAL
         function Objs = findObj(Session,Object_File_Tag,MTAObject_search)
             Objs = {};
             prop = properties(MTAObject_search);
@@ -913,7 +639,10 @@ classdef MTASession < hgsetget
             end
         end
 
-        function trialNames = list_trialNames(Session)
+        function trialNames = listTrialNames(Session)
+        %trialNames = listTrialNames(Session)
+        %returns a cell array of trial names associated with the Session
+        
             trialNames = {};
             files = dir(Session.spath);
             re = ['\.trl\.'];
@@ -927,34 +656,99 @@ classdef MTASession < hgsetget
             end
         end
 
-        function Session = updateBhvSource(Session,varargin)
-            [triallist] = DefaultArgs(varargin,{{Session.trialName}});
-            tempSession = Session;
-            for i = 1:length(triallist),
-                if ~strcmp(Session.trialName,triallist{i})
-                    Session = MTATrial(Session.name,{},triallist{i},[],0,Session.maze.name);
-                end
-                bhvModeNames = {};
-                files = dir(Session.spath);
-                re = [Session.name '\.' Session.maze.name '\.' Session.trialName '\.bhv\.'];
-                bhvFileList = {files(~cellfun(@isempty,regexp({files.name},re))).name};
-                bhvDnumList = {files(~cellfun(@isempty,regexp({files.name},re))).datenum};
-                re = ['\.mat']; 
-                bhvFileListBadInd = find(cellfun(@isempty,regexp(bhvFileList,re)));
-                bhvFileList(bhvFileListBadInd) = [];
-                bhvDnumList(bhvFileListBadInd) = [];
-                [~,newestBhvFileInd] = max(cell2mat(bhvDnumList));
-                if isempty(newestBhvFileInd),continue,end
-                load([Session.spath bhvFileList{newestBhvFileInd}])
-                bhvmode = Bhv.mode;
-                Session.Bhv = {};
-                clear('Bhv');
-                Session = Session.load_Bhv(bhvmode);
-                Session.save;
-            end
-            Session = tempSession;;
+        function Session = filter(Session,varargin)
+        %Session = filter(Session,field_name,kernel)       
+        %filters a field with specified kernel
+        %
+        %  field_name - string/cellArray(string): string of the property to be filtered
+        %
+        %  kernel - numericArray: the weighted kernal used in the convolution
+        %
+        %  example:
+        %    
+        %    Session = Session.filter('xyz',gausswin(9)./sum(gausswin(9))
+        %
+            [field_name,kernel] = DefaultArgs(varargin,{'xyz',gausswin(9)./sum(gausswin(9))});
+            padding_length = length(kernel);
+            fFieldData = zeros(Session.(field_name).size);
+            tFieldData = fFieldData;
+            tFieldData = cat(1,tFieldData,tFieldData(1:2*padding_length,:,:,:,:));
+
+            tFieldData(1:padding_length,:,:,:,:) = flipdim(Session.(field_name)(1:padding_length,:,:,:,:),1);
+            tFieldData(padding_length+1:size(fFieldData,1)+padding_length,:,:,:,:) = Session.(field_name);
+            
+            tFieldData(end-padding_length:end,:,:,:,:) = flipdim(Session.(field_name)(end-padding_length:end,:,:,:,:),1);
+            
+            tFieldData = reshape(Filter0(kernel,tFieldData),size(tFieldData));
+
+            Session.(field_name).data = tFieldData(padding_length+1:size(fFieldData,1)+padding_length,:,:,:,:);
+
         end
-% 
+
+        function printFig(Session,varargin)
+        %printFig(Session,varargin)
+        %saves an image of a target figure. 
+        %
+        %  handle     - figureHandel: default current figure handel
+        %
+        %  imFileType - string: image file type, supports 'eps' and 'png'
+        %
+        %  id         - string: identifier for the figure, (e.g. unit_number )
+        %
+        %  name       - string: name, default - random number between 
+        %
+        %  path       - string: path where the images will be saved -
+        %                      default ~/figures/f_"datestr"/
+        %
+        %  example:
+        %
+        %    Session.printFig(gcf,'png',num2str(1),[],[]);
+        %
+        %    Session.printFig(gcf,'png',num2str(1),'PlaceFields',Session.spath);
+        %
+            [handle,imFileType,id,name,path] = DefaultArgs(varargin,{gcf,'png',[],num2str(randi(100000,1)),['~/figures/f' datestr(now,29)]});
+            if ~exist(path,'dir'),
+                mkdir(path),
+            end
+            if ~isempty(id), id = [ '.' num2str(id)];,end
+            switch imFileType
+              case 'eps'
+                print(handle,'-dpsc2',[path '/' Session.filebase '.' name id '.' imFileType]);
+              case 'png'
+                print(handle,'-dpng',[path '/' Session.filebase '.' name id '.' imFileType]);
+            end
+        end
+
+%% REDO %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+%         function Session = updateBhvSource(Session,varargin)
+%             [triallist] = DefaultArgs(varargin,{{Session.trialName}});
+%             tempSession = Session;
+%             for i = 1:length(triallist),
+%                 if ~strcmp(Session.trialName,triallist{i})
+%                     Session = MTATrial(Session.name,{},triallist{i},[],0,Session.maze.name);
+%                 end
+%                 bhvModeNames = {};
+%                 files = dir(Session.spath);
+%                 re = [Session.name '\.' Session.maze.name '\.' Session.trialName '\.bhv\.'];
+%                 bhvFileList = {files(~cellfun(@isempty,regexp({files.name},re))).name};
+%                 bhvDnumList = {files(~cellfun(@isempty,regexp({files.name},re))).datenum};
+%                 re = ['\.mat']; 
+%                 bhvFileListBadInd = find(cellfun(@isempty,regexp(bhvFileList,re)));
+%                 bhvFileList(bhvFileListBadInd) = [];
+%                 bhvDnumList(bhvFileListBadInd) = [];
+%                 [~,newestBhvFileInd] = max(cell2mat(bhvDnumList));
+%                 if isempty(newestBhvFileInd),continue,end
+%                 load([Session.spath bhvFileList{newestBhvFileInd}])
+%                 bhvmode = Bhv.mode;
+%                 Session.Bhv = {};
+%                 clear('Bhv');
+%                 Session = Session.load_Bhv(bhvmode);
+%                 Session.save;
+%             end
+%             Session = tempSession;;
+%         end
+%
+%% REDO %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 %         function Trial = consolidateTrials(Session,varargin)
 %             if ~isa(Session,'MTASession')&isa(Session,'MTATrial'),
 %                 Session = MTASession(Session.name,{},Session.maze.name);
@@ -995,54 +789,8 @@ classdef MTASession < hgsetget
 %             Bhv.save(Trial,1);
 %             Trial.save
 %         end
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%55
         
-        function Session = filter(Session,varargin)
-        %Session = filter(Session,field_name,kernel)       
-        %filters a field with specified kernel
-        %
-        %  field_name - string/cellArray(string): string of the property to be filtered
-        %
-        %  kernel - numericArray: the weighted kernal used in the convolution
-        %
-        %  example:
-        %    
-        %    Session = Session.filter('xyz',gausswin(9)./sum(gausswin(9))
-        %
-            [field_name,kernel] = DefaultArgs(varargin,{'xyz',gausswin(9)./sum(gausswin(9))});
-            padding_length = length(kernel);
-            fFieldData = zeros(size(Session.(field_name)));
-            tFieldData = fFieldData;
-            tFieldData = cat(1,tFieldData,tFieldData(1:2*padding_length,:,:,:,:));
-
-            tFieldData(1:padding_length,:,:,:,:) = flipdim(Session.(field_name)(1:padding_length,:,:,:,:),1);
-            tFieldData(padding_length+1:size(fFieldData,1)+padding_length,:,:,:,:) = Session.(field_name);
-            
-            tFieldData(end-padding_length:end,:,:,:,:) = flipdim(Session.(field_name)(end-padding_length:end,:,:,:,:),1);
-            
-            tFieldData = reshape(Filter0(kernel,tFieldData),size(tFieldData));
-
-            Session.(field_name) = tFieldData(padding_length+1:size(fFieldData,1)+padding_length,:,:,:,:);
-
-        end
-
-        function Session = resample(Session,field,prevSampleRate,newSampleRate)            
-        end
-
-
-        function printFig(Session,varargin)
-            [handle,imFileType,id,name,path] = DefaultArgs(varargin,{gcf,'png',[],num2str(randi(100000,1)),['~/figures/f' datestr(now,29)]});
-            if ~exist(path,'dir'),
-                mkdir(path),
-            end
-            if ~isempty(id), id = [ '.' num2str(id)];,end
-            switch imFileType
-              case 'eps'
-                print(handle,'-dpsc2',[path '/' Session.filebase '.' name id '.' imFileType]);
-              case 'png'
-                print(handle,'-dpng',[path '/' Session.filebase '.' name id '.' imFileType]);
-            end
-        end
-
     end %methods
 
 end %MTASession
