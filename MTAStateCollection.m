@@ -180,6 +180,7 @@ classdef MTAStateCollection < hgsetget
                     end
                 else
                     Stc = subsref(Stc,S(n:end));
+                    return
                 end
             end
         end

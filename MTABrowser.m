@@ -589,7 +589,7 @@ old_Session = getappdata(handles.MTABrowser,'SESSION_DATA');
 if ~strcmp([subject '-' date '.' maze '.all'],old_Session.filebase),
     clear('old_Session');
     setappdata(handles.MTABrowser,'Session',MTASession([]));
-    Session = MTASession([subject '-' date],{},maze);
+    Session = MTASession([subject '-' date],maze);
     setappdata(handles.MTABrowser,'SESSION_DATA',Session);
 else
     Session = getappdata(handles.MTABrowser,'SESSION_DATA');
@@ -602,7 +602,7 @@ trials = get(handles.TrialList,'String');
 if strcmp(trials{trialIndex},'full session'),
     setappdata(handles.MTABrowser,'Session',getappdata(handles.MTABrowser,'SESSION_DATA'));
 else
-    Trial = MTATrial(Session,{},trials{trialIndex});
+    Trial = MTATrial(Session,trials{trialIndex});
     setappdata(handles.MTABrowser,'Session',Trial);
 end
 function TrialList_CreateFcn(hObject, eventdata, handles)
@@ -649,16 +649,16 @@ if hObject ~= getappdata(handles.MTABrowserStates,'previousBState'),
     MLData.recording=0;
     %set(handles.MTABrowser,'keyPressFcn','MTABrowser(''MLkeyState'',hObject,eventdata,handles)')
     Session = getappdata(handles.MTABrowser,'Session');
-    xyzpos = Session.xyz;
+    xyzpos = Session.xyz.data;
     
     %% Translate connection map to pairs
     markerConnections=[];
-    for i = 1:length(Session.Model.Connections)
+    for i = 1:length(Session.model.Connections)
         markerConnections= cat(1,markerConnections,....
-                               [Session.Model.gmi(Session.Model.Connections{i}.marker1),Session.Model.gmi(Session.Model.Connections{i}.marker2)]...
+                               [Session.model.gmi(Session.model.Connections{i}.marker1),Session.model.gmi(Session.model.Connections{i}.marker2)]...
                               );
     end
-    num_of_sticks= length(Session.Model.Connections);    
+    num_of_sticks= length(Session.model.Connections);    
 
     %% Initialization of graphical elements
     stick_options = {};
@@ -669,9 +669,9 @@ if hObject ~= getappdata(handles.MTABrowserStates,'previousBState'),
     %% Plot MLxyzView
     cla(handles.MLxyzView);
     cla(handles.MLstateView);
-    set(handles.MLxyzView,'XLim',[Session.Maze.visible_volume(1,1) Session.Maze.visible_volume(1,2)],...
-                          'YLim',[Session.Maze.visible_volume(2,1) Session.Maze.visible_volume(2,2)],...
-                          'ZLim',[Session.Maze.visible_volume(3,1) Session.Maze.visible_volume(3,2)],...
+    set(handles.MLxyzView,'XLim',[Session.maze.visible_volume(1,1) Session.maze.visible_volume(1,2)],...
+                          'YLim',[Session.maze.visible_volume(2,1) Session.maze.visible_volume(2,2)],...
+                          'ZLim',[Session.maze.visible_volume(3,1) Session.maze.visible_volume(3,2)],...
                           'View', [322.5 30],...
                           'Drawmode','fast',...
                           'NextPlot','add',...
@@ -685,15 +685,15 @@ if hObject ~= getappdata(handles.MTABrowserStates,'previousBState'),
     try
         delete(MLData.sticks);
     end
-    MLData.sticks = repmat({0},1,length(Session.Model.Connections));
-    for l=1:length(Session.Model.Connections),
+    MLData.sticks = repmat({0},1,length(Session.model.Connections));
+    for l=1:length(Session.model.Connections),
         MLData.sticks{l} =line('Parent',handles.MLxyzView,...
-            'Tag',[Session.Model.Connections{l}.marker1 ':' Session.Model.Connections{l}.marker2],...
+            'Tag',[Session.model.Connections{l}.marker1 ':' Session.model.Connections{l}.marker2],...
             'XData',[xyzpos(1,markerConnections(l,1),1),xyzpos(1,markerConnections(l,2),1)],...
             'YData',[xyzpos(1,markerConnections(l,1),2),xyzpos(1,markerConnections(l,2),2)],...
             'ZData',[xyzpos(1,markerConnections(l,1),3),xyzpos(1,markerConnections(l,2),3)],...
             'LineWidth', stick_options.width, ...
-            'Color'    , Session.Model.Connections{l}.color./255, ...
+            ...%'Color'    , Session.model.Connections{l}.color./255, ...
             'EraseMode', stick_options.erase,...
             'Visible','on');
         guidata(MLData.sticks{l},handles);
@@ -708,17 +708,17 @@ if hObject ~= getappdata(handles.MTABrowserStates,'previousBState'),
     try
         delete(MLData.markers);
     end
-    MLData.markers = repmat({0},1,Session.Model.N);
-    for l=1:Session.Model.N,
+    MLData.markers = repmat({0},1,Session.model.N);
+    for l=1:Session.model.N,
         MLData.markers{l} =line('Parent',handles.MLxyzView, ...
-            'Tag',Session.Model.Markers{l}.name,...
+            'Tag',Session.model.Markers{l}.name,...
             'XData',[xyzpos(1,l,1),xyzpos(1,l,1)],...
             'YData',[xyzpos(1,l,2),xyzpos(1,l,2)],...
             'ZData',[xyzpos(1,l,3),xyzpos(1,l,3)],...
             'Marker'         , marker_options.style, ...
-            'MarkerEdgeColor', Session.Model.Markers{l}.color./255, ...
+            'MarkerEdgeColor', Session.model.Markers{l}.color./255, ...
             'MarkerSize'     , marker_options.size, ...
-            'MarkerFaceColor', Session.Model.Markers{l}.color./255, ...
+            'MarkerFaceColor', Session.model.Markers{l}.color./255, ...
             'EraseMode'      , marker_options.erase,...
             'Visible','on');
         guidata(MLData.markers{l},handles);
@@ -728,24 +728,24 @@ if hObject ~= getappdata(handles.MTABrowserStates,'previousBState'),
     %% Plot MLstateView
     %% Set labels & keys
     % Convert Bhv.States.state from Periods to time-series
-    States = Session.Bhv.States;
+    States = Session.stc.states;
     if ~isempty(States)
         labels = {};
         keys = '';
         for i = 1:length(States)
             labels{i} = States{i}.label;
             keys = strcat(keys,States{i}.key);
-            tmpState = States{i}.state;
+            tmpState = States{i}.data;
             tmpState(tmpState==0) = 1;
-            States{i}.state = zeros(size(Session.xyz,1),1);
+            States{i}.data = zeros(Session.xyz.size(1),1);
             for j = 1:size(tmpState,1),
-                States{i}.state(tmpState(j,1):tmpState(j,2)) = 1;
+                States{i}.data(tmpState(j,1):tmpState(j,2)) = 1;
             end
         end
     else
         labels = {'default'};
         keys = 'd';
-        States{1}.state = zeros(size(Session.xyz,1),1);
+        States{1}.data = zeros(Session.xyz.size(1),1);
     end
 
     current_label = 1;
@@ -758,7 +758,7 @@ if hObject ~= getappdata(handles.MTABrowserStates,'previousBState'),
     %% Set Up States MLstateView Window
     sxyz = size(xyzpos);
     for l=1:num_of_states
-        States{l}.state(States{l}.state(:)>0) =States{l}.state(States{l}.state(:)>0)-1+l/2;
+        States{l}.data(States{l}.data(:)>0) =States{l}.data(States{l}.data(:)>0)-1+l/2;
     end
     statesRange = [-0.5,num_of_states/2+0.5];
     windowSize = 100; 
@@ -781,7 +781,7 @@ if hObject ~= getappdata(handles.MTABrowserStates,'previousBState'),
         MLData.state_lines{l} =line('Parent', handles.MLstateView,...
                           'Tag',       labels{l},...
                           'XData',     1:windowSize,...
-                          'YData',     States{l}.state(1:windowSize),...
+                          'YData',     States{l}.data(1:windowSize),...
                           'LineWidth', state_line_options.width, ...
                           'Color'    , f_line_colors(l,:), ...
                           'EraseMode', state_line_options.erase,...
@@ -820,8 +820,8 @@ if hObject ~= getappdata(handles.MTABrowserStates,'previousBState'),
         delete(MLData.feature_display_panels);              
     end
     
-    if ~isempty(Session.Fet),
-        MLData.Features = Session.Fet.Features;
+    if ~isempty(Session.fet),
+        MLData.Features = Session.fet.Features;
     else
         MLData.Features = {};
     end
@@ -833,7 +833,7 @@ if hObject ~= getappdata(handles.MTABrowserStates,'previousBState'),
         end
     else
         MLData.featurelabels = {'default'};
-        MLData.Features{1} = MTAFeature('default','zeros(size(Session.xyz,1),1);',0,'line');
+        MLData.Features{1} = MTAFeature('default','zeros(Session.xyz.size(1),1);',0,'line');
         MLData.num_of_features = 1;
     end
     
@@ -863,10 +863,10 @@ if hObject ~= getappdata(handles.MTABrowserStates,'previousBState'),
     MLData.line_options = stick_options;
     
     MLData.xyzpos = xyzpos;
-    MLData.sessionLength = size(Session.xyz,1);
+    MLData.sessionLength = Session.xyz.size(1);
     MLData.markerConnections = markerConnections;
     MLData.num_of_sticks = num_of_sticks;
-    MLData.num_of_markers = Session.Model.N;
+    MLData.num_of_markers = Session.model.N;
 
     
     % MLstateView Stuff
@@ -885,7 +885,7 @@ if hObject ~= getappdata(handles.MTABrowserStates,'previousBState'),
     MLData.index_range = index_range;
 
     
-    MLData.t = d2t(size(Session.xyz,1),Session.xyz.sampleRate,0);
+    MLData.t = d2t(Session.xyz.size(1),Session.xyz.sampleRate,0);
     
     set(handles.MLposition_slider,'Value',1,'Min',1,'Max',MLData.sessionLength-MLData.windowSize, 'SliderStep', [10 100]./MLData.sessionLength);
 
@@ -964,8 +964,8 @@ current_label = MLData.current_label;
 setappdata(handles.MLapp,'animation',0);
 setappdata(handles.MLapp,'paused',0);
 if current_label~=0
-    current_state = MLData.States{current_label}.state(MLData.idx);
-    idx_shift = find(MLData.States{current_label}.state(MLData.idx:end)~=current_state,1);
+    current_state = MLData.States{current_label}.data(MLData.idx);
+    idx_shift = find(MLData.States{current_label}.data(MLData.idx:end)~=current_state,1);
     if ~isempty(idx_shift),
         MLData.idx = MLData.idx + idx_shift;
         MLData.flag_tag = 0;
@@ -996,8 +996,8 @@ current_label = MLData.current_label;
 setappdata(handles.MLapp,'animation',0);
 setappdata(handles.MLapp,'paused',0);
 if current_label~=0
-    current_state = MLData.States{current_label}.state(MLData.idx);
-    idx_shift = find(MLData.States{current_label}.state(1:MLData.idx)~=current_state,1,'last');
+    current_state = MLData.States{current_label}.data(MLData.idx);
+    idx_shift = find(MLData.States{current_label}.data(1:MLData.idx)~=current_state,1,'last');
     if ~isempty(idx_shift),
         MLData.idx = MLData.idx + idx_shift - MLData.idx;
         MLData.flag_tag = 0;
@@ -1108,11 +1108,11 @@ f_line_colors = (f_line_colors+repmat([0.1,0,0],size(f_line_colors,1),1))./1.1;
 %% Draws the Behavioral States
 ssl = 1;
 for l=selected_states,
-    MLData.States{l}.state(MLData.States{l}.state(:)>0)=MLData.States{l}.state(MLData.States{l}.state(:)>0)./max(MLData.States{l}.state)-1+ssl/2;
+    MLData.States{l}.data(MLData.States{l}.data(:)>0)=MLData.States{l}.data(MLData.States{l}.data(:)>0)./max(MLData.States{l}.data)-1+ssl/2;
     if l>length(MLData.state_lines),
         MLData.state_lines{l} =line('Parent', handles.MLstateView,...
             'XData',     1:MLData.windowSize+1,...
-            'YData',     MLData.States{l}.state(MLData.idx:MLData.idx+MLData.windowSize),...
+            'YData',     MLData.States{l}.data(MLData.idx:MLData.idx+MLData.windowSize),...
             'LineWidth', MLData.state_line_options.width, ...
             'Color'    , f_line_colors(ssl,:), ...
             'EraseMode', MLData.state_line_options.erase,...
@@ -1145,6 +1145,9 @@ if find(selected_states==MLData.current_label),
         if strcmp(MLData.labels{l},MLData.previous_label)
             MLData.current_label = find(selected_states==l);
         end
+    end
+    if isempty(MLData.current_label)
+        MLData.current_label = 0;
     end
 else
     MLData.current_label = 0;
@@ -1216,7 +1219,7 @@ for i = 1:length(MLData.labels),
     statesTableData{i,1} = MLData.labels{i};
     statesTableData{i,2} = MLData.keys(i);
     statesTableData{i,3} = MLData.selected_states(i);
-    statesTableData{i,4} = size(ThreshCross(MLData.States{i}.state,0.0005,1),1);
+    statesTableData{i,4} = size(ThreshCross(MLData.States{i}.data,0.0005,1),1);
 end
 
 set(handles.MLSstateTable,'ColumnName',columnname);
@@ -1294,11 +1297,11 @@ else
         for i = 1:length(States)
             labels{i} = States{i}.label;
             keys = strcat(keys,States{i}.key);
-            tmpState = States{i}.state;
+            tmpState = States{i}.data;
             tmpState(tmpState==0) = 1;
-            States{i}.state = zeros(size(Session.xyz,1),1);
+            States{i}.data = zeros(Session.xyz.size(1),1);
             for j = 1:size(tmpState,1),
-                States{i}.state(tmpState(j,1):tmpState(j,2)) = 1;
+                States{i}.data(tmpState(j,1):tmpState(j,2)) = 1;
             end
         end        
     end
@@ -1344,7 +1347,7 @@ else
     
     Bhv.States = {};
     for s = 1:MLData.num_of_states,
-        state = MLData.States{s}.state./max(MLData.States{s}.state);
+        state = MLData.States{s}.data./max(MLData.States{s}.data);
         state = ThreshCross(state,0.5,1);
         Bhv = Bhv.addState(MLData.keys(s),MLData.labels{s},state);
     end
@@ -1822,10 +1825,10 @@ function MLFnewFeatureExpression_Callback(hObject, eventdata, handles)
 function MLFfetOpen_Callback(hObject, eventdata, handles)
 Session = getappdata(handles.MTABrowser,'Session');
 MLData = getappdata(handles.MTABrowser,'MLData');
-if isempty(Session.Fet),
+if isempty(Session.fet),
     fet_name = 'default';
 else
-    fet_name = Session.Fet.mode;
+    fet_name = Session.fet.mode;
 end
 
 [filename,filepath] = uigetfile(['*.' Session.trialName '.fet.*'],'Open Feature Collection:',...
@@ -1836,13 +1839,13 @@ if ~ischar(filename)||~ischar(filepath),
     return
 else
     load([filepath filename]);
-    Session.Fet = Fet;
-    Features = Session.Fet.Features;
-    if strcmp(Session.Fet.mode,'default'),        
-        Session.Fet = MTAFet(Session,fet_name,1);
+    Session.fet = Fet;
+    Features = Session.fet.Features;
+    if strcmp(Session.fet.mode,'default'),        
+        Session.fet = MTAFet(Session,fet_name,1);
         featurelabels = {'default'};
-        Features{1} = MTAFeature('default','zeros(size(Session.xyz,1),1);',0,'line');
-        Session.Fet.Features = MLData.Features;
+        Features{1} = MTAFeature('default','zeros(Session.xyz.size(1),1);',0,'line');
+        Session.fet.Features = MLData.Features;
     else
         if ~isempty(Features)
             featurelabels = cell(1,length(Features));
@@ -1865,10 +1868,10 @@ end
 function MLFfetSave_Callback(hObject, eventdata, handles)
 Session = getappdata(handles.MTABrowser,'Session');
 MLData = getappdata(handles.MTABrowser,'MLData');
-if isempty(Session.Fet),
+if isempty(Session.fet),
     fet_name = 'default';
 else
-    fet_name = Session.Fet.mode;
+    fet_name = Session.fet.mode;
 end
 [filename,filepath] = uiputfile(['*' Session.trialName '.fet.*'],'Open Feature Collection:',...
                      fullfile(Session.spath, [Session.filebase '.fet.' fet_name '.mat']));
@@ -1890,7 +1893,7 @@ else
     end
     Fet.Features = MLData.Features;
     Fet.save(Session,1);
-    Session.Fet = Fet;
+    Session.fet = Fet;
     Session.save();
 end
 
@@ -1990,11 +1993,11 @@ if ~getappdata(handles.MLapp,'paused'),
     selected_states = find(MLData.selected_states);
     % Label state
     if MLData.flag_tag&&MLData.current_label,
-        MLData.States{selected_states(MLData.current_label)}.state(MLData.idx:MLData.idx+skip*idx+idx) = MLData.current_label/2;
+        MLData.States{selected_states(MLData.current_label)}.data(MLData.idx:MLData.idx+skip*idx+idx) = MLData.current_label/2;
     end
     % Erase state
     if MLData.erase_tag&&MLData.current_label,
-        MLData.States{selected_states(MLData.current_label)}.state(MLData.idx:MLData.idx+skip*idx+idx) = 0;
+        MLData.States{selected_states(MLData.current_label)}.data(MLData.idx:MLData.idx+skip*idx+idx) = 0;
     end
 
     MLData.idx = MLData.idx+skip*idx+idx;
@@ -2018,7 +2021,7 @@ if ~getappdata(handles.MLapp,'paused'),
     end
     for kk=find(MLData.selected_states),
         set(MLData.state_lines{kk},'XData',MLData.index_range(MLData.idx,1):MLData.index_range(MLData.idx,2),...
-                                   'YData',MLData.States{kk}.state(MLData.index_range(MLData.idx,1):MLData.index_range(MLData.idx,2)),...
+                                   'YData',MLData.States{kk}.data(MLData.index_range(MLData.idx,1):MLData.index_range(MLData.idx,2)),...
                                    'LineStyle','-')
     end
     for kk=find(MLData.selected_features),

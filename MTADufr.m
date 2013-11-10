@@ -20,7 +20,7 @@ classdef MTADufr < MTAData
         
         function Data = create(Data,Session,varargin)
             
-            [DataObj,units,twin] = DefaultArgs(varargin,{Session.lfp,[],0.05});
+            [DataObj,units,twin,overwrite] = DefaultArgs(varargin,{Session.lfp,[],0.05,0});
             
             if isa(DataObj,'MTAApfs'),
                 %nv units
@@ -32,7 +32,7 @@ classdef MTADufr < MTAData
                 Data.data = zeros(Session.xyz.size(1),numel(units));
                 c = 1;
                 for u = units,
-                    rateMap = DataObj.data.rateMap(:,ismember(DataObj.data.clu,units),1);
+                    rateMap = DataObj.data.rateMap(:,ismember(DataObj.data.clu,u),1);
                     Data.data(:,c) = rateMap(sub2ind(DataObj.adata.binSizes',ind{:}));
                     c = c+1;
                 end
@@ -40,7 +40,7 @@ classdef MTADufr < MTAData
                 
             else
                 lfpSyncPeriods = Session.sync.periods(Session.lfp.sampleRate);
-                if ~exist(Data.fpath,'file'),
+                if ~exist(Data.fpath,'file')||overwrite,
                     [Res,Clu,Map] = LoadCluRes(fullfile(Session.spath,Session.name));
                     
                     gwin = gausswin(round(twin*Session.sampleRate))/sum(gausswin(round(twin*Session.sampleRate)));
@@ -59,11 +59,12 @@ classdef MTADufr < MTAData
                     load(Data.fpath);
                 end
                 
+                Data.sampleRate = Session.lfp.sampleRate;
                 if isempty(units),units = ':';end
                 Data.data = data(lfpSyncPeriods(1):lfpSyncPeriods(end),units);
              
-                if DataObj.sampleRate < Session.lfp.sampleRate,
-                    Data.resample(DataObj);
+                if DataObj.sampleRate ~= Session.lfp.sampleRate,
+                    Data.resample(DataObj);                                    
                 end
             end
         end
@@ -77,8 +78,7 @@ classdef MTADufr < MTAData
             if DataObj.isempty, DataObj.load; dlen = DataObj.size(1); end
             uind = round(linspace(round(Data.sampleRate/DataObj.sampleRate),Data.size(1),DataObj.size(1)));
             Data.data = Data.data(uind,:);
-            Data.sampleRate = DataObj.sampleRate;
-            DataObj.clear;
+            Data.sampleRate = DataObj.sampleRate;            
         end
         function Data = embed(Data)
         end
