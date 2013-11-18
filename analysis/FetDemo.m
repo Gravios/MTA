@@ -1,7 +1,7 @@
 
-s = MTASession('jg05-20120317');
+s = MTASession('jg05-20120317',[],1);
 t = MTATrial(s);
-
+t.ang.load(t.sync);
 
 
 plot(circ_dist(t.ang(t.stc{'w'}(:,:),1,2,1),t.ang(t.stc{'w'}(:,:),3,4,1))),ylim([-pi,pi])
