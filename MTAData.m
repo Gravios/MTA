@@ -193,7 +193,8 @@ classdef MTAData < hgsetget
                        (size(S.subs{1},2)==1&&size(S.subs{1},1)>2)||...
                        strcmp(S.subs{1},':'),
                    
-                        Data = Data.data(S.subs{1});
+                        Data = builtin('subsref',Data.data,S);
+                        return
                     else
                         S.subs = S.subs(~cellfun(@isempty,S.subs));
                         Sa = S;
