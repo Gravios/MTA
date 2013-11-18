@@ -30,10 +30,10 @@ classdef MTADang < MTAData
         end
         
         function Data = create(Data,Session)
-            ang = zeros(size(Session.xyz,1),Session.Model.N,Session.Model.N,5);
+            ang = zeros(size(Session.xyz,1),Session.model.N,Session.model.N,5);
             diffMat = Session.markerDiffMatrix();
-            for i=1:Session.Model.N,
-                for j=1:Session.Model.N,
+            for i=1:Session.model.N,
+                for j=1:Session.model.N,
                     if i==j,
                         continue
                     end
@@ -49,9 +49,14 @@ classdef MTADang < MTAData
         
         function Data = filter(Data,win)
         end
-        function Data = resample(Data,newSampleRate,varargin)
-            [interp_type] = DefaultArgs(varargin,{'linear'});
+
+        function Data = resample(Data,DataObj)
+            if DataObj.isempty, DataObj.load; dlen = DataObj.size(1); end
+            uind = round(linspace(round(Data.sampleRate/DataObj.sampleRate),Data.size(1),DataObj.size(1)));
+            Data.data = Data.data(uind,:,:,:);
+            Data.sampleRate = DataObj.sampleRate;            
         end
+
         function Data = embed(Data,win,overlap)
         end
 

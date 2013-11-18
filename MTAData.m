@@ -73,7 +73,7 @@ classdef MTAData < hgsetget
             data = Data.data;
             if isempty(varargin),
                 data = Data.data;
-                save(Data.path,'data','-v7.3');
+                save(Data.fpath,'data','-v7.3');
                 out = true;
             else
                 data = Data.data;

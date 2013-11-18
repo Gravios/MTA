@@ -1,17 +1,22 @@
 function paths = MTAConfiguration(root_dir)
 %% still needs work
-user = user(uind:end-1);
+
 if ispc, 
     userdir= getenv('USERPROFILE'); 
 else
     userdir= getenv('HOME');
 end
 
-sysroot
 
 %paths to the data directories
 data = fullfile(userdir,root_dir);
-MTAPath = fullfile(userdir,root_dir,'Config','MTA');
+if ~exist(fullfile(data,'config'),'dir')
+    mkdir(fullfile(data,'config'));
+end
+MTAPath = fullfile(userdir,root_dir,'config','MTA');
+if ~exist(MTAPath,'dir'),
+    mkdir(MTAPath);
+end
 
 %List of the accepted marker names
 MTAMarkers ={'hip_right','pelvis_root','hip_left','spine_lower','knee_left','knee_right','tail_base','tail_end','spine_middle','spine_upper','head_back','head_left','head_front','head_right','shoulder_left','elbow_left','shoulder_right','elbow_right','head_top'};
@@ -47,9 +52,12 @@ MTAMarkerConnections = {{'head_front','head_left' },...
     {'head_top','head_back'}, ...
     {'tail_proximal','spine_lower'}};
 
-save([ '/tmp/MTAPaths.mat'],'MTAPath','data')
-save([ '/tmp/MTAMarkers.mat'],'MTAMarkers')
-save([ '/tmp/MTAMazes.mat'],'MTAMazes')
-save([ '/tmp/MTAMarkerConnections.mat'],'MTAMarkerConnections')
+save(fullfile(MTAPath, 'MTAPaths.mat'  ),'MTAPath','data')
+save(fullfile(MTAPath, 'MTAMarkers.mat'),'MTAMarkers')
+save(fullfile(MTAPath, 'MTAMazes.mat'  ),'MTAMazes')
+save(fullfile(MTAPath, 'MTAMarkerConnections.mat'),'MTAMarkerConnections')
 
-end
+addpath(MTAPath)
+savepath
+
+

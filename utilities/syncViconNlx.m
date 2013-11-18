@@ -99,7 +99,7 @@ xyzData = xyzData(xyzDataInd);
 
 Session.sync = MTASync(Session.spath,Session.name,syncPeriods./1000);
 Session.stc = MTAStateCollection(Session.spath,Session.filebase,'default');
-
+Session.stc.updateSync(Session.sync);
 
 nSessions = length(xyzData);
 xyz = [];
