@@ -160,7 +160,7 @@ classdef MTASession < hgsetget
               otherwise
                 switch xyzSystem,
                   case 'vicon'
-                    Session = loadVicon(Session);
+                    Session = loadVicon(Session,xyzSampleRate);
                 end
             end
         end
