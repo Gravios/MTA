@@ -1,14 +1,20 @@
 
+
 t = MTATrial('jg05-20120317');
 t.ufr.create(t,t.xyz);
-vel = MTADxyz([],[],t.vel(7),t.xyz.sampleRate);
+vel = MTADxyz([],[],Filter0(gausswin(31)./sum(gausswin(31)),t.vel(7)),t.xyz.sampleRate);
 
 units =[18,24,29,32,37,41,42];
+units = 1:95;
+
+
 
 figure,hist(t.ufr(:,units==29),100)
 u = 29;
 figure,hold on
-uind = t.ufr(:,u==units)>10&t.ufr(:,u==units)<20&[0;vel(:)]>2;
+spkind = find(t.ufr(:,units==u)>6&t.ufr(:,u==units)<8&[0;vel(:)]>2);
+uind = reshape(repmat(spkind,1,ts)+repmat(1:ts,size(spkind,1),1),[],1);
+%uind = t.ufr(:,u==units)>15&t.ufr(:,u==units)<30&[0;vel(:)]>2;
 plot3(t.xyz(uind,7,1),t.xyz(uind,7,2),t.xyz(uind,7,3),'.r')
 pfs.plot(u)
 

@@ -33,7 +33,7 @@ classdef MTAApfs < hgsetget %< MTAAnalysis
                     Pfs.session.mazeName    = MazeName;
                     
                     pfsState = Session.stc{states,Session.xyz.sampleRate}.copy;
-                    
+
                     Pfs.parameters.states = states;
                     Pfs.parameters.type   = type;
                     Pfs.parameters.spkShuffle = spkShuffle;
@@ -84,7 +84,7 @@ classdef MTAApfs < hgsetget %< MTAAnalysis
             %% load existing data
             epftmp = exist(pf_tmpfile,'file');
 
-            if epftmp&&overwrite~=1,
+            if epftmp&&~overwrite,
                 if isempty(Pfs.data.clu),
                     load(pf_tmpfile);
                 end
@@ -126,10 +126,10 @@ classdef MTAApfs < hgsetget %< MTAAnalysis
                     end
                 end
 
-            elseif epftmp&&overwrite==1,
+            elseif epftmp&&overwrite,
             %% Extend Pfs data for additional units
                 numUnits = numel(units);
-                if numUnits ==0
+                if numUnits == 0
                     numUnits = size(Session.spk.map,1);
                     units    = 1:size(Session.spk.map,1);
                 end
@@ -161,9 +161,10 @@ classdef MTAApfs < hgsetget %< MTAAnalysis
             elseif ~epftmp
             %% Instantiate Pfs Data Variables if DeNovoCalc
                 numUnits = numel(units);
-                if numUnits ==0
+                if numUnits == 0
                     numUnits = size(Session.spk.map,1);
-                    units    = 1:size(Session.spk.map,1);
+                    units    = 1:numUnits;
+                    selected_units    = units;
                 end
                 dind = 1:numUnits;
                 Pfs.data =struct('clu',        zeros(1,numUnits),...
@@ -190,12 +191,13 @@ classdef MTAApfs < hgsetget %< MTAAnalysis
                 Pfs.data.clu(dind(i)) = Session.spk.map(unit,1);
                 Pfs.data.el(dind(i)) = Session.spk.map(unit,2);
                 Pfs.data.elClu(dind(i)) = Session.spk.map(unit,3);
-                mySpkPos = Session.xyz(Session.spk(unit),Session.trackingMarker,1:numel(binDims));
-                
-                nSpk = size(mySpkPos,1);
+
+                spkres = Session.spk(unit);
+                nSpk = numel(spkres);
                 
                 %% Skip unit if too few spikes
                 if nSpk>10,
+                    mySpkPos = Session.xyz(spkres,Session.trackingMarker,1:numel(binDims));
                     %% CircShift position data
                     shuffled_Pos = @(posShuffle,stspos) circshift(stspos,randi([-posShuffle,posShuffle]));
                     switch spkShuffle
@@ -233,6 +235,7 @@ classdef MTAApfs < hgsetget %< MTAAnalysis
                 i = i+1;
                 save(pf_tmpfile,'Pfs','-v7.3')
             end
+
             field = fieldnames(Pfs.data);
             Clu = Pfs.data.clu;
             for f = 1:numel(field);
