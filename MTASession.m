@@ -203,7 +203,7 @@ classdef MTASession < hgsetget
 
 
         %% Variables from XYZ -------------------------------------------------------------%        
-        function diffMat = markerDiffMatrix(Session)
+        function diffMat = markerDiffMatrix(Session,varargin)
         %diffMat = markerDiffMatrix(Session)
         %create a time series where the position of every marker
         %has been substracted from one another
@@ -211,11 +211,11 @@ classdef MTASession < hgsetget
         %Output: 
         %  diffMat - numericArray: (index,marker1,marker2,dim)
         %
-            xl = Session.xyz.size(1);
-            diffMat = zeros(xl,Session.model.N,Session.model.N,3);
-            for i=1:Session.model.N,
-                for j=1:Session.model.N,
-                    diffMat(:,i,j,:) = Session.xyz(:,j,:)-Session.xyz(:,i,:);
+            [xyz] = DefaultArgs(varargin,{Session.xyz});
+            diffMat = zeros(xyz.size(1),xyz.model.N,xyz.model.N,3);
+            for i=1:xyz.model.N,
+                for j=1:xyz.model.N,
+                    diffMat(:,i,j,:) = xyz(:,j,:)-xyz(:,i,:);
                 end
             end
         end

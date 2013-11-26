@@ -29,11 +29,12 @@ classdef MTADang < MTAData
             Data.model = model;
         end
         
-        function Data = create(Data,Session)
-            ang = zeros(size(Session.xyz,1),Session.model.N,Session.model.N,5);
-            diffMat = Session.markerDiffMatrix();
-            for i=1:Session.model.N,
-                for j=1:Session.model.N,
+        function Data = create(Data,Session,varargin)
+            [xyz] = DefaultArgs(varargin,{Session.xyz});
+            ang = zeros(xyz.size(1),xyz.model.N,xyz.model.N,5);
+            diffMat = Session.markerDiffMatrix(); %xyz); change this back later
+            for i=1:xyz.model.N,
+                for j=1:xyz.model.N,
                     if i==j,
                         continue
                     end
