@@ -121,6 +121,8 @@ Session.xyz.save;
 Session.ang = MTADang(Session.spath,Session.filebase,[],viconSampleRate,Session.model);
 Session.ang.save;
 
+Session.ufr = MTADufr(Session.spath,Session.filebase);
+
 Session.save();
 
 end
