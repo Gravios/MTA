@@ -13,7 +13,7 @@ classdef MTAFet
                 Session = [Session.spath.analysis Session.filebase];
             end
 
-            if ~exist([Session '.fet.' label_mode '.mat'],'file')|overwrite,
+            if ~exist([Session '.fet.' label_mode '.mat'],'file')||overwrite,
                 Fet.mode = label_mode;
                 Fet.Features  = {};
                 Fet.save(Session,overwrite);

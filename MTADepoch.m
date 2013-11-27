@@ -21,7 +21,8 @@ classdef MTADepoch < MTAData
             Data.key = key;
         end
         
-        function Data = load(Data)
+        function Data = load(Data,varargin)
+            [sync] = DefaultArgs(varargin,{[]});
             if ~isempty(Data.filename)
                 load(Data.fpath);
             else
@@ -37,6 +38,9 @@ classdef MTADepoch < MTAData
                 end
                 Data.filename = stsFileList{~cellfun(@isempty,regexp(stsFileList,re))};
                 load(Data.fpath)
+            end
+            if ~isempty(sync),
+                sync.resync(Data);
             end
         end
         

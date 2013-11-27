@@ -138,8 +138,7 @@ classdef MTAStateCollection < hgsetget
                                     else
                                         sts{i} = MTADepoch(Stc.path,[],[],[],stsNames{i},[],[],[]);
                                     end
-                                    sts{i} = sts{i}.load;
-                                    Stc.sync.resync(sts{i});
+                                    sts{i} = sts{i}.load(Stc.sync);
                                     Stc.addState(sts{i});
                                 else
                                     sts{i} =  Stc.states{stci};

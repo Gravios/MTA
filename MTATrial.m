@@ -61,7 +61,6 @@ classdef MTATrial < MTASession
             Trial.filebase = [Trial.name '.' Trial.maze.name '.' Trial.trialName];
             Trial.stc.updateFilename(Trial.filebase);
             
-            
             if exist(fullfile(Trial.spath, [Trial.filebase '.trl.mat']),'file')&&~overwrite
                 ds = load(fullfile(Trial.spath, [Trial.filebase '.trl.mat']));
                 %Trial.xyzPeriods = ds.xyzPeriods;
@@ -81,6 +80,7 @@ classdef MTATrial < MTASession
             
             Trial.trackingMarker = Session.trackingMarker;
             Trial.sync.resync(Trial.xyz,new_xyzPeriods);
+            Trial.stc.sync = Trial.sync;
             props = properties(Trial);
             for p = 1:numel(props),
                 prop = Trial.(props{p});

@@ -1524,10 +1524,16 @@ for l=selected_features,
                 set(MLData.feature_display_axes{l},'YDir','normal')                           
             
             case 'imagesc'
-            MLData.feature_display_handles{l} = ...
-                imagesc(MLData.Features{l}.feature(MLData.idx:MLData.idx+MLData.windowSize,:)',...
-                        'Parent',MLData.feature_display_axes{l});
-            guidata(MLData.feature_display_handles{l},handles);
+                MLData.feature_display_handles{l} = ...
+                    imagesc(MLData.Features{l}.feature(MLData.idx:MLData.idx+MLData.windowSize,:)',...
+                    'Parent',MLData.feature_display_axes{l});
+                MLData.feature_display_centerlines{l} = line([1,1], ...
+                    ylim(MLData.feature_display_axes{l}),...
+                    'Color','r',...
+                    'LineStyle','--',...
+                    'LineWidth',1,...
+                    'Parent', MLData.feature_display_axes{l});
+                guidata(MLData.feature_display_handles{l},handles);
         end
     end
     set(MLData.feature_display_panels{l},'Position',display_panel_position(ssl,:))
@@ -1621,11 +1627,17 @@ Style = get(hObject,'Style');
 switch Style,
     
     case 'slider',
-        switch Tag,            
+        switch Tag,
             case 'feature_display_slider',
-                Value = get(hObject,'Value');                
-                index = find(cellfun(@isequal,MLData.feature_display_slider,repmat({hObject},1,length(MLData.feature_display_slider))),1);     
-                set(MLData.feature_display_axes{index},'YLim',[mean(MLData.Features{index}.feature(:))-Value,mean(MLData.Features{index}.feature(:))+Value]);
+                
+                Value = get(hObject,'Value');
+                index = find(cellfun(@isequal,MLData.feature_display_slider,repmat({hObject},1,length(MLData.feature_display_slider))),1);
+                switch MLData.Features{index}.plot_type,
+                    case 'line'
+                        set(MLData.feature_display_axes{index},'YLim',[mean(MLData.Features{index}.feature(:))-Value,mean(MLData.Features{index}.feature(:))+Value]);
+                    case 'imagesc'
+                        caxis(MLData.feature_display_axes{index},[mean(MLData.Features{index}.feature(:))-Value,mean(MLData.Features{index}.feature(:))+Value]);
+                end
                 guidata(MLData.feature_display_axes{index},handles);
                 setappdata(handles.MTABrowser,'MLData',MLData);
                 guidata(hObject,handles);
@@ -1948,6 +1960,7 @@ AppStateChange(hObject,eventdata,handles);
 function MLkeyState(hObject,eventdata,handles)
 %% MLKEYSTATE
 whatkey = double(get(handles.MTABrowser,'CurrentCharacter'));
+if ~whatkey,return,end
 switch whatkey
     case double(' ')
         setappdata(handles.MLapp,'paused',~getappdata(handles.MLapp,'paused'));
@@ -1992,11 +2005,11 @@ if ~getappdata(handles.MLapp,'paused'),
     
     selected_states = find(MLData.selected_states);
     % Label state
-    if MLData.flag_tag&&MLData.current_label,
+    if MLData.flag_tag&MLData.current_label,
         MLData.States{selected_states(MLData.current_label)}.data(MLData.idx:MLData.idx+skip*idx+idx) = MLData.current_label/2;
     end
     % Erase state
-    if MLData.erase_tag&&MLData.current_label,
+    if MLData.erase_tag&MLData.current_label,
         MLData.States{selected_states(MLData.current_label)}.data(MLData.idx:MLData.idx+skip*idx+idx) = 0;
     end
 

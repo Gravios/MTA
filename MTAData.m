@@ -168,7 +168,7 @@ classdef MTAData < hgsetget
         function Data = subsref(Data,S)
             ni = numel(S);
             if strcmp(S(1).type,'()')&&ni==1,
-                modelRef = (cellfun(@numel,S(1).subs(2:end))>1).*cellfun(@ischar,S(1).subs(2:end));
+                modelRef = (cellfun(@numel,S(1).subs(2:end))>1).*cellfun(@ischar,S(1).subs(2:end))|cellfun(@iscell,S(1).subs(2:end));
                 if sum(modelRef)>0&&~isempty(Data.model),
                     mri = find(modelRef)+1;
                     for  i = mri,

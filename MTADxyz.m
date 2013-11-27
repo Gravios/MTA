@@ -23,6 +23,8 @@ classdef MTADxyz < MTAData
             [Session,overwrite] = DefaultArgs(varargin,{{},{}});
         end
         function Data = filter(Data,win)
+            ds = Data.size;
+            Data.data = reshape(Filter0(win,Data.data),ds);
         end
         function Data = resample(Data,DataObj)
             if DataObj.isempty, DataObj.load; dlen = DataObj.size(1); end
