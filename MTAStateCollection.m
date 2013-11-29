@@ -73,6 +73,22 @@ classdef MTAStateCollection < hgsetget
             fpath = fullfile(Stc.path,Stc.filename);
         end
         
+        function Stc = rmState(Stc,name)
+            %Stc = rmState(Stc,name)
+            %Removes a state from the collection 
+            %
+            % name: string, the label or key of the state to be removed
+            %
+            if isempty(Stc.states),
+                return
+            else
+                for i = 1:numel(Stc.states)
+                    if strcmp(name, Stc.states{i}.label),Stc.states(i) = []; return, end
+                    if strcmp(name, Stc.states{i}.key),  Stc.states(i) = []; return, end
+                end
+            end
+        end
+        
         function Stc = updateSync(Stc,sync)
             Stc.sync = sync;
         end
