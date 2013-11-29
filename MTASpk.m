@@ -23,7 +23,7 @@ classdef MTASpk < hgsetget
         end
         function Spk = create(Spk,Session,varargin)
             %% Load and resample Res             
-            [Spk.sampleRate,states,units] = DefaultArgs(varargin,{1,[],{}});
+            [Spk.sampleRate,states,units] = DefaultArgs(varargin,{1,[],[]});
             
             [Res, Clu, Map] = LoadCluRes(fullfile(Session.spath, Session.name));
             Spk.map = Map;

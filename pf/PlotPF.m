@@ -12,21 +12,22 @@ end
 %% Constraint to maze is forced
 switch type
     case 'pfcrz'
-        switch Session.Maze.shape
+        switch Session.maze.shape
             case 'circle'
                 Xmin = 0;
-                Xmax = Session.Maze.boundaries(1,2)-Session.Maze.boundaries(1,1);
-                Ymin = Session.Maze.boundaries(3,1);
-                Ymax = Session.Maze.boundaries(3,2);
+                Xmax = Session.maze.boundaries(1,2)-Session.maze.boundaries(1,1);
+                Ymin = Session.maze.boundaries(3,1);
+                Ymax = Session.maze.boundaries(3,2);
                 %% scaling factor for rounding position
                 dx = Xmax - Xmin;
                 dy = Ymax - Ymin;
-                k = [Nbin/dx Nbin/dy];
+                k = Nbin./[dx;dy];
                 %% matrix size
-                msize = round([sum(abs([Xmin,Xmax]))*k(1) sum(abs([Ymin,Ymax]))*k(2)]);
+                msize = round([sum(abs([Xmin,Xmax]))*k(1) sum(abs([Ymin,Ymax]))*k(2)])';
                 Bin1 = ([1:msize(1)]-1)/k(1);
                 Bin2 = ([1:msize(2)]-1)/k(2);
-                Bins = [Bin1(:),Bin2(:)];
+                Bins = {Bin1(:),Bin2(:)};
+                bound_lims = [Xmin,Xmax;Ymin,Ymax];
             case 'square'
         end
         
@@ -46,13 +47,13 @@ Pos = round((pos-repmat(bound_lims(:,1)',size(pos,1),1)).*repmat(k',size(pos,1),
 for i = 1:ndims   
     Pos(Pos(:,i)<1|Pos(:,i)>Nbin(i),:) = [];
 end
-Occupancy = Accumulate(Pos,1,msize')./Session.xyz.sampleRate;
+Occupancy = accumarray(Pos,1,msize')./Session.xyz.sampleRate;
 
 spkpos = round((spkpos-repmat(bound_lims(:,1)',size(spkpos,1),1)).*repmat(k',size(spkpos,1),1))+1;
 for i = 1:ndims
     spkpos(spkpos(:,i)<1|spkpos(:,i)>Nbin(i),:) = [];
 end
-SpikeCount = Accumulate(spkpos,1,msize');
+SpikeCount = accumarray(spkpos,1,msize');
 
 
 

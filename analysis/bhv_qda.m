@@ -8,7 +8,7 @@ Trial.xyz.filter(fwin);
 
 
 vel =[];
-vel = [vel,log10(Trial.vel({'spine_lower'}).^2)];
+vel = [vel,Filter0(gausswin(61)./sum(gausswin(61)),log10(Trial.vel({'spine_lower'}))).^2];
 vel = [vel,log10(Trial.vel({'spine_lower','spine_upper','head_front'},[1,2]))];
 vel = [vel,log10(Trial.vel({'spine_lower','spine_upper','head_front'},3))];
 vel = [vel,sqrt(sum(diff(Trial.com(Trial.xyz.model.rb({'spine_lower','pelvis_root','spine_middle'}))).^2,3))];
@@ -20,6 +20,11 @@ vel = [vel,log10(abs(Filter0(fwin,circ_dist(Trial.ang(1:end-1,1,2,1),Trial.ang(1
 % aba = abs(Filter0(fwin,circ_dist(Trial.ang(1:end-1,1,2,1),Trial.ang(1:end-1,1,3,1)))).*...
 %       abs(Filter0(fwin,circ_dist(Trial.ang(1:end-1,2,3,1),Trial.ang(1:end-1,2,4,1)))).*...
 %       abs(Filter0(fwin,circ_dist(Trial.ang(1:end-1,3,4,1),Trial.ang(1:end-1,3,5,1))));
+% 
+% sfet = [circ_dist(Trial.ang(1:end-1,2,3,1),Trial.ang(1:end-1,1,2,1)),...
+%         circ_dist(Trial.ang(1:end-1,3,4,1),Trial.ang(1:end-1,2,3,1)),...
+%         circ_dist(Trial.ang(1:end-1,4,5,1),Trial.ang(1:end-1,3,4,1)),...
+%         circ_dist(Trial.ang(1:end-1,5,7,1),Trial.ang(1:end-1,4,5,1))];
        
 if isempty(y),
 dav = Filter0(fwin,diff(circ_dist(Trial.ang(1:end,1,2,1),Trial.ang(1:end,1,3,1))))+...

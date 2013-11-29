@@ -26,6 +26,9 @@ classdef MTADufr < MTAData
             
             if isa(DataObj,'MTAApfs'),
                 %nv units
+                if isempty(units),
+                    units = cat(1,DataObj.data.clu);
+                end
                 Data.sampleRate = Session.xyz.sampleRate;
                 ind = repmat({zeros(Session.xyz.size(1),1)},1,Session.xyz.size(3));
                 for n = 1:numel(DataObj.adata.bins),
