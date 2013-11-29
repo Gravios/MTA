@@ -50,19 +50,20 @@ classdef MTAStateCollection < hgsetget
       
         function Stc = load(Stc)
             ds = load(Stc.fpath);
-            Stc = ds.Stc;
-            Stc.states = {};
+            Stc.states = ds.states;
         end
         
-        function out = save(Stc,overwrite)
+        function out = save(Stc,varargin)
+            [overwrite] = DefaultArgs(varargin,{0});
             out = false;
+            states = Stc.states;  %#ok<NASGU>
             if ~exist(Stc.fpath,'file')
-                save( Stc.fpath,'Stc','-v7.3');
+                save( Stc.fpath,'states','-v7.3');
                 out = true;
             elseif exist(Stc.fpath,'file')&&overwrite
                 warning(['Overwriting: ' Stc.fpath]);
                 out = true;
-                save( Stc.fpath,'Stc','-v7.3');
+                save( Stc.fpath,'states','-v7.3');
             else
                 warning(['File exists: ' Stc.fpath, ' - flag the overwrite option  to save']);
             end
