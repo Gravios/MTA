@@ -80,7 +80,7 @@ classdef MTATrial < MTASession
             
             Trial.trackingMarker = Session.trackingMarker;
             Trial.sync.resync(Trial.xyz,new_xyzPeriods);
-            Trial.stc.sync = Trial.sync;
+            Trial.stc.updateSync(Trial.sync);
             props = properties(Trial);
             for p = 1:numel(props),
                 prop = Trial.(props{p});
