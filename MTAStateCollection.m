@@ -48,9 +48,18 @@ classdef MTAStateCollection < hgsetget
             end
         end
       
-        function Stc = load(Stc)
-            ds = load(Stc.fpath);
-            Stc.states = ds.states;
+        function Stc = load(Stc,varargin)
+            [nMode] = DefaultArgs(varargin,{[]});
+            if isempty(nMode)&&exist(Stc.fpath,'file')
+                ds = load(Stc.fpath);
+                Stc.states = ds.states;
+            else
+                Stc.updateMode(nMode);
+                Stc.states = {};
+                if exist(Stc.fpath,'file')
+                    Stc = Stc.load;
+                end
+            end
         end
         
         function out = save(Stc,varargin)
@@ -121,7 +130,6 @@ classdef MTAStateCollection < hgsetget
                    'MTAStateCollection:addState:ExistingKey',...
                    ['State: ' label ', already exists in this collection']);
             Stc.states{end+1} = MTADepoch(path,filename,data,sampleRate,label,key,type,ext);
-            Stc.states{end}.save;
         end
         
         function [Stc,varargout] = subsref(Stc,S)
@@ -203,6 +211,14 @@ classdef MTAStateCollection < hgsetget
         
         function Stc = updatePath(Stc,path)
             Stc.path = path;
+        end
+        
+        function Stc = updateMode(Stc,mode)
+            Stc.mode = mode;
+            [~,fname,fext] = fileparts(Stc.filename);
+            pind = strfind(fliplr(fname),'.');
+            fname = [fname(1:end-pind+1) mode fext];
+            Stc.updateFilename(fname);
         end
         
         function Stc = updateFilename(Stc,filename)

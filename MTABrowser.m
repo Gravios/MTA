@@ -1275,26 +1275,32 @@ function MLSmoveStateDown_Callback(hObject, eventdata, handles)
 function MLSbhvOpen_Callback(hObject, eventdata, handles)
 Session = getappdata(handles.MTABrowser,'Session');
 MLData = getappdata(handles.MTABrowser,'MLData');
-if isempty(Session.Bhv),
+if isempty(Session.stc),
     bhv_name = 'default';
 else
-    bhv_name = Session.Bhv.mode;
+    bhv_name = Session.stc.mode;
 end
 
-[filename,filepath] = uigetfile(['*.' Session.trialName '.bhv.*'],'Open Behavior Collection:',...
-                     fullfile(Session.spath, [Session.filebase '.bhv.' bhv_name '.mat']),...
+[filename,filepath] = uigetfile(['*.' Session.trialName '.stc.*'],'Open Behavior Collection:',...
+                     fullfile(Session.spath, [Session.filebase '.stc.' bhv_name '.mat']),...
                      'MultiSelect','off');
-                 
+                                  
 if ~ischar(filename)||~ischar(filepath),                 
     return
-else                 
-    load([filepath filename]);
-    Session.Bhv = Bhv;
-    States = Bhv.States;
+else             
+    stc = MTAStateCollection([]);
+    stc.updatePath(filepath);
+    stc.updateFilename(filename);    
+    stc.updateSync(Session.sync)
+    stc.load;    
+    States = stc.states;
     if ~isempty(States)
-        labels = cell(1,length(States));
+        labels = cell(1,numel(States));
         keys = '';
-        for i = 1:length(States)
+        for i = 1:numel(States)
+            if States{i}.sampleRate~=Session.xyz.sampleRate
+                States{i}.resample(Session.xyz.sampleRate);
+            end
             labels{i} = States{i}.label;
             keys = strcat(keys,States{i}.key);
             tmpState = States{i}.data;
@@ -1321,39 +1327,29 @@ end
 function MLSbhvSave_Callback(hObject, eventdata, handles)
 Session = getappdata(handles.MTABrowser,'Session');
 MLData = getappdata(handles.MTABrowser,'MLData');
-if isempty(Session.Bhv),
+if isempty(Session.stc),
     bhv_name = 'default';
 else
-    bhv_name = Session.Bhv.mode;
+    bhv_name = Session.stc.mode;
 end
-[filename,filepath] = uiputfile(['*' Session.trialName '.bhv.*'],'Save Behavior Collection:',...
-                     fullfile(Session.spath, [Session.filebase '.bhv.' bhv_name '.mat']));
+[filename,filepath] = uiputfile(['*' Session.trialName '.stc.*'],'Save Behavior Collection:',...
+                     fullfile(Session.spath, [Session.filebase '.stc.' bhv_name '.mat']));
 
 if ~ischar(filename)||~ischar(filepath),
     return
-else
-    points = regexp(filename,'[.]');
-    fileparts = [1 points+1; points-1 length(filename)]';
-    if size(fileparts,1)==6,
-        bhv_name = filename(fileparts(5,1):fileparts(5,2));
-    else
-        error('Bhv filename does not match standard format,')
-    end
-    if ~exist([filepath filename],'file'),
-        Bhv = MTABhv(Session,bhv_name,1);
-    else
-        load([filepath filename]);
-    end
-    
-    Bhv.States = {};
+else    
+    stc = MTAStateCollection([]);
+    stc.updatePath(filepath);
+    stc.updateFilename(filename);    
+    stc.updateSync(Session.sync);
     for s = 1:MLData.num_of_states,
         state = MLData.States{s}.data./max(MLData.States{s}.data);
         state = ThreshCross(state,0.5,1);
-        Bhv = Bhv.addState(MLData.keys(s),MLData.labels{s},state);
+        stc.addState([],[],state,Session.xyz.sampleRate,MLData.labels{s},MLData.keys(s));
     end
-    Bhv.save(Session,1);
-    Session.Bhv = Bhv;
-    Session.save();
+    stc.save(1);
+    Session.stc = stc;
+    Session.save;
 end
 
 
