@@ -741,6 +741,7 @@ if hObject ~= getappdata(handles.MTABrowserStates,'previousBState'),
             for j = 1:size(tmpState,1),
                 States{i}.data(tmpState(j,1):tmpState(j,2)) = 1;
             end
+            States{l}.type = 'TimeSeries';
         end
     else
         labels = {'default'};
@@ -758,7 +759,7 @@ if hObject ~= getappdata(handles.MTABrowserStates,'previousBState'),
     %% Set Up States MLstateView Window
     sxyz = size(xyzpos);
     for l=1:num_of_states
-        States{l}.data(States{l}.data(:)>0) =States{l}.data(States{l}.data(:)>0)-1+l/2;
+        States{l}.data(States{l}.data(:)>0) =States{l}.data(States{l}.data(:)>0)-1+l/2;        
     end
     statesRange = [-0.5,num_of_states/2+0.5];
     windowSize = 100; 
@@ -1232,6 +1233,7 @@ guidata(handles.MLSstateTable, handles);
 
 function MLSaddState_Callback(hObject, eventdata, handles)
 % Get the name and key of the state which will be added
+Session = getappdata(handles.MTABrowser,'Session');
 MLData = getappdata(handles.MTABrowser,'MLData');
 newStateName = get(handles.MLSnewStateName,'String');
 if isempty(newStateName)|sum(~cellfun(@isempty,regexpi(MLData.labels,newStateName))),
@@ -1247,7 +1249,9 @@ end
 
 MLData.labels{end+1} = newStateName;
 MLData.keys(end+1) = newStateKey;
-MLData.States{end+1} = MTAState(newStateKey,newStateName,zeros(length(MLData.xyzpos),1));
+MLData.States{end+1} = MTADepoch([],[],zeros(length(MLData.xyzpos),1),...
+                                 Session.xyz.sampleRate,newStateName,newStateKey,...
+                                 'TimeSeries');
 MLData.num_of_states = MLData.num_of_states + 1;
 MLData.selected_states(end+1) = true;
 setappdata(handles.MTABrowser,'MLData',MLData);
@@ -1291,7 +1295,7 @@ else
     stc = MTAStateCollection([]);
     stc.updatePath(filepath);
     stc.updateFilename(filename);    
-    stc.updateSync(Session.sync)
+    stc.updateSync(Session.sync);
     stc.load;    
     States = stc.states;
     if ~isempty(States)
@@ -1309,6 +1313,7 @@ else
             for j = 1:size(tmpState,1),
                 States{i}.data(tmpState(j,1):tmpState(j,2)) = 1;
             end
+            States{i}.type = 'TimeSeries';
         end        
     end
     MLData.States = States;

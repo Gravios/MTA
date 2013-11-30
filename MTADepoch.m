@@ -61,7 +61,15 @@ classdef MTADepoch < MTAData
             
         end
 
-        function Data = create(Data,varargin)
+        function Data = create(Data,Session,funcHandle,varargin)            
+            [data,sampleRate,l,k] = feval(funcHandle,Session);
+            [label,key] = DefaultArgs(varargin,{l,k});
+            Data.path = Session.spath;
+            Data.filename = Session.filebase;
+            Data.data = data;
+            Data.sampleRate = sampleRate;
+            Data.label = label;
+            Data.key = key;
         end
 
         function Data = resample(Data,newSampleRate)
@@ -71,34 +79,6 @@ classdef MTADepoch < MTAData
             Data.sampleRate = newSampleRate;
         end
         
-%         function Data = subsref(Data,S)
-%             ni = numel(S);
-%             if strcmp(S(1).type,'()')&&ni==1,
-%                 if numel(S.subs)==0,
-%                     Data = Data.data;
-%                 elseif numel(S.subs)==1,
-%                     if  strcmp(S.subs{1},':')
-%                         Data = Data.data(:);
-%                     else
-%                         Data = Data.data(S.subs);
-%                     end
-%                 else
-%                     Data = Data.data(S.subs{1},S.subs{2});
-%                 end
-%                 return
-%             end
-%             for n = 1:ni,
-%                 if isa(Data,'MTAData'),
-%                     dreturn = false;
-%                     if ismethod(Data,S(n).subs),dreturn = true;end
-%                     Data = builtin('subsref',Data,S(n:end));
-%                     if dreturn,return,end
-%                 else
-%                     Data = subsref(Data,S(n));                    
-%                 end
-%             end
-%         end
-
     end
     
     methods (Static)
