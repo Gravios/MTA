@@ -63,6 +63,7 @@ classdef MTASync < hgsetget
                     Data.data = round(IntersectRanges(Data.data,...
                                                 Sync.periods(Data.sampleRate))...
                                                 -(Sync.data(1)-Sync.origin)*Data.sampleRate);
+                    Data.data(Data.data==0) = 1;
                 case 'TimePoints'
                     %Data.data = SelectPeriods
             end
