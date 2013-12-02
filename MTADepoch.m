@@ -9,14 +9,14 @@ classdef MTADepoch < MTAData
     methods
         
         function Data = MTADepoch(varargin)
-            [path,filename,data,sampleRate,label,key,type,ext] = ...
-                DefaultArgs(varargin,{[],[],[],[],[],[],'TimePeriods','sst'});
+            [path,filename,data,sampleRate,syncPeriods,syncOrigin,label,key,type,ext] = ...
+                DefaultArgs(varargin,{[],[],[],[],[],[],[],[],'TimePeriods','sst'});
             if ~isempty(filename),
                 if ~strcmp(filename(end-3:end),'.mat'),
                     filename = [filename '.' ext '.' label '.' key '.mat'];
                 end
             end
-            Data = Data@MTAData(path,filename,data,sampleRate,type,ext);
+            Data = Data@MTAData(path,filename,data,sampleRate,syncPeriods,syncOrigin,type,ext);
             Data.label = label;
             Data.key = key;
         end

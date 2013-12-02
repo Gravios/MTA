@@ -8,14 +8,14 @@ classdef MTADufr < MTAData
     end
     methods
         function Data = MTADufr(varargin)
-            [path,filename,data,sampleRate,type,ext] = ...
-                DefaultArgs(varargin,{[],[],[],[],'TimeSeries','ufr'});
+            [path,filename,data,sampleRate,syncPeriods,syncOrigin,model,type,ext] = ...
+                DefaultArgs(varargin,{[],[],[],[],[],[],[],'TimeSeries','ufr'});
             if ~isempty(filename),
                 if ~strcmp(filename(end-3:end),'.mat'),
                     filename = [filename '.' ext '.mat'];
                 end
             end
-            Data = Data@MTAData(path,filename,data,sampleRate,type,ext);
+            Data = Data@MTAData(path,filename,data,sampleRate,syncPeriods,syncOrigin,type,ext);
         end
         
         function Data = create(Data,Session,varargin)

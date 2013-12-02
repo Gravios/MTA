@@ -5,7 +5,6 @@ classdef MTASync < hgsetget
         path        % path to file containing object
         ext
         data        % data
-        origin
     end
     
     methods
@@ -19,7 +18,6 @@ classdef MTASync < hgsetget
             Sync.filename = filename;
             Sync.path = path;
             Sync.data = data;
-            Sync.origin = data(1);
             Sync.ext = ext;
         end
         function out = save(Sync,varargin)
@@ -39,7 +37,7 @@ classdef MTASync < hgsetget
         
         function per = periods(Sync,varargin)
             [sampleRate,ind] = DefaultArgs(varargin,{1,':'});
-            per = round((Sync.data-Sync.origin).*sampleRate);
+            per = round((Sync.data-Sync.Data(1)).*sampleRate);
             per(per<=0)=1;
             per = per(ind,:);
         end   

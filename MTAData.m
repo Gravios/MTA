@@ -46,7 +46,13 @@ classdef MTAData < hgsetget
 
         %sampleRate - double: Sampling rate of the associated data
         sampleRate  
-
+        
+        %syncPeriods - numericArray(period,Start/Stop): Time in seconds indicating where the data fits in the Session
+        syncPeriods
+        
+        %syncOrigin - double: time of data origin in seconds with respect to the syncPeriods
+        syncOrigin
+                
     end
     
     properties (Abstract)
@@ -58,15 +64,15 @@ classdef MTAData < hgsetget
     end
     
     methods
-        function Data = MTAData(varargin)
-            [path,filename,data,sampleRate,type,ext] = ...
-                DefaultArgs(varargin,{[],[],[],[],[],[]});
+        function Data = MTAData(path,filename,data,sampleRate,syncPeriods,syncOrigin,type,ext)
             Data.filename = filename;
             Data.path = path;
             Data.data = data;
             Data.type = type;
             Data.ext = ext;
             Data.sampleRate = sampleRate;
+            Data.syncPeriods = syncPeriods;
+            Data.syncOrigin = syncOrigin;
         end
         function out = save(Data,varargin)        
             out = false;
@@ -82,15 +88,18 @@ classdef MTAData < hgsetget
             end
         end
         function Data = load(Data,varargin)
-            [sync,periods] = DefaultArgs(varargin,{[],[]});
-            load(Data.fpath)
-            if ~isempty(periods),
-                Data.data = data(periods(1):periods(2),:,:,:,:);
-            elseif ~isempty(sync)
-                Data.data = data;
-                sync.resync(Data);
-            else
-                Data.data = data;
+            [sync,fillgaps] = DefaultArgs(varargin,{[],1});
+            ds = load(Data.fpath);
+            switch class(sync)
+                case 'MTASync'
+                    Data.data = ds.data;
+                    sync.resync(Data);
+                case 'double'
+                    if ~isempty(sync),
+                        Data.data = ds.data(sync(1):sync(2),:,:,:,:);
+                    else
+                        Data.data = ds.data;
+                    end
             end
         end
         
@@ -126,7 +135,6 @@ classdef MTAData < hgsetget
         %
             Data.filename = filename;
         end
-        
         function sdim = size(Data,varargin)
         %sdim = size(Data,dimInd)
         % Returns the size of the MTAData object's "data" field
@@ -154,17 +162,14 @@ classdef MTAData < hgsetget
                 sdim = size(Data.data);
             end
         end
-
         function Data = clear(Data)
         %Data = clear(Data)
         % Clear an MTAData object's data field.
             Data.data = [];
         end
-        
         function out = isempty(Data)
             out = isempty(Data.data);
         end
-        
         function Data = subsref(Data,S)
             ni = numel(S);
             switch Data.type
@@ -241,7 +246,6 @@ classdef MTAData < hgsetget
                 end
             end
         end
-
         function DataCopy = copy(Data)
         % Make a copy of a handle object.
         % Instantiate new object of the same class.

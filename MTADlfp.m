@@ -7,14 +7,14 @@ classdef MTADlfp < MTAData
     end
     methods
         function Data = MTADlfp(varargin)
-            [path,filename,data,sampleRate,type,ext] = ...
-                DefaultArgs(varargin,{[],[],[],[],'TimeSeries','lfp'});
+            [path,filename,data,sampleRate,syncPeriods,syncOrigin,model,type,ext] = ...
+                DefaultArgs(varargin,{[],[],[],[],[],[],[],'TimeSeries','lfp'});
             if ~isempty(filename),
                 if ~strcmp(filename(end-3:end),['.' ext]),
                     filename = [filename '.' ext];
                 end
-            end
-            Data = Data@MTAData(path,filename,data,sampleRate,type,ext);
+            end            
+            Data = Data@MTAData(path,filename,data,sampleRate,syncPeriods,syncOrigin,type,ext);
         end        
         function Data = load(Data,Session,varargin)
             [channels,gselect,periods] = DefaultArgs(varargin,...
