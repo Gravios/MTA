@@ -113,11 +113,19 @@ classdef MTASync < hgsetget
 
                 case 'TimePeriods'
                     Data.data = round(IntersectRanges(Data.data,...
+<<<<<<< HEAD
                                                 Data.syncPeriods*Data.sampleRate)...
                                                 -(Sync.data(1)-Data.syncOrigin)*Data.sampleRate);
                     Data.data(Data.data<=0) = 1;
+<<<<<<< HEAD
                                                 Sync.periods(Data.sampleRate))...
                                                 -(Sync.data(1)-Sync.origin)*Data.sampleRate);
+=======
+=======
+                                                Sync.periods(Data.sampleRate))...
+                                                -(Sync.data(1)-Sync.origin)*Data.sampleRate);
+>>>>>>> parent of f74721c... Last commit before overhaul of the synchronization schema
+>>>>>>> 1ae56ce0ca83942551d2d2c9369d124b45b55122
                 case 'TimePoints'
                     %Data.data = SelectPeriods
             end
