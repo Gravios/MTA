@@ -262,6 +262,27 @@ classdef MTAData < hgsetget
             end
         end
         
+        function Data = set.type(Data,val)
+            oldVal = Data.type;
+            Data.type = val;
+            if ~strcmp(oldVal,val)&&~isempty(oldVal)
+                switch Data.type
+                    case 'TimePeriods'
+                        
+                    case 'TimeSeries'
+                        %% Start here
+                        tmpState = States{i}.data;
+                        tmpState(tmpState==0) = 1;
+                        States{i}.data = zeros(Session.xyz.size(1),1);
+                        for j = 1:size(tmpState,1),
+                            States{i}.data(tmpState(j,1):tmpState(j,2)) = 1;
+                        end         
+                end
+            else
+                Data.type = val;
+            end            
+        end
+        
     end
 
     methods (Abstract)        
