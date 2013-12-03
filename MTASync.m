@@ -116,6 +116,8 @@ classdef MTASync < hgsetget
                                                 Data.syncPeriods*Data.sampleRate)...
                                                 -(Sync.data(1)-Data.syncOrigin)*Data.sampleRate);
                     Data.data(Data.data<=0) = 1;
+                                                Sync.periods(Data.sampleRate))...
+                                                -(Sync.data(1)-Sync.origin)*Data.sampleRate);
                 case 'TimePoints'
                     %Data.data = SelectPeriods
             end
