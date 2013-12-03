@@ -51,8 +51,12 @@ classdef MTAData < hgsetget
         syncPeriods
         
         %syncOrigin - double: time of data origin in seconds with respect to the syncPeriods
-        syncOrigin
+        syncOrigin = 0;
                 
+    end
+    
+    properties( Transient=true )
+        treatmentRecord = {};
     end
     
     properties (Abstract)
@@ -166,6 +170,7 @@ classdef MTAData < hgsetget
         %Data = clear(Data)
         % Clear an MTAData object's data field.
             Data.data = [];
+            Data.syncOrigin = [];
         end
         function out = isempty(Data)
             out = isempty(Data.data);
