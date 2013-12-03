@@ -61,8 +61,8 @@ classdef MTADepoch < MTAData
             
         end
 
-        function Data = create(Data,Session,funcHandle,mode,varargin)
-            [data,sampleRate,l,k] = feval(funcHandle,Session,mode);                 
+        function Data = create(Data,Session,funcHandle,varargin)            
+            [data,sampleRate,l,k] = feval(funcHandle,Session);
             [label,key] = DefaultArgs(varargin,{l,k});
             Data.path = Session.spath;
             Data.filename = Session.filebase;
@@ -70,7 +70,6 @@ classdef MTADepoch < MTAData
             Data.sampleRate = sampleRate;
             Data.label = label;
             Data.key = key;
-            Session.sync.resync(Data);
         end
 
         function Data = resample(Data,newSampleRate)

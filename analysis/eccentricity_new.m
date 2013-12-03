@@ -18,7 +18,7 @@ Trial.ufr.create(Trial,Trial.xyz,'theta',units);
 
 
 
-u =29;
+u = 105;
 
 uind = u==units;
 ufrmax = max(Trial.ufr(:,uind));
