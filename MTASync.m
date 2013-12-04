@@ -54,7 +54,39 @@ classdef MTASync < hgsetget
             switch Data.type
                 case 'TimeSeries',
                     mf = matfile(Data.fpath);
-                    oldEpoch = [Data.syncOrigin,Data.syncOrigin+size(Data.data,1)/Data.sampleRate];
+                    mfsize = size(mf,'data');
+                    
+%                     oldEpoch = MTADepoch([],[],[Data.syncOrigin,Data.syncOrigin+size(Data.data,1)/Data.sampleRate],Data.sampleRate,Data.syncPeriods.data,Data.syncOrigin);
+%                     oldEpoch.cast('TimeSeries',Data.sampleRate);
+%                     oldEpoch.data = cat(1,zeros(round(Data.syncOrigin*Data.sampleRate),1),oldEpoch(:));
+                    
+                    dataEpoch = Data.syncPeriods.copy;
+                    dataEpoch.cast('TimeSeries',Data.sampleRate);
+                    dataEpoch.data = cat(1,zeros(round(Data.syncOrigin*Data.sampleRate),1),dataEpoch(:));                                       
+                    dataOrigin = find(dataEpoch.data==1,1,'first');
+                    
+                    loadedData = ones(Data.size(1),1);
+                    loadedData(Data.data(:,1,1,1,1)==0) = 0;
+                    loadedData = cat(1,zeros(round(Data.syncOrigin*Data.sampleRate),1),loadedData);
+                    loadedDataEnd = find(loadedData.data==1,1,'last');
+                    
+                    syncEpoch = MTADepoch([],[],Sync.data,Data.sampleRate,[0,Sync.data(end)],0);
+                    syncEpoch.cast('TimeSeries',Data.sampleRate);
+                    
+                    newOrigin = find(syncEpoch.data==1,1,'first');
+                    newSyncEnd = find(syncEpoch.data==1,1,'last');
+                    shiftIndex = newOrigin-dataOrigin;
+                    
+                    if shiftIndex < 0;
+                       Data.data = cat(1,zeros([shiftIndex,Data.size(2:end)]),Data.data);
+                    end
+                    
+                    
+                    
+                    loadedData = loaded
+                    
+                    
+                    
                     tshift = sync(1)-oldEpoch(1);
                     newOrigin = Data.syncOrigin+tshift;
                     ndata = abs(round(tshift/Data.sampleRate));                                        

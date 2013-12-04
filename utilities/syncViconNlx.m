@@ -108,7 +108,7 @@ Session.stc.updateSync(Session.sync);
 
 nSessions = length(xyzData);
 xyz = [];
-syncShift = [0;round(diff([Session.sync(1:end-1,2) Session.sync(2:end,1)],1,2)*viconSampleRate)];
+syncShift = [0;round(diff([syncPeriods(1:end-1,2) syncPeriods(2:end,1)],1,2)*viconSampleRate)];
 for s=1:nSessions,
     if syncShift(s),
         xyz = cat(1,xyz,zeros(syncShift(s),size(xyzData{s},2),size(xyzData{s},3)));
@@ -121,12 +121,14 @@ xyz = double(xyz);
 Session.spk = MTASpk;
 Session.spk.create(Session);
 
+syncPeriods = MTADepoch([],[],syncPeriods,viconSampleRate,Session.sync,syncPeriods(1));
+
 Session.xyz = MTADxyz(Session.spath,Session.filebase,xyz,viconSampleRate,...
                       syncPeriods,Session.sync.data(1),Session.model);
 Session.xyz.save;
 
 Session.ang = MTADang(Session.spath,Session.filebase,[],viconSampleRate,...
-                      syncPeriods,Session.sync.data(1),Session.model);
+                      Session.xyz.syncPeriods,Session.sync.data(1),Session.model);
 Session.ang.save;
 
 Session.ufr = MTADufr(Session.spath,Session.filebase);

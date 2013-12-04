@@ -262,24 +262,22 @@ classdef MTAData < hgsetget
             end
         end
         
-        function Data = set.type(Data,val)
+        function Data = cast(Data,val,sampleRate)
             oldVal = Data.type;
             Data.type = val;
             if ~strcmp(oldVal,val)&&~isempty(oldVal)
                 switch Data.type
                     case 'TimePeriods'
-                        
+                        Data.data = ThreshCross(Data.data,0.5,1);
                     case 'TimeSeries'
                         %% Start here
-                        tmpState = States{i}.data;
-                        tmpState(tmpState==0) = 1;
-                        States{i}.data = zeros(Session.xyz.size(1),1);
-                        for j = 1:size(tmpState,1),
-                            States{i}.data(tmpState(j,1):tmpState(j,2)) = 1;
+                        tmpdata = round((Data.data-Data.syncOrigin)./Data.sampleRate.*sampleRate);
+                        tmpdata(tmpdata==0) = 1;
+                        Data.data = zeros(round(abs(diff(Data.syncPeriods([1,end]).*sampleRate))),1);
+                        for j = 1:size(tmpdata,1),
+                            Data.data(tmpdata(j,1):tmpdata(j,2)) = 1;
                         end         
                 end
-            else
-                Data.type = val;
             end            
         end
         
