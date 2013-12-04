@@ -68,19 +68,27 @@ classdef MTASync < hgsetget
                     loadedData = ones(Data.size(1),1);
                     loadedData(Data.data(:,1,1,1,1)==0) = 0;
                     loadedData = cat(1,zeros(round(Data.syncOrigin*Data.sampleRate),1),loadedData);
-                    loadedDataEnd = find(loadedData.data==1,1,'last');
+                    loadedDataEnd = find(loadedData==1,1,'last');
                     
                     syncEpoch = MTADepoch([],[],Sync.data,Data.sampleRate,[0,Sync.data(end)],0);
                     syncEpoch.cast('TimeSeries',Data.sampleRate);
                     
                     newOrigin = find(syncEpoch.data==1,1,'first');
                     newSyncEnd = find(syncEpoch.data==1,1,'last');
-                    shiftIndex = newOrigin-dataOrigin;
                     
-                    if shiftIndex < 0;
-                       Data.data = cat(1,zeros([shiftIndex,Data.size(2:end)]),Data.data);
+                    startShiftIndex = newOrigin-dataOrigin;
+                    if startShiftIndex < 0,
+                        Data.data = cat(1,zeros([startShiftIndex,Data.size(2:end)]),Data.data);
+                    else
+                        Data.data = Data.data(startShiftIndex:end,:,:,:,:);
                     end
                     
+                    endShiftIndex = newSyncEnd - loadedDataEnd;
+                    if endShiftIndex < 0,
+                        %Data.data = Data;
+                    else
+                        
+                    end
                     
                     
                     loadedData = loaded

@@ -74,7 +74,20 @@ classdef MTADepoch < MTAData
 
         function Data = resample(Data,newSampleRate)
             % Needs some more corrections for resampling
-            Data.data = round(Data.data/Data.sampleRate*newSampleRate);
+            if newSampleRate == 1
+                rf = @(x)x;
+            elseif isa(newSampleRate,'MTAData')
+                newSampleRate = newSampleRate.sampleRate;
+                rf = @round;
+            else
+                rf = @round;
+            end
+            
+            Data.data = rf(Data.data/Data.sampleRate*newSampleRate);
+            if isa(Data.syncPeriods,'MTAData'),
+                Data.syncPeriods.resample(newSampleRate);
+                Data.syncOrigin = rf(Data.syncOrigin/Data.sampleRate*newSampleRate); 
+            end            
             Data.data(Data.data==0)=1;
             Data.sampleRate = newSampleRate;
         end

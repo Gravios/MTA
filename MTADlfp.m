@@ -34,7 +34,15 @@ classdef MTADlfp < MTAData
         function Data = filter(Data,win)
         end
         function Data = resample(Data,newSampleRate,varargin)
-            [interp_type] = DefaultArgs(varargin,{'linear'});            
+            [interp_type] = DefaultArgs(varargin,{'linear'});
+            if DataObj.isempty, DataObj.load; dlen = DataObj.size(1); end
+            uind = round(linspace(round(Data.sampleRate/DataObj.sampleRate),Data.size(1),DataObj.size(1)));
+            Data.data = Data.data(uind,:);
+                        if isa(Data.syncPeriods,'MTAData'),
+                Data.syncPeriods.resample(newSampleRate);
+                Data.syncOrigin = round(Data.syncOrigin/Data.sampleRate*newSampleRate); 
+            end     
+            Data.sampleRate = DataObj.sampleRate;   
         end
         function Data = embed(Data,win,overlap)
         end        

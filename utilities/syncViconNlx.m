@@ -21,7 +21,8 @@ end
 if exist('Par','var'),
     
     lfp = LoadBinary(fullfile(Session.spath, [Session.name '.lfp']),1,Par.nChannels,4)';
-    lfpSyncPeriods = [0,numel(lfp)/Par.lfpSampleRate];
+    recordSync = [0,numel(lfp)./Par.lfpSampleRate];
+    lfpSyncPeriods = MTADepoch([],[],recordSync*Par.lfpSampleRate+[1,0],Par.lfpSampleRate,recordSync,0);
     clear('lfp');
     Session.lfp = MTADlfp(Session.spath,[Session.name '.lfp'],[],Par.lfpSampleRate,lfpSyncPeriods,0);    
     Session.sampleRate = Par.SampleRate;
@@ -102,7 +103,8 @@ assert(~isempty(syncPeriods),ERR.type,ERR.msg,TTLValue);
 xyzData = xyzData(xyzDataInd);
 
 syncPeriods  = syncPeriods./1000;
-Session.sync = MTASync(Session.spath,Session.name,syncPeriods([1,end]));
+Session.sync = MTADepoch(Session.spath,[Session.filebase '.sync.mat'],syncPeriods([1,end]),1,recordSync,0,[],[],[],'sync');
+Session.sync.save;
 Session.stc = MTAStateCollection(Session.spath,Session.filebase,'default');
 Session.stc.updateSync(Session.sync);
 
@@ -121,10 +123,11 @@ xyz = double(xyz);
 Session.spk = MTASpk;
 Session.spk.create(Session);
 
-syncPeriods = MTADepoch([],[],syncPeriods,viconSampleRate,Session.sync,syncPeriods(1));
+syncPeriods = MTADepoch([],[],syncPeriods,1,Session.sync,syncPeriods(1));
+syncPeriods.resample(viconSampleRate);
 
 Session.xyz = MTADxyz(Session.spath,Session.filebase,xyz,viconSampleRate,...
-                      syncPeriods,Session.sync.data(1),Session.model);
+                      syncPeriods,Session.sync.data(1),Session.model);                  
 Session.xyz.save;
 
 Session.ang = MTADang(Session.spath,Session.filebase,[],viconSampleRate,...

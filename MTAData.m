@@ -233,7 +233,7 @@ classdef MTAData < hgsetget
                             if  strcmp(S.subs{1},':')
                                 Data = Data.data(:);
                             else
-                                Data = Data.data(S.subs);
+                                Data = Data.data(S.subs{1});
                             end
                         else
                             Data = Data.data(S.subs{1},S.subs{2});
@@ -241,15 +241,24 @@ classdef MTAData < hgsetget
                         return
                     end
             end
-            
-            for n = 1:ni,
-                if isa(Data,'MTAData'),
-                    Data = builtin('subsref',Data,S(n:end));
-                    break
+            if strcmp(S(1).type,'.'),
+                if isprop(Data,S(1).subs)
+                    if numel(S)==1,
+                        Data = Data.(S(1).subs);
+                    else
+                        Data = subsref(Data.(S(1).subs),S(2:end));
+                    end
+                elseif ismethod(Data,S(1).subs)
+                    if numel(S)==1,
+                        Data = Data.(S(1).subs);
+                    else
+                        Data = Data.(S(1).subs)(S(2).subs{:});
+                    end
                 else
-                    Data = subsref(Data,S(n));
+                    Data = subsref(Data,S);
                 end
             end
+
         end
         function DataCopy = copy(Data)
         % Make a copy of a handle object.
@@ -262,23 +271,27 @@ classdef MTAData < hgsetget
             end
         end
         
-        function Data = cast(Data,val,sampleRate)
-            oldVal = Data.type;
-            Data.type = val;
-            if ~strcmp(oldVal,val)&&~isempty(oldVal)
-                switch Data.type
+        function Data = cast(Data,type,sampleRate)
+            oldType = Data.type;            
+            if ~strcmp(oldType,type)&&~isempty(oldType)
+                switch type
                     case 'TimePeriods'
                         Data.data = ThreshCross(Data.data,0.5,1);
                     case 'TimeSeries'
-                        %% Start here
-                        tmpdata = round((Data.data-Data.syncOrigin)./Data.sampleRate.*sampleRate);
+                        tmpdata = round(Data.data./Data.sampleRate.*sampleRate);
                         tmpdata(tmpdata==0) = 1;
-                        Data.data = zeros(round(abs(diff(Data.syncPeriods([1,end]).*sampleRate))),1);
+                        if isa(Data.syncPeriods,'MTAData'),
+                            data = zeros(round(abs(diff(Data.syncPeriods.data([1,end])./Data.sampleRate.*sampleRate))),1);
+                        else
+                            data = zeros(round(abs(diff(Data.syncPeriods([1,end])./Data.sampleRate.*sampleRate))),1);
+                        end
                         for j = 1:size(tmpdata,1),
-                            Data.data(tmpdata(j,1):tmpdata(j,2)) = 1;
+                            data(tmpdata(j,1)+1:tmpdata(j,2)) = 1;
                         end         
+                        Data.data = data;
                 end
             end            
+            Data.type = type;
         end
         
     end
