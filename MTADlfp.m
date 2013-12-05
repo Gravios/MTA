@@ -38,9 +38,9 @@ classdef MTADlfp < MTAData
             if DataObj.isempty, DataObj.load; dlen = DataObj.size(1); end
             uind = round(linspace(round(Data.sampleRate/DataObj.sampleRate),Data.size(1),DataObj.size(1)));
             Data.data = Data.data(uind,:);
-                        if isa(Data.syncPeriods,'MTAData'),
-                Data.syncPeriods.resample(newSampleRate);
-                Data.syncOrigin = round(Data.syncOrigin/Data.sampleRate*newSampleRate); 
+                        if isa(Data.sync,'MTAData'),
+                Data.sync.resample(newSampleRate);
+                Data.origin = round(Data.origin/Data.sampleRate*newSampleRate); 
             end     
             Data.sampleRate = DataObj.sampleRate;   
         end

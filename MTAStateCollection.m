@@ -17,6 +17,7 @@ classdef MTAStateCollection < hgsetget
         filename = [];
         path = [];
         sync = [];
+        origin = [];
         ext = [];        
     end
     
@@ -27,7 +28,7 @@ classdef MTAStateCollection < hgsetget
 
     methods
         function Stc = MTAStateCollection(varargin)
-            [path,filename,mode,overwrite,ext] = DefaultArgs(varargin,{[],[],'manual',0,'stc'}); %#ok<*PROP>
+            [path,filename,mode,sync,origin,overwrite,ext] = DefaultArgs(varargin,{[],[],'manual',[],[],0,'stc'}); %#ok<*PROP>
             if ~isempty(filename),
                 if ~strcmp(filename(end-3:end),'.mat'),
                     filename = [filename '.' ext '.' mode '.mat'];
@@ -40,7 +41,8 @@ classdef MTAStateCollection < hgsetget
             
             if ~exist(Stc.fpath,'file')||overwrite,
                 Stc.mode = mode;
-                Stc.states  = {};
+                Stc.sync = sync;
+                Stc.origin = origin;
                 Stc.ext = ext;
                 Stc.save(overwrite);
             else
@@ -101,6 +103,9 @@ classdef MTAStateCollection < hgsetget
         function Stc = updateSync(Stc,sync)
             Stc.sync = sync;
         end
+        function Stc = updateOrigin(Stc,origin)
+            Stc.origin = origin;
+        end
         
         function Stc = addState(Stc,path,filename,data,sampleRate,varargin)            
         %Stc = addState(Stsc,key,label,state)
@@ -159,9 +164,9 @@ classdef MTAStateCollection < hgsetget
                                 stci = Stc.gsi(stsNames{i});
                                 if isempty(stci)
                                     if numel(stsNames{i})==1,
-                                        sts{i} = MTADepoch(Stc.path,[],[],[],[],stsNames{i},[],[]);
+                                        sts{i} = MTADepoch(Stc.path,[],[],[],[],[],[],stsNames{i},[],[]);
                                     else
-                                        sts{i} = MTADepoch(Stc.path,[],[],[],stsNames{i},[],[],[]);
+                                        sts{i} = MTADepoch(Stc.path,[],[],[],[],[],stsNames{i},[],[],[]);
                                     end
                                     sts{i} = sts{i}.load(Stc.sync);
                                     Stc.addState(sts{i});

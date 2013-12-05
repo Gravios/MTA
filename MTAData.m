@@ -48,10 +48,10 @@ classdef MTAData < hgsetget
         sampleRate  
         
         %syncPeriods - numericArray(period,Start/Stop): Time in seconds indicating where the data fits in the Session
-        syncPeriods
+        sync
         
         %syncOrigin - double: time of data origin in seconds with respect to the syncPeriods
-        syncOrigin = 0;
+        origin = 0;
                 
     end
     
@@ -75,8 +75,8 @@ classdef MTAData < hgsetget
             Data.type = type;
             Data.ext = ext;
             Data.sampleRate = sampleRate;
-            Data.syncPeriods = syncPeriods;
-            Data.syncOrigin = syncOrigin;
+            Data.sync = syncPeriods;
+            Data.origin = syncOrigin;
         end
         function out = save(Data,varargin)        
             out = false;
@@ -170,7 +170,7 @@ classdef MTAData < hgsetget
         %Data = clear(Data)
         % Clear an MTAData object's data field.
             Data.data = [];
-            Data.syncOrigin = [];
+            Data.origin = [];
         end
         function out = isempty(Data)
             out = isempty(Data.data);
@@ -271,7 +271,8 @@ classdef MTAData < hgsetget
             end
         end
         
-        function Data = cast(Data,type,sampleRate)
+        function Data = cast(Data,type,varargin)
+            [sampleRate,syncflag] = DefaultArgs(varargin,{Data.sampleRate,'relative'});
             oldType = Data.type;            
             if ~strcmp(oldType,type)&&~isempty(oldType)
                 switch type
@@ -280,14 +281,22 @@ classdef MTAData < hgsetget
                     case 'TimeSeries'
                         tmpdata = round(Data.data./Data.sampleRate.*sampleRate);
                         tmpdata(tmpdata==0) = 1;
-                        if isa(Data.syncPeriods,'MTAData'),
-                            data = zeros(round(abs(diff(Data.syncPeriods.data([1,end])./Data.sampleRate.*sampleRate))),1);
+                        if isa(Data.sync,'MTAData'),
+                            Data.sync.resample(Data.sampleRate);
+                            data = zeros(round(Data.sync.data(end)./Data.sampleRate.*sampleRate),1);
                         else
-                            data = zeros(round(abs(diff(Data.syncPeriods([1,end])./Data.sampleRate.*sampleRate))),1);
-                        end
+                            data = zeros(round(Data.sync(end)./Data.sampleRate.*sampleRate),1);
+                        end                                
                         for j = 1:size(tmpdata,1),
                             data(tmpdata(j,1)+1:tmpdata(j,2)) = 1;
                         end         
+                        switch syncflag
+                            case 'relative'
+                                data = data(Data.sync.sync.data(1):Data.sync.sync.data(end));
+                            case 'absolute'
+                                
+                        end
+                        
                         Data.data = data;
                 end
             end            

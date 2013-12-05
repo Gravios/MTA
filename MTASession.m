@@ -211,7 +211,7 @@ classdef MTASession < hgsetget
 %                         %% Start here
 %                         tmpdata = round(Data.data./Data.sampleRate.*sampleRate);
 %                         tmpdata(tmpdata==0) = 1;
-%                         data = zeros(round(abs(diff(Data.syncPeriods([1,end])./Data.sampleRate.*sampleRate))),1);
+%                         data = zeros(round(abs(diff(Data.sync([1,end])./Data.sampleRate.*sampleRate))),1);
 %                         for j = 1:size(tmpdata,1),
 %                             data(tmpdata(j,1):tmpdata(j,2)) = 1;
 %                         end         
@@ -221,7 +221,7 @@ classdef MTASession < hgsetget
 %             Data.type = type;
 %         end
       
-        function Session = resync(Session,Data,varargin)
+        function Data = resync(Session,Data,varargin)
         % Sync - MTASync
         % epochs - new periods corresponding to the xyz object
             [epochs] = DefaultArgs(varargin,{[]});
@@ -231,43 +231,60 @@ classdef MTASession < hgsetget
             
             switch Data.type
                 case 'TimeSeries',
-                    Data = Data.copy;
-                    mf = matfile(Data.fpath);
+                    Data = Data.copy; % Only for diagnostics
+                    if exist(Data.fpath,'file'),
+                        mf = matfile(Data.fpath);
+                    else
+                        tempData = Data.copy;
+                        tempData.create(Session);
+                        mf.data = tempData.data; 
+                    end
                     mfsize = size(mf,'data');
                     
-%                     oldEpoch = MTADepoch([],[],[Data.syncOrigin,Data.syncOrigin+size(Data.data,1)/Data.sampleRate],Data.sampleRate,Data.syncPeriods.data,Data.syncOrigin);
+%                     oldEpoch = MTADepoch([],[],[Data.origin,Data.origin+size(Data.data,1)/Data.sampleRate],Data.sampleRate,Data.sync.data,Data.origin);
 %                     oldEpoch.cast('TimeSeries',Data.sampleRate);
-%                     oldEpoch.data = cat(1,zeros(round(Data.syncOrigin*Data.sampleRate),1),oldEpoch(:));
-                    
-                    dataEpoch = Data.syncPeriods.copy;
-                    dataEpoch.cast('TimeSeries',Data.sampleRate);
-                    dataOrigin = Data.syncOrigin;
+%                     oldEpoch.data = cat(1,zeros(round(Data.origin*Data.sampleRate),1),oldEpoch(:));
+
+
+
+                    dataEpoch = Data.sync.copy;
+                    dataEpoch.cast('TimeSeries',Data.sampleRate,'absolute')
+                    dataOrigin = Data.origin;
+
                     
                     loadedData = ones(Data.size(1),1);
                     loadedData(Data.data(:,1,1,1,1)==0) = 0;
                     loadedData = cat(1,zeros(dataOrigin,1),loadedData);
+                    loadedData = cat(1,loadedData,zeros(dataEpoch.size(1)-size(loadedData,1),1));
                     loadedDataEnd = find(loadedData==1,1,'last');
                     
-                    syncEpoch = MTADepoch([],[],Session.sync.data,Data.sampleRate,[0,Session.sync.data(end)],0);
-                    syncEpoch.cast('TimeSeries',Data.sampleRate);
-                    syncEpoch.data = cat(1,syncEpoch.data,ones((dataOrigin+mfsize(1))-syncEpoch.size(1),1));
+                    syncEpoch = Data.sync.sync.copy;
+                    syncEpoch.cast('TimeSeries',Data.sampleRate,'absolute');
+                    syncEpoch.data = syncEpoch.data(1:dataEpoch.size(1));
+
+                    
+                    
+                    %syncEpoch.data = cat(1,syncEpoch.data,ones((dataOrigin+mfsize(1))-syncEpoch.size(1),1));
+                    
+                    
                     
 %                     %%Diagnostic
-%                     figure,plot(loadedData),ylim([-2,2])
+%                     figure,plot(dataEpoch.data),ylim([-2,2])
 %                     hold on,plot(loadedData-dataEpoch.data,'r')
 %                     hold on,plot(loadedData-syncEpoch.data,'g')
 %                     hold on,plot(dataEpoch.data-syncEpoch.data,'c')
+%                     hold on,plot(loadedData-syncEpoch.data+dataEpoch.data,'m')
                     
                     newOrigin = find(syncEpoch.data==1,1,'first');
                     newSyncEnd = find(syncEpoch.data==1,1,'last');
                     
                     %%Trim ends
-                    endSync = Session.sync(end);
-                    endShiftIndex = endSync - (dataOrigin+mfsize(1));
+                    endSync = Data.sync.sync(end);
+                    endShiftIndex = endSync - loadedDataEnd;
                     startShiftIndex = newOrigin-dataOrigin;
                     if endShiftIndex < 0,
                         if startShiftIndex < 0,
-                            Data.data = cat(1,zeros([abs(startShiftIndex),Data.size(2:end)]),Data.data(1:endSync-dataOrigin+1,:,:,:,:));
+                            Data.data = cat(1,zeros([abs(startShiftIndex),Data.size(2:end)]),Data.data(1:abs(endSync-dataOrigin+1),:,:,:,:));
                             dataEpoch.data = dataEpoch.data(newOrigin:endSync);
                             loadedData = loadedData(newOrigin:endSync);
                             syncEpoch.data = syncEpoch.data(newOrigin:endSync);
@@ -296,23 +313,30 @@ classdef MTASession < hgsetget
 %                     hold on,plot(loadedData-dataEpoch.data,'r')
 %                     hold on,plot(loadedData-syncEpoch.data,'g')
 %                     hold on,plot(dataEpoch.data-syncEpoch.data,'c')
-                    
-                    syncDataIndex = (dataEpoch.data-syncEpoch.data)==1;
-                    syncLoadIndex = find(syncDataIndex)-startShiftIndex; 
+
+                    syncDataIndex = (loadedData-syncEpoch.data+dataEpoch.data)==0;
+                    syncDataPeriods = ThreshCross(syncDataIndex,0.5,3);               
                     syncZeroIndex = (dataEpoch.data-syncEpoch.data)==-1; 
                                         
-                    if ~isempty(syncLoadIndex),
-                        Data.Data(syncDataIndex,:,:,:,:) = mf.data(syncLoadIndex,:,:,:,:);
+                    if ~isempty(syncDataPeriods),
+                        syncLoadPeriods = syncDataPeriods-(Data.sync(1)-newOrigin); 
+                        d = ones(1,5);
+                        d(1:numel(size(mf,'data'))) = size(mf,'data');
+                        for i = 1:size(syncLoadPeriods,1)
+                            Data.Data(syncDataPeriods(i,1):syncDataPeriods(i,2),1:d(2),1:d(3),1:d(4),1:d(5)) = ...
+                                mf.data(syncLoadPeriods(i,1):syncLoadPeriods(i,2),1:d(2),1:d(3),1:d(4),1:d(5));
+                        end
                     end
                     if ~isempty(syncZeroIndex),
                         Data.data(syncZeroIndex,:,:,:,:) = 0;
                     end
+                    Data.origin = newOrigin;
                     
 
                 case 'TimePeriods'
                     Data.data = round(IntersectRanges(Data.data,...
-                                      Data.syncPeriods*Data.sampleRate)...
-                                      -(Session.sync.data(1)-Data.syncOrigin)*Data.sampleRate);
+                                      Data.sync*Data.sampleRate)...
+                                      -(Session.sync.data(1)-Data.origin)*Data.sampleRate);
                     Data.data(Data.data<=0) = 1;
 
                 case 'TimePoints'

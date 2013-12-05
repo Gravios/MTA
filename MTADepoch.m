@@ -84,10 +84,16 @@ classdef MTADepoch < MTAData
             end
             
             Data.data = rf(Data.data/Data.sampleRate*newSampleRate);
-            if isa(Data.syncPeriods,'MTAData'),
-                Data.syncPeriods.resample(newSampleRate);
-                Data.syncOrigin = rf(Data.syncOrigin/Data.sampleRate*newSampleRate); 
+            while sum(Data.data(:)==0)>1
+                Data.data(1,:) = [];
+            end
+            if isa(Data.sync,'MTAData'),
+                Data.sync.resample(newSampleRate);
+                Data.origin = rf(Data.origin/Data.sampleRate*newSampleRate); 
+            else
+                Data.sync = rf(Data.sync/Data.sampleRate*newSampleRate);
             end            
+            Data.origin(Data.origin==0) = 1;
             Data.data(Data.data==0)=1;
             Data.sampleRate = newSampleRate;
         end

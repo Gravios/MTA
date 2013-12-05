@@ -104,9 +104,10 @@ xyzData = xyzData(xyzDataInd);
 
 syncPeriods  = syncPeriods./1000;
 Session.sync = MTADepoch(Session.spath,[Session.filebase '.sync.mat'],syncPeriods([1,end]),1,recordSync,0,[],[],[],'sync');
-Session.sync.save;
+Session.sync.save(1);
 Session.stc = MTAStateCollection(Session.spath,Session.filebase,'default');
 Session.stc.updateSync(Session.sync);
+Session.stc.updateOrigin(0);
 
 nSessions = length(xyzData);
 xyz = [];
@@ -123,15 +124,15 @@ xyz = double(xyz);
 Session.spk = MTASpk;
 Session.spk.create(Session);
 
-syncPeriods = MTADepoch([],[],syncPeriods,1,Session.sync,syncPeriods(1));
+syncPeriods = MTADepoch([],[],syncPeriods,1,Session.sync.copy,0);
 syncPeriods.resample(viconSampleRate);
 
 Session.xyz = MTADxyz(Session.spath,Session.filebase,xyz,viconSampleRate,...
-                      syncPeriods,Session.sync.data(1),Session.model);                  
+                      syncPeriods,round(Session.sync.data(1)*viconSampleRate),Session.model);                  
 Session.xyz.save;
 
 Session.ang = MTADang(Session.spath,Session.filebase,[],viconSampleRate,...
-                      Session.xyz.syncPeriods,Session.sync.data(1),Session.model);
+                      Session.xyz.sync,Session.xyz.origin,Session.model);
 Session.ang.save;
 
 Session.ufr = MTADufr(Session.spath,Session.filebase);
