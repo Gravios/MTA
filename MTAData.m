@@ -92,15 +92,26 @@ classdef MTAData < hgsetget
             end
         end
         function Data = load(Data,varargin)
-            [sync,fillgaps] = DefaultArgs(varargin,{[],1});
+            [Session,syncshift] = DefaultArgs(varargin,{[],0});
             ds = load(Data.fpath);
-            switch class(sync)
-                case 'MTASync'
+            switch class(Session)
+                case 'MTASession'
                     Data.data = ds.data;
-                    sync.resync(Data);
+                    Data.sync.sync = Session.sync.copy;
+                    Session.resync(Data);                    
                 case 'double'
-                    if ~isempty(sync),
-                        Data.data = ds.data(sync(1):sync(2),:,:,:,:);
+                    if ~isempty(Session),
+                        mf = matfile(Data.fpath);
+                        d = ones(1,5);
+                        if Data.isempty,
+                            dsize(1:numel(size(mf,'data'))) = size(mf,'data');
+                        else
+                            dsize(1:numel(Data.size)) = Data.size;
+                        end
+                        d(1:numel(dsize)) = dsize;
+                        for i = 1:size(Session,1),
+                            Data.data(Session(i,1):Session(i:2),:,:,:,:) = ds.data((Session(i,1):Session(i:2))-syncshift,1:d(2),1:d(3),1:d(4),1:d(5));
+                        end
                     else
                         Data.data = ds.data;
                     end
