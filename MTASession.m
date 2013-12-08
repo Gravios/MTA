@@ -1,50 +1,41 @@
 classdef MTASession < hgsetget
-% MTASession(name,varargin) - Data structure to organize the analysis of neural and spatial data.
+% MTASession(name,varargin) 
+% Data structure to organize the analysis of neural and spatial data.
 %
 %   name - string: Same name as the directory of the session
 %
 %   varargin:
-%     [preLoadedFields,mazeName,overwrite,TTLValue,xyzSampleRate,trackingMarker,spath,sampleRate]
+%     [mazeName,overwrite,TTLValue,xyzSampleRate,xyzSystem,ephySystem]
 %
 %     mazeName:        string, 3-4 letter name of the testing arena 
 %                      (e.g. 'rof' := rectangular open-field)
 %
 %     overwrite:       boolean, flag to overwrite saved Sessions
 %
-%     ignore_events:   boolean, flag to ignore events from recording system
-%                                when only the xyz data is required
-%
 %     TTLValue:        string, used to synchronize position and electrophysiological data
 %
 %     xyzSampleRate:   double, sample rate of position tracking system
 %
-%     trackingMarker:  string, marker used for placefield calculations           
-%
-%     sampleRate:      double, sample rate of electrophysiological recording system
+%     xyzSystem:       string, name/id of the system to record position
+%    
+%     ephySystem:      string, name/id of the system to record neural activity
 %
 %---------------------------------------------------------------------------------------------------------
 %   General Loading:
 %     
 %     Load from saved Session,
-%     Session = MTASession(name);
+%     Session = MTASession(name,mazeName);
 %     
 %     Create new session,
-%     Session = MTASession(name,[],mazeName,overwrite,ignore_events,...
-%                          TTLValue,xyzSampleRate,trackingMarker,[],sampleRate);
+%     Session = MTASession(name,mazeName,overwrite,TTLValue,xyzSampleRate,xyzSystem,ephySystem);
 %
 %---------------------------------------------------------------------------------------------------------
 %     examples:
 %       load saved session,
-%         Session = MTASession('jg05-20120309',[],'rof');
-%
-%       load saved session with presaved variables: lfp and Place fields
-%         Session = MTASession('jg05-20120309',{{'lfp',65:95},'Pfs'},'rof');
-%
-%       load saved session with presaved variables: marker angles and Clustering data
-%         Session = MTASession('jg05-20120309',{'ang','CluRes'},'rof');
+%         Session = MTASession('jg05-20120309','rof');
 %
 %       Create New Session
-%         Session = MTASession('jg05-20120309',[],'rof',1,0,'0x0040',119.880135,head_front,[],32552);
+%         Session = MTASession('jg05-20120309','rof',1,'0x0040',119.880135,'vicon','nlx');
 %   
 %---------------------------------------------------------------------------------------------------------
 
@@ -144,6 +135,11 @@ classdef MTASession < hgsetget
         end
 
         function Session = create(Session,varargin)
+        % Session = create(Session,varargin)
+        % Wrapper function for functions used to synchronize experimental
+        % data. The choice of function is dependent upon the combination of
+        % recording systems used in the session.
+        %  
             [xyzSampleRate,TTLValue,xyzSystem,ephySystem] = DefaultArgs(varargin,{[],'0x8000','vicon','nlx'});
             switch ephySystem,
 
@@ -166,7 +162,7 @@ classdef MTASession < hgsetget
         end
 
         function Session = updatePaths(Session,varargin)
-        %Session = updatePaths(Session)
+        % Session = updatePaths(Session)
         % Change Session.path & Session.spath to the current
         % MTAPath.mat configuration found in the matlab path.
             Session.path = load('MTAPaths.mat');
@@ -184,7 +180,7 @@ classdef MTASession < hgsetget
 
         %% Save and Load-------------------------------------------------------------------%
 
-        function save(Session,varargin)
+        function save(Session)
         %save(Session)
             save(fullfile(Session.spath, [Session.filebase '.ses.mat']),'Session','-v7.3');
         end
@@ -192,8 +188,18 @@ classdef MTASession < hgsetget
         function Session = load(Session,varargin)
         %Session = load(Session,varargin)
         %load the session file
+        %
+        %  Session:     MTASession, The data object which synchronizes and
+        %                           holds all experimental data.
+        %
+        %  varargin:    string,     The name of a field which belongs to
+        %                           session, which will be loaded from the
+        %                           data file and synchronized with the
+        %                           current sync.
+        %
+        
             if numel(varargin)==1&&ischar(varargin{1}),
-                Session.(varargin{1}).load;
+                Session.(varargin{1}).load(Session);
             else
                 load(fullfile(Session.spath, [Session.filebase '.ses.mat']));    
             end
@@ -204,24 +210,27 @@ classdef MTASession < hgsetget
         
         
         function Data = resync(Session,Data,varargin)
-        %Data = resync(Session,Data,varargin)
+        % Data = resync(Session,Data,varargin)
+        % Resync uses the sync object of a session or one given through the
+        % varargin option. 
         %
-        %variables 
-        % 
-        %  Session: MTASession - Data object holding all session information
-        %  Data: MTAData - Data object targeted for resynchronization.
-        %  sync: MTADepoch - A set of periods defining what data needs to
-        %                    be loaded. 
-        %        double    - Set of periods which have to be specifed in
-        %                    indecies in the sampling rate of the Data
-        %                    object
+        %  Session: MTASession, Data object holding all session information
         %
-                        
-        % sync - new periods corresponding to the xyz object
+        %  Data:    MTAData,    Data object targeted for resynchronization.
+        %
+        %  sync:    MTADepoch,  A set of periods defining what data needs to
+        %                       be loaded. 
+        %           double,     Set of periods which have to be specifed in
+        %                       indecies in the sampling rate of the Data
+        %                       object
+        %
         [sync] = DefaultArgs(varargin,{[]});
         
-        Data = Data.copy;
+        global diagnostic;
+        
+        %diagnostic,
         %Data = Data.copy;
+        
         switch class(Data)
             case 'MTADepoch'
                 Data.load;
@@ -237,7 +246,6 @@ classdef MTASession < hgsetget
                     Data.sync.data = sync./Data.sampleRate+Session.sync.origin;
                     
                 case 'MTADepoch'
-                    
                     Data.sync.sync = sync.copy;
                     Data.sync.sync.resample(Data.sampleRate);
             end
@@ -249,7 +257,6 @@ classdef MTASession < hgsetget
         
         
         if isa(Data,'MTADepoch'),
-            Data.load;
             Data.data = IntersectRanges(Data.data+Data.origin,Data.sync.sync.data+Data.sync.sync.origin)-Data.sync.sync(1)+1;
             Data.origin = Data.sync.sync(1)+1;
             return
@@ -280,16 +287,17 @@ classdef MTASession < hgsetget
             syncEpoch.data = syncEpoch.data(1:dataEpoch.size(1));
             newOrigin = find(syncEpoch.data==1,1,'first');
             
-            %                     %%Diagnostic
-            if exist('diagnostic','var')
-                if diagnostic,
-                    figure,plot(dataEpoch.data),ylim([-3,3])
-                    hold on,plot(loadedData-dataEpoch.data,'r')
-                    hold on,plot(loadedData-syncEpoch.data,'g')
-                    hold on,plot(dataEpoch.data-syncEpoch.data,'c')
-                    hold on,plot(loadedData-syncEpoch.data+dataEpoch.data,'m')
-                end
-            end
+            %Diagnostic
+            %diagnostic,
+%                 figure,
+%                 plot(dataEpoch.data)
+%                 ylim([-3,3])
+%                 hold on
+%                 plot(loadedData-dataEpoch.data,'r')
+%                 plot(loadedData-syncEpoch.data,'g')
+%                 plot(dataEpoch.data-syncEpoch.data,'c')
+%                 plot(loadedData-syncEpoch.data+dataEpoch.data,'m')
+%             
             
             syncshift = Data.sync(1)-newOrigin-1;
             
@@ -324,15 +332,16 @@ classdef MTASession < hgsetget
                 end
             end
             
-            %                     %%Diagnostic
-            if exist('diagnostic','var')
-                if diagnostic,
-                    figure,plot(loadedData),ylim([-2,2])
-                    hold on,plot(loadedData-dataEpoch.data,'r')
-                    hold on,plot(loadedData-syncEpoch.data,'g')
-                    hold on,plot(dataEpoch.data-syncEpoch.data,'c')
-                end
-            end
+            %Diagnostic
+            %diagnostic,
+%                 figure,
+%                 plot(loadedData)
+%                 ylim([-2,2])
+%                 hold on
+%                 plot(loadedData-dataEpoch.data,'r')
+%                 plot(loadedData-syncEpoch.data,'g')
+%                 plot(dataEpoch.data-syncEpoch.data,'c')
+
             
             syncFeature = (loadedData-dataEpoch.data).*syncEpoch.data-syncEpoch.data;
             syncDataIndex = syncFeature==-2;
@@ -360,10 +369,11 @@ classdef MTASession < hgsetget
         %% Variables from XYZ -------------------------------------------------------------%        
         function diffMat = markerDiffMatrix(Session,varargin)
         %diffMat = markerDiffMatrix(Session)
-        %create a time series where the position of every marker
+        %Create a time series where the position of every marker
         %has been substracted from one another
         %
-        %Output: 
+        %  Output: 
+        %
         %  diffMat - numericArray: (index,marker1,marker2,dim)
         %
             [xyz] = DefaultArgs(varargin,{Session.xyz});
@@ -375,7 +385,7 @@ classdef MTASession < hgsetget
             end
         end
 
-% CHECK IF STILL FUNCTIONAL
+
         function angles = transformOrigin(Session, origin, orientationVector, vectorTranSet)   
             %angles = transformOrigin(Session, origin, orientationVector, vectorTranSet)   
             diffMat = Session.markerDiffMatrix();
@@ -433,7 +443,7 @@ classdef MTASession < hgsetget
         %
         %Examples:
         %  Find the center of mass of the session model
-        %    center_of_mass = Session.com(Session.model);
+        %    center_of_mass = Session.com(Session.xyz.model);
         %
         %  Select a model based on a subset of markers from a larger model
         %    Model = Session.model.rb({'head_back','head_left','head_front','head_right'});

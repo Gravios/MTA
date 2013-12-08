@@ -14,18 +14,20 @@ classdef MTATrial < MTASession
 %
 %
 %   varargin:
-%     [preLoadedFields,trialName,new_xyzPeriods,overwrite,mazeName]
+%     [trialName,mazeName,overwrite,sync]
 %
-%     trialName:       string, designation of trial, the Trial representing 
-%                      the full Session has the default name 'all'
+%     trialName:       string,       designation of trial, the Trial representing 
+%                                    the full Session has the default name 'all'
 %
-%     new_xyzPeriods:  numericArray, new Periods defined in the refrence 
-%                      frame of the MTASession objects xyzPeriods
+%     mazeName:        string,       3-4 letter name of the testing arena 
+%                                    (e.g. 'rof' := rectangular open-field)
 %
-%     overwrite:       boolean, flag to overwrite saved Trials
+%     overwrite:       boolean,      flag to overwrite saved Trials
 %
-%     mazeName:        string, 3-4 letter name of the testing arena 
-%                      (e.g. 'rof' := rectangular open-field)
+%     sync:            MTADepoch,    New sync object who data field
+%                                    contains new synchronization periods
+%                      numericArray, New periods to select from the
+%                                    MTASession object in secords
 %
 %
 %---------------------------------------------------------------------------------------------------------
@@ -35,7 +37,7 @@ classdef MTATrial < MTASession
 %     Trial = MTATrial(name,trialName);
 %     
 %     Create new Trial,
-%     Trial = MTATrial(name,trialName,new_xyzPeriods,overwrite,mazeName);
+%     Trial = MTATrial(name,trialName,mazeName,overwrite,sync);
 %
 %---------------------------------------------------------------------------------------------------------
 %     examples:
@@ -43,13 +45,13 @@ classdef MTATrial < MTASession
 %         Trial = MTATrial('jg05-20120309','all');
 %
 %       Create New Trial from a subset of the total session
-%         Trial = MTATrial('jg05-20120309','crt1',[1,10000;11000,21000],1,'rof','normal')
+%         Trial = MTATrial('jg05-20120309','crt1','rof',false,[1,1000;1100,2100])
 %              
 %---------------------------------------------------------------------------------------------------------
 
     methods 
         function Trial = MTATrial(Session,varargin)
-            [trialName,sync,overwrite,mazeName] = DefaultArgs(varargin,{'all',[],0,'cof'});
+            [trialName,mazeName,overwrite,sync] = DefaultArgs(varargin,{'all','cof',0,[]});
             if ~isa(Session,'MTASession'),
                 Session = MTASession(Session,mazeName);
             end
@@ -62,48 +64,69 @@ classdef MTATrial < MTASession
             Trial.stc.updateFilename(Trial.filebase);
             
             if exist(fullfile(Trial.spath, [Trial.filebase '.trl.mat']),'file')&&~overwrite
+                
                 ds = load(fullfile(Trial.spath, [Trial.filebase '.trl.mat']));
                 Trial.sync = ds.sync;
                 if isfield(ds,'stcmode'),
-                    if ~isempty(ds.stcmode)&&exist(fullfile(Trial.spath, [Trial.filebase '.stc.' ds.stcmode '.mat']),'file')
+                    if ~isempty(ds.stcmode)&&exist(Trial.stc.fpath,'file')
                         Trial.stc.updateFilename([Trial.filebase '.stc.' ds.stcmode '.mat']);
+                        Trial.stc.load;
+                    else
                         Trial.stc.load;
                     end
                 end
+                
             else
+                
+                msg.message = 'The provided synchronization periods are empty.';
+                msg.identifier = 'MTATrial:MTAtrial:EmptySync';
+                
                 switch class(sync)
+                    
                     case 'MTADepoch'
-                        Trial.sync = sync;
+                        if sync.isempty,
+                            msg.stack = dbstack;
+                            error(msg);
+                        else
+                            Trial.sync = sync.copy;
+                        end
+                        
                     case 'double'
-                        msg.message = 'The provided synchronization periods are empty.';
-                        msg.identifier = 'MTATrial:MTAtrial:EmptySync';
-                        msg.stack = dbstack;
-                        if isempty(sync),error(msg),end
+
+                        if isempty(sync),
+                            msg.stack = dbstack;
+                            error(msg),
+                        else
+                            Trial.sync.resample(1);
+                            Trial.sync = MTADepoch(Trial.spath,[Trial.filebase '.sync.mat'],sync,1,Trial.sync.sync,0);
+                        end
                         
                     otherwise
                         error('sync format not recognized')
+                end
+                
             end
             
             Trial.trackingMarker = Session.trackingMarker;
-            Trial.resync(Trial.xyz);
-            Trial.stc.updateSync(Trial.sync);
+            Trial.stc.updateSync(Trial.sync.copy);
             props = properties(Trial);
             for p = 1:numel(props),
+                if strcmp(props{p},'sync'),continue,end
                 prop = Trial.(props{p});
+                                
                 if isa(prop,'MTAData'),
-                    if prop.isempty||strcmp(props{p},'xyz'),
-                        continue,
-                    else
+                    if ~prop.isempty
                         Trial.resync(prop);
                     end
+                    
                 elseif isa(prop,'MTAStateCollection')
-                    prop.sync = Trial.sync;
                     if ~prop.isempty
-                        for s = numel(prop(:)),
-                            Trial.sync.resync(prop{s});
+                        for s = numel(prop.states(:)),
+                            Trial.resync(prop.states{s});
                         end
                     end
                 end
+                
             end
         end
         
