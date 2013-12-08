@@ -266,7 +266,7 @@ classdef MTAData < hgsetget
                         Data = Data.(S(1).subs)(S(2).subs{:});
                     end
                 else
-                    Data = subsref(Data,S);
+                    Data = builtin('subsref',Data,S);
                 end
             end
 
@@ -278,7 +278,11 @@ classdef MTAData < hgsetget
             % Copy all non-hidden properties.
             p = properties(Data);
             for i = 1:length(p)
-                DataCopy.(p{i}) = Data.(p{i});
+                if isa(Data.(p{i}),'MTAData'),
+                    DataCopy.(p{i}) = Data.(p{i}).copy;
+                else
+                    DataCopy.(p{i}) = Data.(p{i});
+                end
             end
         end
         
@@ -294,12 +298,12 @@ classdef MTAData < hgsetget
                         tmpdata(tmpdata==0) = 1;
                         if isa(Data.sync,'MTAData'),
                             Data.sync.resample(Data.sampleRate);
-                            data = zeros(round(Data.sync.data(end)./Data.sampleRate.*sampleRate),1);
+                            data = false(round(Data.sync.data(end)./Data.sampleRate.*sampleRate),1);
                         else
-                            data = zeros(round(Data.sync(end)./Data.sampleRate.*sampleRate),1);
+                            data = false(round(Data.sync(end)./Data.sampleRate.*sampleRate),1);
                         end                                
                         for j = 1:size(tmpdata,1),
-                            data(tmpdata(j,1)+1:tmpdata(j,2)) = 1;
+                            data(tmpdata(j,1)+1:tmpdata(j,2)) = true;
                         end         
                         switch syncflag
                             case 'relative'
@@ -318,7 +322,8 @@ classdef MTAData < hgsetget
 
     methods (Abstract)        
         Data = create(Data,varargin);      
-        Data = resample(data,newSampleRate);
+        Data = resample(Data,newSampleRate);
+        %Data = filter(Data,fwindow);
     end
 
 end

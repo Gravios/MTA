@@ -49,7 +49,7 @@ classdef MTATrial < MTASession
 
     methods 
         function Trial = MTATrial(Session,varargin)
-            [trialName,new_xyzPeriods,overwrite,mazeName,mode] = DefaultArgs(varargin,{'all',[],0,'cof','normal'});
+            [trialName,sync,overwrite,mazeName] = DefaultArgs(varargin,{'all',[],0,'cof'});
             if ~isa(Session,'MTASession'),
                 Session = MTASession(Session,mazeName);
             end
@@ -63,23 +63,29 @@ classdef MTATrial < MTASession
             
             if exist(fullfile(Trial.spath, [Trial.filebase '.trl.mat']),'file')&&~overwrite
                 ds = load(fullfile(Trial.spath, [Trial.filebase '.trl.mat']));
-                %Trial.xyzPeriods = ds.xyzPeriods;
-                new_xyzPeriods = ds.xyzPeriods;
-                if isfield(ds,'bhvmode'),
-                    if ~isempty(ds.bhvmode)&&exist(fullfile(Trial.spath, [Trial.filebase '.stc.' ds.bhvmode '.mat']),'file')
-                        Trial.stc.updateFilename([Trial.filebase '.stc.' ds.bhvmode '.mat']);
+                Trial.sync = ds.sync;
+                if isfield(ds,'stcmode'),
+                    if ~isempty(ds.stcmode)&&exist(fullfile(Trial.spath, [Trial.filebase '.stc.' ds.stcmode '.mat']),'file')
+                        Trial.stc.updateFilename([Trial.filebase '.stc.' ds.stcmode '.mat']);
                         Trial.stc.load;
-                        Trial.stc.updateSync(Trial.sync);
                     end
                 end
-                if strcmp(mode,'minimal'),
-                    Trial.xyz = MTADxyz(Trial.spath,Trial.name,[],[]);
-                    return,
-                end
+            else
+                switch class(sync)
+                    case 'MTADepoch'
+                        Trial.sync = sync;
+                    case 'double'
+                        msg.message = 'The provided synchronization periods are empty.';
+                        msg.identifier = 'MTATrial:MTAtrial:EmptySync';
+                        msg.stack = dbstack;
+                        if isempty(sync),error(msg),end
+                        
+                    otherwise
+                        error('sync format not recognized')
             end
             
             Trial.trackingMarker = Session.trackingMarker;
-            Trial.sync.resync(Trial.xyz,new_xyzPeriods);
+            Trial.resync(Trial.xyz);
             Trial.stc.updateSync(Trial.sync);
             props = properties(Trial);
             for p = 1:numel(props),
@@ -88,7 +94,7 @@ classdef MTATrial < MTASession
                     if prop.isempty||strcmp(props{p},'xyz'),
                         continue,
                     else
-                        Trial.sync.resync(prop);
+                        Trial.resync(prop);
                     end
                 elseif isa(prop,'MTAStateCollection')
                     prop.sync = Trial.sync;
@@ -103,13 +109,13 @@ classdef MTATrial < MTASession
         
 
         function save(Trial)
-            bhvmode = [];
+            stcmode = [];
             if ~isempty(Trial.stc)
-                bhvmode = Trial.stc.mode;
+                stcmode = Trial.stc.mode;
             end
             trialName = Trial.trialName;
-            xyzPeriods = Trial.sync.periods(Trial.xyz.sampleRate);
-            save(fullfile(Trial.spath,[Trial.filebase '.trl.mat']),'trialName','xyzPeriods','bhvmode');            
+            sync = Trial.sync;
+            save(fullfile(Trial.spath,[Trial.filebase '.trl.mat']),'trialName','sync','stcmode');            
         end
 
     end

@@ -22,7 +22,7 @@ classdef MTADepoch < MTAData
         end
         
         function Data = load(Data,varargin)
-            [sync] = DefaultArgs(varargin,{[]});
+            [Session,sync] = DefaultArgs(varargin,{[],[]});
             if ~isempty(Data.filename)
                 load(Data.fpath);
             else
@@ -39,8 +39,8 @@ classdef MTADepoch < MTAData
                 Data.filename = stsFileList{~cellfun(@isempty,regexp(stsFileList,re))};
                 load(Data.fpath)
             end
-            if ~isempty(sync),
-                sync.resync(Data);
+            if ~isempty(Session),
+                Session.resync(Data);
             end
         end
         
@@ -92,6 +92,7 @@ classdef MTADepoch < MTAData
                 Data.origin = rf(Data.origin/Data.sampleRate*newSampleRate); 
             else
                 Data.sync = rf(Data.sync/Data.sampleRate*newSampleRate);
+                Data.sync(Data.sync==0) = 1;
             end            
             Data.origin(Data.origin==0) = 1;
             Data.data(Data.data==0)=1;

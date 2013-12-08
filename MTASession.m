@@ -201,140 +201,158 @@ classdef MTASession < hgsetget
 
         %%---------------------------------------------------------------------------------%
 
-%         function Data = cast(Session,Data,type,sampleRate)
-%             oldType = Data.type;            
-%             if ~strcmp(oldType,type)&&~isempty(oldType)
-%                 switch type
-%                     case 'TimePeriods'
-%                         Data.data = ThreshCross(Data.data,0.5,1);
-%                     case 'TimeSeries'
-%                         %% Start here
-%                         tmpdata = round(Data.data./Data.sampleRate.*sampleRate);
-%                         tmpdata(tmpdata==0) = 1;
-%                         data = zeros(round(abs(diff(Data.sync([1,end])./Data.sampleRate.*sampleRate))),1);
-%                         for j = 1:size(tmpdata,1),
-%                             data(tmpdata(j,1):tmpdata(j,2)) = 1;
-%                         end         
-%                         Data.data = data;
-%                 end
-%             end            
-%             Data.type = type;
-%         end
-      
+        
+        
         function Data = resync(Session,Data,varargin)
-        % Sync - MTASync
-        % epochs - new periods corresponding to the xyz object
-            [epochs] = DefaultArgs(varargin,{[]});
-            if ~isempty(epochs)
-                Session.sync.data = epochs./Data.sampleRate+Session.sync.origin;            
+        %Data = resync(Session,Data,varargin)
+        %
+        %variables 
+        % 
+        %  Session: MTASession - Data object holding all session information
+        %  Data: MTAData - Data object targeted for resynchronization.
+        %  sync: MTADepoch - A set of periods defining what data needs to
+        %                    be loaded. 
+        %        double    - Set of periods which have to be specifed in
+        %                    indecies in the sampling rate of the Data
+        %                    object
+        %
+                        
+        % sync - new periods corresponding to the xyz object
+        [sync] = DefaultArgs(varargin,{[]});
+        
+        Data = Data.copy;
+        %Data = Data.copy;
+        switch class(Data)
+            case 'MTADepoch'
+                Data.load;
+        end
+        
+        if ~isempty(sync)
+            switch class(sync)
+                case 'double',
+                    msg.message = 'The provided synchronization periods are empty.';
+                    msg.identifier = 'MTASession:resync:EmptySync';
+                    msg.stack = dbstack;
+                    if isempty(sync),error(msg),end
+                    Data.sync.data = sync./Data.sampleRate+Session.sync.origin;
+                    
+                case 'MTADepoch'
+                    
+                    Data.sync.sync = sync.copy;
+                    Data.sync.sync.resample(Data.sampleRate);
+            end
+        else
+            Data.sync.sync = Session.sync.copy;
+            Data.sync.sync.resample(Data.sampleRate);
+        end
+        
+        
+        
+        if isa(Data,'MTADepoch'),
+            Data.load;
+            Data.data = IntersectRanges(Data.data+Data.origin,Data.sync.sync.data+Data.sync.sync.origin)-Data.sync.sync(1)+1;
+            Data.origin = Data.sync.sync(1)+1;
+            return
+
+        elseif isa(Data,'MTAData'),
+            
+            % The periods when the data was recorded
+            dataEpoch = Data.sync.copy;
+            dataEpoch.cast('TimeSeries',Data.sampleRate,'absolute');
+            dataOrigin = Data.origin;
+            
+            % The periods of data which are already loaded
+            loadedData = ones(Data.size(1),1);
+            loadedData(Data.data(:,1,1,1,1)==0) = 0;
+            loadedData = cat(1,zeros(dataOrigin,1),loadedData);
+            tailbuff = dataEpoch.size(1)-size(loadedData,1);
+            if tailbuff>0,
+                loadedData = cat(1,loadedData,zeros(dataEpoch.size(1)-size(loadedData,1),1));
+            else
+                loadedData = loadedData(1:end+tailbuff);
             end
             
-            switch Data.type
-                case 'TimeSeries',
-                    %Data = Data.copy; % Only for diagnostics
-
-                    dataEpoch = Data.sync.copy;
-                    dataEpoch.cast('TimeSeries',Data.sampleRate,'absolute')
-                    dataOrigin = Data.origin;
-
-                    
-                    loadedData = ones(Data.size(1),1);
-                    loadedData(Data.data(:,1,1,1,1)==0) = 0;
-                    loadedData = cat(1,zeros(dataOrigin,1),loadedData);
-                    tailbuff = dataEpoch.size(1)-size(loadedData,1);
-                    if tailbuff>0,
-                    loadedData = cat(1,loadedData,zeros(dataEpoch.size(1)-size(loadedData,1),1));
-                    else
-                        loadedData = loadedData(1:end+tailbuff);
-                    end
-                    loadedDataEnd = find(loadedData==1,1,'last');
-                    
-                    syncEpoch = Data.sync.sync.copy;
-                    syncEpoch.cast('TimeSeries',Data.sampleRate,'absolute');
-                    syncEpoch.data = syncEpoch.data(1:dataEpoch.size(1));
-                    newOrigin = find(syncEpoch.data==1,1,'first');
-                    
-%                     %%Diagnostic
-%                     figure,plot(dataEpoch.data),ylim([-2,2])
-%                     hold on,plot(loadedData(1:end-1)-dataEpoch.data,'r')
-%                     hold on,plot(loadedData(1:end-1)-syncEpoch.data,'g')
-%                     hold on,plot(dataEpoch.data-syncEpoch.data,'c')
-%                     hold on,plot(loadedData(1:end-1)-syncEpoch.data+dataEpoch.data,'m')
-
-
-                    
-                    %%Trim ends
-                    endSync = Data.sync.sync(end);
-                    endShiftIndex = endSync - loadedDataEnd;
-                    startShiftIndex = newOrigin-dataOrigin;
-                    startShiftIndex(startShiftIndex==0)=1;
-                    if endShiftIndex < 0,
-                        if startShiftIndex < 0,
-                            Data.data = cat(1,zeros([abs(startShiftIndex),Data.size(2:end)]),Data.data(1:abs(endSync-dataOrigin+1),:,:,:,:));
-                            dataEpoch.data = dataEpoch.data(newOrigin:endSync);
-                            loadedData = loadedData(newOrigin:endSync);
-                            syncEpoch.data = syncEpoch.data(newOrigin:endSync);
-                        else
-                            Data.data = Data.data(startShiftIndex:endSync,:,:,:,:);
-                            dataEpoch.data = dataEpoch.data(newOrigin:endSync);
-                            loadedData = loadedData(newOrigin:endSync);
-                            syncEpoch.data = syncEpoch.data(newOrigin:endSync);
-                        end
-                    else
-                        if startShiftIndex < 0,
-                            Data.data = cat(1,zeros([abs(startShiftIndex),Data.size(2:end)]),Data.data,zeros([abs(endShiftIndex),Data.size(2:end)]));
-                            dataEpoch.data = dataEpoch.data(newOrigin:endSync);
-                            loadedData = loadedData(newOrigin:endSync);
-                            syncEpoch.data = syncEpoch.data(newOrigin:endSync);
-                        else
-                            Data.data = cat(1,Data.data(startShiftIndex:end,:,:,:,:),zeros([abs(endShiftIndex),Data.size(2:end)]));
-                            dataEpoch.data = dataEpoch.data(newOrigin:endSync);
-                            loadedData = loadedData(newOrigin:endSync);
-                            syncEpoch.data = syncEpoch.data(newOrigin:endSync);
-                        end
-                    end
-                    
-%                     %%Diagnostic
-%                     figure,plot(loadedData),ylim([-2,2])
-%                     hold on,plot(loadedData-dataEpoch.data,'r')
-%                     hold on,plot(loadedData-syncEpoch.data,'g')
-%                     hold on,plot(dataEpoch.data-syncEpoch.data,'c')
-
-                    syncFeature = (loadedData-dataEpoch.data).*syncEpoch.data-syncEpoch.data;
-                    syncDataIndex = syncFeature==-2;
-                    syncDataPeriods = ThreshCross(syncDataIndex,0.5,3);               
-                    syncZeroIndex = syncFeature==0;
-                    %syncZeroIndex = (dataEpoch.data-syncEpoch.data)==-1; 
-                    
-                    if ~isempty(syncDataPeriods),
-                        %syncLoadPeriods = syncDataPeriods-(Data.sync(1)-newOrigin)-1; 
-                        syncshift = Data.sync(1)-newOrigin-1;
-                        Data.load(syncLoadPeriods,syncshift);
-%                         d = ones(1,5);
-%                         dsize = Data.size;
-%                         d(1:numel(dsize)) = dsize;
-%                         for i = 1:size(syncLoadPeriods,1)
-%                             Data.data(syncDataPeriods(i,1):syncDataPeriods(i,2),1:d(2),1:d(3),1:d(4),1:d(5)) = ...
-%                                 mf.data(syncLoadPeriods(i,1):syncLoadPeriods(i,2),1:d(2),1:d(3),1:d(4),1:d(5));
-%                         end
-                    end
-                    if ~isempty(syncZeroIndex),
-                        Data.data(syncZeroIndex,:,:,:,:) = 0;
-                    end
-                    Data.origin = newOrigin;
-                    
-
-                case 'TimePeriods'
-                    Data.data = round(IntersectRanges(Data.data,...
-                                      Data.sync*Data.sampleRate)...
-                                      -(Session.sync.data(1)-Data.origin)*Data.sampleRate);
-                    Data.data(Data.data<=0) = 1;
-
-                case 'TimePoints'
-                    %Data.data = SelectPeriods
+            loadedDataEnd = find(loadedData==1,1,'last');
+            
+            % The desired synchronization periods
+            syncEpoch = Data.sync.sync.copy;
+            syncEpoch.cast('TimeSeries',Data.sampleRate,'absolute');
+            syncEpoch.data = syncEpoch.data(1:dataEpoch.size(1));
+            newOrigin = find(syncEpoch.data==1,1,'first');
+            
+            %                     %%Diagnostic
+            if exist('diagnostic','var')
+                if diagnostic,
+                    figure,plot(dataEpoch.data),ylim([-3,3])
+                    hold on,plot(loadedData-dataEpoch.data,'r')
+                    hold on,plot(loadedData-syncEpoch.data,'g')
+                    hold on,plot(dataEpoch.data-syncEpoch.data,'c')
+                    hold on,plot(loadedData-syncEpoch.data+dataEpoch.data,'m')
+                end
             end
+            
+            syncshift = Data.sync(1)-newOrigin-1;
+            
+            %%Trim ends
+            endSync = Data.sync.sync(end);
+            endShiftIndex = endSync - loadedDataEnd;
+            startShiftIndex = newOrigin-dataOrigin;
+            startShiftIndex(startShiftIndex==0)=1;
+            if endShiftIndex < 0,
+                if startShiftIndex < 0,
+                    Data.data = cat(1,zeros([abs(startShiftIndex),Data.size(2:end)]),Data.data(1:abs(endSync-dataOrigin+1),:,:,:,:));
+                    dataEpoch.data = dataEpoch.data(newOrigin:endSync);
+                    loadedData = loadedData(newOrigin:endSync);
+                    syncEpoch.data = syncEpoch.data(newOrigin:endSync);
+                else
+                    Data.data = Data.data(startShiftIndex:endSync,:,:,:,:);
+                    dataEpoch.data = dataEpoch.data(newOrigin:endSync);
+                    loadedData = loadedData(newOrigin:endSync);
+                    syncEpoch.data = syncEpoch.data(newOrigin:endSync);
+                end
+            else
+                if startShiftIndex < 0,
+                    Data.data = cat(1,zeros([abs(startShiftIndex),Data.size(2:end)]),Data.data,zeros([abs(endShiftIndex),Data.size(2:end)]));
+                    dataEpoch.data = dataEpoch.data(newOrigin:endSync);
+                    loadedData = loadedData(newOrigin:endSync);
+                    syncEpoch.data = syncEpoch.data(newOrigin:endSync);
+                else
+                    Data.data = cat(1,Data.data(startShiftIndex:end,:,:,:,:),zeros([abs(endShiftIndex),Data.size(2:end)]));
+                    dataEpoch.data = dataEpoch.data(newOrigin:endSync);
+                    loadedData = loadedData(newOrigin:endSync);
+                    syncEpoch.data = syncEpoch.data(newOrigin:endSync);
+                end
+            end
+            
+            %                     %%Diagnostic
+            if exist('diagnostic','var')
+                if diagnostic,
+                    figure,plot(loadedData),ylim([-2,2])
+                    hold on,plot(loadedData-dataEpoch.data,'r')
+                    hold on,plot(loadedData-syncEpoch.data,'g')
+                    hold on,plot(dataEpoch.data-syncEpoch.data,'c')
+                end
+            end
+            
+            syncFeature = (loadedData-dataEpoch.data).*syncEpoch.data-syncEpoch.data;
+            syncDataIndex = syncFeature==-2;
+            syncDataPeriods = ThreshCross(syncDataIndex,0.5,3);
+            syncZeroIndex = syncFeature==0;
+            
+            if ~isempty(syncDataPeriods),
+                syncshift = Data.sync(1)-newOrigin-1;
+                Data.load(syncDataPeriods,syncshift);
+            end
+            if ~isempty(find(syncZeroIndex,1)),
+                Data.data(syncZeroIndex,:,:,:,:) = 0;
+            end
+            
         end
+        
+        Data.origin = newOrigin-1;
 
+        end
+        
         
         
         

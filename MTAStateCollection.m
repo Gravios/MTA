@@ -242,7 +242,11 @@ classdef MTAStateCollection < hgsetget
             % Copy all non-hidden properties.
             p = properties(Data);
             for i = 1:length(p)                
-                DataCopy.(p{i}) = Data.(p{i});
+                if isa(Data.(p{i}),'MTAData'),
+                    DataCopy.(p{i}) = Data.(p{i}).copy;
+                else
+                    DataCopy.(p{i}) = Data.(p{i});
+                end
             end
             for s = 1:numel(Data.states)
                 DataCopy.states{s} = Data.states{s}.copy;

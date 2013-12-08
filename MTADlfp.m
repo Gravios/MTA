@@ -25,6 +25,7 @@ classdef MTADlfp < MTAData
             end
             Data.data = LoadBinary(Data.fpath,channels,...
                                    Par.nChannels,[],[],[],periods)';
+            Data.data(Data.data==0)=1;
         end
         function Data = create(Data,varargin)
         end
