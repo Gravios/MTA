@@ -270,7 +270,9 @@ classdef MTASession < hgsetget
             
             % The periods of data which are already loaded
             loadedData = ones(Data.size(1),1);
-            loadedData(Data.data(:,1,1,1,1)==0) = 0;
+            try
+            loadedData(Data.data(:,1,1,1,1)==0|isnan(Data.data(:,1,1,1,1))|isnan(Data.data(:,1,1,1,1))) = 0;
+            end
             loadedData = cat(1,zeros(dataOrigin,1),loadedData);
             tailbuff = dataEpoch.size(1)-size(loadedData,1);
             if tailbuff>0,
@@ -299,8 +301,6 @@ classdef MTASession < hgsetget
                 plot(loadedData-syncEpoch.data+dataEpoch.data,'m')
 %             
             
-            syncshift = Data.sync(1)-newOrigin-1;
-            
             %%Trim ends
             endSync = Data.sync.sync(end);
             endShiftIndex = endSync - loadedDataEnd+1;
@@ -320,6 +320,7 @@ classdef MTASession < hgsetget
                     syncEpoch.data = syncEpoch.data(newOrigin:endSync);
                 end
             else
+                if endShiftIndex == 1, endShiftIndex = 0; end
                 if startShiftIndex < 0,
                     Data.data = cat(1,zeros([abs(startShiftIndex),Data.size(2:end)]),Data.data,zeros([abs(endShiftIndex),Data.size(2:end)]));
                     dataEpoch.data = dataEpoch.data(newOrigin:endSync);
@@ -840,10 +841,10 @@ classdef MTASession < hgsetget
             tFieldData = fFieldData;
             tFieldData = cat(1,tFieldData,tFieldData(1:2*padding_length,:,:,:,:));
 
-            tFieldData(1:padding_length,:,:,:,:) = flipdim(Session.(field_name)(1:padding_length,:,:,:,:),1);
-            tFieldData(padding_length+1:size(fFieldData,1)+padding_length,:,:,:,:) = Session.(field_name);
+            tFieldData(1:padding_length,:,:,:,:) = flipdim(Session.(field_name).data(1:padding_length,:,:,:,:),1);
+            tFieldData(padding_length+1:size(fFieldData,1)+padding_length,:,:,:,:) = Session.(field_name).data;
             
-            tFieldData(end-padding_length:end,:,:,:,:) = flipdim(Session.(field_name)(end-padding_length:end,:,:,:,:),1);
+            tFieldData(end-padding_length:end,:,:,:,:) = flipdim(Session.(field_name).data(end-padding_length:end,:,:,:,:),1);
             
             tFieldData = reshape(Filter0(kernel,tFieldData),size(tFieldData));
 

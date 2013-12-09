@@ -107,7 +107,7 @@ classdef MTAStateCollection < hgsetget
             Stc.origin = origin;
         end
         
-        function Stc = addState(Stc,path,filename,data,sampleRate,varargin)            
+        function Stc = addState(Stc,path,filename,data,sampleRate,sync,origin,varargin)            
         %Stc = addState(Stsc,key,label,state)
         %
         %   Stc - MTAStateCollection: object containing state epochs
@@ -134,7 +134,7 @@ classdef MTAStateCollection < hgsetget
             assert(isempty(Stc.gsi(key)),...
                    'MTAStateCollection:addState:ExistingKey',...
                    ['State: ' label ', already exists in this collection']);
-            Stc.states{end+1} = MTADepoch(path,filename,data,sampleRate,label,key,type,ext);
+            Stc.states{end+1} = MTADepoch(path,filename,data,sampleRate,sync,origin,label,key,type,ext);
         end
         
         function [Stc,varargout] = subsref(Stc,S)
@@ -248,9 +248,13 @@ classdef MTAStateCollection < hgsetget
                     DataCopy.(p{i}) = Data.(p{i});
                 end
             end
-            for s = 1:numel(Data.states)
-                DataCopy.states{s} = Data.states{s}.copy;
-            end
+            if ~isempty(Data.states)
+                for s = 1:numel(Data.states)
+                    DataCopy.states{s} = Data.states{s}.copy;
+                end
+            else
+                DataCopy.states = Data.states;
+            end    
         end
         
         function state_index = gsi(Stc,state)

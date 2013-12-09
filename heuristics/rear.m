@@ -6,8 +6,8 @@ elseif isempty(Session.ang),
     Session = Session.load_ang();
 end
 
-%rear_feature = abs((Session.xyz(:,Session.Model.gmi('head_back'),3)-Session.xyz(:,Session.Model.gmi('spine_lower'),3)).*Session.ang(:,Session.Model.gmi('pelvis_root'),Session.Model.gmi('spine_middle'),2).*Session.ang(:,Session.Model.gmi('spine_middle'),Session.Model.gmi('spine_upper'),2).*Session.ang(:,Session.Model.gmi('spine_upper'),Session.Model.gmi('head_back'),2)); 
-rear_feature = abs(Session.xyz(:,Session.Model.gmi('head_front'),3)-Session.xyz(:,Session.Model.gmi('spine_lower'),3)).*Session.ang(:,Session.Model.gmi('spine_middle'),Session.Model.gmi('spine_upper'),2); 
+
+rear_feature = abs(Session.xyz(:,'head_front',3)-Session.xyz(:,'spine_lower',3)).*Session.ang(:,'spine_middle','spine_upper',2); 
 rear_feature(isnan(rear_feature))=0;
 switch method
 
@@ -46,8 +46,8 @@ switch method
     xyz = reshape(Filter0(gausswin(win)./sum(gausswin(win)),Session.xyz),size(Session.xyz,1),size(Session.xyz,2),size(Session.xyz,3));
     v = sqrt(sum(diff(xyz).^2,3));
     win = 241;
-    comb = Filter0(gausswin(win)./sum(gausswin(win)),Session.com(Session.Model.rb({'spine_lower','pelvis_root','spine_middle','spine_upper'})));
-    comh = Filter0(gausswin(win)./sum(gausswin(win)),Session.com(Session.Model.rb({'head_back','head_left','head_front','head_right'})));
+    comb = Filter0(gausswin(win)./sum(gausswin(win)),Session.com(Session.model.rb({'spine_lower','pelvis_root','spine_middle','spine_upper'})));
+    comh = Filter0(gausswin(win)./sum(gausswin(win)),Session.com(Session.model.rb({'head_back','head_left','head_front','head_right'})));
     comb = sqrt(sum(diff(comb(:,[1,2])).^2,2));
     comh = sqrt(sum(diff(comh(:,[1,2])).^2,2));
     comv = [comb,comh];
@@ -89,7 +89,7 @@ rear_state = rearPeriods;
 % $$$ for i = 1:size(rearPeriods,1),
 % $$$ rint(i) = sum(rear_feature(rearPeriods(i,1):rearPeriods(i,2)));
 % $$$ rmax(i) = max(rear_feature(rearPeriods(i,1):rearPeriods(i,2)));
-% $$$ rhmax(i) = max(Session.xyz(rearPeriods(i,1):rearPeriods(i,2),Session.Model.gmi('head_front'),3));
+% $$$ rhmax(i) = max(Session.xyz(rearPeriods(i,1):rearPeriods(i,2),Session.model.gmi('head_front'),3));
 % $$$ end
 % $$$ figure
 % $$$ hist(log10(rint),100)

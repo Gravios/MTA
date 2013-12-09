@@ -5,9 +5,10 @@ function Trial = labelBhv(Trial)
 %Trial = MTATrial('jg05-20120315',{'ang'},'all');
 %Trial = MTATrial('jg05-20120310',{'ang'},'all');
 %Trial = MTATrial('jg05-20120309',{'ang'},'all');
+if Trial.xyz.isempty, Trial.xyz.load(Trial); end    
+if Trial.ang.isempty, Trial.ang.load(Trial); end    
 
-fwin = 9;
-Trial.xyz = reshape(Filter0(gausswin(fwin)./sum(gausswin(fwin)),Trial.xyz),size(Trial.xyz,1),size(Trial.xyz,2),size(Trial.xyz,3));
+Trial.filter('xyz');
 xyzlen = size(Trial.xyz,1);
 
 if isempty(Trial.ang),
@@ -16,15 +17,15 @@ end
 
 winlen = 64;
 nOverlap = 8;
-trajSampleRate = (Trial.xyzSampleRate/winlen)*nOverlap;
+trajSampleRate = (Trial.xyz.sampleRate/winlen)*nOverlap;
 
 zpad = mod(xyzlen,winlen);
 if zpad~=0,
-xyz = Trial.xyz(1:end-zpad,Trial.Model.gmi({'spine_lower','pelvis_root','spine_middle','head_back'}),[1,2]);
+xyz = Trial.xyz(1:end-zpad,{'spine_lower','pelvis_root','spine_middle','head_back'},[1,2]);
 ang = Trial.ang(1:end-zpad,:,:,:);
 else 
-xyz = Trial.xyz(:,Trial.Model.gmi({'spine_lower','pelvis_root','spine_middle','head_back'}),[1,2]);
-ang = Trial.ang;
+xyz = Trial.xyz(:,{'spine_lower','pelvis_root','spine_middle','head_back'},[1,2]);
+ang = Trial.ang.data;
 end 
 
 
@@ -183,7 +184,7 @@ hfp = ThreshCross(hfl,0.5,5);
 
 
 %% @(BHV-FILTER,DIST_TRAV_DUR_WPER)
-cur_wper = round((wfp+0.25*trajSampleRate).*Trial.xyzSampleRate./trajSampleRate);
+cur_wper = round((wfp+0.25*trajSampleRate).*Trial.xyz.sampleRate./trajSampleRate);
 cur_wper(end) =size(xyz,1);
 fxyz = Filter0(gausswin(65)./sum(gausswin(65)),sq(xyz(:,1,[1,2])));
 wdist_score = zeros(size(cur_wper,1),1);
@@ -209,7 +210,7 @@ bawper = cur_wper(wang_score>wang_thresh,:);
 
 
 %% @(BHV-FILTER,ANG_SUM_THRESH)
-cur_btper = round(wper./Trial.xyzSampleRate.*trajSampleRate);
+cur_btper = round(wper./Trial.xyz.sampleRate.*trajSampleRate);
 btpa = zeros(size(cur_btper,1),1);
 for i=1:size(cur_btper,1)
     btpa(i) = max(abs(bf(cur_btper(i,1):cur_btper(i,2))));
@@ -221,7 +222,7 @@ for i=1:size(cur_btper,1)
     baf(cur_btper(i,1):cur_btper(i,2)) = abs(bf(cur_btper(i,1):cur_btper(i,2)));
 end
 bwnbtper = ThreshCross(baf>.02,0.5,1);
-wper = SubstractRanges(wper,round((bwnbtper+0.25*trajSampleRate)./trajSampleRate.*Trial.xyzSampleRate+repmat([0,-0.25*Trial.xyzSampleRate],size(bwnbtper,1),1)));
+wper = SubstractRanges(wper,round((bwnbtper+0.25*trajSampleRate)./trajSampleRate.*Trial.xyz.sampleRate+repmat([0,-0.25*Trial.xyz.sampleRate],size(bwnbtper,1),1)));
 
 
 %% @(BHV-FILTER,REMOVE_SHORT_PERIODS,MIN_32_FRAMES)
@@ -260,34 +261,34 @@ wper = wper(diff(wper,1,2)>wper_dur_thresh,:);
 
 
 %% @(BHV-FILTER,NON_FORWARD_WALK_PERIODS)
-cur_wper = round(wper./Trial.xyzSampleRate.*trajSampleRate);
+cur_wper = round(wper./Trial.xyz.sampleRate.*trajSampleRate);
 twpa=zeros(size(cur_wper,1),1);
 for i=1:size(cur_wper,1)
     twpa(i) = median(sum(dvtm(cur_wper(i,1):cur_wper(i,2),[2,3]),2));
 end
 twdt = 0;
-wper = round(cur_wper(twpa>twdt,:)./trajSampleRate.*Trial.xyzSampleRate);
+wper = round(cur_wper(twpa>twdt,:)./trajSampleRate.*Trial.xyz.sampleRate);
 
 
 %% @(BHV-FILTER,trajectory path vector(1,end) projection onto the final body direction
 %% of each trajectory for 0.5 second trajectory segments)
-cur_wper = round(wper./Trial.xyzSampleRate.*trajSampleRate);
+cur_wper = round(wper./Trial.xyz.sampleRate.*trajSampleRate);
 ntwpa=zeros(size(cur_wper,1),1);
 for i=1:size(cur_wper,1)
 ntwpa(i) = median(sum(ndvtm(cur_wper(i,1):cur_wper(i,2),[2,3]),2))/(cur_wper(i,2)-cur_wper(i,1));
 end
 ntwdt = 10;
-wper = round(cur_wper(ntwpa>ntwdt,:)./trajSampleRate.*Trial.xyzSampleRate);
+wper = round(cur_wper(ntwpa>ntwdt,:)./trajSampleRate.*Trial.xyz.sampleRate);
 
 
 %% @(BHV-FILTER)
-cur_wper = round(wper./Trial.xyzSampleRate.*trajSampleRate);
+cur_wper = round(wper./Trial.xyz.sampleRate.*trajSampleRate);
 vdplts = zeros(size(dtraj,1),1);
 for i = 1:size(cur_wper,1),
     vdplts(cur_wper(i,1):cur_wper(i,2)) = 1;
 end
 vdplts(mean(ndvtm(:,[2:size(ndvtm,2)]),2)<0) = 0;
-wper = round(ThreshCross(vdplts,0.5,2)./trajSampleRate.*Trial.xyzSampleRate);
+wper = round(ThreshCross(vdplts,0.5,2)./trajSampleRate.*Trial.xyz.sampleRate);
 
 
 %% @(BHV-FILTER,DIST_TRAV_DUR_WPER)
@@ -318,7 +319,7 @@ bawper = cur_wper(wang_score>wang_thresh,:);
 nwinlen = 16;
 nnOverlap = 2;
 ntrlen = xyzlen/nwinlen*nnOverlap;
-ntrajSampleRate = (Trial.xyzSampleRate/nwinlen)*nnOverlap;
+ntrajSampleRate = (Trial.xyz.sampleRate/nwinlen)*nnOverlap;
 
 ftraj =[];
 for i = 1:nnOverlap,
@@ -346,14 +347,14 @@ fwf = Filter0(gausswin(11)./sum(gausswin(11)),mean(log10(fmv(:,1:2)),2));
 
 
 %% @(BHV-FILTER,MOVEMENT)
-cur_wper = round(wper./Trial.xyzSampleRate.*ntrajSampleRate);
+cur_wper = round(wper./Trial.xyz.sampleRate.*ntrajSampleRate);
 wf_mov = zeros(size(fwf,1),1);
 for i = 1:size(cur_wper,1),
     wf_mov(cur_wper(i,1):cur_wper(i,2)) = 1;
 end
 wf_mov_thresh=1.49;
 wf_mov(fwf<wf_mov_thresh) = 0;
-wper = round(ThreshCross(wf_mov,0.5,5)./ntrajSampleRate.*Trial.xyzSampleRate);
+wper = round(ThreshCross(wf_mov,0.5,5)./ntrajSampleRate.*Trial.xyz.sampleRate);
 
 
 
@@ -361,7 +362,7 @@ wper = round(ThreshCross(wf_mov,0.5,5)./ntrajSampleRate.*Trial.xyzSampleRate);
 cur_rper = rear(Trial,'com',45); %50
 mrh = zeros(size(cur_rper,1),1);
 for i = 1:size(cur_rper,1),
-    mrh(i) = max(Trial.xyz(cur_rper(i,1):cur_rper(i,2),Trial.Model.gmi('head_front'),3));
+    mrh(i) = max(Trial.xyz(cur_rper(i,1):cur_rper(i,2),Trial.model.gmi('head_front'),3));
 end
 rper_height_thresh = 170;
 rper = cur_rper(mrh>rper_height_thresh,:);
@@ -371,11 +372,53 @@ wper = SubstractRanges(wper,rper+repmat([-64,24],size(rper,1),1));
 
 
 
-Trial.Bhv = MTABhv(Trial,'auto_wbhr',1);
-Trial.Bhv.States = {};
-Trial.Bhv.States{1} = MTAState('w','walk',wper);
-Trial.Bhv.States{2} = MTAState('b','bturn',round((afp+0.25*trajSampleRate).*Trial.xyzSampleRate./trajSampleRate));
-Trial.Bhv.States{3} = MTAState('h','hturn',round((hfp+0.25*trajSampleRate).*Trial.xyzSampleRate./trajSampleRate));
-Trial.Bhv.States{4} = MTAState('r','rear',rper);
-Trial.Bhv.save(Trial,1);
-Trial.save
+Trial.stc = MTAStateCollection(Trial.spath,...
+                               Trial.filebase,....
+                               'auto_wbhr',...
+                               Trial.xyz.sync.copy,...
+                               Trial.xyz.origin,...
+                               1);
+Trial.stc.addState(Trial.spath,...
+                   Trial.filebase,...
+                   wper,...
+                   Trial.xyz.sampleRate,...
+                   Trial.xyz.sync.copy,...
+                   Trial.xyz.origin,...
+                   'walk','w');
+
+Trial.stc.addState(Trial.spath,...
+                   Trial.filebase,...
+                   round((afp+0.25*trajSampleRate).*Trial.xyz.sampleRate./trajSampleRate),...
+                   Trial.xyz.sampleRate,...
+                   Trial.xyz.sync.copy,...
+                   Trial.xyz.origin,...
+                   'bturn','b');
+
+Trial.stc.addState(Trial.spath,...
+                   Trial.filebase,...
+                   round((hfp+0.25*trajSampleRate).*Trial.xyz.sampleRate./trajSampleRate),...
+                   Trial.xyz.sampleRate,...
+                   Trial.xyz.sync.copy,...
+                   Trial.xyz.origin,...
+                   'hturn','h');
+
+Trial.stc.addState(Trial.spath,...
+                   Trial.filebase,...
+                   rper,...
+                   Trial.xyz.sampleRate,...
+                   Trial.xyz.sync.copy,...
+                   Trial.xyz.origin,...
+                   'rear','r');
+               
+Trial.stc.save(1);
+Trial.save;
+               
+               
+% Trial.Bhv = MTABhv(Trial,'auto_wbhr',1);
+% Trial.Bhv.States = {};
+% Trial.Bhv.States{1} = MTAState('w','walk',wper);
+% Trial.Bhv.States{2} = MTAState('b','bturn',round((afp+0.25*trajSampleRate).*Trial.xyz.sampleRate./trajSampleRate));
+% Trial.Bhv.States{3} = MTAState('h','hturn',round((hfp+0.25*trajSampleRate).*Trial.xyz.sampleRate./trajSampleRate));
+% Trial.Bhv.States{4} = MTAState('r','rear',rper);
+% Trial.Bhv.save(Trial,1);
+% Trial.save

@@ -30,7 +30,8 @@ classdef MTADang < MTAData
         end
         
         function Data = create(Data,Session,varargin)
-            [xyz] = DefaultArgs(varargin,{Session.xyz});
+            [xyz] = DefaultArgs(varargin,{Session.xyz.copy});
+            if xyz.isempty, xyz.load(Session); end
             ang = zeros(xyz.size(1),xyz.model.N,xyz.model.N,5);
             diffMat = Session.markerDiffMatrix(); %xyz); change this back later
             for i=1:xyz.model.N,
@@ -45,6 +46,7 @@ classdef MTADang < MTAData
                     ang(:,i,j,3:5) = ry;
                 end
             end
+            ang(ang(:,1,2,2)~=0,1,1,1)=1;
             Data.data = ang;
         end
         

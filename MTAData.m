@@ -99,6 +99,10 @@ classdef MTAData < hgsetget
                     Data.data = ds.data;
                     Data.sync.sync = Session.sync.copy;
                     Session.resync(Data);                    
+                case 'MTATrial'
+                    Data.data = ds.data;
+                    Data.sync.sync = Session.sync.copy;
+                    Session.resync(Data);                    
                 case 'double'
                     if ~isempty(Session),
                         mf = matfile(Data.fpath);

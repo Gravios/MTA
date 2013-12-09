@@ -43,18 +43,21 @@ classdef MTADufr < MTAData
                 end
             
             else
+                
                 Data.sampleRate = DataObj.sampleRate;
-                syncPeriods = Session.sync.periods(DataObj.sampleRate);
                 %if ~exist(Data.fpath,'file')||overwrite,
                 spk = Session.spk.copy();
                 spk.create(Session,DataObj.sampleRate,state,units);
-                Data.data = zeros(diff(syncPeriods([1,end]))+1,numel(units));
+                dsize = diff(DataObj.sync.sync([1,end]))+1;
+                Data.data = zeros(dsize,numel(units));
                 if isempty(units), units = 1:spk.map(end,1);end
                 swin = round(twin*DataObj.sampleRate);
                 gwin = gausswin(swin)/sum(gausswin(swin));
                 for unit = units(:)'
-                    Data.data(:,unit==units) = conv(accumarray(spk.res(spk.clu==unit),1,[diff(syncPeriods([1,end]))+1,1]),gwin,'same')/twin;
+                    Data.data(:,unit==units) = conv(accumarray(spk.res(spk.clu==unit),1,[dsize,1]),gwin,'same')/twin;
                 end
+                Data.origin = DataObj.origin;
+                Data.sync = DataObj.sync;
             end
         end
         
