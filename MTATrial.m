@@ -117,6 +117,8 @@ classdef MTATrial < MTASession
                 if isa(prop,'MTAData'),
                     if ~prop.isempty
                         Trial.resync(prop);
+                    else
+                        prop.origin = Session.(props{p}).origin;
                     end
                     
                 elseif isa(prop,'MTAStateCollection')

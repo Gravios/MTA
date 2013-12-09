@@ -26,6 +26,7 @@ classdef MTADlfp < MTAData
             Data.data = LoadBinary(Data.fpath,channels,...
                                    Par.nChannels,[],[],[],periods)';
             Data.data(Data.data==0)=1;
+            Session.resync(Data);
         end
         function Data = create(Data,varargin)
         end

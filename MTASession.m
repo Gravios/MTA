@@ -226,7 +226,7 @@ classdef MTASession < hgsetget
         %
         [sync] = DefaultArgs(varargin,{[]});
         
-        global diagnostic;
+        %global diagnostic;
         
         %diagnostic,
         %Data = Data.copy;
@@ -289,23 +289,24 @@ classdef MTASession < hgsetget
             
             %Diagnostic
             %diagnostic,
-%                 figure,
-%                 plot(dataEpoch.data)
-%                 ylim([-3,3])
-%                 hold on
-%                 plot(loadedData-dataEpoch.data,'r')
-%                 plot(loadedData-syncEpoch.data,'g')
-%                 plot(dataEpoch.data-syncEpoch.data,'c')
-%                 plot(loadedData-syncEpoch.data+dataEpoch.data,'m')
+                figure,
+                plot(dataEpoch.data)
+                ylim([-3,3])
+                hold on
+                plot(loadedData-dataEpoch.data,'r')
+                plot(loadedData-syncEpoch.data,'g')
+                plot(dataEpoch.data-syncEpoch.data,'c')
+                plot(loadedData-syncEpoch.data+dataEpoch.data,'m')
 %             
             
             syncshift = Data.sync(1)-newOrigin-1;
             
             %%Trim ends
             endSync = Data.sync.sync(end);
-            endShiftIndex = endSync - loadedDataEnd;
+            endShiftIndex = endSync - loadedDataEnd+1;
+            endShiftIndex(endShiftIndex==0)=1;           
             startShiftIndex = newOrigin-dataOrigin;
-            startShiftIndex(startShiftIndex==0)=1;
+            startShiftIndex(startShiftIndex==0)=1;           
             if endShiftIndex < 0,
                 if startShiftIndex < 0,
                     Data.data = cat(1,zeros([abs(startShiftIndex),Data.size(2:end)]),Data.data(1:abs(endSync-dataOrigin+1),:,:,:,:));
