@@ -291,14 +291,14 @@ classdef MTASession < hgsetget
             
             %Diagnostic
             %diagnostic,
-                figure,
-                plot(dataEpoch.data)
-                ylim([-3,3])
-                hold on
-                plot(loadedData-dataEpoch.data,'r')
-                plot(loadedData-syncEpoch.data,'g')
-                plot(dataEpoch.data-syncEpoch.data,'c')
-                plot(loadedData-syncEpoch.data+dataEpoch.data,'m')
+%                 figure,
+%                 plot(dataEpoch.data)
+%                 ylim([-3,3])
+%                 hold on
+%                 plot(loadedData-dataEpoch.data,'r')
+%                 plot(loadedData-syncEpoch.data,'g')
+%                 plot(dataEpoch.data-syncEpoch.data,'c')
+%                 plot(loadedData-syncEpoch.data+dataEpoch.data,'m')
 %             
             
             %%Trim ends
