@@ -119,3 +119,31 @@ plot(sper.data),ylim([-1,3])
 Lines(tper(:,1),[],'g');
 Lines(tper(:,2),[],'g');
 
+
+pfg = MTAApfs(Trial,[],'hwalk',1,[],[30,30],[1.2,1.2],'xy');
+pfl = MTAApfs(Trial,[],'lwalk',1,[],[30,30],[1.2,1.2],'xy');
+Bccg = gen_bhv_ccg(Trial,'hwalk');
+Lccg = gen_bhv_ccg(Trial,'lwalk');
+
+units = 1:105;
+u=1;
+hfig = figure;
+set(hfig,'Name',num2str(u));
+while u~=-1,
+    subplot2(4,2,[1,2],1),pfg.plot(u),
+    subplot2(4,2,[1,2],2),pfl.plot(u),
+    subplot2(4,2,3,1)    ,Bccg.plot(u,1),axis tight
+    subplot2(4,2,4,1)    ,Bccg.plot(u,2),axis tight
+    subplot2(4,2,3,2)    ,Lccg.plot(u,1),axis tight
+    subplot2(4,2,4,2)    ,Lccg.plot(u,2),axis tight
+    
+    uicontrol(hfig,'String','>','units','normalized','Position',[.97, 0, .03,  1],'Callback',@(hfig,index,indArray,callback)figure_controls(hfig,u,units,'forwardButton_Callback'));
+    uicontrol(hfig,'String','<','units','normalized','Position',[  0, 0, .03,  1],'Callback',@(hfig,index,indArray,callback)figure_controls(hfig,u,units,'backwardButton_Callback'));
+    uicontrol(hfig,'String','X','units','normalized','Position',[.47, 0, .10,.07],'Callback',@(hfig,index,indArray,callback)figure_controls(hfig,u,units,'exitButton_Callback'));
+    while strcmp(num2str(u),get(hfig,'Name'))
+        pause(0.2);
+    end
+    u = str2double(get(hfig,'Name'));
+
+end
+

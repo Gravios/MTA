@@ -1,5 +1,9 @@
 function paths = MTAConfiguration(root_dir)
-%% still needs work
+%paths = MTAConfiguration(root_dir)
+% Paths,
+% Vicon Markers Names
+% Marker Connections
+% Default Maze Configurations
 
 if ispc, 
     userdir= getenv('USERPROFILE'); 
@@ -8,7 +12,7 @@ else
 end
 
 
-%paths to the data directories
+%% paths to the data directories
 data = fullfile(userdir,root_dir);
 if ~exist(fullfile(data,'config'),'dir')
     mkdir(fullfile(data,'config'));
@@ -18,17 +22,17 @@ if ~exist(MTAPath,'dir'),
     mkdir(MTAPath);
 end
 
-%List of the accepted marker names
+%% List of the accepted marker names
 MTAMarkers ={'hip_right','pelvis_root','hip_left','spine_lower','knee_left','knee_right','tail_base','tail_end','spine_middle','spine_upper','head_back','head_left','head_front','head_right','shoulder_left','elbow_left','shoulder_right','elbow_right','head_top'};
 
-%List of the accepted mazes
+%% List of the accepted mazes
 MTAMazes = {{'cof','circle',   [-500,500;-500,500;0,300],[-500,500;-500,500;0,360]},...
             {'nor','circle',   [-500,500;-500,500;0,300],[-500,500;-500,500;0,360]},...
             {'sof','square'},...
             {'rof','rectangle',[-800,800;-500,500;0,300],[-800,800;-500,500;0,300]},...
             {'tm','circle',    [-500,500;-500,500;0,300],[-500,500;-500,500;0,360]}};
 
-%List of the accepted connections between markers
+%% List of the accepted connections between markers
 MTAMarkerConnections = {{'head_front','head_left' },...
     {'head_front','head_right'},...
     {'head_right','head_left' },...
@@ -53,6 +57,7 @@ MTAMarkerConnections = {{'head_front','head_left' },...
     {'head_top','head_back'}, ...
     {'tail_proximal','spine_lower'}};
 
+%% Save configuations
 save(fullfile(MTAPath, 'MTAPaths.mat'  ),'MTAPath','data')
 save(fullfile(MTAPath, 'MTAMarkers.mat'),'MTAMarkers')
 save(fullfile(MTAPath, 'MTAMazes.mat'  ),'MTAMazes')

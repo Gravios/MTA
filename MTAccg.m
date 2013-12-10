@@ -47,19 +47,19 @@ methods
 
         %% Load Session data
         if ~isa(Session,'MTASession'), 
-            Session = MTASession(Session,{{'CluRes',[],units}});
+            Session = MTASession(Session);
         end
         
         if partitions == 1, method = 'normal';end
-        Session = Session.load_CluRes([],units);
-        numClu = size(Session.map,1);
+        Session.spk.create(Session,Session.lfp.sampleRate);
+        numClu = size(Session.spk.map,1);
 
-        Bccg.mazeName = Session.Maze.name;
+        Bccg.mazeName = Session.maze.name;
         Bccg.trialName = Session.trialName; 
         Bccg.name = name;
         Bccg.filebase = Session.filebase;
         Bccg.method = method;
-        Bccg.cluMap = Session.map;     
+        Bccg.cluMap = Session.spk.map;     
         Bccg.partitions = partitions;
         Bccg.CluTags = CluTags;
         Bccg.Description = Description;
@@ -80,7 +80,7 @@ methods
 
         %% Check if Session already contains pf with given parameters
         %% If terminal error occurred during a previous run pick up from the last unit.    
-        pf_tmpfile = [Session.spath.analysis Session.filebase '.ccg.' name '.mat'];
+        pf_tmpfile = fullfile(Session.spath ,[Session.filebase '.ccg.' name '.mat']);
 
         if ~exist(pf_tmpfile,'file'),
             Bccg.calculation_completion_map = false(numClu,1);
@@ -109,17 +109,17 @@ methods
         end
 
 
-        numClu = size(Session.map,1);
+        numClu = size(Session.spk.map,1);
         numResTrains = length(ResTrain);
         Bccg.ccg = zeros(halfBins*2+1,numClu,length(ResTrain),partitions,numIterations);
         posind = {};
         partBoundary = {};
         partition_distMap = {};
 
-        uRes = Session.res;
+        uRes = Session.spk.res;
 
 
-        %% Change res sampling rate to lfpSampleRate and create
+        %% Change res sampling rate to lfp.sampleRate and create
         %% surrogates where ResTrain is a list of periods.
         surrogateIndex = {};
         for nr = 1:numResTrains,               
@@ -140,11 +140,11 @@ methods
 
                 for i = 1:numIterations,
                     posind{nr,i} = surrogateIndex{nr}(rpi(:,i));
-                    tRes{nr,i} = round((surrogateIndex{nr}(rpi(:,i))-1)./Session.xyzSampleRate.*Session.lfpSampleRate);
+                    tRes{nr,i} = round((surrogateIndex{nr}(rpi(:,i))-1)./Session.xyz.sampleRate.*Session.lfp.sampleRate);
                 end
             else
                 for i = 1:numIterations,
-                    tRes{nr,i} = round((ResTrain{nr}-1)./Session.xyzSampleRate.*Session.lfpSampleRate);
+                    tRes{nr,i} = round((ResTrain{nr}-1)./Session.xyz.sampleRate.*Session.lfp.sampleRate);
                     posind{nr,i} = ResTrain{nr};
                 end
             end
@@ -157,7 +157,7 @@ methods
                     for unit = units,
                         for i = 1:numIterations,
                             try
-                                partition_distMap{nr,i}(unit,:) = sqrt(sum((repmat(partition_feature(unit,:),size(posind{nr,i},1),1)-sq(Session.xyz(posind{nr,i},Session.Model.gmi(Session.trackingMarker),[1,2]))).^2,2));
+                                partition_distMap{nr,i}(unit,:) = sqrt(sum((repmat(partition_feature(unit,:),size(posind{nr,i},1),1)-sq(Session.xyz(posind{nr,i},Session.trackingMarker,[1,2]))).^2,2));
                             end
                         end
                     end
@@ -165,7 +165,7 @@ methods
                     for unit = units,
                         for i = 1:numIterations,                     
                             try
-                                partition_distMap{nr,i}(unit,:) = sqrt(sum((repmat(partition_feature(unit,:),size(posind{nr,i},1),1)-sq(Session.xyz(posind{nr,i},Session.Model.gmi(Session.trackingMarker),[1,2]))).^2,2));
+                                partition_distMap{nr,i}(unit,:) = sqrt(sum((repmat(partition_feature(unit,:),size(posind{nr,i},1),1)-sq(Session.xyz(posind{nr,i},Session.trackingMarker,[1,2]))).^2,2));
                             end
                         end
                     end
@@ -186,7 +186,7 @@ methods
                         case 'prctile_dist'                    
                           partBoundary{nr,i}(unit,:) = prctile(partition_distMap{nr,i}(unit,:),[0:100/partitions:100]);
                         case 'abs_dist'
-                          partBoundary{nr,i}(unit,:) = [0:max(abs(diff(Session.Maze.boundaries,1,2)))/partitions:max(abs(diff(Session.Maze.boundaries,1,2)))];
+                          partBoundary{nr,i}(unit,:) = [0:max(abs(diff(Session.maze.boundaries,1,2)))/partitions:max(abs(diff(Session.maze.boundaries,1,2)))];
                         end
                     end
                 end
@@ -199,10 +199,10 @@ methods
                         Res = tRes;
                     end
 
-                    Res{numResTrains+1} = uRes(Session.clu==unit);
-                    Clu{numResTrains+1} = Session.clu(Session.clu==unit);
+                    Res{numResTrains+1} = uRes(Session.spk.clu==unit);
+                    Clu{numResTrains+1} = Session.spk.clu(Session.spk.clu==unit);
 
-                    [rccg Bccg.tbin ] = Trains2CCG(Res,Clu,binSize,halfBins,Session.lfpSampleRate,normalization);
+                    [rccg Bccg.tbin ] = Trains2CCG(Res',Clu,binSize,halfBins,Session.lfp.sampleRate,normalization);
                     emptyResInd = cellfun(@isempty,Res);
 
                     for nr = 1:numResTrains,
@@ -226,9 +226,9 @@ methods
 
 
         if rand_tag,
-            save([Session.spath.analysis Session.filebase '.ccg.' Bccg.name '.' num2str(randi([100000,999999],1)) '.mat'],'Bccg','-v7.3');
+            save(fullfile(Session.spath ,[Session.filebase '.ccg.' Bccg.name '.' num2str(randi([100000,999999],1)) '.mat']),'Bccg','-v7.3');
         else
-            save([Session.spath.analysis Session.filebase '.ccg.' Bccg.name '.mat'],'Bccg','-v7.3');
+            save(fullfile(Session.spath ,[Session.filebase '.ccg.' Bccg.name '.mat']),'Bccg','-v7.3');
         end
 
         Bccg.save(Session,rand_tag);
@@ -237,10 +237,10 @@ methods
         function save(Bccg,Session,rand_tag)
             if rand_tag,
                 %% Seed RandStream with system clock
-                RandStream.setDefaultStream(RandStream('mt19937ar','seed',sum(100*clock)));
-                save([Session.spath.analysis Session.filebase '.ccg.' Bccg.name '.' num2str(randi([100000,999999],1)) '.mat'],'Bccg','-v7.3');
+                RandStream.setGlobalStream(RandStream('mt19937ar','seed',sum(100*clock)));
+                save(fullfile(Session.spath, [Session.filebase '.ccg.' Bccg.name '.' num2str(randi([100000,999999],1)) '.mat']),'Bccg','-v7.3');
             else
-                save([Session.spath.analysis Session.filebase '.ccg.' Bccg.name '.mat'],'Bccg','-v7.3');
+                save(fullfile(Session.spath, [Session.filebase '.ccg.' Bccg.name '.mat']),'Bccg','-v7.3');
             end
         end
 
@@ -263,7 +263,7 @@ methods
 
 
         function axis_handel = plot(Bccg,unit,varargin)
-            [filterKernel,partitions,ifColorBar] = DefaultArgs(varargin,{gausswin(5),1});
+            [partitions,filterKernel,ifColorBar] = DefaultArgs(varargin,{1,gausswin(5),1});
             if length(filterKernel) > 1,
                 fccg = Bccg.filter(filterKernel);
             elseif filterKernel~=0,
