@@ -298,7 +298,7 @@ classdef MTAData < hgsetget
                     case 'TimePeriods'
                         Data.data = ThreshCross(Data.data,0.5,1);
                     case 'TimeSeries'
-                        tmpdata = round(Data.data./Data.sampleRate.*sampleRate);
+                        tmpdata = round(Data.data./Data.sampleRate.*sampleRate)+Data.origin;
                         tmpdata(tmpdata==0) = 1;
                         if isa(Data.sync,'MTAData'),
                             Data.sync.resample(Data.sampleRate);
@@ -307,11 +307,11 @@ classdef MTAData < hgsetget
                             data = false(round(Data.sync(end)./Data.sampleRate.*sampleRate),1);
                         end                                
                         for j = 1:size(tmpdata,1),
-                            data(tmpdata(j,1)+1:tmpdata(j,2)) = true;
+                            data(tmpdata(j,1):tmpdata(j,2)) = true;
                         end         
                         switch syncflag
                             case 'relative'
-                                data = data(Data.sync.sync.data(1):Data.sync.sync.data(end));
+                                data = data(Data.sync.sync.data(1)+1:Data.sync.sync.data(end));
                             case 'absolute'
                                 
                         end

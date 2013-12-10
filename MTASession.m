@@ -233,7 +233,9 @@ classdef MTASession < hgsetget
         
         switch class(Data)
             case 'MTADepoch'
-                Data.load;
+                if exist(Data.fpath,'file'),
+                    Data.load;
+                end
         end
         
         if ~isempty(sync)
@@ -254,10 +256,10 @@ classdef MTASession < hgsetget
             Data.sync.sync.resample(Data.sampleRate);
         end
         
-        
+
         
         if isa(Data,'MTADepoch'),
-            Data.data = IntersectRanges(Data.data+Data.origin,Data.sync.sync.data+Data.sync.sync.origin)-Data.sync.sync(1)+1;
+            Data.data = IntersectRanges(Data.data+Data.origin,Data.sync.sync.data+Data.sync.sync.origin-1)-Data.sync.sync(1);
             Data.origin = Data.sync.sync(1)+1;
             return
 

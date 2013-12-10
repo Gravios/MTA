@@ -122,7 +122,7 @@ classdef MTATrial < MTASession
                     end
                     
                 elseif isa(prop,'MTAStateCollection')
-                    if ~prop.isempty
+                    if ~prop.isempty,
                         for s = numel(prop.states(:)),
                             Trial.resync(prop.states{s});
                         end
