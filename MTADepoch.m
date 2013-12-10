@@ -1,4 +1,32 @@
 classdef MTADepoch < MTAData
+% MTADepoch(path,filename,data,sampleRate,syncOrigin,label,key,datatype,extension)
+% MTADepoch is a container for periods of time as defined by start and stop
+% instances recorded in a Nx2 array, within the context of a dynamic
+% temporal domain (e.g. MTASession or MTATrial).
+%
+%  Data Types:
+%
+%    TimePeriods: Nx2 array, The index boundaries of the stored epochs
+%    TimeSeries:  Tx1 array, Logical array where, (1 == within epoch)
+%
+%  Behavior:
+%    
+%      
+%   
+%  Variables:
+%    
+%    path:        string, location where the data should be saved
+%    
+%    filename:    string, Name of the file
+%
+%    data:        double, matrix of size Nx2, where N is the number of epochs
+%
+%    sampleRate:  double, Number of samples per second to which start and stop
+%                         values of the data corespond.
+%
+%    syncPeriods: MTADepoch, time periods in reference to larger timescale
+%                            indicating where the data fits in a Session
+
     properties
         data 
         label
