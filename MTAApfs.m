@@ -164,6 +164,7 @@ classdef MTAApfs < hgsetget %< MTAAnalysis
                 if numUnits ==0
                     numUnits = size(Session.spk.map,1);
                     units    = 1:size(Session.spk.map,1);
+                    selected_units = units;                    
                 end
                 dind = 1:numUnits;
                 Pfs.data =struct('clu',        zeros(1,numUnits),...
@@ -187,15 +188,19 @@ classdef MTAApfs < hgsetget %< MTAAnalysis
 
             i = 1;
             for unit=selected_units,
+
                 Pfs.data.clu(dind(i)) = Session.spk.map(unit,1);
                 Pfs.data.el(dind(i)) = Session.spk.map(unit,2);
                 Pfs.data.elClu(dind(i)) = Session.spk.map(unit,3);
-                mySpkPos = Session.xyz(Session.spk(unit),Session.trackingMarker,1:numel(binDims));
-                
-                nSpk = size(mySpkPos,1);
-                
+                res = Session.spk(unit);
+
                 %% Skip unit if too few spikes
-                if nSpk>10,
+                if numel(res)>10,
+                  
+                    mySpkPos = Session.xyz(res,Session.trackingMarker,1:numel(binDims));
+
+                    nSpk = size(mySpkPos,1);
+                
                     %% CircShift position data
                     shuffled_Pos = @(posShuffle,stspos) circshift(stspos,randi([-posShuffle,posShuffle]));
                     switch spkShuffle
