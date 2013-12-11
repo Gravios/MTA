@@ -42,7 +42,7 @@ end
 
 figure,
 bper = Trial.stc{'w',Trial.xyz.sampleRate}.data;
-hist2([Trial.xyz(bper,5,3),Trial.ang(bper,1,3,2)],100,100);
+hist2([Trial.xyz(bper,7,3),Trial.ang(bper,3,4,2)],100,100);
 
 lv = log10(abs(v(:,3)));
 xaind = Trial.xyz(:,1,1)~=0&~isnan(Trial.ang(:,1,2,2))&~isinf(lv);
@@ -120,6 +120,7 @@ Lines(tper(:,1),[],'g');
 Lines(tper(:,2),[],'g');
 
 
+
 pfg = MTAApfs(Trial,[],'hwalk',1,[],[30,30],[1.2,1.2],'xy');
 pfl = MTAApfs(Trial,[],'lwalk',1,[],[30,30],[1.2,1.2],'xy');
 Bccg = gen_bhv_ccg(Trial,'hwalk');
@@ -145,5 +146,16 @@ while u~=-1,
     end
     u = str2double(get(hfig,'Name'));
 
+end
+
+
+
+figure,
+
+
+u=1;
+while u ~=-1
+subplot(121),pfl.plot(u),subplot(122),pfg.plot(u)
+u = figure_controls(gcf,u);
 end
 
