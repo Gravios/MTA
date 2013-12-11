@@ -7,12 +7,16 @@ if ~isa(Session,'MTASession'),
     Session = MTASession(Session);
 end
 
-Session = Session.load_CluRes(Session.sampleRate,units);
+Session.spk.create(Session,Session.sampleRate,units);
 
-accg = zeros(1+2*halfBins,size(Session.map,1));
-for i = 1:size(Session.map),
-    uRes = Session.res(Session.clu==i);
+if isempty(units)
+    units = 1:size(Session.spk.map);
+end
+
+accg = zeros(1+2*halfBins,size(Session.spk.map,1));
+for i = units,
+    uRes = Session.spk(i);
     [tccg,tbin] = CCG(uRes,i,binSize,halfBins,Session.sampleRate,[],normalization,[]);
-    accg(:,i) = tccg;
+    accg(:,i==units) = tccg;
 end
 

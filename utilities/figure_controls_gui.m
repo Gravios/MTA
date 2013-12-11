@@ -1,6 +1,6 @@
 
 
-function figure_controls(hfig,index,indArray,mode)
+function figure_controls_gui(hfig,index,indArray,mode)
 hfig = get(hfig,'Parent');
 eval([mode '(hfig,index,indArray)']);
 end
@@ -41,4 +41,27 @@ end
 function exitButton_Callback(hfig,index,indArray)
     index = -1;
     set(hfig,'Name',num2str(index));
+end
+
+
+function popupmenu_Callback(hfig,index,indArray)
+    index = -1;
+    set(hfig,'Name',num2str(index));
+end
+
+
+function printButton_Callback(hfig,index,indArray)
+    if ispc, 
+        userdir= getenv('USERPROFILE'); 
+    else
+        userdir= getenv('HOME');
+    end
+    dest = fullfile(userdir,'figures');
+    folder = ['figs' datestr(now,29)];
+    if ~exist(fullfile(dest,folder),'dir'),mkdir(fullfile(dest,folder));end
+    filenamepng = fullfile(dest,folder,['f' datestr(now,30) '.png']);
+    filenameeps = fullfile(dest,folder,['f' datestr(now,30) '.eps']);
+    parent = hfig;%get(hfig,'Parent');
+    print(parent,'-dpng',filenamepng);
+    print(parent,'-dpsc2',filenameeps);
 end

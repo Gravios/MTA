@@ -52,9 +52,10 @@ classdef MTADufr < MTAData
                 Data.data = zeros(dsize,numel(units));
                 if isempty(units), units = 1:spk.map(end,1);end
                 swin = round(twin*DataObj.sampleRate);
-                gwin = gausswin(swin)/sum(gausswin(swin));
+                %gwin = gausswin(swin)/sum(gausswin(swin));
+                gwin = ones(swin,1);
                 for unit = units(:)'
-                    Data.data(:,unit==units) = conv(accumarray(spk.res(spk.clu==unit),1,[dsize,1]),gwin,'same')/twin;
+                    Data.data(:,unit==units) = conv(accumarray(spk.res(spk.clu==unit),1,[dsize,1])./twin,gwin,'same');
                 end
                 Data.origin = DataObj.origin;
                 Data.sync = DataObj.sync;

@@ -119,33 +119,43 @@ plot(sper.data),ylim([-1,3])
 Lines(tper(:,1),[],'g');
 Lines(tper(:,2),[],'g');
 
+[accg,tbin] = autoccg(Trial);
 
-
-pfg = MTAApfs(Trial,[],'hwalk',1,[],[30,30],[1.2,1.2],'xy');
+pfr = MTAApfs(Trial,[],'rear',1,[],[30,30],[1.2,1.2],'xy');
+pfw = MTAApfs(Trial,[],'walk',1,[],[30,30],[1.2,1.2],'xy');
+pfh = MTAApfs(Trial,[],'hwalk',1,[],[30,30],[1.2,1.2],'xy');
 pfl = MTAApfs(Trial,[],'lwalk',1,[],[30,30],[1.2,1.2],'xy');
+Rccg = gen_bhv_ccg(Trial,'rear');
 Bccg = gen_bhv_ccg(Trial,'hwalk');
 Lccg = gen_bhv_ccg(Trial,'lwalk');
 
-units = 1:105;
-u=1;
+
+
+units = pfh.data.clu(pfh.data.meanRate>.3|pfr.data.meanRate>.3|pfl.data.meanRate>.3);
+
 hfig = figure;
+
+u=1;
 set(hfig,'Name',num2str(u));
 while u~=-1,
-    subplot2(4,2,[1,2],1),pfg.plot(u),
-    subplot2(4,2,[1,2],2),pfl.plot(u),
-    subplot2(4,2,3,1)    ,Bccg.plot(u,1),axis tight
-    subplot2(4,2,4,1)    ,Bccg.plot(u,2),axis tight
-    subplot2(4,2,3,2)    ,Lccg.plot(u,1),axis tight
-    subplot2(4,2,4,2)    ,Lccg.plot(u,2),axis tight
+    subplot2(4,3,[1,2],1),pfr.plot(u),title('rear')
+    subplot2(4,3,[1,2],2),pfl.plot(u),title('hwalk')
+    subplot2(4,3,[1,2],3),pfh.plot(u),title('lwalk')
+    subplot2(4,3,3,1)    ,Rccg.plot(u,1),axis tight
+    subplot2(4,3,4,1)    ,Rccg.plot(u,2),axis tight
+    subplot2(4,3,3,2)    ,Lccg.plot(u,1),axis tight
+    subplot2(4,3,4,2)    ,Lccg.plot(u,2),axis tight
+    subplot2(4,3,3,3)    ,Bccg.plot(u,1),axis tight
+    subplot2(4,3,4,3)    ,Bccg.plot(u,2),axis tight
     
-    uicontrol(hfig,'String','>','units','normalized','Position',[.97, 0, .03,  1],'Callback',@(hfig,index,indArray,callback)figure_controls(hfig,u,units,'forwardButton_Callback'));
-    uicontrol(hfig,'String','<','units','normalized','Position',[  0, 0, .03,  1],'Callback',@(hfig,index,indArray,callback)figure_controls(hfig,u,units,'backwardButton_Callback'));
-    uicontrol(hfig,'String','X','units','normalized','Position',[.47, 0, .10,.07],'Callback',@(hfig,index,indArray,callback)figure_controls(hfig,u,units,'exitButton_Callback'));
+    uicontrol(hfig,'String','>','units','normalized','Position',[.97, 0, .03,  1],'Callback',@(hfig,index,indArray,callback)figure_controls_gui(hfig,u,units,'forwardButton_Callback'));
+    uicontrol(hfig,'String','<','units','normalized','Position',[  0, 0, .03,  1],'Callback',@(hfig,index,indArray,callback)figure_controls_gui(hfig,u,units,'backwardButton_Callback'));
+    uicontrol(hfig,'String','X','units','normalized','Position',[.45, 0, .10,.07],'Callback',@(hfig,index,indArray,callback)figure_controls_gui(hfig,u,units,'exitButton_Callback'));
+    uicontrol(hfig,'String','unit','units','normalized','Position',[.45, 0, .10,.07],'Callback',@(hfig,index,indArray,callback)figure_controls_gui(hfig,u,units,'popupmenu_Callback'));
     while strcmp(num2str(u),get(hfig,'Name'))
         pause(0.2);
     end
     u = str2double(get(hfig,'Name'));
-
 end
 
 
@@ -156,6 +166,6 @@ figure,
 u=1;
 while u ~=-1
 subplot(121),pfl.plot(u),subplot(122),pfg.plot(u)
-u = figure_controls(gcf,u);
+u = figure_controls_gui(gcf,u);
 end
 
