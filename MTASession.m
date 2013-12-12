@@ -607,7 +607,7 @@ classdef MTASession < hgsetget
              pose = sq(Session.xyz(Session.model.index,Session.model.gmi(markerSubset),:));
              for i = 1:size(Session.xyzPeriods,1),
                  Temp = MTATrial(Session,{},[],Session.xyzPeriods(i,:));
-                 Temp = CorrectRigidBody(Temp,rb,pose);
+                 %%REDO this part  Temp = CorrectRigidBody(Temp,rb,pose);
                  Session.xyz(Temp.xyzPeriods(1,1):Temp.xyzPeriods(1,2),:,:) = Temp.xyz;
              end
              Session.ang = Session.load_ang(1);
@@ -646,8 +646,8 @@ classdef MTASession < hgsetget
          %
              
              Marker = MTAMarker(name,color);
-             Session.DataObj.model.Markers{end+1} = Marker;
-             Session.DataObj.model.N = Session.DataObj.model.N + 1;
+             DataObj.model.Markers{end+1} = Marker;
+             DataObj.model.N = DataObj.model.N + 1;
              for i = 1:length(sticks),
                  Session.model.Connections{end+1} = MTAStick(sticks{i}{1},sticks{i}{2},sticks{i}{3});
              end
@@ -656,7 +656,7 @@ classdef MTASession < hgsetget
 
         %%---------------------------------------------------------------------------------%
 
-%% REDO %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+
         %% Place Fields -------------------------------------------------------------------%
 % CHECK IF STILL FUNCTIONAL
         function Session = load_Pfs(Session,varargin)

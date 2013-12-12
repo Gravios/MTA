@@ -3,7 +3,7 @@ function [RateMap,Bins,MRate,SI,Spar]= PlotKNNPF(Session,ufr,pos,varargin)
 
 Session = MTATrial('jg05-20120317');
 Session.xyz.load(Session);
-Sission = Session.filter('xyz');
+Session = Session.filter('xyz');
 
 
 ufr = Session.ufr.create(Session,Session.xyz,[],[],0.2);

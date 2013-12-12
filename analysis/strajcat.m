@@ -19,17 +19,18 @@ Trial = Trial.addMarker(Trial.xyz,'head_com','[0,0,0]',...
                  {'head_left','head_com',[0,0,255]},...
                  {'head_front','head_com',[0,0,255]},...
                  {'head_right','head_com',[0,0,255]}},comh);
-Trial = Trial.ang.create(Trial);
+%Trial = Trial.ang.create(Trial);
 
+sfet = [];
 
-sfet = [circ_dist(Trial.ang(:,2,3,1),Trial.ang(:,1,2,1)),...
-%        circ_dist(Trial.ang(:,2,3,1),Trial.ang(:,1,10,1)),...
-        circ_dist(Trial.ang(:,3,4,1),Trial.ang(:,2,3,1)),...
-%        circ_dist(Trial.ang(:,3,4,1),Trial.ang(:,1,10,1)),...
-        circ_dist(Trial.ang(:,4,5,1),Trial.ang(:,3,4,1)),...
-%        circ_dist(Trial.ang(:,4,5,1),Trial.ang(:,1,10,1)),...
-        circ_dist(Trial.ang(:,5,7,1),Trial.ang(:,4,5,1))];,...
-%        circ_dist(Trial.ang(:,5,7,1),Trial.ang(:,1,11,1))];
+% $$$ sfet = [circ_dist(Trial.ang(:,2,3,1),Trial.ang(:,1,2,1)),...
+% $$$ %        circ_dist(Trial.ang(:,2,3,1),Trial.ang(:,1,10,1)),...
+% $$$         circ_dist(Trial.ang(:,3,4,1),Trial.ang(:,2,3,1)),...
+% $$$ %        circ_dist(Trial.ang(:,3,4,1),Trial.ang(:,1,10,1)),...
+% $$$         circ_dist(Trial.ang(:,4,5,1),Trial.ang(:,3,4,1)),...
+% $$$ %        circ_dist(Trial.ang(:,4,5,1),Trial.ang(:,1,10,1)),...
+% $$$         circ_dist(Trial.ang(:,5,7,1),Trial.ang(:,4,5,1))];,
+% $$$ %        circ_dist(Trial.ang(:,5,7,1),Trial.ang(:,1,11,1))];
 
 pfet = [Trial.ang(:,1,2,2),...
         Trial.ang(:,2,3,2),...
@@ -40,55 +41,37 @@ pfet = [Trial.ang(:,1,2,2),...
         Trial.ang(:,5,8,2)];
 
 %xyz = cat(2,sfet,pfet);
-markers = [1,2,3,4,5,6,7,8];
-fwin = 3;
-xyz = reshape(Filter0(gausswin(fwin)./sum(gausswin(fwin)),Trial.xyz(:,markers,:)),size(Trial.xyz,1),length(markers),size(Trial.xyz,3));
-xyz = sqrt(sum(diff(xyz).^2,3));
-xyz = cat(1,xyz(1,:,:),xyz);
-xyz = cat(2,xyz,sfet,pfet);
+markers = [1,3,4,5,7,10,11];
+xyz = Filter0(gausswin(31)./gausswin(31),[zeros(1,numel(markers));Trial.vel(markers)]);
+xyz = cat(2,xyz,pfet);
 
 xyzlen = size(xyz,1);
-winlen = 64;
-zpad = mod(xyzlen,winlen);
+winInterval = 10;
+zpad = mod(xyzlen,winInterval);
 
-if zpad~=0,
-%% add script to pad xyz with zeros so future matrix
-%% reshaping functions will work.
-xyzlen = size(xyz,1);
-end 
 
-nOverlap = 4;
+fetseg = GetSegs(xyz,1:winInterval:size(xyz,1)-zpad,32,0);
+fetSR = Trial.xyz.sampleRate/winInterval;
 
-trajSampleRate = (Trial.xyzSampleRate/winlen)*nOverlap;
-trlen = xyzlen/winlen*nOverlap;
+Trial.stc.load('auto_wbhr');
+wper = Trial.stc{'w'}.copy;;
+wper.resample(fetSR);
+wper.cast('TimeSeries');
 
-traj =[];
-for i = 1:nOverlap,
-ttraj = reshape(circshift(xyz,-(i-1).*winlen/nOverlap),[],xyzlen/winlen,size(xyz,2),size(xyz,3));
-ttraj = reshape(ttraj,size(ttraj,1),size(ttraj,2),[]);
-traj(:,i:nOverlap:trlen,:) = ttraj-repmat(ttraj(1,:,:),winlen,1);
-end
+wfet = fetseg(:,wper.data,:);
+wm = sq(mean(sq(mean(wfet))));
 
-%ntraj = traj./repmat(max(traj),winlen,1);
 
-trajCov  = zeros(size(traj,2),size(traj,3),size(traj,3));
+trajCov  = zeros(size(fetseg,2),size(fetseg,3),size(fetseg,3));
 
-for i=31640:size(traj,2),
-trajCov(i,:,:) = cov(sq(traj(:,i,:)));
+for i=1:size(fetseg,2),
+trajCov(i,:,:) = (sq(fetseg(:,i,:))-repmat(wm,32,1))'*(sq(fetseg(:,i,:))-repmat(wm,32,1));
 end
 
 
-%figure,for i=1:size(traj,2), imagesc(sq(trajCov(i,:,:))'),title(num2str(i)),pause(.1),end
+wtrajCov =  trajCov(wper.data,:,:);
 
-%%Bhv state Walk
-wper = round(Trial.Bhv.getState('walk').state./Trial.xyzSampleRate.*trajSampleRate);
-wper = wper(find(diff(wper,1,2)>8),:);
-wtrajCov = SelectPeriods(trajCov,wper+repmat([1,-0.5*nOverlap],size(wper,1),1),'c',1,1);
-wtrajCov = reshape(wtrajCov,size(wtrajCov,1),size(trajCov,2),size(trajCov,2));
-
-%figure,for i=1:size(wtrajCov,1), imagesc(sq(wtrajCov(i,:,:))'),title(num2str(i)),pause(.1),end
-
-wcoffset = 1000;
+wcoffset = 2000;
 wscore = zeros(4000,1000);%zeros(size(trajCov,1),1);
 
 for i=1:size(wscore,1)
@@ -114,37 +97,38 @@ end
 
 wscore(wscore==-1)=nan;
 
-figure,plot(min(real(wscore),[],2))
-hold on,plot(Filter0(gausswin(11)./sum(gausswin(11)),min(real(wscore),[],2)))
-hold on,plot(max(real(wscore),[],2),'r')
-hold on,plot(mean(real(wscore),2),'g')
-Lines(round(Trial.Bhv.getState('walk').state(:,1)./Trial.xyzSampleRate.*trajSampleRate),[],'k');
-Lines(round(Trial.Bhv.getState('walk').state(:,2)./Trial.xyzSampleRate.*trajSampleRate),[],'r');
+figure,plot(1./min(real(wscore),[],2).*sq(mean(fetseg(:,1:4000,1)))')
+hold on,plot(1./Filter0(gausswin(11)./sum(gausswin(11)),min(real(wscore),[],2)).*sq(mean(fetseg(:,1:4000,1)))')
+%hold on,plot(max(real(wscore),[],2),'r')
+%hold on,plot(mean(real(wscore),2),'g')
+Lines(round(Trial.stc{'w'}(:,1)./Trial.xyz.sampleRate.*fetSR),[],'k');
+Lines(round(Trial.stc{'w'}(:,2)./Trial.xyz.sampleRate.*fetSR),[],'r');
+hold on,plot(sq(mean(fetseg(:,1:4000,1))),'r')
 
-figure,plot(log10(max(real(wscore),[],2).*var(real(wscore),[],2)))
-Lines(round(Trial.Bhv.getState('walk').state(:,1)./Trial.xyzSampleRate.*trajSampleRate),[],'k');
-Lines(round(Trial.Bhv.getState('walk').state(:,2)./Trial.xyzSampleRate.*trajSampleRate),[],'r');
+figure,plot(log10(min(real(wscore),[],2).*var(real(wscore),[],2)))
+Lines(round(Trial.stc{'w'}(:,1)./Trial.xyz.sampleRate.*fetSR),[],'k');
+Lines(round(Trial.stc{'w'}(:,2)./Trial.xyz.sampleRate.*fetSR),[],'r');
 
 
 figure,plot(log10(var(real(wscore),[],2)./median(real(wscore),2)))
 hold on,plot(Filter0(gausswin(11)./sum(gausswin(11)),var(real(wscore),[],2)./log10(median(real(wscore),2))))
-Lines(round(Trial.Bhv.getState('walk').state(:,1)./Trial.xyzSampleRate.*trajSampleRate),[],'k');
-Lines(round(Trial.Bhv.getState('walk').state(:,2)./Trial.xyzSampleRate.*trajSampleRate),[],'r');
+Lines(round(Trial.Bhv.getState('walk').state(:,1)./Trial.xyzSampleRate.*fetSR),[],'k');
+Lines(round(Trial.Bhv.getState('walk').state(:,2)./Trial.xyzSampleRate.*fetSR),[],'r');
 
 figure,plot(var(real(wscore),[],2))
-Lines(round(Trial.Bhv.getState('walk').state(:,1)./Trial.xyzSampleRate.*trajSampleRate),[],'k');
-Lines(round(Trial.Bhv.getState('walk').state(:,2)./Trial.xyzSampleRate.*trajSampleRate),[],'r');
+Lines(round(Trial.Bhv.getState('walk').state(:,1)./Trial.xyzSampleRate.*fetSR),[],'k');
+Lines(round(Trial.Bhv.getState('walk').state(:,2)./Trial.xyzSampleRate.*fetSR),[],'r');
 Lines([],10^2.03,'k');
 
 figure,plot(std(real(wscore),[],2))
-Lines(round(Trial.Bhv.getState('walk').state(:,1)./Trial.xyzSampleRate.*trajSampleRate),[],'k');
-Lines(round(Trial.Bhv.getState('walk').state(:,2)./Trial.xyzSampleRate.*trajSampleRate),[],'r');
+Lines(round(Trial.Bhv.getState('walk').state(:,1)./Trial.xyzSampleRate.*fetSR),[],'k');
+Lines(round(Trial.Bhv.getState('walk').state(:,2)./Trial.xyzSampleRate.*fetSR),[],'r');
 
 
 slws = sort(log10(real(wscore)));
 figure,plot(slws(:,1)
-Lines(round(Trial.Bhv.getState('walk').state(:,1)./Trial.xyzSampleRate.*trajSampleRate),[],'k');
-Lines(round(Trial.Bhv.getState('walk').state(:,2)./Trial.xyzSampleRate.*trajSampleRate),[],'r');
+Lines(round(Trial.Bhv.getState('walk').state(:,1)./Trial.xyzSampleRate.*fetSR),[],'k');
+Lines(round(Trial.Bhv.getState('walk').state(:,2)./Trial.xyzSampleRate.*fetSR),[],'r');
 
 
 
@@ -163,7 +147,7 @@ end
 figure,imagesc(log(wCovScore)')
 
 
-rtrajCov = SelectPeriods(trajCov,round(Trial.Bhv.getState('turnR').state./Trial.xyzSampleRate.*trajSampleRate),'c',1,1);
+rtrajCov = SelectPeriods(trajCov,round(Trial.Bhv.getState('turnR').state./Trial.xyzSampleRate.*fetSR),'c',1,1);
 rtrajCov = reshape(rtrajCov,size(rtrajCov,1),size(trajCov,2),size(trajCov,2));
 %rCov = cov(reshape(rtrajCov,size(rtrajCov,1),[]));
 rmCov =sq(mean(rtrajCov));
@@ -195,8 +179,8 @@ end
 figure,imagesc(log(abs(wscore)))
 
 figure,plot(log(abs(wscore)))
-Lines(round(Trial.Bhv.getState('walk').state(:,1)./Trial.xyzSampleRate.*trajSampleRate),[],'k')
-Lines(round(Trial.Bhv.getState('walk').state(:,2)./Trial.xyzSampleRate.*trajSampleRate),[],'r')
+Lines(round(Trial.Bhv.getState('walk').state(:,1)./Trial.xyzSampleRate.*fetSR),[],'k')
+Lines(round(Trial.Bhv.getState('walk').state(:,2)./Trial.xyzSampleRate.*fetSR),[],'r')
 
 U = zeros(size(wtrajCov,1),size(wtrajCov,2),size(wtrajCov,3));
 S = zeros(size(wtrajCov,1),size(wtrajCov,2),size(wtrajCov,3));
@@ -228,8 +212,8 @@ for i=1:size(nwscore,1)
 end
 
 figure,plot(log(abs(min(nwscore))))
-Lines(round(Trial.Bhv.getState('walk').state(:,1)./Trial.xyzSampleRate.*trajSampleRate),[],'k')
-Lines(round(Trial.Bhv.getState('walk').state(:,2)./Trial.xyzSampleRate.*trajSampleRate),[],'r')
+Lines(round(Trial.Bhv.getState('walk').state(:,1)./Trial.xyzSampleRate.*fetSR),[],'k')
+Lines(round(Trial.Bhv.getState('walk').state(:,2)./Trial.xyzSampleRate.*fetSR),[],'r')
 
 
 
@@ -278,7 +262,7 @@ if zpad~=0,
 xyzlen = size(xyz,1);
 end 
 nOverlap = 8;
-trajSampleRate = (Trial.xyzSampleRate/winlen)*nOverlap;
+fetSR = (Trial.xyzSampleRate/winlen)*nOverlap;
 trlen = xyzlen/winlen*nOverlap;
 
 
@@ -370,36 +354,36 @@ end
 vmv = vtrajMeanD.*vtrajVarD;
 
 figure,plot(vtrajMeanD.*vtrajVarD)
-Lines(round(Trial.Bhv.getState('walk').state(:,1)./Trial.xyzSampleRate.*trajSampleRate),[],'k')
-Lines(round(Trial.Bhv.getState('walk').state(:,2)./Trial.xyzSampleRate.*trajSampleRate),[],'r')
+Lines(round(Trial.Bhv.getState('walk').state(:,1)./Trial.xyzSampleRate.*fetSR),[],'k')
+Lines(round(Trial.Bhv.getState('walk').state(:,2)./Trial.xyzSampleRate.*fetSR),[],'r')
 
 
 dvs = diff(varscore);
 
-wondvsd = mean(GetSegs(dvs,ceil(Trial.Bhv.getState('walk').state(:,1)./Trial.xyzSampleRate.*trajSampleRate)-7,8));
-wofdvsd = mean(GetSegs(dvs,ceil(Trial.Bhv.getState('walk').state(:,2)./Trial.xyzSampleRate.*trajSampleRate)-7,8));
+wondvsd = mean(GetSegs(dvs,ceil(Trial.Bhv.getState('walk').state(:,1)./Trial.xyzSampleRate.*fetSR)-7,8));
+wofdvsd = mean(GetSegs(dvs,ceil(Trial.Bhv.getState('walk').state(:,2)./Trial.xyzSampleRate.*fetSR)-7,8));
 
 
 figure,
 plot(log10(clip(Filter0(gausswin(3)./sum(gausswin(3)),varscore),0,100000))/4)
 Lines([],.4,'k');
 
-Lines(round(Trial.Bhv.getState('walk').state(:,1)./Trial.xyzSampleRate.*trajSampleRate),[],'k');
-Lines(round(Trial.Bhv.getState('walk').state(:,2)./Trial.xyzSampleRate.*trajSampleRate),[],'r');
-Lines(round(Trial.Bhv.getState('turnR').state(:,1)./Trial.xyzSampleRate.*trajSampleRate),[],'g');
-Lines(round(Trial.Bhv.getState('turnR').state(:,2)./Trial.xyzSampleRate.*trajSampleRate),[],'m');
-Lines(round(Trial.Bhv.getState('turnL').state(:,1)./Trial.xyzSampleRate.*trajSampleRate),[],'g');
-Lines(round(Trial.Bhv.getState('turnL').state(:,2)./Trial.xyzSampleRate.*trajSampleRate),[],'m');
+Lines(round(Trial.Bhv.getState('walk').state(:,1)./Trial.xyzSampleRate.*fetSR),[],'k');
+Lines(round(Trial.Bhv.getState('walk').state(:,2)./Trial.xyzSampleRate.*fetSR),[],'r');
+Lines(round(Trial.Bhv.getState('turnR').state(:,1)./Trial.xyzSampleRate.*fetSR),[],'g');
+Lines(round(Trial.Bhv.getState('turnR').state(:,2)./Trial.xyzSampleRate.*fetSR),[],'m');
+Lines(round(Trial.Bhv.getState('turnL').state(:,1)./Trial.xyzSampleRate.*fetSR),[],'g');
+Lines(round(Trial.Bhv.getState('turnL').state(:,2)./Trial.xyzSampleRate.*fetSR),[],'m');
 Lines([],.2,'k');
 Lines([],-.2,'k');
 
 figure,plot(Filter0(gausswin(21)./sum(gausswin(21)),circ_mean(atrajMean,[],2)))
-Lines(round(Trial.Bhv.getState('walk').state(:,1)./Trial.xyzSampleRate.*trajSampleRate),[],'k');
-Lines(round(Trial.Bhv.getState('walk').state(:,2)./Trial.xyzSampleRate.*trajSampleRate),[],'r');
-Lines(round(Trial.Bhv.getState('turnR').state(:,1)./Trial.xyzSampleRate.*trajSampleRate),[],'g');
-Lines(round(Trial.Bhv.getState('turnR').state(:,2)./Trial.xyzSampleRate.*trajSampleRate),[],'m');
-Lines(round(Trial.Bhv.getState('turnL').state(:,1)./Trial.xyzSampleRate.*trajSampleRate),[],'g');
-Lines(round(Trial.Bhv.getState('turnL').state(:,2)./Trial.xyzSampleRate.*trajSampleRate),[],'m');
+Lines(round(Trial.Bhv.getState('walk').state(:,1)./Trial.xyzSampleRate.*fetSR),[],'k');
+Lines(round(Trial.Bhv.getState('walk').state(:,2)./Trial.xyzSampleRate.*fetSR),[],'r');
+Lines(round(Trial.Bhv.getState('turnR').state(:,1)./Trial.xyzSampleRate.*fetSR),[],'g');
+Lines(round(Trial.Bhv.getState('turnR').state(:,2)./Trial.xyzSampleRate.*fetSR),[],'m');
+Lines(round(Trial.Bhv.getState('turnL').state(:,1)./Trial.xyzSampleRate.*fetSR),[],'g');
+Lines(round(Trial.Bhv.getState('turnL').state(:,2)./Trial.xyzSampleRate.*fetSR),[],'m');
 Lines([],.2,'k');
 Lines([],-.2,'k');
 
@@ -410,12 +394,12 @@ figure,plot(Filter0(gausswin(31)./sum(gausswin(31)),circ_mean(atrajMean,[],2).*m
 
 
 figure,plot(Filter0(gausswin(21)./sum(gausswin(21)),circ_mean(atrajMean,[],2).*mean(atrajVarD,2)))
-Lines(round(Trial.Bhv.getState('walk').state(:,1)./Trial.xyzSampleRate.*trajSampleRate),[],'k');
-Lines(round(Trial.Bhv.getState('walk').state(:,2)./Trial.xyzSampleRate.*trajSampleRate),[],'r');
-Lines(round(Trial.Bhv.getState('turnR').state(:,1)./Trial.xyzSampleRate.*trajSampleRate),[],'g');
-Lines(round(Trial.Bhv.getState('turnR').state(:,2)./Trial.xyzSampleRate.*trajSampleRate),[],'m');
-Lines(round(Trial.Bhv.getState('turnL').state(:,1)./Trial.xyzSampleRate.*trajSampleRate),[],'g');
-Lines(round(Trial.Bhv.getState('turnL').state(:,2)./Trial.xyzSampleRate.*trajSampleRate),[],'m');
+Lines(round(Trial.Bhv.getState('walk').state(:,1)./Trial.xyzSampleRate.*fetSR),[],'k');
+Lines(round(Trial.Bhv.getState('walk').state(:,2)./Trial.xyzSampleRate.*fetSR),[],'r');
+Lines(round(Trial.Bhv.getState('turnR').state(:,1)./Trial.xyzSampleRate.*fetSR),[],'g');
+Lines(round(Trial.Bhv.getState('turnR').state(:,2)./Trial.xyzSampleRate.*fetSR),[],'m');
+Lines(round(Trial.Bhv.getState('turnL').state(:,1)./Trial.xyzSampleRate.*fetSR),[],'g');
+Lines(round(Trial.Bhv.getState('turnL').state(:,2)./Trial.xyzSampleRate.*fetSR),[],'m');
 Lines([],.01,'k');
 Lines([],-.01,'k');
 
@@ -426,24 +410,24 @@ end
 
 figure,
 plot(log10(clip(detscore,0,100000)))
-Lines(round(Trial.Bhv.getState('walk').state(:,1)./Trial.xyzSampleRate.*trajSampleRate),[],'k')
-Lines(round(Trial.Bhv.getState('walk').state(:,2)./Trial.xyzSampleRate.*trajSampleRate),[],'r')
+Lines(round(Trial.Bhv.getState('walk').state(:,1)./Trial.xyzSampleRate.*fetSR),[],'k')
+Lines(round(Trial.Bhv.getState('walk').state(:,2)./Trial.xyzSampleRate.*fetSR),[],'r')
 
 %% dsvtraj
 dsvtraj = abs(sq(diff(sum(vtraj))));
 
 figure,plot(Filter0(gausswin(11)./sum(gausswin(11)),log10(sum(dsvtraj,2))))
-Lines(round(Trial.Bhv.getState('walk').state(:,1)./Trial.xyzSampleRate.*trajSampleRate),[],'k')
-Lines(round(Trial.Bhv.getState('walk').state(:,2)./Trial.xyzSampleRate.*trajSampleRate),[],'r')
-Lines(round(Trial.Bhv.getState('rear').state(:,1)./Trial.xyzSampleRate.*trajSampleRate),[],'g')
-Lines(round(Trial.Bhv.getState('rear').state(:,2)./Trial.xyzSampleRate.*trajSampleRate),[],'m')
+Lines(round(Trial.Bhv.getState('walk').state(:,1)./Trial.xyzSampleRate.*fetSR),[],'k')
+Lines(round(Trial.Bhv.getState('walk').state(:,2)./Trial.xyzSampleRate.*fetSR),[],'r')
+Lines(round(Trial.Bhv.getState('rear').state(:,1)./Trial.xyzSampleRate.*fetSR),[],'g')
+Lines(round(Trial.Bhv.getState('rear').state(:,2)./Trial.xyzSampleRate.*fetSR),[],'m')
 Lines([],2.5,'k');
 
 
 dvs = diff(Filter0(gausswin(11)./sum(gausswin(11)),log10(sum(dsvtraj,2))));
 
-wondvsd = mean(GetSegs(dvs,ceil(Trial.Bhv.getState('walk').state(:,1)./Trial.xyzSampleRate.*trajSampleRate)-7,8));
-wofdvsd = mean(GetSegs(dvs,ceil(Trial.Bhv.getState('walk').state(:,2)./Trial.xyzSampleRate.*trajSampleRate)-7,8));
+wondvsd = mean(GetSegs(dvs,ceil(Trial.Bhv.getState('walk').state(:,1)./Trial.xyzSampleRate.*fetSR)-7,8));
+wofdvsd = mean(GetSegs(dvs,ceil(Trial.Bhv.getState('walk').state(:,2)./Trial.xyzSampleRate.*fetSR)-7,8));
 
 figure
 subplot(211);
@@ -461,22 +445,22 @@ end
 
 tdv = sum(sq(diff(sum(vtraj))),2);
 plot(abs(tdv))
-Lines(round(Trial.Bhv.getState('walk').state(:,1)./Trial.xyzSampleRate.*trajSampleRate),[],'k')
-Lines(round(Trial.Bhv.getState('walk').state(:,2)./Trial.xyzSampleRate.*trajSampleRate),[],'r')
-Lines(round(Trial.Bhv.getState('rear').state(:,1)./Trial.xyzSampleRate.*trajSampleRate),[],'g')
-Lines(round(Trial.Bhv.getState('rear').state(:,2)./Trial.xyzSampleRate.*trajSampleRate),[],'m')
+Lines(round(Trial.Bhv.getState('walk').state(:,1)./Trial.xyzSampleRate.*fetSR),[],'k')
+Lines(round(Trial.Bhv.getState('walk').state(:,2)./Trial.xyzSampleRate.*fetSR),[],'r')
+Lines(round(Trial.Bhv.getState('rear').state(:,1)./Trial.xyzSampleRate.*fetSR),[],'g')
+Lines(round(Trial.Bhv.getState('rear').state(:,2)./Trial.xyzSampleRate.*fetSR),[],'m')
 
 intdv = sum(GetSegs(abs(tdv),6:size(tdv,1)-5,10));
-Lines(round(Trial.Bhv.getState('walk').state(:,1)./Trial.xyzSampleRate.*trajSampleRate),[],'k')
-Lines(round(Trial.Bhv.getState('walk').state(:,2)./Trial.xyzSampleRate.*trajSampleRate),[],'r')
-Lines(round(Trial.Bhv.getState('rear').state(:,1)./Trial.xyzSampleRate.*trajSampleRate),[],'g')
-Lines(round(Trial.Bhv.getState('rear').state(:,2)./Trial.xyzSampleRate.*trajSampleRate),[],'m')
+Lines(round(Trial.Bhv.getState('walk').state(:,1)./Trial.xyzSampleRate.*fetSR),[],'k')
+Lines(round(Trial.Bhv.getState('walk').state(:,2)./Trial.xyzSampleRate.*fetSR),[],'r')
+Lines(round(Trial.Bhv.getState('rear').state(:,1)./Trial.xyzSampleRate.*fetSR),[],'g')
+Lines(round(Trial.Bhv.getState('rear').state(:,2)./Trial.xyzSampleRate.*fetSR),[],'m')
 
 plot(log10(intdv))
-Lines(round(Trial.Bhv.getState('walk').state(:,1)./Trial.xyzSampleRate.*trajSampleRate),[],'k')
-Lines(round(Trial.Bhv.getState('walk').state(:,2)./Trial.xyzSampleRate.*trajSampleRate),[],'r')
-Lines(round(Trial.Bhv.getState('rear').state(:,1)./Trial.xyzSampleRate.*trajSampleRate),[],'g')
-Lines(round(Trial.Bhv.getState('rear').state(:,2)./Trial.xyzSampleRate.*trajSampleRate),[],'m')
+Lines(round(Trial.Bhv.getState('walk').state(:,1)./Trial.xyzSampleRate.*fetSR),[],'k')
+Lines(round(Trial.Bhv.getState('walk').state(:,2)./Trial.xyzSampleRate.*fetSR),[],'r')
+Lines(round(Trial.Bhv.getState('rear').state(:,1)./Trial.xyzSampleRate.*fetSR),[],'g')
+Lines(round(Trial.Bhv.getState('rear').state(:,2)./Trial.xyzSampleRate.*fetSR),[],'m')
 
 
 something = log10(clip(Filter0(gausswin(11)./sum(gausswin(11)),abs(sum(sq(diff(sum(vtraj))),2))),0.0001,5000));
@@ -486,8 +470,8 @@ figure
 bhvl = 
 yl = zeros(length(bhvl),2);
 for i = 1:length(bhvl),
-bhvdist = SelectPeriods(combvf(:,1),round(Trial.Bhv.getState(bhvl{i}).state./Trial.xyzSampleRate.*trajSampleRate),'c',1,1);
-notbhvper = SubstractRanges([1,size(combvf,1)],round(Trial.Bhv.getState(bhvl{i}).state./Trial.xyzSampleRate.*trajSampleRate));
+bhvdist = SelectPeriods(combvf(:,1),round(Trial.Bhv.getState(bhvl{i}).state./Trial.xyzSampleRate.*fetSR),'c',1,1);
+notbhvper = SubstractRanges([1,size(combvf,1)],round(Trial.Bhv.getState(bhvl{i}).state./Trial.xyzSampleRate.*fetSR));
 notbhvdist = SelectPeriods(combvf(:,1),notbhvper,'c',1,1);
 edges = [-1.4:7/1000:2];
 nnwd = histc(log10(abs(notbhvdist)),edges);
@@ -511,7 +495,7 @@ ylim([0,ylm])
 tdvs = sq(sum(vtraj));
 
 
-wper = round(Trial.Bhv.getState('walk').state./Trial.xyzSampleRate.*trajSampleRate);
+wper = round(Trial.Bhv.getState('walk').state./Trial.xyzSampleRate.*fetSR);
 wper = wper(find(diff(wper,1,2)>8),:);
 wper(1)=1;
 dtrajCov = SelectPeriods(vmv,wper+repmat([1,-0.5*nOverlap],size(wper,1),1),'c',1,1);
@@ -536,10 +520,10 @@ end
 
 figure,plot(real(twi))
 figure,plot(Filter0(gausswin(9)./sum(gausswin(9)),real(twi)))
-Lines(round(Trial.Bhv.getState('walk').state(:,1)./Trial.xyzSampleRate.*trajSampleRate),[],'k');
-Lines(round(Trial.Bhv.getState('walk').state(:,2)./Trial.xyzSampleRate.*trajSampleRate),[],'r');
-Lines(round(Trial.Bhv.getState('rear').state(:,1)./Trial.xyzSampleRate.*trajSampleRate),[],'g');
-Lines(round(Trial.Bhv.getState('rear').state(:,2)./Trial.xyzSampleRate.*trajSampleRate),[],'m');
+Lines(round(Trial.Bhv.getState('walk').state(:,1)./Trial.xyzSampleRate.*fetSR),[],'k');
+Lines(round(Trial.Bhv.getState('walk').state(:,2)./Trial.xyzSampleRate.*fetSR),[],'r');
+Lines(round(Trial.Bhv.getState('rear').state(:,1)./Trial.xyzSampleRate.*fetSR),[],'g');
+Lines(round(Trial.Bhv.getState('rear').state(:,2)./Trial.xyzSampleRate.*fetSR),[],'m');
 
 wonvmn = vmv(wper(:,1),:);
 wofvmn = vmv(wper(:,2),:);
@@ -548,12 +532,12 @@ figure,hist(log10(wofvmn(:)),100)
 
 
 figure,plot(mean(log10(vmv(:,1:2)),2)),Lines([],2,'k');
-Lines(round(Trial.Bhv.getState('walk').state(:,1)./Trial.xyzSampleRate.*trajSampleRate),[],'k');
-Lines(round(Trial.Bhv.getState('walk').state(:,2)./Trial.xyzSampleRate.*trajSampleRate),[],'r');
-Lines(round(Trial.Bhv.getState('turnR').state(:,1)./Trial.xyzSampleRate.*trajSampleRate),[],'g');
-Lines(round(Trial.Bhv.getState('turnR').state(:,2)./Trial.xyzSampleRate.*trajSampleRate),[],'m');
-Lines(round(Trial.Bhv.getState('turnL').state(:,1)./Trial.xyzSampleRate.*trajSampleRate),[],'g');
-Lines(round(Trial.Bhv.getState('turnL').state(:,2)./Trial.xyzSampleRate.*trajSampleRate),[],'m');
+Lines(round(Trial.Bhv.getState('walk').state(:,1)./Trial.xyzSampleRate.*fetSR),[],'k');
+Lines(round(Trial.Bhv.getState('walk').state(:,2)./Trial.xyzSampleRate.*fetSR),[],'r');
+Lines(round(Trial.Bhv.getState('turnR').state(:,1)./Trial.xyzSampleRate.*fetSR),[],'g');
+Lines(round(Trial.Bhv.getState('turnR').state(:,2)./Trial.xyzSampleRate.*fetSR),[],'m');
+Lines(round(Trial.Bhv.getState('turnL').state(:,1)./Trial.xyzSampleRate.*fetSR),[],'g');
+Lines(round(Trial.Bhv.getState('turnL').state(:,2)./Trial.xyzSampleRate.*fetSR),[],'m');
 
 
 
@@ -573,8 +557,8 @@ wfp = ThreshCross(wfl,0.5,5);
 afp = ThreshCross(afl,0.5,5);
 
 Trial.Bhv = MTABhv(Trial,'altest20130424',1)
-Trial.Bhv.States{1} = MTAState('w','walk',round((wfp+0.25*trajSampleRate).*Trial.xyzSampleRate./trajSampleRate))
-Trial.Bhv.States{2} = MTAState('t','turn',round((afp+0.25*trajSampleRate).*Trial.xyzSampleRate./trajSampleRate))
+Trial.Bhv.States{1} = MTAState('w','walk',round((wfp+0.25*fetSR).*Trial.xyzSampleRate./fetSR))
+Trial.Bhv.States{2} = MTAState('t','turn',round((afp+0.25*fetSR).*Trial.xyzSampleRate./fetSR))
 Trial.Bhv.save(Trial,1);
 Trial.save
 
@@ -605,19 +589,19 @@ wpdm = log10(wpdm);
 
 Trial.Bhv = MTABhv(Trial,'altest20130424',1)
 Trial.Bhv.States{1} = MTAState('w','walk',nwper);
-Trial.Bhv.States{2} = MTAState('n','old_walk',round((wfp+0.25*trajSampleRate).*Trial.xyzSampleRate./trajSampleRate));
-Trial.Bhv.States{3} = MTAState('t','turn',round((afp+0.25*trajSampleRate).*Trial.xyzSampleRate./trajSampleRate));
+Trial.Bhv.States{2} = MTAState('n','old_walk',round((wfp+0.25*fetSR).*Trial.xyzSampleRate./fetSR));
+Trial.Bhv.States{3} = MTAState('t','turn',round((afp+0.25*fetSR).*Trial.xyzSampleRate./fetSR));
 Trial.Bhv.save(Trial,1);
 Trial.save
 
 
 figure,plot(af)
-Lines(round(Trial.Bhv.getState('walk').state(:,1)./Trial.xyzSampleRate.*trajSampleRate),[],'k');
-Lines(round(Trial.Bhv.getState('walk').state(:,2)./Trial.xyzSampleRate.*trajSampleRate),[],'r');
-Lines(round(Trial.Bhv.getState('turnR').state(:,1)./Trial.xyzSampleRate.*trajSampleRate),[],'g');
-Lines(round(Trial.Bhv.getState('turnR').state(:,2)./Trial.xyzSampleRate.*trajSampleRate),[],'m');
-Lines(round(Trial.Bhv.getState('turnL').state(:,1)./Trial.xyzSampleRate.*trajSampleRate),[],'g');
-Lines(round(Trial.Bhv.getState('turnL').state(:,2)./Trial.xyzSampleRate.*trajSampleRate),[],'m');
+Lines(round(Trial.Bhv.getState('walk').state(:,1)./Trial.xyzSampleRate.*fetSR),[],'k');
+Lines(round(Trial.Bhv.getState('walk').state(:,2)./Trial.xyzSampleRate.*fetSR),[],'r');
+Lines(round(Trial.Bhv.getState('turnR').state(:,1)./Trial.xyzSampleRate.*fetSR),[],'g');
+Lines(round(Trial.Bhv.getState('turnR').state(:,2)./Trial.xyzSampleRate.*fetSR),[],'m');
+Lines(round(Trial.Bhv.getState('turnL').state(:,1)./Trial.xyzSampleRate.*fetSR),[],'g');
+Lines(round(Trial.Bhv.getState('turnL').state(:,2)./Trial.xyzSampleRate.*fetSR),[],'m');
 
 
 
@@ -632,10 +616,10 @@ wfet(wfet<=0) = 0.00001;
 wfet = log10(wfet);
 wfet(wfet<=0) = 0.00001;
 figure,plot(wfet)
-Lines(round(Trial.Bhv.getState('walk').state(:,1)./Trial.xyzSampleRate.*trajSampleRate),[],'k');
-Lines(round(Trial.Bhv.getState('walk').state(:,2)./Trial.xyzSampleRate.*trajSampleRate),[],'r');
-Lines(round(Trial.Bhv.getState('rear').state(:,1)./Trial.xyzSampleRate.*trajSampleRate),[],'g');
-Lines(round(Trial.Bhv.getState('rear').state(:,2)./Trial.xyzSampleRate.*trajSampleRate),[],'m');
+Lines(round(Trial.Bhv.getState('walk').state(:,1)./Trial.xyzSampleRate.*fetSR),[],'k');
+Lines(round(Trial.Bhv.getState('walk').state(:,2)./Trial.xyzSampleRate.*fetSR),[],'r');
+Lines(round(Trial.Bhv.getState('rear').state(:,1)./Trial.xyzSampleRate.*fetSR),[],'g');
+Lines(round(Trial.Bhv.getState('rear').state(:,2)./Trial.xyzSampleRate.*fetSR),[],'m');
 
 
 

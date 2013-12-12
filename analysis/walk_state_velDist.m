@@ -121,10 +121,12 @@ Lines(tper(:,2),[],'g');
 
 [accg,tbin] = autoccg(Trial);
 
-pfr = MTAApfs(Trial,[],'rear',1,[],[30,30],[1.2,1.2],'xy');
-pfw = MTAApfs(Trial,[],'walk',1,[],[30,30],[1.2,1.2],'xy');
-pfh = MTAApfs(Trial,[],'hwalk',1,[],[30,30],[1.2,1.2],'xy');
-pfl = MTAApfs(Trial,[],'lwalk',1,[],[30,30],[1.2,1.2],'xy');
+Trial.stc.load('auto_wbhr');
+
+pfr = MTAApfs(Trial,[],'rear',0,[],[30,30],[1.2,1.2],'xy');
+pfw = MTAApfs(Trial,[],'walk',0,[],[30,30],[1.2,1.2],'xy');
+pfh = MTAApfs(Trial,[],'hwalk',0,[],[30,30],[1.2,1.2],'xy');
+pfl = MTAApfs(Trial,[],'lwalk',0,[],[30,30],[1.2,1.2],'xy');
 Rccg = gen_bhv_ccg(Trial,'rear');
 Bccg = gen_bhv_ccg(Trial,'hwalk');
 Lccg = gen_bhv_ccg(Trial,'lwalk');
@@ -151,7 +153,7 @@ while u~=-1,
     uicontrol(hfig,'String','>','units','normalized','Position',[.97, 0, .03,  1],'Callback',@(hfig,index,indArray,callback)figure_controls_gui(hfig,u,units,'forwardButton_Callback'));
     uicontrol(hfig,'String','<','units','normalized','Position',[  0, 0, .03,  1],'Callback',@(hfig,index,indArray,callback)figure_controls_gui(hfig,u,units,'backwardButton_Callback'));
     uicontrol(hfig,'String','X','units','normalized','Position',[.45, 0, .10,.07],'Callback',@(hfig,index,indArray,callback)figure_controls_gui(hfig,u,units,'exitButton_Callback'));
-    uicontrol(hfig,'String','unit','units','normalized','Position',[.45, 0, .10,.07],'Callback',@(hfig,index,indArray,callback)figure_controls_gui(hfig,u,units,'popupmenu_Callback'));
+    %    uicontrol(hfig,'String','unit','units','normalized','Position',[.35, 0, .10,.07],'Callback',@(hfig,index,indArray,callback)figure_controls_gui(hfig,u,units,'popupmenu_Callback'));
     while strcmp(num2str(u),get(hfig,'Name'))
         pause(0.2);
     end
