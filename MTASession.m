@@ -470,6 +470,7 @@ classdef MTASession < hgsetget
             ds = load(fullfile(Session.spath, [Session.name '.NeuronQuality.mat']));
             Session.nq = ds.nq;
         end
+
 % UPDATE %
         function units = selectUnits(Session,query) %#ok<INUSL>
         %units = selectUnits(Session,query)
@@ -537,125 +538,125 @@ classdef MTASession < hgsetget
         %% Model Statistics and Corrections based on Session Data--------------------------%
 
 %% REDO %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
-%         function Session = updateModel(Session,varargin)
-%         %Session = updateModel(Session,depth)
-%         %update or create model, used for error correction
-%         %
-%         %  depth - int: default is 3, leave it alone
-%         %
-%             [depth] = DefaultArgs(varargin,{3});
-%             
-%             dist = Session.ang(:,:,:,3);
-%             dist_std = zeros(Session.model.N,Session.model.N,depth);
-%             dist_mean = zeros(Session.model.N,Session.model.N,depth);
-%             dist_error = zeros(size(Session.xyz,1),Session.model.N,Session.model.N,depth);
-%             fdist = sum(sum(dist,2),3);
-%             zdist = (fdist-mean(fdist(~isnan(fdist))))/std(fdist(~isnan(fdist)));
-%             for i = 1:Session.model.N,
-%                 for j = 1:Session.model.N,
-%                     tdist = sq(dist(:,i,j));
-%                     dist_std(i,j,1)  =  std(tdist(~dist_error(:,i,j,1)&~isnan(tdist)&zdist<1));
-%                     dist_mean(i,j,1) = mean(tdist(~dist_error(:,i,j,1)&~isnan(tdist)&zdist<1));
-%                     dist_error((tdist(~isnan(tdist))>(dist_std(i,j,1)+dist_mean(i,j,1)))|(tdist(~isnan(tdist))<(-dist_std(i,j,1)+dist_mean(i,j,1))),i,j,1)=1;
-%                     for k = 2:depth,
-%                         dist_std(i,j,k)  =  std(tdist(~dist_error(:,i,j,k-1)&~isnan(tdist)&zdist<1));
-%                         dist_mean(i,j,k) = mean(tdist(~dist_error(:,i,j,k-1)&~isnan(tdist)&zdist<1));
-%                         dist_error((tdist(~isnan(tdist))>(dist_std(i,j,k)+dist_mean(i,j,k)))|(tdist(~isnan(tdist))<(-dist_std(i,j,k)+dist_mean(i,j,k))),i,j,k)=1;
-%                     end
-%                 end
-%             end
-%             Session.model.imdMean = dist_mean;
-%             Session.model.imdStd = dist_std;
-% 
-%             % Find Index within the Session with Best Fit - Though
-%             % best to select it by eye
-%             model_index = 0;
-%             for i = 0:depth-1,
-%                 model_index = find(sum(sum(dist_error(:,:,:,depth-i),2),3)==0);
-%                 model_index = model_index(randi(length(model_index)));
-%                 if model_index, break, end
-%             end    
-%             Session.model.index = model_index;                    
-%         end
-% 
+         function Session = updateModel(Session,varargin)
+         %Session = updateModel(Session,depth)
+         %update or create model, used for error correction
+         %
+         %  depth - int: default is 3, leave it alone
+         %
+             [depth] = DefaultArgs(varargin,{3});
+             if Session.ang.isempty, Session.ang.load(Session);end             
+             dist = Session.ang(:,:,:,3);
+             dist_std = zeros(Session.model.N,Session.model.N,depth);
+             dist_mean = zeros(Session.model.N,Session.model.N,depth);
+             dist_error = zeros(size(Session.xyz,1),Session.model.N,Session.model.N,depth);
+             fdist = sum(sum(dist,2),3);
+             zdist = (fdist-mean(fdist(~isnan(fdist))))/std(fdist(~isnan(fdist)));
+             for i = 1:Session.model.N,
+                 for j = 1:Session.model.N,
+                     tdist = sq(dist(:,i,j));
+                     dist_std(i,j,1)  =  std(tdist(~dist_error(:,i,j,1)&~isnan(tdist)&zdist<1));
+                     dist_mean(i,j,1) = mean(tdist(~dist_error(:,i,j,1)&~isnan(tdist)&zdist<1));
+                     dist_error((tdist(~isnan(tdist))>(dist_std(i,j,1)+dist_mean(i,j,1)))|(tdist(~isnan(tdist))<(-dist_std(i,j,1)+dist_mean(i,j,1))),i,j,1)=1;
+                     for k = 2:depth,
+                         dist_std(i,j,k)  =  std(tdist(~dist_error(:,i,j,k-1)&~isnan(tdist)&zdist<1));
+                         dist_mean(i,j,k) = mean(tdist(~dist_error(:,i,j,k-1)&~isnan(tdist)&zdist<1));
+                         dist_error((tdist(~isnan(tdist))>(dist_std(i,j,k)+dist_mean(i,j,k)))|(tdist(~isnan(tdist))<(-dist_std(i,j,k)+dist_mean(i,j,k))),i,j,k)=1;
+                     end
+                 end
+             end
+             Session.model.imdMean = dist_mean;
+             Session.model.imdStd = dist_std;
+ 
+             % Find Index within the Session with Best Fit - Though
+             % best to select it by eye
+             model_index = 0;
+             for i = 0:depth-1,
+                 model_index = find(sum(sum(dist_error(:,:,:,depth-i),2),3)==0);
+                 model_index = model_index(randi(length(model_index)));
+                 if model_index, break, end
+             end    
+             Session.model.index = model_index;                    
+         end
+ 
 
 %% REDO %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%5
-%         function Session = correctRigidBody(Session,varargin)
-%         %Session = correctRigidBody(Session,markerSubset,depth,modelIndex,display)
-%         %find rigid body errors and correct them, if possible  
-%         %uses model frame as a basis for the geometrical
-%         %organization of the rigid body
-%         %
-%         %  markerSubset - cellArray: group of markers included in
-%         %                            the rigid body
-%         %                            
-%         %    (e.g. {'head_back','head_left','head_front','head_right','head_top'})
-%         %
-%         %  depth - int: just leave this alone, since the default works fine
-%         %  modelIndex - int: xyz index which contains an ideal constellation
-%         %                    of markers in the rigid body 
-%         %  display - boolean: display rb errors (only for head)
-%         %
-% 
-%             [markerSubset,depth,modelIndex,display] = DefaultArgs(varargin,{{'head_back','head_left','head_front','head_right','head_top'},3,[],0});
-%             if size(Session.model.imdMean,3)~=3|Session.model.index==0,
-%                 Session = Session.updateModel(depth);
-%             end
-%             rb = Session.model.rb(markerSubset);
-%             if ~isempty(modelIndex), Session.model.index = modelIndex; end
-%             pose = sq(Session.xyz(Session.model.index,Session.model.gmi(markerSubset),:));
-%             for i = 1:size(Session.xyzPeriods,1),
-%                 Temp = MTATrial(Session,{},[],Session.xyzPeriods(i,:));
-%                 Temp = CorrectRigidBody(Temp,rb,pose);
-%                 Session.xyz(Temp.xyzPeriods(1,1):Temp.xyzPeriods(1,2),:,:) = Temp.xyz;
-%             end
-%             Session.ang = Session.load_ang(1);
-%             if display, PlotSessionErrors(Session),end
-%         end
-% 
-%         function Session = correctPointErrors(Session,varargin)
-%         %Session = correctPointErrors(Session,varargin)
-%         %
-% 
-%             [markerSubset] = DefaultArgs(varargin,{{'head_back','head_left','head_front','head_right','head_top'}});
-%             rb = Session.model.rb(markerSubset);
-%             for i = 1:size(Session.xyzPeriods,1),
-%                 Temp = MTATrial(Session,{},[],Session.xyzPeriods(i,:));
-%                 Temp = CorrectPointErrors(Temp,rb);
-%                 Session.xyz(Temp.xyzPeriods(1,1):Temp.xyzPeriods(1,2),:,:) = Temp.xyz;
-%             end
-%             Session.ang = Session.load_ang(1);
-%         end
+         function Session = correctRigidBody(Session,varargin)
+         %Session = correctRigidBody(Session,markerSubset,depth,modelIndex,display)
+         %find rigid body errors and correct them, if possible  
+         %uses model frame as a basis for the geometrical
+         %organization of the rigid body
+         %
+         %  markerSubset - cellArray: group of markers included in
+         %                            the rigid body
+         %                            
+         %    (e.g. {'head_back','head_left','head_front','head_right','head_top'})
+         %
+         %  depth - int: just leave this alone, since the default works fine
+         %  modelIndex - int: xyz index which contains an ideal constellation
+         %                    of markers in the rigid body 
+         %  display - boolean: display rb errors (only for head)
+         %
+ 
+             [markerSubset,depth,modelIndex,display] = DefaultArgs(varargin,{{'head_back','head_left','head_front','head_right','head_top'},3,[],0});
+             if size(Session.model.imdMean,3)~=3|Session.model.index==0,
+                 Session = Session.updateModel(depth);
+             end
+             rb = Session.model.rb(markerSubset);
+             if ~isempty(modelIndex), Session.model.index = modelIndex; end
+             pose = sq(Session.xyz(Session.model.index,Session.model.gmi(markerSubset),:));
+             for i = 1:size(Session.xyzPeriods,1),
+                 Temp = MTATrial(Session,{},[],Session.xyzPeriods(i,:));
+                 Temp = CorrectRigidBody(Temp,rb,pose);
+                 Session.xyz(Temp.xyzPeriods(1,1):Temp.xyzPeriods(1,2),:,:) = Temp.xyz;
+             end
+             Session.ang = Session.load_ang(1);
+             if display, PlotSessionErrors(Session),end
+         end
+ 
+         function Session = correctPointErrors(Session,varargin)
+         %Session = correctPointErrors(Session,varargin)
+         %
 
-%% REDO %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
-%         function Session = addMarker(Session,name,color,sticks,xyz)
-%         %Session = addMarker(Session,name,color,sticks,xyz)
-%         %modify Model and xyz by adding an additional marker
-%         %
-%         %  name - string: marker descriptor (e.g.'bodypart_position')
-%         %  color - numericArray: rgb values range - [0,1] (e.g.[0.4,1,0])
-%         %  sticks - cellArray: information used to visualize connections/spatial
-%         %                      organizations of markers
-%         %                      {'marker_name1','marker_name2',[stick_color]}
-%         %                      (e.g. {'head_front','head_back',[0,0,1]})
-%         %
-%         %             marker_name1 - string: marker descriptor (e.g.'bodypart_position')
-%         %             marker_name2 - string: marker descriptor (e.g.'bodypart_position')
-%         %             stick_color - numericArray: rgb values range - [0,1] (e.g.[0.4,1,0])
-%         %
-% 
-%             Marker = MTAMarker(name,color);
-%             Session.model.Markers{end+1} = Marker;
-%             Session.model.N = Session.model.N + 1;
-%             for i = 1:length(sticks),
-%                 Session.model.Connections{end+1} = MTAStick(sticks{i}{1},sticks{i}{2},sticks{i}{3});
-%             end
-%             Session.xyz = cat(2,Session.xyz,xyz);
-%         end
+             [markerSubset] = DefaultArgs(varargin,{{'head_back','head_left','head_front','head_right','head_top'}});
+             rb = Session.model.rb(markerSubset);
+             Session.xyz.sync.resample(Session.xyz.sampleRate);
+             for i = 1:size(Session.xyz.sync,1),
+                 %%REDO this part  Temp = MTATrial(Session,[],Session.xyz.sync(i,:));
+                 Temp = CorrectPointErrors(Temp,rb);
+                 Session.xyz(Temp.xyz.sync(1,1):Temp.xyz.sync(1,2),:,:) = Temp.xyz;
+             end
+             Session.ang = Session.load_ang(1);
+         end
+
+         function Session = addMarker(Session,DataObj,name,color,sticks,data)
+         %Session = addMarker(Session,name,color,sticks,xyz)
+         %modify Model and xyz by adding an additional marker
+         %
+         %  name - string: marker descriptor (e.g.'bodypart_position')
+         %  color - numericArray: rgb values range - [0,1] (e.g.[0.4,1,0])
+         %  sticks - cellArray: information used to visualize connections/spatial
+         %                      organizations of markers
+         %                      {'marker_name1','marker_name2',[stick_color]}
+         %                      (e.g. {'head_front','head_back',[0,0,1]})
+         %
+         %             marker_name1 - string: marker descriptor (e.g.'bodypart_position')
+         %             marker_name2 - string: marker descriptor (e.g.'bodypart_position')
+         %             stick_color - numericArray: rgb values range - [0,1] (e.g.[0.4,1,0])
+         %
+             
+             Marker = MTAMarker(name,color);
+             Session.DataObj.model.Markers{end+1} = Marker;
+             Session.DataObj.model.N = Session.DataObj.model.N + 1;
+             for i = 1:length(sticks),
+                 Session.model.Connections{end+1} = MTAStick(sticks{i}{1},sticks{i}{2},sticks{i}{3});
+             end
+             DataObj.data = cat(2,DataObj.data,data);
+         end
 
         %%---------------------------------------------------------------------------------%
 
-
+%% REDO %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
         %% Place Fields -------------------------------------------------------------------%
 % CHECK IF STILL FUNCTIONAL
         function Session = load_Pfs(Session,varargin)
