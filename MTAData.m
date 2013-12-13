@@ -311,9 +311,15 @@ classdef MTAData < hgsetget
                         end         
                         switch syncflag
                             case 'relative'
-                                data = data(Data.sync.sync.data(1)+1:Data.sync.sync.data(end));
+                              %keyboard
+                                try
+                                    data = data(Data.sync.sync.data(1):Data.sync.sync.data(end));
+                                catch err
+                                    data = cat(1,data,zeros(Data.sync.sync.data(end)-Data.sync.data(end),1));
+                                    data = data(Data.sync.sync.data(1):Data.sync.sync.data(end));
+                                end
                             case 'absolute'
-                                
+keyboard                                
                         end
                         
                         Data.data = data;

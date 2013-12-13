@@ -10,7 +10,6 @@ ERR.type = 'MTASession:create';
 ERR.msg  = ['SyncPeriods is empty, check event file that ' ...
             'the TTLValues corresponding to the recording ' ...
             'trials is equal to: %s'];
-
 try
     Par = LoadPar(fullfile(Session.spath, [Session.name '.xml']));            
 catch
