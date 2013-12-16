@@ -567,7 +567,7 @@ function TrialList_Callback(hObject, eventdata, handles)
 % handles    structure with handles and user data (see GUIDATA)
 
 
-if sum(strcmp(get(handles.TrialList,'String'),''))||strcmp(get(handles.MazeList,'String'),''), 
+if sum(strcmp(get(handles.TrialList,'String'),''))|strcmp(get(handles.MazeList,'String'),''), 
     return;
 end
 

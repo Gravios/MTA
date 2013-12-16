@@ -97,6 +97,7 @@ for i=1:length(xyzData),
     end
 end
 
+
 assert(~isempty(syncPeriods),ERR.type,ERR.msg,TTLValue);
 
 xyzData = xyzData(xyzDataInd);

@@ -293,15 +293,15 @@ classdef MTASession < hgsetget
             
             %Diagnostic
             %diagnostic,
-%                 figure,
-%                 plot(dataEpoch.data)
-%                 ylim([-3,3])
-%                 hold on
-%                 plot(loadedData-dataEpoch.data,'r')
-%                 plot(loadedData-syncEpoch.data,'g')
-%                 plot(dataEpoch.data-syncEpoch.data,'c')
-%                 plot(loadedData-syncEpoch.data+dataEpoch.data,'m')
-%             
+% $$$                  figure,
+% $$$                  plot(dataEpoch.data)
+% $$$                  ylim([-3,3])
+% $$$                  hold on
+% $$$                  plot(loadedData-dataEpoch.data,'r')
+% $$$                  plot(loadedData-syncEpoch.data,'g')
+% $$$                  plot(dataEpoch.data-syncEpoch.data,'c')
+% $$$                  plot(loadedData-syncEpoch.data+dataEpoch.data,'m')
+             
             
             %%Trim ends
             endSync = Data.sync.sync(end);
@@ -316,7 +316,7 @@ classdef MTASession < hgsetget
                     loadedData = loadedData(newOrigin:endSync);
                     syncEpoch.data = syncEpoch.data(newOrigin:endSync);
                 else
-                    Data.data = Data.data(startShiftIndex:endSync,:,:,:,:);
+                    Data.data = Data.data(startShiftIndex:endSync-newOrigin,:,:,:,:);
                     dataEpoch.data = dataEpoch.data(newOrigin:endSync);
                     loadedData = loadedData(newOrigin:endSync);
                     syncEpoch.data = syncEpoch.data(newOrigin:endSync);
@@ -338,14 +338,14 @@ classdef MTASession < hgsetget
             
             %Diagnostic
             %diagnostic,
-%                 figure,
-%                 plot(loadedData)
-%                 ylim([-2,2])
-%                 hold on
-%                 plot(loadedData-dataEpoch.data,'r')
-%                 plot(loadedData-syncEpoch.data,'g')
-%                 plot(dataEpoch.data-syncEpoch.data,'c')
-
+% $$$                  figure,
+% $$$                  plot(loadedData)
+% $$$                  ylim([-2,2])
+% $$$                  hold on
+% $$$                  plot(loadedData-dataEpoch.data,'r')
+% $$$                  plot(loadedData-syncEpoch.data,'g')
+% $$$                  plot(dataEpoch.data-syncEpoch.data,'c')
+            %%keyboard
             
             syncFeature = (loadedData-dataEpoch.data).*syncEpoch.data-syncEpoch.data;
             syncDataIndex = syncFeature==-2;

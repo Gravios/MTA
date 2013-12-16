@@ -100,7 +100,7 @@ end
 
 
 
-%hfig = figure;
+hfig = figure;
 
 u = 1;
 set(hfig,'Name',num2str(u));
@@ -122,14 +122,14 @@ title(['rear u ' num2str(Session.spk.map(u,:))])
 text(xbins(1)+30,ybins(1)-50,sprintf('%2.1f',max(max(pfknnmrr(:,:,u)))),'Color','w','FontWeight','bold','FontSize',10)
 
 subplot(254);
-imagescnan({xbins,ybins,pfknnmrl(:,:,u)},[],[],0,[0,0,0]),axis xy
+imagescnan({xbins,ybins,pfknnmrg(:,:,u)},[],[],0,[0,0,0]),axis xy
 title(['hwalk u ' num2str(Session.spk.map(u,:))])
-text(xbins(1)+30,ybins(1)-50,sprintf('%2.1f',max(max(pfknnmrl(:,:,u)))),'Color','w','FontWeight','bold','FontSize',10)
+text(xbins(1)+30,ybins(1)-50,sprintf('%2.1f',max(max(pfknnmrg(:,:,u)))),'Color','w','FontWeight','bold','FontSize',10)
 
 subplot(255);
-imagescnan({xbins,ybins,pfknnmrg(:,:,u)},[],[],0,[0,0,0]),axis xy
+imagescnan({xbins,ybins,pfknnmrl(:,:,u)},[],[],0,[0,0,0]),axis xy
 title(['lwalk u ' num2str(Session.spk.map(u,:))])
-text(xbins(1)+30,ybins(1)-50,sprintf('%2.1f',max(max(pfknnmrg(:,:,u)))),'Color','w','FontWeight','bold','FontSize',10)
+text(xbins(1)+30,ybins(1)-50,sprintf('%2.1f',max(max(pfknnmrl(:,:,u)))),'Color','w','FontWeight','bold','FontSize',10)
 
 
 subplot(256);
@@ -142,10 +142,10 @@ subplot(258);
 pfr.plot(u),
 
 subplot(259);
-pfl.plot(u)
+pfh.plot(u)
 
 subplot(2,5,10);
-pfh.plot(u)
+pfl.plot(u)
 
 %print(gcf,'-dpsc2',[Trial.filebase '.knnpf_100ms_50msol_walk_rear' num2str(u) '.eps']);
     uicontrol(hfig,'String','>','units','normalized','Position',[.97, 0, .03,  1],'Callback',@(hfig,index,indArray,callback)figure_controls_gui(hfig,u,units,'forwardButton_Callback'));

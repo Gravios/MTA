@@ -58,7 +58,7 @@ ylim([-1,6])
 
 
 %% This is the good stuff
-Trial.ang.load(Trial);
+
 lv = v.copy;
 lv.data = log10(abs(lv(:,3)));
 bper = Trial.stc{'w',Trial.xyz.sampleRate}.copy;
@@ -123,10 +123,10 @@ Lines(tper(:,2),[],'g');
 
 Trial.stc.load('auto_wbhr');
 
-pfr = MTAApfs(Trial,[],'rear',0,[],[30,30],[1.2,1.2],'xy');
-pfw = MTAApfs(Trial,[],'walk',0,[],[30,30],[1.2,1.2],'xy');
-pfh = MTAApfs(Trial,[],'hwalk',0,[],[30,30],[1.2,1.2],'xy');
-pfl = MTAApfs(Trial,[],'lwalk',0,[],[30,30],[1.2,1.2],'xy');
+pfr = MTAApfs(Trial,[],'rear',1,[],[30,30],[1.2,1.2],'xy');
+pfw = MTAApfs(Trial,[],'walk',1,[],[30,30],[1.2,1.2],'xy');
+pfh = MTAApfs(Trial,[],'hwalk',1,[],[30,30],[1.2,1.2],'xy');
+pfl = MTAApfs(Trial,[],'lwalk',1,[],[30,30],[1.2,1.2],'xy');
 Rccg = gen_bhv_ccg(Trial,'rear');
 Bccg = gen_bhv_ccg(Trial,'hwalk');
 Lccg = gen_bhv_ccg(Trial,'lwalk');
@@ -141,14 +141,14 @@ u=1;
 set(hfig,'Name',num2str(u));
 while u~=-1,
     subplot2(4,3,[1,2],1),pfr.plot(u),title('rear')
-    subplot2(4,3,[1,2],2),pfl.plot(u),title('hwalk')
-    subplot2(4,3,[1,2],3),pfh.plot(u),title('lwalk')
+    subplot2(4,3,[1,2],2),pfh.plot(u),title('hwalk')
+    subplot2(4,3,[1,2],3),pfl.plot(u),title('lwalk')
     subplot2(4,3,3,1)    ,Rccg.plot(u,1),axis tight
     subplot2(4,3,4,1)    ,Rccg.plot(u,2),axis tight
-    subplot2(4,3,3,2)    ,Lccg.plot(u,1),axis tight
-    subplot2(4,3,4,2)    ,Lccg.plot(u,2),axis tight
-    subplot2(4,3,3,3)    ,Bccg.plot(u,1),axis tight
-    subplot2(4,3,4,3)    ,Bccg.plot(u,2),axis tight
+    subplot2(4,3,3,2)    ,Bccg.plot(u,1),axis tight
+    subplot2(4,3,4,2)    ,Bccg.plot(u,2),axis tight
+    subplot2(4,3,3,3)    ,Lccg.plot(u,1),axis tight
+    subplot2(4,3,4,3)    ,Lccg.plot(u,2),axis tight
     
     uicontrol(hfig,'String','>','units','normalized','Position',[.97, 0, .03,  1],'Callback',@(hfig,index,indArray,callback)figure_controls_gui(hfig,u,units,'forwardButton_Callback'));
     uicontrol(hfig,'String','<','units','normalized','Position',[  0, 0, .03,  1],'Callback',@(hfig,index,indArray,callback)figure_controls_gui(hfig,u,units,'backwardButton_Callback'));

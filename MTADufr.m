@@ -48,14 +48,17 @@ classdef MTADufr < MTAData
                 %if ~exist(Data.fpath,'file')||overwrite,
                 spk = Session.spk.copy();
                 spk.create(Session,DataObj.sampleRate,state,units);
-                dsize = diff(DataObj.sync.sync([1,end]))+1;
+                dsize = diff(DataObj.sync.sync([1,end]));
                 Data.data = zeros(dsize,numel(units));
                 if isempty(units), units = 1:spk.map(end,1);end
                 swin = round(twin*DataObj.sampleRate);
                 %gwin = gausswin(swin)/sum(gausswin(swin));
                 gwin = ones(swin,1);
                 for unit = units(:)'
-                    Data.data(:,unit==units) = conv(accumarray(spk.res(spk.clu==unit),1,[dsize,1])./twin,gwin,'same');
+                    res = spk.res(spk.clu==unit);
+                    res(res==0) = 1;
+                    res(res>dsize) = dsize;
+                    Data.data(:,unit==units) = conv(accumarray(res,1,[dsize,1])./twin,gwin,'same');
                 end
                 Data.origin = DataObj.origin;
                 Data.sync = DataObj.sync;
