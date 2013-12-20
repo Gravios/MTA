@@ -10,10 +10,10 @@ function PHI=phase(G,varargin)
 %   L. Ljung 10-2-86
 %   Copyright 1986-2004 The MathWorks, Inc.
 %   $Revision: 1.5.4.2 $  $Date: 2004/07/31 23:24:49 $
-[flag] = DefaultArgs(varargin,{1,''});
+[flag] = DefaultArgs(varargin,{''});
 
 ndim = ones(1,4);
-ndim(1:size(size(G)))=size(G);
+ndim(1:numel(size(G)))=size(G);
 G = G(:);
 PHI = atan2(imag(G),real(G));
 PHI = reshape(PHI,ndim);
