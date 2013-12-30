@@ -44,7 +44,7 @@ figure,imagesc(gts,gfs,icasig),axis xy
 zlfgs = unity(lfgs')';
 gb = LocalMinima2(-zlfgs,-1,5);
 
-gb = LocalMinima2(-zlfgs,-.5,10);
+gb = LocalMinima2(-zlfgs,-.5,[5,20]);
 figure,hold on,imagesc(gts,gfs,zlfgs),axis xy,
 caxis([.5,3]),scatter(gts(gb(:,2)),gfs(gb(:,1)),6);
 

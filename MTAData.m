@@ -1,6 +1,6 @@
 classdef MTAData < hgsetget
 %MTAData(varargin)
-%MTAData(path,filename,data,sampleRate,type,ext)
+%MTAData(path,filename,data,sampleRate,syncPeriods,syncOrigin,type,ext)
 %
 %  MTAData is a superclass of most MTA data types. It is a container for 
 %  general data types, which alows dynamic refrencing and the use of a set
@@ -12,21 +12,52 @@ classdef MTAData < hgsetget
 %  Current Subclasses:
 %    MTADang, MTADepoch, MTADlfp, MTADufr, MTADxyz
 %
+%  Indexing (TimeSeries):
+%    first dimension:    time, ':', numeric array of indicies or
+%                              start and stop periods in an nx2 matrix 
+%
+%    second dimension:   channel/marker, ':', numeric array of indicies or
+%                              string corresponding to one of the model labels
+%    
+%    Nth dimension:      subspace/channel/marker, :', numeric array of
+%                              indicies or string corresponding to one of 
+%                              the model labels
+%
+%    Indexing Example:
+%       MTADxyz TimeSeries, xy coordinates of 2 markers for all time
+%       xy_head = xyz(:,{'head_back','head_front'},[1,2]);
+%
+%       MTADxyz TimeSeries, z coordinates of 2 markers for specific periods
+%       z_head = xyz([1,300;400,1000],'head_front',3);
+%
+%       MTADang TimeSeries, pitch of 2 markers for all time
+%       spine_pitch = ang(:,'spine_middle','spine_upper',2);
+%
 %  varargin:
 %    
 %    path:       string, the directory where the object's data is stored
 %
-%    filename:   string, the file name of the .mat file which contains the 
+%    filename:   string, The file name of the .mat file which contains the 
 %                        objects data
 %
-%    type:       string, a short string which denotes the type of data held
+%    data:       matrix, Data is your data, ... so put your data here
+%
+%    sampleRate: double, Sampling rate of the associated data
+%        
+%    syncPeriods: MTADepoch, Time in seconds or the indicies indicating 
+%                            where the data fits in the Session
+%                 numericArray, The absolute Recording indicies
+%
+%    syncOrigin: double, Time or index where the data exits in the overall
+%                        session
+%
+%    type:       string, A short string which denotes the type of data held
 %                        by the object
 %
-%    ext:        string, a short, unique string which will be the primary
+%    ext:        string, A short, unique string which will be the primary
 %                        file identifier
 %
-%    sampleRate: double, the sampling rate of the associated data
-%
+%    sampleRate: double, The sampling rate of the associated data
 %
 
 
@@ -41,13 +72,13 @@ classdef MTAData < hgsetget
         %type - string: a short string which denotes the type of data held by the object
         type        
         
-        %ext - string: a short, unique string which will be the primary file identifier
+        %ext - string: a short file extension
         ext
 
         %sampleRate - double: Sampling rate of the associated data
         sampleRate  
         
-        %syncPeriods - numericArray(period,Start/Stop): Time in seconds indicating where the data fits in the Session
+        %syncPeriods - MTADepoch: Time in seconds indicating where the data fits in the Session
         sync
         
         %syncOrigin - double: time of data origin in seconds with respect to the syncPeriods
@@ -317,8 +348,8 @@ classdef MTAData < hgsetget
                                     data = cat(1,data,zeros(Data.sync.sync.data(end)-Data.sync.data(end),1));
                                     data = data(Data.sync.sync.data(1)+1:Data.sync.sync.data(end));
                                 end
-                            case 'absolute'
-
+                            case 'absolute' % Reserved for future versions
+                                
                         end
                         
                         Data.data = data;

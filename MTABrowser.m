@@ -650,6 +650,8 @@ if hObject ~= getappdata(handles.MTABrowserStates,'previousBState'),
     %set(handles.MTABrowser,'keyPressFcn','MTABrowser(''MLkeyState'',hObject,eventdata,handles)')
     Session = getappdata(handles.MTABrowser,'Session');
     if Session.xyz.isempty, Session.xyz.load(Session); end
+    if Session.ang.isempty, Session.ang.load(Session); end
+    
     xyzpos = Session.xyz.data;
     
     %% Translate connection map to pairs

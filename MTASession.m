@@ -425,7 +425,8 @@ classdef MTASession < hgsetget
         %v = vel(Session,varargin)
         %calculate the speed of marker(s)
         %[marker,dim] = DefaultArgs(varargin,{[1:Session.model.N],[1:size(Session.xyz,3)]});
-            [marker,dim] = DefaultArgs(varargin,{1:Session.model.N, 1:Session.xyz.size(3)});
+        if Session.xyz.isempty, Session.xyz.load(Session); end    
+        [marker,dim] = DefaultArgs(varargin,{1:Session.model.N, 1:Session.xyz.size(3)});
             v = sqrt(sum(diff(Session.xyz(:,marker,dim),1).^2,3));
         end            
 

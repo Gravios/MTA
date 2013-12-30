@@ -1,0 +1,3 @@
+function diagnostic_struct2varargin(varargin)
+keyboard
+end
