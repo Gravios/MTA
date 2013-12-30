@@ -1,9 +1,37 @@
-function paths = MTAConfiguration(root_dir)
-%paths = MTAConfiguration(root_dir)
-% Paths,
-% Vicon Markers Names
-% Marker Connections
-% Default Maze Configurations
+function MTAConfiguration(root_dir,varargin)
+% MTAConfiguration(root_dir,flag)
+% Sets up the directories, and variable lists required for MTA
+%
+% Variables:
+%   root_dir: string, Path to the data directory
+%
+%   flag:     string, Path options
+%     values: absolute,  assumes the given path starts in the root dir
+%             otherwise, assumes the given path starts in the home dir
+%
+% Example:
+%   MTAConfiguration('/data/home/username/data_root_dir','absolute')
+%
+%   MTAConfiguration('C:\Users\username\data_root_dir','absolute')
+%
+%   MTAConfiguration('data_root_dir','absolute')
+%
+% Configuration Files:
+%    MTAPaths.mat  
+%       The paths where the data and config folders exist
+%
+%    MTAMarkers.mat
+%       The marker list whith valid marker names (May remove in the future)
+%
+%    MTAMazes.mat 
+%       Cell array containing all information over mazes (Will be replaced by a
+%       database)
+%
+%    MTAMarkerConnections.mat
+%       Defined connections between markers (Not required if vsk file is
+%       present)
+% 
+[flag] = DefaultArgs(varargin,{''});
 
 if ispc, 
     userdir= getenv('USERPROFILE'); 
@@ -13,7 +41,13 @@ end
 
 
 %% paths to the data directories
-data = fullfile(userdir,root_dir);
+switch flag
+    case 'absolute'
+        data = root_dir;
+    otherwise
+        data = fullfile(userdir,root_dir);
+end
+
 if ~exist(fullfile(data,'config'),'dir')
     mkdir(fullfile(data,'config'));
 end
@@ -23,7 +57,10 @@ if ~exist(MTAPath,'dir'),
 end
 
 %% List of the accepted marker names
-MTAMarkers ={'hip_right','pelvis_root','hip_left','spine_lower','knee_left','knee_right','tail_base','tail_end','spine_middle','spine_upper','head_back','head_left','head_front','head_right','shoulder_left','elbow_left','shoulder_right','elbow_right','head_top'};
+MTAMarkers ={'hip_right','pelvis_root','hip_left','spine_lower','knee_left',...
+             'knee_right','tail_base','tail_end','spine_middle','spine_upper',...
+             'head_back','head_left','head_front','head_right','shoulder_left',...
+             'elbow_left','shoulder_right','elbow_right','head_top'};
 
 %% List of the accepted mazes
 MTAMazes = {{'cof','circle',   [-500,500;-500,500;0,300],[-500,500;-500,500;0,360]},...
@@ -33,7 +70,8 @@ MTAMazes = {{'cof','circle',   [-500,500;-500,500;0,300],[-500,500;-500,500;0,36
             {'tm','circle',    [-500,500;-500,500;0,300],[-500,500;-500,500;0,360]}};
 
 %% List of the accepted connections between markers
-MTAMarkerConnections = {{'head_front','head_left' },...
+MTAMarkerConnections = ...
+   {{'head_front','head_left' },...
     {'head_front','head_right'},...
     {'head_right','head_left' },...
     {'head_left' ,'head_back' },...
@@ -63,7 +101,9 @@ save(fullfile(MTAPath, 'MTAMarkers.mat'),'MTAMarkers')
 save(fullfile(MTAPath, 'MTAMazes.mat'  ),'MTAMazes')
 save(fullfile(MTAPath, 'MTAMarkerConnections.mat'),'MTAMarkerConnections')
 
-addpath(MTAPath)
-savepath
+try
+    addpath(MTAPath)
+    savepath
+end
 
 
