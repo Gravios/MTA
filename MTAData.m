@@ -1,5 +1,4 @@
 classdef MTAData < hgsetget
-%MTAData(varargin)
 %MTAData(path,filename,data,sampleRate,syncPeriods,syncOrigin,type,ext)
 %
 %  MTAData is a superclass of most MTA data types. It is a container for 
@@ -44,9 +43,10 @@ classdef MTAData < hgsetget
 %
 %    sampleRate: double, Sampling rate of the associated data
 %        
-%    syncPeriods: MTADepoch, Time in seconds or the indicies indicating 
-%                            where the data fits in the Session
-%                 numericArray, The absolute Recording indicies
+%    syncPeriods: 
+%           MTADepoch,    Time in seconds or the indicies indicating where
+%                         the data fits in the Session
+%           numericArray, The absolute Recording indicies
 %
 %    syncOrigin: double, Time or index where the data exits in the overall
 %                        session

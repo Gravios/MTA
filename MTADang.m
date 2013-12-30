@@ -1,14 +1,33 @@
 classdef MTADang < MTAData
-%MTADang(varargin)
 %MTADang(path,filename,data,sampleRate,model,type,ext)
 %
-%  varargin:
+%  MTADang is a subclass of MTAData. 
+%
+%  Current Data Types: TimeSeries
+%
+%  Indexing (TimeSeries):
+%    first dimension:    time, ':', numeric array of indicies or
+%                              start and stop periods in an nx2 matrix 
+%
+%    second dimension:   marker, ':', numeric array of indicies or
+%                              string corresponding to one of the model labels
+%
+%    third dimension:    marker, ':', numeric array of indicies or
+%                              string corresponding to one of the model labels
 %    
-%    path:     string, the directory where the object's data is stored
+%    fourth dimension:   spherical coordinates in R3 (theta,phi,r)
 %
-%    filename: string, the file name of the .mat file which contains the 
-%                      objects data
 %
+%    Indexing Example:
+%       MTADxyz TimeSeries, xy coordinates of 2 markers for all time
+%       xy_head = xyz(:,{'head_back','head_front'},[1,2]);
+%
+%       MTADxyz TimeSeries, z coordinates of 2 markers for specific periods
+%       z_head = xyz([1,300;400,1000],'head_front',3);
+%
+%
+%  See also MTAData
+
     properties 
         model
     end
