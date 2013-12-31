@@ -123,6 +123,8 @@ classdef MTAData < hgsetget
             end
         end
         function Data = load(Data,varargin)
+        % Data = load(Data,varargin)
+        % Loads data from the file 
             [Session,syncshift] = DefaultArgs(varargin,{[],0});
             ds = load(Data.fpath);
             switch class(Session)
@@ -358,12 +360,41 @@ classdef MTAData < hgsetget
             Data.type = type;
         end
         
+        function Data = resample(Data,DataObj,varargin)
+        % Data = resample(Data,DataObj)
+        % Resample Data to the DataObjects sampleRate
+            switch Data.type
+                case 'TimeSeries'
+                    assert(~DataObj.isempty,'DataObj must be loaded for resampling');
+                    uind = round(linspace(round(Data.sampleRate/DataObj.sampleRate),Data.size(1),DataObj.size(1)));
+                    Data.data = Data.data(uind,:,:,:,:);
+                    if isa(Data.sync,'MTAData'),
+                        Data.sync.resample(DataObj.sampleRate);
+                        Data.origin = round(Data.origin/Data.sampleRate*DataObj.sampleRate);
+                    end
+                    Data.sampleRate = DataObj.sampleRate;
+                case 'TimePeriods'
+                    
+                otherwise
+            end
+        end
+        
+        function Data = filter(Data,varargin)
+        % Data = filter(Data,win)
+        % Data.data = reshape(Filter0(win,Data.data),Data.size);
+            switch Data.type
+                case 'TimeSeries'
+                    [Window] = DefaultArgs(varargin,{gausswin(9)./sum(gausswin(9))});
+                    Data.data = reshape(Filter0(Window,Data.data),Data.size);
+                otherwise
+                    return
+            end
+        end
+        
     end
 
     methods (Abstract)        
         Data = create(Data,varargin);      
-        Data = resample(Data,newSampleRate);
-        %Data = filter(Data,fwindow);
     end
 
 end

@@ -1,9 +1,12 @@
 classdef MTADxyz < MTAData
 %MTADxyz(path,filename,data,sampleRate,syncPeriods,syncOrigin,type,ext)
 %
-%  MTADxyz is a subclass of MTAData. 
+%  MTADxyz is a subclass of MTAData, which stores position data from a vicon
+%  recording system.
 %
-%  Current Data Types: TimeSeries
+%  NOTE: Future versions will allow other systems
+%
+%  Current Data Type: TimeSeries
 %
 %  Indexing (TimeSeries):
 %    first dimension:    time, ':', numeric array of indicies or
@@ -14,12 +17,11 @@ classdef MTADxyz < MTAData
 %    
 %    third dimension:    cartesian coordinates in R3 (x,y,z)
 %
-%
 %    Indexing Example:
-%       MTADxyz TimeSeries, xy coordinates of 2 markers for all time
+%       xy coordinates of 2 markers for all time
 %       xy_head = xyz(:,{'head_back','head_front'},[1,2]);
 %
-%       MTADxyz TimeSeries, z coordinates of 2 markers for specific periods
+%       Selected periods for z coordinates of a marker
 %       z_head = xyz([1,300;400,1000],'head_front',3);
 %
 %
@@ -28,9 +30,11 @@ classdef MTADxyz < MTAData
     properties
         model
     end
+    
     properties(Transient=true)
         data        % data
     end
+    
     methods
         function Data = MTADxyz(varargin)
             [path,filename,data,sampleRate,syncPeriods,syncOrigin,model,type,ext] = ...
@@ -42,21 +46,13 @@ classdef MTADxyz < MTAData
             end            
             Data = Data@MTAData(path,filename,data,sampleRate,syncPeriods,syncOrigin,type,ext);            Data.model = model;
         end
-        
         function Data = create(Data,varargin)
-            [Session,overwrite] = DefaultArgs(varargin,{{},{}});
-        end
-        function Data = filter(Data,win)
-            ds = Data.size;
-            Data.data = reshape(Filter0(win,Data.data),ds);
-        end
-        function Data = resample(Data,DataObj)
-            if DataObj.isempty, DataObj.load; dlen = DataObj.size(1); end
-            uind = round(linspace(round(Data.sampleRate/DataObj.sampleRate),Data.size(1),DataObj.size(1)));
-            Data.data = Data.data(uind,:,:);
-            Data.sampleRate = DataObj.sampleRate;            
+        %Data = create(Data,varargin)
+        %not implemented in this version
         end
         function Data = embed(Data,win,overlap)
+        %Data = embed(Data,win,overlap)
+        %not implemented in this version
         end
 
     end

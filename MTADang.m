@@ -19,12 +19,11 @@ classdef MTADang < MTAData
 %
 %
 %    Indexing Example:
-%       MTADxyz TimeSeries, xy coordinates of 2 markers for all time
-%       xy_head = xyz(:,{'head_back','head_front'},[1,2]);
+%       Pitch of 2 markers for all time
+%       spine_pitch = ang(:,'spine_middle','spine_upper',2);
 %
-%       MTADxyz TimeSeries, z coordinates of 2 markers for specific periods
-%       z_head = xyz([1,300;400,1000],'head_front',3);
-%
+%       Selected periods for Inter Marker distace
+%       spine_pitch = ang([1,300;400,1000],'spine_upper','head_back',3);
 %
 %  See also MTAData
 
@@ -35,6 +34,7 @@ classdef MTADang < MTAData
     properties(Transient=true)
         data        % data
     end
+    
     methods
         function Data = MTADang(varargin)
             [path,filename,data,sampleRate,syncPeriods,syncOrigin,model,type,ext] = ...
@@ -47,8 +47,10 @@ classdef MTADang < MTAData
             Data = Data@MTAData(path,filename,data,sampleRate,syncPeriods,syncOrigin,type,ext);
             Data.model = model;
         end
-        
         function Data = create(Data,Session,varargin)
+        %Data = create(Data,Session,xyzData)
+        %Calculate the spherical coordinates of each marker relative to
+        %each other.
             [xyz] = DefaultArgs(varargin,{Session.xyz.copy});
             if xyz.isempty, xyz.load(Session); end
             ang = zeros(xyz.size(1),xyz.model.N,xyz.model.N,5);
@@ -68,26 +70,10 @@ classdef MTADang < MTAData
             ang(ang(:,1,2,2)~=0,1,1,1)=1;
             Data.data = ang;
         end
-        
-        function Data = filter(Data,win)
-        end
-
-        function Data = resample(Data,DataObj)
-            if DataObj.isempty, DataObj.load; dlen = DataObj.size(1); end
-            uind = round(linspace(round(Data.sampleRate/DataObj.sampleRate),Data.size(1),DataObj.size(1)));
-            Data.data = Data.data(uind,:,:,:);
-            if isa(Data.sync,'MTAData'),
-                Data.sync.resample(newSampleRate);
-                Data.origin = round(Data.origin/Data.sampleRate*newSampleRate);
-            end
-            Data.sampleRate = DataObj.sampleRate;
-            
-
-        end
-
         function Data = embed(Data,win,overlap)
+        %Data = embed(Data,win,overlap)
+        %not implemented in this version
         end
-
     end
     
 end

@@ -1,4 +1,26 @@
 classdef MTADlfp < MTAData
+%MTADlfp(path,filename,data,sampleRate,syncPeriods,syncOrigin,type,ext)
+%
+%  MTADlfp is a subclass of MTAData. 
+%
+%  Current Data Type: TimeSeries
+%
+%  Indexing (TimeSeries):
+%    first dimension:    time, ':', numeric array of indicies or
+%                              start and stop periods in an nx2 matrix 
+%
+%    second dimension:   channel, ':', numeric array of indicies
+%                                 representing the loaded channels                              
+%
+%    Indexing Example:
+%       All time for 2 channels
+%       chan1and2 = lfp(:,[1,2]);
+%
+%       Selected periods for the 3rd channel
+%       chan3per = lfp([1,300;400,1000],3);
+%
+%
+%  See also MTAData
     properties 
         model = [];
     end
@@ -30,23 +52,9 @@ classdef MTADlfp < MTAData
         end
         function Data = create(Data,varargin)
         end
-        function Data = updatePath(Data,path)
-            Data.path = path;
-        end
-        function Data = filter(Data,win)
-        end
-        function Data = resample(Data,newSampleRate,varargin)
-            [interp_type] = DefaultArgs(varargin,{'linear'});
-            if DataObj.isempty, DataObj.load; dlen = DataObj.size(1); end
-            uind = round(linspace(round(Data.sampleRate/DataObj.sampleRate),Data.size(1),DataObj.size(1)));
-            Data.data = Data.data(uind,:);
-                        if isa(Data.sync,'MTAData'),
-                Data.sync.resample(newSampleRate);
-                Data.origin = round(Data.origin/Data.sampleRate*newSampleRate); 
-            end     
-            Data.sampleRate = DataObj.sampleRate;   
-        end
         function Data = embed(Data,win,overlap)
+        %Data = embed(Data,win,overlap)
+        %not implemented in this version            
         end        
     end
     
