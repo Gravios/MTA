@@ -90,24 +90,17 @@ if numel(FSC)>NLineExcerpt,FSC = FSC(1:NLineExcerpt);end
 
 
 %% Clean up excerpt 
-cind = [];
 for i = 1:numel(FSC),
-    csfsc = FSC{i};
-
-    % flag line for deletion if empty
-    if isempty(csfsc), 
-        cind = [cind,i];
-        continue
-    end
-    
     % Remove white spaces
-    csfsc(ismember(csfsc,' ')) = [];
-
+    FSC{i}(ismember(FSC{i},' ')) = [];
+    if  isempty(FSC{i}),continue,end
     % flag lines without code for deletion (i.e. comments)
-    if strcmp(csfsc(1),'%'),
-        cind = [cind,i];
+    
+    if strcmp(FSC{i}(1),'%'),
+        FSC{i} = [];
     end
 end
+cind = find(cellfun(@isempty,FSC));
 if ~isempty(cind), 
     FSC(cind)=[];
 end
@@ -124,7 +117,7 @@ while isempty(outind),
     tdfas = strcat(FSC{tind},tdfas);
 
     % Seach for the begining of variable assignments
-    outind = find(strfind(tdfas,'['));    
+    outind = find(ismember(tdfas(1),'[')==1,1,'first');    
 
     % Search backwards for ellipses 
     if tind-1==0,
@@ -163,7 +156,6 @@ end
 NewMAI = -1;
 if numel(strArgsInd)>0,
     MatchedArgs = cell(size(DefArgs));
-    NewMAI = [];
     MatchedArgsInd = false(size(strArgsInd));
     MatchedArgsInd(strArgsInd) = ~cellfun(@isempty,regexpi(Args(strArgsInd),RPargs));
     MatchedArgsInd = find(MatchedArgsInd);
@@ -188,10 +180,14 @@ end
 
 %% Ensure the Args is a cell with at least one value
 if isempty(Args)
-    Args = cell(size(ParsedArgs));
+    Args = cell(nDefArgs,1);
+elseif numel(Args) ~= nDefArgs,
+    tArgs = Args;
+    Args = cell(nDefArgs,1);
+    Args(1:numel(tArgs)) = tArgs;
 end
 
-varargout = cell(size(ParsedArgs));
+varargout = cell(nDefArgs,1);
 
 for i=1:nDefArgs
     if isempty(Args{i})&& ~ismember(i,NewMAI)
