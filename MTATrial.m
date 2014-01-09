@@ -61,19 +61,21 @@ classdef MTATrial < MTASession
             
             Trial.trialName = trialName;
             Trial.filebase = [Trial.name '.' Trial.maze.name '.' Trial.trialName];
-            Trial.stc.updateFilename(Trial.filebase);
             
             if exist(fullfile(Trial.spath, [Trial.filebase '.trl.mat']),'file')&&~overwrite
                 
                 ds = load(fullfile(Trial.spath, [Trial.filebase '.trl.mat']));
                 Trial.sync = ds.sync;
                 if isfield(ds,'stcmode'),
-                    if ~isempty(ds.stcmode)&&exist(Trial.stc.fpath,'file')
-                        Trial.stc.updateFilename([Trial.filebase '.stc.' ds.stcmode '.mat']);
-                        Trial.stc.load;
-                    else
-                        Trial.stc.load;
+                    if ~isempty(ds.stcmode),                        
+                        Trial.stc.updateMode(ds.stcmode);
+                        if exist(Trial.stc.fpath,'file')
+                            Trial.stc.load;
+                        else
+                            Trial.stc.updateMode('default');                  
+                        end                    
                     end
+                    Trial.stc.load;
                 end
                 
             else

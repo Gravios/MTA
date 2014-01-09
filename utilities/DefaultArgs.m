@@ -144,7 +144,7 @@ else
 end
 
 ParsedArgs = str2cell(tdfas,' ,');
-RPargs = strcat('(',strjoin(ParsedArgs(:)',')|('),')');
+RPargs = strcat('(^',strjoin(ParsedArgs(:)','$)|(^'),'$)');
 strArgsInd = cellfun(@isstr,Args);
 
 
