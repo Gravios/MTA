@@ -650,7 +650,7 @@ if hObject ~= getappdata(handles.MTABrowserStates,'previousBState'),
     %set(handles.MTABrowser,'keyPressFcn','MTABrowser(''MLkeyState'',hObject,eventdata,handles)')
     Session = getappdata(handles.MTABrowser,'Session');
     if Session.xyz.isempty, Session.xyz.load(Session); end
-    if Session.ang.isempty, Session.ang.load(Session); end
+    %if Session.ang.isempty, Session.ang.load(Session); end
     
     xyzpos = Session.xyz.data;
     
@@ -744,7 +744,7 @@ if hObject ~= getappdata(handles.MTABrowserStates,'previousBState'),
             for j = 1:size(tmpState,1),
                 States{i}.data(tmpState(j,1):tmpState(j,2)) = 1;
             end
-            States{l}.type = 'TimeSeries';
+            States{i}.type = 'TimeSeries';            
         end
     else
         labels = {'default'};
