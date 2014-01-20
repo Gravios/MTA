@@ -27,11 +27,12 @@ pfwh_ss =MTAApfs(Trial,[7,9,6,5,20,89,25,71],'hwalk',0,[],[30,30],[1.2,1.2],'spk
 % $$$ title(num2str(unit))
 % $$$ unit = figure_controls(gcf,unit)
 % $$$ end
-u = 9;
+
+u = 22;
 figure,
 subplot2(5,3,1,1),pfw.plot(u),         subplot2(5,3,1,2),pfwl.plot(u),         subplot2(5,3,1,3),pfwh.plot(u)
-subplot2(5,3,2,1),pfw_ss.plot(u,'std'),subplot2(5,3,2,2),pfwl_ss.plot(u,'std'),subplot2(5,3,2,3),pfwh_ss.plot(u,'std')
-subplot2(5,3,3,1),pfw_ss.plot(u,'mean'),      subplot2(5,3,3,2),pfwl_ss.plot(u,'mean'),      subplot2(5,3,3,3),pfwh_ss.plot(u,'mean')
+subplot2(5,3,2,1),pfw_ps.plot(u,'std'),subplot2(5,3,2,2),pfwl_ps.plot(u,'std'),subplot2(5,3,2,3),pfwh_ps.plot(u,'std')
+subplot2(5,3,3,1),pfw_ps.plot(u,'mean'),      subplot2(5,3,3,2),pfwl_ps.plot(u,'mean'),      subplot2(5,3,3,3),pfwh_ps.plot(u,'mean')
 
 subplot2(5,3,4,1)
 imagesc(reshape(sq(1./sum((repmat(max(pfw_ps.data.rateMap(:,pfw_ps.data.clu==u,:)),size(pfwh.data.rateMap,1),1,1)-repmat(pfw.data.rateMap(:,u,1),1,1,pfw_ps.parameters.numIter))<0,3)),33,33)'),axis xy
@@ -99,4 +100,3 @@ subplot2(2,1,1,2)
 imagesc(pscoreMapMC{unit}'),axis xy,colorbar,caxis([0,0.001])
 title(num2str(unit))
 unit = figure_controls(gcf,unit)
-end

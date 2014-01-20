@@ -18,7 +18,7 @@ mytu = mytu(spind,:);
 
 mywx = Session.xyz(Session.stc{'w'},7,[1,2]);
 mywu = ufr(Session.stc{'w'},:);
-spind = 1:30:size(mywx,1);
+spind = 1:10:size(mywx,1);
 mywx = mywx(spind,:);
 mywu = mywu(spind,:);
 
@@ -48,16 +48,56 @@ nybins = 50;
 xbins = linspace(Session.maze.boundaries(1,1),Session.maze.boundaries(1,2),nxbins)';
 ybins = linspace(Session.maze.boundaries(2,2),Session.maze.boundaries(2,1),nxbins)';
 nnn = 15;
-pfknnmrw = nan(nxbins,nybins,95);
+pfknnmrw = nan(nxbins,nybins,ufs.size(2));
 pfknnmdw = nan(nxbins,nybins);
-pfknnmrg = nan(nxbins,nybins,95);
+pfknnmrg = nan(nxbins,nybins,ufs.size(2));
 pfknnmdg = nan(nxbins,nybins);
-pfknnmrl = nan(nxbins,nybins,95);
+pfknnmrl = nan(nxbins,nybins,ufs.size(2));
 pfknnmdl = nan(nxbins,nybins);
 
-pfknnmrr = nan(nxbins,nybins,95);
+pfknnmrr = nan(nxbins,nybins,ufs.size(2));
 pfknnmdr = nan(nxbins,nybins);
 
+
+%new knnpf-start
+
+nxbins = 50;
+nybins = 50;
+xbins = linspace(Session.maze.boundaries(1,1),Session.maze.boundaries(1,2),nxbins)';
+ybins = linspace(Session.maze.boundaries(2,2),Session.maze.boundaries(2,1),nxbins)';
+nnn = 15;
+pfknnmrw = nan(nxbins,nybins,ufs.size(2));
+pfknnmdw = nan(nxbins,nybins);
+dthresh = 70;
+
+xy = cell(2,1);
+[xy{:}]= meshgrid(xbins,ybins);
+
+xyi = cell(2,1)
+[xyi{:}] = meshgrid(1:nxbins,1:nybins);
+xyi = repmat(permute(cat(3,xyi{:}),[4,3,1,2]),size(mywx,1),1);
+
+xy = repmat(permute(cat(3,xy{:}),[4,3,1,2]),size(mywx,1),1);
+mywxt = repmat(mywx,[1,1,nxbins,nybins]);
+mywut = repmat(mywu,[1,1,nxbins,nybins]);
+distw = sqrt(sum((mywxt-xy).^2,2));
+[distdw,distIndw ] = sort(distw,1,'ascend');  
+
+pfknnmdw = sq(median(distdw(1:nnn,:,:,:),1));
+
+
+s = size(mywut);
+cm = reshape(repmat([0:s(1):prod(s)-1],s(1),1),s);     
+     
+smywut = mywut(repmat(distIndw,1,ufr.size(2))+cm);
+pfknnmrw = permute(mean(smywut(1:70,:,:,:),1),[3,4,2,1]);
+pfknnmrw = permute(mean(smywut(1:nnn,:,:,:),1),[3,4,2,1]);
+%pfknnmrw = permute(mean(mywut(repmat(distIndw(1:nnn,:,:,:),1,ufr.size(2))),1),[3,4,2,1]);
+
+pfknnmrw(repmat(pfknnmdw,[1,1,ufr.size(2)])>dthresh) = nan;
+pfknnmrw(repmat(pfknnmdw,[1,1,ufr.size(2)])>40) = nan;
+
+%new knnpf-end
 
 for y = 1:length(ybins),
     for x = 1:length(xbins),
