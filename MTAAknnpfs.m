@@ -15,12 +15,14 @@ classdef MTAAknnpfs < hgsetget %< MTAAnalysis
     methods
 
         function Pfs = MTAAknnpfs(Obj, varargin)     
-            [units,states,overwrite,tag,binDims,,type,spkShuffle,posShuffle,numIter]=...
-            DefaultArgs(varargin,{[],'walk',0,[],[20,20],[1.2,1.2],'xy','n',0,1,});
+            [units,states,overwrite,tag,binDims,nNearestNeighbors,distThreshold,...
+                type,ufrShufBlockSize,numIter, downSampleRate]=...
+            DefaultArgs(varargin,{[],'walk',0,[],[30,30],80,60,'xy',0,1,20});
             
         
             switch class(Obj)
                 case 'MTATrial'
+                    %% Base values for every analysis -> perhaps create superclass later
                     Session = Obj;
                     SessionName = Session.name;
                     MazeName    = Session.maze.name;
@@ -35,16 +37,15 @@ classdef MTAAknnpfs < hgsetget %< MTAAnalysis
                     
                     pfsState = Session.stc{states,Session.xyz.sampleRate}.copy;
                     
+                    %% 
                     Pfs.parameters.states = states;
                     Pfs.parameters.type   = type;
-                    Pfs.parameters.spkShuffle = spkShuffle;
-                    Pfs.parameters.posShuffle = posShuffle;
+                    Pfs.parameters.ufrShufBlockSize= ufrShufBlockSize;
                     Pfs.parameters.numIter  = numIter;
-                    if isempty(SmoothingWeights)&&numel(binDims)==numel(SmoothingWeights)
-                        SmoothingWeights = Nbin./30;
-                    end
-                    Pfs.parameters.smoothingWeights   = SmoothingWeights;
+                    Pfs.parameters.nNearestNeighbors   = nNearestNeighbors;
+                    Pfs.parameters.distThreshold = distThreshold;
                     Pfs.parameters.binDims = binDims;
+                    Pfs.parameters.downSampleRate = downSampleRate;
                     
                     Pfs.adata.trackingMarker = Session.trackingMarker;
                     Pfs.adata.bins = [];
@@ -181,67 +182,78 @@ classdef MTAAknnpfs < hgsetget %< MTAAnalysis
 
             end
             
-            %% load Units into spk object;
-            Session.spk.create(Session,Session.xyz.sampleRate,pfsState.label,units);
+            %% load unit firing rate
+            Session.ufr.create(Session,Session.xyz,pfsState.label,units,0.2);
+            sstufr = Session.ufr(pfsState,:);
             
             %% Get State Positions
             if Session.xyz.isempty, Session.xyz.load(Session);end
-            sstpos = Session.xyz(pfsState,Session.trackingMarker,1:numel(binDims));
+            sstpos = sq(Session.xyz(pfsState,Session.trackingMarker,1:numel(binDims)));
+            
+            %% Trim ufr and xyz
+            if numIter>1
+                samplesPerBlock = round(Session.xyz.sampleRate*ufrShufBlockSize);
+                vlen = size(sstpos,1);
+                trim = mod(vlen,samplesPerBlock);
+                sstpos = sstpos(1:vlen-trim,:);
+                sstufr = sstufr(1:vlen-trim,:);
+                ufrShufBlockCount = (vlen-trim)/samplesPerBlock;
+                ufrBlockInd = reshape(1:size(sstufr,1),[],ufrShufBlockCount);
 
+                ufrShufPermIndices = zeros(numIter,ufrShufBlockCount);
+                ufrShufPermIndices(1,:) = 1:ufrShufBlockCount;
+                for i = 2:numIter,
+                    ufrShufPermIndices(i,:) = randperm(ufrShufBlockCount);
+                end
+            else 
+                ufrBlockInd = ':';
+                ufrShufPermIndices = ':';
+            end
+            
+            
             i = 1;
             for unit=selected_units,
 
                 Pfs.data.clu(dind(i)) = Session.spk.map(unit,1);
                 Pfs.data.el(dind(i)) = Session.spk.map(unit,2);
                 Pfs.data.elClu(dind(i)) = Session.spk.map(unit,3);
-                res = Session.spk(unit);
-
-                %% Skip unit if too few spikes
-                if numel(res)>10,
-
-                    nSpk = numel(res);
-
-                    switch spkShuffle
-                        case 'n'
-                            shufSpkInd = repmat((1:nSpk)',1,numIter);
-                        case 'r'
-                            shufSpkInd = randi(nSpk,nSpk,numIter);
+                
+                %% Calculate Place Fields
+                tic
+                [Pfs.data.rateMap(:,dind(i),1), Pfs.adata.bins] =  ...
+                PlotKNNPF...
+                (Session,sstufr(reshape(ufrBlockInd(:,ufrShufPermIndices(1,:)),[],1),unit==selected_units),...
+                sstpos,binDims,nNearestNeighbors,distThreshold,downSampleRate,type);
+            toc
+                tic
+                if numIter>1,
+                    for bsi = 2:numIter
+                        Pfs.data.rateMap(:,dind(i),bsi) = ...
+                        PlotKNNPF...
+                        (Session,sstufr(reshape(ufrBlockInd(:,ufrShufPermIndices(bsi,:)),[],1),unit==selected_units),...
+                        sstpos,binDims,nNearestNeighbors,distThreshold,downSampleRate,type);
                     end
-                    
-                    sstres = SelectPeriods(res,pfsState.data,'d',1,1);
-                    sresind = sstres(shufSpkInd) + repmat(randi([-posShuffle,posShuffle],1,numIter),nSpk,1);
-                    sresind(sresind<=0) = sresind(sresind<=0)+size(sstpos,1);
-                    sresind(sresind>size(sstpos,1)) = sresind(sresind>size(sstpos,1))-size(sstpos,1);
-                    
-                    shufSpkPos  = @(stspos,stsres,niterCount) stspos(stsres(:,niterCount),:);
-
-                    %% Caluculate Place Fields
-                    [Pfs.data.rateMap(:,dind(i),1), Pfs.adata.bins, Pfs.data.meanRate(dind(i)), Pfs.data.si(dind(i)), Pfs.data.spar(dind(i))] =  ...
-                        PlotPF(Session,sstpos(sstres,:),sstpos,binDims,SmoothingWeights,type);
-                     if numIter>1,
-                         for bsi = 2:numIter
-                             Pfs.data.rateMap(:,dind(i),bsi) = PlotPF(Session,shufSpkPos(sstpos,sresind,bsi),sstpos,binDims,SmoothingWeights,type);
-                         end
-                     end
-%                         Pfs.rateMap{unit} = sq(bsMap);
-%                         PlaceField.stdMap{unit} = sq(std(bsMap,0,3));
-%                     else
-%                         PlaceField.rateMap{unit} = sq(bsMap);
-%                         PlaceField.stdMap{unit} = [];
-%                     end
-                    
-%                     try
-%                         if isempty(PlaceField.rateMap{unit}), continue, end,
-%                         PlaceField.rateMap{unit}(isnan(PlaceField.rateMap{unit})) = 0;
-%                         PlaceField.maxRateInd{unit} = LocalMinima2(-PlaceField.rateMap{unit},-0.2,12);
-%                         PlaceField.rateMap{unit}(PlaceField.rateMap{unit}(:)==0) = nan;
-%                         if isempty(PlaceField.maxRateInd{unit}), continue, end,
-%                         PlaceField.maxRatePos{unit} = [PlaceField.ybin(PlaceField.maxRateInd{unit}(:,2));PlaceField.xbin(PlaceField.maxRateInd{unit}(:,1))]'*[0 1; 1 0];
-%                         PlaceField.maxRate{unit} = PlaceField.rateMap{unit}(round(size(PlaceField.rateMap{unit},1)*[PlaceField.maxRateInd{unit}(:,2)-1]+PlaceField.maxRateInd{unit}(:,1)));
-%                         [~,PlaceField.maxRateMax{unit}] = max(PlaceField.maxRate{unit});
-%                     end
-                    
-                end  
+                end
+                toc
+                %                         Pfs.rateMap{unit} = sq(bsMap);
+                %                         PlaceField.stdMap{unit} = sq(std(bsMap,0,3));
+                %                     else
+                %                         PlaceField.rateMap{unit} = sq(bsMap);
+                %                         PlaceField.stdMap{unit} = [];
+                %                     end
+                
+                %                     try
+                %                         if isempty(PlaceField.rateMap{unit}), continue, end,
+                %                         PlaceField.rateMap{unit}(isnan(PlaceField.rateMap{unit})) = 0;
+                %                         PlaceField.maxRateInd{unit} = LocalMinima2(-PlaceField.rateMap{unit},-0.2,12);
+                %                         PlaceField.rateMap{unit}(PlaceField.rateMap{unit}(:)==0) = nan;
+                %                         if isempty(PlaceField.maxRateInd{unit}), continue, end,
+                %                         PlaceField.maxRatePos{unit} = [PlaceField.ybin(PlaceField.maxRateInd{unit}(:,2));PlaceField.xbin(PlaceField.maxRateInd{unit}(:,1))]'*[0 1; 1 0];
+                %                         PlaceField.maxRate{unit} = PlaceField.rateMap{unit}(round(size(PlaceField.rateMap{unit},1)*[PlaceField.maxRateInd{unit}(:,2)-1]+PlaceField.maxRateInd{unit}(:,1)));
+                %                         [~,PlaceField.maxRateMax{unit}] = max(PlaceField.maxRate{unit});
+                %                     end
+                
+                
                 i = i+1;
                 save(pf_tmpfile,'Pfs','-v7.3')
             end
@@ -265,7 +277,7 @@ classdef MTAAknnpfs < hgsetget %< MTAAnalysis
                         case 'std'
                             rateMap = std(rateMap,[],3);
                     end
-                    imagescnan({bin1,bin2,rateMap'},colorLimits,[],ifColorbar,[0,0,0]);
+                    imagescnan({bin1,bin2,rateMap},colorLimits,[],ifColorbar,[0,0,0]);
                     
                     if ~isempty(rateMap)&&~isempty(bin1)&&~isempty(bin2),
                         text(bin1(1)+30,bin2(end)-50,sprintf('%2.1f',max(rateMap(:))),'Color','w','FontWeight','bold','FontSize',10)
@@ -296,14 +308,16 @@ classdef MTAAknnpfs < hgsetget %< MTAAnalysis
                 binDimTag = num2str(Pfs.parameters.binDims);
                 binDimTag(isspace(binDimTag)&isspace(circshift(binDimTag',1)'))=[];
                 binDimTag(isspace(binDimTag)) = '_';
-                smwTag = num2str(Pfs.parameters.smoothingWeights*100);
-                smwTag(isspace(smwTag)&isspace(circshift(smwTag',1)'))=[];
-                smwTag(isspace(smwTag)) = '_';
+                nnnTag = num2str(Pfs.parameters.nNearestNeighbors);
                 Pfs.filename = [Session.filebase ...
                     '.pfs.' Pfs.parameters.type '.' Session.trackingMarker '.' pfsState.label '.' ...
-                    Pfs.parameters.spkShuffle 'ps' num2str(Pfs.parameters.posShuffle) ...
-                    'bs' num2str(Pfs.parameters.numIter) 'sm' smwTag...
-                    'bd' binDimTag '.mat'];
+                    'us' num2str(Pfs.parameters.ufrShufBlockSize) ...
+                    'bs' num2str(Pfs.parameters.numIter) ...
+                    'nnn' nnnTag ...
+                    'dt' num2str(Pfs.parameters.distThreshold) ...
+                    'bd' binDimTag ...
+                    'ds' num2str(Pfs.parameters.downSampleRate) ...
+                    '.mat'];
             else
                 Pfs.filename = [Session.filebase '.Pfs.' Pfs.tag '.mat'];
             end
