@@ -182,14 +182,16 @@ classdef MTAAknnpfs < hgsetget %< MTAAnalysis
 
             end
             
+
+            %% Get State Positions
+            if Session.xyz.isempty, Session.xyz.load(Session);end
+            sstpos = sq(Session.xyz(pfsState,Session.trackingMarker,1:numel(binDims))); 
+
             %% load unit firing rate
             Session.ufr.create(Session,Session.xyz,pfsState.label,units,0.2);
             sstufr = Session.ufr(pfsState,:);
             
-            %% Get State Positions
-            if Session.xyz.isempty, Session.xyz.load(Session);end
-            sstpos = sq(Session.xyz(pfsState,Session.trackingMarker,1:numel(binDims)));
-            
+           
             %% Trim ufr and xyz
             if numIter>1
                 samplesPerBlock = round(Session.xyz.sampleRate*ufrShufBlockSize);
@@ -310,7 +312,7 @@ classdef MTAAknnpfs < hgsetget %< MTAAnalysis
                 binDimTag(isspace(binDimTag)) = '_';
                 nnnTag = num2str(Pfs.parameters.nNearestNeighbors);
                 Pfs.filename = [Session.filebase ...
-                    '.pfs.' Pfs.parameters.type '.' Session.trackingMarker '.' pfsState.label '.' ...
+                    '.pfknn.' Pfs.parameters.type '.' Session.trackingMarker '.' pfsState.label '.' ...
                     'us' num2str(Pfs.parameters.ufrShufBlockSize) ...
                     'bs' num2str(Pfs.parameters.numIter) ...
                     'nnn' nnnTag ...
@@ -331,4 +333,3 @@ classdef MTAAknnpfs < hgsetget %< MTAAnalysis
 
     end
     
-end
