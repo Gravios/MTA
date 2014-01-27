@@ -1,5 +1,5 @@
-function [RateMap,Bins]= PlotKNNPF(Session,ufr,pos,varargin)
-[binDims,nnn,dthresh,downSampleRate,type] = DefaultArgs(varargin,{50,70,60,20,'xy'});
+function [RateMap,Bins,distdw,distIndw]= PlotKNNPF(Session,ufr,pos,varargin)
+[binDims,nnn,dthresh,downSampleRate,type,distdw,distIndw] = DefaultArgs(varargin,{50,70,60,20,'xy',[],[]});
 
 ndims = numel(binDims);
 bound_lims = Session.maze.boundaries(1:ndims,:);
@@ -14,18 +14,19 @@ for i = 1:ndims
 end
 
 spind = 1:round(Session.xyz.sampleRate/downSampleRate):size(pos,1);
-mywx = repmat(pos(spind,:),[1,1,nbins]);
 mywu = repmat(ufr(spind,:),[1,1,nbins]);
 
-xy = cell(2,1);
-[xy{:}]= meshgrid(Bins{:});
-xy = repmat(permute(reshape(cat(3,xy{:}),nbins,2),fliplr(1:3)),size(mywx,1),1);
-
-distw = sqrt(sum((mywx-xy).^2,2));
-[distdw,distIndw] = sort(distw,1,'ascend');  
+if isempty(distdw)&&isempty(distIndw)
+    spind = 1:round(Session.xyz.sampleRate/downSampleRate):size(pos,1);
+    mywx = repmat(pos(spind,:),[1,1,nbins]);
+    xy = cell(2,1);
+    [xy{:}]= meshgrid(Bins{:});
+    xy = repmat(permute(reshape(cat(3,xy{:}),nbins,2),fliplr(1:3)),size(mywx,1),1);
+    distw = sqrt(sum((mywx-xy).^2,2));
+    [distdw,distIndw] = sort(distw,1,'ascend');  
+end
 
 pfknnmdw = permute(median(distdw(1:nnn,:,:,:),1),[2,3,1]);
-
 
 s = size(mywu);
 cm = reshape(repmat([0:s(1):prod(s)-1],s(1),1),s);     

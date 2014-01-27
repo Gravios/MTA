@@ -222,7 +222,7 @@ classdef MTAAknnpfs < hgsetget %< MTAAnalysis
                 
                 %% Calculate Place Fields
                 tic
-                [Pfs.data.rateMap(:,dind(i),1), Pfs.adata.bins] =  ...
+                [Pfs.data.rateMap(:,dind(i),1), Pfs.adata.bins,dw,diw] =  ...
                 PlotKNNPF...
                 (Session,sstufr(reshape(ufrBlockInd(:,ufrShufPermIndices(1,:)),[],1),unit==selected_units),...
                 sstpos,binDims,nNearestNeighbors,distThreshold,downSampleRate,type);
@@ -233,7 +233,7 @@ classdef MTAAknnpfs < hgsetget %< MTAAnalysis
                         Pfs.data.rateMap(:,dind(i),bsi) = ...
                         PlotKNNPF...
                         (Session,sstufr(reshape(ufrBlockInd(:,ufrShufPermIndices(bsi,:)),[],1),unit==selected_units),...
-                        sstpos,binDims,nNearestNeighbors,distThreshold,downSampleRate,type);
+                        sstpos,binDims,nNearestNeighbors,distThreshold,downSampleRate,type,dw,diw);
                     end
                 end
                 toc
@@ -267,18 +267,27 @@ classdef MTAAknnpfs < hgsetget %< MTAAnalysis
         end
         
         function plot(Pfs,unit,varargin)
-            [nMode,ifColorbar,colorLimits] = DefaultArgs(varargin,{'mean',0,[]});
+            [nMode,ifColorbar,colorLimits,sigDistr] = DefaultArgs(varargin,{'',0,[],[]});
             switch Pfs.parameters.type
                 case 'xy'
                     bin1 = Pfs.adata.bins{1};
                     bin2 = Pfs.adata.bins{2};
-                    rateMap = reshape(Pfs.data.rateMap(:,Pfs.data.clu==unit,:),numel(bin1),numel(bin2),Pfs.parameters.numIter);
+                    
                     switch nMode
                         case 'mean'
-                            rateMap = mean(rateMap,3);
+                            rateMap = mean(Pfs.data.rateMap(:,Pfs.data.clu==unit,:),3);
                         case 'std'
-                            rateMap = std(rateMap,[],3);
+                            rateMap = std(Pfs.data.rateMap(:,Pfs.data.clu==unit,:),[],3);
+                        case 'sig'
+                            rateMap = 1./sum((repmat(max(Pfs.data.rateMap(:,Pfs.data.clu==unit,:)),[size(Pfs.data.rateMap,1),1,1])...
+                                                     -repmat(Pfs.data.rateMap(:,Pfs.data.clu==unit,1),[1,1,Pfs.parameters.numIter]))<0,3)';
+                        otherwise
+                            rateMap = Pfs.data.rateMap(:,Pfs.data.clu==unit,1);
                     end
+                    
+                    
+                    rateMap = reshape(rateMap,numel(bin1),numel(bin2));
+                    
                     imagescnan({bin1,bin2,rateMap},colorLimits,[],ifColorbar,[0,0,0]);
                     
                     if ~isempty(rateMap)&&~isempty(bin1)&&~isempty(bin2),
@@ -333,3 +342,4 @@ classdef MTAAknnpfs < hgsetget %< MTAAnalysis
 
     end
     
+end

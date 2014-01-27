@@ -1,8 +1,8 @@
 function occ = xyocc(Trial,pos,Nbin)
-Xmin = Trial.Maze.boundaries(1,1);
-Xmax = Trial.Maze.boundaries(1,2);
-Ymin = Trial.Maze.boundaries(2,1);
-Ymax = Trial.Maze.boundaries(2,2);
+Xmin = Trial.maze.boundaries(1,1);
+Xmax = Trial.maze.boundaries(1,2);
+Ymin = Trial.maze.boundaries(2,1);
+Ymax = Trial.maze.boundaries(2,2);
 %% scaling factor for rounding position
 dx = Xmax - Xmin; 
 dy = Ymax - Ymin; 
@@ -18,4 +18,4 @@ Y = round((pos(:,2)-Ymin)*k(2))+1;
 X(X>Nbin) = Nbin;
 Y(Y>Nbin) = Nbin;
 %% Occupancy
-occ = Accumulate([X Y],1,msize)./Trial.xyzSampleRate;
+occ = Accumulate([X Y],1,msize)./Trial.xyz.sampleRate;

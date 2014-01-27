@@ -139,6 +139,8 @@ classdef MTADepoch < MTAData
                     DataCell{i}.resample(msr);
                 end
             end
+            sync = DataCell{1}.sync.copy;
+            origin = DataCell{1}.origin;
             newLabel = ['i_' DataCell{1}.key];
             newKey = num2str(randi([0,9],1));
             newData = DataCell{1}.data;
@@ -149,7 +151,7 @@ classdef MTADepoch < MTAData
                 DataCell(1) = [];
             end            
             
-            Data = MTADepoch([],[],newData,msr,newLabel,newKey);
+            Data = MTADepoch([],[],newData,msr,sync,origin,newLabel,newKey);
         end
         function join(DataCell)
         end

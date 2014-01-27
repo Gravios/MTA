@@ -461,7 +461,7 @@ classdef MTAStateCollection < hgsetget
             end
             newStateName = ['COMP_' [keys{:}]];
             uper = JoinRanges(oper);
-            composite_state = MTADepoch([],uper,Stc.sampleRate,newStateName,[keys{:}],[],[]);
+            composite_state = MTADepoch([],uper,Stc.sampleRate,states{1}.sync.copy,states{1}.origin,newStateName,[keys{:}],[],[]);
         end
         
         function out = isempty(Stc)
