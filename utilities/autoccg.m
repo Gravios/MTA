@@ -16,7 +16,7 @@ end
 accg = zeros(1+2*halfBins,size(Session.spk.map,1));
 for i = units,
     uRes = Session.spk(i);
-    [tccg,tbin] = CCG(uRes,i,binSize,halfBins,Session.sampleRate,[],normalization,[]);
+    [tccg,tbin] = CCG(uRes,i,binSize,halfBins,Session.sampleRate,i,normalization);
     accg(:,i) = tccg;
 end
 

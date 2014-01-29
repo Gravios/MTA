@@ -1,0 +1,108 @@
+
+MTAConfiguration('/gpfs01/sirota/bach/data/gravio/','absolute');
+
+%% place field fig
+
+Trial = MTATrial('jg05-20120310');
+%Trial = MTATrial('er06-20130614','all-cof');
+if Trial.xyz.isempty,Trial.xyz.load(Trial);end
+
+
+
+
+%units = [3:30];
+units = 1:29;
+states = {'theta','rear&theta','walk&theta','hwalk&theta','lwalk&theta'};
+numsts = numel(states);
+
+xyo={};pfs={};accg={};
+for i = 1:numsts,
+    % Load Place Field
+    pfs{i}  =        MTAAknnpfs(Trial,units,states{i},0,'numIter',1000,'ufrShufBlockSize',0.5,'binDims',[20,20],'distThreshold',70);
+    [xyo{i},xyb]    = xytrajocc(Trial,Trial.xyz(Trial.stc{states{i}},Trial.trackingMarker,[1,2]),pfs{i}.parameters.binDims,pfs{i}.parameters.distThreshold,'xy');
+    [accg{i},tbin] = autoccg   (Trial,units,states{i});
+end
+
+for u = units
+for state = 1:numsts
+    pfstats(state,u) = PlaceFieldStats(Trial,pfs{state},u);    
+end
+end
+
+for u = units
+    %figure,
+    %u = 15;
+
+for state = 1:numsts
+
+    % xy occupancy
+    subplot2(6,numsts,1,state);
+    imagescnan({xyb{1},xyb{2},xyo{state}},[],0,1);
+
+    subplot2(6,numsts,2,state);
+    bar(tbin,accg{state}(:,u));axis tight
+    
+    subplot2(6,numsts,3,state);
+    pfs{state}.plot(u,[],[],[0,max([pfstats(:,u).peakFR])])
+    
+    subplot2(6,numsts,4,state);
+    pfs{state}.plot(u,'sig');
+
+    subplot2(6,numsts,5,state);
+    hist(pfstats(state,u).shuffledPatchArea,100);
+    Lines(pfstats(state,u).shuffledPatchArea(1),[],'r');
+end
+
+saveas(gcf,fullfile('/gpfs01/sirota/bach/homes/gravio/figures/knnpf',[Trial.filebase '.knnpf-' num2str(u) '.png']),'png')
+
+%set(gcf,'Position',get(2,'Position'));
+%set(gcf,'Name',['unit ' num2str(u)])
+end
+
+
+%| xyocc_a  |  xyocc_t  |  xyocc_r&t  | xyocc_w&t    | xyocc_h&t    |  xyocc_l&t    |
+%| accg_all |  accg_t   |  accg_r&t   | accg_w&t     | accg_h&t     |  accg_l&t     |
+%| pf_all   |  pf_theta |  pf_rear&th | pf_walk&th   | pf_hwalk&th  |  pf_lwalk&th  |
+%| pf_a_sig |  pf_t_sig |  pf_r&t_sig | pf_w&t_sig   | pf_h&t_sig   |  pf_l&t_sig   |
+%| phst_a   |  phst_t   |  phst_r&t   | phst_w&t     | phst_h&t     |  phst_l&t     |
+
+
+states = {'theta','rear&theta','walk&theta','hwalk&theta','lwalk&theta'};
+
+for state = 1:numsts
+Trial.spk.create(Trial,Trial.sampleRate,states{state});
+%[tccg,t] = Trains2CCG({Trial.spk.res},{Trial.spk.clu},16,60,Trial.sampleRate,'count');
+[tccg,t,pairs] = CCG(Trial.spk.res,Trial.spk.clu,16,60,Trial.sampleRate,Trial.spk.map(:,1),'count',[]);
+figure
+
+us1 = 18:25;
+us2 = 18:25;
+icount = 1;
+for i = us1
+jcount = 1;
+for j = us2
+subplot2(numel(us1),numel(us2),icount,jcount);
+bar(t,tccg(:,j,i)),axis tight,
+title([num2str(j) ' _ ' num2str(i)]);
+
+jcount = jcount + 1;
+end
+icount = icount + 1;
+end
+set(gcf,'Position',get(15,'Position'));
+set(gcf,'Name',states{state})
+end
+
+
+
+
+cat(1,pfstats(:,27).patchCOM)
+
+figure,plot(reshape[pfstats([2,3],:).peakFR],2,[])','.')
+
+
+figure,plot(log10([pfstats([3],:).peakFR]),log10([pfstats([2],:).peakFR]),'.')
+line([-1;2],[-1;2])
+
+figure,plot(log10([pfstats([4],:).peakFR]),log10([pfstats([5],:).peakFR]),'.')
+line([-1;2],[-1;2])

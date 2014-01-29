@@ -48,10 +48,12 @@ switch flag
         data = fullfile(userdir,root_dir);
 end
 
+
 if ~exist(fullfile(data,'config'),'dir')
     mkdir(fullfile(data,'config'));
 end
-MTAPath = fullfile(userdir,root_dir,'config','MTA');
+
+MTAPath = fullfile(data,'config','MTA');
 if ~exist(MTAPath,'dir'),
     mkdir(MTAPath);
 end

@@ -26,9 +26,20 @@ else
     switch filesystem{find(hlid)}
       case 'sirota_lab'
         path.home = userdir;
-        path.data = fullfile(userdir,'data');
+        path.bach_data = fullfile(userdir,'data');
+        path.bach_share_matlab = fullfile(userdir,'matlab')
+        path.bach_share_matlab = fullfile('/data/homes/share/matlab/')
         path.cin_cluster_data = fullfile('/mnt/gpfs',username,'data');
       case 'cin_cluster'
+        path.home = userdir;
+        path.bach_data        = fullfile('/gpfs01/sirota/bach/homes/',username,'data')
+        path.bach_share_matlab = fullfile('/gpfs01/sirota/bach/homes/share/matlab/')
+        path.cin_cluster_data = fullfile('/gpfs01/sirota',username,'data');
+        
+      case 'bw_cluster'
+        %path.home = userdir;
+        %path.data = fullfile(userdir,'data');
+        %path.cin_cluster_data = fullfile('/mnt/gpfs',username,'data');
 
     end
 
@@ -41,11 +52,11 @@ end
 %addpath(genpath('/gpfs01/sirota/bach/homes/gravio/root/data/homes/share/matlab/Third-Party_Toolboxes/netlab'));
 
 %% Labbox
-addpath(genpath('/gpfs01/sirota/bach/homes/share/matlab/labbox'));
-rmpath(genpath('/gpfs01/sirota/bach/homes/share/matlab/labbox/.git'));
+addpath(genpath(fullfile(path.bach_share_matlab, 'labbox')));
+ rmpath(genpath(fullfile(path.bach_share_matlab, 'labbox/.git'));
 
 %% Personal utilities
-addpath /gpfs01/sirota/bach/homes/gravio/matlab/utilities
+addpath(fullfile(path.bach_matlab,'utilities'));
 
 %% MTA
 addpath /gpfs01/sirota/gravio/data/config/MTA

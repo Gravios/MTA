@@ -67,15 +67,16 @@ classdef MTATrial < MTASession
                 ds = load(fullfile(Trial.spath, [Trial.filebase '.trl.mat']));
                 Trial.sync = ds.sync;
                 if isfield(ds,'stcmode'),
-                    if ~isempty(ds.stcmode),                        
+                    if ~isempty(ds.stcmode),
+                        Trial.stc.updateFilename([Trial.filebase,'.stc.' ds.stcmode '.mat']);
                         Trial.stc.updateMode(ds.stcmode);
                         if exist(Trial.stc.fpath,'file')
                             Trial.stc.load;
                         else
                             Trial.stc.updateMode('default');                  
+                            Trial.stc.load;
                         end                    
                     end
-                    Trial.stc.load;
                 end
                 
             else
