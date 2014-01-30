@@ -258,13 +258,24 @@ classdef MTAApfs < hgsetget %< MTAAnalysis
                 case 'xy'
                     bin1 = Pfs.adata.bins{1};
                     bin2 = Pfs.adata.bins{2};
-                    rateMap = reshape(Pfs.data.rateMap(:,Pfs.data.clu==unit,:),numel(bin1),numel(bin2),Pfs.parameters.numIter);
+
+
+                    
                     switch nMode
                         case 'mean'
-                            rateMap = mean(rateMap,3);
+                            rateMap = mean(Pfs.data.rateMap(:,Pfs.data.clu==unit,:),3);
                         case 'std'
-                            rateMap = std(rateMap,[],3);
+                            rateMap = std(Pfs.data.rateMap(:,Pfs.data.clu==unit,:),[],3);
+                        case 'sig'
+                            rateMap = 1./sum((repmat(max(Pfs.data.rateMap(:,Pfs.data.clu==unit,:)),[size(Pfs.data.rateMap,1),1,1])...
+                                                     -repmat(Pfs.data.rateMap(:,Pfs.data.clu==unit,1),[1,1,Pfs.parameters.numIter]))<0,3)';
+                        otherwise
+                            rateMap = Pfs.data.rateMap(:,Pfs.data.clu==unit,1);
                     end
+                    
+                    
+                    rateMap = reshape(rateMap,numel(bin1),numel(bin2));
+                    
                     imagescnan({bin1,bin2,rateMap'},colorLimits,[],ifColorbar,[0,0,0]);
                     
                     if ~isempty(rateMap)&&~isempty(bin1)&&~isempty(bin2),

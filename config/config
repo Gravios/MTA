@@ -1,6 +1,12 @@
 
 
+#Host list
 
-host: bach
-MTA_path:     /data/homes/gravio/MTA
-matlab_path:  /data/homes/gravio/matlab
+{'bach':
+    {'paths': 
+        {'MTA_path':     '/data/homes/gravio/MTA',
+         'matlab_path':  '/data/homes/gravio/matlab'},
+    }
+}
+
+

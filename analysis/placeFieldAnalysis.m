@@ -11,16 +11,22 @@ if Trial.xyz.isempty,Trial.xyz.load(Trial);end
 
 
 %units = [3:30];
-units = 1:29;
-states = {'theta','rear&theta','walk&theta','hwalk&theta','lwalk&theta'};
-numsts = numel(states);
+units = 1:95;
+states = {'rear&theta','walk&theta','hwalk&theta','lwalk&theta'};
+numsts = numel(states)
 
 xyo={};pfs={};accg={};
 for i = 1:numsts,
-    % Load Place Field
+    %For MTAAknnpf
     pfs{i}  =        MTAAknnpfs(Trial,units,states{i},0,'numIter',1000,'ufrShufBlockSize',0.5,'binDims',[20,20],'distThreshold',70);
-    [xyo{i},xyb]    = xytrajocc(Trial,Trial.xyz(Trial.stc{states{i}},Trial.trackingMarker,[1,2]),pfs{i}.parameters.binDims,pfs{i}.parameters.distThreshold,'xy');
-    [accg{i},tbin] = autoccg   (Trial,units,states{i});
+    %[xyo{i},xyb]    = xytrajocc(Trial,Trial.xyz(Trial.stc{states{i}},Trial.trackingMarker,[1,2]),pfs{i}.parameters.binDims,pfs{i}.parameters.distThreshold,'xy');
+    %[accg{i},tbin] = autoccg   (Trial,units,states{i});
+
+
+    %For MTAApfs
+    %pfs{i}  =        MTAApfs(Trial,units,states{i},0,'numIter',100);
+    %[xyo{i},xyb]    = xytrajocc(Trial,Trial.xyz(Trial.stc{states{i}},Trial.trackingMarker,[1,2]),[20,20],70,'xy');
+    %[accg{i},tbin] = autoccg   (Trial,units,states{i});
 end
 
 for u = units
@@ -95,14 +101,44 @@ end
 
 
 
-
-cat(1,pfstats(:,27).patchCOM)
+reshape(cat(1,pfstats(:,:).patchCOM),[5,numel(units),2])
 
 figure,plot(reshape[pfstats([2,3],:).peakFR],2,[])','.')
 
 
 figure,plot(log10([pfstats([3],:).peakFR]),log10([pfstats([2],:).peakFR]),'.')
-line([-1;2],[-1;2])
+line([0;2],[0;2])
 
 figure,plot(log10([pfstats([4],:).peakFR]),log10([pfstats([5],:).peakFR]),'.')
-line([-1;2],[-1;2])
+line([0;2],[0;2])
+
+
+
+%% peak firing rate diff vs patch distance
+u = 20;
+%sid = ~cellfun(@isempty,regexp(states,'(hwalk&theta)|(lwalk&theta)'));
+sid = ~cellfun(@isempty,regexp(states,'(^rear&theta?)|(^walk&theta?)'));
+figure
+hold on
+for u = units([Trial.nq.SpkWidthR(1:29)]>.5&[Trial.nq.eDist(units)]>30),
+plot(pdist(cat(1,pfstats(sid,u).patchCOM)),diff([pfstats(sid,u).patchPFR]),'.')
+end
+
+
+
+%% RateMap Correlations
+
+u=18;
+hsig = pfs{3}.plot(u,'sig');
+lsig = pfs{4}.plot(u,'sig');
+
+
+hmap = pfs{3}.plot(u);
+lmap = pfs{4}.plot(u);
+
+mind = hsig<.05&lsig<.05;
+
+figure,
+plot(hmap(mind),lmap(mind),'.')
+xlim([0,20]),ylim([0,20])
+line([0;20],[0;20])

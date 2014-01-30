@@ -68,7 +68,7 @@ classdef MTASpk < hgsetget
         % and then use the create function to populate the properties
         
             [Spk.res,Spk.clu,Spk.map,Spk.sampleRate,Spk.fet,Spk.spk,Spk.type] = ...
-                DefaultArgs(varargin,{[],[],[],[],'TimePoints'});            
+                DefaultArgs(varargin,{[],[],[],[],[],[],'TimePoints'});            
         end
         function Spk = create(Spk,Session,varargin)
         % Spk = create(Spk,Session,varargin)

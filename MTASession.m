@@ -62,6 +62,7 @@ classdef MTASession < hgsetget
         %Model - MTAModel: Object contianing all marker information
         model          
 
+        %sync - MTADepoch: Loading periods relative to the primary recording system
         sync
 
         %sampleRate - double: Sample Rate of electrophysiological recording system
@@ -70,25 +71,28 @@ classdef MTASession < hgsetget
         %trackingMarker - string: Marker name used for place field calculations
         trackingMarker = 'head_front';
 
-        %xyz - numericArray: (time,marker,dimension) XYZ position of each marker 
+        %xyz - MTADxyz: (Time,Marker,Dimension) XYZ position of each marker 
         xyz 
-        
+
+        %ang - MTADang: (Time,Marker,Marker,Dimension) marker to marker angles 
         ang 
 
+        %stc - MTAStateCollection: Stores the periods of events
         stc
         
+        %spk - MTASpk: Stores neurons' action potential timing and features
         spk
 
         %Fet - MTAFet: Object containing behavioral features
         fet
 
-        %lfp - numericArray: (time,channel) local field potential
+        %lfp - MTADlfp: (Time,channel) local field potential
         lfp
 
-        %ufr - numericArray: (time,cluster) unit firing rates with lfpSampleRate
+        %ufr - MTADufr: (Time,ClusterId) unit firing rates with lfpSampleRate
         ufr = [];      
 
-        %nq - struct: containing information about individual units
+        %nq - struct: clustering quality and spike waveform characteristics
         nq = {};
 
     end
@@ -192,14 +196,22 @@ classdef MTASession < hgsetget
         %  Session:     MTASession, The data object which synchronizes and
         %                           holds all experimental data.
         %
-        %  varargin:    string,     The name of a field which belongs to
+        %  field:       string,     The name of a field which belongs to
         %                           session, which will be loaded from the
         %                           data file and synchronized with the
         %                           current sync.
         %
-        
-            if numel(varargin)==1&&ischar(varargin{1}),
-                Session.(varargin{1}).load(Session);
+            [field] = DefaultArgs(varargin,{[]});
+            if ~isempty(field),
+                if isa(Session.(field),'MTAData')
+                    Session.(field).load(Session); 
+                else
+                    switch varargin{1}
+                      case 'nq'
+                        ds = load(fullfile(Session.spath, [Session.name '.NeuronQuality.mat']));
+                        Session.nq = ds.nq;
+                    end
+                end
             else
                 load(fullfile(Session.spath, [Session.filebase '.ses.mat']));    
             end
@@ -465,14 +477,6 @@ classdef MTASession < hgsetget
         %% Load NLX Related data ---------------------------------------------------------%
 
 
-        function Session = load_nq(Session)
-        %Session = load_nq(Session)
-        %load unit statistic
-            ds = load(fullfile(Session.spath, [Session.name '.NeuronQuality.mat']));
-            Session.nq = ds.nq;
-        end
-
-% UPDATE %
         function units = selectUnits(Session,query) %#ok<INUSL>
         %units = selectUnits(Session,query)
         %Return unit ids based on a query   
@@ -485,11 +489,11 @@ classdef MTASession < hgsetget
        
             unit_status = [];
             fh_list = {};
-            % If the qury is a single criteria wrap in a cell
+            % If the query is a single criteria wrap in a cell
             if ~iscell(query{1})
                 query = {query};
             end
-            % bul
+            % parse query
             while numel(query)~=0,
                 if iscell(query{1}),
                     obj = query{1}{1};                
@@ -506,15 +510,17 @@ classdef MTASession < hgsetget
                 end
 
                 switch objmeta.Name
-                  case 'MTAPlaceField'
+                  case 'MTAApfs'
                     % only really meant for the property max rate
                     % at the moment
-                    target_prop = obj.(prop);
+                    target_prop = obj.data.(prop);
                     value = cellfun(@max,target_prop,'UniformOutput',false);
                     value(cellfun(@isempty,value))={[0]};
                     value = cell2mat(value);                    
                     unit_status = cat(2,unit_status,operator(value,selection_value));
                   case 'struct'
+                    value = obj.(prop)
+                    unit_status = cat(2,unit_status,operator(value(:),selection_value));
                   case 'function_handle'
                     % stores the logical operators in a cell array
                     fh_list{end+1} = obj;

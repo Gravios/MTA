@@ -17,7 +17,7 @@ classdef MTAAknnpfs < hgsetget %< MTAAnalysis
         function Pfs = MTAAknnpfs(Obj, varargin)     
             [units,states,overwrite,tag,binDims,nNearestNeighbors,distThreshold,...
                 type,ufrShufBlockSize,numIter, downSampleRate]=...
-            DefaultArgs(varargin,{[],'walk',0,[],[30,30],80,60,'xy',0,1,20});
+            DefaultArgs(varargin,{[],'walk',0,[],[20,20],80,70,'xy',0,1,20});
             
         
             switch class(Obj)
@@ -37,7 +37,6 @@ classdef MTAAknnpfs < hgsetget %< MTAAnalysis
                     
                     pfsState = Session.stc{states,Session.xyz.sampleRate}.copy;
                     
-                    %% 
                     Pfs.parameters.states = states;
                     Pfs.parameters.type   = type;
                     Pfs.parameters.ufrShufBlockSize= ufrShufBlockSize;
@@ -52,15 +51,9 @@ classdef MTAAknnpfs < hgsetget %< MTAAnalysis
                     Pfs.adata.binSizes = round(diff(Session.maze.boundaries(1:numel(binDims),:),1,2)./binDims');
                     
                     Pfs.data =struct( 'clu',        [],...
-                        'elClu',      [],...
-                        'el',         [],...
-                        'maxRate',    [],...
-                        'maxRateInd', [],...
-                        'maxRatePos', [],...
-                        'rateMap',    [],...
-                        'meanRate',   [],...
-                        'si',         [],...
-                        'spar',       []);
+                                      'elClu',      [],...
+                                      'el',         [],...
+                                      'rateMap',    []);
                     Pfs.updateFilename(Session,tag);
                     Pfs.ext = 'pfs';
                     
@@ -81,7 +74,7 @@ classdef MTAAknnpfs < hgsetget %< MTAAnalysis
 
             numUnits = numel(units);
             selected_units = units;
-            
+
             pf_tmpfile = Pfs.fpath;
             %% load existing data
             epftmp = exist(pf_tmpfile,'file');
@@ -111,13 +104,7 @@ classdef MTAAknnpfs < hgsetget %< MTAAnalysis
                             newdata =struct( 'clu',        zeros(1,numNewUnits),...
                                 'elClu',      zeros(1,numNewUnits),...
                                 'el',         zeros(1,numNewUnits),...
-                                'maxRate',    zeros(5,numNewUnits),...
-                                'maxRateInd', zeros(5,numNewUnits,numel(binDims)),...
-                                'maxRatePos', zeros(5,numNewUnits,numel(binDims)),...
-                                'rateMap',    zeros(prod(Pfs.adata.binSizes),numNewUnits,numIter),...
-                                'meanRate',   zeros(1,numNewUnits),...
-                                'si',         zeros(1,numNewUnits),...
-                                'spar',       zeros(1,numNewUnits));
+                                'rateMap',    zeros(prod(Pfs.adata.binSizes),numNewUnits,numIter));
                             field = fieldnames(newdata);
                             for f = 1:numel(field);
                                 Pfs.data.(field{f}) = cat(2,Pfs.data.(field{f}),newdata.(field{f}));
@@ -146,13 +133,7 @@ classdef MTAAknnpfs < hgsetget %< MTAAnalysis
                     newdata =struct( 'clu',        zeros(1,numNewUnits),...
                                      'elClu',      zeros(1,numNewUnits),...
                                      'el',         zeros(1,numNewUnits),...
-                                     'maxRate',    zeros(5,numNewUnits),...
-                                     'maxRateInd', zeros(5,numNewUnits,numel(binDims)),...
-                                     'maxRatePos', zeros(5,numNewUnits,numel(binDims)),...
-                                     'rateMap',    zeros(prod(Pfs.adata.binSizes),numNewUnits,numIter),...
-                                     'meanRate',   zeros(1,numNewUnits),...
-                                     'si',         zeros(1,numNewUnits),...
-                                     'spar',       zeros(1,numNewUnits));
+                                     'rateMap',    zeros(prod(Pfs.adata.binSizes),numNewUnits,numIter));
                     field = fieldnames(newdata);
                     for f = 1:numel(field);
                         Pfs.data.(field{f}) = cat(2,Pfs.data.(field{f}),newdata.(field{f}));
@@ -172,14 +153,7 @@ classdef MTAAknnpfs < hgsetget %< MTAAnalysis
                 Pfs.data =struct('clu',        zeros(1,numUnits),...
                                  'elClu',      zeros(1,numUnits),...
                                  'el',         zeros(1,numUnits),...
-                                 'maxRate',    zeros(5,numUnits),...
-                                 'maxRateInd', zeros(5,numUnits,numel(binDims)),...
-                                 'maxRatePos', zeros(5,numUnits,numel(binDims)),...
-                                 'rateMap',    zeros(prod(Pfs.adata.binSizes),numUnits,numIter),...
-                                 'meanRate',   zeros(1,numUnits),...
-                                 'si',         zeros(1,numUnits),...
-                                 'spar',       zeros(1,numUnits));
-
+                                 'rateMap',    zeros(prod(Pfs.adata.binSizes),numUnits,numIter));
             end
             
 
@@ -226,39 +200,23 @@ classdef MTAAknnpfs < hgsetget %< MTAAnalysis
                 PlotKNNPF...
                 (Session,sstufr(reshape(ufrBlockInd(:,ufrShufPermIndices(1,:)),[],1),unit==selected_units),...
                 sstpos,binDims,nNearestNeighbors,distThreshold,downSampleRate,type);
-            toc
+                toc
+
                 tic
                 if numIter>1,
                     for bsi = 2:numIter
                         Pfs.data.rateMap(:,dind(i),bsi) = ...
                         PlotKNNPF...
                         (Session,sstufr(reshape(ufrBlockInd(:,ufrShufPermIndices(bsi,:)),[],1),unit==selected_units),...
-                        sstpos,binDims,nNearestNeighbors,distThreshold,downSampleRate,type,dw,diw);
+                         sstpos,binDims,nNearestNeighbors,distThreshold,downSampleRate,type,dw,diw);
                     end
                 end
                 toc
-                %                         Pfs.rateMap{unit} = sq(bsMap);
-                %                         PlaceField.stdMap{unit} = sq(std(bsMap,0,3));
-                %                     else
-                %                         PlaceField.rateMap{unit} = sq(bsMap);
-                %                         PlaceField.stdMap{unit} = [];
-                %                     end
-                
-                %                     try
-                %                         if isempty(PlaceField.rateMap{unit}), continue, end,
-                %                         PlaceField.rateMap{unit}(isnan(PlaceField.rateMap{unit})) = 0;
-                %                         PlaceField.maxRateInd{unit} = LocalMinima2(-PlaceField.rateMap{unit},-0.2,12);
-                %                         PlaceField.rateMap{unit}(PlaceField.rateMap{unit}(:)==0) = nan;
-                %                         if isempty(PlaceField.maxRateInd{unit}), continue, end,
-                %                         PlaceField.maxRatePos{unit} = [PlaceField.ybin(PlaceField.maxRateInd{unit}(:,2));PlaceField.xbin(PlaceField.maxRateInd{unit}(:,1))]'*[0 1; 1 0];
-                %                         PlaceField.maxRate{unit} = PlaceField.rateMap{unit}(round(size(PlaceField.rateMap{unit},1)*[PlaceField.maxRateInd{unit}(:,2)-1]+PlaceField.maxRateInd{unit}(:,1)));
-                %                         [~,PlaceField.maxRateMax{unit}] = max(PlaceField.maxRate{unit});
-                %                     end
-                
                 
                 i = i+1;
                 save(pf_tmpfile,'Pfs','-v7.3')
             end
+
             field = fieldnames(Pfs.data);
             Clu = Pfs.data.clu;
             for f = 1:numel(field);
@@ -266,7 +224,7 @@ classdef MTAAknnpfs < hgsetget %< MTAAnalysis
             end
         end
         
-        function plot(Pfs,unit,varargin)
+        function rateMap = plot(Pfs,unit,varargin)
             [nMode,ifColorbar,colorLimits,sigDistr] = DefaultArgs(varargin,{'',0,[],[]});
             switch Pfs.parameters.type
                 case 'xy'
@@ -287,17 +245,22 @@ classdef MTAAknnpfs < hgsetget %< MTAAnalysis
                     
                     
                     rateMap = reshape(rateMap,numel(bin1),numel(bin2));
-                    
-                    imagescnan({bin1,bin2,rateMap},colorLimits,[],ifColorbar,[0,0,0]);
-                    
+
+                    if nargout==0,                    
+                        imagescnan({bin1,bin2,rateMap},colorLimits,[],ifColorbar,[0,0,0]);
+
+
                     if ~isempty(rateMap)&&~isempty(bin1)&&~isempty(bin2),
                         text(bin1(1)+30,bin2(end)-50,sprintf('%2.1f',max(rateMap(:))),'Color','w','FontWeight','bold','FontSize',10)
                     end
                     axis xy
-                case 'xyz'
-                    c = eye(3);
-                    r = [1.2,3,6];
-                    var = cat(2,Pfs.adata.bins,{permute(reshape(Pfs.data.rateMap(:,Pfs.data.clu==unit,1),Pfs.adata.binSizes'),[2,1,3])},{[]});
+                    end                    
+              case 'xyz'
+                c = eye(3);
+                r = [1.2,3,6];
+                var = cat(2,Pfs.adata.bins, ...
+                          {permute(reshape(Pfs.data.rateMap(:,Pfs.data.clu==unit,1),Pfs.adata.binSizes'),[2,1,3])},{[]});
+                if nargout==0,                    
                     for i = 1:3,
                         var(end) = {max(Pfs.data.rateMap(:,Pfs.data.clu==unit,1))/r(i)};
                         fv = isosurface(var{:});
@@ -308,6 +271,9 @@ classdef MTAAknnpfs < hgsetget %< MTAAnalysis
                     ylim([min(Pfs.adata.bins{2}),max(Pfs.adata.bins{2})]);
                     zlim([min(Pfs.adata.bins{3}),max(Pfs.adata.bins{3})]);
                     view(3)
+                else
+                    rateMap = var;
+                end
             end
         end
 
