@@ -3,11 +3,9 @@ MTAConfiguration('/gpfs01/sirota/bach/data/gravio/','absolute');
 
 %% place field fig
 
-Trial = MTATrial('jg05-20120310');
+Trial = MTATrial('jg05-20120317');
 %Trial = MTATrial('er06-20130614','all-cof');
 if Trial.xyz.isempty,Trial.xyz.load(Trial);end
-
-
 
 
 %units = [3:30];
@@ -127,18 +125,59 @@ end
 
 
 %% RateMap Correlations
+Trial = MTATrial('jg05-20120317');
+units = 1:size(Trial.spk.map,1);
+states = {'rear&theta','walk&theta','hwalk&theta','lwalk&theta'};
+numsts = numel(states);
 
-u=18;
-hsig = pfs{3}.plot(u,'sig');
-lsig = pfs{4}.plot(u,'sig');
+pfs={};
+for i = 1:numsts,
+    pfs{i}  =        MTAAknnpfs(Trial,units,states{i},0,'numIter',1000,'ufrShufBlockSize',0.5,'binDims',[20,20],'distThreshold',70);
+end
 
 
-hmap = pfs{3}.plot(u);
-lmap = pfs{4}.plot(u);
+%prinunits = Trial.selectUnits({{Trial.nq,'SpkWidth
+stsCor = zeros(numel(units),numsts,numsts,2,2,2);
 
+for u = units,
+    for statei = 1:numsts,
+        for statej = 1:numsts,
+            
+            hsig = pfs{statei}.plot(u,'sig');
+            lsig = pfs{statej}.plot(u,'sig');
+            hmap = pfs{statei}.plot(u);
+            lmap = pfs{statej}.plot(u);
+            
+            mind = hsig<.05&lsig<.05;
+            if sum(mind(:))>10,
+                [stsCor(u,statei,statej,:,:,1),stsCor(u,statei,statej,:,:,2)] = corrcoef(hmap(mind)/max(hmap(:)),lmap(mind)./max(lmap(:)));
+            else
+                stsCor(u,statei,statej,:,:,1) = zeros(2,2);
+                stsCor(u,statei,statej,:,:,2) = ones(2,2);
+            end
+        end
+    end
+end
+
+cind =stsCor(:,2,3,1,2,2)<0.05&stsCor(:,2,4,1,2,2)<0.05;
+figure,plot(stsCor(cind,2,3,1,2,1),stsCor(cind,2,4,1,2,1),'.')
+xlim([-1,1]),ylim([-1,1])
+line([-1;1],[-1;1])
+
+
+cind =stsCor(:,1,2,1,2,2)<0.05&stsCor(:,1,3,1,2,2)<0.05;
+figure,plot(stsCor(cind,1,2,1,2,1),stsCor(cind,1,3,1,2,1),'.')
+
+
+u=23;
+hsig = pfs{1}.plot(u,'sig');
+lsig = pfs{2}.plot(u,'sig');
+hmap = pfs{1}.plot(u);
+lmap = pfs{2}.plot(u);
 mind = hsig<.05&lsig<.05;
-
 figure,
-plot(hmap(mind),lmap(mind),'.')
-xlim([0,20]),ylim([0,20])
-line([0;20],[0;20])
+plot(hmap(mind)/max(hmap(:)),lmap(mind)./max(lmap(:)),'.')
+xlim([0,1]),ylim([0,1.0])
+line([0;1],[0;1])
+
+
