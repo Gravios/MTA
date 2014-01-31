@@ -171,6 +171,7 @@ line([-1;1],[-1;1])
 
 cind = ':';%stsCor(:,1,2,1,2,2)<0.05&stsCor(:,1,3,1,2,2)<0.05;
 cind = Trial.selectUnits({{Trial.nq,'SpkWidthR',@gt,.5},@and,{Trial.nq,'eDist',@gt,30}});
+cind = cind(cind<=70);
 figure,plot(stsCor(cind,1,2,1,2,1),stsCor(cind,1,3,1,2,1),'.')
 xlim([-1,1]),ylim([-1,1])
 line([-1;1],[-1;1])
