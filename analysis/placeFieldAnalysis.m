@@ -10,15 +10,15 @@ if Trial.xyz.isempty,Trial.xyz.load(Trial);end
 
 %units = [3:30];
 units = 1:95;
-states = {'rear&theta','walk&theta','hwalk&theta','lwalk&theta'};
-numsts = numel(states)
+states = {'theta','rear&theta','walk&theta','hwalk&theta','lwalk&theta'};
+numsts = numel(states);
 
 xyo={};pfs={};accg={};
 for i = 1:numsts,
     %For MTAAknnpf
     pfs{i}  =        MTAAknnpfs(Trial,units,states{i},0,'numIter',1000,'ufrShufBlockSize',0.5,'binDims',[20,20],'distThreshold',70);
-    %[xyo{i},xyb]    = xytrajocc(Trial,Trial.xyz(Trial.stc{states{i}},Trial.trackingMarker,[1,2]),pfs{i}.parameters.binDims,pfs{i}.parameters.distThreshold,'xy');
-    %[accg{i},tbin] = autoccg   (Trial,units,states{i});
+    [xyo{i},xyb]    = xytrajocc(Trial,Trial.xyz(Trial.stc{states{i}},Trial.trackingMarker,[1,2]),pfs{i}.parameters.binDims,pfs{i}.parameters.distThreshold,'xy');
+    [accg{i},tbin] = autoccg   (Trial,units,states{i});
 
 
     %For MTAApfs
@@ -47,7 +47,7 @@ for state = 1:numsts
     bar(tbin,accg{state}(:,u));axis tight
     
     subplot2(6,numsts,3,state);
-    pfs{state}.plot(u,[],[],[0,max([pfstats(:,u).peakFR])])
+    pfs{state}.plot(u,[],[],[0,max([pfstats(:,u).peakFR])]);
     
     subplot2(6,numsts,4,state);
     pfs{state}.plot(u,'sig');
@@ -113,7 +113,7 @@ line([0;2],[0;2])
 
 
 %% peak firing rate diff vs patch distance
-u = 20;
+u = 29;
 %sid = ~cellfun(@isempty,regexp(states,'(hwalk&theta)|(lwalk&theta)'));
 sid = ~cellfun(@isempty,regexp(states,'(^rear&theta?)|(^walk&theta?)'));
 figure
@@ -126,8 +126,10 @@ end
 
 %% RateMap Correlations
 Trial = MTATrial('jg05-20120317');
-units = 1:size(Trial.spk.map,1);
-states = {'rear&theta','walk&theta','hwalk&theta','lwalk&theta'};
+Trial.xyz.load(Trial);
+Trial.load('nq');
+units = 1:70;
+states = {'theta','rear&theta','walk&theta','hwalk&theta','lwalk&theta'};
 numsts = numel(states);
 
 pfs={};
@@ -161,14 +163,18 @@ end
 
 
 
-cind = stsCor(:,2,3,1,2,2)<0.05&stsCor(:,2,4,1,2,2)<0.05;
-figure,plot(stsCor(cind,2,3,1,2,1),stsCor(cind,2,4,1,2,1),'.')
+cind = stsCor(:,1,3,1,2,2)<0.05&stsCor(:,2,1,1,2,2)<0.05;
+figure,plot(stsCor(cind,1,3,1,2,1),stsCor(cind,1,4,1,2,1),'.')
 xlim([-1,1]),ylim([-1,1])
 line([-1;1],[-1;1])
 
 
-cind =stsCor(:,1,2,1,2,2)<0.05&stsCor(:,1,3,1,2,2)<0.05;
+cind = ':';%stsCor(:,1,2,1,2,2)<0.05&stsCor(:,1,3,1,2,2)<0.05;
+cind = Trial.selectUnits({{Trial.nq,'SpkWidthR',@gt,.5},@and,{Trial.nq,'eDist',@gt,30}});
 figure,plot(stsCor(cind,1,2,1,2,1),stsCor(cind,1,3,1,2,1),'.')
+xlim([-1,1]),ylim([-1,1])
+line([-1;1],[-1;1])
+
 
 figure,plot(sq(max(pfs{1}.data.rateMap(:,:,1))),sq(max(pfs{2}.data.rateMap(:,:,1))),'.')
 figure,plot(log10(sq(max(pfs{3}.data.rateMap(:,:,1)))),log10(sq(max(pfs{4}.data.rateMap(:,:,1)))),'.')
@@ -178,7 +184,7 @@ figure,plot(log10(sq(max(pfs{3}.data.rateMap(:,:,1)))),log10(sq(max(pfs{4}.data.
 
 u=29;
 s1 = 1;
-s2 = 2;
+s2 = 5;
 
 for u = units,
 hsig = pfs{s1}.plot(u,'sig');
@@ -195,10 +201,10 @@ title('Rate Map Correlation')
 xlim([0,1]),ylim([0,1.0])
 line([0;1],[0;1])
 subplot(132);
-pfs{1}.plot(u);
+pfs{s1}.plot(u);
 title(pfs{s1}.parameters.states);
 subplot(133);
-pfs{2}.plot(u);
+pfs{s2}.plot(u);
 title(pfs{s2}.parameters.states);
 saveas(gcf,fullfile('C:\Users\justi_000\Dropbox\figures\rmcorr',[Trial.filebase '.rmcorr_' pfs{s1}.parameters.states(~ismember(pfs{s1}.parameters.states,'&')) 'X' pfs{s2}.parameters.states(~ismember(pfs{s2}.parameters.states,'&')) '-' num2str(u) '.png']),'png')
 end
