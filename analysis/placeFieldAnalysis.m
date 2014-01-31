@@ -150,7 +150,7 @@ for u = units,
             
             mind = hsig<.05&lsig<.05;
             if sum(mind(:))>10,
-                [stsCor(u,statei,statej,:,:,1),stsCor(u,statei,statej,:,:,2)] = corrcoef(hmap(mind)/max(hmap(:)),lmap(mind)./max(lmap(:)));
+                [stsCor(u,statei,statej,:,:,1),stsCor(u,statei,statej,:,:,2)] = corrcoef(hmap(mind),lmap(mind));
             else
                 stsCor(u,statei,statej,:,:,1) = zeros(2,2);
                 stsCor(u,statei,statej,:,:,2) = ones(2,2);
@@ -159,7 +159,9 @@ for u = units,
     end
 end
 
-cind =stsCor(:,2,3,1,2,2)<0.05&stsCor(:,2,4,1,2,2)<0.05;
+
+
+cind = stsCor(:,2,3,1,2,2)<0.05&stsCor(:,2,4,1,2,2)<0.05;
 figure,plot(stsCor(cind,2,3,1,2,1),stsCor(cind,2,4,1,2,1),'.')
 xlim([-1,1]),ylim([-1,1])
 line([-1;1],[-1;1])
@@ -168,16 +170,36 @@ line([-1;1],[-1;1])
 cind =stsCor(:,1,2,1,2,2)<0.05&stsCor(:,1,3,1,2,2)<0.05;
 figure,plot(stsCor(cind,1,2,1,2,1),stsCor(cind,1,3,1,2,1),'.')
 
+figure,plot(sq(max(pfs{1}.data.rateMap(:,:,1))),sq(max(pfs{2}.data.rateMap(:,:,1))),'.')
+figure,plot(log10(sq(max(pfs{3}.data.rateMap(:,:,1)))),log10(sq(max(pfs{4}.data.rateMap(:,:,1)))),'.')
 
-u=23;
-hsig = pfs{1}.plot(u,'sig');
-lsig = pfs{2}.plot(u,'sig');
-hmap = pfs{1}.plot(u);
-lmap = pfs{2}.plot(u);
+figure,plot(log10(sq(max(pfs{3}.data.rateMap(:,:,1)))),log10(sq(max(pfs{4}.data.rateMap(:,:,1)))),'.')
+
+
+u=29;
+s1 = 1;
+s2 = 2;
+
+for u = units,
+hsig = pfs{s1}.plot(u,'sig');
+lsig = pfs{s2}.plot(u,'sig');
+hmap = pfs{s1}.plot(u);
+lmap = pfs{s2}.plot(u);
 mind = hsig<.05&lsig<.05;
-figure,
-plot(hmap(mind)/max(hmap(:)),lmap(mind)./max(lmap(:)),'.')
+%figure,
+subplot(131);
+plot(hmap(mind)/max(hmap(:)),lmap(mind)./max(lmap(:)),'.');
+xlabel(pfs{s1}.parameters.states);
+ylabel(pfs{s2}.parameters.states);
+title('Rate Map Correlation')
 xlim([0,1]),ylim([0,1.0])
 line([0;1],[0;1])
-
+subplot(132);
+pfs{1}.plot(u);
+title(pfs{s1}.parameters.states);
+subplot(133);
+pfs{2}.plot(u);
+title(pfs{s2}.parameters.states);
+saveas(gcf,fullfile('C:\Users\justi_000\Dropbox\figures\rmcorr',[Trial.filebase '.rmcorr_' pfs{s1}.parameters.states(~ismember(pfs{s1}.parameters.states,'&')) 'X' pfs{s2}.parameters.states(~ismember(pfs{s2}.parameters.states,'&')) '-' num2str(u) '.png']),'png')
+end
 
