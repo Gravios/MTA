@@ -1,24 +1,27 @@
+% rear_phase.m
+% Examines theta phase with respect to onsets/offsets of rearing
+% Needs update for MTA version 2.0
 
-Trial = MTATrial('jg05-20120316',{'CluRes',{'lfp',72}},'all');
+Trial = MTATrial('jg05-20120317');
 
+Trial.xyz.load(Trial);
+Trial.spk.create(Trial,Trial.xyz.sampleRate);
 
+[rper,blabel] = Trial.stc.filter({'rear',{'exclusion','rear',3},{'duration',1.5}});
+% 
+% bhvl='r';
+% %rper = Trial.Bhv.getState(bhvl).state;
+% rper = Trial.stc{bhvl}.copy;
+% interrdur = [rper(2:end,1)-rper(1:end-1,2)];
+% grperind = find(interrdur>3*Trial.xyzSampleRate);
+% %bhvl offset: filtered out any with bhvl offsets preceding by 3 seconds
+% rdur = diff(rper,1,2);
+% drperind = find(rdur>1.5*Trial.xyzSampleRate);
+% gind = sum(repmat(grperind,1,length(drperind))'==repmat(drperind,1,length(grperind)))>0;
+% bhvoff = rper(grperind(gind),2);
+% %bhvl offset: filtered out any with bhvl offsets following by 3 seconds
+% bhvon =  rper([1;grperind(gind)+1],1);
 
-
-bhvl='rear';
-rper = Trial.Bhv.getState(bhvl).state;
-
-interrdur = [rper(2:end,1)-rper(1:end-1,2)];
-grperind = find(interrdur>3*Trial.xyzSampleRate);
-%bhvl offset: filtered out any with bhvl offsets preceding by 3 seconds
-
-rdur = diff(rper,1,2);
-drperind = find(rdur>1.5*Trial.xyzSampleRate);
-
-gind = sum(repmat(grperind,1,length(drperind))'==repmat(drperind,1,length(grperind)))>0;
-
-bhvoff = rper(grperind(gind),2);
-%bhvl offset: filtered out any with bhvl offsets following by 3 seconds
-bhvon =  rper([1;grperind(gind)+1],1);
 
 
 
@@ -26,19 +29,19 @@ bhvon =  rper([1;grperind(gind)+1],1);
 Bccg = MTAccg(Trial,...
               ['rear'],...
               ['ccg at ' bhvl ' onset and offset filtered: id3,d1.5'],...
-               {bhvon,bhvoff},...
+               {rper(:,bhvoff},...
                {[bhvl '_onset'],[bhvl '_offset']});
 frccg = Bccg.filter(gausswin(3));
 
 
 
 %%Need theta phase
-[ThPh,ThAm,TotP] = myThetaPhase(Trial.lfp);
+[ThPh,ThAm,TotP] = myThetaPhase(Trial.lfp.data);
 
 
 %plot phases precession during rearing
 
-theta = Trial.statePeriods('theta');
+theta = Trial.stc{'t',Trial.lpf.sampleRate}.data;
 
 
 rz = sq(Trial.xyz(:,7,3));

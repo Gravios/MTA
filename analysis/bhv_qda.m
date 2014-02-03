@@ -1,4 +1,5 @@
-
+% bhv_qda.m
+% Sart of a quadratic discriminant analysis segmentation of behaviors
 
 Trial = MTATrial('jg05-20120317');
 fwin = gausswin(11)./sum(gausswin(11));

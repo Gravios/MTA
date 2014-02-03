@@ -283,7 +283,7 @@ classdef MTAStateCollection < hgsetget
             end
         end
 
-        function [sts_res,filterName] = filter(Stc,command_list)
+        function [sts_res,filterName] = filter(Stc,sampleRate,command_list)
         %  use cell arrays for message passing,
         % The first index of the command list i
         %  order of commands will be important: make rules
@@ -298,26 +298,27 @@ classdef MTAStateCollection < hgsetget
                 switch command_list{1}{1}
                   case 'join'
                     tname = 'bhvj';
-                    assert(~isempty(Stc(command_list{1}{2}{1})),ENFT.type,ENFT.msg,command_list{1}{2}{1});
-                    bhvp{1} = Stc(command_list{1}{2}{1});
+                    assert(~isempty(Stc.subsref(substruct('{}',{command_list{1}{2}{1},sampleRate}))),ENFT.type,ENFT.msg,command_list{1}{2}{1});
+                    bhvp{1} = Stc.subsref(substruct('{}',{command_list{1}{2}{1},sampleRate},'.','copy'));
                     tname = strcat(tname,'_',command_list{1}{2}{1});
                     for s = 2:numel(command_list{1}{2}),                                          
-                        assert(~isempty(Stc(command_list{1}{2}{s})),ENFT.type,ENFT.msg,command_list{1}{2}{s});
-                        bhvp{s} = Stc(command_list{1}{2}{s}).data;                                                                        
+                        assert(~isempty(Stc.subsref(substruct('{}',{command_list{1}{2}{s},sampleRate}))),ENFT.type,ENFT.msg,command_list{1}{2}{s});
+                        bhvp{s} = Stc.subsref(substruct('{}',{command_list{1}{2}{s},sampleRate},'.','data'));                                                                        
                         tname = strcat(tname,'_',command_list{1}{2}{1});
                     end
                     sts_periods = JoinRanges(bhvp);
 
                   case 'intersect' 
                     tname = 'bhvi';         
-                    assert(~isempty(Stc(command_list{1}{2}{1}).data),ENFT.type,ENFT.msg,command_list{1}{2}{1});
-                    sts_periods = Stc(command_list{1}{2}{1}).data;
+                    assert(~isempty(Stc.subsref(substruct('{}',{command_list{1}{2}{1},sampleRate},'.','data'))),ENFT.type,ENFT.msg,command_list{1}{2}{1});
+                    sts_periods = Stc.subsref(substruct('{}',{command_list{1}{2}{1},sampleRate},'.','data'));
                     tname = strcat(tname,'_',command_list{1}{2}{1});
                     for s = 2:numel(command_list{1}{2}),                                          
-                        assert(~isempty(Stc(command_list{1}{2}{s}).data),ENFT.type,ENFT.msg,command_list{1}{2}{s});
-                        sts_periods = IntersectRanges(sts_periods,Stc(command_list{1}{2}{s}).data);
+                        assert(~isempty(Stc.subsref(substruct('{}',{command_list{1}{2}{s},sampleRate},'.','data'))),ENFT.type,ENFT.msg,command_list{1}{2}{s});
+                        sts_periods = IntersectRanges(sts_periods,Stc.subsref(substruct('{}',{command_list{1}{2}{s},sampleRate},'.','data')));
                         tname = strcat(tname,'_',command_list{1}{2}{1});
                     end
+                    %% Subsref fixed upto this point
 
                   otherwise
                     error(['Commmand: ' command_list{1}{1} ' not found.'])
@@ -325,8 +326,8 @@ classdef MTAStateCollection < hgsetget
                 end
             else 
                 tname = strcat('Stcs_',command_list{1});
-                assert(~isempty(Stc(command_list{1}).data),ENFT.type,ENFT.msg,command_list{1});
-                sts_periods = Stc(command_list{1}).data;
+                assert(~isempty(Stc.subsref(substruct('{}',{command_list{1},sampleRate},'.','data'))),ENFT.type,ENFT.msg,command_list{1});
+                sts_periods = Stc.subsref(substruct('{}',{command_list{1},sampleRate},'.','data'));
             end
 
             Sts_onset_ind  = true(size(sts_periods,1),1);
@@ -344,25 +345,26 @@ classdef MTAStateCollection < hgsetget
                   case 'exclusion',  filter_tag = 'e';                  
                   
                     if iscell(command_list{1}{2}),
-                        ExState = Stc.JoinStates(command_list{1}{2});
+                        ExState = Stc.JoinStates(command_list{1}{2});                       
                     else
-                        ExState = Stc(command_list{1}{2});
+                        ExState = Stc.subsref(substruct('{}',{command_list{1}{2}},'.','copy'));
                     end
+                    ExState.resample(sampleRate);
                     filterName = strcat(filterName,filter_tag,ExState.key,num2str(command_list{1}{3}));                    
-                    ExThresh = command_list{1}{3}*Stc.sampleRate;
+                    ExThresh = command_list{1}{3}*sampleRate;
 
                     temp_sts_onset_ind  = false(size(sts_periods,1),1);
                     temp_sts_offset_ind = false(size(sts_periods,1),1);
                     event_prox_ind = [];
                     for i = 1:length(Sts_onset_ind)
-                        event_prox = ExState.state(:,2)-sts_periods(i,1);
+                        event_prox = ExState.data(:,2)-sts_periods(i,1);
                         event_prox_ind = find(event_prox>-ExThresh & event_prox < 0,1,'first');
                         if isempty(event_prox_ind),
                             temp_sts_onset_ind(i)  = true;
                         end
                     end
                     for i = 1:length(Sts_offset_ind)
-                        event_prox = ExState.state(:,1)-sts_periods(i,2);
+                        event_prox = ExState.data(:,1)-sts_periods(i,2);
                         event_prox_ind = find(event_prox< ExThresh & event_prox > 0,1,'first');
                         if isempty(event_prox_ind),
                             temp_sts_offset_ind(i)  = true;
@@ -377,8 +379,9 @@ classdef MTAStateCollection < hgsetget
                     if iscell(command_list{1}{2}),
                         ExState = Stc.JoinStates(command_list{1}{2});
                     else
-                        ExState = Stc.getState(command_list{1}{2});
+                        ExState = Stc(substruct('{}',{command_list{1}{2}},'.','copy'));
                     end
+                    ExState.resample(sampleRate);
                     filterName = strcat(filterName,filter_tag,ExState.key,num2str(command_list{1}{3}));
                     ExThresh = command_list{1}{3}*Stc.sampleRate;
 
@@ -386,7 +389,7 @@ classdef MTAStateCollection < hgsetget
                     temp_sts_offset_ind = false(size(sts_periods,1),1);                    
                     event_prox_ind = [];
                     for i = 1:length(Sts_onset_ind)
-                        event_prox = ExState.state(:,2)-sts_periods(i,1);
+                        event_prox = ExState.data(:,2)-sts_periods(i,1);
                         event_prox_ind = find(event_prox>-ExThresh & event_prox < 0,1,'first');
                         if ~isempty(event_prox_ind),
                             temp_sts_onset_ind(i)  = true;
@@ -406,7 +409,7 @@ classdef MTAStateCollection < hgsetget
                   case 'duration', filter_tag = 'd';
 
                     filterName = strcat(filterName,filter_tag,num2str(command_list{1}{2}));
-                    bdur = diff(sts_periods,1,2)/Stc.sampleRate;
+                    bdur = diff(sts_periods,1,2)/sampleRate;
 
                     temp_sts_onset_ind  = false(size(sts_periods,1),1);
                     temp_sts_offset_ind = false(size(sts_periods,1),1);
@@ -419,7 +422,7 @@ classdef MTAStateCollection < hgsetget
                   case 'trim',  filter_tag = 't';
               
                     filterName = strcat(filterName,filter_tag,num2str(command_list{1}{2}));
-                    tshift = round(command_list{1}{2}*Stc.sampleRate);
+                    tshift = round(command_list{1}{2}*sampleRate);
                     
                   case 'complete', filter_tag = 'c';
 
@@ -448,20 +451,23 @@ classdef MTAStateCollection < hgsetget
         % JoinStates(Bhv,varargin)
         % varargin can be a list of state labels
         % or a single cell array of state labels
+        % The final sample rate is set by the first listed state.
             if numel(varargin)==1,
                 states = varargin{1};
             else
                 states = varargin;
             end
-
+            
+            sampleRate = Stc.subsref(substruct('{}',states(1),'.','sampleRate'));
             oper = cell(numel(states),1);
+            keys = '';
             for i=1:numel(states)
-                oper{i} = cat(1,sper,Stc(states{i}).data);
-                keys{end+1} = Stc(states{i}).key;
+                oper{i} = cat(1,sper,Stc.subsref(substruct('{}',{states{i},sampleRate},'.','data')));
+                keys(end+1) = Stc.subsref(substruct('{}',states(i),'.','key'));
             end
-            newStateName = ['COMP_' [keys{:}]];
+            newStateName = ['COMP_' keys];
             uper = JoinRanges(oper);
-            composite_state = MTADepoch([],uper,Stc.sampleRate,states{1}.sync.copy,states{1}.origin,newStateName,[keys{:}],[],[]);
+            composite_state = MTADepoch([],uper,Stc.sampleRate,states{1}.sync.copy,states{1}.origin,newStateName,keys,[],[]);
         end
         
         function out = isempty(Stc)

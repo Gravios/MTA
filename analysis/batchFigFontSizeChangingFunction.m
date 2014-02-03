@@ -1,4 +1,7 @@
 function batchFigFontSizeChangingFunction(varargin)
+% batchFigFontSizeChangingFunction(fig_path,fonSize)
+% Change font sizes of all figures in path and re-export as eps
+
 [fig_path,fontSize] = DefaultArgs(varargin,{'/data/homes/gravio/figures/asFIG-20130512/',20});
 
 files = dir(fig_path);

@@ -1,4 +1,5 @@
-%% UFR vs ACC
+% ufr_vs_acc.m
+% unit firing rate vs head and body accelerations.
 
 win = 241;
 comb = Filter0(gausswin(win)./sum(gausswin(win)),Trial.com(Trial.Model.rb({'spine_lower','pelvis_root','spine_middle','spine_upper'})));

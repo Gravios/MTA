@@ -1,3 +1,7 @@
+% strajcat.m
+% Some method of examining the embeded covariance matricies of many
+% features to discriminate between behaviors.
+
 Trial = MTATrial('jg05-20120317');
 Trial.xyz.load(Trial);
 Trial.ang.load(Trial);

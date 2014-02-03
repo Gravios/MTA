@@ -1,5 +1,6 @@
 function bhv_spect(Trial,varargin)
 % function bhv_spect(Trial,varargin)
+% calculates the spectral segments around onsets/offsets of behaviors
 % [behaviors,nffts,winlen,channels,frange] = DefaultArgs(varargin,{{'walk','rear'},2^11,2^10,65:96,[1,30]})
 [behaviors,nffts,winlen,seglen,channels,frange] = DefaultArgs(varargin,{{'walk','rear'},2^11,2^10,8,65:96,[1,30]});
 

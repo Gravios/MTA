@@ -1,4 +1,7 @@
 function compare_bhv_pfs(Session)
+% function compare_bhv_pfs(Session)
+% Comparison of MTAApfs.m placefields with respect to different behavioral
+% labeling.
 
 Session = MTASession('jg05-20120315');
 

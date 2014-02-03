@@ -1,3 +1,7 @@
+% bayesDecode.m
+% Decode subject position based on unit firing rates and placefields
+% using bayesean decodeing
+
 load ~/data/analysis/jg05-20120317/jg05-20120317.cof.all.bayes2.mat
 
 s = MTASession('jg05-20120317');

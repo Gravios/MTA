@@ -1,3 +1,7 @@
+%rear_ufr.m
+%Precursor to CorrectedUFRCCG.m
+
+
 s = MTASession('jg05-20120317');
 
 Trial = MTATrial(s,{{'CluRes',s.xyzSampleRate}},'all');

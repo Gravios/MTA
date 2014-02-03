@@ -1,3 +1,7 @@
+% rf_ccg_grps.m
+% No fucking clue
+% maybe something to do with catching patch sizes?
+
 load ~/data/analysis/jg05-20120317/jg05-20120317.cof.all.ccg.rear_pfc_walk.mat
 
 frccg = Bccg.filter(gausswin(3));

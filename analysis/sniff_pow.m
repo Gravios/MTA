@@ -1,3 +1,7 @@
+% sniff_pow.m
+% Calc and Plot of the spectral content of the rate of distance between the
+% upper spine and the back of the head.
+
 Trial = MTATrial('jg05-20120310',{'ang'},'all');
 %Trial = MTATrial('jg05-20120310',{'ang',{'lfp',[71,81,91]}},'all');
 

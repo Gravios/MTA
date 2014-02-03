@@ -1,3 +1,7 @@
+% asFIG-20130507.m
+% investigate xy distance variance for 0.5 sec trajectories
+% for walking and rearing
+
 
 slist= {'jg04-20120130','jg04-20120128','jg05-20120309','jg05-20120310','jg05-20120311','jg05-20120315','jg05-20120316','jg05-20120317'}; 
 wmVMVper = {[]};

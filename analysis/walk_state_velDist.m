@@ -1,3 +1,6 @@
+% walk_state_velDist.m
+% IMPORTANT - contains the hmm separation of hwalk and lwalk. Need to make 
+% a dedicated separation heuristic for the heuristics folder
 
 
 s = MTASession('jg05-20120317',[],1);

@@ -1,3 +1,5 @@
+% bhv_seg.m
+% Some sort of seg9mentation script
 
 t = MTATrial('jg05-20120317');
 

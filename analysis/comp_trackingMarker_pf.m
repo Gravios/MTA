@@ -1,4 +1,7 @@
 function comp_trackingMarker_pf(Session)
+% function comp_trackingMarker_pf(Session)
+% Comparison of MTAApfs.m placefield while iterating through
+% trackingMarkers
 
 ml = Session.Model.ml;
 

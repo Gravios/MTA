@@ -1,4 +1,5 @@
-
+% rfhta.m
+% saves an average of the rearing features?
 
 slist = {'jg05-20120309','jg04-20120128','jg04-20120130','jg05-20120315'};
 %slist = {'er01-20110721','jg04-20120210','jg04-20120211','jg04-20120212','jg04-20120213'};

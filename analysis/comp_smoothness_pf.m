@@ -1,4 +1,6 @@
 function comp_smoothness_pf(Session)
+% function comp_smoothness_pf(Session)
+% Comparision of MTAApfs.m placefields while incrementing the smoothing weight 
 
 Session = MTASession('jg05-20120310');
 Session = MTATrial(Session,'all');

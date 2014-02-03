@@ -1,3 +1,7 @@
+% rscpt.m
+% Spectral analysis of rearing and walking onsets and offsets selecting for
+% specific window sizes and spectral bands
+
 
 s = MTASession('jg05-20120315');
 
@@ -13,6 +17,7 @@ rear = zeros(size(rearings)); rear(rearings<44) = 0; rear(rearings>=44) = 1;
 rper = ThreshCross(rear,0.5,60);
 rper = rper(5:end-5,:);
 
+% Load and whiten lfp signal
 lfp = LoadBinary([s.path.nlx s.name '/' s.name '.lfp'],[65:96],96,[],[],[],[s.syncPeriods(1,1), s.syncPeriods(end,2)])';
 wlfp = WhitenSignal(lfp);
 
