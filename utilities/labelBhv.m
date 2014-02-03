@@ -11,10 +11,6 @@ if Trial.ang.isempty, Trial.ang.load(Trial); end
 Trial.filter('xyz');
 xyzlen = size(Trial.xyz,1);
 
-if isempty(Trial.ang),
-    Trial = Trial.load_ang(0);
-end
-
 winlen = 64;
 nOverlap = 8;
 trajSampleRate = (Trial.xyz.sampleRate/winlen)*nOverlap;

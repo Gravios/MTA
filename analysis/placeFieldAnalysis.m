@@ -4,12 +4,14 @@ MTAConfiguration('/gpfs01/sirota/bach/data/gravio/','absolute');
 %% place field fig
 
 Trial = MTATrial('jg05-20120317');
+Trial = MTATrial('jg05-20120309');
+Trial = MTATrial('jg05-20120310');
 %Trial = MTATrial('er06-20130614','all-cof');
-if Trial.xyz.isempty,Trial.xyz.load(Trial);end
+Trial.xyz.load(Trial);
 
 
 %units = [3:30];
-units = 1:95;
+units = 1:29;
 states = {'theta','rear&theta','walk&theta','hwalk&theta','lwalk&theta'};
 numsts = numel(states);
 
@@ -140,7 +142,8 @@ end
 
 %prinunits = Trial.selectUnits({{Trial.nq,'SpkWidth
 stsCor = zeros(numel(units),numsts,numsts,2,2,2);
-
+numIter=1000;
+permstats = zeros(numel(units),numsts,numsts,numIter);
 for u = units,
     for statei = 1:numsts,
         for statej = 1:numsts,
@@ -152,26 +155,47 @@ for u = units,
             
             mind = hsig<.05&lsig<.05;
             if sum(mind(:))>10,
-                [stsCor(u,statei,statej,:,:,1),stsCor(u,statei,statej,:,:,2)] = corrcoef(hmap(mind),lmap(mind));
+                [stsCor(u==units,statei,statej,:,:,1),stsCor(u==units,statei,statej,:,:,2)] = corrcoef(hmap(mind),lmap(mind));
+           
+                
             else
-                stsCor(u,statei,statej,:,:,1) = zeros(2,2);
-                stsCor(u,statei,statej,:,:,2) = ones(2,2);
+                stsCor(u==units,statei,statej,:,:,1) = zeros(2,2);
+                stsCor(u==units,statei,statej,:,:,2) = ones(2,2);
+
             end
+
+
         end
     end
 end
 
 
+%% hwalk vs lwalk (walk)
+sind = find(stsCor(:,3,4,1,2,2)<0.05|stsCor(:,3,5,1,2,2)<0.05);
+cind = Trial.selectUnits({{Trial.nq,'SpkWidthR',@gt,.5},@and,{Trial.nq,'eDist',@gt,30}});
+cind = cind(ismember(cind,sind));
 
-cind = stsCor(:,1,3,1,2,2)<0.05&stsCor(:,2,1,1,2,2)<0.05;
-figure,plot(stsCor(cind,1,3,1,2,1),stsCor(cind,1,4,1,2,1),'.')
+figure,plot(stsCor(cind,3,4,1,2,1),stsCor(cind,3,5,1,2,1),'d')
 xlim([-1,1]),ylim([-1,1])
 line([-1;1],[-1;1])
+Lines([],0,'k')
+Lines(0,[],'k')
+
+
+%% Rear vs walk (theta)
+sind = find(stsCor(:,1,2,1,2,2)<0.05|stsCor(:,1,3,1,2,2)<0.05);
+cind = Trial.selectUnits({{Trial.nq,'SpkWidthR',@gt,.5},@and,{Trial.nq,'eDist',@gt,30}});
+cind = cind(ismember(cind,sind));
+
+figure,plot(stsCor(cind,1,2,1,2,1),stsCor(cind,1,3,1,2,1),'d')
+xlim([-1,1]),ylim([-1,1])
+line([-1;1],[-1;1])
+Lines([],0,'k')
+Lines(0,[],'k')
 
 
 cind = ':';%stsCor(:,1,2,1,2,2)<0.05&stsCor(:,1,3,1,2,2)<0.05;
 cind = Trial.selectUnits({{Trial.nq,'SpkWidthR',@gt,.5},@and,{Trial.nq,'eDist',@gt,30}});
-cind = cind(cind<=70);
 figure,plot(stsCor(cind,1,2,1,2,1),stsCor(cind,1,3,1,2,1),'.')
 xlim([-1,1]),ylim([-1,1])
 line([-1;1],[-1;1])
