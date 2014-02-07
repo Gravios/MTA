@@ -29,7 +29,7 @@ if nargin<6 Verbose=1; end
 Fet = Fet(:,Fets2Use);
 
 
-
+keyboard
 for CluNo = 2:max(Clu)
     if sum(Clu==CluNo)>1
         [eDist(CluNo-1), bRat(CluNo-1)] = ...

@@ -61,7 +61,9 @@ ylim([-1,6])
 
 
 %% This is the good stuff
-
+Trial.filter('xyz',gausswin(11)./sum(gausswin(11)));
+v = MTADxyz([],[],Filter0(gausswin(21)./sum(gausswin(21)),[zeros(1,Trial.xyz.size(2));Trial.vel]),Trial.xyz.sampleRate);
+if Trial.ang.isempty,Trial.ang.load(Trial);end
 lv = v.copy;
 lv.data = log10(abs(lv(:,3)));
 bper = Trial.stc{'w',Trial.xyz.sampleRate}.copy;

@@ -73,7 +73,7 @@ classdef MTAAknnpfs < hgsetget %< MTAAnalysis
                         
 
             numUnits = numel(units);
-            selected_units = units;
+            selected_units = units(:)';
 
             pf_tmpfile = Pfs.fpath;
             %% load existing data
@@ -91,7 +91,7 @@ classdef MTAAknnpfs < hgsetget %< MTAAnalysis
                     if sum(unprocessed_units)==0
                         selected_units_ind = ismember(Pfs.data.clu,units);
                         field = fieldnames(Pfs.data);
-                        for f = 1:numel(field);
+                        for f = 1:numel(field)
                             Pfs.data.(field{f}) = Pfs.data.(field{f})(:,selected_units_ind,:,:,:);
                         end
                         return
@@ -110,7 +110,8 @@ classdef MTAAknnpfs < hgsetget %< MTAAnalysis
                                 Pfs.data.(field{f}) = cat(2,Pfs.data.(field{f}),newdata.(field{f}));
                             end
                         end
-                        selected_units = units(~ismember(units,Pfs.data.clu));
+                        selected_units = reshape(units(~ismember(units,Pfs.data.clu)),1,[]);
+                        
                         dind = [tnumUnits-numNewUnits+1:tnumUnits];
                     end
                 end
@@ -188,8 +189,7 @@ classdef MTAAknnpfs < hgsetget %< MTAAnalysis
             
             
             i = 1;
-            for unit=selected_units,
-
+            for unit=selected_units(:)',
                 Pfs.data.clu(dind(i)) = Session.spk.map(unit,1);
                 Pfs.data.el(dind(i)) = Session.spk.map(unit,2);
                 Pfs.data.elClu(dind(i)) = Session.spk.map(unit,3);
@@ -219,6 +219,7 @@ classdef MTAAknnpfs < hgsetget %< MTAAnalysis
 
             field = fieldnames(Pfs.data);
             Clu = Pfs.data.clu;
+
             for f = 1:numel(field);
                 Pfs.data.(field{f}) = Pfs.data.(field{f})(:,ismember(Clu,units),:,:,:);
             end

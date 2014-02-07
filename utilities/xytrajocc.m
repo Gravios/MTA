@@ -1,6 +1,6 @@
 function [xyto,Bins] = xytrajocc(Session,pos,varargin)
 
-[binDims,dthresh,type] = DefaultArgs(varargin,{[50,50],60,'xy'});
+[binDims,dthresh,type] = DefaultArgs(varargin,{[20,20],80,'xy'});
 
 ndims = numel(binDims);
 bound_lims = Session.maze.boundaries(1:ndims,:);

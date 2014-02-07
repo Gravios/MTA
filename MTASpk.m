@@ -101,6 +101,7 @@ classdef MTASpk < hgsetget
             if Spk.sampleRate~=1
                 Res = ceil(Res);
             end
+            Session.sync.resample(1);
             [Res, ind] = SelectPeriods(Res,ceil(Session.sync([1,end])*Spk.sampleRate),'d',1,1);
             Clu = Clu(ind);
             

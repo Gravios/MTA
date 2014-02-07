@@ -11,7 +11,7 @@ Trial.xyz.load(Trial);
 
 
 %units = [3:30];
-units = 1:29;
+units = find(Trial.SpkWidthR>0.7&Trial.eDist>30);
 states = {'theta','rear&theta','walk&theta','hwalk&theta','lwalk&theta'};
 numsts = numel(states);
 

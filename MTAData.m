@@ -335,10 +335,18 @@ classdef MTAData < hgsetget
                         tmpdata(tmpdata==0) = 1;
                         if isa(Data.sync,'MTAData'),
                             Data.sync.resample(Data.sampleRate);
-                            data = false(round(Data.sync.data(end)./Data.sampleRate.*sampleRate),1);
-                        else
-                            data = false(round(Data.sync(end)./Data.sampleRate.*sampleRate),1);
-                        end                                
+                        end
+                        data = false(round(Data.subsref(substruct('.','sync','()',...
+                                    {numel(Data.subsref(substruct('.','sync','()',{':'})))}))...
+                                    ./Data.sampleRate.*sampleRate),1);
+
+                        
+% $$$                         if isa(Data.sync,'MTAData'),
+% $$$                             Data.sync.resample(Data.sampleRate);
+% $$$                             data = false(round(Data.sync.data(end)./Data.sampleRate.*sampleRate),1);
+% $$$                         else
+% $$$                             data = false(round(Data.sync(end)./Data.sampleRate.*sampleRate),1);
+% $$$                         end                                
                         for j = 1:size(tmpdata,1),
                             data(tmpdata(j,1):tmpdata(j,2)) = true;
                         end         
@@ -351,7 +359,7 @@ classdef MTAData < hgsetget
                                     data = data(Data.sync.sync.data(1)+1:Data.sync.sync.data(end));
                                 end
                             case 'absolute' % Reserved for future versions
-                                
+                                %data = [0;data];
                         end
                         
                         Data.data = data;

@@ -35,7 +35,7 @@ classdef MTASession < hgsetget
 %         Session = MTASession('jg05-20120309','rof');
 %
 %       Create New Session
-%         Session = MTASession('jg05-20120309','rof',1,'0x0040',119.880135,'vicon','nlx');
+%         Session = MTASession('jg05-20120309','rof',1,'0x0040',119.881035,'vicon','nlx');
 %   
 %---------------------------------------------------------------------------------------------------------
 
@@ -300,12 +300,19 @@ classdef MTASession < hgsetget
             % The desired synchronization periods
             syncEpoch = Data.sync.sync.copy;
             syncEpoch.cast('TimeSeries',Data.sampleRate,'absolute');
-            syncEpoch.data = syncEpoch.data(1:dataEpoch.size(1));
+            try
+                syncEpoch.data = syncEpoch.data(1:dataEpoch.size(1));
+            catch err
+                warning('Resync may be shifted 1 index');
+                syncEpoch.data = [0;syncEpoch.data];
+            end
+
             newOrigin = find(syncEpoch.data==1,1,'first');
-            
+
+
             %Diagnostic
             %diagnostic,
-% $$$                  figure,
+% $$$                   figure,
 % $$$                  plot(dataEpoch.data)
 % $$$                  ylim([-3,3])
 % $$$                  hold on
@@ -314,7 +321,7 @@ classdef MTASession < hgsetget
 % $$$                  plot(dataEpoch.data-syncEpoch.data,'c')
 % $$$                  plot(loadedData-syncEpoch.data+dataEpoch.data,'m')
              
-            
+
             %%Trim ends
             endSync = Data.sync.sync(end);
             endShiftIndex = endSync - loadedDataEnd+1;
