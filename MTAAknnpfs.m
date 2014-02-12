@@ -82,6 +82,7 @@ classdef MTAAknnpfs < hgsetget %< MTAAnalysis
             if epftmp&&overwrite~=1,
                 if isempty(Pfs.data.clu),
                     load(pf_tmpfile);
+                    Pfs.rmClu(0);
                 end
                 % Load specific units
                 if isempty(units)
@@ -125,6 +126,7 @@ classdef MTAAknnpfs < hgsetget %< MTAAnalysis
                 end
                 if isempty(Pfs.data.clu),
                     load(pf_tmpfile);
+                    Pfs.rmClu(0);
                 end
                 oldUnitInds = find(ismember(Pfs.data.clu,units));
                 numOldUnits = numel(oldUnitInds);
@@ -140,7 +142,8 @@ classdef MTAAknnpfs < hgsetget %< MTAAnalysis
                         Pfs.data.(field{f}) = cat(2,Pfs.data.(field{f}),newdata.(field{f}));
                     end
                 end
-                selected_units = [units(ismember(units,Pfs.data.clu)),units(~ismember(units,Pfs.data.clu))];
+                selected_units = [units(ismember(units,Pfs.data.clu));units(~ismember(units,Pfs.data.clu))];
+                selected_units = selected_units(:)';
                 dind = [oldUnitInds(:)',[tnumUnits-numNewUnits+1:tnumUnits]];                
             elseif ~epftmp
             %% Instantiate Pfs Data Variables if DeNovoCalc
@@ -305,6 +308,17 @@ classdef MTAAknnpfs < hgsetget %< MTAAnalysis
 
         function path = fpath(Pfs)
             path = fullfile(Pfs.path,Pfs.filename);
+        end
+
+        function Pfs = rmClu(Pfs,clu)
+            cind = Pfs.data.clu==clu;
+            switch class(Pfs.data)
+              case 'struct'
+                fnames = fieldnames(Pfs.data);
+                for f = 1:numel(fnames),
+                    Pfs.data.(fnames{f})(:,cind,:) = [];
+                end
+            end
         end
 
     end

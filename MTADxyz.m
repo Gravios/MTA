@@ -1,5 +1,5 @@
 classdef MTADxyz < MTAData
-%MTADxyz(path,filename,data,sampleRate,syncPeriods,syncOrigin,type,ext)
+%MTADxyz(path,filename,data,sampleRate,syncPeriods,syncOrigin,model,type,ext)
 %
 %  MTADxyz is a subclass of MTAData, which stores position data from a vicon
 %  recording system.
