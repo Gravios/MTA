@@ -93,7 +93,7 @@ classdef MTASpk < hgsetget
         % states
         %
             %% Load and resample Res             
-            [sampleRate,states,units,loadField] = DefaultArgs(varargin,{1,[],[],{}});
+            [sampleRate,states,units,mode,loadField] = DefaultArgs(varargin,{1,[],[],'',{}});
             Spk.sampleRate = sampleRate;
             [Res, Clu, Map] = LoadCluRes(fullfile(Session.spath, Session.name));
             Spk.map = Map;
@@ -104,6 +104,10 @@ classdef MTASpk < hgsetget
             Session.sync.resample(1);
             [Res, ind] = SelectPeriods(Res,ceil(Session.sync([1,end])*Spk.sampleRate),'d',1,1);
             Clu = Clu(ind);
+
+            switch mode
+                case 'NoBurst'                   
+            end
             
             %% Select specific units
             if isempty(units),

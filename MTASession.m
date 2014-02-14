@@ -446,7 +446,7 @@ classdef MTASession < hgsetget
         %[marker,dim] = DefaultArgs(varargin,{[1:Session.model.N],[1:size(Session.xyz,3)]});
         if Session.xyz.isempty, Session.xyz.load(Session); end    
         [marker,dim] = DefaultArgs(varargin,{1:Session.model.N, 1:Session.xyz.size(3)});
-            v = sqrt(sum(diff(Session.xyz(:,marker,dim),1).^2,3));
+            v = sqrt(sum(diff(Session.xyz(:,marker,dim),1).^2,3)).*Session.xyz.sampleRate./10;
         end            
 
         function a = acc(Session,varargin)

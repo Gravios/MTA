@@ -1,5 +1,4 @@
 classdef MTAAknnpfs < hgsetget %< MTAAnalysis
-
     properties 
         path
         filename = '';
@@ -15,6 +14,9 @@ classdef MTAAknnpfs < hgsetget %< MTAAnalysis
     methods
 
         function Pfs = MTAAknnpfs(Obj, varargin)     
+        %            [units,states,overwrite,tag,binDims,nNearestNeighbors,distThreshold,...
+        %             type,ufrShufBlockSize,numIter, downSampleRate]=...
+
             [units,states,overwrite,tag,binDims,nNearestNeighbors,distThreshold,...
                 type,ufrShufBlockSize,numIter, downSampleRate]=...
             DefaultArgs(varargin,{[],'walk',0,[],[20,20],80,70,'xy',0,1,20});
@@ -229,6 +231,8 @@ classdef MTAAknnpfs < hgsetget %< MTAAnalysis
         end
         
         function rateMap = plot(Pfs,unit,varargin)
+        % rateMap = plot(Pfs,unit,varargin)
+        % [nMode,ifColorbar,colorLimits,sigDistr] = DefaultArgs(varargin,{'',0,[],[]});
             [nMode,ifColorbar,colorLimits,sigDistr] = DefaultArgs(varargin,{'',0,[],[]});
             switch Pfs.parameters.type
                 case 'xy'
@@ -321,6 +325,39 @@ classdef MTAAknnpfs < hgsetget %< MTAAnalysis
             end
         end
 
+
+        function rho = spatialCoherence(Pfs,units)
+        % rho = spatialCoherence(Pfs,units);
+        % The correlation between a list of firing rates in each
+        % pixel and a corresponding list of firing rates averaged
+        % over the 8 nearestneighbors of each pixel. 
+        % muller_kubie_1989
+            if isempty(units),
+                units = Pfs.data.clu;
+            end
+            rho = nan(numel(units),1);
+            for u = units,
+                rm = Pfs.plot(u);
+                cmat = [1,1,1;1,0,1;1,1,1];
+                c = conv2(rm,cmat,'valid')./8;
+                rmss = rm(2:end-1,2:end-1);
+                ind = ~isnan(c)&~isnan(rmss);
+                rho(u==units) = corr(c(ind),rmss(ind));
+            end
+        end
+        
+        function [mxr,mxp] = maxRate(Pfs,units)
+            if isempty(units),
+                units = Pfs.data.clu;
+            end
+            mxr = nan(numel(units),1);
+            mxp = nan(numel(units),1);
+            for u = units,
+                [mxr(u==units),mxp(u==units)] = max(Pfs.data.rateMap(:,Pfs.data.clu==u,1));
+            end
+            mxp = Ind2Sub(Pfs.adata.binSizes',mxp);
+            mxp = [Pfs.adata.bins{1}(mxp(:,1)),Pfs.adata.bins{2}(mxp(:,2))];
+        end
     end
     
 end

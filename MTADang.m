@@ -53,10 +53,10 @@ classdef MTADang < MTAData
         %each other.
             [xyz] = DefaultArgs(varargin,{Session.xyz.copy});
             if xyz.isempty, xyz.load(Session); end
-            ang = zeros(xyz.size(1),xyz.model.N,xyz.model.N,5);
+            ang = zeros(xyz.size(1),xyz.size(2),xyz.size(2),5);
             diffMat = Session.markerDiffMatrix(); %xyz); change this back later
-            for i=1:xyz.model.N,
-                for j=1:xyz.model.N,
+            for i=1:xyz.size(2),
+                for j=1:xyz.size(2),
                     if i==j,
                         continue
                     end

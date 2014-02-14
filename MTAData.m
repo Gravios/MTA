@@ -135,6 +135,7 @@ classdef MTAData < hgsetget
                 case 'MTATrial'
                     Data.data = ds.data;
                     Data.sync.sync = Session.sync.copy;
+                    Data.origin = Data.sync.data(1);
                     Session.resync(Data);                    
                 case 'double'
                     if ~isempty(Session),
