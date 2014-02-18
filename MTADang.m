@@ -53,18 +53,16 @@ classdef MTADang < MTAData
         %each other.
             [xyz] = DefaultArgs(varargin,{Session.xyz.copy});
             if xyz.isempty, xyz.load(Session); end
-            ang = zeros(xyz.size(1),xyz.size(2),xyz.size(2),5);
-            diffMat = Session.markerDiffMatrix(); %xyz); change this back later
+
+            diffMat = Session.markerDiffMatrix(xyz);
+            ang = zeros(xyz.size(1),xyz.size(2),xyz.size(2),3);
+
             for i=1:xyz.size(2),
                 for j=1:xyz.size(2),
-                    if i==j,
-                        continue
-                    end
-                    [rz,~,direction] = rotZAxis(squeeze(diffMat(:,i,j,:)));
-                    [ry,~,pitch ] = rotYAxis(rz);
-                    ang(:,i,j,1) = direction;
-                    ang(:,i,j,2) = pitch;
-                    ang(:,i,j,3:5) = ry;
+                    if i==j,continue,end
+                    tang =cell(1,3);
+                    [tang{:}] = cart2sph(diffMat(:,i,j,1),diffMat(:,i,j,2),diffMat(:,i,j,3));
+                    ang(:,i,j,:) = cell2mat(tang);
                 end
             end
             ang(ang(:,1,2,2)~=0,1,1,1)=1;

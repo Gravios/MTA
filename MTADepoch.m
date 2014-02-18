@@ -100,33 +100,7 @@ classdef MTADepoch < MTAData
             Data.key = key;
         end
 
-        function Data = resample(Data,newSampleRate)
-            % Needs some more corrections for resampling
-            if newSampleRate == 1
-                rf = @(x)x;
-            elseif isa(newSampleRate,'MTAData')
-                newSampleRate = newSampleRate.sampleRate;
-                rf = @round;
-            else
-                rf = @round;
-            end
-            
-            Data.data = rf(Data.data/Data.sampleRate*newSampleRate);
-            while sum(Data.data(:)==0)>1
-                Data.data(1,:) = [];
-            end
-            if isa(Data.sync,'MTAData'),
-                Data.sync.resample(newSampleRate);
-                Data.origin = rf(Data.origin/Data.sampleRate*newSampleRate); 
-            else
-                Data.sync = rf(Data.sync/Data.sampleRate*newSampleRate);
-                Data.sync(Data.sync==0) = 1;
-            end            
-            Data.origin(Data.origin==0) = 1;
-            Data.data(Data.data==0)=1;
-            Data.sampleRate = newSampleRate;
-        end
-        
+     
     end
     
     methods (Static)

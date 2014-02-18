@@ -177,6 +177,7 @@ MTAConfiguration('/gpfs01/sirota/bach/data/gravio','absolute');
 sname = 'jg05-20120317';
 sname = 'jg05-20120310';
 sname = 'jg05-20120309';
+
 Trial = MTATrial(sname,'all');
 Trial.xyz.load(Trial);
 
@@ -191,15 +192,16 @@ tbp_phase = phase(tbp_hilbert);
 tbp_phase = MTADlfp([],[],tbp_phase,Trial.lfp.sampleRate,Trial.lfp.sync.copy,Trial.lfp.origin);
 
 
-state = 'hwalk';
+state = 'walk&theta';
 
 tbp_phase.resample(Trial.xyz);
+
 Trial.spk.create(Trial,Trial.xyz.sampleRate,state);
 
 %pfs = MTAAknnpfs(Trial,[],state,0,'numIter',1,'ufrShufBlockSize',0,'binDims',[20,20]);
 
-%pfs = MTAAknnpfs(Trial,[],state,0,'numIter',1,'ufrShufBlockSize',0,'binDims',[20,20],'distThresh',100,'nNearestNeighbors',120);
-pfs = MTAApfs(Trial,[],state,1,[],[20,20],[1.3,1.3]);
+pfs = MTAAknnpfs(Trial,[],state,0,'numIter',1,'ufrShufBlockSize',0,'binDims',[20,20],'distThresh',100,'nNearestNeighbors',120);
+%pfs = MTAApfs(Trial,[],state,1,[],[20,20],[1.3,1.3]);
 
 units = pfs.data.clu(:)';
 
@@ -212,8 +214,8 @@ indrm = sub2ind(pfs.adata.binSizes',indx,indy);
 
 
 for unit = units,
-    rateMap = reshape(pfs.data.rateMap(:,unit),pfs.adata.binSizes');
-    %rateMap = pfs.plot(unit);
+    %rateMap = reshape(pfs.data.rateMap(:,unit),pfs.adata.binSizes');
+    rateMap = pfs.plot(unit);
     %rateMap = rot90(rot90(rateMap)',1);
     wpmr(:,unit==units) = rateMap(indrm);
 end
@@ -253,6 +255,8 @@ pfd(abs(pfds)>pi/2)=1;
 
 %DRZ 
 DRZ = pfd.*(1-wpmr./pmr);
+%DRZ = pfd.*(1-log10(clip(wpmr,1,100))./log10(pmr));
+%figure,scatter(Trial.xyz(1:31:end,7,1),Trial.xyz(1:31:end,7,2),clip(1./abs(DRZ(1:31:end,2)),0,50))
 
 figure,
 for unit = units
@@ -266,17 +270,23 @@ if numel(res)>20000||numel(res)<200,continue,end
 
 drzspk = DRZ(res,unit);
 phzspk = tbp_phase(res,1);
+
 gind = ~isnan(drzspk)&~isnan(phzspk);
 
+subplot2(2,3,[1,2],1),
+plot(Trial.xyz(res,7,1),Trial.xyz(res,7,2),'.');
+xlim([-500,500]),ylim([-500,500])
 
-subplot2(2,2,[1,2],1),pfs.plot(unit);
-hold on,plot(pmp(unit,1),pmp(unit==units,2),'w*')
+subplot2(2,3,[1,2],2),pfs.plot(unit);
+hold on,plot(pmp(unit==units,1),pmp(unit==units,2),'w*')
+title(num2str(unit))
 
-subplot2(2,2,1,2),plot(drzspk(gind),circ_rad2ang(phzspk(gind)),'.')
-hold on,     plot(drzspk(gind),circ_rad2ang(phzspk(gind))+360,'.')
+subplot2(2,3,1,3),plot(drzspk(gind),circ_rad2ang(phzspk(gind)),'.')
+hold on,          plot(drzspk(gind),circ_rad2ang(phzspk(gind))+360,'.')
+xlim([-1,1]),
 
-subplot2(2,2,2,2)
-hist2([[drzspk(gind);drzspk(gind)],[circ_rad2ang(phzspk(gind));circ_rad2ang(phzspk(gind))+360]],20,15)
+subplot2(2,3,2,3)
+hist2([[drzspk(gind);drzspk(gind)],[circ_rad2ang(phzspk(gind));circ_rad2ang(phzspk(gind))+360]],30,25)
 
 
 
@@ -284,8 +294,411 @@ pause(.1)
 waitforbuttonpress
 end
  
- 
+
 
 
 
 %% End Figure 4
+
+
+
+%% Figure 5 - State Wise Unit Firing Rates
+
+
+
+
+MTAConfiguration('/gpfs01/sirota/bach/data/gravio','absolute');
+%MTAConfiguration('/data/data/gravio','absolute');
+%sname = 'jg05-20120317';
+%sname = 'jg05-20120310';
+sname = 'jg05-20120309';
+
+Trial = MTATrial(sname,'all');
+Trial.load('nq');
+
+states = {'theta','vel&theta','rear&theta','walk&theta','hwalk&theta','lwalk&theta'};
+units = find(Trial.nq.eDist>30&Trial.nq.SpkWidthR>.5)';
+
+sscount = nan(numel(units),numel(states));
+ssdur   = nan(numel(units),numel(states));
+
+for s = 1:numel(states),
+
+    tsts = Trial.stc{states{s}};
+    Trial.spk.create(Trial,Trial.xyz.sampleRate,states{s},units);
+    ssdur(:,s) = sum(diff(tsts.data,1,2));
+for u = units,
+
+    try, sscount(u==units,s) = numel(Trial.spk(u));end
+
+end
+end
+
+
+srates = sscount./(ssdur./Trial.xyz.sampleRate);
+
+nrates = srates./repmat(max(srates,[],2),1,numel(states));
+
+[~,rind] = sort(nrates(:,3));
+
+figure,imagescnan(nrates(rind,:)',[],[],1);
+set(gca,'YTickLabel',states);
+ 
+
+%% End Figure 5
+
+
+
+
+%% Figure 6 - 
+
+MTAConfiguration('/gpfs01/sirota/bach/data/gravio','absolute');
+%MTAConfiguration('/data/data/gravio','absolute');
+%sname = 'jg05-20120317';
+sname = 'jg05-20120310';
+%sname = 'jg05-20120309';
+disp = 0;
+chans = [71:2:96];
+marker = 'spine_lower'
+
+Trial = MTATrial(sname,'all');
+Trial.ang.load(Trial);
+Trial.xyz.load(Trial);
+Trial.lfp.load(Trial,chans);
+
+
+wlfp = WhitenSignal(Trial.lfp.data,[],1);
+
+yl=[];
+for i = 1:Trial.lfp.size(2),
+    [yl(:,:,i),fl,tl] = mtchglong(wlfp(:,i),2^12,Trial.lfp.sampleRate,2^11,2^11*0.875,[],[],[],[1,40]);
+end
+yh=[];
+for i = 1:Trial.lfp.size(2),
+    [yh(:,:,i),fh,th] = mtchglong(wlfp(:,i),2^9,Trial.lfp.sampleRate,2^8,2^8*0.875,[],[],[],[40,120]);
+end
+
+yld = MTADlfp([],[],yl,1/diff(tl(1:2)));
+%yld = MTADlfp([],[],yh,1/diff(th(1:2)));
+
+bang = ButFilter(Trial.ang(:,4,5,3),3,[2,16]./(Trial.ang.sampleRate./2),'bandpass');
+bhh = ButFilter(Trial.xyz(:,7,3),3,[2,16]./(Trial.xyz.sampleRate./2),'bandpass');
+bhx = ButFilter(Trial.xyz(:,7,1),3,[2,16]./(Trial.xyz.sampleRate./2),'bandpass');
+bhy = ButFilter(Trial.xyz(:,7,2),3,[2,16]./(Trial.xyz.sampleRate./2),'bandpass');
+if disp, figure,plot([bang,bhh,bhx,bhy]+3.*repmat(1:4,size(bang,1),1)), end
+
+wang = WhitenSignal([bang,bhh,bhx,bhy],[],1);
+[ya,fa,ta,phia,fsta] = mtchglong(wang,2^9,Trial.ang.sampleRate,2^8,2^8*0.875,[],[],[],[2,16]);
+
+%figure,plot(mean(ya(:,fa>9&fa<12),2)./mean(ya(:,fa<7),2))
+%figure,plot([mean(ya(:,fa>9&fa<12,1,1),2),mean(ya(:,fa>9&fa<12,2,2),2)])
+%figure,plot(mean(ya(:,fa>9&fa<12,1,1),2),mean([mean(ya(:,fa>9&fa<12,4,4),2),mean(ya(:,fa>9&fa<12,3,3),2)],2),'.')
+%figure,plot(log10(mean(ya(:,fa>9&fa<12,1,1),2)),log10(mean([mean(ya(:,fa>9&fa<12,4,4),2),mean(ya(:,fa>9&fa<12,3,3),2)],2)),'.')
+spowa = log10(mean(ya(:,fa>9&fa<12,1,1),2));
+spowh = log10(mean(ya(:,fa>9&fa<12,2,2),2));
+
+
+
+% VELOCITY 
+xyz = Trial.xyz.copy;
+xyz.filter(gausswin(31)./sum(gausswin(31)));
+v = MTADxyz([],[],sqrt(sum(diff(xyz(:,marker,[1,2])).^2,3)).*Trial.xyz.sampleRate./10,Trial.xyz.sampleRate);
+clear('xyz');
+
+
+% HEAD DIRECTION VARIANCE
+hd = Trial.ang(:,5,7,1);
+hd = circ_dist(Trial.ang(:,1,7,1),Trial.ang(:,1,2,1));
+hd = GetSegs(hd,1:Trial.ang.size(1),round(Trial.ang.sampleRate),0);
+hdv = circ_var(hd,[],[],1)';
+hdv = MTADxyz([],[],hdv,Trial.ang.sampleRate);
+
+
+%figure,hist2([clip(log10(v.data),-2,3),clip(spow,-6,1)],100,100),caxis([0,40])
+%figure,hist2([clip(log10(v.data),-2,3),clip(mean([spowa,spowh],2),-6,1)],100,100),caxis([0,40])
+
+% RESAMPLE variables
+v.resample(yad);
+yld.resample(yad);
+hdv.resample(yad);
+
+
+sbins = 30;
+sedges = [-6,-2];
+
+vbins = 30;
+vedges = [-3,2];
+
+wper = Trial.stc{'w'}.copy;
+wper.cast('TimeSeries');
+wper.resample(yad);
+
+spow = clip(spowa,sedges(1),sedges(2));
+sind = spowa>sedges(1)&spowa<sedges(2);
+vlog = clip(log10(v.data),vedges(1),vedges(2));
+vind = vlog>vedges(1)&vlog<vedges(2);
+aind = sind&vind&wper.data;
+
+
+[spow_count,shind] = histc(spow(aind),sedges(1):abs(diff(sedges))/sbins:sedges(2));
+[v_count,vhind] = histc(vlog(aind),vedges(1):abs(diff(vedges))/vbins:vedges(2));
+
+% CA1 LM 81;
+% DG  G  85;
+% CA3 ?  95;
+chan = find(chans == 71);
+numIter = 10000;
+%tpow = log10(mean(yld(aind,fl>6&fl<12,chan),2));
+tpow = log10(mean(yld(aind,fl<=4,chan),2));
+%tpow = log10(mean(yld(aind,fh>50&fh<80,chan),2));
+
+B=nan(vbins,sbins,numIter);
+A=nan(vbins,sbins,numIter);
+%S=nan(vbins,sbins,numIter);
+tind = ~isinf(tpow)&~isnan(tpow)&vhind~=0&shind~=0;
+B = accumarray([vhind(tind),shind(tind)],ones(sum(tind),1),[vbins,sbins],@sum,nan);
+A(:,:,1) = accumarray([vhind(tind),shind(tind)],tpow(tind),[vbins,sbins],@median,nan);
+%S(:,:,1) = accumarray([vhind(tind),shind(tind)],tpow(tind),[vbins,sbins],@std,nan);
+for i = 2:numIter,
+tpow = tpow(randperm(numel(tpow)));
+tind = ~isinf(tpow)&~isnan(tpow)&vhind~=0&shind~=0;
+A(:,:,i) = accumarray([vhind(tind),shind(tind)],tpow(tind),[vbins,sbins],@median,nan);
+%S(:,:,i) = accumarray([vhind(tind),shind(tind)],tpow(tind),[vbins,sbins],@std,nan);
+end
+
+AS = sort(A,3);
+P = 1./sum(repmat(A(:,:,1),[1,1,numIter])>A,3);
+P(isinf(P)) = nan;
+
+SIG = P<=0.0002;
+ASIG = A; 
+ASIG(~SIG)=nan;
+ASIG(B<10)=nan;
+Aclims = [prctile(ASIG(~isnan(ASIG)),5),prctile(ASIG(~isnan(ASIG)),95)];
+
+figure
+
+subplot(131),imagescnan({vedges,sedges,B'./yad.sampleRate},[],[],1,[0,0,0]),axis xy,
+title('Occupancy in seconds')
+ylabel('log10(P(10Hz)) of Spine to Head Distance')
+xlabel('Head Speed (cm/s)')
+ticks_lin2log(gca,'x')
+
+subplot(132),imagescnan({vedges,sedges,   A(:,:,1)'},Aclims,[],1,[0,0,0]),axis xy,
+title('Mean Power 1-4Hz given 10Hz Osc. Power dist(SU,HB) VS Vel(HF)')
+ylabel('log10(P(10Hz)) of Spine to Head Distance')
+xlabel('Head Speed (cm/s)')
+ticks_lin2log(gca,'x')
+
+subplot(133),imagescnan({vedges,sedges,ASIG(:,:,1)'},Aclims,[],1,[0,0,0]),axis xy,
+title('P<0.0002 and Occupancy > 1.33 seconds')
+ylabel('log10(P(10Hz)) of Spine to Head Distance')
+xlabel('Head Speed (cm/s)')
+ticks_lin2log(gca,'x')
+
+
+
+
+
+flim=[1,4;6,12;20,27;30,40];
+%flim=[40,60;60,80;80,100;100,120];
+mychans = [71,73,81,85,95];
+B = accumarray([vhind(tind),shind(tind)],ones(sum(tind),1),[vbins,sbins],@sum,nan);
+figure
+for c = 1:numel(mychans),
+    for i = flim',
+        subplot2(numel(mychans),size(flim,1),c,find(i(1)==flim(:,1)));
+        tpow = log10(mean(yld(aind,fl>i(1)&fl<i(2),find(chans==mychans(c))),2));
+        %tpow = log10(mean(yld(aind,fh>i(1)&fh<i(2),find(chans==mychans(c))),2));
+        tind = ~isinf(tpow)&~isnan(tpow)&vhind~=0&shind~=0;
+        AFB = accumarray([vhind(tind),shind(tind)],tpow(tind),[vbins,sbins],@mean,nan);
+        AFB(B<10)=nan;
+        AFBclims = [prctile(AFB(~isnan(AFB)),5),prctile(AFB(~isnan(AFB)),95)];
+        imagescnan({vedges,sedges,AFB'},AFBclims,[],1,[0,0,0]);
+        axis xy,
+        ticks_lin2log(gca,'x')
+        title(['C: ' num2str(mychans(c)) 'Mean P(' num2str(i(1)) '-' num2str(i(2)) ')'])
+    end
+end
+
+text(.1,.1,['Mean P(' num2str(flim(1)) '-' num2str(flim(end)) ') given 10Hz Osc. Power dist(SU,HB) VS Vel(SL)'])
+ylabel('log10(P(10Hz)) of Spine to Head Distance')
+xlabel('Head Speed (cm/s)')
+
+
+% $$$ A = accumarray([vhind(tind),shind(tind)],hdv(tind),[vbins,sbins],@mean,nan);
+% $$$ figure,imagescnan({vedges,sedges,clip(A,0,.015)'},[],[],1,[0,0,0]),axis xy,
+% $$$ 
+% $$$ %tbp_phase.resample(yad);
+% $$$ A = accumarray([vhind(tind),shind(tind)],tbp_phase(tind),[vbins,sbins],@circ_median,nan);
+% $$$ A = accumarray([vhind(tind),shind(tind)],tbp_phase(tind),[vbins,sbins],@circ_var,nan);
+% $$$ figure,imagescnan({vedges,sedges,A'},[],[],1,[0,0,0]),axis xy,
+
+
+% $$$ %dratio = mean(yld(aind,fl>6&fl<12,chan),2)./mean(yld(aind,fl<4|(fl>12&fl<18),chan),2);
+% $$$ %dratio = mean(yld(aind,fl>6&fl<12,chan),2)./mean(yld(aind,fl<4,chan),2);
+
+
+
+%% End - Figure 6
+
+
+%% Figure 7 - rhm vs thetaM
+MTAConfiguration('/gpfs01/sirota/bach/data/gravio','absolute');
+%MTAConfiguration('/data/data/gravio','absolute');
+%sname = 'jg05-20120317';
+sname = 'jg05-20120310';
+%sname = 'jg05-20120309';
+disp = 0;
+chans = [71:2:96];
+marker = 'spine_lower'
+
+Trial = MTATrial(sname,'all');
+Trial.ang.load(Trial);
+Trial.xyz.load(Trial);
+Trial.lfp.load(Trial,chans);
+
+
+wlfp = WhitenSignal(Trial.lfp.data,[],1);
+
+yl=[];
+for i = 1:Trial.lfp.size(2),
+    [yl(:,:,i),fl,tl] = mtchglong(wlfp(:,i),2^12,Trial.lfp.sampleRate,2^11,2^11*0.875,[],[],[],[1,40]);
+end
+yh=[];
+for i = 1:Trial.lfp.size(2),
+    [yh(:,:,i),fh,th] = mtchglong(wlfp(:,i),2^9,Trial.lfp.sampleRate,2^8,2^8*0.875,[],[],[],[40,120]);
+end
+
+bang = ButFilter(Trial.ang(:,4,5,3),3,[2,16]./(Trial.ang.sampleRate./2),'bandpass');
+bhh = ButFilter(Trial.xyz(:,7,3),3,[2,16]./(Trial.xyz.sampleRate./2),'bandpass');
+bhx = ButFilter(Trial.xyz(:,7,1),3,[2,16]./(Trial.xyz.sampleRate./2),'bandpass');
+bhy = ButFilter(Trial.xyz(:,7,2),3,[2,16]./(Trial.xyz.sampleRate./2),'bandpass');
+if disp, figure,plot([bang,bhh,bhx,bhy]+3.*repmat(1:4,size(bang,1),1)), end
+
+wang = WhitenSignal([bang,bhh,bhx,bhy],[],1);
+[ya,fa,ta,phia,fsta] = mtchglong(wang,2^9,Trial.ang.sampleRate,2^8,2^8*0.875,[],[],[],[2,16]);
+yad = MTADlfp([],[],ya,1/diff(ta(1:2)));
+
+yld = MTADlfp([],[],yl,1/diff(tl(1:2)));
+yld.resample(yad);
+
+count = 1;
+states = 'tvrwgl';
+for c = 1:13,
+for s = 1:numel(states)
+
+wper = Trial.stc{states(s)}.copy;
+wper.cast('TimeSeries');
+wper.resample(yad);
+
+
+
+ylpf = yld(:,fl<14&fl>5,c);yapf = yad(:,fa<14&fa>5,1,1);
+%yad(:,fa<14&fa>5,3,3)+yad(:,fa<14&fa>5,4,4)+yad(:,fa<14&fa>5,1,1);
+flpf = fl(fl<14&fl>5);fapf = fa(fa<14&fa>5);
+[ylpfsp,ylpfs] = sort(ylpf,2,'descend');[yapfsp,yapfs] = sort(yapf,2,'descend');
+flf = flpf(ylpfs(:,1));faf = fapf(yapfs(:,1));
+
+aind = wper.data==1;
+%aind = true(size(wper.data));
+lbounds = prctile(log10(ylpfsp(:,1)),[.5,99.5]);
+abounds = prctile(log10(yapfsp(:,1)),[.5,99.5]);
+aind = aind&~isinf(log10(ylpfsp(:,1)))&~isinf(log10(yapfsp(:,1)))...
+        &log10(ylpfsp(:,1))>lbounds(1)&log10(ylpfsp(:,1))<lbounds(2)...
+        &log10(yapfsp(:,1))>abounds(1)&log10(yapfsp(:,1))<abounds(2);
+
+%figure,hist(flf,29)
+%figure,hist(faf,38)
+%figure,hist2([flf(aind),faf(aind)],29,38);caxis([0,140])
+
+%figure,hist2([clip(log10(ylpfsp(aind,1)),2.4,4), ...
+%              clip(log10(yapfsp(aind,1)),-5.5,-2.5)],30,30);caxis([0,130])
+
+%subplot(13,6,count),
+%figure,
+plot(log10(ylpfsp(aind,1)), ...
+            log10(yapfsp(aind,1)),'.')
+for shift = 1:50;
+[rho(c,s,shift),p(c,shift)] = corr(circshift(log10(ylpfsp(aind,1)),25-shift),log10(yapfsp(aind,1)));
+end
+%legend(num2str([rho,p]))
+%count = count+1;
+end
+end
+figure,imagesc(rho)
+
+
+figure,
+for i= 1:25
+subplot(5,5,i),hist2([circshift(flf,-i),faf],29,38);caxis([0,150])
+end
+
+%% End - Figure 7
+
+%% Figure 8 Feature Selection 
+MTAConfiguration('/gpfs01/sirota/bach/data/gravio','absolute');
+%MTAConfiguration('/data/data/gravio','absolute');
+%sname = 'jg05-20120317';
+sname = 'jg05-20120310';
+%sname = 'jg05-20120309';
+disp = 0;
+
+Trial = MTATrial(sname,'all');
+Trial.ang.load(Trial);
+Trial.xyz.load(Trial);
+%Trial.lfp.load(Trial,[71:2:96]);
+
+
+xyz = Trial.xyz.copy;
+xyz.filter(gausswin(31)./sum(gausswin(31)));
+v = MTADxyz([],[],sqrt(sum(diff(xyz(:,:,[1,2])).^2,3)).*Trial.xyz.sampleRate./10,Trial.xyz.sampleRate,[],[],Trial.xyz.model);
+
+
+% JPD Head Vel vs Head Height
+hist2([clip(log10(v(:,'head_front')),-2,3),clip(log10(Trial.xyz(1:end-1,'head_front',3)),1.6,3)],100,100)
+hist2([clip(log10(v(:,'head_front')),-2,3),clip(log10(Trial.xyz(1:end-1,'head_front',3)),1.6,3).*Trial.ang(1:end-1,3,4,2)],100,100)
+caxis([0,800])
+ticks_lin2log
+
+
+% JPD Head Vel vs Lower Spine Height
+hist2([clip(log10(v(:,'head_front')),-2,3),clip(log10(Trial.xyz(1:end-1,'spine_lower',3)),1.2,2)],100,100)
+caxis([0,1000])
+ticks_lin2log
+
+
+% JPD Head Vel vs Lower Spine Height
+hist2([clip(log10(v(:,'spine_lower')),-3,3),clip(log10(Trial.xyz(1:end-1,'spine_lower',3)),1.2,2)],100,100)
+caxis([0,800])
+ticks_lin2log
+
+
+% JPD Head height vs Spine angle
+hist2([Trial.ang(:,'spine_middle','spine_upper',2),clip(log10(Trial.xyz(1:end,'head_front',3)),1.5,2.7)],100,100)
+caxis([0,800])
+ticks_lin2log(gca,'y')
+
+
+sfet = [circ_dist(Trial.ang(:,2,3,1),Trial.ang(:,1,2,1)),...
+        circ_dist(Trial.ang(:,3,4,1),Trial.ang(:,2,3,1)),...
+        circ_dist(Trial.ang(:,4,5,1),Trial.ang(:,3,4,1)),...
+        -circ_dist(Trial.ang(:,5,7,1),Trial.ang(:,4,5,1))];
+
+hist2([clip(log10(v(:,'spine_lower')),-3,3), ...
+       clip(sum(abs(Filter0(gausswin(31)./sum(gausswin(31)),sfet(1:end-1,:))),2),0,5)],100,100)
+caxis([0,800])
+ticks_lin2log(gca,'x')
+
+
+hist2([clip(log10(v(:,'spine_upper')),-3,3), ...
+       clip(sum(abs(Filter0(gausswin(31)./sum(gausswin(31)),sfet(1:end-1,:))),2),0,5)],100,100)
+caxis([0,800])
+ticks_lin2log(gca,'x')
+
+
+
+% JPD Head Vel vs Head Height
+hist2([clip(log10(v(Trial.stc{'w'},'spine_lower')),0,3),clip(log10(Trial.xyz(Trial.stc{'w'},'head_front',3)),1.6,3)],50,50)
+caxis([0,300])
+ticks_lin2log

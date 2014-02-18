@@ -252,10 +252,10 @@ classdef MTAAknnpfs < hgsetget %< MTAAnalysis
                     end
                     
                     
-                    rateMap = reshape(rateMap,numel(bin1),numel(bin2));
+                    rateMap = reshape(rateMap',numel(bin1),numel(bin2))';
 
                     if nargout==0,                    
-                        imagescnan({bin1,bin2,rateMap},colorLimits,[],ifColorbar,[0,0,0]);
+                        imagescnan({bin1,bin2,rateMap'},colorLimits,[],ifColorbar,[0,0,0]);
 
 
                     if ~isempty(rateMap)&&~isempty(bin1)&&~isempty(bin2),

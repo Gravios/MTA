@@ -372,18 +372,65 @@ classdef MTAData < hgsetget
         function Data = resample(Data,DataObj,varargin)
         % Data = resample(Data,DataObj)
         % Resample Data to the DataObjects sampleRate
+        %
+        % Assumes the two objects have their starting points synchronized
+        %
+        % WARNING - Doesn't modify the sync if sizes don't match
+
             switch Data.type
                 case 'TimeSeries'
                     assert(~DataObj.isempty,'DataObj must be loaded for resampling');
-                    uind = round(linspace(round(Data.sampleRate/DataObj.sampleRate),Data.size(1),DataObj.size(1)));
+
+                    % Assume the two objects have their starting
+                    % points synchronized
+                    %
+                    % Get the tail difference in seconds
+                    dosize = DataObj.size(1)./DataObj.sampleRate;
+                    dsize = Data.size(1)./Data.sampleRate;
+
+                    dsdiff = dsize-dosize;
+
+                    uind = round(linspace(ceil(Data.sampleRate/DataObj.sampleRate),Data.size(1)-round(dsdiff*Data.sampleRate),DataObj.size(1)));
+                    if dsdiff < 0,
+                        padding = round(dsdiff*Data.sampleRate);
+                        Data.data = cat(1,Data.data,zeros(padding,Data.size([2,3,4,5])));
+                    end    
+
                     Data.data = Data.data(uind,:,:,:,:);
+
+
                     if isa(Data.sync,'MTAData'),
                         Data.sync.resample(DataObj.sampleRate);
                         Data.origin = round(Data.origin/Data.sampleRate*DataObj.sampleRate);
                     end
                     Data.sampleRate = DataObj.sampleRate;
                 case 'TimePeriods'
-                    
+                  % Needs some more corrections for resampling
+                  if DataObj == 1
+                      newSampleRate = DataObj;
+                      rf = @(x)x;
+                  elseif isa(DataObj,'MTAData')
+                      newSampleRate = DataObj.sampleRate;
+                      rf = @round;
+                  else
+                      newSampleRate = DataObj;
+                      rf = @round;
+                  end
+                  
+                  Data.data = rf(Data.data/Data.sampleRate*newSampleRate);
+                  while sum(Data.data(:)==0)>1
+                      Data.data(1,:) = [];
+                  end
+                  if isa(Data.sync,'MTAData'),
+                      Data.sync.resample(newSampleRate);
+                      Data.origin = rf(Data.origin/Data.sampleRate*newSampleRate); 
+                  else
+                      Data.sync = rf(Data.sync/Data.sampleRate*newSampleRate);
+                      Data.sync(Data.sync==0) = 1;
+                  end            
+                  Data.origin(Data.origin==0) = 1;
+                  Data.data(Data.data==0)=1;
+                  Data.sampleRate = newSampleRate;
                 otherwise
             end
         end

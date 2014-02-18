@@ -6,6 +6,8 @@ rateThreshold = prctile(sq(max(map(:,:))),95);
 
 ratemap = reshape(map(:,1),pf.adata.binSizes')';
 
+ratemap = pf.plot(unit);
+
 % Maximum firing rate found within the normal place field
 pfstats.peakFR = pkfr;
 pfstats.patchArea = 0;

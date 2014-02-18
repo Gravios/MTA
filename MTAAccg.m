@@ -45,7 +45,7 @@ end
 
 methods
 
-        function Bccg = MTAccg(Session,name,Description,ResTrain,CluTags,varargin)
+        function Bccg = MTAAccg(Session,name,Description,ResTrain,CluTags,varargin)
         prop = properties('MTAccg');
         for i = 1:length(prop)
             Bccg.(prop{i})=[];

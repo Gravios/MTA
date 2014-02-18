@@ -1,4 +1,5 @@
 %function dstruct = population_placeFieldAnalysis(sesList,states,pftype)
+MTAConfiguration('/gpfs01/sirota/bach/data/gravio','absolute'); 
 
 sesList = {{'jg05-20120309','cof','all'},...
            {'jg05-20120310','cof','all'},...
@@ -11,7 +12,7 @@ pftype = 'MTAAknnpf';
 numsts = numel(states);
 pfstats = {};
     pfs={};
-for ses = 1:numel(sesList),
+for ses = 2:numel(sesList),
     Trial = MTATrial(sesList{ses}{1},sesList{ses}{3},sesList{ses}{2});
     Trial.xyz.load(Trial);
     Trial.load('nq');
@@ -24,8 +25,10 @@ for ses = 1:numel(sesList),
     for i = 1:numsts,
         switch pftype
           case 'MTAAknnpf'
-            pfs{ses,i} = MTAAknnpfs(Trial,units,states{i},0,'numIter',10, ...
+            try
+            pfs{ses,i} = MTAAknnpfs(Trial,units,states{i},0,'numIter',1000, ...
                             'ufrShufBlockSize',0.5,'binDims',[20,20],'distThreshold',70);
+            end
           case 'MTAApfs'
             % not ready 
             % pfs{i} = MTAApfs(Trial,units,states{i},0,'numIter',1000)
@@ -106,17 +109,29 @@ cpfstats = cat(1,pfstats{:});
 
 
 %% Distance vs FR difference
-s1 = 4;
-s2 = 5;
+s1 = 2;
+s2 = 3;
 %cind = find(cstruct.SpkWidthR>0.3&cstruct.eDist>20&cstruct.FirRate>0.2&[[cpfstats(:,s1).patchArea]>2000|[cpfstats(:,s2).patchArea]>2000]');
 cind = find(cstruct.SpkWidthR>0.3&cstruct.TimeSym>2.5&cstruct.eDist>19&cstruct.FirRate>0.2);
 
 dist = sqrt(sum((reshape([cpfstats(cind,s1).patchCOM],2,[])'-reshape([cpfstats(cind,s2).patchCOM],2,[])').^2,2));
-rdr = ([cpfstats(cind,s1).peakFR]-[cpfstats(cind,s2).peakFR])./([cpfstats(cind,s1).peakFR]+[cpfstats(cind,s2).peakFR]);
+rdr = ([cpfstats(cind,s1).peakFR]-[cpfstats(cind,s2).peakFR])./ ...
+      ([cpfstats(cind,s1).peakFR]+[cpfstats(cind,s2).peakFR]);
+mrdr = ([cpfstats(cind,s1).patchMFR]-[cpfstats(cind,s2).patchMFR])./ ...
+      ([cpfstats(cind,s1).patchMFR]+[cpfstats(cind,s2).patchMFR]);
 
-figure,plot(dist,rdr,'d','MarkerFaceColor','b')
+pr = max([[cpfstats(cind,s1).peakFR];[cpfstats(cind,s2).peakFR]])';
 
-figure,hist(rdr,100,'MarkerFaceColor','b')
+pra = max([[cpfstats(:,s1).peakFR];[cpfstats(:,s2).peakFR]])';
+
+figure,plot(dist,mrdr,'d','MarkerFaceColor','b')
+
+figure,scatter(dist,mrdr,pr.*5);
+
+figure,hist(mrdr,30,'MarkerFaceColor','b')
+figure,hist(mrdr(pr>4&pr<40),30,'MarkerFaceColor','b')
+
+figure,hist(cstruct.ratecorr(cstruct.overlap(:,2,3)>0.05&pra>4&pra<40&cstruct.SpkWidthR>0.3&cstruct.TimeSym>2.5&cstruct.eDist>19&cstruct.FirRate>0.2,2,3,1,2,1),15)
 
 figure,plot([cpfstats(cind,s1).peakFR]-[cpfstats(cind,s2).peakFR],[cpfstats(cind,s1).peakFR]+[cpfstats(cind,s2).peakFR],'d','MarkerFaceColor','b')
 line([0;-30],[0;30])
