@@ -1,6 +1,6 @@
 function Anal_Struct = Corrected_UFR_CCG(Session,varargin)
-[ bhvs,           pfcbhv, surbhv, klen, overlap, thresh_rad, test_sample_size, min_sample_size, niter] = DefaultArgs(varargin,...
-{{'rear','walk'}, 'walk', 'walk',   64,      16,       1000,               20,              10, 1000});
+[ bhvs,           pfcbhv, surbhv, downSampleRate, thresh_rad, test_sample_size, min_sample_size, niter] = DefaultArgs(varargin,...
+{{'rear','walk'}, 'walk', 'walk',             20,       1000,               20,              10, 1000});
 
 Session = 'jg05-20120317';
 thresh_rad = 150;
@@ -8,93 +8,62 @@ test_sample_size = 7;
 min_sample_size = 4;
 
 
+
 %% Load Session if Session is not already a MTASession
 if ~isa(Session,'MTASession'),
-    s = MTASession(Session);
-    Trial = MTATrial(s,...
-                    {{'CluRes',s.xyzSampleRate},...
-                     {'Pfs',   {'walk','rear'}}},...
-                    'all');
-    clear('s');
+    Trial = MTATrial(Session);
+    Trial.spk.create(Trial.xyz.sampleRate);
+    %{'Pfs',   {'walk','rear'}}},...
 end
+
+
+
+
 
 %% Number of units
 numClu = size(Trial.map,1);
 
-%% Filter xyz 
-Trial = Trial.filter();
+newSampleRate = downSampleRate;
 
-%% Kernal with klen number of bins
-kern = ones(klen,1);
+myxyz = Trial.xyz.copy;
+myxyz.load(Trial);
+myxyz.filter(gausswin(9)./sum(gausswin(9)));
+myxyz.resample(newSampleRate);
 
-%% xbins and ybins in placefields
-xbins = pfw.xbin);
-ybins = fliplr(pfw.ybin);
-
-%% Get the mean position of each bin in the xy coordinates
-%% Resample xyz to new bin intervals
-myxyz = sq(Trial.xyz(:,7,[1,2]));
-t =         permute(reshape(          myxyz(1:size(myxyz,1)-mod(size(myxyz,1),klen),:),klen,[],2),[4,1,2,3]);
-for shift = 1:klen/overlap-1,
-t = cat(1,t,permute(reshape(circshift(myxyz(1:size(myxyz,1)-mod(size(myxyz,1),klen),:),-overlap*shift),klen,[],2),[4,1,2,3]));
-end
-myxyz = t;
-myxyz = reshape(sq(sum(repmat(permute(repmat(permute(repmat(kern./sum(kern),1,size(myxyz,3)),[5,4,1,2,3]),size(myxyz,4),1),[2,3,4,1]),klen/overlap,1).*myxyz,2)),[],2);
-
-%% Calculate the new sampling rate for indexing purposes 
-newSampleRate = 1/((size(Trial.xyz,1)-mod(size(Trial.xyz,1),klen))/Trial.xyzSampleRate/length(myxyz));
-
-
-%% Get the unit firing rate (ufr) for each unit
-%% Resample ufr to new bin intervals
-myufr = {};
-for unit = 1:76
-myres = Trial.res(Trial.clu==unit);
-myufr{unit} = zeros(size(Trial.xyz,1),1);
-myufr{unit}(1:myres(end)) = accumarray(myres,ones(size(myres),1));
-t =         permute(reshape(myufr{unit}(1:size(myufr{unit},1)-mod(size(myufr{unit},1),klen)),klen,[]),[3,1,2]);
-for shift = 1:klen/overlap-1
-t = cat(1,t,permute(reshape(circshift(myufr{unit}(1:size(myufr{unit},1)-mod(size(myufr{unit},1),klen)),-overlap*shift),klen,[]),[3,1,2]));
-end
-myufr{unit} = t; 
-myufr{unit} = reshape(sq(sum(repmat(permute(repmat(kern,1,size(myufr{unit},3)),[3,1,2]),size(myufr{unit},1),1).*myufr{unit},2))/(klen/Trial.xyzSampleRate),[],1);
-end
-myufr = cell2mat(myufr);
-
-
-pfc = MTAPlaceField(Trial,[],pfcbhv);
-%pfr = MTAPlaceField(Trial,[],'rear');
+myufr = Trial.ufr.copy;
+myufr.create(Trial,myxyz);
 
 
 %% Get the expected ufr for each xy 
 %% Substract the expected ufr from the observed
-wpmr = zeros(size(myxyz,1),76);
-for unit =1:76,
-    for i=1:size(myxyz,1),
-        wpmr(i,unit) = pfc.rateMap{unit}(find(pfc.xbin<round(myxyz(i,1)),1,'last'),find(pfc.ybin<round(myxyz(i,2)),1,'last'));
-    end
+pfc = MTAAknnpfs(Trial,units,pfcbhv,0,'numIter',1000,'ufrShufBlockSize',0.5,'binDims',[20,20],'distThreshold',70);
+wpmr = ones(myxyz.size(1),numel(units));
+[~,indx] = min(abs(repmat(pfc.adata.bins{1}',myxyz.size(1),1)-repmat(myxyz(:,7,1),1,numel(pfc.adata.bins{1}))),[],2);
+[~,indy] = min(abs(repmat(pfc.adata.bins{2}',myxyz.size(1),1)-repmat(Trial.xyz(:,7,2),1,numel(pfc.adata.bins{2}))),[],2);
+indrm = sub2ind(pfc.adata.binSizes',indx,indy);
+for unit = units,
+    rateMap = pfc.plot(unit);
+    wpmr(:,unit==units) = rateMap(indrm);
 end
 ufrwd = myufr-wpmr;
 
 
 
 %% Reduce Bhv events to a subset 
-[rear_evts,filtName] = Trial.Bhv.filter({'rear',...
-                                  {'exclusion','rear',2},...
-                                  {'select_boarder_states','walk',3},...
-                                  {'duration',1.5}});
+StcFilters = {{'rear',{'exclusion','rear',2},{'select_boarder_states','walk',3},{'duration',1.5}},...
+              {'walk',{'exclusion','walk',2},{'duration',0.75},{'complete'}}};
 
-[walk_evts,filtName] = Trial.Bhv.filter({'walk',...
-                                  {'exclusion','walk',2},...
-                                  {'duration',0.75},...
-                                  {'complete'}}); 
+%for f = numel(StcFilters),
+[rear_evts,filtName] = Trial.stc.filter(StcFilters{1});
+%end
+[walk_evts,filtName] = Trial.stc.filter(StcFilters{2});
 
 
 %% Get the ufr for each behavioral res +- 5 s
-rufrs = GetSegs(ufrwd,round(((rear_evts{1}+0.5*Trial.xyzSampleRate/newSampleRate)./Trial.xyzSampleRate.*newSampleRate)-5*newSampleRate),round(10*newSampleRate));
-dufrs = GetSegs(ufrwd,round(((rear_evts{2}+0.5*Trial.xyzSampleRate/newSampleRate)./Trial.xyzSampleRate.*newSampleRate)-5*newSampleRate),round(10*newSampleRate));
-wufrs = GetSegs(ufrwd,round(((walk_evts{1}+0.5*Trial.xyzSampleRate/newSampleRate)./Trial.xyzSampleRate.*newSampleRate)-5*newSampleRate),round(10*newSampleRate));
-sufrs = GetSegs(ufrwd,round(((walk_evts{2}+0.5*Trial.xyzSampleRate/newSampleRate)./Trial.xyzSampleRate.*newSampleRate)-5*newSampleRate),round(10*newSampleRate));
+rufrs = GetSegs(ufrwd,round(((rear_evts{1}+0.5*Trial.xyz.sampleRate/newSampleRate)./Trial.xyz.sampleRate.*newSampleRate)-5*newSampleRate),round(10*newSampleRate));
+dufrs = GetSegs(ufrwd,round(((rear_evts{2}+0.5*Trial.xyz.sampleRate/newSampleRate)./Trial.xyz.sampleRate.*newSampleRate)-5*newSampleRate),round(10*newSampleRate));
+wufrs = GetSegs(ufrwd,round(((walk_evts{1}+0.5*Trial.xyz.sampleRate/newSampleRate)./Trial.xyz.sampleRate.*newSampleRate)-5*newSampleRate),round(10*newSampleRate));
+sufrs = GetSegs(ufrwd,round(((walk_evts{2}+0.5*Trial.xyz.sampleRate/newSampleRate)./Trial.xyz.sampleRate.*newSampleRate)-5*newSampleRate),round(10*newSampleRate));
 
 %pfMaxPosRear = zeros(size(pfr.cluMap,1),2);
 pfMaxPos = zeros(size(pfc.cluMap,1),2);
@@ -106,10 +75,10 @@ for unit = 1:size(pfc.cluMap,1),
     %upos(unit,:) = pfMaxPosRear(unit,:);
 end
 
-rposon = myxyz(round((rear_evts{1}+0.5*Trial.xyzSampleRate/newSampleRate)./Trial.xyzSampleRate.*newSampleRate),:);
-rposoff = myxyz(round((rear_evts{2}+0.5*Trial.xyzSampleRate/newSampleRate)./Trial.xyzSampleRate.*newSampleRate),:);
-wposon = myxyz(round((walk_evts{1}+0.5*Trial.xyzSampleRate/newSampleRate)./Trial.xyzSampleRate.*newSampleRate),:);
-wposoff= myxyz(round((walk_evts{2}+0.5*Trial.xyzSampleRate/newSampleRate)./Trial.xyzSampleRate.*newSampleRate),:);
+rposon = myxyz(round((rear_evts{1}+0.5*Trial.xyz.sampleRate/newSampleRate)./Trial.xyz.sampleRate.*newSampleRate),:);
+rposoff = myxyz(round((rear_evts{2}+0.5*Trial.xyz.sampleRate/newSampleRate)./Trial.xyz.sampleRate.*newSampleRate),:);
+wposon = myxyz(round((walk_evts{1}+0.5*Trial.xyz.sampleRate/newSampleRate)./Trial.xyz.sampleRate.*newSampleRate),:);
+wposoff= myxyz(round((walk_evts{2}+0.5*Trial.xyz.sampleRate/newSampleRate)./Trial.xyz.sampleRate.*newSampleRate),:);
 
 %% time bins for display pourposes
 nbins = size(rufrs,1);
@@ -147,7 +116,7 @@ for unit = 1:size(rufrs,3),
     wwdisto = sqrt(sum((wposoff-repmat(upos(unit,:),size(wposoff,1),1)).^2,2));
     wsur_rand_ind = randi([1,length(wsur)],wsss,niter);
     wsursamp = wsur(wsur_rand_ind(:,iter));
-    wsurpos = myxyz(round((wsursamp+0.5*Trial.xyzSampleRate/newSampleRate)./Trial.xyzSampleRate.*newSampleRate),:);
+    wsurpos = myxyz(round((wsursamp+0.5*Trial.xyz.sampleRate/newSampleRate)./Trial.xyz.sampleRate.*newSampleRate),:);
     wsurdist = sqrt(sum((wsurpos-repmat(upos(unit,:),wsss,1)).^2,2));
     %% resample if too few are found
     timeout_countdown = 10;
@@ -157,7 +126,7 @@ for unit = 1:size(rufrs,3),
         %% Pull random sample from the walk surrogate tarjectories
         wsursamp = wsur(wsur_rand_ind(:,iter));
         %% Get the position of the random samples from the walk surrogate tarjectories
-        wsurpos = myxyz(round((wsursamp+0.5*Trial.xyzSampleRate/newSampleRate)./Trial.xyzSampleRate.*newSampleRate),:);
+        wsurpos = myxyz(round((wsursamp+0.5*Trial.xyz.sampleRate/newSampleRate)./Trial.xyz.sampleRate.*newSampleRate),:);
         %% Calc the distance of each sample to the center of the current units placefield
         wsurdist = sqrt(sum((wsurpos-repmat(upos(unit,:),wsss,1)).^2,2));                        
         timeout_countdown = timeout_countdown - 1;
@@ -168,8 +137,8 @@ for unit = 1:size(rufrs,3),
     end
     %% Get the unit firing rates for the surrogate walking segments
     wsurufrs = GetSegs(ufrwd(:,unit),...
-                       round(((wsursamp+0.5*Trial.xyzSampleRate/newSampleRate)...
-                              ./Trial.xyzSampleRate.*newSampleRate)...
+                       round(((wsursamp+0.5*Trial.xyz.sampleRate/newSampleRate)...
+                              ./Trial.xyz.sampleRate.*newSampleRate)...
                              -5*newSampleRate),...
                        round(10*newSampleRate));
     %% Sample Sets
@@ -211,7 +180,7 @@ for unit = 1:size(rufrs,3),
                         %% Pull random sample from the walk surrogate tarjectories
                         wsursamp = wsur(wsur_rand_ind(:,iter));
                         %% Get the position of the random samples from the walk surrogate tarjectories
-                        wsurpos = myxyz(round((wsursamp+0.5*Trial.xyzSampleRate/newSampleRate)./Trial.xyzSampleRate.*newSampleRate),:);
+                        wsurpos = myxyz(round((wsursamp+0.5*Trial.xyz.sampleRate/newSampleRate)./Trial.xyz.sampleRate.*newSampleRate),:);
                         %% Calc the distance of each sample to the center of the current units placefield
                         wsurdist = sqrt(sum((wsurpos-repmat(upos(unit,:),wsss,1)).^2,2));
                         %% resample if too few are found
@@ -222,7 +191,7 @@ for unit = 1:size(rufrs,3),
                             %% Pull random sample from the walk surrogate tarjectories
                             wsursamp = wsur(wsur_rand_ind(:,iter));
                             %% Get the position of the random samples from the walk surrogate tarjectories
-                            wsurpos = myxyz(round((wsursamp+0.5*Trial.xyzSampleRate/newSampleRate)./Trial.xyzSampleRate.*newSampleRate),:);
+                            wsurpos = myxyz(round((wsursamp+0.5*Trial.xyz.sampleRate/newSampleRate)./Trial.xyz.sampleRate.*newSampleRate),:);
                             %% Calc the distance of each sample to the center of the current units placefield
                             wsurdist = sqrt(sum((wsurpos-repmat(upos(unit,:),wsss,1)).^2,2));                        
                             timeout_countdown = timeout_countdown - 1;
@@ -238,8 +207,8 @@ for unit = 1:size(rufrs,3),
 
                         %% Get the unit firing rate time series around each sample +-5 seconds
                         wsurufrs = GetSegs(ufrwd(:,unit),...
-                                           round(((wsursamp+0.5*Trial.xyzSampleRate/newSampleRate)...
-                                                  ./Trial.xyzSampleRate.*newSampleRate)...
+                                           round(((wsursamp+0.5*Trial.xyz.sampleRate/newSampleRate)...
+                                                  ./Trial.xyz.sampleRate.*newSampleRate)...
                                                  -5*newSampleRate),...
                                            round(10*newSampleRate));
                         %% Select sample rates base on sample distance from placefield center

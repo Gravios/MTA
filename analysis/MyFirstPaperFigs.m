@@ -377,7 +377,6 @@ yh=[];
 for i = 1:Trial.lfp.size(2),
     [yh(:,:,i),fh,th] = mtchglong(wlfp(:,i),2^9,Trial.lfp.sampleRate,2^8,2^8*0.875,[],[],[],[40,120]);
 end
-
 yld = MTADlfp([],[],yl,1/diff(tl(1:2)));
 %yld = MTADlfp([],[],yh,1/diff(th(1:2)));
 

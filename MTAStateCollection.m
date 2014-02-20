@@ -379,11 +379,11 @@ classdef MTAStateCollection < hgsetget
                     if iscell(command_list{1}{2}),
                         ExState = Stc.JoinStates(command_list{1}{2});
                     else
-                        ExState = Stc(substruct('{}',{command_list{1}{2}},'.','copy'));
+                        ExState = Stc.subsref(substruct('{}',{command_list{1}{2}},'.','copy'));
                     end
                     ExState.resample(sampleRate);
                     filterName = strcat(filterName,filter_tag,ExState.key,num2str(command_list{1}{3}));
-                    ExThresh = command_list{1}{3}*Stc.sampleRate;
+                    ExThresh = command_list{1}{3}*sampleRate;
 
                     temp_sts_onset_ind  = false(size(sts_periods,1),1);
                     temp_sts_offset_ind = false(size(sts_periods,1),1);                    
@@ -439,8 +439,8 @@ classdef MTAStateCollection < hgsetget
                 command_list(1)=[];
             end    
                         
-            pind = find(filterName=='.');
-            filterName(pind) = '_';
+
+            filterName(ismember(filterName,'.'))='_';
             sts_res{1}  = sts_periods(Sts_onset_ind, 1)+tshift;
             sts_res{2}  = sts_periods(Sts_offset_ind,2)-tshift;
             
@@ -467,7 +467,7 @@ classdef MTAStateCollection < hgsetget
             end
             newStateName = ['COMP_' keys];
             uper = JoinRanges(oper);
-            composite_state = MTADepoch([],uper,Stc.sampleRate,states{1}.sync.copy,states{1}.origin,newStateName,keys,[],[]);
+            composite_state = MTADepoch([],uper,sampleRate,states{1}.sync.copy,states{1}.origin,newStateName,keys,[],[]);
         end
         
         function out = isempty(Stc)
