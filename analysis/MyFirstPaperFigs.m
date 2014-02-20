@@ -549,7 +549,6 @@ MTAConfiguration('/gpfs01/sirota/bach/data/gravio','absolute');
 %sname = 'jg05-20120317';
 sname = 'jg05-20120310';
 %sname = 'jg05-20120309';
-disp = 0;
 chans = [71:2:96];
 marker = 'spine_lower'
 
@@ -558,30 +557,33 @@ Trial.ang.load(Trial);
 Trial.xyz.load(Trial);
 Trial.lfp.load(Trial,chans);
 
-
 wlfp = WhitenSignal(Trial.lfp.data,[],1);
 
 yl=[];
 for i = 1:Trial.lfp.size(2),
     [yl(:,:,i),fl,tl] = mtchglong(wlfp(:,i),2^12,Trial.lfp.sampleRate,2^11,2^11*0.875,[],[],[],[1,40]);
 end
-yh=[];
-for i = 1:Trial.lfp.size(2),
-    [yh(:,:,i),fh,th] = mtchglong(wlfp(:,i),2^9,Trial.lfp.sampleRate,2^8,2^8*0.875,[],[],[],[40,120]);
-end
+%yh=[];
+%for i = 1:Trial.lfp.size(2),
+%    [yh(:,:,i),fh,th] = mtchglong(wlfp(:,i),2^9,Trial.lfp.sampleRate,2^8,2^8*0.875,[],[],[],[40,120]);
+%end
 
-bang = ButFilter(Trial.ang(:,4,5,3),3,[2,16]./(Trial.ang.sampleRate./2),'bandpass');
-bhh = ButFilter(Trial.xyz(:,7,3),3,[2,16]./(Trial.xyz.sampleRate./2),'bandpass');
-bhx = ButFilter(Trial.xyz(:,7,1),3,[2,16]./(Trial.xyz.sampleRate./2),'bandpass');
-bhy = ButFilter(Trial.xyz(:,7,2),3,[2,16]./(Trial.xyz.sampleRate./2),'bandpass');
-if disp, figure,plot([bang,bhh,bhx,bhy]+3.*repmat(1:4,size(bang,1),1)), end
+bang = ButFilter(Trial.ang(:,4,5,3),3,[1,20]./(Trial.ang.sampleRate./2),'bandpass');
+%bhh = ButFilter(Trial.xyz(:,7,3),3,[2,16]./(Trial.xyz.sampleRate./2),'bandpass');
+%bhx = ButFilter(Trial.xyz(:,7,1),3,[2,16]./(Trial.xyz.sampleRate./2),'bandpass');
+%bhy = ButFilter(Trial.xyz(:,7,2),3,[2,16]./(Trial.xyz.sampleRate./2),'bandpass');
+%if disp, figure,plot([bang,bhh,bhx,bhy]+3.*repmat(1:4,size(bang,1),1)), end
 
-wang = WhitenSignal([bang,bhh,bhx,bhy],[],1);
+%wang = WhitenSignal([bang,bhh,bhx,bhy],[],1);
+wang = WhitenSignal([bang],[],1);
 [ya,fa,ta,phia,fsta] = mtchglong(wang,2^9,Trial.ang.sampleRate,2^8,2^8*0.875,[],[],[],[2,16]);
 yad = MTADlfp([],[],ya,1/diff(ta(1:2)));
-
 yld = MTADlfp([],[],yl,1/diff(tl(1:2)));
 yld.resample(yad);
+xyz = Trial.xyz.copy;
+xyz.filter(gausswin(31)./sum(gausswin(31)));
+v = MTADxyz([],[],sqrt(sum(diff(xyz(:,marker,[1,2])).^2,3)).*Trial.xyz.sampleRate./10,Trial.xyz.sampleRate);
+v.resample(yad);
 
 count = 1;
 states = 'tvrwgl';
@@ -604,9 +606,10 @@ aind = wper.data==1;
 %aind = true(size(wper.data));
 lbounds = prctile(log10(ylpfsp(:,1)),[.5,99.5]);
 abounds = prctile(log10(yapfsp(:,1)),[.5,99.5]);
-aind = aind&~isinf(log10(ylpfsp(:,1)))&~isinf(log10(yapfsp(:,1)))...
-        &log10(ylpfsp(:,1))>lbounds(1)&log10(ylpfsp(:,1))<lbounds(2)...
-        &log10(yapfsp(:,1))>abounds(1)&log10(yapfsp(:,1))<abounds(2);
+aind = aind&~isinf(log10(ylpfsp(:,1)))&~isinf(log10(yapfsp(:,1)));
+%aind = aind&~isinf(log10(ylpfsp(:,1)))&~isinf(log10(yapfsp(:,1)))...
+%        &log10(ylpfsp(:,1))>lbounds(1)&log10(ylpfsp(:,1))<lbounds(2)...
+%        &log10(yapfsp(:,1))>abounds(1)&log10(yapfsp(:,1))<abounds(2);
 
 %figure,hist(flf,29)
 %figure,hist(faf,38)
@@ -617,8 +620,7 @@ aind = aind&~isinf(log10(ylpfsp(:,1)))&~isinf(log10(yapfsp(:,1)))...
 
 %subplot(13,6,count),
 %figure,
-plot(log10(ylpfsp(aind,1)), ...
-            log10(yapfsp(aind,1)),'.')
+%plot(log10(ylpfsp(aind,1)),log10(yapfsp(aind,1)),'.')
 for shift = 1:50;
 [rho(c,s,shift),p(c,shift)] = corr(circshift(log10(ylpfsp(aind,1)),25-shift),log10(yapfsp(aind,1)));
 end
@@ -702,3 +704,64 @@ ticks_lin2log(gca,'x')
 hist2([clip(log10(v(Trial.stc{'w'},'spine_lower')),0,3),clip(log10(Trial.xyz(Trial.stc{'w'},'head_front',3)),1.6,3)],50,50)
 caxis([0,300])
 ticks_lin2log
+
+%% Figure - 9 Comodugram rhm and lfp
+
+
+MTAConfiguration('/gpfs01/sirota/bach/data/gravio','absolute');
+%MTAConfiguration('/data/data/gravio','absolute');
+%sname = 'jg05-20120317';
+sname = 'jg05-20120315';
+%sname = 'jg05-20120310';
+%sname = 'jg05-20120309';
+chans = [68:3:95];
+marker = 'spine_lower'
+
+
+Trial = MTATrial(sname,'all');
+Trial.ang.load(Trial);
+Trial.xyz.load(Trial);
+Trial.lfp.load(Trial,chans);
+Trial.lfp.resample(Trial.ang);
+
+%figure,plot(linspace(0,10000/1250,10000),Trial.lfp(1:10000,1))
+%hold on,plot(linspace(0,1000/Trial.ang.sampleRate,1000),lfp(1:1000,1),'r.')
+
+ang = Trial.ang(:,4,5,3);
+ang(isnan(ang))=40;
+bang = ButFilter(ang,3,[1,30]./(Trial.ang.sampleRate./2),'bandpass').*500;
+%bang = Trial.ang(:,4,5,3);
+%lbang = WhitenSignal(Trial.lfp.data,[],1);
+lbang = WhitenSignal([Trial.lfp.data,bang],[],1);
+lbang = MTADlfp([],[],[lbang],Trial.ang.sampleRate);
+
+
+states = 'vrwgl';
+nsts = numel(states);
+nchan = numel(chans);
+ figure,
+for s = 1:nsts
+x = [lbang(Trial.stc{states(s)},:)];
+[Co,f] = Comodugram(x,2^9,Trial.ang.sampleRate,[1,20],2^8);
+
+for i =1:nchan
+subplot2(nchan,nsts,i,s),
+imagesc(f,f,Co(:,:,i,nchan+1)'),axis xy,
+if i==1,title(Trial.stc{states(s)}.label),end
+if i==1&s==1,ylabel([ 'Channel: ',num2str(chans(i))]),end
+caxis([-.5,.5])
+sub_pos = get(gca,'position'); % get subplot axis position
+set(gca,'position',sub_pos.*[1 1 1.2 1.2]) % stretch its width and height
+
+end
+
+end
+
+
+
+figure,imagesc(f,f,Co(:,:,4,5)'),axis xy
+
+[Co,f] = Comodugram(WhitenSignal(Trial.lfp(Trial.stc{'r'},:),[],1),);
+figure,imagesc(f,f,Co(:,:,1,2)'),axis xy
+
+[ya,fa,ta,phia,fsta] = mtchglong(wang,2^9,Trial.ang.sampleRate,2^8,2^8*0.875,[],[],[],[2,16]);

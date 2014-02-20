@@ -392,8 +392,8 @@ classdef MTAData < hgsetget
 
                     uind = round(linspace(ceil(Data.sampleRate/DataObj.sampleRate),Data.size(1)-round(dsdiff*Data.sampleRate),DataObj.size(1)));
                     if dsdiff < 0,
-                        padding = round(dsdiff*Data.sampleRate);
-                        Data.data = cat(1,Data.data,zeros(padding,Data.size([2,3,4,5])));
+                        padding = abs(round(dsdiff*Data.sampleRate));
+                        Data.data = cat(1,Data.data,zeros([padding,Data.size([2,3,4,5])]));
                     end    
 
                     Data.data = Data.data(uind,:,:,:,:);

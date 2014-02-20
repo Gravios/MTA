@@ -4,7 +4,6 @@ map = sq(pf.data.rateMap(:,unit==pf.data.clu,:));
 pkfr = max(map(:,1));
 rateThreshold = prctile(sq(max(map(:,:))),95);
 
-ratemap = reshape(map(:,1),pf.adata.binSizes')';
 
 ratemap = pf.plot(unit);
 
