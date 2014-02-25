@@ -373,7 +373,7 @@ if getappdata(handles.DMapp,'load_sessions'),
     
     
         % Recursive maze and trial search
-    files = cellfun(@dir,cellfun(@strcat,repmat({Session.path.data},1,length(sessionList)), sessionList,'UniformOutput',false),'UniformOutput',false);
+    files = cellfun(@dir,cellfun(@fullfile,repmat({Session.path.data},1,length(sessionList)), sessionList,'UniformOutput',false),'UniformOutput',false);
     mazelist = cell(1,length(files));
     triallist = cell(1,length(files));
     for i = 1:length(files),

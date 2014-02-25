@@ -38,8 +38,8 @@ myufr.create(Trial,myxyz,[],units);
 %% Substract the expected ufr from the observed
 pfc = MTAAknnpfs(Trial,units,pfcbhv,0,'numIter',1,'ufrShufBlockSize',0,'binDims',[20,20],'distThreshold',70);
 wpmr = ones(myxyz.size(1),numel(units));
-[~,indx] = min(abs(repmat(pfc.adata.bins{1}',myxyz.size(1),1)-repmat(myxyz(:,7,1),1,numel(pfc.adata.bins{1}))),[],2);
-[~,indy] = min(abs(repmat(pfc.adata.bins{2}',myxyz.size(1),1)-repmat(myxyz(:,7,2),1,numel(pfc.adata.bins{2}))),[],2);
+[~,indx] = min(abs(repmat(pfc.adata.bins{1}',myxyz.size(1),1)-repmat(myxyz(:,1),1,numel(pfc.adata.bins{1}))),[],2);
+[~,indy] = min(abs(repmat(pfc.adata.bins{2}',myxyz.size(1),1)-repmat(myxyz(:,2),1,numel(pfc.adata.bins{2}))),[],2);
 indrm = sub2ind(pfc.adata.binSizes',indx,indy);
 for unit = units,
     rateMap = pfc.plot(unit);
@@ -53,9 +53,9 @@ StcFilters = {{'rear',{'exclusion','rear',2},{'select_boarder_states','walk',3},
 
           
 %for f = numel(StcFilters),
-[rear_evts,filtName] = Trial.stc.filter(StcFilters{1});
+[rear_evts,filtName] = Trial.stc.filter(newSampleRate,StcFilters{1});
 %end
-[walk_evts,filtName] = Trial.stc.filter(StcFilters{2});
+[walk_evts,filtName] = Trial.stc.filter(newSampleRate,StcFilters{2});
 
 
 %% Get the ufr for each behavioral res +- 5 s
@@ -65,9 +65,7 @@ wufrs = GetSegs(ufrwd,round(walk_evts{1}-3*newSampleRate),round(6*newSampleRate)
 sufrs = GetSegs(ufrwd,round(walk_evts{2}-3*newSampleRate),round(6*newSampleRate),[]);
 
 %pfMaxPosRear = zeros(size(pfr.cluMap,1),2);
-pfMaxPos = zeros(size(pfc.cluMap,1),2);
-
-[urate,upos] = pfc.maxRate(units);
+[urate,pfMaxPos] = pfc.maxRate(units);
 
 rposon =  myxyz(rear_evts{1},:);
 rposoff = myxyz(rear_evts{2},:);
@@ -79,7 +77,7 @@ nbins = size(rufrs,1);
 tbins = linspace(-3000,3000,nbins);
 
 %% START - rear walk premutation stats
-RandStream.setDefaultStream(RandStream('mt19937ar','seed',sum(100*clock)));
+RandStream.setGlobalStream(RandStream('mt19937ar','seed',sum(100*clock)));
 
 ntrans = 5;
 perm_stat = zeros(nbins,numClu,ntrans,ntrans,niter);
@@ -183,7 +181,7 @@ for unit = 1:size(rufrs,3),
                             %% Pull random sample from the walk surrogate tarjectories
                             wsursamp = wsur(wsur_rand_ind(:,iter));
                             %% Get the position of the random samples from the walk surrogate tarjectories
-                            wsurpos = myxyz(wsursamp+0.5*Trial.xyz.sampleRate/newSampleRate)./Trial.xyz.sampleRate.*newSampleRate),:);
+                            wsurpos = myxyz(wsursamp,:);
                             %% Calc the distance of each sample to the center of the current units placefield
                             wsurdist = sqrt(sum((wsurpos-repmat(upos(unit,:),wsss,1)).^2,2));                        
                             timeout_countdown = timeout_countdown - 1;
@@ -268,6 +266,7 @@ for unit = 1:numClu,
     end
 end
 toc
+
 
           
           % 

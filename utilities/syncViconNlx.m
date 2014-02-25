@@ -49,45 +49,18 @@ Session.model = model;
 
 %assert(exist([Session.spath Session.name '.all.evt'],'file'))
 % Load events
-events = textread(fullfile(Session.spath, [Session.name '.all.evt']),'%s','delimiter','\n','emptyvalue',NaN);
-% Parse event type
-parsedEvents = {};
-aborentEvents = {};
-for i=1:length(events),
-    rStart = regexpi(events{i},'starting recording');
-    rStop = regexpi(events{i},'stopping recording');
-    eStart = regexpi( events{i},TTLValue);
-    eStop = regexpi(events{i},'0x0000');
-    ts = events{i}(1:regexpi(events{i},' ','once')-1);
-    
-    if rStart,
-        parsedEvents{end+1} = struct('ts',ts,'event_name','starting_recording','ttl_value','');
-    elseif eStart,
-        parsedEvents{end+1} = struct('ts',ts,'event_name','vicon_start','ttl_value',TTLValue);
-    elseif sum(eStop) && strcmp(parsedEvents{end}.ttl_value, TTLValue),
-        parsedEvents{end+1} = struct('ts',ts,'event_name', 'vicon_stop','ttl_value','0x0000');
-    elseif rStop,
-        parsedEvents{end+1} = struct('ts',ts,'event_name','stopping_recording','ttl_value','');
-    else
-        aborentEvents{end+1} = events{i};
-    end
-end
+events = LoadEvents(fullfile(Session.spath, [Session.name '.all.evt']));
+tsRanges = [events.time(events.Clu==find(~cellfun(@isempty,regexp(events.Labels,TTLValue)))),...
+            events.time(events.Clu==find(~cellfun(@isempty,regexp(events.Labels,'0x0000'))))];
 
-% Create array of time spans between events
-tsRanges = [];
 
-for i=1:length(parsedEvents),
-    if strcmp(parsedEvents{i}.event_name,'vicon_stop')&&strcmp(parsedEvents{i-1}.event_name,'vicon_start'),
-        tsRanges(end+1,:) = [str2double(parsedEvents{i-1}.ts) str2double(parsedEvents{i}.ts)];
-    end
-end
-
+%% Assign xyz data to nlx event epochs
 syncPeriods=[];
 xyzDataInd = [];
 for i=1:length(xyzData),
     if ~isempty(xyzData{i})
         for j=1:size(tsRanges,1),
-            if round(diff(tsRanges(j,:))/100)==round(length(xyzData{i})/viconSampleRate*10),
+            if round(diff(tsRanges(j,:))*10-size(xyzData{i},1)/viconSampleRate*10)==0,
                 syncPeriods(end+1,:) = tsRanges(j,:);
                 tsRanges(j,:) = [];
                 xyzDataInd(end+1) = i;
