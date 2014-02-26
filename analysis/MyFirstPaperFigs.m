@@ -441,9 +441,9 @@ aind = sind&vind&wper.data;
 [v_count,vhind] = histc(vlog(aind),vedges(1):abs(diff(vedges))/vbins:vedges(2));
 
 %tpow = log10(mean(yld(aind,fl>=6&fl<=12,3),2));
-%tpow = log10(mean(yld(aind,fl>=4&fl<=16,1,1),2));
+tpow = log10(mean(yld(aind,fl>=4&fl<=16,1,1),2));
 %tpow = log10(mean(yad(aind,fa>=4&fa<=16,1,1),2));
-%tind = ~isinf(tpow)&~isnan(tpow)&vhind~=0&shind~=0;
+tind = ~isinf(tpow)&~isnan(tpow)&vhind~=0&shind~=0;
 
 %A = accumarray([vhind(tind),shind(tind)],tpow(tind),[vbins,sbins],@mean,nan);
 %figure,
@@ -522,7 +522,7 @@ for c = 1:numel(mychans),
         tpow = log10(mean(yld(aind,fl>i(1)&fl<i(2),find(chans==mychans(c))),2));
         %tpow = log10(mean(yld(aind,fh>i(1)&fh<i(2),find(chans==mychans(c))),2));
         tind = ~isinf(tpow)&~isnan(tpow)&vhind~=0&shind~=0;
-        AFB = accumarray([vhind(tind),shind(tind)],tpow(tind),[vbins,sbins],@std,nan);
+        AFB = accumarray([vhind(tind),shind(tind)],tpow(tind),[vbins,sbins],@mean,nan);
         AFB(B<5)=nan;
         AFBclims = [prctile(AFB(~isnan(AFB)),5),prctile(AFB(~isnan(AFB)),95)];
         imagescnan({vedges,sedges,AFB'},AFBclims,[],1,[0,0,0]);
@@ -727,7 +727,7 @@ MTAConfiguration('/gpfs01/sirota/bach/data/gravio','absolute');
 %sname = 'jg05-20120309';
 sname = 'co01-20140222';
 %chans = [68:3:95];
-chans = [1:2:8];
+chans = [1:4:32];
 
 
 
@@ -740,7 +740,9 @@ Trial.lfp.resample(Trial.ang);
 %figure,plot(linspace(0,10000/1250,10000),Trial.lfp(1:10000,1))
 %hold on,plot(linspace(0,1000/Trial.ang.sampleRate,1000),lfp(1:1000,1),'r.')
 
-ang = Trial.ang(:,3,5,3);
+ang = Trial.ang(:,4,5,3);
+ang = Trial.ang(:,5,7,3);
+ang = Trial.ang(:,4,5,3)-Trial.ang(:,3,5,3);
 ang(isnan(ang))=40;
 bang = ButFilter(ang,3,[1,20]./(Trial.ang.sampleRate./2),'bandpass').*500;
 %bang = Trial.ang(:,4,5,3);
@@ -749,7 +751,7 @@ lbang = WhitenSignal([Trial.lfp.data,bang],[],1);
 lbang = MTADlfp([],[],[lbang],Trial.ang.sampleRate);
 
 
-states = 'vrwgl';
+states = 'trwgl';
 nsts = numel(states);
 nchan = numel(chans);
  figure,
