@@ -1,47 +1,53 @@
 
 %% Mcam
-hpx = 953;
-vpx = 881;
-msize = 8 %mm
-fov = 41;
+cam(1).hpx = 953;
+cam(1).vpx = 881;
+cam(1).msize = 8; %mm
+cam(1).fov = 41;
 
 %%18w
-hpx = 1664;
-vpx = 1088;
-msize = 8 %mm
-fov = 70;
+cam(2).hpx = 1664;
+cam(2).vpx = 1088;
+cam(2).msize = 8; %mm
+cam(2).fov = 51;
 
 
 %%p18w
-hpx = 1664;
-vpx = 1088;
-msize = 4 %mm
-fov = 67;
+cam(3).hpx = 1664;
+cam(3).vpx = 1088;
+cam(3).msize = 8; %mm
+cam(3).fov = 70;
 
 
 %%p41
-hpx=2048;
-vpx=2048;
-msize=8;
-fov = 51;
+cam(4).hpx=2048;
+cam(4).vpx=2048;
+cam(4).msize=8;
+cam(4).fov = 51;
 
 
-fov = deg2rad(fov);
+
+
+for i=1:numel(c)
+end
+
+i = 3
+
+cam(i).fov = deg2rad(cam(i).fov);
 r = [.4:.01:4]';
+c = sqrt((r-r.*cos(cam(i).fov)).^2+(r.*sin(cam(i).fov)).^2);
 
-c = sqrt((r-r.*cos(fov)).^2+(r.*sin(fov)).^2);
-
-hppm = msize./(c./hpx.*1000);
-vppm = msize./(c./vpx.*1000);
+hppm = cam(i).msize./(c./cam(i).hpx.*1000);
+vppm = cam(i).msize./(c./cam(i).vpx.*1000);
 
 
 mazer = [.5:.1:4]';
 
-dr = (2.*r./sin((pi-fov)./2)).*sqrt(1/((1-cos(fov)).^2+sin(fov).^2)).*cos(fov./2);
+dr = (2.*r./sin((pi-cam(i).fov)./2)).*sqrt(1/((1-cos(cam(i).fov)).^2+sin(cam(i).fov).^2)).*cos(cam(i).fov./2);
 
 
 figure
 plot([r,r,r,r],[hppm,vppm,c,dr])
 
 
-
+camera(1).pos = 

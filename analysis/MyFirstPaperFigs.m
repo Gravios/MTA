@@ -725,7 +725,9 @@ MTAConfiguration('/gpfs01/sirota/bach/data/gravio','absolute');
 %sname = 'jg05-20120315';
 %sname = 'jg05-20120310';
 %sname = 'jg05-20120309';
-sname = 'co01-20140222';
+sname = 'jg04-20120129';
+%sname = 'jg04-20120130';
+%sname = 'co01-20140222';
 %chans = [68:3:95];
 chans = [1:4:32];
 
@@ -740,9 +742,11 @@ Trial.lfp.resample(Trial.ang);
 %figure,plot(linspace(0,10000/1250,10000),Trial.lfp(1:10000,1))
 %hold on,plot(linspace(0,1000/Trial.ang.sampleRate,1000),lfp(1:1000,1),'r.')
 
-ang = Trial.ang(:,4,5,3);
-ang = Trial.ang(:,5,7,3);
-ang = Trial.ang(:,4,5,3)-Trial.ang(:,3,5,3);
+%ang= [0;ButFilter(Filter0(gausswin(11)./sum(gausswin(11)),Trial.vel(7)),3,[1,30]./(Trial.xyz.sampleRate/2),'bandpass')];
+%ang= [0;ButFilter(Trial.vel(5),3,[1,30]./(Trial.xyz.sampleRate/2),'bandpass')];
+ang= Trial.ang(:,4,5,3);
+%ang = Trial.ang(:,5,7,3);
+%ang = Trial.ang(:,4,5,3)-Trial.ang(:,3,5,3);
 ang(isnan(ang))=40;
 bang = ButFilter(ang,3,[1,20]./(Trial.ang.sampleRate./2),'bandpass').*500;
 %bang = Trial.ang(:,4,5,3);
@@ -750,6 +754,15 @@ bang = ButFilter(ang,3,[1,20]./(Trial.ang.sampleRate./2),'bandpass').*500;
 lbang = WhitenSignal([Trial.lfp.data,bang],[],1);
 lbang = MTADlfp([],[],[lbang],Trial.ang.sampleRate);
 
+
+
+[ta,fa,ya,pha,sfa] = mtchglong(lbang(:,[1,9]),2^9,Trial.ang.sampleRate,2^8,(2^8)*.875,[],[],[],[1,30]);
+
+figure,subplot(211),bar(linspace(1,4,64),histc(max(log10(ya(Trial.stc{'g'},fa>5&fa<14,2,2)),[],2),linspace(1,4,64)),'histc')
+subplot(212),bar(linspace(1,4,64),histc(max(log10(ya(Trial.stc{'l'},fa>5&fa<14,2,2)),[],2),linspace(1,4,64)),'histc')
+
+figure,subplot(211),bar(linspace(1,4,128),histc(log10(Trial.xyz(Trial.stc{'g'},7,3)),linspace(1,4,128)),'histc')
+       subplot(212),bar(linspace(1,4,128),histc(log10(Trial.xyz(Trial.stc{'l'},7,3)),linspace(1,4,128)),'histc')
 
 states = 'trwgl';
 nsts = numel(states);
@@ -764,7 +777,7 @@ subplot2(nchan,nsts,i,s),
 imagesc(f,f,Co(:,:,i,nchan+1)'),axis xy,
 if i==1,title(Trial.stc{states(s)}.label),end
 if i==1&s==1,ylabel([ 'Channel: ',num2str(chans(i))]),end
-caxis([-1,1])
+caxis([-.5,.5])
 sub_pos = get(gca,'position'); % get subplot axis position
 set(gca,'position',sub_pos.*[1 1 1.2 1.2]) % stretch its width and height
 
