@@ -8,6 +8,9 @@ test_sample_size = 7;
 min_sample_size = 4;
 
 
+MTAConfiguration('/gpfs01/sirota/bach/data/gravio','absolute');
+
+
 
 %% Load Session if Session is not already a MTASession
 if ~isa(Session,'MTASession'),
@@ -65,7 +68,7 @@ wufrs = GetSegs(ufrwd,round(walk_evts{1}-3*newSampleRate),round(6*newSampleRate)
 sufrs = GetSegs(ufrwd,round(walk_evts{2}-3*newSampleRate),round(6*newSampleRate),[]);
 
 %pfMaxPosRear = zeros(size(pfr.cluMap,1),2);
-[urate,pfMaxPos] = pfc.maxRate(units);
+[urate,upos] = pfc.maxRate(units);
 
 rposon =  myxyz(rear_evts{1},:);
 rposoff = myxyz(rear_evts{2},:);
@@ -93,6 +96,7 @@ end
 
 %% Generate random samples from the walk surrogates
 wsss = size(wposon,1);
+gss = zeros(numClu,ntrans);
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 
 for unit = 1:size(rufrs,3),
@@ -140,6 +144,7 @@ for unit = 1:size(rufrs,3),
 
     %% max number of trajectories for each behavioral transition
     sample_size = cellfun(@size,cufrs,repmat({2},1,ntrans));
+    gss(unit,:) = sample_size;
     rand_samp_ind = zeros(test_sample_size,ntrans,2,niter);
     for i = 1:ntrans,
         for j = 1:2,
@@ -268,6 +273,122 @@ end
 toc
 
 
+
+%% Calculating random permuted differences for obvStates VS surState
+prankstat = zeros(numel(tbins),numClu,ntrans-1);
+hrankstat = zeros(numel(tbins),numClu,ntrans-1);
+tic
+for u = 1:numClu;
+    for p1 = 1:ntrans,
+        for t = 1:nbins,
+            [prankstat(t,u,p1),hrankstat(t,u,p1)] = ranksum(sq(diff_stat(t,u,p1,p1,~isnan(diff_stat(t,u,p1,p1,:)))),sq(diff_stat(t,u,p1,ntrans,~isnan(diff_stat(t,u,p1,ntrans,:)))));
+        end
+    end
+end
+toc
+
+
+
+auxdata.numUnits = numClu;
+auxdata.nbins = nbins;
+auxdata.tbins = tbins;
+auxdata.tbound = find(auxdata.tbins>-2000&auxdata.tbins<2000);
+auxdata.bname = [];
+auxdata.ntrans = ntrans;
+auxdata.newSampleRate = newSampleRate;
+
+%% metadata
+data.filebase = repmat({Trial.filebase},1,numClu);
+data.clu = units';
+data.el = Trial.spk.map(units,2)';
+
+
+%% data
+data.idd = zeros(nbins,numClu,ntrans,niter);
+data.idd_p95 = zeros(nbins,numClu,ntrans);
+data.idd_p05 = zeros(nbins,numClu,ntrans);
+data.pdd = zeros(nbins,numClu,ntrans,niter);
+data.pdd_p95 = zeros(nbins,numClu,ntrans);
+data.pdd_p05 = zeros(nbins,numClu,ntrans);
+data.edd = zeros(nbins,numClu,ntrans,niter);
+data.edd_p95 = zeros(nbins,numClu,ntrans);
+data.edd_p05 = zeros(nbins,numClu,ntrans);
+
+data.midd = zeros(nbins,numClu,ntrans);
+data.mpdd = zeros(nbins,numClu,ntrans);
+data.medd = zeros(nbins,numClu);
+
+data.idd_pdd_prs = prankstat;
+data.idd_pdd_hrs = hrankstat;
+data.bhv_sample_size = gss';
+          
+for p1 = 1:ntrans,data.idd(:,:,p1,:) = sq(diff_stat(:,:,p1,p1,:));end
+for p1 = 1:ntrans,data.idd_p95(:,:,p1) = wrucl(:,:,p1,p1);,end
+for p1 = 1:ntrans,data.idd_p05(:,:,p1) = wrlcl(:,:,p1,p1);,end
+
+for p1 = 1:ntrans,data.pdd(:,:,p1,:) = sq(diff_stat(:,:,p1,ntrans,:));end
+for p1 = 1:ntrans,data.pdd_p95(:,:,p1) = wrucl(:,:,p1,ntrans);,end
+for p1 = 1:ntrans,data.pdd_p05(:,:,p1) = wrlcl(:,:,p1,ntrans);,end
+
+for p1 = 1:ntrans,data.edd(:,:,p1,:) = sq(diff_stat(:,:,ntrans,p1,:));,end
+for p1 = 1:ntrans,data.edd_p95(:,:,p1) = wrucl(:,:,ntrans,p1);,end
+for p1 = 1:ntrans,data.edd_p05(:,:,p1) = wrlcl(:,:,ntrans,p1);,end
+
+for p1 = 1:ntrans,data.midd(:,:,p1) = sq(nanmean(diff_stat(:,:,p1,p1,:),5));end
+for p1 = 1:ntrans,data.mpdd(:,:,p1) = sq(nanmean(diff_stat(:,:,p1,ntrans,:),5));end
+for p1 = 1:ntrans,data.medd(:,:,p1) = sq(nanmean(diff_stat(:,:,ntrans,p1,:),5));end
+
+
+
+
+%% Calculate the SNR between the intra-distribution-difference and
+%% the permuted-distribution-difference
+data.pdd_idd_snr = zeros(nbins,numClu,ntrans);
+tic
+for u = 1:numClu,
+    for p1 = 1:ntrans,
+        data.pdd_idd_snr(:,u,p1) = (nanmean(diff_stat(:,u,p1,p1,1:niter),5)-nanmean(diff_stat(:,u,ntrans,p1,1:niter),5))./(nanvar(diff_stat(:,u,p1,p1,1:niter),[],5)+nanvar(diff_stat(:,u,ntrans,p1,1:niter),[],5));
+    end
+end
+toc
+%% Calculate the SNR between the intra-distribution-difference and
+%% the permuted-distribution-difference
+data.pdd_edd_snr = zeros(nbins,numClu,ntrans);
+tic
+for u = 1:numClu,
+    for p1 = 1:ntrans,
+        data.pdd_edd_snr(:,u,p1) = (nanmean(diff_stat(:,u,ntrans,ntrans,1:niter),5)-nanmean(diff_stat(:,u,ntrans,p1,1:niter),5))./(nanvar(diff_stat(:,u,ntrans,ntrans,1:niter),[],5)+nanvar(diff_stat(:,u,ntrans,p1,1:niter),[],5));
+    end
+end
+toc
+
+
+%% PVAL of mean of edd vs dist of surrogate pdd
+data.medd_pval = zeros(nbins,numClu,ntrans);
+medd_pval = sum((repmat(diff_stat(:,:,ntrans,ntrans,1:niter),[1,1,ntrans,ntrans,1])<repmat(nanmean(diff_stat(:,:,ntrans,:,1:niter),5),[1,1,ntrans,1,niter])),5)./nnsamp;
+
+medd_pval(medd_pval==1) = medd_pval(medd_pval==1) - 1./nnsamp(medd_pval==1);
+medd_pval(medd_pval==0) = medd_pval(medd_pval==0) + 1./nnsamp(medd_pval==0);
+
+medd_pval = 0.5-abs(medd_pval-0.5);
+
+tic
+for u = 1:numClu,
+    for p1 = 1:ntrans,
+        data.medd_pval(:,u,p1) = medd_pval(:,u,p1,p1);
+    end
+end
+toc
+
+data.medd_pval(data.medd_pval>0.5) =data.medd_pval(data.medd_pval>0.5)-1;
+data.nnsamp = nnsamp;
+
+
+data = StructArray(data,2);
+
+save(fullfile(Trial.spath, [Trial.filebase '.cufrccg.' ...
+      num2str(thresh_rad) '.pfc_' pfcbhv '.sur_' surbhv ...
+      '.mat']), 'data','auxdata','-v7.3')
           
           % 
 

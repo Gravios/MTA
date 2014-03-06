@@ -3,21 +3,24 @@
 
 Trial = MTATrial('jg05-20120317');
 fwin = gausswin(11)./sum(gausswin(11));
-sst = 'w';
-Trial.ang.load(Trial.sync);
+Trial.ang.load(Trial);
+Trial.xyz.load(Trial);
 Trial.xyz.filter(fwin);
 
 
 vel =[];
 vel = [vel,Filter0(gausswin(61)./sum(gausswin(61)),log10(Trial.vel({'spine_lower'}))).^2];
-vel = [vel,log10(Trial.vel({'spine_lower','spine_upper','head_front'},[1,2]))];
-vel = [vel,log10(Trial.vel({'spine_lower','spine_upper','head_front'},3))];
-vel = [vel,sqrt(sum(diff(Trial.com(Trial.xyz.model.rb({'spine_lower','pelvis_root','spine_middle'}))).^2,3))];
+vel = [vel,Filter0(fwin,log10(Trial.vel({'spine_lower','spine_upper','head_front'},[1,2])))];
+vel = [vel,Filter0(fwin,log10(Trial.vel({'spine_lower','spine_upper','head_front'},3)))];
+vel = [vel,Filter0(gausswin(61)./sum(gausswin(61)),sqrt(sum(diff(Trial.com(Trial.xyz.model.rb({'spine_lower','pelvis_root','spine_middle'}))).^2,3)))];
 %vel = [vel,Filter0(fwin,diff(circ_dist(Trial.ang(1:end,1,2,1),Trial.ang(1:end,1,3,1)))+diff(circ_dist(Trial.ang(1:end,2,3,1),Trial.ang(1:end,2,4,1)))+diff(circ_dist(Trial.ang(1:end,3,4,1),Trial.ang(1:end,3,5,1))))];
-vel = [vel,log10(abs(Filter0(fwin,circ_dist(Trial.ang(1:end-1,1,2,1),Trial.ang(1:end-1,1,3,1)))).*...
-          abs(Filter0(fwin,circ_dist(Trial.ang(1:end-1,2,3,1),Trial.ang(1:end-1,2,4,1)))).*...
-          abs(Filter0(fwin,circ_dist(Trial.ang(1:end-1,3,4,1),Trial.ang(1:end-1,3,5,1)))))];
-
+% $$$ vel = [vel,log10(abs(Filter0(fwin,circ_dist(Trial.ang(1:end-1,1,2,1),Trial.ang(1:end-1,1,3,1)))).*...
+% $$$           abs(Filter0(fwin,circ_dist(Trial.ang(1:end-1,2,3,1),Trial.ang(1:end-1,2,4,1)))).*...
+% $$$           abs(Filter0(fwin,circ_dist(Trial.ang(1:end-1,3,4,1),Trial.ang(1:end-1,3,5,1)))))];
+% $$$ 
+% $$$ aba = log10(abs(Filter0(fwin,circ_dist(Trial.ang(1:end-1,1,2,1),Trial.ang(1:end-1,1,3,1))))+...
+% $$$           abs(Filter0(fwin,circ_dist(Trial.ang(1:end-1,2,3,1),Trial.ang(1:end-1,2,4,1))))+...
+% $$$           abs(Filter0(fwin,circ_dist(Trial.ang(1:end-1,3,4,1),Trial.ang(1:end-1,3,5,1)))));
 % aba = abs(Filter0(fwin,circ_dist(Trial.ang(1:end-1,1,2,1),Trial.ang(1:end-1,1,3,1)))).*...
 %       abs(Filter0(fwin,circ_dist(Trial.ang(1:end-1,2,3,1),Trial.ang(1:end-1,2,4,1)))).*...
 %       abs(Filter0(fwin,circ_dist(Trial.ang(1:end-1,3,4,1),Trial.ang(1:end-1,3,5,1))));
@@ -27,13 +30,13 @@ vel = [vel,log10(abs(Filter0(fwin,circ_dist(Trial.ang(1:end-1,1,2,1),Trial.ang(1
 %         circ_dist(Trial.ang(1:end-1,4,5,1),Trial.ang(1:end-1,3,4,1)),...
 %         circ_dist(Trial.ang(1:end-1,5,7,1),Trial.ang(1:end-1,4,5,1))];
        
-if isempty(y),
-dav = Filter0(fwin,diff(circ_dist(Trial.ang(1:end,1,2,1),Trial.ang(1:end,1,3,1))))+...
-      Filter0(fwin,diff(circ_dist(Trial.ang(1:end,2,3,1),Trial.ang(1:end,2,4,1))))+...
-      Filter0(fwin,diff(circ_dist(Trial.ang(1:end,3,4,1),Trial.ang(1:end,3,5,1))));
-wdav = WhitenSignal(dav);
-[y,t,f] = mtchglong(wdav,2^8,Trial.xyz.sampleRate,2^7,2^7-1,[],[],[],[1,20]);
-end
+% $$$ if isempty(y),
+% $$$ dav = Filter0(fwin,diff(circ_dist(Trial.ang(1:end,1,2,1),Trial.ang(1:end,1,3,1))))+...
+% $$$       Filter0(fwin,diff(circ_dist(Trial.ang(1:end,2,3,1),Trial.ang(1:end,2,4,1))))+...
+% $$$       Filter0(fwin,diff(circ_dist(Trial.ang(1:end,3,4,1),Trial.ang(1:end,3,5,1))));
+% $$$ wdav = WhitenSignal(dav);
+% $$$ [y,t,f] = mtchglong(wdav,2^8,Trial.xyz.sampleRate,2^7,2^7-1,[],[],[],[1,20]);
+% $$$ end
 %vel = [vel,[log10(sum(y(:,f>8&f<16),2)./sum(y(:,f<7),2));zeros(Trial.xyz.size(1)-numel(t)-1,1)]];
   
 vel = [vel,Trial.ang(1:end-1,1,2,2)];
@@ -64,7 +67,7 @@ mean_vel_rear = repmat(nanmean(vel_rear),vel.size(1),1);
 d_rear = zeros(vel.size(1),1);
 d_rear(vel_not_nan) = -.5*log(det(cov_walk))-.5*dot(((vel.data(vel_not_nan,:)-mean_vel_rear(vel_not_nan,:))/cov_rear)',(vel.data(vel_not_nan,:)-mean_vel_rear(vel_not_nan,:))');
 
-dwin= gausswin(21)./sum(gausswin(21));
+dwin= gausswin(61)./sum(gausswin(61));
 figure
 %plot(Filter0(dwin,d_walk),'.'),hold on,plot(Filter0(dwin,d_rear),'.r'),
 plot(Filter0(dwin,d_walk)),hold on,plot(Filter0(dwin,d_rear),'r'),

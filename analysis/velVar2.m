@@ -17,13 +17,14 @@ v = vel(:,1:8,1);
 
 
 
-ixy = zeros(numel(sbound),size(v,2),size(v,2),500);
+ixy = zeros(numel(sbound),size(v,2),size(v,2),1000);
 v = vel(x:x+200,1:8,1);
 vind = v(:,1)~=0;
 nind = numel(vind);
+if matlabpool('size')==0,matlabpool open 12,end
 
 xc = 0;
-for x = round(linspace(1,25*500,500)),
+for x = round(linspace(1,10*1000,1000)),
 s = 1;
 v = vel(x:x+200,1:8,1);
 vind = v(:,1)~=0;
@@ -33,7 +34,7 @@ xc = xc+1;
 for m = 1:size(v,2)
 for o = 1:size(v,2)
 for shift = sbound
-[out,xb,yb,p]=hist2([log10(v(vind,m)),circshift(log10(v(vind,o)),shift)],edges);
+[out,xb,yb,p]=hist2([log10(v(vind,m)),circshift(log10(v(vind,o)),shift)],edges,edges);
 pxy = out./nind;
 px = histc(log10(v(vind,m)),xb);
 px = px(1:end-1)/nind;
@@ -54,12 +55,17 @@ mixy = sq(mixy);
 sixy = (sq(sixy)-ceil(numel(sbound)/2))./Trial.xyz.sampleRate*1000;
 
 
-figure
-subplot(1,2,1),imagesc(mixy(:,:))
-subplot(1,2,2),imagesc(sixy(:,:))
+%figure
+%subplot(1,2,1),imagesc(mixy(:,:))
+%subplot(1,2,2),imagesc(sixy(:,:))
 
 
-
+figure,plot(var(sq(reshape(sixy(:,:,:),[],1000))',[],2))
+figure,plot(diff(Filter0(gausswin(7)./sum(gausswin(7)),reshape(mixy([1:3],[5:7],:),[],1000)')))
+Lines(Trial.stc{'w',Trial.xyz.sampleRate/10}.data(1:10,1),[],'b');
+Lines(Trial.stc{'w',Trial.xyz.sampleRate/10}.data(1:10,2),[],'b');
+Lines(Trial.stc{'r',Trial.xyz.sampleRate/10}.data(1:10,1),[],'r');
+Lines(Trial.stc{'r',Trial.xyz.sampleRate/10}.data(1:10,2),[],'r');
 
 % $$$ figure,
 % $$$ for f = 1:filtn,

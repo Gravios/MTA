@@ -1,7 +1,7 @@
 Trial = MTATrial('jg05-20120317');
 
-pfw = MTAPlaceField(Trial,[],'walk');
-pfr = MTAPlaceField(Trial,[],'rear');
+pfw = MTAAknnpfs(Trial,[],'walk');
+pfr = MTAAknnpfs(Trial,[],'rear');
 
 
 load(['/data/homes/gravio/data/analysis/jg05-20120317/jg05-' ...
@@ -17,11 +17,12 @@ hks = zeros(auxdata.nbins,dlen,auxdata.ntrans);
 for u = 1:dlen
 for p1 = 1:auxdata.ntrans,
 for t = 1:auxdata.nbins,
+try
 [prs(t,u,p1),hrs(t,u,p1)] = ranksum(sq(data(u).pdd(t,p1,:)), ...
                                     sq(data(u).edd(t,p1,:)));
 [hks(t,u,p1),pks(t,u,p1)] = kstest2(sq(data(u).pdd(t,p1,:)), ...
                                     sq(data(u).idd(t,p1,:)));
-
+end
 end
 end
 end
@@ -59,4 +60,4 @@ figure,plot(-data([data(:).clu]==u).pdd_edd_snr(:,s));
 s =2
 
 figure,plot(auxdata.tbins,-log10(eps+prs(:,s)),'-b',auxdata.tbins,-log10(eps+pks(:,s)),'-r')
-axis tight,ylim([0,0.000001])
+%axis tight,ylim([0,0.
