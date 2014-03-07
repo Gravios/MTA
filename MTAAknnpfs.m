@@ -230,10 +230,11 @@ classdef MTAAknnpfs < hgsetget %< MTAAnalysis
             end
         end
         
-        function rateMap = plot(Pfs,unit,varargin)
+        function rateMap = plot(Pfs,varargin)
         % rateMap = plot(Pfs,unit,varargin)
         % [nMode,ifColorbar,colorLimits,sigDistr] = DefaultArgs(varargin,{'',0,[],[]});
-            [nMode,ifColorbar,colorLimits,sigDistr] = DefaultArgs(varargin,{'',0,[],[]});
+            [unit,nMode,ifColorbar,colorLimits,sigDistr] = DefaultArgs(varargin,{[],'',0,[],[]});
+            if isempty(unit),unit=Pfs.data.clu(1);end
             switch Pfs.parameters.type
                 case 'xy'
                     bin1 = Pfs.adata.bins{1};
