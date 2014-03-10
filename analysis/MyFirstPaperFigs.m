@@ -719,57 +719,66 @@ ticks_lin2log
 %% Figure - 9 Comodugram rhm and lfp
 
 
-MTAConfiguration('/gpfs01/sirota/bach/data/gravio','absolute');
+%MTAConfiguration('/gpfs01/sirota/bach/data/gravio','absolute');
 %MTAConfiguration('/data/data/gravio','absolute');
 %sname = 'jg05-20120317';
 %sname = 'jg05-20120315';
 %sname = 'jg05-20120310';
 %sname = 'jg05-20120309';
-sname = 'jg04-20120129';
+%sname = 'jg04-20120129';
 %sname = 'jg04-20120130';
 %sname = 'co01-20140222';
 %chans = [68:3:95];
-chans = [1:4:32];
+%chans = [1:4:32];
 
-
+sname = 'jg05-20120310';
+chans = 68:3:95;
 
 Trial = MTATrial(sname,'all');
-Trial.ang.load(Trial);
+%Trial.ang.load(Trial);
 Trial.xyz.load(Trial);
 Trial.lfp.load(Trial,chans);
-Trial.lfp.resample(Trial.ang);
+Trial.lfp.resample(Trial.xyz);
 
-%figure,plot(linspace(0,10000/1250,10000),Trial.lfp(1:10000,1))
-%hold on,plot(linspace(0,1000/Trial.ang.sampleRate,1000),lfp(1:1000,1),'r.')
+rb = Trial.xyz.model.rb({'head_back','head_left','head_front','head_right'});
+hcom = Trial.com(rb);
+Trial.addMarker(Trial.xyz,'hcom',[.7,0,.7],{{'head_back','head_front',[0,0,1]}},hcom);
+Trial.addMarker(Trial.xyz,'fhcom',[.7,1,.7],{{'head_back','head_front',[0,0,1]}},permute(Filter0(gausswin(61)./sum(gausswin(61)),hcom),[1,3,2]));
 
-%ang= [0;ButFilter(Filter0(gausswin(11)./sum(gausswin(11)),Trial.vel(7)),3,[1,30]./(Trial.xyz.sampleRate/2),'bandpass')];
-%ang= [0;ButFilter(Trial.vel(5),3,[1,30]./(Trial.xyz.sampleRate/2),'bandpass')];
-ang= Trial.ang(:,4,5,3);
-%ang = Trial.ang(:,5,7,3);
-%ang = Trial.ang(:,4,5,3)-Trial.ang(:,3,5,3);
-ang(isnan(ang))=40;
-bang = ButFilter(ang,3,[1,20]./(Trial.ang.sampleRate./2),'bandpass').*500;
-%bang = Trial.ang(:,4,5,3);
+ang = Trial.ang.copy;
+ang.create(Trial);
+ang.data = ang(:,5,11,3);
+%ang.resample(Trial.lfp);
+ang = ang.data;
+ang(isnan(ang))=nanmean(ang);
+
+%bang = ButFilter(ang,3,[1,20]./(Trial.ang.sampleRate./2),'bandpass').*500;
+bang = ang;
+
+%abang = WhitenSignal(bang);
 %lbang = WhitenSignal(Trial.lfp.data,[],1);
 lbang = WhitenSignal([Trial.lfp.data,bang],[],1);
-lbang = MTADlfp([],[],[lbang],Trial.ang.sampleRate);
+%lbang = MTADlfp([],[],lbang,Trial.lfp.sampleRate);
+lbang = MTADlfp([],[],lbang,Trial.ang.sampleRate);
+%lbang = MTADlfp([],[],[lbang,abang],Trial.ang.sampleRate);
 
 
 
-[ta,fa,ya,pha,sfa] = mtchglong(lbang(:,[1,9]),2^9,Trial.ang.sampleRate,2^8,(2^8)*.875,[],[],[],[1,30]);
+%[ta,fa,ya,pha,sfa] = mtchglong(lbang(:,[1,9]),2^9,Trial.ang.sampleRate,2^8,(2^8)*.875,[],[],[],[1,30]);
 
-figure,subplot(211),bar(linspace(1,4,64),histc(max(log10(ya(Trial.stc{'g'},fa>5&fa<14,2,2)),[],2),linspace(1,4,64)),'histc')
-subplot(212),bar(linspace(1,4,64),histc(max(log10(ya(Trial.stc{'l'},fa>5&fa<14,2,2)),[],2),linspace(1,4,64)),'histc')
+%figure,subplot(211),bar(linspace(1,4,64),histc(max(log10(ya(Trial.stc{'g'},fa>5&fa<14,2,2)),[],2),linspace(1,4,64)),'histc')
+%subplot(212),bar(linspace(1,4,64),histc(max(log10(ya(Trial.stc{'l'},fa>5&fa<14,2,2)),[],2),linspace(1,4,64)),'histc')
 
-figure,subplot(211),bar(linspace(1,4,128),histc(log10(Trial.xyz(Trial.stc{'g'},7,3)),linspace(1,4,128)),'histc')
-       subplot(212),bar(linspace(1,4,128),histc(log10(Trial.xyz(Trial.stc{'l'},7,3)),linspace(1,4,128)),'histc')
+%figure,subplot(211),bar(linspace(1,4,128),histc(log10(Trial.xyz(Trial.stc{'g'},7,3)),linspace(1,4,128)),'histc')
+%       subplot(212),bar(linspace(1,4,128),histc(log10(Trial.xyz(Trial.stc{'l'},7,3)),linspace(1,4,128)),'histc')
 
-states = 'trwgl';
+states = 'wgl';
 nsts = numel(states);
 nchan = numel(chans);
  figure,
 for s = 1:nsts
 x = [lbang(Trial.stc{states(s)},:)];
+%[Co,f] = Comodugram(x,2^11,Trial.lfp.sampleRate,[1,120],2^10);
 [Co,f] = Comodugram(x,2^9,Trial.ang.sampleRate,[1,20],2^8);
 
 for i =1:nchan

@@ -26,16 +26,15 @@ classdef MTAAknnpfs < hgsetget %< MTAAnalysis
                 case 'MTATrial'
                     %% Base values for every analysis -> perhaps create superclass later
                     Session = Obj;
-                    SessionName = Session.name;
-                    MazeName    = Session.maze.name;
-                    TrialName   = Session.trialName;
-                    
+
                     Pfs.path = Session.spath;
                     Pfs.tag  = tag;
                     
-                    Pfs.session.name = SessionName;
-                    Pfs.session.trialName   = TrialName;
-                    Pfs.session.mazeName    = MazeName;
+                    % Session struct holding the basic information about
+                    % the session used to create the analysis object.
+                    Pfs.session.name = Session.name;
+                    Pfs.session.trialName   = Session.trialName;
+                    Pfs.session.mazeName    = Session.maze.name;
                     
                     pfsState = Session.stc{states,Session.xyz.sampleRate}.copy;
                     
