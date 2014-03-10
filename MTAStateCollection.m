@@ -6,7 +6,7 @@ classdef MTAStateCollection < hgsetget
 %                               file base follows the convention
 %                               [Session.name Session.Maze.name Session.trialName]
 %  varargin:
-%    [label_mode,overwrite]
+%    [path,filename,mode,sync,origin,overwrite,ext]
 %
 %    label_mode:  string,  3-4 letter name of the labeling object
 %    overwrite:   boolean, flag to overwrite an existing bhv file
@@ -19,13 +19,10 @@ classdef MTAStateCollection < hgsetget
         sync = [];
         origin = [];
         ext = [];        
-    end
-    
-    properties (Transient=true)
         %States - cellArray(MTADepoch): object containing State information         
         states = {};
     end
-
+    
     methods
         function Stc = MTAStateCollection(varargin)
             [path,filename,mode,sync,origin,overwrite,ext] = DefaultArgs(varargin,{[],[],'manual',[],[],0,'stc'}); %#ok<*PROP>
@@ -46,35 +43,43 @@ classdef MTAStateCollection < hgsetget
                 Stc.ext = ext;
                 Stc.save(overwrite);
             else
-                Stc = Stc.load;
+                Stc.load;
             end
         end
-      
+
         function Stc = load(Stc,varargin)
             [nMode] = DefaultArgs(varargin,{[]});
             if isempty(nMode)&&exist(Stc.fpath,'file')
                 ds = load(Stc.fpath);
-                Stc.states = ds.states;
+                %Stc = ds.Stc.copy;
+                sprop = properties(Stc);
+                for s = 1:numel(sprop)
+                    Stc.(sprop{s}) = ds.Stc.(sprop{s});
+                end
             else
                 Stc.updateMode(nMode);
                 Stc.states = {};
+
                 if exist(Stc.fpath,'file')
-                    Stc = Stc.load;
+                sprop = properties(Stc);
+                for s = 1:numel(sprop)
+                    Stc.(sprop{s}) = ds.Stc.(sprop{s});
+                end
                 end
             end
         end
-        
+
         function out = save(Stc,varargin)
             [overwrite] = DefaultArgs(varargin,{0});
             out = false;
             states = Stc.states;  %#ok<NASGU>
             if ~exist(Stc.fpath,'file')
-                save( Stc.fpath,'states','-v7.3');
+                save( Stc.fpath,'Stc','-v7.3');
                 out = true;
             elseif exist(Stc.fpath,'file')&&overwrite
                 warning(['Overwriting: ' Stc.fpath]);
                 out = true;
-                save( Stc.fpath,'states','-v7.3');
+                save( Stc.fpath,'Stc','-v7.3');
             else
                 warning(['File exists: ' Stc.fpath, ' - flag the overwrite option  to save']);
             end
@@ -213,11 +218,11 @@ classdef MTAStateCollection < hgsetget
                 end
             end
         end
-        
+
         function Stc = updatePath(Stc,path)
             Stc.path = path;
         end
-        
+
         function Stc = updateMode(Stc,mode)
             Stc.mode = mode;
             [~,fname,fext] = fileparts(Stc.filename);

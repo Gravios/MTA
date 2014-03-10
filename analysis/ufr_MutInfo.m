@@ -1,7 +1,7 @@
 MTAConfiguration('/gpfs01/sirota/bach/data/gravio','absolute');
 Trial = MTATrial('jg05-20120317','all');
 Trial.xyz.load(Trial);
-Trial.ufr.create(Trial,Trial.xyz,'rear&walk');
+Trial.ufr.create(Trial,Trial.xyz,'walk&theta');
 
 edges = linspace(-2,2,64);
 sbound = -10:10;
@@ -36,8 +36,8 @@ s = 1;
 end
 end
 
-sxy = reshape(cell2mat(ixy),[],size(v,2),size(v,2));
-[mixy,sixy] = max(sxy);
+wxy = reshape(cell2mat(ixy),[],size(v,2),size(v,2));
+[mixy,sixy] = max(rxy);
 %[mixy,sixy] = max(mint);
 mixy = sq(mixy);
 sixy = (sq(sixy)-ceil(numel(sbound)/2))./Trial.xyz.sampleRate*1000;
@@ -72,7 +72,7 @@ us = [20,62];
 us = [9,65];
 us = [35,47];
 us = [70,35];
-
+us = [89,35];
 
 figure,
 subplot(221),pfw.plot(us(1));

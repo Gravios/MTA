@@ -66,19 +66,20 @@ classdef MTATrial < MTASession
                 
                 ds = load(fullfile(Trial.spath, [Trial.filebase '.trl.mat']));
                 Trial.sync = ds.sync;
-                if isfield(ds,'stcmode'),
-                    if ~isempty(ds.stcmode),
-                        Trial.stc.updateFilename([Trial.filebase,'.stc.' ds.stcmode '.mat']);
-                        Trial.stc.updateMode(ds.stcmode);
-                        if exist(Trial.stc.fpath,'file')
-                            Trial.stc.load;
-                        else
-                            Trial.stc.updateMode('default');                  
-                            Trial.stc.load;
-                        end                    
-                    end
-                end
-                
+                try
+                 if isfield(ds,'stcmode'),
+                     if ~isempty(ds.stcmode),
+                         Trial.stc.updateFilename([Trial.filebase,'.stc.' ds.stcmode '.mat']);
+                         Trial.stc.updateMode(ds.stcmode);
+                         if exist(Trial.stc.fpath,'file')
+                             Trial.stc.load;
+                         else
+                             Trial.stc.updateMode('default');                  
+                             Trial.stc.load;
+                         end                    
+                     end
+                 end
+                end             
             else
                 
                 msg.message = 'The provided synchronization periods are empty.';
@@ -86,15 +87,15 @@ classdef MTATrial < MTASession
                 
                 switch class(sync)
                     
-                    case 'MTADepoch'
-                        if sync.isempty,
-                            msg.stack = dbstack;
-                            error(msg);
-                        else
-                            Trial.sync = sync.copy;
-                        end
-                        
-                    case 'double'
+                  case 'MTADepoch'
+                    if sync.isempty,
+                        msg.stack = dbstack;
+                        error(msg);
+                    else
+                        Trial.sync = sync.copy;
+                    end
+                    
+                  case 'double'
 
                         if isempty(sync),
                             msg.stack = dbstack;

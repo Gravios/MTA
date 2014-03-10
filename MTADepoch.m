@@ -1,5 +1,5 @@
 classdef MTADepoch < MTAData
-% MTADepoch(path,filename,data,sampleRate,syncOrigin,label,key,datatype,extension)
+% MTADepoch(path,filename,data,sampleRate,syncPeriods,syncOrigin,label,key,datatype,extension)
 % MTADepoch is a container for periods of time as defined by start and stop
 % instances recorded in a Nx2 array, within the context of a dynamic
 % temporal domain (e.g. MTASession or MTATrial).

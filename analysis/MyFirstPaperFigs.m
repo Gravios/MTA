@@ -719,19 +719,17 @@ ticks_lin2log
 %% Figure - 9 Comodugram rhm and lfp
 
 
-%MTAConfiguration('/gpfs01/sirota/bach/data/gravio','absolute');
+MTAConfiguration('/gpfs01/sirota/bach/data/gravio','absolute');
 %MTAConfiguration('/data/data/gravio','absolute');
-%sname = 'jg05-20120317';
+
 %sname = 'jg05-20120315';
-%sname = 'jg05-20120310';
+sname = 'jg05-20120310';
 %sname = 'jg05-20120309';
 %sname = 'jg04-20120129';
 %sname = 'jg04-20120130';
 %sname = 'co01-20140222';
-%chans = [68:3:95];
-%chans = [1:4:32];
 
-sname = 'jg05-20120310';
+sname = 'jg05-20120317';
 chans = 68:3:95;
 
 Trial = MTATrial(sname,'all');
@@ -747,7 +745,7 @@ Trial.addMarker(Trial.xyz,'fhcom',[.7,1,.7],{{'head_back','head_front',[0,0,1]}}
 
 ang = Trial.ang.copy;
 ang.create(Trial);
-ang.data = ang(:,5,11,3);
+ang.data = ang(:,7,11,3);
 %ang.resample(Trial.lfp);
 ang = ang.data;
 ang(isnan(ang))=nanmean(ang);
@@ -779,7 +777,7 @@ nchan = numel(chans);
 for s = 1:nsts
 x = [lbang(Trial.stc{states(s)},:)];
 %[Co,f] = Comodugram(x,2^11,Trial.lfp.sampleRate,[1,120],2^10);
-[Co,f] = Comodugram(x,2^9,Trial.ang.sampleRate,[1,20],2^8);
+[Co,f] = Comodugram(x,2^9,Trial.ang.sampleRate,[1,30],2^8);
 
 for i =1:nchan
 subplot2(nchan,nsts,i,s),
@@ -796,9 +794,16 @@ end
 
 
 
-figure,imagesc(f,f,Co(:,:,4,5)'),axis xy
 
-[Co,f] = Comodugram(WhitenSignal(Trial.lfp(Trial.stc{'r'},:),[],1),);
-figure,imagesc(f,f,Co(:,:,1,2)'),axis xy
+%% Figure 10 - Behavior Label Confusion Matrix
 
-[ya,fa,ta,phia,fsta] = mtchglong(wang,2^9,Trial.ang.sampleRate,2^8,2^8*0.875,[],[],[],[2,16]);
+
+
+%xlim([1.731139e+05,2.254813e+05])
+%xlim([2.862903e+05,3.185484e+05])
+%xlim([6.137097e+05,6.330645e+05])
+%disp(sprintf('xlim([%s,%s])',xlim));
+
+
+% jg05-20120309 m20130311 requires no shift
+% jg05-20120310 m20130318 requires a 40 frame forward shift 
