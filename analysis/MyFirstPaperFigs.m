@@ -692,6 +692,19 @@ hist2([Trial.ang(:,'spine_middle','spine_upper',2),clip(log10(Trial.xyz(1:end,'h
 caxis([0,800])
 ticks_lin2log(gca,'y')
 
+% JPD Head Front Vs Left distance to lower spine
+figure,hist2(log10([Trial.ang(Trial.ang(:,1,8,3)~=0,1,8,3),Trial.ang(Trial.ang(:,1,8,3)~=0,1,7,3)]),300,300)
+caxis([0,800])
+title('Left and Right Head distances to the lower spine')
+xlabel('Head Right (mm)');
+ylabel('Head Left (mm)');
+
+% JPD Head Right Vs Left distance to lower spine
+figure,hist2(log10([Trial.ang(Trial.ang(:,1,8,3)~=0,1,6,3),Trial.ang(Trial.ang(:,1,8,3)~=0,1,8,3)]),300,300)
+caxis([0,800])
+title('Left and Right Head distances to the lower spine')
+xlabel('Head Right (mm)');
+ylabel('Head Left (mm)');
 
 sfet = [circ_dist(Trial.ang(:,2,3,1),Trial.ang(:,1,2,1)),...
         circ_dist(Trial.ang(:,3,4,1),Trial.ang(:,2,3,1)),...
@@ -729,7 +742,7 @@ sname = 'jg05-20120310';
 %sname = 'jg04-20120130';
 %sname = 'co01-20140222';
 
-sname = 'jg05-20120317';
+%sname = 'jg05-20120317';
 chans = 68:3:95;
 
 Trial = MTATrial(sname,'all');
@@ -805,5 +818,158 @@ end
 %disp(sprintf('xlim([%s,%s])',xlim));
 
 
-% jg05-20120309 m20130311 requires no shift
-% jg05-20120310 m20130318 requires a 40 frame forward shift 
+
+
+
+
+
+
+
+
+
+%% Figure 11 - RHM distributions
+
+
+
+MTAConfiguration('/gpfs01/sirota/bach/data/gravio','absolute');
+%MTAConfiguration('/data/data/gravio','absolute');
+
+%sname = 'jg05-20120315';
+%sname = 'jg05-20120309';
+%sname = 'jg04-20120129';
+%sname = 'jg04-20120130';
+%sname = 'co01-20140222';
+%sname = 'jg05-20120317';
+
+sname = 'jg05-20120310';
+Trial = MTATrial(sname,'all');
+%Trial.ang.load(Trial);
+Trial.xyz.load(Trial);
+Trial.xyz.filter(gausswin(9)./sum(gausswin(9)));
+
+rb = Trial.xyz.model.rb({'head_back','head_left','head_front','head_right'});
+hcom = Trial.com(rb);
+Trial.addMarker(Trial.xyz,'hcom',[.7,0,.7],{{'head_back','head_front',[0,0,1]}},hcom);
+Trial.addMarker(Trial.xyz,'fhcom',[.7,1,.7],{{'head_back','head_front',[0,0,1]}},permute(Filter0(gausswin(61)./sum(gausswin(61)),hcom),[1,3,2]));
+
+ang = Trial.ang.copy;
+ang.create(Trial);
+ang.data = [ang(:,4,5,3),ang(:,7,11,3)];
+%ang.resample(Trial.lfp);
+ang = ang.data;
+ang(isnan(ang(:,1)),:)=repmat(nanmean(ang),[sum(isnan(ang(:,1))),1]);
+
+wang = WhitenSignal(ang,[],1);
+
+[ya,fa,ta,pha,fsta] = mtchglong(wang,2^9,Trial.ang.sampleRate,2^8, ...
+                                2^8*.875,[],[],[],[1,30]);
+
+
+
+chans = [71,81,86,96];
+Trial.lfp.load(Trial,chans);
+wlfp = WhitenSignal(Trial.lfp.data,[],1);
+yl=[];
+for i = 1:Trial.lfp.size(2),
+    [yl(:,:,i),fl,tl] = mtchglong(wlfp(:,i),2^12,Trial.lfp.sampleRate,2^11,2^11*0.875,[],[],[],[1,40]);
+end
+
+
+
+figure,
+sp = [];
+for i = 1:numel(chans)
+sp(i) = subplot(6,1,i);
+imagesc(tl+2^11/Trial.lfp.sampleRate,fl,log10(yl(:,:,i)'));axis xy,caxis([1,3])
+end
+sp(6) = subplot(6,1,5);
+imagesc(ta+2^8/Trial.ang.sampleRate,fa,log10(ya(:,:,1,1)'));axis xy,caxis([-5,-2])
+sp(7) = subplot(6,1,6);
+imagesc(ta+2^8/Trial.ang.sampleRate,fa,log10(ya(:,:,2,2)'));axis xy,caxis([-5,-2])
+linkaxes(sp,'xy');
+
+
+
+figure,imagesc(tl,fl,log10(yl(:,:,1)'));axis xy
+
+
+
+
+
+%% Figure - 12 Time Shifted Comodugram rhm and lfp
+
+
+MTAConfiguration('/gpfs01/sirota/bach/data/gravio','absolute');
+%MTAConfiguration('/data/data/gravio','absolute');
+
+%sname = 'jg05-20120315';
+sname = 'jg05-20120310';
+%sname = 'jg05-20120309';
+%sname = 'jg04-20120129';
+%sname = 'jg04-20120130';
+%sname = 'co01-20140222';
+
+%sname = 'jg05-20120317';
+chans = 68:4:95;
+
+Trial = MTATrial(sname,'all');
+%Trial.ang.load(Trial);
+Trial.xyz.load(Trial);
+Trial.lfp.load(Trial,chans);
+Trial.lfp.resample(Trial.xyz);
+
+rb = Trial.xyz.model.rb({'head_back','head_left','head_front','head_right'});
+hcom = Trial.com(rb);
+Trial.addMarker(Trial.xyz,'hcom',[.7,0,.7],{{'head_back','head_front',[0,0,1]}},hcom);
+Trial.addMarker(Trial.xyz,'fhcom',[.7,1,.7],{{'head_back','head_front',[0,0,1]}},permute(Filter0(gausswin(61)./sum(gausswin(61)),hcom),[1,3,2]));
+
+ang = Trial.ang.copy;
+ang.create(Trial);
+ang.data = ang(:,7,11,3);
+ang = ang.data;
+ang(isnan(ang))=nanmean(ang);
+bang = ang;
+lbang = WhitenSignal([Trial.lfp.data,bang],[],1);
+%lbang = MTADlfp([],[],lbang,Trial.ang.sampleRate);
+
+
+states = [-400,-250,-175,-70,-20,0,20,70,175,250,400];
+nsts = numel(states);
+nchan = numel(chans);
+ figure,
+for s = 1:nsts
+lb = MTADlfp([],[],lbang(:,1:end-1),Trial.ang.sampleRate);
+ab = MTADlfp([],[],circshift(lbang(:,end),states(s)),Trial.ang.sampleRate);
+[Co,f] = Comodugram([lb(Trial.stc{'l'},:),ab(Trial.stc{'l'},:)],2^9,Trial.ang.sampleRate,[1,30],2^8);
+
+for i =1:nchan
+subplot2(nchan,nsts,i,s),
+imagesc(f,f,Co(:,:,i,nchan+1)'),axis xy,
+if i==1,title(Trial.stc{'l'}.label),end
+if i==1&s==1,ylabel([ 'Channel: ',num2str(chans(i))]),end
+caxis([-.65,.65])
+sub_pos = get(gca,'position'); % get subplot axis position
+set(gca,'position',sub_pos.*[1 1 1.2 1.2]) % stretch its width and height
+
+end
+
+end
+
+
+%% Figure 13 - Marker to marker distances
+MTAConfiguration('/gpfs01/sirota/bach/data/gravio','absolute');
+%MTAConfiguration('/data/data/gravio','absolute');
+sname = 'jg05-20120310';
+Trial = MTATrial(sname,'all');
+Trial.load('ang');
+Trial.load('xyz');
+
+figure
+for m = 1:8,
+for o = 1:8,
+subplot2(8,8,m,o)
+hist(Trial.ang(Trial.ang(:,m,o,3)~=0,m,o,3),500)
+sub_pos = get(gca,'position'); % get subplot axis position
+set(gca,'position',sub_pos.*[1 1 1.2 1.2]) % stretch its width and height
+end
+end
