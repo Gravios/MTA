@@ -47,6 +47,22 @@ classdef MTAStateCollection < hgsetget
             end
         end
 
+        function Stc = create(Stc,Session,varargin)
+            [method] = DefaultArgs(varargin,{'auto'})
+
+            if ~strcmp(filename(end-3:end),'.mat'),
+                Stc.updateFilename([Session.filebase '.' ext '.' method '.mat']);
+                Stc.mode = method;
+            else
+                Stc.updateMode(method);
+            end
+
+            Stc.updatePath(Session.spath);
+
+            
+
+        end
+
         function Stc = load(Stc,varargin)
             [nMode] = DefaultArgs(varargin,{[]});
             if isempty(nMode)&&exist(Stc.fpath,'file')
@@ -148,9 +164,8 @@ classdef MTAStateCollection < hgsetget
             for n = 1:ni,
                 if isa(Stc,'MTAStateCollection'),
                     if strcmp(S(n).type,'{}'),
-                        
                         if ischar(S(n).subs{1}),
-                            
+
                             stsSampleRate = [];
                             if numel(S(n).subs)>=2
                                 stsSampleRate = S(n).subs{2};
@@ -164,7 +179,6 @@ classdef MTAStateCollection < hgsetget
                                 ['Each state name must be separated by a \n' ...
                                 'join(''^'',''&'') or intersect(''|'',''+'') operator']);
                             sts = {};
-                            
                             for i = 1:numel(stsNames),
                                 stci = Stc.gsi(stsNames{i});
                                 if isempty(stci)
@@ -198,18 +212,20 @@ classdef MTAStateCollection < hgsetget
                                 stsFuncs(1) = [];
                             end
                             
-                            if isempty(stsSampleRate)
-                                sts = sts{1};
-                            else
-                                sts = sts{1}.resample(stsSampleRate);
+                            sts = sts{1}.copy;
+                            if ~isempty(stsSampleRate)
+                                sts.resample(stsSampleRate);
                             end
-                            Stc.addState(sts);
+                            if isempty(Stc.gsi(sts.label)),
+                                Stc.addState(sts);
+                            end
                             Stc = sts;
                         else
-                            Stc = Stc.states{S(n).subs{1}};
+                            Stc = Stc.states{S(n).subs{1}}.copy;
+                            Stc.resample(S(n).subs{2});
                         end
                     else
-                        Stc = builtin('subsref',Stc,S(n:end));
+                        Stc = builtin('subsref',Stc,S(n:end));                       
                         return
                     end
                 else
