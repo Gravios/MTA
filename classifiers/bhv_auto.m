@@ -1,4 +1,4 @@
-function Trial = labelBhv(Trial,Stc)
+function Trial = bhv_auto(Trial,Stc)
 % Basic Set of heuristics for the most basic behavioral states
 % 
 % Note: Requires an update to include MoCap sampling rates other than 120Hz

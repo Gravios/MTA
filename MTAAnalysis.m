@@ -2,9 +2,12 @@ classdef MTAAnalysis < hgsetget
 % Oh god here we go again
 %
 
-    properties (Abstract)
+    properties
         path
+        filename
+        tag
         ext
+        session
         parameters
         mdata
         data

@@ -48,19 +48,28 @@ classdef MTAStateCollection < hgsetget
         end
 
         function Stc = create(Stc,Session,varargin)
-            [method] = DefaultArgs(varargin,{'auto'})
-
-            if ~strcmp(filename(end-3:end),'.mat'),
-                Stc.updateFilename([Session.filebase '.' ext '.' method '.mat']);
-                Stc.mode = method;
-            else
-                Stc.updateMode(method);
-            end
-
-            Stc.updatePath(Session.spath);
-
+            [method,training_set] = DefaultArgs(varargin,{'auto',[]});
             
-
+            Stc.updateFilename([Session.filebase '.stc.' method '.mat']);
+            Stc.mode = method;
+            Stc.updatePath(Session.spath);
+            Stc.ext = 'stc';
+            Stc.sync = Session.sync.copy;
+            Stc.origin = Session.sync.origin;
+            
+            switch method
+                case 'auto'
+                    bhv_auto(Session,Stc);
+                case 'hmm'
+                    %bhv_hmm(Trial,Stc,training_set);
+                    disp('bhv_hmm is not ready for use at this time');
+                case 'qda'
+                    %bhv_qda(Session,Stc,training_set);
+                    disp('bhv_qda is not ready for use at this time');
+                otherwise
+                    error('MTAStateCollection: Unknown method for creating a state collection');
+            end
+            
         end
 
         function Stc = load(Stc,varargin)

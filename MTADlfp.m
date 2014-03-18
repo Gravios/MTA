@@ -39,6 +39,8 @@ classdef MTADlfp < MTAData
             Data = Data@MTAData(path,filename,data,sampleRate,syncPeriods,syncOrigin,type,ext);
         end        
         function Data = load(Data,Session,varargin)
+            %load(Data,Session,varargin)
+            %[channels,gselect,periods] = DefaultArgs(varargin,{[],{'AnatGrps',1,1},[]});
             [channels,gselect,periods] = DefaultArgs(varargin,...
             {[],{'AnatGrps',1,1},[]});
             if isempty(periods),
