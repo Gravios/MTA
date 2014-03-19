@@ -12,7 +12,7 @@ pftype = 'MTAAknnpf';
 numsts = numel(states);
 pfstats = {};
     pfs={};
-for ses = 2:numel(sesList),
+for ses = 1:numel(sesList),
     Trial = MTATrial(sesList{ses}{1},sesList{ses}{3},sesList{ses}{2});
     Trial.xyz.load(Trial);
     Trial.load('nq');
