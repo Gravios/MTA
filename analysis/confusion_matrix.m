@@ -24,7 +24,7 @@ for i = 1:numel(stc1.states),
     end
 end
 
-assert(~isempty(s1ind)&~isempty(s2ind),'No matching States')
+%assert(~isempty(s1ind)&~isempty(s2ind),'No matching States')
 
 
 

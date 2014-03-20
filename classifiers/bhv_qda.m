@@ -1,76 +1,102 @@
-% bhv_qda.m
-% Sart of a quadratic discriminant analysis segmentation of behaviors
+function Stc = bhv_qda(Trial,Stc,varargin)
+[train,states,model_filename,display] = DefaultArgs(varargin,{false,{'walk','rear'},'MTA_standard_QDA_model.mat',false});
 
-Trial = MTATrial('jg05-20120317');
-fwin = gausswin(11)./sum(gausswin(11));
+ns = numel(states);
+
 Trial.ang.load(Trial);
 Trial.xyz.load(Trial);
-Trial.xyz.filter(fwin);
-
-
-vel =[];
-vel = [vel,Filter0(gausswin(61)./sum(gausswin(61)),log10(Trial.vel({'spine_lower'}))).^2];
-vel = [vel,Filter0(fwin,log10(Trial.vel({'spine_lower','spine_upper','head_front'},[1,2])))];
-vel = [vel,Filter0(fwin,log10(Trial.vel({'spine_lower','spine_upper','head_front'},3)))];
-vel = [vel,Filter0(gausswin(61)./sum(gausswin(61)),sqrt(sum(diff(Trial.com(Trial.xyz.model.rb({'spine_lower','pelvis_root','spine_middle'}))).^2,3)))];
-%vel = [vel,Filter0(fwin,diff(circ_dist(Trial.ang(1:end,1,2,1),Trial.ang(1:end,1,3,1)))+diff(circ_dist(Trial.ang(1:end,2,3,1),Trial.ang(1:end,2,4,1)))+diff(circ_dist(Trial.ang(1:end,3,4,1),Trial.ang(1:end,3,5,1))))];
-% $$$ vel = [vel,log10(abs(Filter0(fwin,circ_dist(Trial.ang(1:end-1,1,2,1),Trial.ang(1:end-1,1,3,1)))).*...
-% $$$           abs(Filter0(fwin,circ_dist(Trial.ang(1:end-1,2,3,1),Trial.ang(1:end-1,2,4,1)))).*...
-% $$$           abs(Filter0(fwin,circ_dist(Trial.ang(1:end-1,3,4,1),Trial.ang(1:end-1,3,5,1)))))];
-% $$$ 
-% $$$ aba = log10(abs(Filter0(fwin,circ_dist(Trial.ang(1:end-1,1,2,1),Trial.ang(1:end-1,1,3,1))))+...
-% $$$           abs(Filter0(fwin,circ_dist(Trial.ang(1:end-1,2,3,1),Trial.ang(1:end-1,2,4,1))))+...
-% $$$           abs(Filter0(fwin,circ_dist(Trial.ang(1:end-1,3,4,1),Trial.ang(1:end-1,3,5,1)))));
-% aba = abs(Filter0(fwin,circ_dist(Trial.ang(1:end-1,1,2,1),Trial.ang(1:end-1,1,3,1)))).*...
-%       abs(Filter0(fwin,circ_dist(Trial.ang(1:end-1,2,3,1),Trial.ang(1:end-1,2,4,1)))).*...
-%       abs(Filter0(fwin,circ_dist(Trial.ang(1:end-1,3,4,1),Trial.ang(1:end-1,3,5,1))));
-% 
-% sfet = [circ_dist(Trial.ang(1:end-1,2,3,1),Trial.ang(1:end-1,1,2,1)),...
-%         circ_dist(Trial.ang(1:end-1,3,4,1),Trial.ang(1:end-1,2,3,1)),...
-%         circ_dist(Trial.ang(1:end-1,4,5,1),Trial.ang(1:end-1,3,4,1)),...
-%         circ_dist(Trial.ang(1:end-1,5,7,1),Trial.ang(1:end-1,4,5,1))];
-       
-% $$$ if isempty(y),
-% $$$ dav = Filter0(fwin,diff(circ_dist(Trial.ang(1:end,1,2,1),Trial.ang(1:end,1,3,1))))+...
-% $$$       Filter0(fwin,diff(circ_dist(Trial.ang(1:end,2,3,1),Trial.ang(1:end,2,4,1))))+...
-% $$$       Filter0(fwin,diff(circ_dist(Trial.ang(1:end,3,4,1),Trial.ang(1:end,3,5,1))));
-% $$$ wdav = WhitenSignal(dav);
-% $$$ [y,t,f] = mtchglong(wdav,2^8,Trial.xyz.sampleRate,2^7,2^7-1,[],[],[],[1,20]);
-% $$$ end
-%vel = [vel,[log10(sum(y(:,f>8&f<16),2)./sum(y(:,f<7),2));zeros(Trial.xyz.size(1)-numel(t)-1,1)]];
-  
-vel = [vel,Trial.ang(1:end-1,1,2,2)];
-vel = [vel,Trial.ang(1:end-1,3,4,2)];
-vel = [vel,vel.^2];
-
-vel = MTADxyz([],[],Filter0(fwin,vel),Trial.xyz.sampleRate);
-
-
-vel_walk = vel(Trial.stc{'w'}(1:100,:),:);
-vel_walk(sum(isnan(vel_walk)|isinf(vel_walk),2)>0,:) = [];
-vel_rear = vel(Trial.stc{'r'}(1:50,:),:);
-vel_rear(sum(isnan(vel_rear)|isinf(vel_rear),2)>0,:) = [];
-
-
-
-cov_walk = cov(vel_walk);
-cov_rear = cov(vel_rear);
-
-vel.data(vel.data==0) = nan;
-vel_not_nan = ~isnan(vel.data(:,1));
-
-mean_vel_walk = repmat(nanmean(vel_walk),vel.size(1),1);
-d_walk = zeros(vel.size(1),1);
-d_walk(vel_not_nan) = -.5*log(det(cov_walk))-.5*dot(((vel.data(vel_not_nan,:)-mean_vel_walk(vel_not_nan,:))/cov_walk)',(vel.data(vel_not_nan,:)-mean_vel_walk(vel_not_nan,:))');
-
-mean_vel_rear = repmat(nanmean(vel_rear),vel.size(1),1);
-d_rear = zeros(vel.size(1),1);
-d_rear(vel_not_nan) = -.5*log(det(cov_walk))-.5*dot(((vel.data(vel_not_nan,:)-mean_vel_rear(vel_not_nan,:))/cov_rear)',(vel.data(vel_not_nan,:)-mean_vel_rear(vel_not_nan,:))');
 
 dwin= gausswin(61)./sum(gausswin(61));
+fwin = gausswin(11)./sum(gausswin(11));
+Trial.xyz.filter(fwin);
+
+fpv = cat(1,[-2,-2,-2],log10(Filter0(dwin,Trial.vel({'spine_lower','spine_upper','head_front'},[1,2]))));
+fpz = cat(1,[-2,-2],log10(Filter0(dwin,Trial.vel({'spine_lower','head_back'},[3]))));
+
+fet =[];
+fet = [fet,fpv,fpz];
+fet = [fet,Trial.xyz(:,7,3)-Trial.xyz(:,1,3)];
+fet = [fet,Trial.ang(:,3,4,2)];
+fet = [fet,Trial.ang(:,5,7,2)];
+fet = [fet,fet.^2,fet.^3];
+fet = MTADxyz([],[],Filter0(fwin,fet),Trial.xyz.sampleRate);
+fet.data(fet.data==0) = nan;
+fet_not_nan = ~isnan(fet.data(:,1));
+
+
+%% Get or Train QDA Model
+if train
+    Model_Information.description = '';
+    Model_Information.StcMode     = Trial.stc.mode;
+    Model_Information.StcFilename = Trial.stc.filename;
+    Model_Information.SessionFilebase = Trial.filebase;
+    Model_Information.state_labels = states;
+    keys = Trial.stc.list_state_attrib('key')
+    fet_mean_state = zeros([1,size(fet,2),ns]);
+    for i = 1:ns
+        fet_state = fet(Trial.stc{states{i}},:);
+        fet_state(sum(isnan(fet_state)|...
+                      isinf(fet_state),2)>0,:) = [];
+        fet_mean_state(1,:,i) = nanmean(fet_state);
+        cov_state(:,:,i) = cov(fet_state);
+        sti = Trial.stc.gsi(states{i});
+        if ~isempty(sti)
+            Model_Information.state_keys(i) = keys(sti);
+        else
+            spare_keys = 'aqjpxothrymunslf';
+            spare_keys = spare_keys(~ismember(spare_keys,cell2mat(keys)));
+            Model_Information.state_keys(i) = spare_keys(i);
+        end
+    end
+    save(fullfile(fileparts(mfilename('fullpath')),model_filename),...
+         'fet_state','fet_mean_state','cov_state','Model_Information');
+else
+    load(model_filename);
+    mean_fet_state = repmat(fet_mean_state,[fet.size(1),1,ns]);
+end
+
+
+%% Transform Features to QDA scores
+
+
+
+
+d_state = zeros(fet.size(1),ns);
+for i =  1:ns
+    d_state(fet_not_nan,i) = -.5*log(det(cov_state(:,:,i)))...
+        -.5*dot(((fet.data(fet_not_nan,:)...
+        -mean_fet_state(fet_not_nan,:,i))/cov_state(:,:,i))',(fet.data(fet_not_nan,:)...
+        -mean_fet_state(fet_not_nan,:,i))');
+end
+
+
+
+d_state = Filter0(dwin,d_state);
+
+[~,maxState] = max(d_state,[],2);
+
+for i = 1:ns,
+Stc.addState(Trial.spath,...
+             Trial.filebase,...
+             ThreshCross(maxState==i&d_state(:,i)>0,0.5,10),...
+             Trial.xyz.sampleRate,...
+             Trial.xyz.sync.copy,...
+             Trial.xyz.origin,...
+             states{i},...
+             Model_Information.state_keys(i),...
+             'TimePeriods');
+end
+
+
+
+if display
+sts_colors = 'krgbcmy';
+d_colors   = 'brcmgky';
 figure
-%plot(Filter0(dwin,d_walk),'.'),hold on,plot(Filter0(dwin,d_rear),'.r'),
-plot(Filter0(dwin,d_walk)),hold on,plot(Filter0(dwin,d_rear),'r'),
-Lines(Trial.stc{'w',Trial.xyz.sampleRate}(:),[],'k');
-Lines(Trial.stc{'r',Trial.xyz.sampleRate}(:),[],'r');
+hold on
+for i = 1:ns,
+plot(Filter0(dwin,d_state(:,i)),'r'),
+Lines(Trial.stc{states{i},Trial.xyz.sampleRate}(:),[],sts_color(i));
+end
 Lines([],0,'k')
+end

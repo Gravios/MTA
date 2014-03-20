@@ -61,7 +61,7 @@ classdef MTAStateCollection < hgsetget
                 case 'auto'
                     bhv_auto(Session,Stc);
                 case 'hmm'
-                    %bhv_hmm(Trial,Stc,training_set);
+                    %bhv_hmm(Session,Stc,training_set);
                     disp('bhv_hmm is not ready for use at this time');
                 case 'qda'
                     %bhv_qda(Session,Stc,training_set);
