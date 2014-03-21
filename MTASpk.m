@@ -52,7 +52,7 @@ classdef MTASpk < hgsetget
     properties
         %map - matrix: Cluster/electrode mapping
         map
-     
+        
         %type - string: Data type
         type
     end
@@ -66,7 +66,7 @@ classdef MTASpk < hgsetget
         % The general constuctor for MTASpk 
         % Normal usage is to create an Spk object with all values empty 
         % and then use the create function to populate the properties
-        
+            
             [Spk.res,Spk.clu,Spk.map,Spk.sampleRate,Spk.fet,Spk.spk,Spk.type] = ...
                 DefaultArgs(varargin,{[],[],[],[],[],[],'TimePoints'});            
         end
@@ -76,7 +76,7 @@ classdef MTASpk < hgsetget
         % and synchronize with the Session
         %   
         %   varargin:
-        %     [sampleRate,states,units,loadField] 
+        %     [sampleRate,states,units,mode,loadField] 
         %
         %     sampleRate: double, the sampleRate in Hertz
         %
@@ -92,7 +92,7 @@ classdef MTASpk < hgsetget
         % See also MTAStateCollection for more information on selecting
         % states
         %
-            %% Load and resample Res             
+        %% Load and resample Res             
             [sampleRate,states,units,mode,loadField] = DefaultArgs(varargin,{1,[],[],'',{}});
             Spk.sampleRate = sampleRate;
             [Res, Clu, Map] = LoadCluRes(fullfile(Session.spath, Session.name));
@@ -104,10 +104,6 @@ classdef MTASpk < hgsetget
             Session.sync.resample(1);
             [Res, ind] = SelectPeriods(Res,ceil(Session.sync([1,end])*Spk.sampleRate),'d',1,1);
             Clu = Clu(ind);
-
-            switch mode
-                case 'NoBurst'                   
-            end
             
             %% Select specific units
             if isempty(units),
@@ -125,6 +121,27 @@ classdef MTASpk < hgsetget
                 Clu = Clu(sind);
             end
             
+            %% Extra Modifications
+            switch mode
+              case 'deburst'
+                nRes = [];
+                nClu = [];
+                thresh = round(10/1000*sampleRate);
+                if thresh==0,thresh =1;end
+                for u = unique(Clu)'
+                    try                            
+                        tRes = Res(Clu==u);
+                        bresind = SplitIntoBursts(tRes,thresh);
+                        nRes = [nRes; tRes(bresind)];
+                        nClu = [nClu; u.*ones(numel(bresind),1)];
+                    end
+                end
+                Res = nRes;
+                Clu = nClu;
+
+            end
+
+
             Spk.clu = Clu;
             Spk.res = Res;
         end

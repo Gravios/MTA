@@ -1,31 +1,54 @@
-MTAConfiguration('/gpfs01/sirota/bach/data/gravio','absolute');
 
 Trial = MTATrial('jg05-20120317')
 state = 'r';
+Trial.load('xyz')
+Trial.load('ang')
 
-v = Trial.vel(1:8);
-v = Filter0(gausswin(61)./sum(gausswin(61)),v);
+dwin= gausswin(61)./sum(gausswin(61));
+fwin = gausswin(11)./sum(gausswin(11));
+Trial.xyz.filter(fwin);
 
-edges = linspace(-2,2,32);
+fpv = cat(1,[-2,-2,-2],log10(Filter0(dwin,Trial.vel({'spine_lower','spine_upper','head_front'},[1,2]))));
+fpz = cat(1,[-2,-2],log10(Filter0(dwin,Trial.vel({'spine_lower','head_back'},[3]))));
+
+fet =[];
+fet = [fet,fpv,fpz];
+fet = [fet,Trial.xyz(:,7,3)-Trial.xyz(:,1,3)];
+fet = [fet,Trial.ang(:,3,4,2)];
+fet = [fet,Trial.ang(:,5,7,2)];
+fet = [fet,fet.^2,fet.^3];
+% $$$ fet = MTADxyz([],[],Filter0(fwin,fet),Trial.xyz.sampleRate);
+% $$$ fet.data(fet.data==0) = nan;
+% $$$ fet_not_nan = ~isnan(fet.data(:,1));
+
+
+
+for i = 1:size(fet,2)
+    %for i = 1:fet.size(2)
+    edges(:,i) = linspace(prctile(fet(~isinf(fet(:,i)),i),[.1]),prctile(fet(~isinf(fet(:,i)),i),[99.9]),32);
+end
+
 sbound = -60:60;
-ixy = repmat({zeros(numel(sbound),size(v,2))},[size(v,2),1]);
-
+%ixy = repmat({zeros(numel(sbound),fet.size(2))},[fet.size(2),1]);
+ixy = repmat({zeros(numel(sbound),size(fet,2))},[size(fet,2),1]);
 
 if matlabpool('size')==0,matlabpool open 12,end
 
-parfor m = 1:size(v,2)
-    for o = 1:size(v,2)
+% $$$ parfor m = 1:fet.size(2)
+% $$$     for o = 1:fet.size(2)
+parfor m = 1:size(fet,2)
+    for o = 1:size(fet,2)
         for s = 1:numel(sbound)
 
-            vx = MTADxyz('data',log10(v(:,m)),'sampleRate',Trial.xyz.sampleRate);
+            vx = MTADxyz('data',fet(:,m),'sampleRate',Trial.xyz.sampleRate);
             sx = vx(Trial.stc{state});
-            vy = MTADxyz('data',circshift(log10(v(:,o)),sbound(s)),'sampleRate',Trial.xyz.sampleRate);
+            vy = MTADxyz('data',circshift(fet(:,o),sbound(s)),'sampleRate',Trial.xyz.sampleRate);
             sy = vy(Trial.stc{state});
 
             noinf = ~isinf(sy)&~isinf(sx);
             nind = sum(noinf);
 
-            [out,xb,yb,p]=hist2([sx(noinf),sy(noinf)],edges,edges);
+            [out,xb,yb,p]=hist2([sx(noinf),sy(noinf)],edges(:,m),edges(:,o));
             pxy = out./nind;
 
             px = histc(sx(~isinf(sx)&~isinf(sy)),xb);
@@ -43,9 +66,7 @@ parfor m = 1:size(v,2)
 end
 
 
-nixy = reshape(cell2mat(ixy),[121,8,8]);
-%nixy = reshape(cell2mat(ixy),[9,121,9]);
-%nixy = permute(reshape(cell2mat(ixy),[9,121,9]),[2,1,3]);
+nixy = reshape(cell2mat(ixy),[numel(sbound),size(fet,2),size(fet,2)]);
 
 [mixy,sixy] = max(nixy);
 mixy = sq(mixy);
