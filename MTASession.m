@@ -400,9 +400,9 @@ classdef MTASession < hgsetget
         %  diffMat - numericArray: (index,marker1,marker2,dim)
         %
             [xyz] = DefaultArgs(varargin,{Session.xyz});
-            diffMat = zeros(xyz.size(1),xyz.model.N,xyz.model.N,3);
-            for i=1:xyz.model.N,
-                for j=1:xyz.model.N,
+            diffMat = zeros(xyz.size(1),xyz.size(2),xyz.size(2),3);
+            for i=1:xyz.size(2),
+                for j=1:xyz.size(2),
                     diffMat(:,i,j,:) = xyz(:,j,:)-xyz(:,i,:);
                 end
             end

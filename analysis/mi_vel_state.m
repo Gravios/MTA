@@ -1,6 +1,6 @@
 
 Trial = MTATrial('jg05-20120317')
-state = 'r';
+state = 'w';
 Trial.load('xyz')
 Trial.load('ang')
 
@@ -66,6 +66,8 @@ parfor m = 1:size(fet,2)
 end
 
 
+
+
 nixy = reshape(cell2mat(ixy),[numel(sbound),size(fet,2),size(fet,2)]);
 
 [mixy,sixy] = max(nixy);
@@ -75,8 +77,8 @@ sixy = sq(sixy)-ceil(numel(sbound)/2);
 
 figure,
 subplot2(1,3,1,1),imagesc(sq(nixy(61,:,:)))
-subplot2(1,3,1,2),imagesc(mixy(:,:,f))
-subplot2(1,3,1,3),imagesc(sixy(:,:,f)./Trial.xyz.sampleRate.*1000)
+subplot2(1,3,1,2),imagesc(mixy(:,:))
+subplot2(1,3,1,3),imagesc(sixy(:,:)./Trial.xyz.sampleRate.*1000)
 
 
 
@@ -93,4 +95,17 @@ subplot(3,1,3),imagesc(sbound./Trial.xyz.sampleRate.*1000,1:8,log10(sq(nixy(:,1,
 
 
 
+rp = Trial.stc{state}.copy;rp.cast('TimeSeries');
+wp = Trial.stc{'w'}.copy;wp.cast('TimeSeries');
 
+f1 = 24;
+f2 = 22;
+nif = ~isinf(fet(:,f1))&~isinf(fet(:,f2))&rp.data;
+nif = ~isinf(fet(:,f1))&~isinf(fet(:,f2))&wp.data;
+nif = ~isinf(fet(:,f1))&~isinf(fet(:,f2));
+figure,hist2([clip(fet(nif,f1),edges(1,f1),edges(end,f1)),clip(fet(nif,f2),edges(1,f2),edges(end,f2))],50,50)
+
+%figure,hist2([10.^clip(fet(nif,f1),edges(1,f1),edges(end,f1)),10.^clip(fet(nif,f2),edges(1,f2),edges(end,f2))],50,50)
+
+
+fet(isinf(fet))=nan;
