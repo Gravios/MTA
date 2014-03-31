@@ -1252,8 +1252,10 @@ end
 
 MLData.labels{end+1} = newStateName;
 MLData.keys(end+1) = newStateKey;
+stateSync = Sesesion.sync.copy;
+stateSync.resample(Session.xyz.sampleRate);
 MLData.States{end+1} = MTADepoch([],[],zeros(length(MLData.xyzpos),1),...
-                                 Session.xyz.sampleRate,newStateName,newStateKey,...
+                                 Session.xyz.sampleRate,stateSync,Trial.xyz.origin,newStateName,newStateKey,...
                                  'TimeSeries');
 MLData.num_of_states = MLData.num_of_states + 1;
 MLData.selected_states(end+1) = true;
@@ -1283,42 +1285,35 @@ function MLSbhvOpen_Callback(hObject, eventdata, handles)
 Session = getappdata(handles.MTABrowser,'Session');
 MLData = getappdata(handles.MTABrowser,'MLData');
 if isempty(Session.stc),
-    bhv_name = 'default';
+    mode = 'default';
 else
-    bhv_name = Session.stc.mode;
+    mode = Session.stc.mode;
 end
 
 [filename,filepath] = uigetfile(['*.' Session.trialName '.stc.*'],'Open Behavior Collection:',...
-                     fullfile(Session.spath, [Session.filebase '.stc.' bhv_name '.mat']),...
+                     fullfile(Session.spath, [Session.filebase '.stc.' mode '.mat']),...
                      'MultiSelect','off');
                                   
 if ~ischar(filename)||~ischar(filepath),                 
     return
-else             
-    stc = MTAStateCollection([]);
+else       
+    stc = MTAStateCollection;
     stc.updatePath(filepath);
     stc.updateFilename(filename);    
-    stc.updateSync(Session.sync);
+    stc.updateSync(Session.sync.copy);
     stc.load;    
     States = stc.states;
     if ~isempty(States)
-        labels = cell(1,numel(States));
-        keys = '';
+        keys = cell2mat(stc.list_state_attrib('key'));
+        labels = stc.list_state_attrib('label');
         for i = 1:numel(States)
             if States{i}.sampleRate~=Session.xyz.sampleRate
                 States{i}.resample(Session.xyz.sampleRate);
             end
-            labels{i} = States{i}.label;
-            keys = strcat(keys,States{i}.key);
-            tmpState = States{i}.data;
-            tmpState(tmpState==0) = 1;
-            States{i}.data = zeros(Session.xyz.size(1),1);
-            for j = 1:size(tmpState,1),
-                States{i}.data(tmpState(j,1):tmpState(j,2)) = 1;
-            end
-            States{i}.type = 'TimeSeries';
+            States{i}.cast('TimeSeries');
         end        
     end
+    
     MLData.States = States;
     MLData.labels = labels;
     MLData.keys = keys;
@@ -1346,14 +1341,14 @@ end
 if ~ischar(filename)||~ischar(filepath),
     return
 else    
-    stc = MTAStateCollection([]);
+    stc = MTAStateCollection;
     stc.updatePath(filepath);
     stc.updateFilename(filename);    
     stc.updateSync(Session.sync);
     for s = 1:MLData.num_of_states,
-        state = MLData.States{s}.data./max(MLData.States{s}.data);
-        state = ThreshCross(state,0.5,1);
-        stc.addState([],[],state,Session.xyz.sampleRate,MLData.labels{s},MLData.keys(s));
+        state = MLData.States{s}.copy;
+        state.cast('TimePeriods');
+        stc.states{s} = state;
     end
     stc.save(1);
     Session.stc = stc;

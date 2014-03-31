@@ -664,7 +664,7 @@ Trial.xyz.load(Trial);
 
 
 xyz = Trial.xyz.copy;
-xyz.filter(gausswin(31)./sum(gausswin(31)));
+xyz.filter(gausswin(61)./sum(gausswin(61)));
 v = MTADxyz([],[],sqrt(sum(diff(xyz(:,:,[1,2])).^2,3)).*Trial.xyz.sampleRate./10,Trial.xyz.sampleRate,[],[],Trial.xyz.model);
 
 
