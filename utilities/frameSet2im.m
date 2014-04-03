@@ -1,6 +1,8 @@
 function frameSet2im(Session,SetName)
 
 %SetName = 'frameset_16768_17797';
+%SetName = 'frameset_852_1438';
+SetName = 'frameset_273_737';
 load(fullfile(Session.spath, [Session.filebase '.' SetName '.mat']));
 imPath =fullfile(Session.spath, [Session.filebase '.' SetName '/']);
 if ~exist(imPath,'dir'),
@@ -13,16 +15,17 @@ for i = 1:length(record),
 index(i) = record{i}.index;
 record{i} = rmfield(record{i},'index');
 images{i} = frame2im(record{i});
-keyboard
+%keyboard
 imwrite(images{i},fullfile(imPath,[ 'frame_' num2str(index(i)) '.png']),'PNG','BitDepth',16,'Transparency',[0,0,0])
 end
 
 grim = mean(images{1},3);
 grim = grim./max(grim(:));
 contrastRange = [170,255];
-%ncspace = round(linspace(contrastRange(1),contrastRange(2),255));
 x = round(diff(contrastRange).*grim)+contrastRange(1);
-%[x =  NearestNeighbour(),grim(:));
+imagesc(x),colormap gray,caxis([1,255])
+
+
 
 
 %cimages = {}
