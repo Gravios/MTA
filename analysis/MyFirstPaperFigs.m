@@ -295,16 +295,13 @@ waitforbuttonpress
 end
  
 
-
-
-
 %% End Figure 4
 
 
 
+
+
 %% Figure 5 - State Wise Unit Firing Rates
-
-
 
 
 MTAConfiguration('/gpfs01/sirota/bach/data/gravio','absolute');
@@ -656,78 +653,59 @@ MTAConfiguration('/gpfs01/sirota/bach/data/gravio','absolute');
 sname = 'jg05-20120310';
 %sname = 'jg05-20120309';
 disp = 0;
+Trial = MTATrial(sname);
+Trial.load('xyz');
+Trial.load('ang');
 
-Trial = MTATrial(sname,'all');
-Trial.ang.load(Trial);
-Trial.xyz.load(Trial);
-%Trial.lfp.load(Trial,[71:2:96]);
+Trial.xyz.filter(gausswin(61)./sum(gausswin(61)));
+vel = Trial.vel;
+vel = clip(log10(vel),-2,2);
+vel =  MTADxyz('data',[zeros([1,size(vel,2)]);vel],'sampleRate',Trial.xyz.sampleRate);
 
-
-xyz = Trial.xyz.copy;
-xyz.filter(gausswin(61)./sum(gausswin(61)));
-v = MTADxyz([],[],sqrt(sum(diff(xyz(:,:,[1,2])).^2,3)).*Trial.xyz.sampleRate./10,Trial.xyz.sampleRate,[],[],Trial.xyz.model);
-
-
-% JPD Head Vel vs Head Height
-hist2([clip(log10(v(:,'head_front')),-2,3),clip(log10(Trial.xyz(1:end-1,'head_front',3)),1.6,3)],100,100)
-hist2([clip(log10(v(:,'head_front')),-2,3),clip(log10(Trial.xyz(1:end-1,'head_front',3)),1.6,3).*Trial.ang(1:end-1,3,4,2)],100,100)
-caxis([0,800])
-ticks_lin2log
+m=1;
+figure
+%hist2([vel(:,m),vel(:,7)],linspace(-2,2,64),linspace(-2,2,64));
+hist2([vel(vel(:,1)>0,m),vel(vel(:,1)>0,7)],linspace(-2,2,64),linspace(-2,2,64));
+caxis([0,600])
 
 
-% JPD Head Vel vs Lower Spine Height
-hist2([clip(log10(v(:,'head_front')),-2,3),clip(log10(Trial.xyz(1:end-1,'spine_lower',3)),1.2,2)],100,100)
-caxis([0,1000])
-ticks_lin2log
+% marker speed vs marker height
+figure
+ind = ':';
+vm = 1;
+hm = 1;
+hist2([vel(:,vm),clip(log10(Trial.xyz(:,hm,3)),0,3)],linspace(-2,2,64),linspace(1,2,64))
+caxis([0,1600])
+hold on
+states = 'rwgl';
+colors = 'wgmc';
+for i = 1:numel(states),
+ind = Trial.stc{states(i)};
+vh = [vel(ind,vm),clip(log10(Trial.xyz(ind,hm,3)),0,3)];
+eeh = error_ellipse(cov(vh),mean(vh),'conf',.95,'style',colors(i));
+end
 
 
-% JPD Head Vel vs Lower Spine Height
-hist2([clip(log10(v(:,'spine_lower')),-3,3),clip(log10(Trial.xyz(1:end-1,'spine_lower',3)),1.2,2)],100,100)
-caxis([0,800])
-ticks_lin2log
-
-
-% JPD Head height vs Spine angle
-hist2([Trial.ang(:,'spine_middle','spine_upper',2),clip(log10(Trial.xyz(1:end,'head_front',3)),1.5,2.7)],100,100)
-caxis([0,800])
-ticks_lin2log(gca,'y')
-
-% JPD Head Front Vs Left distance to lower spine
-figure,hist2(log10([Trial.ang(Trial.ang(:,1,8,3)~=0,1,8,3),Trial.ang(Trial.ang(:,1,8,3)~=0,1,7,3)]),300,300)
-caxis([0,800])
-title('Left and Right Head distances to the lower spine')
-xlabel('Head Right (mm)');
-ylabel('Head Left (mm)');
-
-% JPD Head Right Vs Left distance to lower spine
-figure,hist2(log10([Trial.ang(Trial.ang(:,1,8,3)~=0,1,6,3),Trial.ang(Trial.ang(:,1,8,3)~=0,1,8,3)]),300,300)
-caxis([0,800])
-title('Left and Right Head distances to the lower spine')
-xlabel('Head Right (mm)');
-ylabel('Head Left (mm)');
-
-sfet = [circ_dist(Trial.ang(:,2,3,1),Trial.ang(:,1,2,1)),...
-        circ_dist(Trial.ang(:,3,4,1),Trial.ang(:,2,3,1)),...
-        circ_dist(Trial.ang(:,4,5,1),Trial.ang(:,3,4,1)),...
-        -circ_dist(Trial.ang(:,5,7,1),Trial.ang(:,4,5,1))];
-
-hist2([clip(log10(v(:,'spine_lower')),-3,3), ...
-       clip(sum(abs(Filter0(gausswin(31)./sum(gausswin(31)),sfet(1:end-1,:))),2),0,5)],100,100)
-caxis([0,800])
-ticks_lin2log(gca,'x')
-
-
-hist2([clip(log10(v(:,'spine_upper')),-3,3), ...
-       clip(sum(abs(Filter0(gausswin(31)./sum(gausswin(31)),sfet(1:end-1,:))),2),0,5)],100,100)
-caxis([0,800])
-ticks_lin2log(gca,'x')
+% marker speed vs marker segment pitch
+figure
+ind = ':';
+vm = 1;
+ms = [3,4];
+hist2([vel(:,vm),Trial.ang(:,ms(1),ms(2),2)],linspace(-1.5,2,64),linspace(-1.8,1.8,64))
+%ticks_lin2log
+caxis([0,1600])
+hold on
+states = 'rwgl';
+colors = 'wgmc';
+for i = 1:numel(states),
+ind = Trial.stc{states(i)};
+vh = [vel(ind,vm),Trial.ang(ind,ms(1),ms(2),2)];
+eeh = error_ellipse(cov(vh),mean(vh),'conf',.95,'style',colors(i));
+end
 
 
 
-% JPD Head Vel vs Head Height
-hist2([clip(log10(v(Trial.stc{'w'},'spine_lower')),0,3),clip(log10(Trial.xyz(Trial.stc{'w'},'head_front',3)),1.6,3)],50,50)
-caxis([0,300])
-ticks_lin2log
+%% End - Figure 8
 
 %% Figure - 9 Comodugram rhm and lfp
 

@@ -1,27 +1,18 @@
 
 
 Trial = MTATrial('jg05-20120310');
-fet = detect_walk(Trial);
-figure,plot(fet)
-Lines(Trial.stc{'w'}(:),[],'k');
-Lines(Trial.stc{'r'}(:),[],'w');
-Lines([],0,'k');
-
-fet = MTADxyz('data',fet,'sampleRate',Trial.xyz.sampleRate);
-
-
-
-
-
-
-sfet = sign(fet.data);
-afet = abs(fet.data);
-afet(afet<1)=1;
-lfet = log10(afet).*sfet;
-
-fet.data = lfet;
-
-figure,hist(fet(Trial.stc{'r'}),100)
+%fet = detect_walk(Trial);
+%figure,plot(fet)
+%Lines(Trial.stc{'w'}(:),[],'k');
+%Lines(Trial.stc{'r'}(:),[],'w');
+%Lines([],0,'k');
+%fet = MTADxyz('data',fet,'sampleRate',Trial.xyz.sampleRate);
+%sfet = sign(fet.data);
+%afet = abs(fet.data);
+%afet(afet<1)=1;
+%lfet = log10(afet).*sfet;
+%fet.data = lfet;
+%figure,hist(fet(Trial.stc{'r'}),100)
 
 Trial.xyz.filter(gausswin(61)./sum(gausswin(61)));
 vel = Trial.vel;
@@ -29,9 +20,12 @@ vel = clip(log10(vel),-2,2);
 vel =  MTADxyz('data',[zeros([1,size(vel,2)]);vel],'sampleRate',Trial.xyz.sampleRate);
 
 
-m=1;
-hist2([vel(:,m),fet(:)],linspace(-2,2,64),linspace(-2,2,64));
-caxis([0,600])
+
+
+% $$$ m=1;
+% $$$ figure
+% $$$ hist2([vel(:,m),vel(:,7)],linspace(-2,2,64),linspace(-2,2,64));%hist2([vel(fet(:)==0,m),vel(fet(:)==0,7)],linspace(-2,2,64),linspace(-2,2,64));
+% $$$ caxis([0,600])
 
 
 
@@ -65,11 +59,29 @@ eeh = error_ellipse(cov(vh),mean(vh),'conf',.95,'style',colors(i));
 end
 
 
+
 figure
 ind = ':';
 vm = 1;
 hm = 1;
-hist2([vel(:,vm),clip(log10(Trial.xyz(:,hm,3)./10),0,3)],linspace(-2,2,64),linspace(0.2,1,64))
+hist2([vel(:,vm),Trial.ang(:,5,7,2)],linspace(-1.5,2,64),linspace(-1.8,1.8,64))
+%ticks_lin2log
+caxis([0,1600])
+hold on
+states = 'rwgl';
+colors = 'wgmc';
+for i = 1:numel(states),
+ind = Trial.stc{states(i)};
+vh = [vel(ind,vm),Trial.ang(ind,5,7,2)];
+eeh = error_ellipse(cov(vh),mean(vh),'conf',.95,'style',colors(i));
+end
+
+
+figure
+ind = ':';
+vm = 1;
+hm = 1;
+hist2([vel(:,vm),clip(Trial.ang(:,5,7,2),-3,3)],linspace(-2,2,64),linspace(0.2,1,64))
 ticks_lin2log
 caxis([0,1600])
 hold on
@@ -77,7 +89,7 @@ states = 'rwgl';
 colors = 'wgmc';
 for i = 1:numel(states),
 ind = Trial.stc{states(i)};
-vh = [vel(ind,vm),clip(log10(Trial.xyz(ind,hm,3)./10),0,3)];
+vh = [clip(Trial.xyz(ind,5,7,2),-3,3),clip(Trial.xyz(ind,5,7,2),-3,3)];
 eeh = error_ellipse(cov(vh),mean(vh),'conf',.95,'style',colors(i));
 end
 
