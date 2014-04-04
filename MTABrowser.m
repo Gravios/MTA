@@ -65,6 +65,7 @@ if ~ispc,javax.swing.UIManager.setLookAndFeel('com.sun.java.swing.plaf.gtk.GTKLo
 setappdata(handles.MTABrowser,'SESSION_DATA',MTASession([]));
 setappdata(handles.MTABrowser,'Session',getappdata(handles.MTABrowser,'SESSION_DATA'));
 setappdata(handles.MTABrowser,'MLData',[]);
+set(handles.MTABrowser,'keyPressFcn',@(hObject,eventdata)MTABrowser('MLkeyState',hObject,eventdata,guidata(hObject)));
 
 %% Initialize Sockets
 
@@ -643,11 +644,14 @@ function BSmotionLabeling_Callback(hObject, eventdata, handles)
 
 if hObject ~= getappdata(handles.MTABrowserStates,'previousBState'),
     
-    
+
+
     MLData = getappdata(handles.MTABrowser,'MLData');
     MLData.record = {};
     MLData.recording=0;
+    MLData.MLRotaKeyPressFcn = [];
     %set(handles.MTABrowser,'keyPressFcn','MTABrowser(''MLkeyState'',hObject,eventdata,handles)')
+
     Session = getappdata(handles.MTABrowser,'Session');
     if Session.xyz.isempty, Session.xyz.load(Session); end
     %if Session.ang.isempty, Session.ang.load(Session); end
@@ -682,7 +686,8 @@ if hObject ~= getappdata(handles.MTABrowserStates,'previousBState'),
                           'XMinorGrid','on',...
                           'YMinorGrid','on');
 
-    rotate3d(handles.MLxyzView);
+    MLData.MLxyzViewRotate = rotate3d(handles.MLxyzView);
+
 
     %% Lines connecting the markers
     try
@@ -1252,10 +1257,10 @@ end
 
 MLData.labels{end+1} = newStateName;
 MLData.keys(end+1) = newStateKey;
-stateSync = Sesesion.sync.copy;
+stateSync = Session.sync.copy;
 stateSync.resample(Session.xyz.sampleRate);
 MLData.States{end+1} = MTADepoch([],[],zeros(length(MLData.xyzpos),1),...
-                                 Session.xyz.sampleRate,stateSync,Trial.xyz.origin,newStateName,newStateKey,...
+                                 Session.xyz.sampleRate,stateSync,Session.xyz.origin,newStateName,newStateKey,...
                                  'TimeSeries');
 MLData.num_of_states = MLData.num_of_states + 1;
 MLData.selected_states(end+1) = true;
@@ -1347,6 +1352,7 @@ else
     stc.updateSync(Session.sync);
     for s = 1:MLData.num_of_states,
         state = MLData.States{s}.copy;
+        state.data(state.data>0)=1;
         state.cast('TimePeriods');
         stc.states{s} = state;
     end
@@ -1958,26 +1964,86 @@ AppStateChange(hObject,eventdata,handles);
 
 function MLkeyState(hObject,eventdata,handles)
 %% MLKEYSTATE
+
+if length(eventdata.Modifier)==1,
+    switch eventdata.Modifier{1}
+      case 'control'
+        switch eventdata.Key
+          case 'r'
+            MLData = getappdata(handles.MTABrowser,'MLData');
+            switch get(MLData.MLxyzViewRotate,'Enable'),
+              case 'on',                
+                set(MLData.MLxyzViewRotate,'Enable','off');
+                uicontrol(handles.MLplayforward);
+
+              case 'off',
+                kpf = get(handles.MTABrowser,'KeyPressFcn');
+                set(MLData.MLxyzViewRotate,'Enable','on');
+
+                %if isempty(MLData.MLRotaKeyPressFcn)
+                    h = findobj(handles.MTABrowser);
+                    h = h(ismember(h,findobj('-property','keyPressFcn')));                               
+                    hManager = uigetmodemanager(handles.MTABrowser);
+                    set(hManager.WindowListenerHandles,'Enable','off')
+                    MLData.MLRotaKeyPressFcn = get(handles.MTABrowser,'KeyPressFcn');
+                    set(handles.MTABrowser,'KeyPressFcn',kpf);
+                    set(h,'KeyPressFcn',kpf);
+                    set(hManager.WindowListenerHandles,'Enable','on')
+                    %end
+                    %copyAxisProps(handles.MLxyzView,MLData.MLRotaKeyPressFcn{2}.ModeStateData.rotateAxes);
+                delete(MLData.MLRotaKeyPressFcn{2}.UIContextMenu)
+                set(handles.MTABrowser,'CurrentAxes',handles.MLxyzView);
+                setappdata(handles.MTABrowser,'MLData',MLData);
+            end
+        end   
+      case 'alt'
+        switch eventdata.Key
+          case 'leftarrow'
+          case 'rightarrow'
+        end
+    end
+else
+
+
+
 whatkey = double(get(handles.MTABrowser,'CurrentCharacter'));
 if ~whatkey,return,end
-switch whatkey
-    case double(' ')
+switch eventdata.Key
+    case 'space'
         setappdata(handles.MLapp,'paused',~getappdata(handles.MLapp,'paused'));
-    case double('e')
+    case 'delete'
         MLstateErase_Callback(hObject, eventdata, handles)
-    case 29
-        MLplayforward_Callback(hObject, eventdata, handles)
-    case 28
-        MLplayreverse_Callback(hObject, eventdata, handles)
+% $$$     case 'backspace'
+% $$$         MLstateErase_Callback(hObject, eventdata, handles)
+    case 'rightarrow'
+        MLData = getappdata(handles.MTABrowser,'MLData');
+        switch get(MLData.MLxyzViewRotate,'Enable'),
+          case 'off',
+            MLplayforward_Callback(hObject, eventdata, handles)
+          case 'on',
+            %set(handles.MTABrowser,'CurrentAxes',handles.MLxyzView);
+            %copyAxisProps(handles.MLxyzView,MLData.MLRotaKeyPressFcn{2}.ModeStateData.rotateAxes);
+            feval(MLData.MLRotaKeyPressFcn{1},handles.MTABrowser,eventdata,MLData.MLRotaKeyPressFcn{2},MLData.MLRotaKeyPressFcn{3});
+            setappdata(handles.MTABrowser,'MLData',MLData);
+
+        end
+
+    case 'leftarrow'
+        MLData = getappdata(handles.MTABrowser,'MLData');
+        switch get(MLData.MLxyzViewRotate,'Enable'),
+          case 'off',
+            MLplayreverse_Callback(hObject, eventdata, handles)
+        end
+
     otherwise
         MLData = getappdata(handles.MTABrowser,'MLData');
-        if MLData.current_label == strfind(MLData.keys(MLData.selected_states),char(whatkey));
+        if MLData.current_label == strfind(MLData.keys(MLData.selected_states),eventdata.Key);
             MLData.flag_tag=~MLData.flag_tag;
         else
             if isempty(MLData.current_label),
                 MLData.current_label = 0;
             else
-                MLData.current_label = strfind(MLData.keys(MLData.selected_states),char(whatkey));
+                MLData.current_label = strfind(MLData.keys(MLData.selected_states),eventdata.Key);
                 MLData.flag_tag=1;
             end
         end
@@ -1990,6 +2056,9 @@ switch whatkey
         end
         setappdata(handles.MTABrowser,'MLData',MLData);
 end
+
+end
+
 set(handles.MTABrowser,'CurrentCharacter','0');
 guidata(handles.MTABrowser,handles);
 function updateCircle(hObject,handles,idx)
@@ -2269,3 +2338,23 @@ function LSveiwoptions_Callback(hObject, eventdata, handles)
 function LSstates_Callback(hObject, eventdata, handles)
 
 function LSfeatures_Callback(hObject, eventdata, handles)
+
+function copyAxisProps(original,dest)
+props = {
+    'DataAspectRatio'
+    'DataAspectRatioMode'
+    'CameraViewAngle'
+    'CameraViewAngleMode'
+    'XLim'
+    'YLim'
+    'ZLim'
+    'PlotBoxAspectRatio'
+    'PlotBoxAspectRatioMode'
+    'Units'
+    'Position'
+    'View'
+    'Projection'
+    'Parent'
+    };
+values = get(original,props);
+set(dest,props,values);
