@@ -651,12 +651,18 @@ if hObject ~= getappdata(handles.MTABrowserStates,'previousBState'),
     MLData.recording=0;
     MLData.MLRotaKeyPressFcn = [];
     %set(handles.MTABrowser,'keyPressFcn','MTABrowser(''MLkeyState'',hObject,eventdata,handles)')
-
+    
     Session = getappdata(handles.MTABrowser,'Session');
     if Session.xyz.isempty, Session.xyz.load(Session); end
     %if Session.ang.isempty, Session.ang.load(Session); end
-    
     xyzpos = Session.xyz.data;
+    
+
+    %% Rescale Play Speed slider for xyz Sample Rate
+    psSliderMax = round(Session.xyz.sampleRate/2);
+    set(handles.MLplayspeed_slider,'max',psSliderMax);
+    %set(handles.MLplayspeed_slider,'SliderStep',[0.01,0.1].*psSliderMax);
+
     
     %% Translate connection map to pairs
     markerConnections=[];
@@ -1978,23 +1984,25 @@ if length(eventdata.Modifier)==1,
 
               case 'off',
                 kpf = get(handles.MTABrowser,'KeyPressFcn');
+                set(handles.MTABrowser,'CurrentAxes',handles.MLxyzView);
                 set(MLData.MLxyzViewRotate,'Enable','on');
 
-                %if isempty(MLData.MLRotaKeyPressFcn)
-                    h = findobj(handles.MTABrowser);
-                    h = h(ismember(h,findobj('-property','keyPressFcn')));                               
-                    hManager = uigetmodemanager(handles.MTABrowser);
-                    set(hManager.WindowListenerHandles,'Enable','off')
-                    MLData.MLRotaKeyPressFcn = get(handles.MTABrowser,'KeyPressFcn');
-                    set(handles.MTABrowser,'KeyPressFcn',kpf);
-                    set(h,'KeyPressFcn',kpf);
-                    set(hManager.WindowListenerHandles,'Enable','on')
-                    %end
-                    %copyAxisProps(handles.MLxyzView,MLData.MLRotaKeyPressFcn{2}.ModeStateData.rotateAxes);
-                delete(MLData.MLRotaKeyPressFcn{2}.UIContextMenu)
+                h = findobj(handles.MTABrowser);
+                h = h(ismember(h,findobj('-property','keyPressFcn')));
+                hManager = uigetmodemanager(handles.MTABrowser);
+                set(hManager.WindowListenerHandles,'Enable','off')
+                MLData.MLRotaKeyPressFcn = get(handles.MTABrowser,'KeyPressFcn');
+                set(handles.MTABrowser,'KeyPressFcn',kpf);
+                set(h,'KeyPressFcn',kpf);
+                set(hManager.WindowListenerHandles,'Enable','on')
                 set(handles.MTABrowser,'CurrentAxes',handles.MLxyzView);
+
+                delete(MLData.MLRotaKeyPressFcn{2}.UIContextMenu)
+                hgfeval(get(MLData.MLRotaKeyPressFcn{2},'WindowButtonDownFcn'),handles.MTABrowser,[]);
+
                 setappdata(handles.MTABrowser,'MLData',MLData);
             end
+            
         end   
       case 'alt'
         switch eventdata.Key
@@ -2006,26 +2014,23 @@ else
 
 
 
-whatkey = double(get(handles.MTABrowser,'CurrentCharacter'));
-if ~whatkey,return,end
+%whatkey = double(get(handles.MTABrowser,'CurrentCharacter'));
+%if ~whatkey,return,end
 switch eventdata.Key
     case 'space'
         setappdata(handles.MLapp,'paused',~getappdata(handles.MLapp,'paused'));
     case 'delete'
         MLstateErase_Callback(hObject, eventdata, handles)
-% $$$     case 'backspace'
-% $$$         MLstateErase_Callback(hObject, eventdata, handles)
+    case 'backspace'
+        MLstateErase_Callback(hObject, eventdata, handles)
     case 'rightarrow'
         MLData = getappdata(handles.MTABrowser,'MLData');
         switch get(MLData.MLxyzViewRotate,'Enable'),
           case 'off',
             MLplayforward_Callback(hObject, eventdata, handles)
           case 'on',
-            %set(handles.MTABrowser,'CurrentAxes',handles.MLxyzView);
-            %copyAxisProps(handles.MLxyzView,MLData.MLRotaKeyPressFcn{2}.ModeStateData.rotateAxes);
-            feval(MLData.MLRotaKeyPressFcn{1},handles.MTABrowser,eventdata,MLData.MLRotaKeyPressFcn{2},MLData.MLRotaKeyPressFcn{3});
+            hgfeval(MLData.MLRotaKeyPressFcn,handles.MTABrowser,eventdata);
             setappdata(handles.MTABrowser,'MLData',MLData);
-
         end
 
     case 'leftarrow'
@@ -2033,8 +2038,47 @@ switch eventdata.Key
         switch get(MLData.MLxyzViewRotate,'Enable'),
           case 'off',
             MLplayreverse_Callback(hObject, eventdata, handles)
+          case 'on',
+            hgfeval(MLData.MLRotaKeyPressFcn,handles.MTABrowser,eventdata);
+            setappdata(handles.MTABrowser,'MLData',MLData);
         end
 
+     case 'uparrow'
+        MLData = getappdata(handles.MTABrowser,'MLData');
+        switch get(MLData.MLxyzViewRotate,'Enable'),
+          case 'off',
+            currentPlaySpeed = get(handles.MLplayspeed_slider,'Value');
+            maxPlaySpeed = get(handles.MLplayspeed_slider,'Max');
+            minPlaySpeed = get(handles.MLplayspeed_slider,'Min');
+            newPlaySpeed = currentPlaySpeed+maxPlaySpeed.*0.01;
+            if maxPlaySpeed<newPlaySpeed, newPlaySpeed = maxPlaySpeed;end
+            if minPlaySpeed>newPlaySpeed, newPlaySpeed = minPlaySpeed;end
+            setappdata(handles.MLapp,'play_speed',newPlaySpeed);
+            set(handles.MLplayspeed_slider,'Value', newPlaySpeed);
+          case 'on',
+            hgfeval(MLData.MLRotaKeyPressFcn,handles.MTABrowser,eventdata);
+            setappdata(handles.MTABrowser,'MLData',MLData);
+        end
+
+      case 'downarrow'
+        MLData = getappdata(handles.MTABrowser,'MLData');
+        switch get(MLData.MLxyzViewRotate,'Enable'),
+          case 'off',
+            currentPlaySpeed = get(handles.MLplayspeed_slider,'Value');
+            maxPlaySpeed = get(handles.MLplayspeed_slider,'Max');
+            minPlaySpeed = get(handles.MLplayspeed_slider,'Min');
+            newPlaySpeed = currentPlaySpeed-maxPlaySpeed.*0.01;
+            if maxPlaySpeed<newPlaySpeed, newPlaySpeed = maxPlaySpeed;end
+            if minPlaySpeed>newPlaySpeed, newPlaySpeed = minPlaySpeed;end
+            setappdata(handles.MLapp,'play_speed',newPlaySpeed);
+            set(handles.MLplayspeed_slider,'Value', newPlaySpeed);
+          case 'on',
+            hgfeval(MLData.MLRotaKeyPressFcn,handles.MTABrowser,eventdata);
+            setappdata(handles.MTABrowser,'MLData',MLData);
+        end
+
+        
+        
     otherwise
         MLData = getappdata(handles.MTABrowser,'MLData');
         if MLData.current_label == strfind(MLData.keys(MLData.selected_states),eventdata.Key);

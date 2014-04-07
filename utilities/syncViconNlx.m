@@ -80,7 +80,7 @@ Session.sync = MTADepoch(Session.spath,[Session.filebase '.sync.mat'],syncPeriod
 Session.sync.save(1);
 Session.lfp.sync.sync = Session.sync.copy;
 Session.lfp.origin = round(Session.lfp.sync.sync.data(1)*Par.lfpSampleRate);
-Session.stc = MTAStateCollection(Session.spath,Session.filebase,'default');
+Session.stc = MTAStateCollection(Session.spath,Session.filebase,'default',[],[],1);
 Session.stc.updateSync(Session.sync);
 Session.stc.updateOrigin(0);
 
