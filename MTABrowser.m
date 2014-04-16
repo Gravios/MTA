@@ -1263,7 +1263,7 @@ end
 
 MLData.labels{end+1} = newStateName;
 MLData.keys(end+1) = newStateKey;
-stateSync = Session.sync.copy;
+stateSync = Session.xyz.sync.copy;
 stateSync.resample(Session.xyz.sampleRate);
 MLData.States{end+1} = MTADepoch([],[],zeros(length(MLData.xyzpos),1),...
                                  Session.xyz.sampleRate,stateSync,Session.xyz.origin,newStateName,newStateKey,...
@@ -1349,17 +1349,24 @@ end
 [filename,filepath] = uiputfile(['*' Session.trialName '.stc.*'],'Save Behavior Collection:',...
                      fullfile(Session.spath, [Session.filebase '.stc.' bhv_name '.mat']));
 
+
 if ~ischar(filename)||~ischar(filepath),
     return
 else    
     stc = MTAStateCollection;
+    inds = find(ismember(filename,'.'),2,'last')+[1,-1];
+    stc.updateFilename(filename);
+    stc.updateMode(stc.filename(inds(1):inds(2)));
     stc.updatePath(filepath);
-    stc.updateFilename(filename);    
+    stc.ext = 'stc';
+    %stc.updateFilename(filename);    
     stc.updateSync(Session.sync);
+    stc.origin = 0;
     for s = 1:MLData.num_of_states,
         state = MLData.States{s}.copy;
         state.data(state.data>0)=1;
         state.cast('TimePeriods');
+        state.data(:,2) = state.data(:,2) - 1;
         stc.states{s} = state;
     end
     stc.save(1);
@@ -1975,6 +1982,10 @@ if length(eventdata.Modifier)==1,
     switch eventdata.Modifier{1}
       case 'control'
         switch eventdata.Key
+          case 'rightarrow'
+            MLjumpforward_Callback(handles.MLjumpback,[],handles);
+          case 'leftarrow'
+            MLjumpback_Callback(handles.MLjumpback,[],handles);
           case 'r'
             MLData = getappdata(handles.MTABrowser,'MLData');
             switch get(MLData.MLxyzViewRotate,'Enable'),
@@ -2076,6 +2087,16 @@ switch eventdata.Key
             hgfeval(MLData.MLRotaKeyPressFcn,handles.MTABrowser,eventdata);
             setappdata(handles.MTABrowser,'MLData',MLData);
         end
+
+      case 'numpad0'
+            newPlaySpeed = get(handles.MLplayspeed_slider,'Min');
+            setappdata(handles.MLapp,'play_speed',newPlaySpeed);
+            set(handles.MLplayspeed_slider,'Value', newPlaySpeed);
+
+      case 'numpad1'
+            newPlaySpeed = get(handles.MLplayspeed_slider,'Max')/2;
+            setappdata(handles.MLapp,'play_speed',newPlaySpeed);
+            set(handles.MLplayspeed_slider,'Value', newPlaySpeed);
 
         
         
