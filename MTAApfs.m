@@ -15,6 +15,7 @@ classdef MTAApfs < hgsetget %< MTAAnalysis
     methods
 
         function Pfs = MTAApfs(Obj, varargin)     
+        % MTAApfs(Obj,{units,states,overwrite,tag,binDims,SmoothingWeights,type,spkShuffle,posShuffle,numIter})
             [units,states,overwrite,tag,binDims,SmoothingWeights,type,spkShuffle,posShuffle,numIter]=...
             DefaultArgs(varargin,{[],'walk',0,[],[20,20],[1.2,1.2],'xy','n',0,1,});
             

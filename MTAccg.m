@@ -51,7 +51,7 @@ methods
         end
         
         if partitions == 1, method = 'normal';end
-        Session.spk.create(Session,Session.lfp.sampleRate);
+        Session.spk.create(Session,Session.xyz.sampleRate);
         numClu = size(Session.spk.map,1);
 
         Bccg.mazeName = Session.maze.name;

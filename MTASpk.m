@@ -87,6 +87,9 @@ classdef MTASpk < hgsetget
         %                         of spikes. The default [] will return all
         %                         Clusters.
         %
+        %     mode:       string, {'','deburst'}, only keep 1st spk of each
+        %                         burst.
+        %
         %     loadField: cellarry, NOT IMPLEMENTED
         %
         % See also MTAStateCollection for more information on selecting
