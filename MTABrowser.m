@@ -1366,7 +1366,7 @@ else
         state = MLData.States{s}.copy;
         state.data(state.data>0)=1;
         state.cast('TimePeriods');
-        state.data(:,2) = state.data(:,2) - 1;
+        state.data(:,1) = state.data(:,1) + 1;
         stc.states{s} = state;
     end
     stc.save(1);
