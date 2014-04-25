@@ -199,7 +199,7 @@ classdef MTAStateCollection < hgsetget
                                     sts{i} = sts{i}.load(Stc.sync);
                                     Stc.addState(sts{i});
                                 else
-                                    sts{i} =  Stc.states{stci};
+                                    sts{i} =  Stc.states{stci}.copy;
                                 end
                             end
                             
