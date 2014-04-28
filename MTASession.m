@@ -276,6 +276,8 @@ classdef MTASession < hgsetget
             return
 
         elseif isa(Data,'MTAData'),
+            % TODO: Need to deal with lfp resync eventually.
+            if isa(Data,'MTADlfp'),return,end
             
             % The periods when the data was recorded
             dataEpoch = Data.sync.copy;

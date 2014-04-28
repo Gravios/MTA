@@ -181,18 +181,16 @@ sname = 'jg05-20120309';
 Trial = MTATrial(sname,'all');
 Trial.xyz.load(Trial);
 
-Trial.load('nq');
-Trial.lfp.load(Trial,[71:3:84]);
+%Trial.load('nq');
+Trial.lfp.load(Trial,[61,71:3:84]);
 
 
 
-tbp = ButFilter(Trial.lfp.data(:,:),3,[6,12]./(Trial.lfp.sampleRate/2),'bandpass');
-tbp_hilbert = Shilbert(tbp);
-tbp_phase = phase(tbp_hilbert);
-tbp_phase = MTADlfp([],[],tbp_phase,Trial.lfp.sampleRate,Trial.lfp.sync.copy,Trial.lfp.origin);
+
+tbp_phase = Trial.lfp.phase;
 
 
-state = 'walk&theta';
+state = 'walk';
 
 tbp_phase.resample(Trial.xyz);
 
@@ -302,20 +300,12 @@ end
 
 
 %% Figure 5 - State Wise Unit Firing Rates
-
-
-MTAConfiguration('/gpfs01/sirota/bach/data/gravio','absolute');
-%MTAConfiguration('/data/data/gravio','absolute');
-%sname = 'jg05-20120317';
-%sname = 'jg05-20120310';
 sname = 'jg05-20120309';
-
 Trial = MTATrial(sname,'all');
 Trial.load('nq');
 
 states = {'theta','vel&theta','rear&theta','walk&theta','hwalk&theta','lwalk&theta'};
 units = find(Trial.nq.eDist>30&Trial.nq.SpkWidthR>.5)';
-
 sscount = nan(numel(units),numel(states));
 ssdur   = nan(numel(units),numel(states));
 
@@ -330,8 +320,6 @@ for u = units,
 
 end
 end
-
-
 srates = sscount./(ssdur./Trial.xyz.sampleRate);
 
 nrates = srates./repmat(max(srates,[],2),1,numel(states));
@@ -340,7 +328,6 @@ nrates = srates./repmat(max(srates,[],2),1,numel(states));
 
 figure,imagescnan(nrates(rind,:)',[],[],1);
 set(gca,'YTickLabel',states);
- 
 
 %% End Figure 5
 
