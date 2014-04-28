@@ -19,8 +19,9 @@ classdef MTAAknnpfs < hgsetget %< MTAAnalysis
 
             [units,states,overwrite,tag,binDims,nNearestNeighbors,distThreshold,...
                 type,ufrShufBlockSize,numIter, downSampleRate]=...
-            DefaultArgs(varargin,{[],'walk',0,[],[20,20],80,70,'xy',0,1,20});
-            
+            DefaultArgs(varargin,{[],'walk',false,[],[20,20],80,70,'xy',0,1,20});
+             
+            units = units(:)';
         
             switch class(Obj)
                 case 'MTATrial'
@@ -74,13 +75,13 @@ classdef MTAAknnpfs < hgsetget %< MTAAnalysis
                         
 
             numUnits = numel(units);
-            selected_units = units(:)';
+            selected_units = units;
 
             pf_tmpfile = Pfs.fpath;
             %% load existing data
             epftmp = exist(pf_tmpfile,'file');
 
-            if epftmp&&overwrite~=1,
+            if epftmp&&~overwrite,
                 if isempty(Pfs.data.clu),
                     load(pf_tmpfile);
                     Pfs.rmClu(0);
@@ -112,13 +113,13 @@ classdef MTAAknnpfs < hgsetget %< MTAAnalysis
                                 Pfs.data.(field{f}) = cat(2,Pfs.data.(field{f}),newdata.(field{f}));
                             end
                         end
-                        selected_units = reshape(units(~ismember(units,Pfs.data.clu)),1,[]);
+                        selected_units = units(~ismember(units,Pfs.data.clu));
                         
                         dind = [tnumUnits-numNewUnits+1:tnumUnits];
                     end
                 end
 
-            elseif epftmp&&overwrite==1,
+            elseif epftmp&&overwrite,
             %% Extend Pfs data for additional units
                 numUnits = numel(units);
                 if numUnits ==0
@@ -143,8 +144,7 @@ classdef MTAAknnpfs < hgsetget %< MTAAnalysis
                         Pfs.data.(field{f}) = cat(2,Pfs.data.(field{f}),newdata.(field{f}));
                     end
                 end
-                selected_units = [units(ismember(units,Pfs.data.clu));units(~ismember(units,Pfs.data.clu))];
-                selected_units = selected_units(:)';
+                selected_units = [units(ismember(units,Pfs.data.clu)),units(~ismember(units,Pfs.data.clu))];
                 dind = [oldUnitInds(:)',[tnumUnits-numNewUnits+1:tnumUnits]];                
             elseif ~epftmp
             %% Instantiate Pfs Data Variables if DeNovoCalc
@@ -167,7 +167,7 @@ classdef MTAAknnpfs < hgsetget %< MTAAnalysis
             sstpos = sq(Session.xyz(pfsState,Session.trackingMarker,1:numel(binDims))); 
 
             %% load unit firing rate
-            Session.ufr.create(Session,Session.xyz,pfsState.label,units,0.2);
+            Session.ufr.create(Session,Session.xyz,pfsState.label,selected_units,0.2);
             sstufr = Session.ufr(pfsState,:);
             
            
@@ -191,7 +191,7 @@ classdef MTAAknnpfs < hgsetget %< MTAAnalysis
                 ufrShufPermIndices = ':';
             end
             
-            
+
             i = 1;
             for unit=selected_units(:)',
                 Pfs.data.clu(dind(i)) = Session.spk.map(unit,1);
@@ -208,18 +208,31 @@ classdef MTAAknnpfs < hgsetget %< MTAAnalysis
 
                 tic
                 if numIter>1,
-                    for bsi = 2:numIter
-                        Pfs.data.rateMap(:,dind(i),bsi) = ...
+                    RandRateMap = zeros([size(Pfs.data.rateMap,1),numIter-1]);
+                    %PAR POOL open, only for cluster at the
+                    %moment since it tries to open a ton of nodes
+                    %switch  version        
+                    %   case '8.1.0.604 (R2013a)'
+                    if matlabpool('size')~=12,matlabpool('open',12);end
+                       %MATLAB2014a: if ~exist('parObj','var')==0,parObj=parpool('MTAparpool',20);end
+                    %end
+                    
+                    parfor bsi = 1:numIter-1,
+                        RandRateMap(:,bsi) = ...
                         PlotKNNPF...
-                        (Session,sstufr(reshape(ufrBlockInd(:,ufrShufPermIndices(bsi,:)),[],1),unit==selected_units),...
+                        (Session,sstufr(reshape(ufrBlockInd(:,ufrShufPermIndices(bsi+1,:)),[],1),unit==selected_units),...
                          sstpos,binDims,nNearestNeighbors,distThreshold,downSampleRate,type,dw,diw);
                     end
+                    Pfs.data.rateMap(:,dind(i),2:end) = RandRateMap;
                 end
                 toc
                 
                 i = i+1;
                 save(pf_tmpfile,'Pfs','-v7.3')
             end
+
+            % PAR POOL close 
+            if matlabpool('size')==12,matlabpool('close');end
 
             field = fieldnames(Pfs.data);
             Clu = Pfs.data.clu;

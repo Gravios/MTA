@@ -1,5 +1,5 @@
 %function dstruct = population_placeFieldAnalysis(sesList,states,pftype)
-MTAConfiguration('/gpfs01/sirota/bach/data/gravio','absolute'); 
+%MTAConfiguration('/gpfs01/sirota/bach/data/gravio','absolute'); 
 
 sesList = {{'jg05-20120309','cof','all'},...
            {'jg05-20120310','cof','all'},...
@@ -17,7 +17,7 @@ for ses = 1:numel(sesList),
     Trial.xyz.load(Trial);
     Trial.load('nq');
 
-    %units = find(Trial.nq.SpkWidthR>0.7&Trial.nq.eDist>30);
+    units = find(Trial.nq.SpkWidthR>0.8&Trial.nq.eDist>18)';
     units = [];
 
     % Load PlaceFields
@@ -26,19 +26,20 @@ for ses = 1:numel(sesList),
         switch pftype
           case 'MTAAknnpf'
             try
-            pfs{ses,i} = MTAAknnpfs(Trial,units,states{i},0,'numIter',1000, ...
-                            'ufrShufBlockSize',0.5,'binDims',[20,20],'distThreshold',70);
+% $$$             pfs{ses,i} = MTAAknnpfs(Trial,units,states{i},0,'numIter',1000, ...
+% $$$                             'ufrShufBlockSize',0.5,'binDims',[20,20],'distThreshold',70);
+            pfst{ses,i} = MTAAknnpfs(Trial,units,states{i},1,'numIter',1, ...
+                            'ufrShufBlockSize',0,'binDims',[20,20],'distThreshold',70);
             end
           case 'MTAApfs'
             % not ready 
             % pfs{i} = MTAApfs(Trial,units,states{i},0,'numIter',1000)
         end
 
-        if i==1,
-            units = pfs{ses,1}.data.clu;
-        end
+% $$$         if i==1,
+% $$$             units = pfs{ses,1}.data.clu;
+% $$$         end
     end
-
 
 
     % Calulate the characteristic values of place fields
@@ -48,6 +49,13 @@ for ses = 1:numel(sesList),
         end
     end
 
+end 
+
+for ses = 1:numel(sesList),
+    Trial = MTATrial(sesList{ses}{1},sesList{ses}{3},sesList{ses}{2});
+    Trial.xyz.load(Trial);
+    Trial.load('nq');
+    units = pfs{ses,1}.data.clu;
 
 tic
     % Initialize correlation vars
