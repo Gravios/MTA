@@ -228,9 +228,9 @@ classdef MTAAknnpfs < hgsetget %< MTAAnalysis
                 toc
                 
                 i = i+1;
-                save(pf_tmpfile,'Pfs','-v7.3')
+                %save(pf_tmpfile,'Pfs','-v7.3')
             end
-
+                save(pf_tmpfile,'Pfs','-v7.3')
             % PAR POOL close 
             if matlabpool('size')==12,matlabpool('close');end
 

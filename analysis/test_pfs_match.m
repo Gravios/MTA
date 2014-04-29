@@ -38,7 +38,7 @@ end
 
 
 
-pfs = MTAAknnpfs(Trial,1:5,'theta',0,'numIter',1001, ...
+pfs = MTAAknnpfs(Trial,1:5,'walk^theta',0,'numIter',1000, ...
                        'ufrShufBlockSize',0.5,'binDims',[20,20],'distThreshold',70);
 
 

@@ -5,49 +5,50 @@ Trial.xyz.load(Trial);
 Trial.filter('xyz',gausswin(31)./sum(gausswin(31)));
 
 
-%% CRAP Figure 1 - Comparison between head and body motion
 
-dmax = 100;dmin =0.1;
-dxys = Trial.vel(1:Trial.xyz.size(2),[1,2]);
-for i = 1:Trial.xyz.size(2),
-    dxysc = clip(dxys(:,i)*10,dmin,dmax);
-    dxysc(isnan(dxysc))=dmin;
-    [dxyscu(:,i) dxyscux(:,i)] = MakeUniformDistr(dxysc);
+
+%% Figure 1 BHV state Place Fields and ccgs
+% rear walk hwalk lwalk
+
+Trial = MTATrial('jg05-20120309','all');
+Trial.load('nq');
+units = find(Trial.nq.SpkWidthR>0.8&Trial.nq.eDist>18)';
+states = {'rear&theta','walk&theta','hwalk&theta','lwalk&theta'};
+nsts = numel(states);
+for i = 1:nsts,
+pfs{i} =     MTAAknnpfs(Trial,units,states{i},0,'numIter',1000, ...
+                'ufrShufBlockSize',0.5,'binDims',[20,20],'distThreshold',70);
 end
 
 
-dxyscu = MTADxyz([],[],dxyscu,Trial.xyz.sampleRate,[],[],Trial.xyz.model);
-dxyscux = MTADxyz([],[],dxyscux,Trial.xyz.sampleRate,[],[],Trial.xyz.model);    
-
-tdxyscu = dxyscu.copy;
-tdxyscux = dxyscux.copy;
-tdxyscu.data = dxyscu(Trial.stc{'t'},:);
-tdxyscux.data = dxyscux(Trial.stc{'t'},:);
-
-marpairs = {{{'spine_lower'},{'head_front'}},{{'pelvis_root'},{'head_back'}},{{'spine_upper'},{'head_back'}},{{'head_front'},{'head_back'}}};
-nbins = 100;
-nticks = 10;
-for i = 1:size(marpairs,2),
-    figure
-    hist2([tdxyscu(:,marpairs{i}{1}) tdxyscu(:,marpairs{i}{2})],100,100)
-    caxis([0 100])
-    mdxyscux1 = reshape(tdxyscux(1+mod(size(tdxyscux,1),100):end,Trial.xyz.model.gmi(marpairs{i}{1})),[],nbins);
-    mdxyscux2 = reshape(tdxyscux(1+mod(size(tdxyscux,1),100):end,Trial.xyz.model.gmi(marpairs{i}{2})),[],nbins);
-    for j = 1:nticks
-        xticks{j} = sprintf('%2.2f',mdxyscux1(round(size(mdxyscux1,1)/2),j*nticks));
-        yticks{j} = sprintf('%2.2f',mdxyscux2(round(size(mdxyscux2,1)/2),j*nticks));
-    end
-    xl = xlim;
-    yl = ylim;
-    set(gca,'XTick',linspace(xl(1),xl(2),10),'XTickLabel',xticks)
-    set(gca,'YTick',linspace(yl(1),yl(2),10),'YTickLabel',yticks)
+f = figure(1123);
+for u = pfs{1}.data.clu, 
+for i = 1:nsts,
+subplotfit(i,nsts),pfs{i}.plot(u);title([pfs{i}.parameters.states,':',num2str(u)]),
+end
+pause(.2),
+reportfig(f,[Trial.name,'-pfs_state'],[],['unit: ',num2str(u)]);
 end
 
-set(gca,'XTickLabel',sprintf('%2.2f\n', ...
-                             mdxyscux1(round(size(mdxyscux1,1)/2),nticks:nticks:nbins)))
-set(gca,'YTickLabel',sprintf('%2.2f\n', ...
-                             mdxyscux2(round(size(mdxyscux2,1)/2),nticks:nticks:nbins)))
+
+figc = figure(1231);
+for u = pfl.data.clu, 
+for i = 1:nsts,
+subplotfit(i,nsts),pfs{i}.plot(u);title([pfs{i}.parameters.states,':',num2str(u)]),
+end
+pause(.2),
+reportfig(figc,'jg05-201203017-ccg_state',[],['unit: num2str(u)']);
+end
+
+bccg{i} = gen_bhv_ccg(Trial);
+figure,
+subplot(211),bccg.plot(units(10),1);
+subplot(212),bccg.plot(units(10),2);
+
+
 %% End - Figure 1
+
+
 
 
 %% Figure 2 - Marker vs Marker Speed Joint Distribution

@@ -2,10 +2,12 @@
 %MTAConfiguration('/gpfs01/sirota/bach/data/gravio','absolute'); 
 
 sesList = {{'jg05-20120309','cof','all'},...
-           {'jg05-20120310','cof','all'},...
            {'jg05-20120317','cof','all'}};
 
-states = {'theta','rear&theta','walk&theta','hwalk&theta','lwalk&theta'};
+%           {'jg05-20120310','cof','all'},...
+
+%states = {'theta','rear&theta','walk&theta','hwalk&theta','lwalk&theta'};
+states = {'rear&theta','walk&theta','hwalk&theta','lwalk&theta'};
 
 pftype = 'MTAAknnpf';
 
@@ -26,19 +28,17 @@ for ses = 1:numel(sesList),
         switch pftype
           case 'MTAAknnpf'
             try
-% $$$             pfs{ses,i} = MTAAknnpfs(Trial,units,states{i},0,'numIter',1000, ...
-% $$$                             'ufrShufBlockSize',0.5,'binDims',[20,20],'distThreshold',70);
-            pfst{ses,i} = MTAAknnpfs(Trial,units,states{i},1,'numIter',1, ...
-                            'ufrShufBlockSize',0,'binDims',[20,20],'distThreshold',70);
+            pfs{ses,i} = MTAAknnpfs(Trial,units,states{i},0,'numIter',1000, ...
+                            'ufrShufBlockSize',0.5,'binDims',[20,20],'distThreshold',70);
             end
           case 'MTAApfs'
             % not ready 
             % pfs{i} = MTAApfs(Trial,units,states{i},0,'numIter',1000)
         end
 
-% $$$         if i==1,
-% $$$             units = pfs{ses,1}.data.clu;
-% $$$         end
+        if i==1,
+            units = pfs{ses,1}.data.clu;
+        end
     end
 
 

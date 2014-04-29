@@ -13,7 +13,7 @@ units = [18,21:32,36:39]';
 
 pfsc={};
 for i = 1:numsts,
-    pfsc{i}  =  MTAAPfknncorm(Trial,units,states{i},1,'numIter',1,'ufrShufBlockSize',0,'binDims',[30,30],'distThreshold',120);
+    pfsc{i}  =  MTAAPfknncorm(Trial,units,states{i},1,'numIter',1,'ufrShufBlockSize',0,'binDims',[30,30],'distThreshold',200,'nNearestNeighbors',300);
 end
 
 pfsr={};
