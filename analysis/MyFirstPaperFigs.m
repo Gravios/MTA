@@ -339,12 +339,12 @@ set(gca,'YTickLabel',states);
 
 MTAConfiguration('/gpfs01/sirota/bach/data/gravio','absolute');
 %MTAConfiguration('/data/data/gravio','absolute');
-%sname = 'jg05-20120317';
-sname = 'jg05-20120310';
+sname = 'jg05-20120317';
+%sname = 'jg05-20120310';
 %sname = 'jg05-20120309';
 disp = 0;
-chans = [1:2:8];
-%chans = [71:2:96];
+%chans = [1:2:8];
+chans = [71:2:96];
 marker = 'spine_lower'
 
 Trial = MTATrial(sname,'all');
@@ -355,16 +355,24 @@ Trial.lfp.load(Trial,chans);
 
 wlfp = WhitenSignal(Trial.lfp.data,[],1);
 
+
+matlabpool open 12
+
+tl=[];
+fl=[];
 yl=[];
-for i = 1:Trial.lfp.size(2),
-    [yl(:,:,i),fl,tl] = mtchglong(wlfp(:,i),2^12,Trial.lfp.sampleRate,2^11,2^11*0.875,[],[],[],[1,40]);
+parfor i = 1:Trial.lfp.size(2),
+    [yl(:,:,i),fl(:,i),tl(:,i)] = mtchglong(wlfp(:,i),2^12,Trial.lfp.sampleRate,2^11,2^11*0.875,[],[],[],[1,40]);
 end
+
+th=[];
+fh=[];
 yh=[];
-for i = 1:Trial.lfp.size(2),
-    [yh(:,:,i),fh,th] = mtchglong(wlfp(:,i),2^9,Trial.lfp.sampleRate,2^8,2^8*0.875,[],[],[],[40,120]);
+parfor i = 1:Trial.lfp.size(2),
+    [yh(:,:,i),fh(:,i),th(:,i)] = mtchglong(wlfp(:,i),2^9,Trial.lfp.sampleRate,2^8,2^8*0.875,[],[],[],[40,120]);
 end
-yld = MTADlfp([],[],yl,1/diff(tl(1:2)));
-yld = MTADlfp([],[],yh,1/diff(th(1:2)));
+yld = MTADlfp('data',yl,'sampleRate',1/diff(tl(1:2,1)));
+yhd = MTADlfp('data',yh,'sampleRate',1/diff(th(1:2,1)));
 
 bang = ButFilter(Trial.ang(:,4,5,3),3,[1,20]./(Trial.ang.sampleRate./2),'bandpass');
 bhh = ButFilter(Trial.xyz(:,7,3),3,[1,20]./(Trial.xyz.sampleRate./2),'bandpass');
@@ -939,3 +947,174 @@ sub_pos = get(gca,'position'); % get subplot axis position
 set(gca,'position',sub_pos.*[1 1 1.2 1.2]) % stretch its width and height
 end
 end
+
+
+%% Figure 14 - Spectral power for each behavior
+sname = 'jg05-20120317';
+%sname = 'jg05-20120310';
+%sname = 'jg05-20120309';
+disp = 0;
+%chans = [1:2:8];
+chans = [65:1:96];
+marker = 'spine_lower'
+
+Trial = MTATrial(sname,'all');
+Trial.ang.load(Trial);
+Trial.xyz.load(Trial);
+Trial.lfp.load(Trial,chans);
+
+wlfp = WhitenSignal(Trial.lfp.data,[],1);
+
+matlabpool open 12
+
+tl=[];
+fl=[];
+yl=[];
+spectral.nfft = 2^11;
+spectral.window = 2^10;
+parfor i = 1:Trial.lfp.size(2),
+    [yl(:,:,i),fl(:,i),tl(:,i)] = mtchglong(wlfp(:,i),spectral.nfft,Trial.lfp.sampleRate,spectral.window,spectral.window*0.875,[],[],[],[1,40]);
+end
+fl = fl(:,1);
+tl = tl(:,1);
+yld = MTADlfp('data',yl,'sampleRate',1/diff(tl(1:2,1)));
+yld.data(yld.data==0)=nan;
+yld.data = log10(yld.data);
+yld.data = (yld.data-repmat(nanmedian(yld.data),[yld.size(1),1,1]))./repmat(nanstd(yld.data),[yld.size(1),1,1]);
+tshift = round(spectral.window/2/Trial.lfp.sampleRate*yld.sampleRate);
+
+
+
+
+sts='r'
+evt=1;
+figure,cnt=1;
+for i=linspace(-2,2,40).*yld.sampleRate
+imagesc(fl,1:13,sq(nanmean(yld(round(Trial.stc{sts,yld.sampleRate}.data(diff(Trial.stc{sts}.data,1,2)>200,evt)+i-tshift),:,:),1))'),
+caxis([-1,1])
+text( 35,13,num2str((i)./yld.sampleRate),'HorizontalAlignment','center','BackgroundColor',[.7 .9 .7])
+pause(.2)
+frms(cnt) = getframe;
+cnt=cnt+1;
+end
+
+prm.fps = 5;
+prm.loop = inf;
+makeGif(frms,'/gpfs01/sirota/bach/homes/gravio/figures/spect_rear_on_theta.gif',prm);
+
+
+th=[];
+fh=[];
+yh=[];
+spectral.nfft = 2^9;
+spectral.window = 2^7;
+spectral.freq = [40,120];
+parfor i = 1:Trial.lfp.size(2),
+    [yh(:,:,i),fh(:,i),th(:,i)] = mtchglong(wlfp(:,i),spectral.nfft,Trial.lfp.sampleRate,spectral.window,spectral.window*0.875,[],[],[],spectral.freq);
+end
+fh = fh(:,1);
+th = th(:,1);
+yhd = MTADlfp('data',yh,'sampleRate',1/diff(th(1:2,1)));
+yhd.data(yhd.data==0)=nan;
+yhd.data = log10(yhd.data);
+yhd.data = (yhd.data-repmat(nanmedian(yhd.data),[yhd.size(1),1,1]))./repmat(nanstd(yhd.data),[yhd.size(1),1,1]);
+tshift = round(spectral.window/2/Trial.lfp.sampleRate*yhd.sampleRate);
+
+sts='r'
+evt=2;
+figure,cnt=1;
+for i=linspace(-2,2,200).*yhd.sampleRate
+imagesc(fh,1:yhd.size(3),sq(nanmean(yhd(round(Trial.stc{sts,yhd.sampleRate}.data(diff(Trial.stc{sts}.data,1,2)>200,evt)+i-tshift),:,:),1))'),
+caxis([-.51,.51])
+text( 80,30,num2str(i./yhd.sampleRate),'HorizontalAlignment','center','BackgroundColor',[.7 .9 .7])
+pause(.2)
+frms(cnt) = getframe;
+cnt=cnt+1;
+end
+
+prm.fps = 10;
+prm.loop = inf;
+makeGif(frms,'/gpfs01/sirota/bach/homes/gravio/figures/spect_rear_off_gamma.gif',prm);
+
+
+figure,
+s = 'r'
+sp1 = subplot(121);hold on
+sp2 = subplot(122);hold on
+colors= jet(numel(chans))';
+
+for c = colors
+plot(sp1,fl,-.5*find(ismember(colors',c','rows'))+nanmean(log10(yld(Trial.stc{s,yld.sampleRate}.data(2:end-1,:),:,ismember(colors',c','rows')))),'color',c)
+plot(sp2,fh,-.21*find(ismember(colors',c','rows'))+nanmean(log10(yhd(Trial.stc{s,yhd.sampleRate},:,ismember(colors',c','rows')))),'color',c)
+end
+
+
+figure,
+subplot(121),
+boundedline(fl,mean(yld(Trial.stc{'r',yld.sampleRate}.data(2:end-1,:)-tshift,:,3)),std(yld(Trial.stc{'r',yld.sampleRate}.data(2:end-1,:)-tshift,:,3)),'-r',fl,mean(yld(Trial.stc{'w',yld.sampleRate}.data(2:end-1,:)-tshift,:,3)),std(yld(Trial.stc{'w',yld.sampleRate}.data(2:end-1,:)-tshift,:,3)),'-b','alpha')
+
+subplot(122),
+
+boundedline(fh,mean(log10(yhd(Trial.stc{'r',yhd.sampleRate}.data(2:end-1,:),:,3))),std(log10(yhd(Trial.stc{'r',yhd.sampleRate}.data(2:end-1,:),:,3))),'-r',fh,mean(log10(yhd(Trial.stc{'w',yhd.sampleRate}.data(2:end-1,:),:,3))),std(log10(yhd(Trial.stc{'w',yhd.sampleRate}.data(2:end-1,:),:,3))),'-b','alpha')
+
+
+evt = 1;
+sts = 'r';
+figure,imagesc(sq(nanmean(GetSegs(sq(nanmean(yld.data(:,fl<12&fl>6,:),2)),round(Trial.stc{sts,yld.sampleRate}.data(diff(Trial.stc{sts}.data,1,2)>200,evt)-2*yld.sampleRate),round(4*yld.sampleRate),0),2))')
+
+evt = 2;
+sts = 'r';
+figure,imagesc(sq(nanmean(GetSegs(sq(nanmean(yld.data(:,fl<25&fl>18,:),2)),round(Trial.stc{sts,yld.sampleRate}.data(diff(Trial.stc{sts}.data,1,2)>200,evt)-2*yld.sampleRate),round(4*yld.sampleRate),0),2))')
+
+
+evt = 1;
+sts = 'r';
+figure,imagesc(sq(nanmean(GetSegs(sq(nanmean(yhd.data(:,fh<120&fh>80,:),2)),round(Trial.stc{sts,yhd.sampleRate}.data(diff(Trial.stc{sts}.data,1,2)>200,evt)-2*yhd.sampleRate),round(4*yhd.sampleRate),0),2))')
+
+tdr = sq(mean(yl(:,fl>6&fl<12,:),2)./(mean(yl(:,fl<5,:),2)+mean(yl(:,fl<18&fl>13,:),2))/2);
+tdr = MTADlfp('data',tdr,'sampleRate',1/diff(tl(1:2,1)));
+
+
+tdr.data = (tdr.data-repmat(nanmedian(tdr.data),[tdr.size(1),1,1]))./repmat(nanstd(tdr.data),[tdr.size(1),1,1]);
+
+
+evt = 1;
+sts = 'r';
+figure,imagesc(sq(nanmean(GetSegs(tdr.data,round(Trial.stc{sts,yld.sampleRate}.data(diff(Trial.stc{sts}.data,1,2)>200,evt)-2*yld.sampleRate-tshift/yld.sampleRate),round(4*yld.sampleRate),0),2))')
+
+sts = 'w';
+[U,V,D] = svd(cov(yld(round(Trial.stc{sts,yld.sampleRate}.data(diff(Trial.stc{sts}.data,1,2)>200,evt)-tshift/yld.sampleRate),:,21)));
+figure,imagesc(fl,fl,U),axis xy
+
+
+%% Figure # Unit state place field formation
+
+sname = 'jg05-20120317';
+Trial = MTATrial(sname,'all');
+Trial.stc.updateMode('auto_wbhr');
+Trial.stc.load;
+states = 'rwgl';
+
+for i = 1:numel(states),
+    Trial.spk.create(Trial,Trial.xyz.sampleRate,states(i));
+    spk{i} = Trial.spk.copy;
+    sts{i} = Trial.stc{states(i)}.copy;
+    sts{i}.cast('TimeSeries');
+endn
+
+clrs = 'rbcm';
+
+unit = 71;
+figure
+hold on
+for i = 1:numel(states),
+Lines(spk{i}(unit),[],clrs(i));
+end
+for i = 1:numel(states),
+plot(sts{i}.data*2+i/4,clrs(i))
+end
+ylim([-3,4])
+
+plot([sqrt(sum(sq([Trial.xyz(:,7,1)-75,Trial.xyz(:,7,2)+50]).^2,2))<100]-2)
+
+%plot((Trial.xyz(:,7,3)-Trial.xyz(:,1,3))./max(Trial.xyz(:,7,3)-Trial.xyz(:,1,3)),'r')

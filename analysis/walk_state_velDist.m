@@ -70,7 +70,7 @@ v = MTADxyz([],[],Filter0(gausswin(21)./sum(gausswin(21)),[zeros(1,Trial.xyz.siz
 
 lv = v.copy;
 lv.data = log10(abs(lv(:,3)));
-bper = Trial.stc{'w',Trial.xyz.sampleRate}.copy;
+bper = Trial.stc{'w'}.copy;
 bper.cast('TimeSeries');
 xaind = Trial.xyz(:,1,1)~=0&~isnan(Trial.ang(:,1,2,2))&~isinf(lv(:))&bper(1:Trial.xyz.size(1));
 fet = [log10(Trial.xyz(xaind,5,3)),Trial.ang(xaind,1,3,2),lv(xaind)];

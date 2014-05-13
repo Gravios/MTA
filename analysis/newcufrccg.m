@@ -8,8 +8,6 @@ test_sample_size = 7;
 min_sample_size = 4;
 
 
-MTAConfiguration('/gpfs01/sirota/bach/data/gravio','absolute');
-
 
 
 %% Load Session if Session is not already a MTASession
@@ -18,11 +16,12 @@ if ~isa(Session,'MTASession'),
     Trial.load('nq');
     %{'Pfs',   {'walk','rear'}}},...
 end
-
+Trial.stc.updateMode('auto_wbhr');
+Trial.stc.load;
 
 
 %% Get units which are of good enough quality
-units = find(Trial.nq.SpkWidthR>0.3&Trial.nq.eDist>19)';
+units = find(Trial.nq.SpkWidthR>0.5&Trial.nq.eDist>30)';
 numClu = numel(units);
 
 newSampleRate = downSampleRate;
@@ -39,7 +38,7 @@ myufr.create(Trial,myxyz,[],units);
 
 %% Get the expected ufr for each xy 
 %% Substract the expected ufr from the observed
-pfc = MTAAknnpfs(Trial,units,pfcbhv,0,'numIter',1,'ufrShufBlockSize',0,'binDims',[20,20],'distThreshold',70);
+pfc = MTAAknnpfs(Trial,units,pfcbhv,0,'numIter',0,'ufrShufBlockSize',0,'binDims',[20,20],'distThreshold',70);
 wpmr = ones(myxyz.size(1),numel(units));
 [~,indx] = min(abs(repmat(pfc.adata.bins{1}',myxyz.size(1),1)-repmat(myxyz(:,1),1,numel(pfc.adata.bins{1}))),[],2);
 [~,indy] = min(abs(repmat(pfc.adata.bins{2}',myxyz.size(1),1)-repmat(myxyz(:,2),1,numel(pfc.adata.bins{2}))),[],2);
@@ -235,8 +234,8 @@ for p1 = 1:ntrans,
     for p2 = p1:ntrans,
         count = 1;
         if p1==p2|p2==ntrans,
-            for i = 1:110,
-                for j = i:110,
+            for i =  randi(1000,[1,110]),
+                for j = randi(1000,[1,110]),
                     if i==j,continue,end
                     diff_stat(:,:,p1,p2,count) = perm_stat(:,:,p1,p2,i)-perm_stat(:,:,p1,p2,j);
                     if count == niter , break , end
@@ -299,7 +298,7 @@ auxdata.newSampleRate = newSampleRate;
 
 %% metadata
 data.filebase = repmat({Trial.filebase},1,numClu);
-data.clu = units';
+data.clu = units;
 data.el = Trial.spk.map(units,2)';
 
 

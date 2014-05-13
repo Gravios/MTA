@@ -1,9 +1,9 @@
-function cufrccg(Session,mode,varargin)
+function CorrectedUFRCCG(Session,mode,varargin)
 %function [data,parameters] = cufrccg(Session,varargin)
 [ bhvf,           pfcbhv, surbhv, klen, overlap, thresh_rad, test_sample_size, min_sample_size, niter,states] = DefaultArgs(varargin,...
 {{{'rear',{'exclusion','rear',2},{'select_boarder_states','walk',3},{'duration',1.5}},...
   {'walk',{'exclusion','walk',2},{'duration',0.75},{'complete'}}},...
-                  'walk', 'walk',   64,      16,       1000,                7,               4, 5000,'theta'});
+                  'walk', 'walk',   64,      16,       200,                7,               4, 5000,'theta'});
 
 
 parameters.bhvf = bhvf;
@@ -514,7 +514,7 @@ load([Trial.spath.analysis Trial.filebase '.cufrccg.' ...
 cmap = ['bgr'];
 figure,
 u=1;
-report = 1;
+report = 0;
 while u~=-1
 clf
 for i = 1:auxdata.ntrans-1,
@@ -557,8 +557,8 @@ title(num2str(data(u).clu));
 
 
 if report, 
-    Trial.printFig([],[],data(u).clu,['cufrccg_' ...
-                        num2str(parameters.thresh_rad) '_' num2str(parameters.klen)]);
+    Trial.printFig([],[],data(u).clu,['cufrccg_' 'testing']);
+    %                        num2str(parameters.thresh_rad) '_' num2str(parameters.klen)]);
     u = u+1;
     if u>auxdata.numUnits,
         break,
