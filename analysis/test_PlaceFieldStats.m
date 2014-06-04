@@ -175,6 +175,7 @@ pri_z = permute(cat(5,pri.zval),[5,1,2,3,4]);
 
 
 
+
 ous.perm = permute(cat(5,apa.ovUniShStPerm),[4,5,1,2,3]);
 ous.pri = permute(cat(5,apa.ovUniShStPri),[4,5,1,2,3]);
 ous.sec = permute(cat(5,apa.ovUniShStSec),[4,5,1,2,3]);
@@ -186,4 +187,16 @@ figure,plot(pri_z(:,2,5,1),pri_z(:,2,4,1),'.')
 line([-6000;6000],[-6000;6000])
 
 
+s1=2;s2=4;
 
+%state patch distance
+spd = sqrt(sum(sq((apfs.patchCOM(:,s1,1,:))-apfs.patchCOM(:,s2,1,:)).^2,2));
+%relative rate difference
+rrd = sq((apfs.patchMFR(:,s1,1)-apfs.patchMFR(:,s2,1))./(apfs.patchMFR(:,s1,1)+apfs.patchMFR(:,s2,1)));
+%rrd = sq((apfs.patchPFR(:,s1,1)-apfs.patchPFR(:,s2,1))./(apfs.patchPFR(:,s1,1)+apfs.patchPFR(:,s2,1)));
+%rrd = sq((apfs.peakFR(:,s1,1)-apfs.peakFR(:,s2,1))./(apfs.peakFR(:,s1,1)+apfs.peakFR(:,s2,1)));
+
+figure,hist(rrd(spd<100),20);
+figure,hist(rrd(:),20);
+
+figure,plot(spd,rrd,'.')

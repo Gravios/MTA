@@ -2,14 +2,15 @@
 %MTAConfiguration('/gpfs01/sirota/bach/data/gravio','absolute'); 
 
 sesList = {{'jg05-20120309','cof','all'},...
+           {'jg05-20120310','cof','all'},...
            {'jg05-20120317','cof','all'}};
 
-%           {'jg05-20120310','cof','all'},...
 
 %states = {'theta','rear&theta','walk&theta','hwalk&theta','lwalk&theta'};
 states = {'rear&theta','walk&theta','hwalk&theta','lwalk&theta'};
 
 pftype = 'MTAAknnpf';
+stc_mode = 'auto_wbhr';
 
 numsts = numel(states);
 pfstats = {};
@@ -17,6 +18,7 @@ pfstats = {};
 for ses = 1:numel(sesList),
     Trial = MTATrial(sesList{ses}{1},sesList{ses}{3},sesList{ses}{2});
     Trial.xyz.load(Trial);
+    Trial.stc.updateMode(stc_mode);Trial.stc.load;
     Trial.load('nq');
 
     units = find(Trial.nq.SpkWidthR>0.8&Trial.nq.eDist>18)';
