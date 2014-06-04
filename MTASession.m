@@ -375,6 +375,7 @@ classdef MTASession < hgsetget
             
             if ~isempty(syncDataPeriods),
                 syncshift = Data.sync(1)-newOrigin-1;
+                if syncshift ==-2,syncshift=0;end
                 Data.load(syncDataPeriods,syncshift);
             end
             if ~isempty(find(syncZeroIndex,1)),

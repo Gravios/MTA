@@ -29,7 +29,6 @@ for ses = 1:numel(sesList),
     Trial.load('nq');
     %Trial.load('xyz');
 
-
     units = select_units(Trial,18,'pyr');
     map = cat(1,map,cat(2,size(map,1)+[1:numel(units)]',ses*ones([numel(units),1]),Trial.spk.map(units,:)));
 
@@ -81,12 +80,17 @@ niter = 10000;
 
 % apa - all patches over lap
 
-apa = repmat(struct('ovIntShStPerm',nan([numsts,numsts,npatch,npatch,niter]),'ovUniShStPerm',nan([numsts,numsts,npatch,niter])),size(map,1),1);
+apa = repmat(struct('ovIntShStPerm',nan([numsts,numsts,npatch,npatch,niter]),...
+                    'ovUniShStPerm',nan([numsts,numsts,npatch,niter]),...
+                    'ovUniShStPri', nan([numsts,numsts,npatch,niter]),...
+                    'ovUniShStSec', nan([numsts,numsts,npatch,niter])...
+             ),size(map,1),1);
 
 %apa.ovUniShStPerm = nan([numel(units),numsts,numsts,npatch,npatch,niter]);
 %apa.ovIntShStPerm = nan([numsts,numsts,npatch,npatch,niter]);
 %apa.pvpallShStPerm = nan([numel(units),numsts,numsts,npatch,npatch,niter]);
 
+pfs = {};
 for ses = 1:numel(sesList),
     Trial = MTATrial(sesList{ses}{1},sesList{ses}{3},sesList{ses}{2});
     Trial.stc.updateMode(stc_mode);Trial.stc.load;
@@ -96,41 +100,45 @@ for ses = 1:numel(sesList),
     end
 end
 
-parfor u = map(:,1)',    
+parfor u = map(1:221,1)',    
     for s1 = 1:numsts,
         for s2 = 1:numsts,
             for p1 = 1:npatch,
                 for p2 = 1:npatch,
 
                     %------overlaped patch intersection shuffled state permutations------%
-                    oLapInd1 = ismember(sq(apfs.patchRateInd(u,s1,p1,:,~isnan(sq(apfs.patchRateInd(u,s1,p1,1,:)))))',...
-                                        sq(apfs.patchRateInd(u,s2,p2,:,~isnan(sq(apfs.patchRateInd(u,s2,p2,1,:)))))','rows');
-                    if ~isempty(oLapInd1),
-                        oLapInd2 = ismember(sq(apfs.patchRateInd(u,s2,p2,:,~isnan(sq(apfs.patchRateInd(u,s2,p2,1,:)))))',...
-                                            sq(apfs.patchRateInd(u,s1,p1,:,~isnan(sq(apfs.patchRateInd(u,s1,p1,1,:)))))','rows');
-                        if ~isempty(oLapInd2),
-                            rm1 = sq(apfs.patchRateMap(u,s1,p1,~isnan(sq(apfs.patchRateMap(u,s1,p1,:)))));
-                            rm2 = sq(apfs.patchRateMap(u,s2,p2,~isnan(sq(apfs.patchRateMap(u,s2,p2,:)))));
-                            
-                            if sum(oLapInd1)>(numel(oLapInd1)/2)&numel(oLapInd1)>minEl...
-                                    & sum(oLapInd2)>(numel(oLapInd2)/2)&numel(oLapInd2)>minEl,
-                                for i = 1:niter
-                                    apa(u).ovIntShStPerm(s1,s2,p1,p2,i) = mean([randsample(rm1(oLapInd1),minEl/2,true);randsample(rm2(oLapInd2),minEl/2,true)]);
-                                end
-                            end
-                        end
-                    end
+% $$$                     oLapInd1 = ismember(sq(apfs.patchRateInd(u,s1,p1,:,~isnan(sq(apfs.patchRateInd(u,s1,p1,1,:)))))',...
+% $$$                                         sq(apfs.patchRateInd(u,s2,p2,:,~isnan(sq(apfs.patchRateInd(u,s2,p2,1,:)))))','rows');
+% $$$                     if ~isempty(oLapInd1),
+% $$$                         oLapInd2 = ismember(sq(apfs.patchRateInd(u,s2,p2,:,~isnan(sq(apfs.patchRateInd(u,s2,p2,1,:)))))',...
+% $$$                                             sq(apfs.patchRateInd(u,s1,p1,:,~isnan(sq(apfs.patchRateInd(u,s1,p1,1,:)))))','rows');
+% $$$                         if ~isempty(oLapInd2),
+% $$$                             rm1 = sq(apfs.patchRateMap(u,s1,p1,~isnan(sq(apfs.patchRateMap(u,s1,p1,:)))));
+% $$$                             rm2 = sq(apfs.patchRateMap(u,s2,p2,~isnan(sq(apfs.patchRateMap(u,s2,p2,:)))));
+% $$$                             
+% $$$                             if sum(oLapInd1)>(numel(oLapInd1)/2)&numel(oLapInd1)>minEl...
+% $$$                                     & sum(oLapInd2)>(numel(oLapInd2)/2)&numel(oLapInd2)>minEl,
+% $$$                                 for i = 1:niter
+% $$$                                     apa(u).ovIntShStPerm(s1,s2,p1,p2,i) = mean([randsample(rm1(oLapInd1),minEl/2,true);randsample(rm2(oLapInd2),minEl/2,true)]);
+% $$$                                 end
+% $$$                             end
+% $$$                         end
+% $$$                     end
 
                     %------overlaped patch union shuffled state permutations------%
-                    rmap_st1 = sq(apfs.patchRateMap(u,s1,p1,~isnan(sq(apfs.patchRateMap(u,s1,p1,:)))));
+                    ind = sq(apfs.patchRateMap(u,s1,p1,:))~=0&~isnan(sq(apfs.patchRateMap(u,s1,p1,:)));
+                    rmap_st1 = sq(apfs.patchRateMap(u,s1,p1,ind));
                     if ~isempty(rmap_st1),
                         rmap_st2 = pfs{map(u,2),s2}.plot(map(u,3));
-                        patchPos_st1 = sq(apfs.patchRateInd(u,s1,p1,:,~isnan(sq(apfs.patchRateInd(u,s1,p1,1,:)))))';
+                        patchPos_st1 = sq(apfs.patchRateInd(u,s1,p1,:,ind))';
                         if ~isempty(patchPos_st1),
                             rmap_st2 = rmap_st2(sub2ind(size(rmap_st2),patchPos_st1(:,1),patchPos_st1(:,2)));
-
+                            if numel(rmap_st1)>=minEl&numel(rmap_st2)>=minEl
                             for i = 1:niter
+                                apa(u).ovUniShStPri(s1,s2,p1,i) = mean([randsample(rmap_st1,minEl/2,true);randsample(rmap_st1,minEl/2,true)]);
+                                apa(u).ovUniShStSec(s1,s2,p1,i) = mean([randsample(rmap_st2,minEl/2,true);randsample(rmap_st2,minEl/2,true)]);
                                 apa(u).ovUniShStPerm(s1,s2,p1,i) = mean([randsample(rmap_st1,minEl/2,true);randsample(rmap_st2,minEl/2,true)]);
+                            end
                             end
                         end
                     end
@@ -141,64 +149,41 @@ parfor u = map(:,1)',
     end
 end
 
+ous.perm = permute(cat(5,apa.ovUniShStPerm),[4,5,1,2,3]);
+ous.pri = permute(cat(5,apa.ovUniShStPri),[4,5,1,2,3]);
+ous.sec = permute(cat(5,apa.ovUniShStSec),[4,5,1,2,3]);
 
-parfor i = 1:1000,
-    for j= 1:100,
-    tstruct(i).tv(j)= i*j+i+j;
+parfor u = map(1:221,1)',    
+    for st1 = 1:numsts,
+        for st2 = 1:numsts,
+            for p1 = 1:npatch,
+                    pmean = mean(ous.perm(:,u,st1,st2,p1));
+                    pstd  =std(ous.perm(:,u,st1,st2,p1));
+                    [pri(u).h(st1,st2,p1),pri(u).p(st1,st2,p1),pri(u).ci(st1,st2,p1,:),pri(u).zval(st1,st2,p1)] ...
+                        =ztest(ous.pri(:,u,st1,st2,p1),pmean,pstd);
+                    [sec(u).h(st1,st2,p1),sec(u).p(st1,st2,p1),sec(u).ci(st1,st2,p1,:),sec(u).zval(st1,st2,p1)] ...
+                        =ztest(ous.sec(:,u,st1,st2,p1),pmean,pstd);
 
-end
-end
-
-
-u = 216;
-s1= 2;
-s2= 3;
-p1= 1;
-p2= 1;
-
-figure,hist(sq(apa(u,s1,s2,p1,p2,:)),30)
-
-sq(apfs.patchRateMap(u,s1,p1,~isnan(sq(apfs.patchRateMap(u,s1,p1,:)))))
-
-figure,
-
-plot(1./(sum(sq(sort(apa(~isnan(apa(:,2,3,1,1,1)),2,3,1,1,:),2))<repmat(apfs.patchMFR(~isnan(apa(:,2,3,1,1,1)),3,1),[1,10000]),2)),1./(sum(sq(sort(apa(~isnan(apa(:,2,3,1,1,1)),2,3,1,1,:),2))<repmat(apfs.patchMFR(~isnan(apa(:,2,3,1,1,1)),2,1),[1,10000]),2)),'.');
-
-
-
-s1= 4;
-s2= 5;
-figure,
-for p1=1:2;
-for p2=1:2;
-
-nind = ~isnan(apa(:,s1,s2,p1,p2,1));
-sig1 = 0.05<1./(sum(sq(sort(apa(nind,s1,s2,p1,p2,:),2))<repmat(apfs.patchMFR(nind,s2,1),[1,10000]),2));
-sig2 = 0.05>1./(sum(sq(sort(apa(nind,s1,s2,p1,p2,:),2))<repmat(apfs.patchMFR(nind,s1,1),[1,10000]),2));
-
-nmfr1 = apfs.patchMFR(nind,s1,1);
-nmfr2 = apfs.patchMFR(nind,s2,1);
-%nmfr1 = apfs.patchPFR(nind,s1,1);
-%nmfr2 = apfs.patchPFR(nind,s2,1);
-plot(nmfr1(sig1&sig2),nmfr2(sig1&sig2) ,'.c');
-hold on;
-plot(nmfr1(~sig1&~sig2),nmfr2(~sig1&~sig2) ,'.m');
-end
+            end
+        end
+    end
 end
 
-%plot(nmfr1(~sig1&sig2),nmfr2(~sig1&sig2) ,'.g');
-%hold on;
-%plot(nmfr1(sig1&~sig2),nmfr2(sig1&~sig2) ,'.r');
+sec_z = permute(cat(5,sec.zval),[5,1,2,3,4]);
+pri_z = permute(cat(5,pri.zval),[5,1,2,3,4]);
 
 
-sesId = 1
-% $$$     if map(u,2)~=sesId,
-% $$$         sesId = map(u,2);
-% $$$         pfs = {};
-% $$$         Trial = MTATrial(sesList{sesId}{1},sesList{sesId}{3},sesList{sesId}{2});
-% $$$         Trial.stc.updateMode(stc_mode);Trial.stc.load;
-% $$$         for i=1:numsts,
-% $$$             pfs{i} = MTAAknnpfs(Trial,units,states{i},0,'numIter',1, ...
-% $$$                                 'ufrShufBlockSize',0,'binDims',[20,20],'distThreshold',70);
-% $$$         end
-% $$$     end
+
+
+ous.perm = permute(cat(5,apa.ovUniShStPerm),[4,5,1,2,3]);
+ous.pri = permute(cat(5,apa.ovUniShStPri),[4,5,1,2,3]);
+ous.sec = permute(cat(5,apa.ovUniShStSec),[4,5,1,2,3]);
+
+
+
+figure,plot(pri_z(:,2,5,1),pri_z(:,2,4,1),'.')
+
+line([-6000;6000],[-6000;6000])
+
+
+

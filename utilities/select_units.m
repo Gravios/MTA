@@ -1,4 +1,9 @@
 function units = select_units(varargin)
+% $$$ function units = select_units(varargin)
+% $$$ [SessionList,eDistThreshold,type,mode,nqFields] 
+% $$$ {{{'jg05-20120309','cof','all'},{'jg05-20120310','cof','all'},{'jg05-20120317','cof','all'}},...
+% $$$ 15,'pyr','get',{'SpkWidthR','AmpSym'}});
+
 [SessionList,eDistThreshold,type,mode,nqFields] = DefaultArgs(varargin,...
 {{{'jg05-20120309','cof','all'},{'jg05-20120310','cof','all'},{'jg05-20120317','cof','all'}},...
 15,'pyr','get',{'SpkWidthR','AmpSym'}});

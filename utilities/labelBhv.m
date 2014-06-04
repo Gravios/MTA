@@ -1,7 +1,10 @@
-function Trial = labelBhv(Trial,Stc)
+function Trial = labelBhv(Trial,Stc,varargin)
 % Basic Set of heuristics for the most basic behavioral states
 % 
 % Note: Requires an update to include MoCap sampling rates other than 120Hz
+[winlen,nOverlap,nwinlen,nnOverlap] = DefaultArgs(varargin,{64,8,16,2});
+
+
 
 if Trial.xyz.isempty, Trial.load('xyz'); end    
 if Trial.ang.isempty, Trial.load('ang'); end    
@@ -9,8 +12,6 @@ if Trial.ang.isempty, Trial.load('ang'); end
 Trial.filter('xyz');
 xyzlen = size(Trial.xyz,1);
 
-winlen = 64;
-nOverlap = 8;
 trajSampleRate = (Trial.xyz.sampleRate/winlen)*nOverlap;
 
 zpad = mod(xyzlen,winlen);
@@ -310,8 +311,8 @@ wper = cur_wper(wang_score<wang_thresh,:);
 bawper = cur_wper(wang_score>wang_thresh,:);
 
 
-nwinlen = 16;
-nnOverlap = 2;
+%nwinlen = 16;
+%nnOverlap = 2;
 ntrlen = xyzlen/nwinlen*nnOverlap;
 ntrajSampleRate = (Trial.xyz.sampleRate/nwinlen)*nnOverlap;
 

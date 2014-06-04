@@ -49,20 +49,22 @@ Session.model = model;
 
 %assert(exist([Session.spath Session.name '.all.evt'],'file'))
 % Load events
+
 events = LoadEvents(fullfile(Session.spath, [Session.name '.all.evt']));
 tsRanges = [events.time(events.Clu==find(~cellfun(@isempty,regexp(events.Labels,TTLValue)))),...
-            events.time(events.Clu==find(~cellfun(@isempty,regexp(events.Labels,'0x0000'))))];
+       events.time(find(events.Clu==find(~cellfun(@isempty,regexp(events.Labels,TTLValue))))+1)];
 
 
 %% Assign xyz data to nlx event epochs
 syncPeriods=[];
 xyzDataInd = [];
-for i=1:length(xyzData),
+for i=1:numel(xyzData),
     if ~isempty(xyzData{i})
         for j=1:size(tsRanges,1),
-            if round(diff(tsRanges(j,:))*10-size(xyzData{i},1)/viconSampleRate*10)==0,
+            if abs(diff(tsRanges(j,:))*10-size(xyzData{i},1)/viconSampleRate*10)<0.2,
                 syncPeriods(end+1,:) = tsRanges(j,:);
-                tsRanges(j,:) = [];
+
+                tsRanges(tsRanges(j,1)>=tsRanges(:,1),:) = [];
                 xyzDataInd(end+1) = i;
                 break;
             end

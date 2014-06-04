@@ -390,7 +390,11 @@ classdef MTAData < hgsetget
                         dosize = DataObj.size(1)./newSampleRate;
                         dsize = Data.size(1)./Data.sampleRate;                        
                         dsdiff = dsize-dosize;
-                        
+
+                        if newSampleRate<Data.sampleRate
+                        Data.data = ButFilter(Data.data,3,[newSampleRate/2]/(Data.sampleRate/2),'low');
+                        end                        
+
                         uind = round(linspace(ceil(Data.sampleRate/newSampleRate),Data.size(1)-round(dsdiff*Data.sampleRate),DataObj.size(1)));
                         if dsdiff < 0,
                             padding = abs(round(dsdiff*Data.sampleRate));

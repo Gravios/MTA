@@ -7,7 +7,7 @@ classdef MTAMarker
         function Marker = MTAMarker(name,color)
             Marker.name = name;
             if ischar(color),
-                Marker.color = str2double(color);
+                Marker.color = str2num(color);
             end
         end
     end

@@ -1,5 +1,5 @@
 function nq = NeuronQuality(Session, varargin)
-%function NeuronQuality(FileBase, Electrodes,Display,Batch,Overwrite)
+%function NeuronQuality(Session, Electrodes,Display,Batch,Overwrite)
 
 Par = LoadXml(fullfile(Session.spath,[Session.name '.xml']));
 

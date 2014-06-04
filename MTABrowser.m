@@ -666,12 +666,12 @@ if hObject ~= getappdata(handles.MTABrowserStates,'previousBState'),
     
     %% Translate connection map to pairs
     markerConnections=[];
-    for i = 1:length(Session.model.Connections)
+    for i = 1:length(Session.xyz.model.Connections)
         markerConnections= cat(1,markerConnections,....
-                               [Session.model.gmi(Session.model.Connections{i}.marker1),Session.model.gmi(Session.model.Connections{i}.marker2)]...
+                               [Session.xyz.model.gmi(Session.xyz.model.Connections{i}.marker1),Session.xyz.model.gmi(Session.xyz.model.Connections{i}.marker2)]...
                               );
     end
-    num_of_sticks= length(Session.model.Connections);    
+    num_of_sticks= length(Session.xyz.model.Connections);    
 
     %% Initialization of graphical elements
     stick_options = {};
@@ -699,10 +699,10 @@ if hObject ~= getappdata(handles.MTABrowserStates,'previousBState'),
     try
         delete(MLData.sticks);
     end
-    MLData.sticks = repmat({0},1,length(Session.model.Connections));
-    for l=1:length(Session.model.Connections),
+    MLData.sticks = repmat({0},1,length(Session.xyz.model.Connections));
+    for l=1:length(Session.xyz.model.Connections),
         MLData.sticks{l} =line('Parent',handles.MLxyzView,...
-            'Tag',[Session.model.Connections{l}.marker1 ':' Session.model.Connections{l}.marker2],...
+            'Tag',[Session.xyz.model.Connections{l}.marker1 ':' Session.xyz.model.Connections{l}.marker2],...
             'XData',[xyzpos(1,markerConnections(l,1),1),xyzpos(1,markerConnections(l,2),1)],...
             'YData',[xyzpos(1,markerConnections(l,1),2),xyzpos(1,markerConnections(l,2),2)],...
             'ZData',[xyzpos(1,markerConnections(l,1),3),xyzpos(1,markerConnections(l,2),3)],...
@@ -713,7 +713,8 @@ if hObject ~= getappdata(handles.MTABrowserStates,'previousBState'),
         guidata(MLData.sticks{l},handles);
     end
     
-    
+
+
     %% Markers
     marker_options = {};
     marker_options.style ='o' ;
@@ -723,21 +724,21 @@ if hObject ~= getappdata(handles.MTABrowserStates,'previousBState'),
         delete(MLData.markers);
     end
     MLData.markers = repmat({0},1,Session.model.N);
-    for l=1:Session.model.N,
+    for l=1:Session.xyz.model.N,
         MLData.markers{l} =line('Parent',handles.MLxyzView, ...
-            'Tag',Session.model.Markers{l}.name,...
+            'Tag',Session.xyz.model.Markers{l}.name,...
             'XData',[xyzpos(1,l,1),xyzpos(1,l,1)],...
             'YData',[xyzpos(1,l,2),xyzpos(1,l,2)],...
             'ZData',[xyzpos(1,l,3),xyzpos(1,l,3)],...
             'Marker'         , marker_options.style, ...
-            'MarkerEdgeColor', Session.model.Markers{l}.color./255, ...
+            'MarkerEdgeColor', Session.xyz.model.Markers{l}.color./255, ...
             'MarkerSize'     , marker_options.size, ...
-            'MarkerFaceColor', Session.model.Markers{l}.color./255, ...
+            'MarkerFaceColor', Session.xyz.model.Markers{l}.color./255, ...
             'EraseMode'      , marker_options.erase,...
             'Visible','on');
         guidata(MLData.markers{l},handles);
     end
-    
+
     
     %% Plot MLstateView
     %% Set labels & keys
@@ -881,7 +882,7 @@ if hObject ~= getappdata(handles.MTABrowserStates,'previousBState'),
     MLData.sessionLength = Session.xyz.size(1);
     MLData.markerConnections = markerConnections;
     MLData.num_of_sticks = num_of_sticks;
-    MLData.num_of_markers = Session.model.N;
+    MLData.num_of_markers = Session.xyz.model.N;
 
     
     % MLstateView Stuff

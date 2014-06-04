@@ -7,6 +7,33 @@ Trial.filter('xyz',gausswin(31)./sum(gausswin(31)));
 
 
 
+
+%% Figure 1 3D tracking -> labeled behavior
+
+figure,
+sph = [];
+% A: Image, rat with markers in maze.
+%subplot2(6,6,1,[1,2]); image('rat.png');
+% B: Image, marker skeleton reconstruction
+%subplot2(6,6,1,[3,4]); image('skel.png');
+% C: Image, cameras and maze
+%subplot2(6,6,1,[3,4]); image('skel.png');
+
+% D: Plot ( Time Series ), COM_head speed ( blue )
+%    Plot ( Time Series ), COM_body speed ( green )
+%    Plot ( Time Series ), COM_head height ( red )
+
+window_figD = 1300; index_figD = 600;
+t = linspace(0,size(coms,1)/Trial.xyz.sampleRate,size(coms,1)-1)';
+coms = cat(2,Trial.com(Trial.xyz.model.rb({'spine_lower','pelvis_root','spine_middle'})),...
+             Trial.com(Trial.xyz.model.rb({'head_back','head_left','head_front','head_right'})));
+vcoms = sqrt(sum(diff(coms).^2,3));
+sph(end+1) = subplot2(6,6,2,[1:6]); 
+ax_figD = plotyy(t,clip(coms(1:end-1,2,3),20,350),[t,t],clip(vcoms,0,25));
+set(ax_figD,'xlim',[479,515]);%[1660,1730]);
+set(ax_figD(1),'ylim',[20,280]);
+set(ax_figD(2),'ylim',[-2,10]);
+
 %% Figure 1 BHV state Place Fields and ccgs
 % rear walk hwalk lwalk
 
@@ -172,19 +199,17 @@ end
 
 
 %% Figure 4 - Classical 2-D phase precession
-
-MTAConfiguration('/gpfs01/sirota/bach/data/gravio','absolute');
-%MTAConfiguration('/data/data/gravio','absolute');
-sname = 'jg05-20120317';
-sname = 'jg05-20120310';
-sname = 'jg05-20120309';
+%sname = 'jg05-20120317';
+%sname = 'jg05-20120310';
+sname = 'er06-20130612';
+%sname = 'jg05-20120309';
 
 Trial = MTATrial(sname,'all');
 Trial.xyz.load(Trial);
 
 %Trial.load('nq');
-Trial.lfp.load(Trial,[61,71:3:84]);
-
+%Trial.lfp.load(Trial,[61,71:3:84]);
+Trial.lfp.load(Trial,[32]);
 
 
 
@@ -195,12 +220,10 @@ state = 'walk';
 
 tbp_phase.resample(Trial.xyz);
 
-Trial.spk.create(Trial,Trial.xyz.sampleRate,state);
-
-%pfs = MTAAknnpfs(Trial,[],state,0,'numIter',1,'ufrShufBlockSize',0,'binDims',[20,20]);
 
 pfs = MTAAknnpfs(Trial,[],state,0,'numIter',1,'ufrShufBlockSize',0,'binDims',[20,20],'distThresh',100,'nNearestNeighbors',120);
-%pfs = MTAApfs(Trial,[],state,1,[],[20,20],[1.3,1.3]);
+
+Trial.spk.create(Trial,Trial.xyz.sampleRate,state,[],'deburst');
 
 units = pfs.data.clu(:)';
 
@@ -257,6 +280,8 @@ DRZ = pfd.*(1-wpmr./pmr);
 %DRZ = pfd.*(1-log10(clip(wpmr,1,100))./log10(pmr));
 %figure,scatter(Trial.xyz(1:31:end,7,1),Trial.xyz(1:31:end,7,2),clip(1./abs(DRZ(1:31:end,2)),0,50))
 
+phchan = 1;
+
 figure,
 for unit = units
 clf
@@ -265,10 +290,10 @@ rind = SplitIntoBursts(res,3);
 res = res(unique(rind));
 
 if isempty(res),continue,end
-if numel(res)>20000||numel(res)<200,continue,end
+if numel(res)>20000||numel(res)<100,continue,end
 
 drzspk = DRZ(res,unit);
-phzspk = tbp_phase(res,1);
+phzspk = tbp_phase(res,phchan);
 
 gind = ~isnan(drzspk)&~isnan(phzspk);
 
@@ -291,8 +316,11 @@ hist2([[drzspk(gind);drzspk(gind)],[circ_rad2ang(phzspk(gind));circ_rad2ang(phzs
 
 pause(.1)
 waitforbuttonpress
+
+reportfig(gcf,'er06-20130613-2Dphspredb',0,num2str(unit),[],0);
+
 end
- 
+
 
 %% End Figure 4
 
@@ -950,8 +978,8 @@ end
 
 
 %% Figure 14 - Spectral power for each behavior
-sname = 'jg05-20120317';
-%sname = 'jg05-20120310';
+%sname = 'jg05-20120317';
+sname = 'jg05-20120310';
 %sname = 'jg05-20120309';
 disp = 0;
 %chans = [1:2:8];
@@ -962,6 +990,8 @@ Trial = MTATrial(sname,'all');
 Trial.ang.load(Trial);
 Trial.xyz.load(Trial);
 Trial.lfp.load(Trial,chans);
+Trial.stc.updateMode('auto_wbhr');
+Trial.stc.load;
 
 wlfp = WhitenSignal(Trial.lfp.data,[],1);
 
@@ -1050,8 +1080,17 @@ end
 
 
 figure,
-subplot(121),
-boundedline(fl,mean(yld(Trial.stc{'r',yld.sampleRate}.data(2:end-1,:)-tshift,:,3)),std(yld(Trial.stc{'r',yld.sampleRate}.data(2:end-1,:)-tshift,:,3)),'-r',fl,mean(yld(Trial.stc{'w',yld.sampleRate}.data(2:end-1,:)-tshift,:,3)),std(yld(Trial.stc{'w',yld.sampleRate}.data(2:end-1,:)-tshift,:,3)),'-b','alpha')
+%subplot(121),
+chan = 15;
+st1 = 'l'; st2 = 'g'; 
+st1 = 'r'; st2 = 'w';
+boundedline(fl,mean(yld(Trial.stc{st1,yld.sampleRate}.data(2:end-1,:)-tshift,:,chan)),2*std(yld(Trial.stc{st1,yld.sampleRate}.data(2:end-1,:)-tshift,:,chan)),'-r',fl,mean(yld(Trial.stc{st2,yld.sampleRate}.data(2:end-1,:)-tshift,:,chan)),2*std(yld(Trial.stc{st2,yld.sampleRate}.data(2:end-1,:)-tshift,:,chan)),'-b','alpha')
+
+figure,
+%subplot(121),
+st1 = 'l'; st2 = 'g';
+boundedline(fl,mean(yld(Trial.stc{st1,yld.sampleRate}.data(2:end-1,:)-tshift,:,3)),2*std(yld(Trial.stc{st1,yld.sampleRate}.data(2:end-1,:)-tshift,:,3)),'-r',fl,mean(yld(Trial.stc{st2,yld.sampleRate}.data(2:end-1,:)-tshift,:,3)),2*std(yld(Trial.stc{st2,yld.sampleRate}.data(2:end-1,:)-tshift,:,3)),'-b','alpha')
+
 
 subplot(122),
 
