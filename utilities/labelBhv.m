@@ -313,12 +313,13 @@ bawper = cur_wper(wang_score>wang_thresh,:);
 
 %nwinlen = 16;
 %nnOverlap = 2;
+keyboard
 ntrlen = xyzlen/nwinlen*nnOverlap;
 ntrajSampleRate = (Trial.xyz.sampleRate/nwinlen)*nnOverlap;
 
 ftraj =[];
 for i = 1:nnOverlap,
-tftraj = reshape(circshift(xyz,-(i-1).*nwinlen/nnOverlap),[],xyzlen/nwinlen,size(xyz,2),size(xyz,3));
+tftraj = reshape(circshift(xyz,round(-(i-1).*nwinlen/nnOverlap)),[],xyzlen/nwinlen,size(xyz,2),size(xyz,3));
 tftraj = reshape(tftraj,size(tftraj,1),size(tftraj,2),[]);
 ftraj(:,i:nnOverlap:ntrlen,:) = tftraj-repmat(tftraj(1,:,:),nwinlen,1);
 end

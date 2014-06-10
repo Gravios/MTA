@@ -1,7 +1,7 @@
 function [accg,tbin] = autoccg(Session,varargin)
 % function [accg,tbin] = autoccg(Session,varargin)
 % [units,states,binSize,halfBins,normalization] = DefaultArgs(varargin,{[],[],16,60,'count'});
-[units,states,binSize,halfBins,normalization,spkopt] = DefaultArgs(varargin,{[],[],16,60,'count',''});
+[units,states,binSize,halfBins,normalization,spkopt] = DefaultArgs(varargin,{[],[],16,60,'count',[]});
 
 if ~isa(Session,'MTASession'),
     Session = MTASession(Session);

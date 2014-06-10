@@ -129,5 +129,20 @@ classdef MTADepoch < MTAData
         end
         function join(DataCell)
         end
+% $$$ 
+% $$$         function Data = plus(a,b)
+% $$$             if isa(a,'MTADepoch')&isvector(b)
+% $$$                 Data = a.copy;
+% $$$                 Data.data = Data.data+repmat(b,[Data.size(1),1]);
+% $$$                 perDur = -Data;
+% $$$             elseif isa(b,'MTADepoch')&isvector(a)
+% $$$ 
+% $$$             end
+% $$$         end
+
+% $$$         function perDiff = uminus(Data)
+% $$$             perDiff = diff(Data.data,1,2);
+% $$$         end
+
     end
 end

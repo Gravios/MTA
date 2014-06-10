@@ -46,6 +46,9 @@ classdef MTADlfp < MTAData
             if isempty(periods),
                 if Session.sync.sampleRate~=1,Session.sync.resample(1);end
                 periods = round(Session.sync([1,end]).*Session.lfp.sampleRate);
+            elseif isa(periods,'MTADepoch'),
+                periods.resample(Session.lfp.sampleRate);
+                periods = periods.data + Session.sync(1)*Session.lfp.sampleRate;
             end
             Par = LoadPar(fullfile(Session.spath, [Session.name '.xml']));
             if isempty(channels)

@@ -31,7 +31,12 @@ end
 
 switch mode
   case 'get'
-    load(fullfile(Trial.path.MTAPath,'unit_selection_criteria.mat'));
+    if exist(fullfile(Trial.path.MTAPath,'unit_selection_criteria.mat'),'file');
+        load(fullfile(Trial.path.MTAPath,'unit_selection_criteria.mat'));
+    else
+        %load(fullfile(Trial.path.MTAPath,'unit_selection_criteria.mat'));
+    end
+
     nq_res = anq.(usp.fields{2})-polyval(usp.pram,anq.(usp.fields{1}));
 
     switch type

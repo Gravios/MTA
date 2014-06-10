@@ -1,6 +1,8 @@
 function Stc = bhv_qda(Trial,Stc,varargin)
-[train,states,model_filename,display] = DefaultArgs(varargin,{false,{'walk','rear'},'MTA_standard_QDA_model.mat',false});
+[train,states,model_filename,display] = DefaultArgs(varargin,{false,[],'MTA_standard_QDA_model.mat',false});
 
+
+if isempty(states),   states = Trial.stc.list_state_attrib('key'); end
 ns = numel(states);
 
 Trial.ang.load(Trial);
@@ -52,10 +54,12 @@ if train
     end
     save(fullfile(fileparts(mfilename('fullpath')),model_filename),...
          'fet_state','fet_mean_state','cov_state','Model_Information');
-else
-    load(model_filename);
-    mean_fet_state = repmat(fet_mean_state,[fet.size(1),1,ns]);
+    return
 end
+
+load(model_filename);
+mean_fet_state = repmat(fet_mean_state,[fet.size(1),1,ns]);
+
 
 
 %% Transform Features to QDA scores
@@ -92,13 +96,13 @@ end
 
 
 if display
-sts_colors = 'krgbcmy';
+sts_colors = 'brcmgky';
 d_colors   = 'brcmgky';
 figure
 hold on
 for i = 1:ns,
-plot(Filter0(dwin,d_state(:,i)),'r'),
-Lines(Trial.stc{states{i},Trial.xyz.sampleRate}(:),[],sts_color(i));
+plot(Filter0(dwin,d_state(:,i)),d_colors(i)),
+Lines(Trial.stc{states{i},Trial.xyz.sampleRate}(:),[],sts_colors(i));
 end
 Lines([],0,'k')
 end

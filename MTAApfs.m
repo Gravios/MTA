@@ -18,7 +18,8 @@ classdef MTAApfs < hgsetget %< MTAAnalysis
         % MTAApfs(Obj,{units,states,overwrite,tag,binDims,SmoothingWeights,type,spkShuffle,posShuffle,numIter})
             [units,states,overwrite,tag,binDims,SmoothingWeights,type,spkShuffle,posShuffle,numIter]=...
             DefaultArgs(varargin,{[],'walk',0,[],[20,20],[1.2,1.2],'xy','n',0,1,});
-            
+
+            units = units(:)';            
         
             switch class(Obj)
                 case 'MTATrial'
@@ -128,7 +129,7 @@ classdef MTAApfs < hgsetget %< MTAAnalysis
                     end
                 end
 
-            elseif epftmp&&overwrite==1,
+            elseif epftmp&&overwrite,
             %% Extend Pfs data for additional units
                 numUnits = numel(units);
                 if numUnits ==0
@@ -186,8 +187,8 @@ classdef MTAApfs < hgsetget %< MTAAnalysis
             Session.spk.create(Session,Session.xyz.sampleRate,pfsState.label,units);
             
             %% Get State Positions
-            if Session.xyz.isempty, Session.xyz.load(Session);end
-            sstpos = Session.xyz(pfsState,Session.trackingMarker,1:numel(binDims));
+            if Session.xyz.isempty, Session.load('xyz');end
+            sstpos = sq(Session.xyz(pfsState,Session.trackingMarker,1:numel(binDims)));
 
             i = 1;
             for unit=selected_units,
@@ -244,8 +245,9 @@ classdef MTAApfs < hgsetget %< MTAAnalysis
                     
                 end  
                 i = i+1;
-                save(pf_tmpfile,'Pfs','-v7.3')
             end
+            % Save Data after Calculations
+            save(pf_tmpfile,'Pfs','-v7.3')
             field = fieldnames(Pfs.data);
             Clu = Pfs.data.clu;
             for f = 1:numel(field);
@@ -253,14 +255,14 @@ classdef MTAApfs < hgsetget %< MTAAnalysis
             end
         end
         
-        function plot(Pfs,unit,varargin)
-            [nMode,ifColorbar,colorLimits] = DefaultArgs(varargin,{'mean',0,[]});
+        function plot(Pfs,varargin)
+            [unit,nMode,ifColorbar,colorLimits] = DefaultArgs(varargin,{[],'mean',0,[]});
+
+            if isempty(unit),unit=Pfs.data.clu(1);end
             switch Pfs.parameters.type
                 case 'xy'
                     bin1 = Pfs.adata.bins{1};
                     bin2 = Pfs.adata.bins{2};
-
-
                     
                     switch nMode
                         case 'mean'
