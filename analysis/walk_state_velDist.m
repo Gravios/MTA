@@ -121,6 +121,56 @@ plot([1:Trial.xyz.size(1)]+Trial.xyz.origin,Trial.xyz(:,7,3),'r')
 
 
 
+%% For separating high and low turns
+Trial.ang.clear;Trial.ang.load(Trial);
+Trial.xyz.clear;Trial.xyz.load(Trial);
+
+Trial.filter('xyz',gausswin(11)./sum(gausswin(11)));
+v = MTADxyz([],[],Filter0(gausswin(21)./sum(gausswin(21)),[zeros(1,Trial.xyz.size(2));Trial.vel]),Trial.xyz.sampleRate);
+
+lv = v.copy;
+lv.data = log10(abs(lv(:,7)));
+bper = Trial.stc{'n'}.copy;
+bper.cast('TimeSeries');
+xaind = Trial.xyz(:,1,1)~=0&~isnan(Trial.ang(:,1,2,2))&~isinf(lv(:))&bper(1:Trial.xyz.size(1));
+fet = [log10(Trial.xyz(xaind,5,3)),Trial.ang(xaind,5,7,2),lv(xaind)];
+[bsts,bhmm,bdcd] = gausshmm(fet,2);
+
+
+fasts = zeros(Trial.xyz.size(1),1);
+fasts(xaind) = bsts;
+
+figure,
+plot(fasts),
+Lines(Trial.stc{'w'}(:,1),[],'m');
+Lines(Trial.stc{'w'}(:,2),[],'m');
+ylim([-1,3])
+
+figure,hist(Trial.xyz(fasts==1,7,3),40:1:150)
+figure,hist(Trial.xyz(fasts==2,7,3),40:1:150)
+
+h = 2;f = 1;
+Trial.stc.addState(Trial.spath,...
+                   Trial.filebase,...
+                   fasts==h,...
+                   Trial.xyz.sampleRate,...
+                   Trial.xyz.sync.copy,...
+                   Trial.xyz.origin,...
+                   'hturn','h','TimeSeries');
+Trial.stc{'h'}.cast('TimePeriods');
+
+Trial.stc.addState(Trial.spath,...
+                   Trial.filebase,...
+                   fasts==f,...
+                   Trial.xyz.sampleRate,...
+                   Trial.xyz.sync.copy,...
+                   Trial.xyz.origin,...
+                   'lturn','f','TimeSeries');
+Trial.stc{'f'}.cast('TimePeriods');
+
+
+
+
 
 sper = tper.copy;
 sper.cast('TimeSeries');

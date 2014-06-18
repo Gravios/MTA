@@ -456,7 +456,44 @@ classdef MTAData < hgsetget
                     return
             end
         end
-        
+
+        function out = ne(a,b)
+            if  isa(a,'MTAData') &&  isa(b,'MTAData'), out = a.data~=b.data; return,end
+            if ~isa(a,'MTAData') &&  isa(b,'MTAData'), out = a     ~=b.data; return,end
+            if  isa(a,'MTAData') && ~isa(b,'MTAData'), out = a.data~=b;      return,end
+        end
+
+        function out = eq(a,b)
+            if  isa(a,'MTAData') &&  isa(b,'MTAData'), out = a.data==b.data; return,end
+            if ~isa(a,'MTAData') &&  isa(b,'MTAData'), out = a     ==b.data; return,end
+            if  isa(a,'MTAData') && ~isa(b,'MTAData'), out = a.data==b;      return,end
+        end
+
+        function out = ge(a,b)
+            if  isa(a,'MTAData') &&  isa(b,'MTAData'), out = a.data>=b.data; return,end
+            if ~isa(a,'MTAData') &&  isa(b,'MTAData'), out = a     >=b.data; return,end
+            if  isa(a,'MTAData') && ~isa(b,'MTAData'), out = a.data>=b;      return,end
+        end
+
+        function out = le(a,b)
+            if  isa(a,'MTAData') &&  isa(b,'MTAData'), out = a.data<=b.data; return,end
+            if ~isa(a,'MTAData') &&  isa(b,'MTAData'), out = a     <=b.data; return,end
+            if  isa(a,'MTAData') && ~isa(b,'MTAData'), out = a.data<=b;      return,end
+        end
+
+        function out = gt(a,b)
+            if  isa(a,'MTAData') &&  isa(b,'MTAData'), out = a.data>b.data; return,end
+            if ~isa(a,'MTAData') &&  isa(b,'MTAData'), out = a     >b.data; return,end
+            if  isa(a,'MTAData') && ~isa(b,'MTAData'), out = a.data>b;      return,end
+        end
+
+        function out = lt(a,b)
+            if  isa(a,'MTAData') &&  isa(b,'MTAData'), out = a.data<b.data; return,end
+            if ~isa(a,'MTAData') &&  isa(b,'MTAData'), out = a     <b.data; return,end
+            if  isa(a,'MTAData') && ~isa(b,'MTAData'), out = a.data<b;      return,end
+        end
+
+
     end
 
     methods (Abstract)        

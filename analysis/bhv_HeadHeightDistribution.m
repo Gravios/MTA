@@ -19,4 +19,4 @@ legend('rear','high walk','low walk')
 
 title('Distribution of head height across behaviors')
 xlabel('Sample Count')
-ylabel('Height (mm)'
+ylabel('Height (mm)')

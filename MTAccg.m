@@ -140,11 +140,11 @@ methods
 
                 for i = 1:numIterations,
                     posind{nr,i} = surrogateIndex{nr}(rpi(:,i));
-                    tRes{nr,i} = round((surrogateIndex{nr}(rpi(:,i))-1)./Session.xyz.sampleRate.*Session.lfp.sampleRate);
+                    tRes{nr,i} = surrogateIndex{nr}(rpi(:,i));
                 end
             else
                 for i = 1:numIterations,
-                    tRes{nr,i} = round((ResTrain{nr}-1)./Session.xyz.sampleRate.*Session.lfp.sampleRate);
+                    tRes{nr,i} = ResTrain{nr};
                     posind{nr,i} = ResTrain{nr};
                 end
             end
@@ -263,7 +263,7 @@ methods
 
 
         function axis_handel = plot(Bccg,unit,varargin)
-            [partitions,filterKernel,ifColorBar] = DefaultArgs(varargin,{1,gausswin(5),1});
+            [partitions,filterKernel,ifColorBar] = DefaultArgs(varargin,{1,gausswin(5)./sum(gausswin(5)),1});
             if length(filterKernel) > 1,
                 fccg = Bccg.filter(filterKernel);
             elseif filterKernel~=0,

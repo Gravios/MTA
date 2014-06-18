@@ -24,15 +24,18 @@ sph = [];
 %    Plot ( Time Series ), COM_head height ( red )
 
 window_figD = 1300; index_figD = 600;
-t = linspace(0,size(coms,1)/Trial.xyz.sampleRate,size(coms,1)-1)';
+
 coms = cat(2,Trial.com(Trial.xyz.model.rb({'spine_lower','pelvis_root','spine_middle'})),...
              Trial.com(Trial.xyz.model.rb({'head_back','head_left','head_front','head_right'})));
+t = linspace(0,size(coms,1)/Trial.xyz.sampleRate,size(coms,1)-1)';
 vcoms = sqrt(sum(diff(coms).^2,3));
 sph(end+1) = subplot2(6,6,2,[1:6]); 
 ax_figD = plotyy(t,clip(coms(1:end-1,2,3),20,350),[t,t],clip(vcoms,0,25));
 set(ax_figD,'xlim',[479,515]);%[1660,1730]);
 set(ax_figD(1),'ylim',[20,280]);
 set(ax_figD(2),'ylim',[-2,10]);
+
+
 
 %% Figure 1 BHV state Place Fields and ccgs
 % rear walk hwalk lwalk

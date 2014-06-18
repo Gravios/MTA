@@ -313,7 +313,7 @@ bawper = cur_wper(wang_score>wang_thresh,:);
 
 %nwinlen = 16;
 %nnOverlap = 2;
-keyboard
+%keyboard
 ntrlen = xyzlen/nwinlen*nnOverlap;
 ntrajSampleRate = (Trial.xyz.sampleRate/nwinlen)*nnOverlap;
 

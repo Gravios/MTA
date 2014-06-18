@@ -12,10 +12,14 @@ s1ep = {};
 s2ep = {};
 for i = 1:numel(stc1.states),
     for j = 1:numel(stc2.states),
-        if strcmp(stc1.states{i}.label,stc2.states{j}.label),
-            labels = cat(2,labels,stc1.states{i}.label);
+        if strcmp(stc1.states{i}.label,stc2.states{j}.label)...
+           &&~isempty(stc1.states{i}.data)...
+           &&~isempty(stc2.states{i}.data),
+            %labels = cat(2,labels,stc1.states{i}.label);
             s1ep{numel(s1ep)+1} = stc1{i,5};
             s2ep{numel(s2ep)+1} = stc2{j,5};
+            s1ep{numel(s1ep)}.data(:,2) = s1ep{numel(s1ep)}.data(:,2)-1;
+            s2ep{numel(s2ep)}.data(:,2) = s2ep{numel(s2ep)}.data(:,2)-1;
             s1ep{numel(s1ep)}.cast('TimeSeries');
             s2ep{numel(s2ep)}.cast('TimeSeries');
             s1ep{numel(s1ep)} = s1ep{numel(s1ep)}.data;

@@ -1,15 +1,24 @@
 function gen_unit_profile(Trial,varargin)
 [units,states,overwrite,mode,stc_mode,display] = DefaultArgs(varargin,{'pyr',[],false,'pfs','auto_wbhr',0});
 
-if isempty(states),   states = Trial.stc.list_state_attrib('key'); end
-numsts = numel(states);
+stc_mode = 'auto_wbhr';
+stc_mode = 'manual_tmknsrw';
+stc_mode = 'qda_segmented';
+stc_mode = 'qda_ext_seg';
+stc_mode = 'extended';
 
 Trial.stc.updateMode(stc_mode);Trial.stc.load;
+if isempty(states),   states = Trial.stc.list_state_attrib('label'); end
+numsts = numel(states);
+
+
+states = cellfun(@cat,repmat({2},1,numel(states)),states,repmat({'&theta'},1,numel(states)),'uniformoutput',false);
+
 
 if isempty(Trial.nq), Trial.load('nq');                     end
 if Trial.xyz.isempty, Trial.load('xyz');                    end
 
-if ischar(units),    units = select_units(Trial,18,units); end
+if ischar(units),    units = select_units(Trial,25,units); end
 
 
 
@@ -28,28 +37,43 @@ for s=1:numsts,
     end
 end
 
+% ACCG for each State
 for s = 1:numsts,
-    [accg(:,:,s),tbin] = autoccg(Trial,units,states{s});
+    [accg(:,:,s),tbin] = autoccg(Trial,units,states{s},'normalization','hz');
 end
 
 
+% SCCG for each State periods must be > 0.5;
+for s = 1:numsts,
+    Bccg{s} = gen_bhv_ccg(Trial,states{s},.5);
+end
+
+ 
 figH = figure(2324);
 for u = units,
     %clims = [0, max(cellfun(@maxRate,pfs,repmat({u},1,numsts)))];
-clims = [0,30];
+clims = [0,25];
 s = 1;
     for s = 1:numsts,
 
-        subplot2(2,numsts,1,s);
+        subplot2(4,numsts,1,s);
+        bar(tbin,accg(:,u,s)),axis tight,
+
+        subplot2(4,numsts,2,s);
         pfs{s}.plot(u,'colorLimits',clims);
         title([pfs{s}.parameters.states ' ' num2str(u)]);
 
-        subplot2(2,numsts,2,s);
-        bar(tbin,accg(:,u==units,s)),axis tight,
+        subplot2(4,numsts,3,s);
+        Bccg{s}.plot(u,1); axis tight,
+
+        subplot2(4,numsts,4,s);
+        Bccg{s}.plot(u,2); axis tight,
 
     end
 
 waitforbuttonpress
-savefig(fullfile(Trial.spath,'figures',[Trial.filebase '-unit_prof-' num2str(u)]),figH,'png');
+%savefig(fullfile(Trial.spath,'figures','unit_profiles',[Trial.filebase '-unit_prof-' num2str(u) '.png']),figH,'png');
+%saveas(figH,fullfile(Trial.spath,'figures','unit_profiles',[Trial.filebase '-unit_prof-' num2str(u) '.pdf']));
 end
+ 
 

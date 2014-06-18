@@ -67,6 +67,7 @@ classdef MTADang < MTAData
             end
             ang(ang(:,1,2,2)~=0,1,1,1)=1;
             Data.data = ang;
+            Data.model = xyz.model;
         end
         function Data = embed(Data,win,overlap)
         %Data = embed(Data,win,overlap)

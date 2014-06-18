@@ -276,7 +276,7 @@ methods
 
 
         function axis_handel = plot(Bccg,unit,varargin)
-            [filterKernel,partitions,ifColorBar] = DefaultArgs(varargin,{gausswin(5),1});
+            [filterKernel,partitions,ifColorBar] = DefaultArgs(varargin,{gausswin(5)./sum(gausswin(5)),1});
             if length(filterKernel) > 1,
                 fccg = Bccg.filter(filterKernel);
             elseif filterKernel~=0,
