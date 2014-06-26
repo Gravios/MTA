@@ -109,7 +109,7 @@ classdef MTADepoch < MTAData
             msr = max(samplingRates);
             if numel(unique(samplingRates))~=1,
                 rsi = find(samplingRates~=msr);
-                for i = 1:numel(rsi)
+                for i = rsi,
                     DataCell{i}.resample(msr);
                 end
             end
@@ -127,7 +127,29 @@ classdef MTADepoch < MTAData
             
             Data = MTADepoch([],[],newData,msr,sync,origin,newLabel,newKey);
         end
+
         function join(DataCell)
+            samplingRates = cellfun(@getfield,DataCell,repmat({'sampleRate'},1,numel(DataCell)));
+            msr = max(samplingRates);
+            if numel(unique(samplingRates))~=1,
+                rsi = find(samplingRates~=msr);
+                for i = rsi,
+                    DataCell{i}.resample(msr);
+                end
+            end
+            for i = 1:numel(DataCell)
+                DataCell{i}.cast('TimeSeries');
+            end
+
+            sync = DataCell{1}.sync.copy;
+            origin = DataCell{1}.origin;
+
+            newLabel = ['u_' DataCell{1}.key];
+            newKey = num2str(randi([0,9],1));
+            newData = DataCell{1}.data;
+            DataCell(1) = [];
+
+            Data = MTADepoch([],[],newData,msr,sync,origin,newLabel,newKey);
         end
 % $$$ 
 % $$$         function Data = plus(a,b)

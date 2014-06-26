@@ -1,11 +1,15 @@
 function gen_unit_profile(Trial,varargin)
 [units,states,overwrite,mode,stc_mode,display] = DefaultArgs(varargin,{'pyr',[],false,'pfs','auto_wbhr',0});
 
+
 stc_mode = 'auto_wbhr';
 stc_mode = 'manual_tmknsrw';
 stc_mode = 'qda_segmented';
 stc_mode = 'qda_ext_seg';
 stc_mode = 'extended';
+stc_mode = 'mlda_ext';
+stc_mode = 'mlda_ext_t1';
+overwrite = true;
 
 Trial.stc.updateMode(stc_mode);Trial.stc.load;
 if isempty(states),   states = Trial.stc.list_state_attrib('label'); end
@@ -63,15 +67,16 @@ s = 1;
         pfs{s}.plot(u,'colorLimits',clims);
         title([pfs{s}.parameters.states ' ' num2str(u)]);
 
-        subplot2(4,numsts,3,s);
-        Bccg{s}.plot(u,1); axis tight,
-
-        subplot2(4,numsts,4,s);
-        Bccg{s}.plot(u,2); axis tight,
+% $$$         subplot2(4,numsts,3,s);
+% $$$         Bccg{s}.plot(u,1); axis tight,
+% $$$ 
+% $$$         subplot2(4,numsts,4,s);
+% $$$         Bccg{s}.plot(u,2); axis tight,
 
     end
 
 waitforbuttonpress
+reportfig(Trial,'FileName',['unit_profile_' stc_mode],'Comment',num2str(u))
 %savefig(fullfile(Trial.spath,'figures','unit_profiles',[Trial.filebase '-unit_prof-' num2str(u) '.png']),figH,'png');
 %saveas(figH,fullfile(Trial.spath,'figures','unit_profiles',[Trial.filebase '-unit_prof-' num2str(u) '.pdf']));
 end

@@ -1,109 +1,88 @@
+Trial = MTATrial('Ed05-20140528');
+%Trial = MTATrial('jg05-20120317');
+Trial.stc.updateMode('qda_filtf1p5');,Trial.stc.load;
+xyz = Trial.xyz.copy;
+xyz.load(Trial);
 
-%fwin = gausswin(61)./sum(gausswin(61));
+wang = WhitenSignal([fet_rhm(Trial),fet_ncp(Trial,'chans',[1,2])],[],1);
 
-%Trial = MTATrial('Ed05-20140528');
-Trial = MTATrial('jg05-20120317');
-
-
-fwin = gausswin(91)./sum(gausswin(91));
-
-Trial.load('xyz');
-rb = Trial.xyz.model.rb({'head_back','head_left','head_front','head_right'});
-rbb = Trial.xyz.model.rb({'spine_lower','pelvis_root'});
-
-hcom = Trial.com(rb);
-Trial.addMarker(Trial.xyz,'hcom',[.7,0,.7],{{'head_back','head_front',[0,0,1]}},hcom);
-Trial.addMarker(Trial.xyz,'fhcom',[.7,1,.7],{{'head_back','head_front',[0,0,1]}},permute(Filter0(fwin,hcom),[1,3,2]));
-
-
-bcom = Trial.com(rbb);
-Trial.addMarker(Trial.xyz,'bcom',[.7,0,.7],{{'spine_lower','pelvis_root',[0,0,1]}},bcom);
-Trial.addMarker(Trial.xyz,'fbcom',[.7,0,.7],{{'spine_lower','pelvis_root',[0,0,1]}},permute(Filter0(fwin,bcom),[1,3,2]));
-
-
-
-ang = Trial.ang.copy;
-ang.create(Trial);
-ang = ang(:,5,11,3);
-bang = ButFilter(ang,3,[1,30]./(Trial.ang.sampleRate/2),'bandpass');
-dbang = ButFilter(bang,3,[5,13]./(Trial.ang.sampleRate/2),'bandpass');
-
-
-Trial.lfp.load(Trial,1:2);
-Trial.lfp.resample(Trial.xyz);
-
-% $$$ Trial.lfp.load(Trial,65:96);
-% $$$ phase = Trial.lfp.phase;
-% $$$ phase.resample(Trial.xyz);
-% $$$ 
-% $$$ Trial.spk.create(Trial,Trial.xyz.sampleRate,'lwalk',[],'deburst');
-% $$$ 
-% $$$ rhm = Trial.lfp.copy;
-% $$$ rhm.filename = '';
-% $$$ rhm.sampleRate = Trial.xyz.sampleRate;
-% $$$ rhmp = rhm.phase;
-% $$$ 
-% $$$ for i =1:106,try,hist(rhmp(Trial.spk(i)),30),end,title(num2str(i)),waitforbuttonpress,end
-
-%wang = WhitenSignal([ang,s.lfp.data],[],1);
-%wang = [ang,Trial.lfp.data];
-wang = [bang,Trial.lfp.data];
-
-%[ya,fa,ta] = mtchglong(diff(Filter0(gausswin(11)./sum(gausswin(11)),hang)),2^9,ang.sampleRate,2^8,2^8*.875,[],[],[],[1,30]);
-%[ya,fa,ta] = mtchglong(WhitenSignal(Filter0(gausswin(11)./sum(gausswin(11)),hang)),2^9,ang.sampleRate,2^8,2^8*.875,[],[],[],[1,30]);
-
-[ys,fs,ts,] = mtcsdglong(wang,2^8,Trial.ang.sampleRate,2^7,2^7*.875,[],'linear',[],[1,30]);
-ys = MTADlfp('data',ys,'sampleRate',1/diff(ts(1:2)));
+[ys,fs,ts] = mtcsdglong(wang,2^8,Trial.ang.sampleRate,2^7,2^7*.875,[],'linear',[],[1,30]);
+szy = size(ys);
+padding = zeros([round(2^6/xyz.sampleRate/diff(ts(1:2))),szy(2:end)]);
+ys = MTADlfp('data',cat(1,padding,ys,padding),'sampleRate',1/diff(ts(1:2)));
 
 % Speed of the head
-vh = Trial.vel(11,[1,2]);
-vh = MTADxyz('data',vh,'sampleRate',Trial.xyz.sampleRate);
-vh.resample(ys);
-edges = [0 1 2 4  8 12 16 20;...
-         1 2 4 8 12 16 20 24];
+xyz.filter(gtwin(1,Trial.xyz.sampleRate));
+vh = MTADxyz('data',xyz.vel(1,[1,2]),'sampleRate',Trial.xyz.sampleRate);
 
-edges_labels = mat2cell(edges,2,ones(1,size(edges,2)))';
+%% Bug: zeros should remain after resample, anti-alias filter seems
+%% to be affecting the edges
+vh.resample(ys);
+
+
+
+%edges_labels = mat2cell(edges,2,ones(1,size(edges,2)))';
 chan_labels = {'Rhythmic Head Motion','Nasal Epithelium Signal','Nasal Cavity Pressure'};
+
+for s = 1:numel(Trial.stc.states);
+
+sind = Trial.stc.states{s};
+
+
+vhs = log10(abs(vh(sind)));
+ind = ~isinf(vhs)&~isnan(vhs);
+vhs = vhs(ind);
+vhlim =prctile(vhs,[5,98]);
+edges = linspace(vhlim(1),vhlim(2),9);
+edges = [edges(1:end-1);edges(2:end)];
+edges_labels = mat2cell(10.^mean(edges),1,ones(1,size(edges,2)))';
+yss = ys(sind,:,:,:);
+yss = yss(ind,:,:,:);
+clear ind;
 
 vsc = [];
 for i = edges,
-    ind = i(1)>=vh.data&vh.data<i(2);% & 5>=mean(log10(ys(:,fs>13&fs>5,3,3)),2);
-    for j = 1:size(ys,3),
-        for k = 1:size(ys,3),
+    ind = i(1)>=vhs&vhs<i(2);% & 5>=mean(log10(yss(:,fs>13&fs>5,3,3)),2);
+    for j = 1:size(yss,3),
+        for k = 1:size(yss,3),
             if sum(ind)~=0,
                 if k~=j,
-                    vsc(find(i(1)==edges(1,:)),:,k,j) = nanmean(abs(ys(ind,:,k,j)))./mean(sqrt(ys(ind,:,k,k).*ys(ind,:,j,j)));
+                    vsc(find(i(1)==edges(1,:)),:,k,j) = nanmean(abs(yss(ind,:,k,j)))./mean(sqrt(yss(ind,:,k,k).*yss(ind,:,j,j)));
                 else
-                    vsc(find(i(1)==edges(1,:)),:,k,j) = nanmean(ys(ind,:,k,j));
+                    vsc(find(i(1)==edges(1,:)),:,k,j) = nanmean(yss(ind,:,k,j));
                 end
 
             else
-                vsc(find(i(1)==edges(1,:)),:) = zeros([1,size(ys,2),size(ys,3)]);
+                vsc(find(i(1)==edges(1,:)),:,:) = zeros([1,size(yss,2),size(yss,3)]);
             end
 
         end
     end
 end
 
-figure,
-for j = 1:size(ys,3),
-    for k = 1:size(ys,3),
-        subplot2(size(ys,3),size(ys,3),j,k),
+
+for j = 1:size(yss,3),
+    for k = 1:size(yss,3),
+        subplot2(size(yss,3),size(yss,3),j,k),
         if j~=k
             imagesc(1:size(edges,2),fs,vsc(:,:,j,k)'),axis xy,
             title([chan_labels{j} ' & ' chan_labels{k} ' coherence'])
         else
             imagesc(1:size(edges,2),fs,log10(vsc(:,:,j,k))'),axis xy,
-            title([chan_labels{j} ' PSD Binned by Head Speed'])
+            title([chan_labels{j} ' PSD Binned by Body Speed'])
         end
         set(gca,'XTickLabel',cellfun(@num2str,cellfun(@transpose,edges_labels(2:2:8),'UniformOutput',false),'UniformOutput',false)');
-        xlabel('Binned Head Speed cm/s')
+        xlabel('Binned Body Speed cm/s')
         ylabel('Frequency Hz')
         colorbar
     end
 end
 
+reportfig('Trial','/gpfs01/sirota/bach/homes/gravio/figures', ...
+          'FileName','mean_Coherence_RHM_NCP','Comment',['State: ' ...
+                    Trial.stc.states{s}.label]  )
 
+end
 
 yp=ys.copy;
 yp.resample(Trial.xyz);
