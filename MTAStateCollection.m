@@ -488,16 +488,21 @@ classdef MTAStateCollection < hgsetget
                 states = varargin;
             end
             
-            sampleRate = Stc.subsref(substruct('{}',states(1),'.','sampleRate'));
-            oper = cell(numel(states),1);
-            keys = '';
-            for i=1:numel(states)
-                oper{i} = cat(1,sper,Stc.subsref(substruct('{}',{states{i},sampleRate},'.','data')));
-                keys(end+1) = Stc.subsref(substruct('{}',states(i),'.','key'));
+            if numel(states) == 1,
+                composite_state = Stc.subsref(substruct('{}',states(1)));
+            else
+                sampleRate = Stc.subsref(substruct('{}',states(1),'.','sampleRate'));
+                oper = cell(numel(states),1);
+                keys = '';
+                for i=1:numel(states)
+                    oper{i} = Stc.subsref(substruct('{}',{states{i},sampleRate},'.','data'));
+                    keys(end+1) = Stc.subsref(substruct('{}',states(i),'.','key'));
+                end
+                newStateName = ['COMP_' keys];
+                uper = JoinRanges(oper);
+                composite_state = MTADepoch([],uper,sampleRate, ...
+                                            states{1}.sync.copy,states{1}.origin,newStateName,keys,[],[]);
             end
-            newStateName = ['COMP_' keys];
-            uper = JoinRanges(oper);
-            composite_state = MTADepoch([],uper,sampleRate,states{1}.sync.copy,states{1}.origin,newStateName,keys,[],[]);
         end
         
         function out = isempty(Stc)
