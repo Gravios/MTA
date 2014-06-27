@@ -1,28 +1,27 @@
 function gen_unit_profile(Trial,varargin)
-[units,states,overwrite,mode,stc_mode,display] = DefaultArgs(varargin,{'pyr',[],false,'pfs','auto_wbhr',0});
+[units,states,overwrite,mode,stc_mode,display] = DefaultArgs(varargin,{'pyr',[],true,'pfs','auto_wbhr',0});
 
 
 stc_mode = 'auto_wbhr';
-stc_mode = 'manual_tmknsrw';
-stc_mode = 'qda_segmented';
-stc_mode = 'qda_ext_seg';
-stc_mode = 'extended';
-stc_mode = 'mlda_ext';
-stc_mode = 'mlda_ext_t1';
-overwrite = true;
+% $$$ stc_mode = 'manual_tmknsrw';
+% $$$ stc_mode = 'qda_segmented';
+% $$$ stc_mode = 'qda_ext_seg';
+% $$$ stc_mode = 'extended';
+% $$$ stc_mode = 'mlda_ext';
+% $$$ stc_mode = 'mlda_ext_t1';
+
 
 Trial.stc.updateMode(stc_mode);Trial.stc.load;
 if isempty(states),   states = Trial.stc.list_state_attrib('label'); end
 numsts = numel(states);
-
-
+states = states(cellfun(@isempty,regexpi(states,'theta')));
 states = cellfun(@cat,repmat({2},1,numel(states)),states,repmat({'&theta'},1,numel(states)),'uniformoutput',false);
+if numsts>numel(states), states{end+1} = 'theta';end
 
 
 if isempty(Trial.nq), Trial.load('nq');                     end
 if Trial.xyz.isempty, Trial.load('xyz');                    end
-
-if ischar(units),    units = select_units(Trial,25,units); end
+if ischar(units),    units = select_units(Trial,10,units); end
 
 
 
@@ -48,8 +47,9 @@ end
 
 
 % SCCG for each State periods must be > 0.5;
+Bccg = {};
 for s = 1:numsts,
-    Bccg{s} = gen_bhv_ccg(Trial,states{s},.5);
+    Bccg{s} = gen_bhv_ccg(Trial,states{s},1);
 end
 
  

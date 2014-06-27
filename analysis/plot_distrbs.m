@@ -1,24 +1,24 @@
-function plot_distrbs(Sessions)
+function plot_distrbs(Sessions,var1,var2,varargin)
+[name,states,v1nbins,v2nbins,stc_mode] = DefaultArgs(varargin,{'jpdf_headHeight_bSpeed','rw',30,30,'auto_wbhr')
 
-
-%% Test Vars
-%                  SessionName   TrialName DataServer
-Sessions = {{'er01-20110719',     'all', 'bach'},... CA3
-               {'er01-20110721',     'all', 'bach'},... CA3
-               {'er06-20130612',     'all',  'cin'},... CA1
-               {'er06-20130613', 'all-cof',  'cin'},... CA1
-               {'er06-20130614', 'all-cof',  'cin'},... CA1
-               {'jg04-20120129',     'all', 'bach'},... CA1
-               {'jg04-20120130',     'all', 'bach'},... CA1
-               {'jg05-20120309',     'all', 'bach'},... CA1
-               {'jg05-20120310',     'all', 'bach'},... CA1
-               {'jg05-20120311',     'all', 'bach'},... CA1
-               {'jg05-20120315',     'all', 'bach'},... CA1
-               {'jg05-20120317',     'all', 'bach'},... CA2???
-               {'jg05-20120324',     'all', 'bach'}}; % CA3
-stc_mode = 'auto_wbhr';
-%s = 12;
-%% end - Test vars
+% $$$ %% Test Vars
+% $$$ %                  SessionName   TrialName DataServer
+% $$$ Sessions = {{'er01-20110719',     'all', 'bach'},... CA3
+% $$$                {'er01-20110721',     'all', 'bach'},... CA3
+% $$$                {'er06-20130612',     'all',  'cin'},... CA1
+% $$$                {'er06-20130613', 'all-cof',  'cin'},... CA1
+% $$$                {'er06-20130614', 'all-cof',  'cin'},... CA1
+% $$$                {'jg04-20120129',     'all', 'bach'},... CA1
+% $$$                {'jg04-20120130',     'all', 'bach'},... CA1
+% $$$                {'jg05-20120309',     'all', 'bach'},... CA1
+% $$$                {'jg05-20120310',     'all', 'bach'},... CA1
+% $$$                {'jg05-20120311',     'all', 'bach'},... CA1
+% $$$                {'jg05-20120315',     'all', 'bach'},... CA1
+% $$$                {'jg05-20120317',     'all', 'bach'},... CA2???
+% $$$                {'jg05-20120324',     'all', 'bach'}}; % CA3
+% $$$ stc_mode = 'auto_wbhr';
+% $$$ %s = 12;
+% $$$ %% end - Test vars
 
 
 nses = numel(Sessions);
@@ -43,19 +43,17 @@ for s = 1:nses
     end
     %[state,type] = DefaultArgs(varargin,{[],'linear'})
 
-%% Test Vars
-states = 'rw';
-v1nbins = 30;
-v2nbins = 30;
-xyz = Trial.xyz.copy;
-xyz.load(Trial);
-xyz.filter(gtwin(.5,xyz.sampleRate));
-vel = MTADxyz('data',log10([0;Trial.vel('spine_lower',[1,2])]),'sampleRate',xyz.sampleRate);
-%% end - Test vars
-
-
-var1 = vel;
-var2 = MTADxyz('data',log10(xyz(:,7,3)),'sampleRate',xyz.sampleRate);
+% $$$ %% Test Vars
+% $$$ states = 'rw';
+% $$$ v1nbins = 30;
+% $$$ v2nbins = 30;
+% $$$ xyz = Trial.xyz.copy;
+% $$$ xyz.load(Trial);
+% $$$ xyz.filter(gtwin(.5,xyz.sampleRate));
+% $$$ vel = MTADxyz('data',log10([0;Trial.vel('spine_lower',[1,2])]),'sampleRate',xyz.sampleRate);
+% $$$ %% end - Test vars
+% $$$ var1 = vel;
+% $$$ var2 = MTADxyz('data',log10(xyz(:,7,3)),'sampleRate',xyz.sampleRate);
 
 no_zeros = var1~=0&var2~=0&var1~=nan&var2~=nan&var1~=inf&var2~=inf&var1~=-inf&var2~=-inf;
 
