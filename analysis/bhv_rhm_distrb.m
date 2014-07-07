@@ -1,14 +1,16 @@
 function bhv_rhm_distrb(Trial,varargin)
 [feature] = DefaultArgs(varargin,{'v'});
 
-sname = 'jg05-20120317';
-sname = 'er06-20130614';
-tname = 'all-cof';
+sname = 'jg05-20120310';
 tname = 'all';
 marker = 'spine_lower';
 stc_mode = 'auto_wbhr';
-stc_mode = 'manual_tmknsrw';
-stc_mode = 'qda_filtp5';
+
+
+% sname = 'er06-20130614';
+% tname = 'all-cof';
+% stc_mode = 'manual_tmknsrw';
+% stc_mode = 'qda_filtp5';
 
 
 Trial = MTATrial(sname,tname);
@@ -20,33 +22,29 @@ Trial.stc.load;
 
 xyz = Trial.xyz.copy;
 xyz.load(Trial);
-
-Trial.load('xyz');
-Trial.xyz.filter(gtwin(0.5,Trial.xyz.sampleRate));
+xyz.filter(gtwin(.2,xyz.sampleRate));
 
 switch feature
   case 'z'
-    vel = MTADxyz('data',Trial.xyz(:,'head_front',3),'sampleRate',xyz.sampleRate);
-    vel.data(vel.data==0) = nan;
-    vnn = ~isnan(vel.data);
+    vel = MTADxyz('data',xyz(:,'head_front',3),'sampleRate',xyz.sampleRate);
+    vnn = nniz(vel);
   case 'v'
-    vel = MTADxyz('data',[0;Trial.vel('spine_lower',[1,2])],'sampleRate',xyz.sampleRate);
-    vel.data(vel.data==0) = nan;
+    vel = xyz.vel(marker,[1,2]);
     vel.data = log10(vel.data);
-    vnn = ~isnan(vel.data);
+    vnn = nniz(vel);
 end
 
 
-% $$$ [rhm,fs] = fet_rhm(Trial);
-% $$$ rhm.data  = log10(rhm.data);
-% $$$ rhm.data(isinf(rhm.data))=nan;
+[rhm,fs] = fet_rhm(Trial,xyz.sampleRate,'wspectral');
+rhm.data  = log10(rhm.data);
+rhm.data(isinf(rhm.data))=nan;
 
 
 vlim =prctile(vel(Trial.stc{'w'}),[2,98]);
 
 
 
-s = 'g';
+s = 'w';
 srhm = rhm(Trial.stc{s},:);
 svel = vel(Trial.stc{s},:);
 
@@ -58,7 +56,7 @@ testrhm  = (srhm-repmat(nanmean(rhm(vnn,:)),[size(srhm,1),1]))./repmat(nanstd(rh
 vbins = 50;
 vedgs = linspace(vlim(1),vlim(2),vbins);
 
-[vcount,vbs] = histc(vel(Trial.stc{s}),vedgs);
+[~,vbs] = histc(vel(Trial.stc{s}),vedgs);
 %vel.data = repmat(vel.data,[1,rhm.size(2)]);
 
 mrv = [];
@@ -69,8 +67,8 @@ for f =1:rhm.size(2),
 end
 %figure,imagesc(vedgs,fs,mrv'),axis xy
 %figure,imagesc(vedgs,fs,srv'),axis xy
-figure,
-figH = imagesc(vedgs,fs,mrv'./srv');axis xy,caxis([0,4])
+figure,figH = imagesc(vedgs,fs,mrv'./srv');axis xy,%caxis([0,4])
+figure,figH = imagesc(vedgs,fs,mrv');axis xy,%caxis([0,4])
 
 
 spowa = MTADlfp('data',log10(median(10.^rhm(:,fs>7&fs<11),2)./sum(10.^rhm(:,:),2)),'sampleRate',Trial.xyz.sampleRate);
@@ -86,14 +84,38 @@ s = 'w';
 vbins = 25;
 vedgs = linspace(vlim(1),vlim(2),vbins);
 spbins = 25;
-spedgs = linspace(splim(1),splim(2),spbins);f
+spedgs = linspace(splim(1),splim(2),spbins);
 figure,hist2([vel(Trial.stc{s}),clip(spowa(Trial.stc{s}),-5.8,.2)],vedgs,spedgs)
 title(Trial.stc{s}.label);
 xlabel('height cm/s')
 %xlabel('height cm/s')
 ylabel('log10 rhm power 7-11 hz')
 
+wvel = vel.data;
+wvel = WhitenSignal(wvel,[],1,ARmodel);
 
+[ys,fs,ts,phi] = mtchglong(vel.data,2^8,xyz.sampleRate,2^7,2^7*.875,[],'linear',[],[1,30]);
+
+% [ys,fs,ts,phi,~,yn] = mtcsdlong(vel.data,2^8,xyz.sampleRate,2^7,2^7*.875,[],'linear',[],[1,30]);
+% for sigs = 1:size(wvel,2),
+%         ys(:,:,sigs,sigs) = mtcsglong(vel(:,sigs),2^8,xyz.sampleRate,2^7,2^7-1,[],'linear',[],[1,30]);
+% end
+
+ts = ts+(2^6)/vel.sampleRate;
+ssr = 1/diff(ts(1:2));
+pad = round([ts(1),2^7/xyz.sampleRate].*ssr);
+szy = size(ys);
+ysd = MTADlfp('data',cat(1,zeros([pad(1),szy(2:end)]),ys,zeros([pad(2),szy(2:end)])),...
+             'sampleRate',ssr);
+
+
+
+wfet(:,1) = mean(log10(abs(yst(:,fs<10,1,1))),2)./mean(log10(abs(yst(:,fs>15,1,1))),2);
+wfet(:,2) = mean(log10(abs(yst(:,fs<10,2,2))),2)./mean(log10(abs(yst(:,fs>15,2,2))),2);
+
+wfet = mean(log10(abs(ysd(:,fs>25,2,2))),2);
+
+wcoh = abs(yn(:,:,1,2))./sqrt((ys(:,:,1,1).*ys(:,:,2,2)));
 % $$$ 
 % $$$ sbins = 25;
 % $$$ sedges = [-5,-2];

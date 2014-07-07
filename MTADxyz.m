@@ -77,8 +77,12 @@ classdef MTADxyz < MTAData
         %v = vel(Data,varargin)
         %calculate the speed of marker(s)
         %[markers,dims] = DefaultArgs(varargin,{[1:Data.model.N],[1:size(Data.xyz,3)]});
+        %zeros are added to the the beginning to for padding; reinterpolate
+        %later to match xyz vector.
             [markers,dims] = DefaultArgs(varargin,{1:Data.model.N, 1:Data.size(3)});
-            v = sqrt(sum(diff(Data.subsref(substruct('()',{':',markers,dims})),1,1).^2,3)).*Data.sampleRate./10;
+            if ischar(markers),markers ={markers};end
+            v = MTADxyz('data',cat(1,zeros([1,numel(markers)]),sqrt(sum(diff(Data.subsref(substruct('()',{':',markers,dims})),1,1).^2,3)).*Data.sampleRate./10),...
+                        'sampleRate',Data.sampleRate);
         end            
 
         function a = acc(Data,varargin)

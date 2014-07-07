@@ -1,19 +1,26 @@
 Trial = MTATrial('Ed05-20140528');
 %Trial = MTATrial('jg05-20120317');
-Trial.stc.updateMode('qda_filtf1p5');,Trial.stc.load;
+%stc_mode = 'qda_filtf1p5';
+stc_mode = 'auto_wbhr';
+Trial.stc.updateMode(stc_mode);Trial.stc.load;
 xyz = Trial.xyz.copy;
 xyz.load(Trial);
 
-wang = WhitenSignal([fet_rhm(Trial),fet_ncp(Trial,'chans',[1,2])],[],1);
+wang = [fet_rhm(Trial),fet_ncp(Trial,'chans',[1,2])];
+wang = WhitenSignal(wang,[],1);
 
-[ys,fs,ts] = mtcsdglong(wang,2^8,Trial.ang.sampleRate,2^7,2^7*.875,[],'linear',[],[1,30]);
+
+[ys,fs,ts] = mtcsdlong(wang,2^8,Trial.ang.sampleRate,2^7,2^7*.875,[],'linear',[],[1,30]);
+for sigs = 1:size(wang,2),
+ys(:,:,sigs,sigs) = mtcsglong(wang(:,sigs),2^8,Trial.ang.sampleRate,2^7,2^7*.875,[],'linear',[],[1,30]);
+end
 szy = size(ys);
 padding = zeros([round(2^6/xyz.sampleRate/diff(ts(1:2))),szy(2:end)]);
 ys = MTADlfp('data',cat(1,padding,ys,padding),'sampleRate',1/diff(ts(1:2)));
 
 % Speed of the head
 xyz.filter(gtwin(1,Trial.xyz.sampleRate));
-vh = MTADxyz('data',xyz.vel(1,[1,2]),'sampleRate',Trial.xyz.sampleRate);
+vh = xyz.vel('spine_lower',[1,2]);
 
 %% Bug: zeros should remain after resample, anti-alias filter seems
 %% to be affecting the edges
@@ -29,9 +36,8 @@ for s = 1:numel(Trial.stc.states);
 sind = Trial.stc.states{s};
 
 
-vhs = log10(abs(vh(sind)));
-ind = ~isinf(vhs)&~isnan(vhs);
-vhs = vhs(ind);
+ind = nniz(vh(sind));
+vhs = log10(vh(ind));
 vhlim =prctile(vhs,[5,98]);
 edges = linspace(vhlim(1),vhlim(2),9);
 edges = [edges(1:end-1);edges(2:end)];
@@ -77,8 +83,9 @@ for j = 1:size(yss,3),
         colorbar
     end
 end
+suptitle(['Coherence During ' sind.label]);
 
-reportfig('Trial','/gpfs01/sirota/bach/homes/gravio/figures', ...
+reportfig(Trial, ...
           'FileName','mean_Coherence_RHM_NCP','Comment',['State: ' ...
                     Trial.stc.states{s}.label]  )
 

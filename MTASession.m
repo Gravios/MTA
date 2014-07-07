@@ -314,14 +314,14 @@ classdef MTASession < hgsetget
 
             %Diagnostic
             %diagnostic,
-% $$$                   figure,
-% $$$                  plot(dataEpoch.data)
-% $$$                  ylim([-3,3])
-% $$$                  hold on
-% $$$                  plot(loadedData-dataEpoch.data,'r')
-% $$$                  plot(loadedData-syncEpoch.data,'g')
-% $$$                  plot(dataEpoch.data-syncEpoch.data,'c')
-% $$$                  plot(loadedData-syncEpoch.data+dataEpoch.data,'m')
+%                  figure,
+%                  plot(dataEpoch.data)
+%                  ylim([-3,3])
+%                  hold on
+%                  plot(loadedData-dataEpoch.data,'r')
+%                  plot(loadedData-syncEpoch.data,'g')
+%                  plot(dataEpoch.data-syncEpoch.data,'c')
+%                  plot(loadedData-syncEpoch.data+dataEpoch.data,'m')
              
 
             %%Trim ends
@@ -412,12 +412,17 @@ classdef MTASession < hgsetget
         end
 
 
-        function angles = transformOrigin(Session, origin, orientationVector, vectorTranSet)   
-            %angles = transformOrigin(Session, origin, orientationVector, vectorTranSet)   
-            diffMat = Session.markerDiffMatrix();
+        function angles = transformOrigin(Session,varargin)               
+            %angles = transformOrigin(Session, xyz, origin, orientationVector, vectorTranSet)   
+            [xyz,origin,orientationVector,vectorTranSet] = DefaultArgs(varargin,{Session.xyz.copy,'head_back','head_front',{'head_left','head_right'}});
+            
+            xyz.load(Session);
+            xyz.filter(gtwin(.1,xyz.sampleRate));
+
+            diffMat = Session.markerDiffMatrix(xyz);
             mdvlen = size(diffMat,1);
-            origin = Session.model.gmi(origin);
-            orientationVector = Session.model.gmi(orientationVector);
+            origin = xyz.model.gmi(origin);
+            orientationVector = xyz.model.gmi(orientationVector);
             
             % Get transformation Matricies
             [rz,     rzMat, direction] = rotZAxis(squeeze(diffMat(:,origin,orientationVector,:)));
@@ -443,25 +448,25 @@ classdef MTASession < hgsetget
         end
         
         
-        function v = vel(Session,varargin)
-        %v = vel(Session,varargin)
-        %calculate the speed of marker(s)
-        %[marker,dim] = DefaultArgs(varargin,{[1:Session.model.N],[1:size(Session.xyz,3)]});
-        if Session.xyz.isempty, Session.xyz.load(Session); end    
-        [marker,dim] = DefaultArgs(varargin,{1:Session.model.N, 1:Session.xyz.size(3)});
-            v = sqrt(sum(diff(Session.xyz(:,marker,dim),1).^2,3)).*Session.xyz.sampleRate./10;
-        end            
-
-        function a = acc(Session,varargin)
-        %a = acc(Session,varargin)
-        %calculate the acceleration of marker(s)
-        %[marker,dim] = DefaultArgs(varargin,{[1:Session.model.N],[1:size(Session.xyz,3)]});
-            [marker,dim,padded] = DefaultArgs(varargin,{1:Session.model.N, 1:Session.xyz.size(3),1});
-            a = diff(Session.vel(marker,dim),1);
-            if padded==1
-                a = cat(1,a(1,:),a,a(end,:));
-            end
-        end
+%         function v = vel(Session,varargin)
+%         %v = vel(Session,varargin)
+%         %calculate the speed of marker(s)
+%         %[marker,dim] = DefaultArgs(varargin,{[1:Session.model.N],[1:size(Session.xyz,3)]});
+%         if Session.xyz.isempty, Session.xyz.load(Session); end    
+%         [marker,dim] = DefaultArgs(varargin,{1:Session.model.N, 1:Session.xyz.size(3)});
+%             v = sqrt(sum(diff(Session.xyz(:,marker,dim),1).^2,3)).*Session.xyz.sampleRate./10;
+%         end            
+% 
+%         function a = acc(Session,varargin)
+%         %a = acc(Session,varargin)
+%         %calculate the acceleration of marker(s)
+%         %[marker,dim] = DefaultArgs(varargin,{[1:Session.model.N],[1:size(Session.xyz,3)]});
+%             [marker,dim,padded] = DefaultArgs(varargin,{1:Session.model.N, 1:Session.xyz.size(3),1});
+%             a = diff(Session.vel(marker,dim),1);
+%             if padded==1
+%                 a = cat(1,a(1,:),a,a(end,:));
+%             end
+%         end
 
         function center_of_mass = com(Session,Model)
         %center_of_mass = com(Session,Model)
@@ -897,7 +902,7 @@ classdef MTASession < hgsetget
             if ~exist(path,'dir'),
                 mkdir(path),
             end
-            if ~isempty(id), id = [ '.' num2str(id)];,end
+            if ~isempty(id), id = [ '.' num2str(id)];end
             switch imFileType
               case 'eps'
                 print(handle,'-dpsc2',[path '/' Session.filebase '.' name id '.' imFileType]);

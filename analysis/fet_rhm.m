@@ -40,9 +40,18 @@ switch mode
     rhm = MTADlfp('data',rhm,'sampleRate',xyz.sampleRate);
 
   case 'wspectral'
-    load(fullfile(Trial.path.MTApath,'fet_rhm.arm'),'-mat');
+    try,load(fullfile(Trial.path.MTAPath,'fet_rhm.arm.mat'));end
+    if exist('ARmodel','var'),
     bang = WhitenSignal(bang,[],[],ARmodel);
-    [ys,fs,ts] = mtcsdglong(bang,2^8,Trial.ang.sampleRate,2^7,2^7-1,[],'linear',[],[1,30]);
+    else
+        [bang,ARmodel] = WhitenSignal(bang);
+        save(fullfile(Trial.path.MTAPath,'fet_rhm.arm.mat'),'ARmodel');
+    end
+    [ys,fs,ts] = mtcsdlong(bang,2^8,Trial.ang.sampleRate,2^7,2^7-1,[],'linear',[],[1,30]);
+    for sigs = 1:size(bang,2),
+        ys(:,:,sigs,sigs) = mtcsglong(bang(:,sigs),2^8,Trial.ang.sampleRate,2^7,2^7-1,[],'linear',[],[1,30]);
+    end
+    %[ys,fs,ts] = mtcsdglong(bang,2^8,Trial.ang.sampleRate,2^7,2^7-1,[],'linear',[],[1,30]);
     rhm = zeros(xyz.size(1),size(ys,2));
     rhm((2^6+1):(size(ys)+2^6),:) = ys;
     rhm = MTADlfp('data',rhm,'sampleRate',xyz.sampleRate);

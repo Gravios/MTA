@@ -17,7 +17,7 @@ classdef MTAApfs < hgsetget %< MTAAnalysis
         function Pfs = MTAApfs(Obj, varargin)     
         % MTAApfs(Obj,{units,states,overwrite,tag,binDims,SmoothingWeights,type,spkShuffle,posShuffle,numIter})
             [units,states,overwrite,tag,binDims,SmoothingWeights,type,spkShuffle,posShuffle,numIter]=...
-            DefaultArgs(varargin,{[],'walk',0,[],[20,20],[1.2,1.2],'xy','n',0,1,});
+            DefaultArgs(varargin,{[],'walk',0,[],[20,20],[1.2,1.2],'xy',0,0,1,});
 
             units = units(:)';            
         
@@ -203,26 +203,35 @@ classdef MTAApfs < hgsetget %< MTAAnalysis
 
                     nSpk = numel(res);
 
-                    switch spkShuffle
-                        case 'n'
-                            shufSpkInd = repmat((1:nSpk)',1,numIter);
-                        case 'r'
-                            shufSpkInd = randi(nSpk,nSpk,numIter);
+                    if ~spkShuffle
+                        res = repmat(res,1,numIter);
+                    else
+                        res = repmat(res,1,numIter);                        
+                        shufSpkInd = zeros([nSpk,numIter]);
+                        spkswind = round(spkShuffle*Session.xyz.sampleRate);
+                        startres = res(1);
+                        spkTSeries = startres:res(end);
+                        spad = mod(res(end),spkswind);
+                        spkTSeries = [spkTSeries,zeros([1,spad])];
+                        spkTSeries = reshape(spkTSeries,[],spkswind);
+                        nsbins = size(spkTSeries,1);
+                        for s = 2:numIter,
+                            res(:,s) = find(reshape(res(:,spkTSeries(randperm(nsbins),:),s),[],1))+startres;
+                        end
                     end
                     
                     sstres = SelectPeriods(res,pfsState.data,'d',1,1);
-                    sresind = sstres(shufSpkInd) + repmat(randi([-posShuffle,posShuffle],1,numIter),nSpk,1);
-                    sresind(sresind<=0) = sresind(sresind<=0)+size(sstpos,1);
-                    sresind(sresind>size(sstpos,1)) = sresind(sresind>size(sstpos,1))-size(sstpos,1);
+                    sresind = sstres + repmat(randi([-posShuffle,posShuffle],1,numIter),nSpk,1);        % shifts the position of the res along the sstpos
+                    sresind(sresind<=0) = sresind(sresind<=0)+size(sstpos,1);                           % Wraps negative res to end of the sstpos vector
+                    sresind(sresind>size(sstpos,1)) = sresind(sresind>size(sstpos,1))-size(sstpos,1);   % Wraps res greater than the size of the sstpos vector
                     
-                    shufSpkPos  = @(stspos,stsres,niterCount) stspos(stsres(:,niterCount),:);
 
                     %% Caluculate Place Fields
                     [Pfs.data.rateMap(:,dind(i),1), Pfs.adata.bins, Pfs.data.meanRate(dind(i)), Pfs.data.si(dind(i)), Pfs.data.spar(dind(i))] =  ...
-                        PlotPF(Session,sstpos(sstres,:),sstpos,binDims,SmoothingWeights,type);
+                        PlotPF(Session,sstpos(sresind(:,1),:),sstpos,binDims,SmoothingWeights,type);
                      if numIter>1,
                          for bsi = 2:numIter
-                             Pfs.data.rateMap(:,dind(i),bsi) = PlotPF(Session,shufSpkPos(sstpos,sresind,bsi),sstpos,binDims,SmoothingWeights,type);
+                             Pfs.data.rateMap(:,dind(i),bsi) = PlotPF(Session,sstpos(sresind(:,bsi),:),sstpos,binDims,SmoothingWeights,type);
                          end
                      end
 %                         Pfs.rateMap{unit} = sq(bsMap);
@@ -314,8 +323,8 @@ classdef MTAApfs < hgsetget %< MTAAnalysis
                 smwTag(isspace(smwTag)&isspace(circshift(smwTag',1)'))=[];
                 smwTag(isspace(smwTag)) = '_';
                 Pfs.filename = [Session.filebase ...
-                    '.pfs.' Pfs.parameters.type '.' Session.trackingMarker '.' pfsState.label '.' ...
-                    Pfs.parameters.spkShuffle 'ps' num2str(Pfs.parameters.posShuffle) ...
+                    '.pfs.' Pfs.parameters.type '.' Session.trackingMarker '.' Session.stc.mode '.' pfsState.label '.' ...
+                    'ss' num2str(Pfs.parameters.spkShuffle) 'ps' num2str(Pfs.parameters.posShuffle) ...
                     'bs' num2str(Pfs.parameters.numIter) 'sm' smwTag...
                     'bd' binDimTag '.mat'];
             else

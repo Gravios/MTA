@@ -253,7 +253,6 @@ classdef MTAData < hgsetget
                             if (size(S.subs{1},1)==1&&size(S.subs{1},2)>2)||...
                                     (size(S.subs{1},2)==1&&size(S.subs{1},1)>2)||...
                                     strcmp(S.subs{1},':'),
-                                
                                 Data = builtin('subsref',Data.data,S);
                                 return
                             else
@@ -492,6 +491,24 @@ classdef MTAData < hgsetget
             if ~isa(a,'MTAData') &&  isa(b,'MTAData'), out = a     <b.data; return,end
             if  isa(a,'MTAData') && ~isa(b,'MTAData'), out = a.data<b;      return,end
         end
+        
+        function lind = isnan(Data)
+            lind = isnan(Data.data);
+        end
+
+        function lind = isinf(Data)
+            lind = isinf(Data.data);
+        end
+        
+        function ind = end(obj,k,n)
+            szd = size(obj.data);
+            if k < n
+                ind = szd(k);
+            else
+                ind = prod(szd(k:end));
+            end
+        end
+            
 
 
     end

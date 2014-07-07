@@ -113,6 +113,7 @@ classdef MTATrial < MTASession
             
             Trial.trackingMarker = Session.trackingMarker;
             Trial.stc.updateSync(Trial.sync.copy);
+            Trial.stc.updatePath(Trial.spath);
             props = properties(Trial);
             for p = 1:numel(props),
                 if strcmp(props{p},'sync'),continue,end

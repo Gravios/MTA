@@ -27,7 +27,7 @@ fncp = MTADlfp('data',fncp,'sampleRate',xyz.sampleRate);
 case 'default'
 fncp = MTADlfp('data',fncp.data,'sampleRate',xyz.sampleRate);
 otherwise
-fncp = fncp;
+fncp = fncp.data;
 end
 
 

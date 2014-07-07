@@ -67,11 +67,11 @@ s = 1;
         pfs{s}.plot(u,'colorLimits',clims);
         title([pfs{s}.parameters.states ' ' num2str(u)]);
 
-% $$$         subplot2(4,numsts,3,s);
-% $$$         Bccg{s}.plot(u,1); axis tight,
-% $$$ 
-% $$$         subplot2(4,numsts,4,s);
-% $$$         Bccg{s}.plot(u,2); axis tight,
+        subplot2(4,numsts,3,s);
+        Bccg{s}.plot(u,1); axis tight,
+
+        subplot2(4,numsts,4,s);
+        Bccg{s}.plot(u,2); axis tight,
 
     end
 

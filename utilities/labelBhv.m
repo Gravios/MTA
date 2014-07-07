@@ -1,4 +1,5 @@
 function Trial = labelBhv(Trial,Stc,varargin)
+% function Trial = labelBhv(Trial,Stc,varargin)
 % Basic Set of heuristics for the most basic behavioral states
 % 
 % Note: Requires an update to include MoCap sampling rates other than 120Hz

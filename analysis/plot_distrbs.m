@@ -1,5 +1,5 @@
 function plot_distrbs(Sessions,var1,var2,varargin)
-[name,states,v1nbins,v2nbins,stc_mode] = DefaultArgs(varargin,{'jpdf_headHeight_bSpeed','rw',30,30,'auto_wbhr')
+[name,states,v1nbins,v2nbins,stc_mode] = DefaultArgs(varargin,{'jpdf_headHeight_bSpeed','rwgl',30,30,'auto_wbhr'});
 
 % $$$ %% Test Vars
 % $$$ %                  SessionName   TrialName DataServer
@@ -20,12 +20,15 @@ function plot_distrbs(Sessions,var1,var2,varargin)
 % $$$ %s = 12;
 % $$$ %% end - Test vars
 
+% $$$ %% Test Vars
+% $$$ %                  SessionName   TrialName DataServer
+% $$$ Sessions = {{'jg05-20120310',     'all', 'mypc'}};
 
 nses = numel(Sessions);
 
 for s = 1:nses
 
-    MTAstartup('cin',Sessions{s}{3})
+    MTAstartup('mypc',Sessions{s}{3},false)
     Trial = MTATrial(Sessions{s}{1},Sessions{s}{2});
     Trial.stc.updateMode(stc_mode);
     try 
@@ -55,7 +58,7 @@ for s = 1:nses
 % $$$ var1 = vel;
 % $$$ var2 = MTADxyz('data',log10(xyz(:,7,3)),'sampleRate',xyz.sampleRate);
 
-no_zeros = var1~=0&var2~=0&var1~=nan&var2~=nan&var1~=inf&var2~=inf&var1~=-inf&var2~=-inf;
+no_zeros = nniz(var1)&nniz(var2);
 
 
 %% Plot JPDF(v1,v2), distribution 
@@ -99,5 +102,6 @@ xlabel('body speed log(mm/s)')
 legend(slab{:},'Location','southwest')
 suptitle(['Contour JPDF ' Trial.filebase ])
 
-reportfig('/gpfs01/sirota/bach/homes/gravio/figures',figh,'jpdfc',[],Trial.filebase,100)
+reportfig([],figh,'jpdfc',[],Trial.filebase,100)
+%reportfig('/gpfs01/sirota/bach/homes/gravio/figures',figh,'jpdfc',[],Trial.filebase,100)
 end
