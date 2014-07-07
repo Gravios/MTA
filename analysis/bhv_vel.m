@@ -1,7 +1,8 @@
 
 Trial = MTATrial('jg05-20120310');
 xyz = Trial.xyz.copy;
-hang = Trial.transformOrigin;
+xyz.filter
+vel = Trial.transformOrigin;
 %figure,plot(hang.roll);
 %figure,hist(hang.roll,1000);
 
@@ -19,10 +20,6 @@ ys = MTADlfp('data',cat(1,zeros([pad(1),szy(2:end)]),ys,zeros([pad(2),szy(2:end)
              'sampleRate',ssr);
 ts = cat(1,zeros([pad(1),1]),ts,zeros([pad(2),1]));
          
-hrol = MTADxyz('data',hang.roll,...
-               'sampleRate',xyz.sampleRate);
-
-figure,hist(hrol(Trial.stc{'w'}),100)
 
 s = 'r';
 fhscore = zeros(ys.size(2));
@@ -45,9 +42,16 @@ sp(2) = subplot(312); plot(gfet);
 sp(3) = subplot(313); plot(gsfet);
 linkaxes(sp,'x');
 
+
+figure,
+sp(1) = subplot(311); imagesc(log10(ys.data')),axis xy
 ys.data = ys.data./repmat(sum(ys.data,2),[1,ys.size(2)]);
 ys.data = log10(ys.data);
+sp(2) = subplot(312); imagesc(ys.data'),axis xy
 ys.data(nniz(ys),:) = ys(nniz(ys),:)-repmat(mean(ys(nniz(ys),:)),[sum(nniz(ys.data)),1]);
+sp(3) = subplot(313); imagesc(ys.data'),axis xy
+linkaxes(sp,'x');
+
 
 
 [U,D,V] = svd(cov(ys(nniz(ys),:)));
