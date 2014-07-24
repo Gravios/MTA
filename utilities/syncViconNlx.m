@@ -92,7 +92,7 @@ Session.sync.save(1);
 %% Concatenate all xyz pieces and fill gaps with zeros
 nSessions = length(xyzData);
 xyzLengths = cellfun(@length,xyzData);
-xyz = zeros([ceil(diff(syncPeriods.data([1,end]))*viconSampleRate),size(xyzData{s},2),size(xyzData{s},3)]);
+xyz = zeros([ceil(diff(syncPeriods([1,end]))*viconSampleRate),size(xyzData{1},2),size(xyzData{1},3)]);
 syncXyzStart = round((syncPeriods(1:length(syncPeriods))-syncPeriods(1))*viconSampleRate+1);
 %syncShift = [0;floor(diff([syncPeriods(1:end-1,2) syncPeriods(2:end,1)],1,2)*viconSampleRate)];
 for s=1:nSessions,
@@ -121,7 +121,7 @@ Session.stc.updateSync(Session.sync);
 Session.stc.updateOrigin(0);
 
 
-syncPeriods = MTADepoch([],[],syncPeriods,inf,Session.sync.copy,0);
+syncPeriods = MTADepoch([],[],syncPeriods,1,Session.sync.copy,0);
 
 Session.xyz = MTADxyz(Session.spath,Session.filebase,xyz,viconSampleRate,...
                       syncPeriods,Session.sync.data(1),Session.model);                  

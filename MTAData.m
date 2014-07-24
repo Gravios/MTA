@@ -377,7 +377,7 @@ classdef MTAData < hgsetget
         % WARNING - Doesn't modify the sync if sizes don't match
         % WARNING - uses lowpass ButFilter as antialias filter
         % WARNING - upsampling uses spline ( Not Ready )
-
+            Data = Data.copy;
             switch Data.type
                 
                 case 'TimeSeries'
