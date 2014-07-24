@@ -71,7 +71,7 @@ classdef MTAModel
 
                 numheadmar = 0;
                 for i=1:Model.N,
-                    if regexpi(Model.Markers{i}.name,'head^'),
+                    if ~isempty(regexpi('head_front','^head'))
                         numheadmar = numheadmar+1;
                     end
                 end
