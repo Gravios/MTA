@@ -392,6 +392,7 @@ classdef MTAData < hgsetget
                         dsize = Data.size(1)./Data.sampleRate;                        
                         dsdiff = dsize-dosize;
 
+                        % Antialias filter - lowpass ButFilter
                         if newSampleRate<Data.sampleRate
                         Data.data = ButFilter(Data.data,3,[newSampleRate/2]/(Data.sampleRate/2),'low');
                         end                        

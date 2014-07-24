@@ -21,7 +21,7 @@ if exist('Par','var'),
     
     lfp = LoadBinary(fullfile(Session.spath, [Session.name '.lfp']),1,Par.nChannels,4)';
     recordSync = [0,numel(lfp)./Par.lfpSampleRate];
-    lfpSyncPeriods = MTADepoch([],[],recordSync*Par.lfpSampleRate+[1,0],Par.lfpSampleRate,recordSync,0);
+    lfpSyncPeriods = MTADepoch([],[],recordSync+[1/Par.lfpSampleRate,1/Par.lfpSampleRate],1,recordSync,0);
     clear('lfp');
     Session.lfp = MTADlfp(Session.spath,[Session.name '.lfp'],[],Par.lfpSampleRate,lfpSyncPeriods,0);    
     Session.sampleRate = Par.SampleRate;
@@ -62,7 +62,9 @@ for i=1:numel(xyzData),
     if ~isempty(xyzData{i})
         for j=1:size(tsRanges,1),
             if abs(diff(tsRanges(j,:))*10-size(xyzData{i},1)/viconSampleRate*10)<0.2,
-                syncPeriods(end+1,:) = tsRanges(j,:);
+                % ???Shift time back so index corresponds to
+                % syncPeriods(1) :-1/viconSampleRate???
+                syncPeriods(end+1,:) = tsRanges(j,:)-1/viconSampleRate;
 
                 tsRanges(tsRanges(j,1)>=tsRanges(:,1),:) = [];
                 xyzDataInd(end+1) = i;
@@ -73,39 +75,56 @@ for i=1:numel(xyzData),
 end
 
 
+%% Error if no NLX events match xyzData
 assert(~isempty(syncPeriods),ERR.type,ERR.msg,TTLValue);
 
+%% Select xyzData which match NLX events Pairs
 xyzData = xyzData(xyzDataInd);
 
 
+%% Setup the Session Synchronization Periods
+% syncViconNlx - Sessions are synchronized to the period
+% between the start and end  of vicon recording
 Session.sync = MTADepoch(Session.spath,[Session.filebase '.sync.mat'],syncPeriods([1,end]),1,recordSync,0,[],[],[],'sync');
 Session.sync.save(1);
-Session.lfp.sync.sync = Session.sync.copy;
-Session.lfp.origin = round(Session.lfp.sync.sync.data(1)*Par.lfpSampleRate);
-Session.stc = MTAStateCollection(Session.spath,Session.filebase,'default',[],[],1);
-Session.stc.updateSync(Session.sync);
-Session.stc.updateOrigin(0);
 
+
+%% Concatenate all xyz pieces and fill gaps with zeros
 nSessions = length(xyzData);
-xyz = [];
-syncShift = [0;round(diff([syncPeriods(1:end-1,2) syncPeriods(2:end,1)],1,2)*viconSampleRate)];
+xyzLengths = cellfun(@length,xyzData);
+xyz = zeros([ceil(diff(syncPeriods.data([1,end]))*viconSampleRate),size(xyzData{s},2),size(xyzData{s},3)]);
+syncXyzStart = round((syncPeriods(1:length(syncPeriods))-syncPeriods(1))*viconSampleRate+1);
+%syncShift = [0;floor(diff([syncPeriods(1:end-1,2) syncPeriods(2:end,1)],1,2)*viconSampleRate)];
 for s=1:nSessions,
-    if syncShift(s),
-        xyz = cat(1,xyz,zeros(syncShift(s),size(xyzData{s},2),size(xyzData{s},3)));
-    end
-    xyz = cat(1,xyz,xyzData{s});
+% $$$     if syncShift(s),
+% $$$         xyz = cat(1,xyz,zeros(syncShift(s),size(xyzData{s},2),size(xyzData{s},3)));
+% $$$     end
+xyz(syncXyzStart(s):syncXyzStart(s)+xyzLengths(s)-1,:,:) = xyzData{s};
+% $$$     [size(xyz,1)/viconSampleRate+syncPeriods.data(1)+1/viconSampleRate,syncPeriods.data(s)]
+% $$$     diff([size(xyz,1)/viconSampleRate+syncPeriods.data(1)+1/viconSampleRate,syncPeriods.data(s)])
+% $$$     xyz = cat(1,xyz,xyzData{s});
 end
 xyz = double(xyz);
 
 
+%% MTASpk Object - holds all neuronal spiking information
 Session.spk = MTASpk;
 Session.spk.create(Session);
 
-syncPeriods = MTADepoch([],[],syncPeriods,1,Session.sync.copy,0);
-syncPeriods.resample(viconSampleRate);
+%% Update the synchronization periods of the LFP object
+Session.lfp.sync.sync = Session.sync.copy;
+Session.lfp.origin = round(Session.lfp.sync.sync.data(1)*Par.lfpSampleRate);
+
+%% MTAStateCollection object holds all behavioral sets of periods
+Session.stc = MTAStateCollection(Session.spath,Session.filebase,'default',[],[],1);
+Session.stc.updateSync(Session.sync);
+Session.stc.updateOrigin(0);
+
+
+syncPeriods = MTADepoch([],[],syncPeriods,inf,Session.sync.copy,0);
 
 Session.xyz = MTADxyz(Session.spath,Session.filebase,xyz,viconSampleRate,...
-                      syncPeriods,round(Session.sync.data(1)*viconSampleRate),Session.model);                  
+                      syncPeriods,Session.sync.data(1),Session.model);                  
 Session.xyz.save;
 
 Session.ang = MTADang(Session.spath,Session.filebase,[],viconSampleRate,...
