@@ -6,30 +6,76 @@ Trial.stc.updateMode(stc_mode);Trial.stc.load;
 xyz = Trial.xyz.copy;
 xyz.load(Trial);
 
-wang = [fet_rhm(Trial),fet_ncp(Trial,'chans',[1,2])];
+%xyz.filter(gtwin(.1,xyz.sampleRate));
+rb = Trial.xyz.model.rb({'head_back','head_left','head_front','head_right'});
+hcom = xyz.com(rb);
+
+xyz.addMarker('fbcom',[.7,1,.7],{{'head_back','head_front',[0,0, ...
+                    1]}},ButFilter(xyz(:,7,:),3,[2]./(Trial.ang.sampleRate/2),'low'));
+xyz.addMarker('bbcom',[.7,1,.7],{{'head_back','head_front',[0,0, ...
+                    1]}},ButFilter(xyz(:,5,:),3,[2]./(Trial.ang.sampleRate/2),'low'));
+xyz.addMarker('chcom',[.7,1,.7],{{'head_back','head_front',[0,0, ...
+                    1]}},ButFilter(hcom,3,[2]./(Trial.ang.sampleRate/2),'low'));
+
+xyz.data = xyz.data-repmat(xyz(:,'chcom',:),[1,xyz.size(2),1]);
+%xyz.data = xyz.data-repmat(xyz(:,'bbcom',:),[1,xyz.size(2),1]);
+%xyz.data = xyz.data-repmat(xyz(:,'head_back',:),[1,xyz.size(2),1]);
+%fd = (circshift(xyz(:,'fbcom',:),-1)-circshift(xyz(:,'fbcom',:),1))/2;
+fd = (circshift(xyz(:,'chcom',:),-1)-circshift(xyz(:,'chcom',:),1))/2;
+td = fd+xyz(:,'head_front',:);
+[~,~,sd] = cart2sph(td(:,1,1),td(:,1,2),td(:,1,3));
+sd = Filter0(gausswin(15)./sum(gausswin(15)),sd);
+
+
+
+rhm = fet_rhm(Trial);
+ncp = fet_ncp(Trial,'chans',[1,2]);
+
+
+
+wang = [sd(:,end),rhm,ncp];
 wang = WhitenSignal(wang,[],1);
 
+%[ys,fs,ts,phi,fsta] = mtchglong(wang,2^9,Trial.ang.sampleRate,2^7,2^7*.875,3,'linear',[],[1,20]);
+[ys,fs,ts] = mtcsdglong(wang,2^9,Trial.ang.sampleRate,2^7,2^7*.875,[],'linear',[],[1,20]);
+%[ys,fs,ts] = mtcsdglong(wang,2^9,Trial.ang.sampleRate,2^6,2^6*.875,[],'linear',[],[1,20]);
 
-[ys,fs,ts] = mtcsdlong(wang,2^8,Trial.ang.sampleRate,2^7,2^7*.875,[],'linear',[],[1,30]);
-for sigs = 1:size(wang,2),
-ys(:,:,sigs,sigs) = mtcsglong(wang(:,sigs),2^8,Trial.ang.sampleRate,2^7,2^7*.875,[],'linear',[],[1,30]);
-end
+% $$$ lys = ys.data./repmat(nanmean(ys.data,2),[1,size(ys.data,2),1,1]);
+% $$$ lys = log10(lys);
+% $$$ nys = (lys-repmat(nanmean(lys(nniz(lys),:,:,:)),[size(lys,1),1,1,1]))./repmat(nanstd(lys(nniz(lys),:,:,:)),[size(lys,1),1,1,1]);
+
+
+figure,
+sp(1) = subplot(311);
+imagescnan({ts,fs,log10(ys(:,:,2,2))'},[-9,-3],0,1);axis xy,
+ylabel('rhm')
+sp(2) = subplot(312);
+imagescnan({ts,fs,angle(ys(:,:,2,4)')},[],1,1);axis xy,
+ylabel('phase diff')
+sp(3) = subplot(313);
+imagescnan({ts,fs,log10(ys(:,:,4,4)')},[-3,4],0,1);axis xy,
+ylabel('ncp')
+linkaxes(sp,'xy');
+
+
 szy = size(ys);
 padding = zeros([round(2^6/xyz.sampleRate/diff(ts(1:2))),szy(2:end)]);
 ys = MTADlfp('data',cat(1,padding,ys,padding),'sampleRate',1/diff(ts(1:2)));
 
 % Speed of the head
+xyz = Trial.xyz.copy;
+xyz.load(Trial);
 xyz.filter(gtwin(1,Trial.xyz.sampleRate));
 vh = xyz.vel('spine_lower',[1,2]);
 
 %% Bug: zeros should remain after resample, anti-alias filter seems
 %% to be affecting the edges
 vh.resample(ys);
-
+vh.data(~nniz(vh)) = nan;
 
 
 %edges_labels = mat2cell(edges,2,ones(1,size(edges,2)))';
-chan_labels = {'Rhythmic Head Motion','Nasal Epithelium Signal','Nasal Cavity Pressure'};
+chan_labels = {'newVecMeth','Rhythmic Head Motion','Nasal Epithelium Signal','Nasal Cavity Pressure'};
 
 for s = 1:numel(Trial.stc.states);
 
@@ -37,7 +83,7 @@ sind = Trial.stc.states{s};
 
 
 ind = nniz(vh(sind));
-vhs = log10(vh(ind));
+vhs = abs(log10(vh(ind)));
 vhlim =prctile(vhs,[5,98]);
 edges = linspace(vhlim(1),vhlim(2),9);
 edges = [edges(1:end-1);edges(2:end)];
@@ -78,12 +124,13 @@ for j = 1:size(yss,3),
             title([chan_labels{j} ' PSD Binned by Body Speed'])
         end
         set(gca,'XTickLabel',cellfun(@num2str,cellfun(@transpose,edges_labels(2:2:8),'UniformOutput',false),'UniformOutput',false)');
+        if j~=k,caxis([.6,.9]),end
         xlabel('Binned Body Speed cm/s')
         ylabel('Frequency Hz')
         colorbar
     end
 end
-suptitle(['Coherence During ' sind.label]);
+%suptitle(['Coherence During ' sind.label]);
 
 reportfig(Trial, ...
           'FileName','mean_Coherence_RHM_NCP','Comment',['State: ' ...

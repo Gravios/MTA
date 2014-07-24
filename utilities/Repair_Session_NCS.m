@@ -1,6 +1,9 @@
 
+cd('/gpfs01/sirota/data/bachdata/data/gravio/Eduardo/Press-OEG/Ed03/Ed03-20140707-nlx/')
+
 mode = 'build_TimeStampMap';
-fbase = 'jg05-20120312-01-cof-nlx-0';
+%fbase = 'jg05-20120312-01-cof-nlx-0';
+fbase = 'CSC'
 
 ncs_ext = '.ncs';
 ts_ext = '.timestamps';
@@ -12,22 +15,22 @@ switch mode
   case 'extract_Data&TimeStamps'
 
 for f = 1:96,
-    if ~(f > 9),
+    if (f > 9),
         fnum = ['0',num2str(f)];
     else
         fnum = num2str(f);
     end
 
     fid = fopen([fbase,fnum,ncs_ext],'r');
-    oid = fopen([fbase,fnum,ts_ext],'a+');
-    did = fopen([fbase,fnum,dat_ext],'a+');
+    %oid = fopen([fbase,fnum,ts_ext],'a+');
+    %did = fopen([fbase,fnum,dat_ext],'a+');
 
     fseek(fid,0,'eof');
     eofpos = ftell(fid);
 
     fseek(fid,0,'bof');
-    fseek(oid,0,'bof');
-    fseek(did,0,'bof');
+    %fseek(oid,0,'bof');
+    %fseek(did,0,'bof');
 
     hdr = []; freq=[]; rsize=[];
 
@@ -37,23 +40,24 @@ for f = 1:96,
 
     i=1;
     ts = fread(fid,1,'uint64=>uint64');
-    fwrite(oid,ts,'integer*8');
+    %fwrite(oid,ts,'integer*8');
     status = fseek(fid,4,'cof'); 
     freq = single(fread(fid,1,'uint32=>uint32'));
     rsize = single(fread(fid,1,'uint32=>uint32'));
     dat = fread(fid,rsize,'int16=>int16');
-    fwrite(did,dat,'integer*2');
+    %fwrite(did,dat,'integer*2');
     %fseek(fid,1024,'cof'); % skip record samples
     tic
-    while rsize==512&&freq==32556&&ftell(fid)~=eofpos
+    while rsize==512&&freq==32000&&ftell(fid)~=eofpos
         i=i+1;
         ts = fread(fid,1,'uint64=>uint64');
-        fwrite(oid,ts,'integer*8');
+        %fwrite(oid,ts,'integer*8');
         fseek(fid,4,'cof');
         freq = single(fread(fid,1,'uint32=>uint32')); 
         rsize = single(fread(fid,1,'uint32=>uint32'));
-        dat = fread(fid,rsize,'int16=>int16');
-        fwrite(did,dat,'integer*2');
+        dat = cat(1,dat,fread(fid,rsize,'int16=>int16'));
+        %dat = fread(fid,rsize,'int16=>int16');
+        %fwrite(did,dat,'integer*2');
         %fseek(fid,1024,'cof'); % skip record samples
     end
     toc

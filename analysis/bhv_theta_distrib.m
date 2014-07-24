@@ -1,5 +1,5 @@
-function bhv_rhm_distrb(Trial,varargin)
-[feature] = DefaultArgs(varargin,{'Body Speed'});
+function bhv_theta_distrib(Trial,varargin)
+[tname,feature] = DefaultArgs(varargin,{'Body Speed'});
 
 sname = 'jg05-20120311';
 tname = 'all';
@@ -8,6 +8,8 @@ stc_mode = 'auto_wbhr';
 
 
 Trial = MTATrial(sname,tname);
+
+
 Trial.stc.updateMode(stc_mode);
 Trial.stc.load;
 
@@ -28,17 +30,37 @@ switch feature
     xlab = 'Log10 Body Speed (cm/s)';
 end
 
-[rhm,fs] = fet_rhm(Trial,xyz.sampleRate,'wspectral');
-rhm.data  = log10(rhm.data);
-rhm.data(rhm<-8) = nan;
-rhm.data(nniz(rhm.data))=nan;
-rhm.data = (rhm.data-repmat(nanmean(rhm(vnn,:)),[rhm.size(1),1]))./repmat(nanstd(rhm(vnn,:)),[rhm.size(1),1]);
+lfp = Trial.lfp.copy;
+lfp.load(Trial,[69,80]);
+lfp.resample(xyz);
+wlfp = WhitenSignal(lfp.data,[],1);
+[ys,fs,ts] = mtcsdglong(wlfp(:,2),2^8,lfp.sampleRate,2^7,2^7-1,[],'linear',[],[1,30]);
+
+lfpPSD = zeros(xyz.size(1),size(ys,2));
+tncp = zeros(xyz.size(1),1);
+lfpPSD((2^6+1):(size(ys)+2^6),:) = ys;
+tncp((2^6+1):(size(ts)+2^6),:) = ts;
+lfpPSD = MTADlfp('data',lfpPSD,'sampleRate',xyz.sampleRate);
+tpow = MTADlfp('data',log10(mean(lfpPSD(:,fs>=6&fs<=12),2)./mean(lfpPSD(:,fs<4),2)),'sampleRate',xyz.sampleRate);;
+
+rhm = lfpPSD;
+rhm = fet_rhm(Trial,[],'wspectral');
+
+spowa = MTADlfp('data',log10(nanmean(rhm(:,fs>6&fs<12),2)),'sampleRate',Trial.xyz.sampleRate);
+
+spind=nniz(spowa);
+%spind=Trial.stc{'r'};
+spw = clip(spowa(spind),-8,10);
+hist(spw(spw>-8),100)
+set(gca,'yticklabel',[])
+xlabel('lfp 6-12Hz pow');
+title('jg05-20120311.cof.all-all');
 
 
 vlim =prctile(vel(Trial.stc{'t'}),[2,98]);
 
-s = 'w';
-srhm = rhm(Trial.stc{s},:);
+s = 'r';
+srhm = log10(rhm(Trial.stc{s},:));
 svel = vel(Trial.stc{s},:);
 
 
@@ -59,22 +81,22 @@ figH = figure(22030232);
 
 subplot(131)
 imagescnan({vedgs,fs,mrv'},prctile(mrv(nniz(mrv(:))),[5,95]),false,1,[0,0,0]);axis xy,
-title(['Mean RHM psd Given ' feature]);
+title(['Mean LFP psd Given ' feature]);
 xlabel(xlab);
-ylabel('RHM frequency (Hz)');
+ylabel('LFP frequency (Hz)');
 
 subplot(132)
 imagescnan({vedgs,fs,srv'},prctile(srv(nniz(srv(:))),[5,95]),false,1,[0,0,0]);axis xy,
-title(['Std RHM psd Given ' feature]);
+title(['Std LFP psd Given ' feature]);
 xlabel(xlab);
-ylabel('RHM frequency (Hz)');
+ylabel('LFP frequency (Hz)');
 
 subplot(133)
 snr = mrv./srv;
-imagescnan({vedgs,fs,snr'},prctile(snr(nniz(snr(:))),[5,95]),false,1,[0,0,0]);axis xy,
-title(['SNR RHM psd Given ' feature]);
+imagescnan({vedgs,fs,abs(snr)'},prctile(abs(snr(nniz(snr(:)))),[5,95]),false,1,[0,0,0]);axis xy,
+title(['SNR LFP psd Given ' feature]);
 xlabel(xlab);
-ylabel('RHM frequency (Hz)');
+ylabel('LFP frequency (Hz)');
 
 suptitle([Trial.filebase ' : ' Trial.stc{s}.label])
 
@@ -86,63 +108,15 @@ reportfig(fullfile(Trial.path.data,'figures'),figH, ...
 
 
 
-
-% $$$ spowa = MTADlfp('data',nanmean(rhm(:,fs>6&fs<12),2),'sampleRate',Trial.xyz.sampleRate);
-% $$$ 
-% $$$ figure,hist2([vel(vnn),spowa(vnn)],75,75)
-% $$$ title('all');
-% $$$ xlabel('height cm/s')
-% $$$ ylabel('log10 rhm power 6-12 hz')
-% $$$ 
-% $$$ 
-% $$$ 
-% $$$ splim = prctile(spowa(Trial.stc{'w'},:),[2,98]);
-% $$$ vlim  = prctile(  vel(Trial.stc{'w'})  ,[2,98]);
-% $$$ 
-% $$$ s = 'w';
-% $$$ vbins = 25;
-% $$$ vedgs = linspace(vlim(1),vlim(2),vbins);
-% $$$ spbins = 25;
-% $$$ spedgs = linspace(splim(1),splim(2),spbins);
-% $$$ figure,hist2([vel(Trial.stc{s}),spowa(Trial.stc{s})],vedgs,spedgs)
-% $$$ title(Trial.stc{s}.label);
-% $$$ xlabel('height cm/s')
-% $$$ ylabel('log10 rhm power 6-12 hz')
-
-
 %% hist3 stuff
 
-lfp = Trial.lfp.copy;
-lfp.load(Trial,[69,80]);
-lfp.resample(xyz);
-wlfp = WhitenSignal(lfp.data,[],1);
-[ys,fs,ts] = mtcsdglong(wlfp(:,2),2^8,lfp.sampleRate,2^7,2^7-1,[],'linear',[],[1,30]);
-
-fncp = zeros(xyz.size(1),size(ys,2));
-tncp = zeros(xyz.size(1),1);
-fncp((2^6+1):(size(ys)+2^6),:) = ys;
-tncp((2^6+1):(size(ts)+2^6),:) = ts;
-fncp = MTADlfp('data',fncp,'sampleRate',xyz.sampleRate);
-%fncp.data = (fncp.data./repmat(sum(fncp.data),size(fncp.data,1),1));
-
-tpow = MTADlfp('data',log10(mean(fncp(:,fs>=6&fs<=12),2)./mean(fncp(:,fs<4),2)),'sampleRate',xyz.sampleRate);;
-%tpow.filter(gtwin(1.2,tpow.sampleRate));
-
-% $$$ figure,
-% $$$ sp(1) = subplot(211);
-% $$$ plot(tncp(nniz(tncp)),tpow(nniz(tncp)))
-% $$$ sp(2) = subplot(212);
-% $$$ imagesc(tncp(nniz(tncp)),fs,log10(fncp.data(nniz(tncp),:)')),axis xy
-% $$$ linkaxes(sp,'x');
-
-
-spowa = MTADlfp('data',nanmean(rhm(:,fs>6&fs<12),2),'sampleRate',Trial.xyz.sampleRate);
+spowa = MTADlfp('data',log10(nanmax(rhm(:,fs>6&fs<12),2)),'sampleRate',Trial.xyz.sampleRate);
 spd = xyz.vel(marker,[1,2]);
 spd.data = log10(spd.data);
 
 
 sind = true(xyz.size(1),1);
-sind = Trial.stc{'w'};
+sind = Trial.stc{'t'};
 
 %varA1 = log10(xyz(sind,7,3));
 varA1 = spd(sind);
@@ -195,12 +169,12 @@ ylabel('Log10 Head Height (mm)');
 
 subplot(133)
 ABN = A'./B';
-imagescnan({vA1e,vA2e,ABN},prctile(ABN(nniz(ABN(:))),[5,95]),false,true,[0,0,0]),axis xy,
+imagescnan({vA1e,vA2e,abs(ABN)},prctile(abs(ABN(nniz(ABN(:)))),[5,95]),false,true,[0,0,0]),axis xy,
 title(['SNR RHM PSD']);
 xlabel('Log10 Body Speed (cm/s)');
 ylabel('Log10 Head Height (mm)');
 
-suptitle([Trial.filebase ' : ' Trial.stc{s}.label])
+suptitle([Trial.filebase ' : ' sind.label])
 set(figH,'pos',[14,325,1581,420]);
 
 reportfig(fullfile(Trial.path.data,'figures'),figH, ...

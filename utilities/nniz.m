@@ -10,5 +10,5 @@ else
     lind = var~=0&~isnan(var)&~isinf(var);
 end
 for s = 2:numel(szv),
-    lind = sum(lind,s)>0;
+    lind = prod(lind,s)>0;
 end

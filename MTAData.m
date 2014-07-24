@@ -375,6 +375,8 @@ classdef MTAData < hgsetget
         % Assumes the two objects have their starting points synchronized
         %
         % WARNING - Doesn't modify the sync if sizes don't match
+        % WARNING - uses lowpass ButFilter as antialias filter
+        % WARNING - upsampling uses spline ( Not Ready )
 
             switch Data.type
                 

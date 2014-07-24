@@ -105,7 +105,7 @@ classdef MTASession < hgsetget
             [mazeName,overwrite,TTLValue,xyzSampleRate,xyzSystem,ephySystem] = ...
              DefaultArgs(varargin,{'cof',0,'0x0040',119.881035,'vicon','nlx'});
             Session.path = load('MTAPaths.mat');
-            
+
             if isempty(name),
                 Session.filebase = '';
                 Session.name = '';

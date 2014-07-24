@@ -28,7 +28,7 @@ nses = numel(Sessions);
 
 for s = 1:nses
 
-    MTAstartup('mypc',Sessions{s}{3},false)
+    MTAstartup('cin',Sessions{s}{3},false)
     Trial = MTATrial(Sessions{s}{1},Sessions{s}{2});
     Trial.stc.updateMode(stc_mode);
     try 

@@ -1,7 +1,7 @@
-function bhv_rhm_distrb(Trial,varargin)
+function bhv_ncp_distrib(Trial,varargin)
 [feature] = DefaultArgs(varargin,{'Body Speed'});
 
-sname = 'jg05-20120311';
+sname = 'Ed05-20140528';
 tname = 'all';
 marker = 'spine_lower';
 stc_mode = 'auto_wbhr';
@@ -28,7 +28,7 @@ switch feature
     xlab = 'Log10 Body Speed (cm/s)';
 end
 
-[rhm,fs] = fet_rhm(Trial,xyz.sampleRate,'wspectral');
+[rhm,fs] = fet_ncp(Trial,xyz.sampleRate,'wspectral');
 rhm.data  = log10(rhm.data);
 rhm.data(rhm<-8) = nan;
 rhm.data(nniz(rhm.data))=nan;
@@ -37,7 +37,7 @@ rhm.data = (rhm.data-repmat(nanmean(rhm(vnn,:)),[rhm.size(1),1]))./repmat(nanstd
 
 vlim =prctile(vel(Trial.stc{'t'}),[2,98]);
 
-s = 'w';
+for s = 'wbhr',
 srhm = rhm(Trial.stc{s},:);
 svel = vel(Trial.stc{s},:);
 
@@ -55,7 +55,7 @@ end
 mrv(N<30,:) = nan;
 srv(N<30,:) = nan;
 
-figH = figure(22030232); 
+figH = figure(22030231); 
 
 subplot(131)
 imagescnan({vedgs,fs,mrv'},prctile(mrv(nniz(mrv(:))),[5,95]),false,1,[0,0,0]);axis xy,
@@ -82,8 +82,7 @@ set(figH,'pos',[14,325,1581,420]);
 
 reportfig(fullfile(Trial.path.data,'figures'),figH, ...
           'RHM_psd_distrib',[],[Trial.filebase ' :' Trial.stc{s}.label],200)
-
-
+end
 
 
 
@@ -136,7 +135,7 @@ tpow = MTADlfp('data',log10(mean(fncp(:,fs>=6&fs<=12),2)./mean(fncp(:,fs<4),2)),
 % $$$ linkaxes(sp,'x');
 
 
-spowa = MTADlfp('data',nanmean(rhm(:,fs>6&fs<12),2),'sampleRate',Trial.xyz.sampleRate);
+spowa = MTADlfp('data',nanmax(rhm(:,fs>6&fs<12),[],2),'sampleRate',Trial.xyz.sampleRate);
 spd = xyz.vel(marker,[1,2]);
 spd.data = log10(spd.data);
 

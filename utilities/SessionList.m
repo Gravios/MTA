@@ -5,19 +5,36 @@ path = load('MTAPaths.mat');
 
 switch varargin{1}
   case 'all'
-    Sessions = {{'er01-20110719',     'all', 'bach'},... CA3
-                {'er01-20110721',     'all', 'bach'},... CA3
-                {'er06-20130612',     'all',  'cin'},... CA1
-                {'er06-20130613', 'all-cof',  'cin'},... CA1
-                {'er06-20130614', 'all-cof',  'cin'},... CA1
-                {'jg04-20120129',     'all', 'bach'},... CA1
-                {'jg04-20120130',     'all', 'bach'},... CA1
-                {'jg05-20120309',     'all', 'bach'},... CA1
-                {'jg05-20120310',     'all', 'bach'},... CA1
-                {'jg05-20120311',     'all', 'bach'},... CA1
-                {'jg05-20120315',     'all', 'bach'},... CA1
-                {'jg05-20120317',     'all', 'bach'},... CA2???
-                {'jg05-20120324',     'all', 'bach'}}; % CA3
+    Sessions = {{'er01-20110719',     'cof',     'all', 'bach'},... CA3
+                {'er01-20110721',     'cof',     'all', 'bach'},... CA3
+                {'er06-20130612',     'cof',     'all',  'cin'},... CA1
+                {'er06-20130613',     'cof', 'all-cof',  'cin'},... CA1
+                {'er06-20130614',     'cof', 'all-cof',  'cin'},... CA1
+                {'jg04-20120129',     'cof',     'all', 'bach'},... CA1
+                {'jg04-20120130',     'cof',     'all', 'bach'},... CA1
+                {'jg05-20120309',     'cof',     'all', 'bach'},... CA1
+                {'jg05-20120310',     'cof',     'all', 'bach'},... CA1
+                {'jg05-20120311',     'cof',     'all', 'bach'},... CA1
+                {'jg05-20120315',     'cof',     'all', 'bach'},... CA1
+                {'jg05-20120317',     'cof',     'all', 'bach'},... CA2???
+                {'jg05-20120324',     'cof',     'all', 'bach'}}; % CA3
 
+  case 'ncpH5B4'
+    Sessions = {{'Ed01-20140707',     'cof',     'all', 'bach',  '0x0002'},... 
+                {'Ed01-20140709',     'cof',     'all', 'bach',  '0x0002'},... 
+                {'Ed01-20140717',     'cof',     'all', 'bach',  '0x0002'},... 
+                                                                           ...
+                {'Ed03-20140623',     'cof',     'all', 'bach',  '0x0002'},... 
+                {'Ed03-20140624',     'cof',     'all', 'bach',  '0x0002'},...
+                {'Ed03-20140625',     'cof',     'all', 'bach',  '0x0002'},...
+                                                                           ... 
+                {'Ed05-20140528',     'cof',     'all', 'bach',  '0x0010'},... 
+                {'Ed05-20140529',     'ont',     'all', 'bach',  '0x0010'}}; % 
+  case 'lists'
+    disp(['all'      ,'  ',...
+          'ncpH5B4'  ,'  ']);
+
+  otherwise
+    warning('SessionList:ListName the provided list name was not recognized')
+    Sessions ={};
 end
-path.data

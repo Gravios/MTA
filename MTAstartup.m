@@ -8,7 +8,8 @@ switch host_server
             case 'cin'
                 MTAConfiguration('/gpfs01/sirota/home/gravio/data','absolute');
             case 'bach'
-                MTAConfiguration('/gpfs01/sirota/bach/data/gravio','absolute');
+              %MTAConfiguration('/gpfs01/sirota/bach/data/gravio','absolute');
+                MTAConfiguration('/gpfs01/sirota/data/bachdata/data/gravio','absolute');
         end
         
         
@@ -40,7 +41,18 @@ if add_basic_paths
     else
         userpath = getenv('HOME');
     end
-    cd(fullfile(userpath,'../share/matlab/MTA/'));
-    addpath(genpath(fullfile(userpath,'../share/matlab/Third-Party_Toolboxes/HMM/hmmbox/')),'-END')
-    addpath(genpath(fillfile(userpath,'../share/matlab/Third-Party_Toolboxes/netlab/')),'-END')
+    cd(fullfile(userpath,'../../homes/share/matlab/MTA/'));
+    addpath(genpath(fullfile(userpath,'../../homes/share/matlab/Third-Party_Toolboxes/HMM/hmmbox/')),'-END')
+    addpath(genpath(fullfile(userpath,'../../homes/share/matlab/Third-Party_Toolboxes/netlab/')),'-END')
 end
+% $$$ 
+% $$$ if add_basic_paths    
+% $$$     if ispc,
+% $$$         userpath = getenv('HOMEPATH');
+% $$$     else
+% $$$         userpath = getenv('HOME');
+% $$$     end
+% $$$     cd(fullfile(userpath,'../share/matlab/MTA/'));
+% $$$     addpath(genpath(fullfile(userpath,'../share/matlab/Third-Party_Toolboxes/HMM/hmmbox/')),'-END')
+% $$$     addpath(genpath(fillfile(userpath,'../share/matlab/Third-Party_Toolboxes/netlab/')),'-END')
+% $$$ end
