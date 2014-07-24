@@ -265,15 +265,16 @@ classdef MTASession < hgsetget
             end
         else
             Data.sync.sync = Session.sync.copy;
-            Data.sync.sync.resample(Data.sampleRate);
         end
         
 
         
         if isa(Data,'MTADepoch'),
+            %%%%%%%%%%%%%%%%%%% REDO %%%%%%%%%%%%%%%%%%%
             Data.data = IntersectRanges(Data.data+Data.origin,Data.sync.sync.data+Data.sync.sync.origin-1)-Data.sync.sync(1);
             Data.origin = Data.sync.sync(1)+1;
             return
+            %%%%%%%%%%%%%%%%%%% REDO %%%%%%%%%%%%%%%%%%%
 
         elseif isa(Data,'MTAData'),
             % TODO: Need to deal with lfp resync eventually.
