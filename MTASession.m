@@ -325,8 +325,8 @@ classdef MTASession < hgsetget
             
 
             %%Trim ends
-            endSync = syncEpoch.size(1)-1;
-            endShiftIndex = endSync - loadedDataEnd-1;
+            endSync = syncEpoch.size(1);
+            endShiftIndex = endSync - loadedDataEnd;
             endShiftIndex(endShiftIndex==0)=1;           
             startShiftIndex = newOrigin-dataOrigin;
             startShiftIndex(startShiftIndex==0)=1;           
