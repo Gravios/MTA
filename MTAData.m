@@ -422,6 +422,7 @@ classdef MTAData < hgsetget
                   if DataObj == 1
                       newSampleRate = DataObj;
                       rf = @(x)x;
+                      indshift = 0;
                   elseif isa(DataObj,'MTAData')
                       newSampleRate = DataObj.sampleRate;
                       rf = @round;
@@ -429,16 +430,27 @@ classdef MTAData < hgsetget
                       newSampleRate = DataObj;
                       rf = @round;
                   end
-                  
-                  Data.data = rf(Data.data/Data.sampleRate*newSampleRate+1);
+
+                  if newSampleRate==1&&Data.sampleRate==1,
+                      indshift = 0;
+                  elseif  newSampleRate~=1&&Data.sampleRate==1,
+                      indshift = 1/newSampleRate;
+                  elseif  newSampleRate==1&&Data.sampleRate~=1,
+                      indshift = -1/Data.sampleRate;
+                  else
+                      indshift = 0;
+                  end                  
+
+
+                  Data.data = rf(Data.data/Data.sampleRate*newSampleRate+indshift);
                   while sum(Data.data(:)==0)>1
                       Data.data(1,:) = [];
                   end
-                  if isa(Data.sync,'MTAData'),
-                      Data.origin = rf(Data.origin/Data.sampleRate*newSampleRate); 
-                  else
-                      Data.sync = rf(Data.sync/Data.sampleRate*newSampleRate);
-                  end            
+% $$$                   if isa(Data.sync,'MTAData'),
+% $$$                       Data.origin = rf(Data.origin/Data.sampleRate*newSampleRate); 
+% $$$                   else
+% $$$                       Data.sync = rf(Data.sync/Data.sampleRate*newSampleRate);
+% $$$                   end            
                   Data.sampleRate = newSampleRate;
                 otherwise
             end
