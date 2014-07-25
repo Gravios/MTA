@@ -100,6 +100,28 @@ classdef MTADepoch < MTAData
             Data.key = key;
         end
 
+        function Data = plus(a,b)
+            if isa(a,'MTADepoch')&&isvector(b)
+                Data = a.copy;
+                b = b*a.sampleRate;
+                Data.data = Data.data+repmat(b,[Data.size(1),1]);
+                perDur = diff(Data.data,1,2);
+                Data.data(perDur<=0) = [];
+            elseif isa(b,'MTADepoch')&&isvector(a)
+                Data = b.copy;
+                a = a*b.sampleRate;
+                Data.data = Data.data+repmat(a,[Data.size(1),1]);
+                perDur = diff(Data.data,1,2);
+                Data.data(perDur<=0) = [];
+            elseif isa(b,'MTADepoch')&&isa(a,'MTADepoch')
+                %Data = 
+            end
+        end
+
+% $$$         function perDiff = uminus(Data)
+% $$$             perDiff = diff(Data.data,1,2);
+% $$$         end
+
      
     end
     
@@ -151,14 +173,22 @@ classdef MTADepoch < MTAData
 
             Data = MTADepoch([],[],newData,msr,sync,origin,newLabel,newKey);
         end
-% $$$ 
+
 % $$$         function Data = plus(a,b)
-% $$$             if isa(a,'MTADepoch')&isvector(b)
+% $$$             if isa(a,'MTADepoch')&&isvector(b)
 % $$$                 Data = a.copy;
+% $$$                 b = b*a.sampleRate;
 % $$$                 Data.data = Data.data+repmat(b,[Data.size(1),1]);
-% $$$                 perDur = -Data;
-% $$$             elseif isa(b,'MTADepoch')&isvector(a)
-% $$$ 
+% $$$                 perDur = dif(Data.data,1,2);
+% $$$                 Data.data(perDur<=0) = [];
+% $$$             elseif isa(b,'MTADepoch')&&isvector(a)
+% $$$                 Data = b.copy;
+% $$$                 a = a*b.sampleRate;
+% $$$                 Data.data = Data.data+repmat(a,[Data.size(1),1]);
+% $$$                 perDur = dif(Data.data,1,2);
+% $$$                 Data.data(perDur<=0) = [];
+% $$$             elseif isa(b,'MTADepoch')&&isa(a,'MTADepoch')
+% $$$                 %Data = 
 % $$$             end
 % $$$         end
 

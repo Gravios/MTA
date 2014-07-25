@@ -1,8 +1,8 @@
 function QuickTrialSetup(Session,varargin)
-[trialName,offsets] = DefaultArgs(varargin,{'all',[2000,0]});
+[trialName,offsets,dropSyncInd] = DefaultArgs(varargin,{'all',[8,0],[]});
 xsync = Session.xyz.sync.copy;
-%xsync = xsync+offsets;
-xsync.data = xsync.data+repmat(offsets,[xsync.size(1),1]);
+xsync = xsync+offsets;
+xsync.data(dropSyncInd,:) = [];
 xsync.resample(1);
 Trial = MTATrial(Session,trialName,[],true,xsync);
 Trial.save;
