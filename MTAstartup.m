@@ -18,7 +18,8 @@ switch host_server
             case 'cin'
                 MTAConfiguration('/mnt/gpfs/home/gravio/data','absolute');
             case 'bach'
-                MTAConfiguration('/data/homes/gravio/data','absolute');
+              MTAConfiguration('/gpfs01/sirota/data/bachdata/data/gravio');
+              %MTAConfiguration('/data/homes/gravio/data','absolute');
         end
 
     case 'mypc'

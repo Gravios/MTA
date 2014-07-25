@@ -377,7 +377,8 @@ classdef MTAData < hgsetget
         % WARNING - Doesn't modify the sync if sizes don't match
         % WARNING - uses lowpass ButFilter as antialias filter
         % WARNING - upsampling uses spline ( Not Ready )
-            Data = Data.copy;
+         
+            %Data = Data.copy;
             switch Data.type
                 
                 case 'TimeSeries'
@@ -429,19 +430,15 @@ classdef MTAData < hgsetget
                       rf = @round;
                   end
                   
-                  Data.data = rf(Data.data/Data.sampleRate*newSampleRate);
+                  Data.data = rf(Data.data/Data.sampleRate*newSampleRate+1);
                   while sum(Data.data(:)==0)>1
                       Data.data(1,:) = [];
                   end
                   if isa(Data.sync,'MTAData'),
-                      Data.sync.resample(newSampleRate);
                       Data.origin = rf(Data.origin/Data.sampleRate*newSampleRate); 
                   else
                       Data.sync = rf(Data.sync/Data.sampleRate*newSampleRate);
-                      Data.sync(Data.sync==0) = 1;
                   end            
-                  Data.origin(Data.origin==0) = 1;
-                  Data.data(Data.data==0)=1;
                   Data.sampleRate = newSampleRate;
                 otherwise
             end

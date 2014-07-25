@@ -261,7 +261,6 @@ classdef MTASession < hgsetget
                     
                 case 'MTADepoch'
                     Data.sync.sync = sync.copy;
-                    Data.sync.sync.resample(Data.sampleRate);
             end
         else
             Data.sync.sync = Session.sync.copy;
@@ -283,7 +282,7 @@ classdef MTASession < hgsetget
             % The periods when the data was recorded
             dataEpoch = Data.sync.copy;
             dataEpoch.cast('TimeSeries',Data.sampleRate,'absolute');
-            dataOrigin = Data.origin;
+            dataOrigin = round(Data.origin*Data.sampleRate);
             
             % The periods of data which are already loaded
             loadedData = ones(Data.size(1),1);
@@ -315,19 +314,19 @@ classdef MTASession < hgsetget
 
             %Diagnostic
             %diagnostic,
-%                  figure,
-%                  plot(dataEpoch.data)
-%                  ylim([-3,3])
-%                  hold on
-%                  plot(loadedData-dataEpoch.data,'r')
-%                  plot(loadedData-syncEpoch.data,'g')
-%                  plot(dataEpoch.data-syncEpoch.data,'c')
-%                  plot(loadedData-syncEpoch.data+dataEpoch.data,'m')
-             
+% $$$                   figure,
+% $$$                   plot(dataEpoch.data)
+% $$$                   ylim([-3,3])
+% $$$                   hold on
+% $$$                   plot(loadedData-dataEpoch.data,'r')
+% $$$                   plot(loadedData-syncEpoch.data,'g')
+% $$$                   plot(dataEpoch.data-syncEpoch.data,'c')
+% $$$                   plot(loadedData-syncEpoch.data+dataEpoch.data,'m')
+            
 
             %%Trim ends
-            endSync = Data.sync.sync(end);
-            endShiftIndex = endSync - loadedDataEnd+1;
+            endSync = syncEpoch.size(1)-1;
+            endShiftIndex = endSync - loadedDataEnd-1;
             endShiftIndex(endShiftIndex==0)=1;           
             startShiftIndex = newOrigin-dataOrigin;
             startShiftIndex(startShiftIndex==0)=1;           
@@ -385,7 +384,9 @@ classdef MTASession < hgsetget
             
         end
         
-        Data.origin = newOrigin-1;
+        if round(Data.origin*Data.sampleRate) ~= newOrigin;
+            Data.origin = newOrigin/Data.sampleRate;
+        end
 
         end
         

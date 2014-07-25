@@ -18,7 +18,7 @@ catch
 end
 
 if exist('Par','var'),
-    
+    %% Load single channel of lfp to check the exact number of samples
     lfp = LoadBinary(fullfile(Session.spath, [Session.name '.lfp']),1,Par.nChannels,4)';
     recordSync = [0,numel(lfp)./Par.lfpSampleRate];
     lfpSyncPeriods = MTADepoch([],[],recordSync+[1/Par.lfpSampleRate,1/Par.lfpSampleRate],1,recordSync,0);
@@ -104,6 +104,7 @@ xyz(syncXyzStart(s):syncXyzStart(s)+xyzLengths(s)-1,:,:) = xyzData{s};
 % $$$     diff([size(xyz,1)/viconSampleRate+syncPeriods.data(1)+1/viconSampleRate,syncPeriods.data(s)])
 % $$$     xyz = cat(1,xyz,xyzData{s});
 end
+%xyz(syncXyzStart(s)+xyzLengths(s):end,:,:)=1;
 xyz = double(xyz);
 
 
@@ -132,6 +133,7 @@ Session.ang = MTADang(Session.spath,Session.filebase,[],viconSampleRate,...
 xyz = Session.xyz.copy;
 xyz.filter(gtwin(0.1,viconSampleRate));
 Session.ang.create(Session,xyz);
+Session.ang.data(~nniz(Session.xyz),:,:,:) = 0;
 Session.ang.save;
 
 Session.ufr = MTADufr(Session.spath,Session.filebase);
@@ -140,4 +142,5 @@ Session.save();
 Session.spk.clear;
 
 end
+
 
