@@ -1,20 +1,38 @@
 function QuickTrialSetup(Session,varargin)
-[trialName,offsets,dropSyncInd] = DefaultArgs(varargin,{'all',[8,0],[]});
+%function QuickTrialSetup(Session,varargin)
+%[trialName,offsets,dropSyncInd,debug] = DefaultArgs(varargin,{'all',[8,0],[],false});
+
+[trialName,offsets,dropSyncInd,debug] = DefaultArgs(varargin,{'all',[8,0],[],false});
 xsync = Session.xyz.sync.copy;
 xsync = xsync+offsets;
 xsync.data(dropSyncInd,:) = [];
-xsync.resample(1);
 Trial = MTATrial(Session,trialName,[],true,xsync);
 Trial.save;
 
 %% Run labelBhv if all required markers are present
 % labelBhv functions only on Sessions with the H5B4(H0B9) model
-% $$$ rmarkers = {'spine_lower','pelvis_root', 'spine_middle', 'spine_upper',...
-% $$$               'head_back',  'head_left',   'head_front',  'head_right',...
-% $$$                 'head_top'};
-% $$$ 
-% $$$ if sum(ismember(Trial.model.ml,rmarkers))==numel(rmarkers)
-% $$$     Trial.stc.updateMode('auto_wbhr');
-% $$$     Trial = labelBhv(Trial,Trial.stc);
-% $$$     Trial.save;
-% $$$ end
+rmarkers = {'spine_lower','pelvis_root', 'spine_middle', 'spine_upper',...
+              'head_back',  'head_left',   'head_front',  'head_right',...
+                'head_top'};
+
+if sum(ismember(Trial.model.ml,rmarkers))==numel(rmarkers)
+    Trial.stc.updateMode('auto_wbhr');
+    Trial = labelBhv(Trial,Trial.stc);
+    Trial.save;
+end
+
+
+if debug,
+    Trial.load('xyz');
+    Session.load('xyz');
+    figure, plot(Session.xyz(round(offsets(1)*Session.xyz.sampleRate):end,'head_front',3));
+    hold on,plot(Trial.xyz(:,'head_front',3),'r');
+    Lines(Trial.stc{'r'}(:),[],'m');
+    xlabel('samples');
+    ylabel('Height');
+    legend('Session','Trial','Location','NorthEastOutside');
+    title([Trial.filebase , 'Rearing Events']);
+end
+
+
+

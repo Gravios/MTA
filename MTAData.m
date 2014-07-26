@@ -219,7 +219,7 @@ classdef MTAData < hgsetget
         %Data = clear(Data)
         % Clear an MTAData object's data field.
             Data.data = [];
-            Data.origin = [];
+            %Data.origin = [];
         end
         function out = isempty(Data)
             out = isempty(Data.data);
@@ -392,10 +392,13 @@ classdef MTAData < hgsetget
                         dosize = DataObj.size(1)./newSampleRate;
                         dsize = Data.size(1)./Data.sampleRate;                        
                         dsdiff = dsize-dosize;
+                        
 
                         % Antialias filter - lowpass ButFilter
                         if newSampleRate<Data.sampleRate
-                        Data.data = ButFilter(Data.data,3,[newSampleRate/2]/(Data.sampleRate/2),'low');
+                            zind = Data.data==0;
+                            Data.data = ButFilter(Data.data,3,[newSampleRate/2]/(Data.sampleRate/2),'low');
+                            Data.data(zind)=0;
                         end                        
 
                         uind = round(linspace(ceil(Data.sampleRate/newSampleRate),Data.size(1)-round(dsdiff*Data.sampleRate),DataObj.size(1)));
@@ -411,10 +414,10 @@ classdef MTAData < hgsetget
 
                     Data.data = Data.data(uind,:,:,:,:);
 
-                    if isa(Data.sync,'MTAData'),
-                        Data.sync.resample(newSampleRate);
-                        Data.origin = round(Data.origin/Data.sampleRate*newSampleRate);
-                    end
+% $$$                     if isa(Data.sync,'MTAData'),
+% $$$                         Data.sync.resample(newSampleRate);
+% $$$                         Data.origin = round(Data.origin/Data.sampleRate*newSampleRate);
+% $$$                     end
                     Data.sampleRate = newSampleRate;
     
                 case 'TimePeriods'
@@ -462,8 +465,10 @@ classdef MTAData < hgsetget
             switch Data.type
                 case 'TimeSeries'
                     [Window] = DefaultArgs(varargin,{gausswin(9)./sum(gausswin(9))});
+                    zind = Data.data==0;
                     Data.data = reshape(Filter0(Window,Data.data),Data.size);
-                otherwise
+                    Data.data(zind) = 0;
+              otherwise
                     return
             end
         end

@@ -99,7 +99,9 @@ for s=1:nSessions,
 % $$$     if syncShift(s),
 % $$$         xyz = cat(1,xyz,zeros(syncShift(s),size(xyzData{s},2),size(xyzData{s},3)));
 % $$$     end
-xyz(syncXyzStart(s):syncXyzStart(s)+xyzLengths(s)-1,:,:) = xyzData{s};
+xyzseg = xyzData{s};
+xyzseg(xyzseg==0)=nan;
+xyz(syncXyzStart(s):syncXyzStart(s)+xyzLengths(s)-1,:,:) = xyzseg;
 % $$$     [size(xyz,1)/viconSampleRate+syncPeriods.data(1)+1/viconSampleRate,syncPeriods.data(s)]
 % $$$     diff([size(xyz,1)/viconSampleRate+syncPeriods.data(1)+1/viconSampleRate,syncPeriods.data(s)])
 % $$$     xyz = cat(1,xyz,xyzData{s});
@@ -138,7 +140,7 @@ Session.ang.save;
 
 Session.ufr = MTADufr(Session.spath,Session.filebase);
 
-Session.save();
+Session.save;
 Session.spk.clear;
 
 end

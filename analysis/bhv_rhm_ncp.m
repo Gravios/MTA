@@ -47,13 +47,13 @@ wang = WhitenSignal(wang,[],1);
 
 figure,
 sp(1) = subplot(311);
-imagescnan({ts,fs,log10(ys(:,:,2,2))'},[-9,-3],0,1);axis xy,
+imagescnan({ts,fs,log10(ys(:,:,2,2))'},[-8,-3],0,1);axis xy,
 ylabel('rhm')
 sp(2) = subplot(312);
 imagescnan({ts,fs,angle(ys(:,:,2,4)')},[],1,1);axis xy,
 ylabel('phase diff')
 sp(3) = subplot(313);
-imagescnan({ts,fs,log10(ys(:,:,4,4)')},[-3,4],0,1);axis xy,
+imagescnan({ts,fs,log10(ys(:,:,4,4)')},[-3,5],0,1);axis xy,
 ylabel('ncp')
 linkaxes(sp,'xy');
 
@@ -69,8 +69,7 @@ xyz.filter(gtwin(1,Trial.xyz.sampleRate));
 vh = xyz.vel('spine_lower',[1,2]);
 
 
-%% Bug: zeros should remain after resample, anti-alias filter seems
-%% to be affecting the edges
+
 
 vh.resample(ys);
 vh.data = log10(abs(vh.data));
@@ -82,23 +81,26 @@ chan_labels = {'newVecMeth','Rhythmic Head Motion','Nasal Epithelium Signal','Na
 
 for s = 1:numel(Trial.stc.states);
 
+s=3;
 sind = Trial.stc.states{s};
 
 
 %sind = 1:ys.size(1);
 ind = nniz(xyz(sind,7,3));
 %ind = mean(log10(ys(sind,fs>13&fs>5,4,4)),2)>-4&ind;
-ind = max(log10(ys(sind,fs>13&fs>5,4,4)),[],2)>-4.3&ind;
-vhs = abs(log10(xyz(ind,7,3)));
+%ind = max(log10(ys(sind,fs>13&fs>5,4,4)),[],2)>4&ind;
+%vhs = abs(log10(xyz(ind,7,3)));
 % $$$ ind = nniz(vh(sind));
-%vhs =vh(ind);
+% vhs =vh(ind);
 % $$$ sind = 1:ys.size(1);
 
 % $$$ ind = nniz(ys(sind,1,1,1));
-% $$$ vhs = mean(log10(ys(ind,fs>13&fs>5,2,2)),2);
+vhs = max(log10(ys(ind,fs>13a&fs>5,4,4)),[],2);
+%vhs = max(log10(ys(ind,fs>13a&fs>5,2,2)),[],2);
 %sind = mean(log10(ys(:,fs>13&fs>5,2,2)),2)>-8;
 %vhlim =prctile(vhs,[5,98]);
-vhlim = [1,2.5];
+vhlim = [-7,-2];
+%vhlim = [1,2.5];
 edges = linspace(vhlim(1),vhlim(2),9);
 edges = [edges(1:end-1);edges(2:end)];
 edges_labels = mat2cell(10.^mean(edges),1,ones(1,size(edges,2)))';

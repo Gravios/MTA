@@ -270,8 +270,9 @@ classdef MTASession < hgsetget
         
         if isa(Data,'MTADepoch'),
             %%%%%%%%%%%%%%%%%%% REDO %%%%%%%%%%%%%%%%%%%
-            Data.data = IntersectRanges(Data.data+Data.origin,Data.sync.sync.data+Data.sync.sync.origin-1)-Data.sync.sync(1);
-            Data.origin = Data.sync.sync(1)+1;
+            %Data.resample(1);
+% $$$             Data.data = IntersectRanges(Data.data+Data.origin,Data.sync.sync.data+Data.sync.sync.origin-1)-Data.sync.sync(1);
+% $$$             Data.origin = Data.sync.sync(1)+1;
             return
             %%%%%%%%%%%%%%%%%%% REDO %%%%%%%%%%%%%%%%%%%
 
@@ -287,7 +288,7 @@ classdef MTASession < hgsetget
             % The periods of data which are already loaded
             loadedData = ones(Data.size(1),1);
             try
-            loadedData(Data.data(:,1,1,1,1)==0|isnan(Data.data(:,1,1,1,1))|isnan(Data.data(:,1,1,1,1))) = 0;
+            loadedData(Data.data(:,1,1,1,1)==0) = 0;
             end
             loadedData = cat(1,zeros(dataOrigin,1),loadedData);
             tailbuff = dataEpoch.size(1)-size(loadedData,1);
@@ -321,6 +322,15 @@ classdef MTASession < hgsetget
 % $$$                   plot(loadedData-dataEpoch.data,'r')
 % $$$                   plot(loadedData-syncEpoch.data,'g')
 % $$$                   plot(dataEpoch.data-syncEpoch.data,'c')
+% $$$                   plot(loadedData-syncEpoch.data+dataEpoch.data,'m')
+% $$$ 
+% $$$                   figure,
+% $$$                   plot(dataEpoch.data)
+% $$$                   ylim([-3,3])
+% $$$                   hold on
+% $$$                   plot(loadedData+.1,'r')
+% $$$                   plot(syncEpoch.data+.2,'g')
+% $$$                   plot(dataEpoch.data,'c')
 % $$$                   plot(loadedData-syncEpoch.data+dataEpoch.data,'m')
             
 
