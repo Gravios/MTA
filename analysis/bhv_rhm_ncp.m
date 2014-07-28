@@ -1,247 +1,215 @@
-Trial = MTATrial('Ed05-20140528');
-%Trial = MTATrial('jg05-20120317');
-%stc_mode = 'qda_filtf1p5';
-stc_mode = 'auto_wbhr';
-Trial.stc.updateMode(stc_mode);Trial.stc.load;
-xyz = Trial.xyz.copy;
-xyz.load(Trial);
-
-%xyz.filter(gtwin(.1,xyz.sampleRate));
-rb = Trial.xyz.model.rb({'head_back','head_left','head_front','head_right'});
-hcom = xyz.com(rb);
-
-xyz.addMarker('fbcom',[.7,1,.7],{{'head_back','head_front',[0,0, ...
-                    1]}},ButFilter(xyz(:,7,:),3,[2]./(Trial.ang.sampleRate/2),'low'));
-xyz.addMarker('bbcom',[.7,1,.7],{{'head_back','head_front',[0,0, ...
-                    1]}},ButFilter(xyz(:,5,:),3,[2]./(Trial.ang.sampleRate/2),'low'));
-xyz.addMarker('chcom',[.7,1,.7],{{'head_back','head_front',[0,0, ...
-                    1]}},ButFilter(hcom,3,[2]./(Trial.ang.sampleRate/2),'low'));
-
-xyz.data = xyz.data-repmat(xyz(:,'chcom',:),[1,xyz.size(2),1]);
-%xyz.data = xyz.data-repmat(xyz(:,'bbcom',:),[1,xyz.size(2),1]);
-%xyz.data = xyz.data-repmat(xyz(:,'head_back',:),[1,xyz.size(2),1]);
-%fd = (circshift(xyz(:,'fbcom',:),-1)-circshift(xyz(:,'fbcom',:),1))/2;
-fd = (circshift(xyz(:,'chcom',:),-1)-circshift(xyz(:,'chcom',:),1))/2;
-td = fd+xyz(:,'head_front',:);
-[~,~,sd] = cart2sph(td(:,1,1),td(:,1,2),td(:,1,3));
-sd = Filter0(gausswin(15)./sum(gausswin(15)),sd);
+function bhv_rhm_ncp(Trial,varargin)
+[mode,ncp_thresh,ncp_chan,stc_mode] = DefaultArgs(varargin,{'height',[],2,'auto_wbhr'});
 
 
+disp(['bhv_rhm_ncp: ' Trial.filebase])
+%% Select behavioral state collection
+Trial.stc.updateMode(stc_mode);
+Trial.stc.load;
 
+%% Load Rythmic Head Motion(RHM) feature
 rhm = fet_rhm(Trial);
-ncp = fet_ncp(Trial,'chans',[1,2]);
 
+%% Load Nasal Cavity Pressure(NCP) feature
+ncp = fet_ncp(Trial,[],ncp_chan);
 
-
-wang = [sd(:,end),rhm,ncp];
+%% Whiten RHM and NCP for spectral comparison (PSD&CSD)
+wang = [rhm,ncp];
 wang = WhitenSignal(wang,[],1);
 
-%[ys,fs,ts,phi,fsta] = mtchglong(wang,2^9,Trial.ang.sampleRate,2^7,2^7*.875,3,'linear',[],[1,20]);
+
 [ys,fs,ts] = mtcsdglong(wang,2^9,Trial.ang.sampleRate,2^7,2^7*.875,[],'linear',[],[1,20]);
-%[ys,fs,ts] = mtcsdglong(wang,2^9,Trial.ang.sampleRate,2^6,2^6*.875,[],'linear',[],[1,20]);
-
-% $$$ lys = ys.data./repmat(nanmean(ys.data,2),[1,size(ys.data,2),1,1]);
-% $$$ lys = log10(lys);
-% $$$ nys = (lys-repmat(nanmean(lys(nniz(lys),:,:,:)),[size(lys,1),1,1,1]))./repmat(nanstd(lys(nniz(lys),:,:,:)),[size(lys,1),1,1,1]);
 
 
-figure,
+figS = figure(333212);
+set(figS,'Position',[268    80   685   492]);
 sp(1) = subplot(311);
-imagescnan({ts,fs,log10(ys(:,:,2,2))'},[-8,-3],0,1);axis xy,
+imagescnan({ts,fs,log10(ys(:,:,1,1))'},[-8,-3],0,1);axis xy,
 ylabel('rhm')
 sp(2) = subplot(312);
-imagescnan({ts,fs,angle(ys(:,:,2,4)')},[],1,1);axis xy,
+imagescnan({ts,fs,angle(ys(:,:,1,2)')},[],1,1);axis xy,
 ylabel('phase diff')
 sp(3) = subplot(313);
-imagescnan({ts,fs,log10(ys(:,:,4,4)')},[-3,5],0,1);axis xy,
+imagescnan({ts,fs,log10(ys(:,:,2,2)')},[-3,5],0,1);axis xy,
 ylabel('ncp')
+xlabel('time (s)')
 linkaxes(sp,'xy');
+xlim([10,40])
+%Figure, 
+reportfig(fullfile(Trial.path.data,'figures'),figS, ...
+              'FileName',['mean_Coherence_RHM_NCP_X_' mode],...
+              'Comment',[Trial.filebase ':sample:70s'])
 
 
-szy = size(ys);
-padding = zeros([round(2^6/xyz.sampleRate/diff(ts(1:2))),szy(2:end)]);
-ys = MTADlfp('data',cat(1,padding,ys,padding),'sampleRate',1/diff(ts(1:2)));
 
-% Speed of the head
+
+%% Get Speed of the Body
 xyz = Trial.xyz.copy;
 xyz.load(Trial);
 xyz.filter(gtwin(1,Trial.xyz.sampleRate));
 vh = xyz.vel('spine_lower',[1,2]);
 
 
+%% Construct MTADlfp to hold ys
+% adjust with padding to account for spectral window
+szy = size(ys);
+padding = zeros([round(2^6/xyz.sampleRate/diff(ts(1:2))),szy(2:end)]);
+ys = MTADlfp('data',cat(1,padding,ys,padding),'sampleRate',1/diff(ts(1:2)));
 
 
+%% Resample Variable to match PSD&CSD data
 vh.resample(ys);
 vh.data = log10(abs(vh.data));
 vh.data(~nniz(vh(:))) = nan;
 xyz.resample(ys);
 
-%edges_labels = mat2cell(edges,2,ones(1,size(edges,2)))';
-chan_labels = {'newVecMeth','Rhythmic Head Motion','Nasal Epithelium Signal','Nasal Cavity Pressure'};
 
-for s = 1:numel(Trial.stc.states);
+rhm_maxpow = MTADlfp('data',max(log10(ys(:,fs>13&fs>5,1,1)),[],2),'sampleRate',ys.sampleRate);
+ncp_maxpow = MTADlfp('data',max(log10(ys(:,fs>13&fs>5,2,2)),[],2),'sampleRate',ys.sampleRate);
 
-s=3;
-sind = Trial.stc.states{s};
+if isempty(ncp_thresh),
+    ncp_thresh =  mean(ncp_maxpow.data);
+end
 
 
-%sind = 1:ys.size(1);
-ind = nniz(xyz(sind,7,3));
-%ind = mean(log10(ys(sind,fs>13&fs>5,4,4)),2)>-4&ind;
-%ind = max(log10(ys(sind,fs>13&fs>5,4,4)),[],2)>4&ind;
-%vhs = abs(log10(xyz(ind,7,3)));
-% $$$ ind = nniz(vh(sind));
-% vhs =vh(ind);
-% $$$ sind = 1:ys.size(1);
+    
+chan_labels = {'Rhythmic Head Motion','Nasal Cavity Pressure'};
 
-% $$$ ind = nniz(ys(sind,1,1,1));
-vhs = max(log10(ys(ind,fs>13a&fs>5,4,4)),[],2);
-%vhs = max(log10(ys(ind,fs>13a&fs>5,2,2)),[],2);
-%sind = mean(log10(ys(:,fs>13&fs>5,2,2)),2)>-8;
-%vhlim =prctile(vhs,[5,98]);
-vhlim = [-7,-2];
-%vhlim = [1,2.5];
-edges = linspace(vhlim(1),vhlim(2),9);
-edges = [edges(1:end-1);edges(2:end)];
-edges_labels = mat2cell(10.^mean(edges),1,ones(1,size(edges,2)))';
-yss = ys(sind,:,:,:);
-yss = yss(ind,:,:,:);
-clear ind;
+figH = figure(238482);
+%set(figH,'Position',[268    80   985   692]);
+set(figH,'Position',[7, 188, 1908, 1264]);
+for s = 1:numel(Trial.stc.states)
 
-vsc = [];
-for i = edges,
-    ind = i(1)>=vhs&vhs<i(2);% & 5>=mean(log10(yss(:,fs>13&fs>5,3,3)),2);
-    for j = 1:size(yss,3),
-        for k = 1:size(yss,3),
-            if sum(ind)~=0,
-                if k~=j,
-                    vsc(find(i(1)==edges(1,:)),:,k,j) = nanmean(abs(yss(ind,:,k,j)))./mean(sqrt(yss(ind,:,k,k).*yss(ind,:,j,j)));
+    clf;
+    sind = Trial.stc.states{s}.copy;
+    %sind.resample(ys);
+    
+    switch mode
+      case 'height'
+        ind = nniz(xyz(sind,'head_front',3));
+        ind = ncp_maxpow(sind)>ncp_thresh&ind;
+        vhs = log10(xyz(sind,'head_front',3));        
+        vhs = vhs(ind);
+        vhlim = [1.3, 2.4];
+        vh_label = 'Head Height';
+        vh_units = 'mm';
+      case 'speed'
+        ind = nniz(vh(sind));
+        ind = ncp_maxpow(sind)>ncp_thresh&ind;
+        vhs =vh(sind);
+        vhs = vhs(ind);
+        %vhlim =prctile(vhs,[5,98]);
+        vhlim = [-1.5,1.5];
+        vh_label = 'Body Speed';
+        vh_units = 'cm/s';
+      case 'NCPpow'
+        vhncp = ncp_maxpow(sind);
+        ind = nniz(vh(sind));
+        vhs =vhncp(sind);
+        vhs = vhs(ind);
+        vhlim =prctile(vhs,[5,95]);
+        vh_label = 'NCP_pow(5-13)';      
+        vh_units = 'mV^2/s'
+      case 'RHMpow'
+        vhrhm = rhm_maxpow(sind);
+        ind = nniz(vh(sind));
+        vhs = clip(vhrhm(sind),-9,5);
+        vhs = vhs(ind);
+        vhlim =prctile(vhs,[5,95]);
+        vh_label = 'RHM_pow(5-13)'
+        vh_units = 'cm^2/s'
+    end 
+       
+    
+    edges = linspace(vhlim(1),vhlim(2),15);
+    edges = [edges(1:end-1);edges(2:end)];
+    edges_labels = mat2cell(10.^mean(edges),1,ones(1,size(edges,2)))';
+    yss = ys(sind,:,:,:);
+    yss = yss(ind,:,:,:);
+    clear ind;
+
+    vsc = [];
+    for i = edges,
+        ind = i(1)>=vhs&vhs<i(2);
+        for j = 1:size(yss,3),
+            for k = 1:size(yss,3),
+                if sum(ind)~=0,
+                    if k~=j,
+                        vsc(find(i(1)==edges(1,:)),:,k,j) = nanmean(abs(yss(ind,:,k,j)))./mean(sqrt(yss(ind,:,k,k).*yss(ind,:,j,j)));
+                    else
+                        vsc(find(i(1)==edges(1,:)),:,k,j) = nanmean(yss(ind,:,k,j));
+                    end
+
                 else
-                    vsc(find(i(1)==edges(1,:)),:,k,j) = nanmean(yss(ind,:,k,j));
+                    vsc(find(i(1)==edges(1,:)),:,k,j) = zeros([1,size(yss,2)]);
                 end
 
-            else
-                vsc(find(i(1)==edges(1,:)),:,:) = zeros([1,size(yss,2),size(yss,3)]);
             end
-
         end
     end
-end
 
 
-for j = 1:size(yss,3),
-    for k = 1:size(yss,3),
-        subplot2(size(yss,3),size(yss,3),j,k);
-        if j~=k
-            imagesc(1:size(edges,2),fs,vsc(:,:,j,k)'),axis xy,
-            title([chan_labels{j} ' & ' chan_labels{k} ' coherence'])
-        else
-            imagesc(1:size(edges,2),fs,log10(vsc(:,:,j,k))'),axis xy,
-            title([chan_labels{j} ' PSD Binned by Body Speed'])
+    for j = 1:size(yss,3),
+        for k = 1:size(yss,3),
+            subplot2(size(yss,3),size(yss,3)+1,j,k);
+            if j~=k
+                imagesc(1:size(edges,2),fs,vsc(:,:,j,k)'),axis xy,
+                title([chan_labels{j} ' & ' chan_labels{k} ' coherence'])
+            elseif j>k
+                continue
+            else
+                imagesc(1:size(edges,2),fs,log10(vsc(:,:,j,k))'),axis xy,
+                title([chan_labels{j} ' PSD Binned by ' vh_label])
+            end
+            set(gca,'XTickLabelMode','manual');
+            set(gca,'XTickMode','manual');
+            nxt = numel(get(gca,'XTickLabel'));
+            nxts = cellfun(@transpose,edges_labels,'UniformOutput',false);
+            xtl = strsplit(sprintf('%3.2f,',cell2mat(nxts)),',');
+            xtl(end) = [];
+            set(gca,'XTick',[1:2:14]);
+            set(gca,'XTickLabel',xtl(1:2:end-1));
+            if j~=k,caxis([.5,.9]),end
+            xlabel(['Binned ' vh_label ' (' vh_units ')']);
+            ylabel('Frequency Hz')
+            colorbar
         end
-        set(gca,'XTickLabel',cellfun(@num2str,cellfun(@transpose,edges_labels(2:2:8),'UniformOutput',false),'UniformOutput',false)');
-        if j~=k,caxis([.5,.9]),end
-        xlabel('Binned Body Speed cm/s')
-        ylabel('Frequency Hz')
-        colorbar
     end
-end
-%suptitle(['Coherence During ' sind.label]);
-
-reportfig(Trial, ...
-          'FileName','mean_Coherence_RHM_NCP','Comment',['State: ' ...
-                    Trial.stc.states{s}.label]  )
-
-end
-
-% $$$ figure,hist2([clip(max(log10(ys(nniz(ys),fs<13&fs>5,2,2)),[],2),-7,-2),max(log10(ys(nniz(ys),fs<13&fs>5,4,4)),[],2)],100,100)
-
-yp=ys.copy;
-yp.resample(Trial.xyz);
-phs = Trial.lfp.phase([5,13]);
-pang = LocalMinima(dbang,5);
-myp = mean(log10(yp(:,fs<13&fs>5,3,3)),2);
-
-pedges = [0,0.5,1,1.5,2,2.5,3,3.5,4,4.5,5,5.5,;...
-         0.5,1,1.5,2,2.5,3,3.5,4,4.5,5,5.5,6];
-
-apr = [];
-for i = pedges,
-    ind = find(i(1)<=myp & myp<i(2) & ~isnan(myp) &~isinf(myp) & myp~=0);
-    if sum(ind)~=0,
-        apr(find(i(1)==pedges(1,:)),:) = hist(phs(pang(ismember(pang,ind)),2),linspace(-pi,pi,15));
-        apr(find(i(1)==pedges(1,:)),:) = apr(find(i(1)==pedges(1,:)),:)./sum(apr(find(i(1)==pedges(1,:)),:));
-    else
-        apr(find(i(1)==pedges(1,:)),:) = zeros([1,15]);
-    end
-end
 
 
+    subplot2(size(yss,3),size(yss,3)+1,2,1);
+    hist2([vh(sind),log10(xyz(sind,7,3))],linspace(-1.5,1.5,30),linspace(1.3,2.3,30));
+    title([Trial.filebase ' body speed Vs head height'])
+    xlabel('log10 Body Speed cm/s')
+    ylabel('log10 Head Height mm')
+    
+    nedgs = 50;
+    subplot2(size(yss,3),size(yss,3)+1,1,size(yss,3)+1);
+    rhm_hist_edges = prctile(rhm_maxpow(nniz(rhm_maxpow)),[5,98]);
+    rhm_hist_edges = linspace(rhm_hist_edges(1),rhm_hist_edges(2),nedgs);
+    hold('on')
+    Na = histc(rhm_maxpow(nniz(rhm_maxpow)),rhm_hist_edges);
+    nbax = bar(rhm_hist_edges,Na,'histc');axis tight,set(nbax,'FaceVertexCData',repmat([0,0,0],[nedgs,1]))
+    Ns = histc(rhm_maxpow(sind),rhm_hist_edges);
+    nsax = bar(rhm_hist_edges,Ns,'histc');set(nsax,'FaceVertexCData',repmat([1,.3,0],[50,1]))
+    legend('all',sind.label,'Location','northeast')
+    title('Max Power RHM(5-13)')
+    
+    subplot2(size(yss,3),size(yss,3)+1,2,size(yss,3)+1);
+    ncp_hist_edges = prctile(ncp_maxpow(nniz(ncp_maxpow)),[2,98]);
+    ncp_hist_edges = linspace(ncp_hist_edges(1),ncp_hist_edges(2),nedgs);
+    hold('on')
+    Na = histc(ncp_maxpow(nniz(ncp_maxpow)),ncp_hist_edges);
+    nbax = bar(ncp_hist_edges,Na,'histc');axis tight,set(nbax,'FaceVertexCData',repmat([0,0,0],[nedgs,1]))
+    Ns = histc(ncp_maxpow(sind),ncp_hist_edges);
+    nsax = bar(ncp_hist_edges,Ns,'histc');set(nsax,'FaceVertexCData',repmat([1,.3,0],[50,1]))
+    legend('all',sind.label,'Location','northeast')    
+    Lines(ncp_thresh,[],'r');
+    title('Max Power NCP(5-13)')
 
-figure,
-imagesc(linspace(-pi,pi,15),pedges(2,:),apr),axis xy
-caxis([0,0.12])
-title('Filtered[5-13] RHM peak NCP phase Distrb')
-xlabel('Phase (radians)')
-ylabel('log10 NCP 5-13hz Power')
+    reportfig(fullfile(Trial.path.data,'figures'),figH, ...
+              'FileName',['mean_Coherence_RHM_NCP_X_' mode],'Comment',[Trial.filebase ':BhvState: ' ...
+                        Trial.stc.states{s}.label],200  )
 
-
-
-
-
-phs = Trial.lfp.phase([5,13]);
-pang = LocalMinima(dbang,5);
-myp = mean(log10(yp(:,fs<13&fs>5,3,3)),2);
-vhp = Trial.vel(11,[1,2]);
-vhp = MTADxyz('data',[0;vhp],'sampleRate',Trial.xyz.sampleRate);
- 
-
-pedges = [0,0.5,1,1.5,2,2.5,3,3.5,4,4.5,5,5.5;...
-         0.5,1,1.5,2,2.5,3,3.5,4,4.5,5,5.5,6];
-edges = [0 1 2 4  8 12 16 20;...
-         1 2 4 8 12 16 20 24];
-vpr = [];
-vps = [];
-for i = pedges,
-for j = edges,
-    ind = find(i(1)<=myp & myp<i(2) & ~isnan(myp) & ~isinf(myp) & myp~=0 & j(1)>=vhp.data&vhp.data<j(2) );
-    if sum(ind)~=0&&sum(ismember(pang,ind))~=0,
-        vpr(find(i(1)==pedges(1,:)),find(j(1)==edges(1,:)),:) = circ_mean(phs(pang(ismember(pang,ind)),2));
-        [~,vps(find(i(1)==pedges(1,:)),find(j(1)==edges(1,:)),:)] = circ_mtest(phs(pang(ismember(pang,ind)),2),vpr(find(i(1)==pedges(1,:)),find(j(1)==edges(1,:)),:));
-    else
-        vpr(find(i(1)==pedges(1,:)),:) = zeros([1,1,1]);
-    end
-end
 end
 
-
-figure,
-imagescnan({edges(2,:),pedges(2,:),vpr},[-pi,pi],1,1,[0,0,0]),axis xy
-caxis([0,0.1])
-title('Filtered[5-13] RHM peak NCP phase Distrb')
-xlabel('Phase (radians)')
-ylabel('log10 NCP 5-13hz Power')
-
-
-
-[ya,fa,ta,pha,fsa] = mtchglong(wang,2^8,Trial.ang.sampleRate,2^7,2^7*.875,[],[],[],[1,30]);
-
-figure,hold on
-sp = [];
-for i = 1:size(ya,3),
-sp(i) = subplot(3,1,i);
-imagesc(ta,fa,log10(ya(:,:,i,i)'))
-axis xy
-end
-linkaxes(sp,'xy');
-
-
-[yo,fo, phi]= mtchd(wang,2^8,Trial.ang.sampleRate,2^7,2^7*.875,[],'linear',[],[1,30]);
-
-figure,imagesc(ta,fa,log10(ya(:,:,1,3)')),axis xy
-
-
-
-
-
-np
