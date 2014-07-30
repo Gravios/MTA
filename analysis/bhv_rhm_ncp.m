@@ -24,13 +24,13 @@ wang = WhitenSignal(wang,[],1);
 figS = figure(333212);
 set(figS,'Position',[268    80   685   492]);
 sp(1) = subplot(311);
-imagescnan({ts,fs,log10(ys(:,:,1,1))'},[-8,-3],0,1);axis xy,
+imagescnan({ts,fs,log10(ys(:,:,1,1))'},[-6,-3.1],0,1);axis xy,
 ylabel('rhm')
 sp(2) = subplot(312);
 imagescnan({ts,fs,angle(ys(:,:,1,2)')},[],1,1);axis xy,
 ylabel('phase diff')
 sp(3) = subplot(313);
-imagescnan({ts,fs,log10(ys(:,:,2,2)')},[-3,5],0,1);axis xy,
+imagescnan({ts,fs,log10(ys(:,:,2,2)')},[-2,4.5],0,1);axis xy,
 ylabel('ncp')
 xlabel('time (s)')
 linkaxes(sp,'xy');
@@ -103,17 +103,17 @@ for s = 1:numel(Trial.stc.states)
         vh_label = 'Body Speed';
         vh_units = 'cm/s';
       case 'NCPpow'
-        vhncp = ncp_maxpow(sind);
+        vhncp = MTADlfp('data',ncp_maxpow(sind),'sampleRate',ncp_maxpow.sampleRate);
         ind = nniz(vh(sind));
-        vhs =vhncp(sind);
+        vhs =vhncp;
         vhs = vhs(ind);
         vhlim =prctile(vhs,[5,95]);
         vh_label = 'NCP_pow(5-13)';      
-        vh_units = 'mV^2/s'
+        vh_units = 'mV^2/s';
       case 'RHMpow'
         vhrhm = rhm_maxpow(sind);
         ind = nniz(vh(sind));
-        vhs = clip(vhrhm(sind),-9,5);
+        vhs = clip(vhrhm,-9,5);
         vhs = vhs(ind);
         vhlim =prctile(vhs,[5,95]);
         vh_label = 'RHM_pow(5-13)'

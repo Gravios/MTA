@@ -1,9 +1,13 @@
 function [RateMap, Bins, MRate, SI, Spar] = PlotPF(Session,spkpos,pos,varargin)
-[binDims,SmoothingWeights,type] = DefaultArgs(varargin,{50,[],'xy'});
+[binDims,SmoothingWeights,type,bound_lims] = DefaultArgs(varargin,{50,[],'xy',[]});
 
 ndims = numel(binDims);
-bound_lims = Session.maze.boundaries(1:ndims,:);
-Nbin = round(diff(bound_lims,1,2)./binDims');
+
+if isempty(bound_lims),
+    bound_lims = bound_lims(1:ndims,:);
+end
+
+Nbin = round(abs(diff(bound_lims,1,2))./binDims');
 
 if isempty(SmoothingWeights)
   SmoothingWeights = Nbin./30;
@@ -33,8 +37,8 @@ switch type
         
     otherwise
         Bins = cell(1,ndims);
-        k = Nbin./diff(bound_lims,1,2);
-        msize = round(sum(abs(bound_lims),2).*k);
+        k = Nbin./abs(diff(bound_lims,1,2));
+        msize = round(abs(diff(bound_lims,1,2)).*k);
         for i = 1:ndims
             Bins{i} = ([1:msize(i)]'-1)./repmat(k(i)',msize(i),1)+repmat(bound_lims(i,1),msize(i),1)+round(repmat(k(i)',msize(i),1).^-1/2);
         end
@@ -73,7 +77,7 @@ SOcc = convn(Occupancy,Smoother,'same');
 SCount = convn(SpikeCount,Smoother,'same');
 
 
-OccThresh = 0.12;%0.06
+OccThresh = 0.06;%0.12;%
 %% Find the total occupancy and each pixels 
 %% probability of occupancy
 gtind = SOcc>OccThresh;

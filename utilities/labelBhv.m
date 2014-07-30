@@ -6,7 +6,7 @@ function Trial = labelBhv(Trial,Stc,varargin)
 [winlen,nOverlap,nwinlen,nnOverlap] = DefaultArgs(varargin,{64,8,16,2});
 
 
-
+Stc.states = {};
 if Trial.xyz.isempty, Trial.load('xyz'); end    
 if Trial.ang.isempty, Trial.load('ang'); end    
 
@@ -401,7 +401,12 @@ Stc.addState(Trial.spath,...
                    Trial.xyz.sync.copy,...
                    Trial.xyz.origin,...
                    'rear','r');
-               
+
+for i= 1:numel(Stc.states),
+   Stc.states{i}.data(Stc.states{i}.data(:,1)>Trial.xyz.size(1),:)=[];
+   Stc.states{i}.data(end,Stc.states{i}.data(end,:)>Trial.xyz.size(1))=Trial.xyz.size(1);
+end
+
 Stc.save(1);
 Trial.stc = Stc;
 Trial.save;

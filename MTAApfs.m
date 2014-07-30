@@ -16,8 +16,8 @@ classdef MTAApfs < hgsetget %< MTAAnalysis
 
         function Pfs = MTAApfs(Obj, varargin)     
         % MTAApfs(Obj,{units,states,overwrite,tag,binDims,SmoothingWeights,type,spkShuffle,posShuffle,numIter})
-            [units,states,overwrite,tag,binDims,SmoothingWeights,type,spkShuffle,posShuffle,numIter]=...
-            DefaultArgs(varargin,{[],'walk',0,[],[20,20],[1.2,1.2],'xy',0,0,1,});
+            [units,states,overwrite,tag,binDims,SmoothingWeights,type,spkShuffle,posShuffle,numIter,xyz,bound_lims]=...
+            DefaultArgs(varargin,{[],'walk',0,[],[20,20],[1.2,1.2],'xy',0,0,1,MTADxyz([]),[]});
 
             units = units(:)';            
         
@@ -50,7 +50,8 @@ classdef MTAApfs < hgsetget %< MTAAnalysis
                     
                     Pfs.adata.trackingMarker = Session.trackingMarker;
                     Pfs.adata.bins = [];
-                    Pfs.adata.binSizes = round(diff(Session.maze.boundaries(1:numel(binDims),:),1,2)./binDims');
+                    if isempty(bound_lims),bound_lims = Session.maze.boundaries;end
+                    Pfs.adata.binSizes = round(abs(diff(bound_lims(1:numel(binDims),:),1,2))./binDims');
                     
                     Pfs.data =struct( 'clu',        [],...
                         'elClu',      [],...
@@ -187,8 +188,15 @@ classdef MTAApfs < hgsetget %< MTAAnalysis
             Session.spk.create(Session,Session.xyz.sampleRate,pfsState.label,units);
             
             %% Get State Positions
-            if Session.xyz.isempty, Session.load('xyz');end
-            sstpos = sq(Session.xyz(pfsState,Session.trackingMarker,1:numel(binDims)));
+            if xyz.isempty, 
+                xyz = Session.xyz.copy;
+                xyz.load(Session);
+                sstpos = sq(xyz(pfsState,Session.trackingMarker,1:numel(binDims)));
+            else
+                sstpos = sq(xyz(pfsState,:));
+            end
+            
+
 
             i = 1;
             for unit=selected_units,
@@ -228,10 +236,10 @@ classdef MTAApfs < hgsetget %< MTAAnalysis
 
                     %% Caluculate Place Fields
                     [Pfs.data.rateMap(:,dind(i),1), Pfs.adata.bins, Pfs.data.meanRate(dind(i)), Pfs.data.si(dind(i)), Pfs.data.spar(dind(i))] =  ...
-                        PlotPF(Session,sstpos(sresind(:,1),:),sstpos,binDims,SmoothingWeights,type);
+                        PlotPF(Session,sstpos(sresind(:,1),:),sstpos,binDims,SmoothingWeights,type,bound_lims);
                      if numIter>1,
                          for bsi = 2:numIter
-                             Pfs.data.rateMap(:,dind(i),bsi) = PlotPF(Session,sstpos(sresind(:,bsi),:),sstpos,binDims,SmoothingWeights,type);
+                             Pfs.data.rateMap(:,dind(i),bsi) = PlotPF(Session,sstpos(sresind(:,bsi),:),sstpos,binDims,SmoothingWeights,type,bound_lims);
                          end
                      end
 %                         Pfs.rateMap{unit} = sq(bsMap);
