@@ -34,10 +34,15 @@ classdef MTAApfs < hgsetget %< MTAAnalysis
                     Pfs.session.name = SessionName;
                     Pfs.session.trialName   = TrialName;
                     Pfs.session.mazeName    = MazeName;
+
+                    if ischar(states),
+                        Pfs.parameters.states = states;
+                        pfsState = Session.stc{states,Session.xyz.sampleRate}.copy;
+                    elseif isa(states),
+                        pfsState = states.copy;
+                        Pfs.parameters.states = pfsState.label;                       
+                    end
                     
-                    pfsState = Session.stc{states,Session.xyz.sampleRate}.copy;
-                    
-                    Pfs.parameters.states = states;
                     Pfs.parameters.type   = type;
                     Pfs.parameters.spkShuffle = spkShuffle;
                     Pfs.parameters.posShuffle = posShuffle;

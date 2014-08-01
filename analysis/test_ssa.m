@@ -16,7 +16,7 @@ ncp = fet_ncp(Trial,[],'default');
 N=10000;
 shift=2000;
 %X = GetSegs(rhm,1:N,60,0)'/sqrt(N);
-X = GetSegs(vel(:,1),(1+shift):(N+shift),60,0)'/sqrt(N);
+X = GetSegs(vel(:,end),(1+shift):(N+shift),60,0)'/sqrt(N);
 
 %C = X'*X;
 
@@ -27,10 +27,22 @@ subplot(121),imagesc(V')
 subplot(122),plot(diag(S),'o')
 %figure,plot(X*V(:,1))
 
-Xa = zeros(vel.size);
-for i = 1:vel.size(2),
-Xa(:,i) = GetSegs(vel(:,i),1:vel.size(1),60,0)'/sqrt(N)*V(:,1);
+Xa = zeros(vel.size(1),60);
+for i = 1;%:vel.size(2),
+Xa(:,:,i) = GetSegs(vel(:,i),1:vel.size(1),60,0)'/sqrt(N)*V(:,:);
 end
+Xa(nniz(Xa),:) = unity(Xa(nniz(Xa),:));
+
+Na = zeros(vel.size(1),60);
+for i = 1:ncp.size(2),
+Na(:,:,i) = GetSegs(ncp(:,i),1:ncp.size(1),60,0)'/sqrt(N)*V(:,:);
+end
+Na(nniz(Na),:) = unity(Na(nniz(Na),:));
+
+figure
+sp(1) = subplot(211);imagesc(Xa'),axis xy,caxis([1,2])
+sp(2) = subplot(212);imagesc(Na'),axis xy,caxis([1.5,3])
+linkaxes(sp,'xy')
 
 Xa = GetSegs(vel(:,i),1:vel.size(1),60,0)'/sqrt(N)*V(:,5:14);
 Na = GetSegs(ncp(:,i),1:ncp.size(1),60,0)'/sqrt(N)*V(:,5:14);
