@@ -28,7 +28,17 @@ if exist('Par','var'),
 end
 
 if ~exist(Session.spath,'dir')
-    mkdir(Session.spath);
+    if ~exist(Session.spath,'dir') && ...
+        exist(fullfile(Sesssion.path.data,'nlx',Session.name),'dir') && ...
+        exist(fullfile(Sesssion.path.data,'xyz',Session.name),'dir')
+        mkdir(Session.spath);
+        
+    else
+        e.message    = ['Session: ' Session.name ', cannot be found or does not exist. ' ...
+                       'Check paths or see the README for the correct directory structure for the MTA toolbox.'];
+        e.identifier = 'MTA:utilities:syncViconNlx:Session404';
+        error(e);
+    end
 end
 
 

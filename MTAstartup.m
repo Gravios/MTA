@@ -1,5 +1,7 @@
 function MTAstartup(varargin)
-[host_server,data_server,add_basic_paths] = DefaultArgs(varargin,{'cin','bach',true});
+%[host_server,data_server,add_basic_paths] = DefaultArgs(varargin,{'cin','bach',true});
+%[host_server,data_server,add_basic_paths] = DefaultArgs(varargin,{'mypc','mycy',true});
+[host_server,data_server,add_basic_paths] = DefaultArgs(varargin,{'mypc','mycy',true});
 
 switch host_server
     
@@ -29,7 +31,9 @@ switch host_server
             case 'myhd'
                 MTAConfiguration('F:\data','absolute');        
             case 'mysd'
-                MTAConfiguration('E:\data','absolute');        
+                MTAConfiguration('E:\data','absolute');      
+            case 'mycy'
+                MTAConfiguration('C:\cygwin64\home\justi_000\data','absolute');
         end
         return
         
@@ -56,4 +60,4 @@ end
 % $$$     cd(fullfile(userpath,'../share/matlab/MTA/'));
 % $$$     addpath(genpath(fullfile(userpath,'../share/matlab/Third-Party_Toolboxes/HMM/hmmbox/')),'-END')
 % $$$     addpath(genpath(fillfile(userpath,'../share/matlab/Third-Party_Toolboxes/netlab/')),'-END')
-% $$$ end
+% $$$ endC:\cygwin64\home
