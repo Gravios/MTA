@@ -1,7 +1,8 @@
 function MTAstartup(varargin)
-%[host_server,data_server,add_basic_paths] = DefaultArgs(varargin,{'cin','bach',true});
+%
 %[host_server,data_server,add_basic_paths] = DefaultArgs(varargin,{'mypc','mycy',true});
-[host_server,data_server,add_basic_paths] = DefaultArgs(varargin,{'mypc','mycy',true});
+%[host_server,data_server,add_basic_paths] = DefaultArgs(varargin,{'mypc','mycy',true});
+[host_server,data_server,add_basic_paths] = DefaultArgs(varargin,{'cin','bach',true});
 
 switch host_server
     

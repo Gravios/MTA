@@ -7,7 +7,7 @@ Trial.stc.updateMode(stc_mode);Trial.stc.load;
 xyz = Trial.xyz.copy;
 xyz.load(Trial);
 
-pprb = Trial.xyz.model.rb({'head_back','head_left','head_front','head_right'});
+rb = Trial.xyz.model.rb({'head_back','head_left','head_front','head_right'});
 hcom = xyz.com(rb);
 xyz.addMarker('hcom',[.7,0,.7],{{'head_back','head_front',[0,0,1]}},hcom);
 xyz.addMarker('fhcom',[.7,1,.7],{{'head_back','head_front',[0,0,1]}},ButFilter(hcom,3,[2]./(Trial.ang.sampleRate/2),'low'));
@@ -18,6 +18,18 @@ bang = ButFilter(ang(:,'head_back','fhcom',3),3,[1,30]./(Trial.ang.sampleRate/2)
 lang = ButFilter(ang(:,'head_left','fhcom',3),3,[1,30]./(Trial.ang.sampleRate/2),'bandpass');
 rang = ButFilter(ang(:,'head_right','fhcom',3),3,[1,30]./(Trial.ang.sampleRate/2),'bandpass');
 fang = ButFilter(ang(:,'head_front','fhcom',3),3,[1,30]./(Trial.ang.sampleRate/2),'bandpass');
+
+
+
+xyz_hb_b = sq(xyz(:,'head_back',:)-xyz(:,'hcom',:));
+xyz_hb_r = sq(xyz(:,'head_right',:)-xyz(:,'hcom',:) );
+
+head_norm = cross(xyz_hb_b,xyz_hb_r);
+head_norm = multiprod(head_norm,1./sqrt(sum(head_norm.^2,2)),2);
+
+
+j =1:3;
+xyzKron = reshape(repmat(head_norm',3,1)-head_norm(:,j(ones(3,1),:)).',[3,3,size(head_norm,1)]);
 
 
 txyz = xyz.data;
