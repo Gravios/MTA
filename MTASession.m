@@ -267,18 +267,22 @@ classdef MTASession < hgsetget
         end
         
 
+
         
         if isa(Data,'MTADepoch'),
             %%%%%%%%%%%%%%%%%%% REDO %%%%%%%%%%%%%%%%%%%
             %Data.resample(1);
-% $$$             Data.data = IntersectRanges(Data.data+Data.origin,Data.sync.sync.data+Data.sync.sync.origin-1)-Data.sync.sync(1);
+% $$$        Data.data = IntersectRanges(Data.data+Data.origin,Data.sync.sync.data+Data.sync.sync.origin-1)-Data.sync.sync(1);
 % $$$             Data.origin = Data.sync.sync(1)+1;
             return
             %%%%%%%%%%%%%%%%%%% REDO %%%%%%%%%%%%%%%%%%%
 
         elseif isa(Data,'MTAData'),
             % TODO: Need to deal with lfp resync eventually.
-            if isa(Data,'MTADlfp'),return,end
+            if isa(Data,'MTADlfp')|Data.isempty,
+                Data.sync.sync = Session.sync.copy;
+                return
+            end
             
             % The periods when the data was recorded
             dataEpoch = Data.sync.copy;

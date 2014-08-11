@@ -1,12 +1,12 @@
-function bhv_rhm_distrb(Trial,varargin)
+function bhv_ncpp_distrb(Trial,varargin)
 [mode,stc_mode,marker] = DefaultArgs(varargin,{{'height','hangle'},'auto_wbhr','spine_lower'});
 
-% $$$ sname = 'jg05-20120317';
-% $$$ tname = 'all';
-% $$$ mode = {'height','hangle'};
-% $$$ marker = 'spine_lower';
-% $$$ stc_mode = 'auto_wbhr';
-% $$$ Trial = MTATrial(sname,tname);
+sname = 'jg05-20120317';
+tname = 'all';
+mode = {'height','hangle'};
+marker = 'spine_lower';
+stc_mode = 'auto_wbhr';
+Trial = MTATrial(sname,tname);
 
 Trial.stc.updateMode(stc_mode);
 Trial.stc.load;
@@ -22,7 +22,7 @@ set(figH,'pos',[14,325,1181,420+(420*(numel(mode)-1))]);
 
 
 
-[rhm,fs] = fet_rhm(Trial,xyz.sampleRate,'Swspectral');
+[rhm,fs] = fet_rhm(Trial,[],'Swspectral');
 rhm.data  = log10(rhm.data);
 rhm.data(rhm<-8) = nan;
 rhm.data(nniz(rhm.data))=nan;
@@ -31,6 +31,23 @@ vel.resample(rhm);
 vnn = nniz(vel);
 rhm.data = (rhm.data-repmat(nanmean(rhm(vnn,:)),[rhm.size(1),1]))./repmat(nanstd(rhm(vnn,:)),[rhm.size(1),1]);
 
+rhmd = rhm.data;
+
+rhm_snr = abs(nanmedian(rhm(:,fs>6&fs<12),2)-nanmedian([rhm(:,fs<4),rhm(:,fs>13&fs<16)],2));
+
+rhm_snr = nanmax(rhm(:,fs>6&fs<12),[],2).*abs(nanmedian(rhm(:,fs>6&fs<12),2)-nanmedian([rhm(:,fs<4),rhm(:,fs>13&fs<16)],2));
+
+rhm_snr = nanmax(rhm(:,fs>6&fs<12),[],2);
+
+
+figure,
+sp(1)=subplot(211);plot(rhm_snr)
+sp(2)=subplot(212);imagesc(rhm.data');axis xy,caxis([.1,1.5])
+linkaxes(sp,'x')
+
+wrhms = rhm_snr(vnn&wper.data(1:end-1));
+
+figure,hist2([vel(vnn&wper.data(1:end-1)),rhm_snr(vnn&wper.data(1:end-1))],linspace(-1.4,1.4,50),linspace(-.1,1.2,50)),
 
 for m = 1:numel(mode),
 

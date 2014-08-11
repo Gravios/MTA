@@ -105,7 +105,7 @@ classdef MTASpk < hgsetget
                 Res = ceil(Res);
             end
 
-            [Res, ind] = SelectPeriods(Res,ceil(Session.sync([1,end])*Spk.sampleRate),'d',1,1);
+            [Res, ind] = SelectPeriods(Res,ceil(Session.sync([1,end])*Spk.sampleRate+1),'d',1,1);
             Clu = Clu(ind);
             
             %% Select specific units
@@ -120,7 +120,12 @@ classdef MTASpk < hgsetget
             
             %% Select specific states
             if ~isempty(states);
-                [Res,sind] = SelectPeriods(Res,[Session.stc{states,Spk.sampleRate}],'d',1,0);
+                if ischar(states),
+                    [Res,sind] = SelectPeriods(Res,[Session.stc{states,Spk.sampleRate}.data],'d',1,0);
+                else
+                    states.resample(Spk.sampleRate);
+                    [Res,sind] = SelectPeriods(Res,states.data,'d',1,0);                   
+                end
                 Clu = Clu(sind);
             end
             

@@ -17,16 +17,24 @@ classdef MTAApfs < hgsetget %< MTAAnalysis
         function Pfs = MTAApfs(Obj, varargin)     
         % MTAApfs(Obj,{units,states,overwrite,tag,binDims,SmoothingWeights,type,spkShuffle,posShuffle,numIter})
             [units,states,overwrite,tag,binDims,SmoothingWeights,type,spkShuffle,posShuffle,numIter,xyz,bound_lims]=...
-            DefaultArgs(varargin,{[],'walk',0,[],[20,20],[1.2,1.2],'xy',0,0,1,MTADxyz([]),[]});
+            DefaultArgs(varargin,{[],'walk',0,[],[30,30],[1.2,1.2],'xy',0,0,1,MTADxyz([]),[]});
 
             units = units(:)';            
-        
+
+                
             switch class(Obj)
                 case 'MTATrial'
                     Session = Obj;
                     SessionName = Session.name;
                     MazeName    = Session.maze.name;
                     TrialName   = Session.trialName;
+                    
+                    if xyz.isempty,
+                        xyz = Session.xyz.copy;
+                        xyz.load(Session);
+                        xyz.data = sq(xyz(:,Session.trackingMarker,1:numel(binDims)));
+                    end
+
                     
                     Pfs.path = Session.spath;
                     Pfs.tag  = tag;
@@ -37,9 +45,10 @@ classdef MTAApfs < hgsetget %< MTAAnalysis
 
                     if ischar(states),
                         Pfs.parameters.states = states;
-                        pfsState = Session.stc{states,Session.xyz.sampleRate}.copy;
-                    elseif isa(states),
+                        pfsState = Session.stc{states,xyz.sampleRate}.copy;
+                    elseif isa(states,'MTAData'),
                         pfsState = states.copy;
+                        pfsState.resample(xyz);
                         Pfs.parameters.states = pfsState.label;                       
                     end
                     
@@ -55,7 +64,7 @@ classdef MTAApfs < hgsetget %< MTAAnalysis
                     
                     Pfs.adata.trackingMarker = Session.trackingMarker;
                     Pfs.adata.bins = [];
-                    if isempty(bound_lims),bound_lims = Session.maze.boundaries;end
+                    if isempty(bound_lims),bound_lims = Session.maze.boundaries(1:numel(type),:);end
                     Pfs.adata.binSizes = round(abs(diff(bound_lims(1:numel(binDims),:),1,2))./binDims');
                     
                     Pfs.data =struct( 'clu',        [],...
@@ -189,18 +198,13 @@ classdef MTAApfs < hgsetget %< MTAAnalysis
 
             end
             
-            %% load Units into spk object;
-            Session.spk.create(Session,Session.xyz.sampleRate,pfsState.label,units);
             
             %% Get State Positions
-            if xyz.isempty, 
-                xyz = Session.xyz.copy;
-                xyz.load(Session);
-                sstpos = sq(xyz(pfsState,Session.trackingMarker,1:numel(binDims)));
-            else
-                sstpos = sq(xyz(pfsState,:));
-            end
+            sstpos = sq(xyz(pfsState,:));
+
             
+            %% load Units into spk object;
+            Session.spk.create(Session,xyz.sampleRate,pfsState,units);
 
 
             i = 1;
@@ -210,7 +214,6 @@ classdef MTAApfs < hgsetget %< MTAAnalysis
                 Pfs.data.el(dind(i)) = Session.spk.map(unit,2);
                 Pfs.data.elClu(dind(i)) = Session.spk.map(unit,3);
                 res = Session.spk(unit);
-
                 %% Skip unit if too few spikes
                 if numel(res)>10,
 
@@ -221,7 +224,7 @@ classdef MTAApfs < hgsetget %< MTAAnalysis
                     else
                         res = repmat(res,1,numIter);                        
                         shufSpkInd = zeros([nSpk,numIter]);
-                        spkswind = round(spkShuffle*Session.xyz.sampleRate);
+                        spkswind = round(spkShuffle*xyz.sampleRate);
                         startres = res(1);
                         spkTSeries = startres:res(end);
                         spad = mod(res(end),spkswind);
@@ -234,14 +237,14 @@ classdef MTAApfs < hgsetget %< MTAAnalysis
                     end
                     
                     sstres = SelectPeriods(res,pfsState.data,'d',1,1);
-                    sresind = sstres + repmat(randi([-posShuffle,posShuffle],1,numIter),nSpk,1);        % shifts the position of the res along the sstpos
+                    sresind = sstres + repmat(randi([-posShuffle,posShuffle],1,numIter),numel(sstres),1);        % shifts the position of the res along the sstpos
                     sresind(sresind<=0) = sresind(sresind<=0)+size(sstpos,1);                           % Wraps negative res to end of the sstpos vector
                     sresind(sresind>size(sstpos,1)) = sresind(sresind>size(sstpos,1))-size(sstpos,1);   % Wraps res greater than the size of the sstpos vector
                     
 
                     %% Caluculate Place Fields
                     [Pfs.data.rateMap(:,dind(i),1), Pfs.adata.bins, Pfs.data.meanRate(dind(i)), Pfs.data.si(dind(i)), Pfs.data.spar(dind(i))] =  ...
-                        PlotPF(Session,sstpos(sresind(:,1),:),sstpos,binDims,SmoothingWeights,type,bound_lims);
+                        PlotPF(Session,sstpos(sresind(:,1),:),sstpos,binDims,SmoothingWeights,type,bound_lims,xyz.sampleRate);
                      if numIter>1,
                          for bsi = 2:numIter
                              Pfs.data.rateMap(:,dind(i),bsi) = PlotPF(Session,sstpos(sresind(:,bsi),:),sstpos,binDims,SmoothingWeights,type,bound_lims);
@@ -281,8 +284,8 @@ classdef MTAApfs < hgsetget %< MTAAnalysis
             [unit,nMode,ifColorbar,colorLimits] = DefaultArgs(varargin,{[],'mean',0,[]});
 
             if isempty(unit),unit=Pfs.data.clu(1);end
-            switch Pfs.parameters.type
-                case 'xy'
+            switch numel(Pfs.parameters.type)
+                case 2
                     bin1 = Pfs.adata.bins{1};
                     bin2 = Pfs.adata.bins{2};
                     
@@ -307,7 +310,7 @@ classdef MTAApfs < hgsetget %< MTAAnalysis
                         text(bin1(1)+30,bin2(end)-50,sprintf('%2.1f',max(rateMap(:))),'Color','w','FontWeight','bold','FontSize',10)
                     end
                     axis xy
-                case 'xyz'
+                case 3
                     c = eye(3);
                     r = [1.2,3,6];
                     var = cat(2,Pfs.adata.bins,{permute(reshape(Pfs.data.rateMap(:,Pfs.data.clu==unit,1),Pfs.adata.binSizes'),[2,1,3])},{[]});

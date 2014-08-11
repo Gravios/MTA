@@ -331,14 +331,14 @@ classdef MTAData < hgsetget
                     case 'TimePeriods'
                         Data.data = ThreshCross(Data.data,0.5,1);
                     case 'TimeSeries'
-                        tmpdata = round(Data.data./Data.sampleRate.*sampleRate)+Data.origin;
+                        tmpdata = round((Data.data./Data.sampleRate+Data.origin).*sampleRate);
                         tmpdata(tmpdata==0) = 1;
-                        if isa(Data.sync,'MTAData'),
-                            Data.sync.resample(Data.sampleRate);
-                        end
+% $$$                         if isa(Data.sync,'MTAData'),
+% $$$                             Data.sync.resample(Data.sampleRate);
+% $$$                         end
                         data = false(round(Data.subsref(substruct('.','sync','()',...
                                     {numel(Data.subsref(substruct('.','sync','()',{':'})))}))...
-                                    ./Data.sampleRate.*sampleRate),1);
+                                    .*sampleRate),1);
 
                         
 % $$$                         if isa(Data.sync,'MTAData'),
@@ -353,10 +353,10 @@ classdef MTAData < hgsetget
                         switch syncflag
                             case 'relative'
                                 try
-                                    data = [data(Data.sync.sync.data(1)+1:(Data.sync.sync.data(end)));0];
+                                    data = [data(round(Data.sync.sync.data(1)*sampleRate)+1:round(Data.sync.sync.data(end)*sampleRate));0];
                                 catch err
-                                    data = cat(1,data,zeros(Data.sync.sync.data(end)-Data.sync.data(end),1));
-                                    data = data(Data.sync.sync.data(1)+1:Data.sync.sync.data(end));
+                                    data = cat(1,data,zeros(round(Data.sync.sync.data(end)*sampleRate)-round(Data.sync.data(end)*sampleRate),1));
+                                    data = data(round(Data.sync.sync.data(1)*sampleRate)+1:round(Data.sync.sync.data(end)*sampleRate));
                                 end
                             case 'absolute' % Reserved for future versions
                                 %data = [0;data];
@@ -448,6 +448,11 @@ classdef MTAData < hgsetget
                   Data.data = rf(Data.data/Data.sampleRate*newSampleRate+indshift);
                   while sum(Data.data(:)==0)>1
                       Data.data(1,:) = [];
+                  end
+                  mind = find(Data.data(2:end,1)-Data.data(1:end-1,2)==0)+1;
+                  if ~isempty(mind)
+                      Data.data(mind-1,2)=Data.data(mind,2);
+                      Data.data(mind,:)=[];
                   end
 % $$$                   if isa(Data.sync,'MTAData'),
 % $$$                       Data.origin = rf(Data.origin/Data.sampleRate*newSampleRate); 

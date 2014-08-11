@@ -122,6 +122,31 @@ classdef MTADepoch < MTAData
 % $$$             perDiff = diff(Data.data,1,2);
 % $$$         end
 
+        function Data = and(a,b)
+        %function Data = and(a,b)
+        %
+        %If one of the imputs is a normal array then
+        %the array elements are assumed to be in the 
+        %sampling rate of the MTADepoch object.
+            Data = [];
+            if isa(a,'MTADepoch')&&ismatrix(b)
+                assert(strcmp(a.type,'TimePeriods'),'MTADepoch:and:TypeError');
+                Data = a.copy;
+                Data.data = IntersectRanges(Data.data,b);
+                perDur = diff(Data.data,1,2);
+                Data.data(perDur<=0,:) = [];
+            elseif isa(b,'MTADepoch')&&ismatrix(a)
+                assert(strcmp(b.type,'TimePeriods'),'MTADepoch:and:TypeError');
+                Data = b.copy;
+                Data.data = IntersectRanges(Data.data,a);
+                perDur = diff(Data.data,1,2);
+                Data.data(perDur<=0,:) = [];
+            elseif isa(b,'MTADepoch')&&isa(a,'MTADepoch')
+                %Data = 
+            end
+        end
+        
+
      
     end
     

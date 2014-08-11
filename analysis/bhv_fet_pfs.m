@@ -4,8 +4,8 @@ xyz = Trial.xyz.copy;
 xyz.load(Trial);
 
 [rhm,fs] = fet_rhm(Trial,[],'wspectral');
-rhmn = 1./(log10(rhm.data)./repmat(nanmean(clip(log10(rhm.data),-10,6)),[rhm.size(1),1]));
-rhmn = rhmn./repmat(nanmean(rhmn,2),[1,rhm.size(2)]);
+% $$$ rhmn = 1./(log10(rhm.data)./repmat(nanmean(clip(log10(rhm.data),-10,6)),[rhm.size(1),1]));
+% $$$ rhmn = rhmn./repmat(nanmean(rhmn,2),[1,rhm.size(2)]);
 
 rhmp = max(log10(rhm.data(:,fs>5&fs<13)),[],2);
 rhmp = Filter0(gtwin(.2,rhm.sampleRate),rhmp);
@@ -126,13 +126,13 @@ xyz.filter(gtwin(1.25,xyz.sampleRate));
 vel = xyz.vel(7);
 bound_limx = [-500,500;-6,-2.5;-.5,2];
 xsv = MTADxyz('data',[xyz(:,7,1),rhmp,log10(vel.data)],'sampleRate',xyz.sampleRate);
-pfsv = MTAApfs(Trial,[],'theta',true,'bhvfettest57',[30,.2,.1],[1.2,1.8,1.8],'type','xyr','xyz',xsv,'bound_lims',bound_limx);
+pfsv = MTAApfs(Trial,[],'theta',false,'bhvfettest57',[30,.2,.1],[1.2,1.8,1.8],'type','xyr','xyz',xsv,'bound_lims',bound_limx);
 pfsv.parameters.type = 'xyz';
 
 vel = xyz.vel(1);
 bound_limx = [-500,500;-6,-2.5;-.5,2];
 xsv = MTADxyz('data',[xyz(:,7,1),rhmp,log10(vel.data)],'sampleRate',xyz.sampleRate);
-pfsvb = MTAApfs(Trial,[],'theta',true,'bhvfettest56',[30,.2,.1],[1.2,1.8,1.8],'type','xyr','xyz',xsv,'bound_lims',bound_limx);
+pfsvb = MTAApfs(Trial,[],'theta',false,'bhvfettest56',[30,.2,.1],[1.2,1.8,1.8],'type','xyr','xyz',xsv,'bound_lims',bound_limx);
 pfsvb.parameters.type = 'xyz';
 
 xy = MTADxyz('data',[xyz(:,7,1),xyz(:,7,2),xyz(:,7,3)],'sampleRate',xyz.sampleRate);
@@ -140,15 +140,16 @@ pft = MTAApfs(Trial,[],'theta',false,[],[30,30,30],[1.2,1.2,1.2],'type','xy','xy
 pft.parameters.type = 'xyz';
 
 
-
-
-i = 24;
+figure,
+i = 23;
 sp(1) = subplot(131);
 spfs = reshape(pfsv.data.rateMap(:,i),pfsv.adata.binSizes');
 s = slice(spfs,[15],[23],[1:2:25]);set(s,'EdgeColor','none')
+colorbar
 sp(2) = subplot(132);
 spfsb = reshape(pfsvb.data.rateMap(:,i),pfsvb.adata.binSizes');
 s = slice(spfsb,[15],[23],[1:2:25]);set(s,'EdgeColor','none')
+colorbar
 sp(3) = subplot(133);
 cla
 pft.plot(i);

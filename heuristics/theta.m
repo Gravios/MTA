@@ -1,5 +1,5 @@
 function [data,sampleRate,label,key] = theta(Session,varargin)
-[mode,label,key] = DefaultArgs(varargin,{'sts2double','theta','t'});
+[mode,label,key] = DefaultArgs(varargin,{'sts2epoch','theta','t'});
 
 switch mode
     case 'sts2double'
@@ -10,8 +10,9 @@ switch mode
     case 'sts2epoch'
         data = load(fullfile(Session.spath,[Session.name '.sts.theta']));
         sync = Session.lfp.sync.copy;
-        sync.resample(Session.lfp.sampleRate);
-        
+        lsync = sync.sync.copy;
+        lsync.resample(Session.lfp.sampleRate);
+        data = IntersectRanges(lsync.data,data)-lsync.data(1)+1;
         data = MTADepoch(Session.spath,...
                         Session.filebase,...
                         data,...
@@ -19,8 +20,6 @@ switch mode
                         sync,...
                         sync(1),...
                         label,key);
-        Session.resync(data);
-        
 end
 
 end

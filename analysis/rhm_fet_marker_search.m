@@ -7,29 +7,54 @@ Trial.stc.updateMode(stc_mode);Trial.stc.load;
 xyz = Trial.xyz.copy;
 xyz.load(Trial);
 
+
+%% Calculate the Center of Mass of the head for each frame
 rb = Trial.xyz.model.rb({'head_back','head_left','head_front','head_right'});
 hcom = xyz.com(rb);
+% not filtered
 xyz.addMarker('hcom',[.7,0,.7],{{'head_back','head_front',[0,0,1]}},hcom);
+% filtered
 xyz.addMarker('fhcom',[.7,1,.7],{{'head_back','head_front',[0,0,1]}},ButFilter(hcom,3,[2]./(Trial.ang.sampleRate/2),'low'));
 
-ang = Trial.ang.copy;
-ang.create(Trial,xyz);
-bang = ButFilter(ang(:,'head_back','fhcom',3),3,[1,30]./(Trial.ang.sampleRate/2),'bandpass');
-lang = ButFilter(ang(:,'head_left','fhcom',3),3,[1,30]./(Trial.ang.sampleRate/2),'bandpass');
-rang = ButFilter(ang(:,'head_right','fhcom',3),3,[1,30]./(Trial.ang.sampleRate/2),'bandpass');
-fang = ButFilter(ang(:,'head_front','fhcom',3),3,[1,30]./(Trial.ang.sampleRate/2),'bandpass');
 
+
+%% Calculate Rotation Matrix: normal of the head plane as axis of rotation
 
 
 xyz_hb_b = sq(xyz(:,'head_back',:)-xyz(:,'hcom',:));
 xyz_hb_r = sq(xyz(:,'head_right',:)-xyz(:,'hcom',:) );
+xyz_hb_l = sq(xyz(:,'head_right',:)-xyz(:,'hcom',:) );
+xyz_hf_r = sq(xyz(:,'head_right',:)-xyz(:,'hcom',:) );
+xyz_hf_l = sq(xyz(:,'head_right',:)-xyz(:,'hcom',:) );
+
+
 
 head_norm = cross(xyz_hb_b,xyz_hb_r);
 head_norm = multiprod(head_norm,1./sqrt(sum(head_norm.^2,2)),2);
-
+j =1:3;
+head_kron = reshape(repmat(head_norm',3,1).*head_norm(:,j(ones(3,1),:)).',[3,3,size(head_norm,1)]);
+j = [ 0,-1, 1;...
+      1, 0,-1;...
+     -1, 1, 0];
+k = [1,3,2;...
+     3,1,1;...
+     2,1,1];
+head_cpm = reshape(head_norm(:,k)',3,3,size(head_norm,1)).*repmat(j,[1,1,size(head_norm,1)]);
+rot_ang = deg2rad(45);
+head_rotMat = cos(rot_ang)*repmat(eye(3),[1,1,size(head_norm,1)])+sin(rot_ang)*head_cpm+(1-cos(rot_ang))*head_kron;
 
 j =1:3;
-xyzKron = reshape(repmat(head_norm',3,1)-head_norm(:,j(ones(3,1),:)).',[3,3,size(head_norm,1)]);
+
+% Rotated marker;
+nmark = permute(sum(head_rotMat.*permute(reshape(xyz_hb_b(:,j(ones(3,1),:)),[size(head_norm,1),3,3]),[2,3,1]),2),[3,1,2]);
+
+
+
+plot3(xyz_hb_b(1:1000,1),xyz_hb_b(1:1000,2),xyz_hb_b(1:1000,3)),
+old on,
+plot3(xyz_hb_r(1:1000,1),xyz_hb_r(1:1000,2),xyz_hb_r(1:1000,3),'r'),
+plot3(nmark(1:1000,1),nmark(1:1000,2),nmark(1:1000,3),'g')
+
 
 
 txyz = xyz.data;

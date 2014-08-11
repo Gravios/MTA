@@ -1,4 +1,3 @@
-       
 classdef MTADufr < MTAData
     properties 
         model = [];
@@ -48,7 +47,11 @@ classdef MTADufr < MTAData
                 %if ~exist(Data.fpath,'file')||overwrite,
                 spk = Session.spk.copy();
                 spk.create(Session,DataObj.sampleRate,state,units);
-                dsize = diff(DataObj.sync.sync([1,end]));
+                if ~DataObj.isempty,
+                    dsize = DataObj.size(1);
+                else
+                    dsize = diff(round(DataObj.sync.sync([1,end])*DataObj.sampleRate+1));
+                end
                 Data.data = zeros(dsize,numel(units));
                 if isempty(units), units = 1:spk.map(end,1);end
                 swin = round(twin*DataObj.sampleRate);
@@ -68,18 +71,6 @@ classdef MTADufr < MTAData
         function Data = load(Data)
         end
         
-        function Data = filter(Data)
-        end
-        function Data = resample(Data,DataObj)
-            if DataObj.isempty, DataObj.load; dlen = DataObj.size(1); end
-            uind = round(linspace(round(Data.sampleRate/DataObj.sampleRate),Data.size(1),DataObj.size(1)));
-            Data.data = Data.data(uind,:);
-            if isa(Data.sync,'MTAData'),
-                Data.sync.resample(newSampleRate);
-                Data.origin = round(Data.origin/Data.sampleRate*newSampleRate);
-            end
-            Data.sampleRate = DataObj.sampleRate;
-        end
         function Data = embed(Data)
         end
 

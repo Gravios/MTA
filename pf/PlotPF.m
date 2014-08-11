@@ -1,5 +1,5 @@
 function [RateMap, Bins, MRate, SI, Spar] = PlotPF(Session,spkpos,pos,varargin)
-[binDims,SmoothingWeights,type,bound_lims] = DefaultArgs(varargin,{50,[],'xy',[]});
+[binDims,SmoothingWeights,type,bound_lims,posSampleRate] = DefaultArgs(varargin,{50,[],'xy',[],Session.xyz.sampleRate});
 
 ndims = numel(binDims);
 
@@ -49,13 +49,13 @@ end
 %% rounded position and removal of bins outside the computational volume 
 Pos = round((pos-repmat(bound_lims(:,1)',size(pos,1),1)).*repmat(k',size(pos,1),1))+1;
 for i = 1:ndims   
-    Pos(Pos(:,i)<1|Pos(:,i)>Nbin(i),:) = [];
+    Pos(Pos(:,i)<1|Pos(:,i)>Nbin(i)|~nniz(Pos),:) = [];
 end
-Occupancy = accumarray(Pos,1,msize')./Session.xyz.sampleRate;
+Occupancy = accumarray(Pos,1,msize')./posSampleRate;
 
 spkpos = round((spkpos-repmat(bound_lims(:,1)',size(spkpos,1),1)).*repmat(k',size(spkpos,1),1))+1;
 for i = 1:ndims
-    spkpos(spkpos(:,i)<1|spkpos(:,i)>Nbin(i),:) = [];
+    spkpos(spkpos(:,i)<1|spkpos(:,i)>Nbin(i)|~nniz(spkpos),:) = [];
 end
 SpikeCount = accumarray(spkpos,1,msize');
 
