@@ -61,8 +61,21 @@ Session.model = model;
 % Load events
 
 events = LoadEvents(fullfile(Session.spath, [Session.name '.all.evt']));
+stopTTL = '0x0000';
+%% MUA HAHAHAHAHAAAaaaaaa 
+% but seriously it just finds the events with the TTLValue and then
+% the next event which corresponds to the stopTTL
 tsRanges = [events.time(events.Clu==find(~cellfun(@isempty,regexp(events.Labels,TTLValue)))),...
-       events.time(find(events.Clu==find(~cellfun(@isempty,regexp(events.Labels,TTLValue))))+1)];
+       events.time(find(events.Clu==find(~cellfun(@isempty,regexp(events.Labels,TTLValue))))+...
+cell2mat(cellfun(@find,...                   
+cellfun(@eq,...                   
+cellfun(@subsref,repmat({events},numel(find(events.Clu==find(~cellfun(@isempty,regexp(events.Labels,TTLValue))))),1),cellfun(@substruct,...
+repmat({'.'},numel(find(events.Clu==find(~cellfun(@isempty,regexp(events.Labels,TTLValue))))),1),...
+repmat({'Clu'},numel(find(events.Clu==find(~cellfun(@isempty,regexp(events.Labels,TTLValue))))),1),...
+repmat({'()'},numel(find(events.Clu==find(~cellfun(@isempty,regexp(events.Labels,TTLValue))))),1),...
+mat2cell(cellfun(@colon,mat2cell(find(events.Clu==find(~cellfun(@isempty,regexp(events.Labels,TTLValue)))),ones(numel(find(events.Clu==find(~cellfun(@isempty,regexp(events.Labels,TTLValue))))),1),1),repmat({numel(events.Clu)},numel(find(events.Clu==find(~cellfun(@isempty,regexp(events.Labels,TTLValue))))),1),'Uniformoutput',false),ones(numel(find(events.Clu==find(~cellfun(@isempty,regexp(events.Labels,TTLValue))))),1),1),'Uniformoutput',false),'Uniformoutput',false),repmat({find(~cellfun(@isempty,regexp(events.Labels,stopTTL)))},numel(find(events.Clu==find(~cellfun(@isempty,regexp(events.Labels,TTLValue))))),1),'Uniformoutput',false),repmat({1},numel(find(events.Clu==find(~cellfun(@isempty,regexp(events.Labels,TTLValue))))),1),repmat({'first'},numel(find(events.Clu==find(~cellfun(@isempty,regexp(events.Labels,TTLValue))))),1),'uniformoutput',false))-1)];
+
+
 
 
 %% Assign xyz data to nlx event epochs
@@ -110,7 +123,7 @@ for s=1:nSessions,
 % $$$         xyz = cat(1,xyz,zeros(syncShift(s),size(xyzData{s},2),size(xyzData{s},3)));
 % $$$     end
 xyzseg = xyzData{s};
-xyzseg(xyzseg==0)=nan;
+xyzseg(xyzseg==0)=eps;
 xyz(syncXyzStart(s):syncXyzStart(s)+xyzLengths(s)-1,:,:) = xyzseg;
 % $$$     [size(xyz,1)/viconSampleRate+syncPeriods.data(1)+1/viconSampleRate,syncPeriods.data(s)]
 % $$$     diff([size(xyz,1)/viconSampleRate+syncPeriods.data(1)+1/viconSampleRate,syncPeriods.data(s)])

@@ -8,7 +8,7 @@ switch varargin{1}
     Sessions = {...
                 {'er01-20110719',     'cof',     'all',   'bach',  '0x4000',       119.881035},... CA3
                 {'er01-20110721',     'cof',     'all',   'bach',  '0x4000',       119.881035},... CA3
-                ...%{'er06-20130612',     'cof',     'all',    'cin',  'Vicon start',  199.997752},... CA1
+                {'er06-20130612',     'cof',     'all',    'cin',  'Vicon start',  199.997752},... CA1
                 ...%{'er06-20130613',     'cof', 'all-cof',    'cin',  'Vicon start',  199.997752},... CA1
                 ...%{'er06-20130614',     'cof', 'all-cof',    'cin',  'Vicon start',  199.997752},... CA1
                 {'jg04-20120129',     'cof',     'all',   'bach',  '0x4000',       119.881035},... CA1

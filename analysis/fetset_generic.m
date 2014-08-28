@@ -1,5 +1,6 @@
 function fet = fetset_generic(Trial)
 
+Trial = MTATrial('jg05-20120310');
 Trial.load('ang');
 Trial.load('xyz');
 

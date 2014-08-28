@@ -15,8 +15,9 @@ TodayDate = date;
 DefFileName = ['mrep.' TodayDate];	
 DefRepPath = fullfile(getenv('HOME'),'figures');
 
-[Trial,FigHandle, FileName, Preview,Comment,Resolution,SaveFig] = ...
-    DefaultArgs(varargin,{DefRepPath,gcf,DefFileName,0,'',300,0});
+[Trial,FigHandle, FileName, Preview,Comment,Resolution,SaveFig,FigCount] = ...
+    DefaultArgs(varargin,{DefRepPath,gcf,DefFileName,0,'',300,0,false});
+
 
 
 myStack = dbstack;
@@ -27,7 +28,7 @@ else
 end
 
 if isa(Trial,'MTASession'),
-    TrialFigPath= fullfile(Trial.spath,'figures');
+    TrialFigPath= fullfile(Trial.path.data,'figures');
 elseif ischar(Trial),
     TrialFigPath = Trial;
 else
@@ -62,7 +63,19 @@ else
 	mkdir(FunFileDir,FileName);
         FigIndex = 1;
 end
-FigName = [FileName '-' num2str(FigIndex)];
+
+
+if isa(Trial,'MTASession'),
+    if FigCount,
+            FigName = [FileName '-' Trial.filebase '-' num2str(FigIndex)];
+    else
+        FigName = [FileName '-' Trial.filebase];
+    end
+else
+    FigName = [FileName '-' num2str(FigIndex)];
+end
+
+
 LongFigName = fullfile(DirName, FigName);
 
 fPointer=fopen(LongFileName,'at+');

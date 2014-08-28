@@ -130,17 +130,27 @@ classdef MTADepoch < MTAData
         %sampling rate of the MTADepoch object.
             Data = [];
             if isa(a,'MTADepoch')&&ismatrix(b)
-                assert(strcmp(a.type,'TimePeriods'),'MTADepoch:and:TypeError');
                 Data = a.copy;
-                Data.data = IntersectRanges(Data.data,b);
-                perDur = diff(Data.data,1,2);
-                Data.data(perDur<=0,:) = [];
+                switch a.type
+                  case 'TimePeriods'
+                    Data.data = IntersectRanges(Data.data,b);
+                    perDur = diff(Data.data,1,2);
+                    Data.data(perDur<=0,:) = [];
+                  case 'TimeSeries'
+                    Data.data = Data.data&b;
+                end
+                
             elseif isa(b,'MTADepoch')&&ismatrix(a)
-                assert(strcmp(b.type,'TimePeriods'),'MTADepoch:and:TypeError');
                 Data = b.copy;
-                Data.data = IntersectRanges(Data.data,a);
-                perDur = diff(Data.data,1,2);
-                Data.data(perDur<=0,:) = [];
+                switch b.type
+                  case 'TimePeriods'
+                    Data.data = IntersectRanges(Data.data,a);
+                    perDur = diff(Data.data,1,2);
+                    Data.data(perDur<=0,:) = [];
+                  case 'TimeSeries'
+                    Data.data = Data.data&a;
+                end
+
             elseif isa(b,'MTADepoch')&&isa(a,'MTADepoch')
                 %Data = 
             end

@@ -14,7 +14,7 @@ xyz.load(Trial);
 xyz.filter(gtwin(.2,xyz.sampleRate));
 
 [rhm,fsr,tsr] = fet_rhm(Trial,[],'Swspectral');
-[ncp,fsn,tsn] = fet_ncp(Trial,[],'Swspectral');
+[ncp,fsn,tsn] = fet_ncp(Trial,[],'Swspectral',66);
 
 [rhm_fet] = fet_rhm(Trial,[],'default');
 [ncp_fet] = fet_ncp(Trial,[],'default');

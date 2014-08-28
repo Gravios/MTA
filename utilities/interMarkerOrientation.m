@@ -1,17 +1,16 @@
-function imo = interMarkerOrientation(xyz,Model)
-markerDiffMat = zeros(size(xyz,1),Model.N,Model.N,3);
-for i=1:Model.N,
-    for j=1:Model.N,
-        markerDiffMat(:,i,j,:) = xyz(:,j,:)-xyz(:,i,:);
-    end
-end
-imo = zeros(size(markerDiffMat,1),Model.N,Model.N,Model.N,Model.N);
-ccr = zeros(size(markerDiffMat,1),Model.N,Model.N,Model.N,3);
+function imo = interMarkerOrientation(xyz)
+%function imo = interMarkerOrientation(xyz)
+%
+
+markerDiffMat = markerDiffMatrix(xyz);
+
+imo = zeros(size(markerDiffMat,1),xyz.size(2),xyz.size(2),xyz.size(2),xyz.size(2));
+ccr = zeros(size(markerDiffMat,1),xyz.size(2),xyz.size(2),xyz.size(2),3);
 if size(markerDiffMat,1)==1,
-    for i = 1:Model.N,
-        for j = 1:Model.N,
-            for k = 1:Model.N,
-                for l = 1:Model.N,
+    for i = 1:xyz.size(2),
+        for j = 1:xyz.size(2),
+            for k = 1:xyz.size(2),
+                for l = 1:xyz.size(2),
 
                     ccr(:,i,j,k,:) = cross(markerDiffMat(:,i,j,:),markerDiffMat(:,i,k,:),4);
                     dang = dot(sq(ccr(:,i,j,k,:)),sq(markerDiffMat(:,i,l,:)),find(size(sq(ccr(:,i,j,k,:)))==3));
@@ -23,10 +22,10 @@ if size(markerDiffMat,1)==1,
         end
     end
 else
-    for i = 1:Model.N,
-        for j = 1:Model.N,
-            for k = 1:Model.N,
-                for l = 1:Model.N,
+    for i = 1:xyz.size(2),
+        for j = 1:xyz.size(2),
+            for k = 1:xyz.size(2),
+                for l = 1:xyz.size(2),
 
                     ccr(:,i,j,k,:) = cross(markerDiffMat(:,i,j,:),markerDiffMat(:,i,k,:),4);
                     dang = dot(sq(ccr(:,i,j,k,:)),sq(markerDiffMat(:,i,l,:)),find(size(sq(ccr(:,i,j,k,:)))==3));

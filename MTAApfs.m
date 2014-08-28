@@ -218,25 +218,40 @@ classdef MTAApfs < hgsetget %< MTAAnalysis
                 if numel(res)>10,
 
                     nSpk = numel(res);
+                    sstres = SelectPeriods(res,pfsState.data,'d',1,1);
 
                     if ~spkShuffle
                         res = repmat(res,1,numIter);
                     else
-                        res = repmat(res,1,numIter);                        
-                        shufSpkInd = zeros([nSpk,numIter]);
-                        spkswind = round(spkShuffle*xyz.sampleRate);
-                        startres = res(1);
-                        spkTSeries = startres:res(end);
-                        spad = mod(res(end),spkswind);
-                        spkTSeries = [spkTSeries,zeros([1,spad])];
-                        spkTSeries = reshape(spkTSeries,[],spkswind);
-                        nsbins = size(spkTSeries,1);
-                        for s = 2:numIter,
-                            res(:,s) = find(reshape(res(:,spkTSeries(randperm(nsbins),:),s),[],1))+startres;
-                        end
+% $$$                         res = repmat(sstres,1,numIter);
+% $$$                         spkswind = round(spkShuffle*xyz.sampleRate);
+% $$$                         spkWindInd =  [1:spkswind:res(end)-spkswind;(spkswind+1):spkswind:res(end)];
+% $$$                         for s = 2:numIter,
+% $$$                             tres = [];
+% $$$                             for t = spkWindInd
+% $$$                             tres = vertcat(tres,resSelectPeriods(sstres,t,'d',1,0));
+% $$$                         end
+
+% $$$                         shufSpkInd = zeros([nSpk,numIter]);
+% $$$                         spkswind = round(spkShuffle*xyz.sampleRate);
+% $$$                         startres = res(1);
+% $$$                         spkTSeries = false([res(end)-startres,1]);
+% $$$                         spad = spkswind-mod(numel(spkTSeries),spkswind);
+% $$$                         spkTSeries = [spkTSeries;false([spad,1])];
+% $$$                         spkTSeries(res(:,1)-res(1)+1) = true;
+% $$$                         spkTSeriesInd =  1:numel(spkTSeries);
+% $$$                         spkTSeriesInd = reshape(spkTSeriesInd,[],spkswind);
+% $$$                         nsbins = size(spkTSeriesInd,1);
+% $$$                         
+% $$$                         for s = 2:numIter,
+% $$$                             shufInd = reshape(spkTSeriesInd(randperm(nsbins),:),[],1);
+% $$$                             
+% $$$                             res(:,s) = find(spkTSeries(shufInd))+startres;
+% $$$                             %res(:,s) = find(reshape(spkTSeries(:,spkTSeries(randperm(nsbins),:),s),[],1))+startres;
+% $$$                         end
                     end
                     
-                    sstres = SelectPeriods(res,pfsState.data,'d',1,1);
+                    
                     sresind = sstres + repmat(randi([-posShuffle,posShuffle],1,numIter),numel(sstres),1);        % shifts the position of the res along the sstpos
                     sresind(sresind<=0) = sresind(sresind<=0)+size(sstpos,1);                           % Wraps negative res to end of the sstpos vector
                     sresind(sresind>size(sstpos,1)) = sresind(sresind>size(sstpos,1))-size(sstpos,1);   % Wraps res greater than the size of the sstpos vector

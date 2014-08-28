@@ -1,7 +1,9 @@
 function [errorPeriods,hbflr,hrlbf,etrig] = FindErrorPeriods(Trial)
+xyz = Trial.xyz.copy;
+xyz.load(Trial);
 
-hbflr = Trial.transformOrigin('head_back','head_front',{'head_left','head_right'});
-hrlbf = Trial.transformOrigin('head_right','head_left',{'head_back','head_front'});
+hbflr = Trial.transformOrigin(xyz,'head_back','head_front',{'head_left','head_right'});
+hrlbf = Trial.transformOrigin(xyz,'head_right','head_left',{'head_back','head_front'});
 
 efet = [hbflr.transVec(:,:,2),hrlbf.transVec(:,:,2)];
 efmean = zeros(size(efet,2),1);

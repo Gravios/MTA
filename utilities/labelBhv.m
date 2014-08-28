@@ -5,10 +5,14 @@ function Trial = labelBhv(Trial,Stc,varargin)
 % Note: Requires an update to include MoCap sampling rates other than 120Hz
 [winlen,nOverlap,nwinlen,nnOverlap] = DefaultArgs(varargin,{64,8,16,2});
 
+xyz = Trial.xyz.copy;
+xyzSampleRate = Trial.xyz.sampleRate;
 
 Stc.states = {};
 if Trial.xyz.isempty, Trial.load('xyz'); end    
 if Trial.ang.isempty, Trial.load('ang'); end    
+if Trial.xyz.sampleRate>120,Trial.xyz.resample(120);end
+if Trial.ang.sampleRate>120,Trial.ang.resample(120);end
 
 Trial.filter('xyz');
 xyzlen = size(Trial.xyz,1);
@@ -405,7 +409,35 @@ Stc.addState(Trial.spath,...
 for i= 1:numel(Stc.states),
    Stc.states{i}.data(Stc.states{i}.data(:,1)>Trial.xyz.size(1),:)=[];
    Stc.states{i}.data(end,Stc.states{i}.data(end,:)>Trial.xyz.size(1))=Trial.xyz.size(1);
+   Stc.states{i}.resample(xyzSampleRate);
 end
+
+
+
+
+
+
+% $$$ wind = Stc{'w'}.copy;
+% $$$ sind = Stc{'w'}.copy;
+% $$$ ang = Trial.ang.copy;
+% $$$ ang.load(Trial);
+% $$$ sind.data = ThreshCross(ang(:,5,7,2)<-angThresh,.5,20);
+% $$$ sind.label = 'lang';
+% $$$ sind.key = 'p';
+% $$$ sind.filename = [Trial.filebase '.sst.lang.p.mat'];
+% $$$ sind = sind&wind.data;
+% $$$ Stc.states{end+1} = sind;
+% $$$ 
+% $$$ 
+% $$$ sind = Stc{'w'}.copy;
+% $$$ sind.data = ThreshCross(ang(:,5,7,2)>-angThresh,.5,20);
+% $$$ sind.label = 'hang';
+% $$$ sind.key = 'c';
+% $$$ sind.filename = [Trial.filebase '.sst.hang.c.mat'];
+% $$$ sind = sind&wind.data;
+% $$$ Stc.states{end+1} = sind;
+
+
 
 Stc.save(1);
 Trial.stc = Stc;

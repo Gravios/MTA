@@ -1,4 +1,5 @@
-Trial = MTATrial('Ed05-20140528');
+%Trial = MTATrial('Ed05-20140528');
+MTAstartup('cin','cin');Trial = MTATrial('Ed10-20140814');
 %Trial = MTATrial('jg05-20120317');
 %stc_mode = 'qda_filtf1p5';
 stc_mode = 'auto_wbhr';
@@ -28,7 +29,6 @@ xyz_hf_r = sq(xyz(:,'head_right',:)-xyz(:,'hcom',:) );
 xyz_hf_l = sq(xyz(:,'head_right',:)-xyz(:,'hcom',:) );
 
 
-
 head_norm = cross(xyz_hb_b,xyz_hb_r);
 head_norm = multiprod(head_norm,1./sqrt(sum(head_norm.^2,2)),2);
 j =1:3;
@@ -47,6 +47,8 @@ j =1:3;
 
 % Rotated marker;
 nmark = permute(sum(head_rotMat.*permute(reshape(xyz_hb_b(:,j(ones(3,1),:)),[size(head_norm,1),3,3]),[2,3,1]),2),[3,1,2]);
+
+xyz.addMarker('head_br45',[.7,0,.7],{{'head_back','head_right',[0,0,1]}},permute(nmark,[1,3,2])+hcom)
 
 
 
@@ -200,7 +202,7 @@ end
 
 % $$$ for j = 1:size(yss,3),
 % $$$     for k = 1:size(yss,3),
-rhm_mar = [5,12,8,13,14,15];
+rhm_mar = [5,12,8],%13,14,15];
 k = size(yss,3);
 figure,
 for j = 1:size(yss,3)-2,

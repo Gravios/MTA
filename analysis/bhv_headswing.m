@@ -44,3 +44,24 @@ avm = [max(angvel,[],2),min(angvel,[],2)];
 figure,plot(diff(avm,1,2));
 Lines(Trial.stc{'r'}.data(:),[],'r')
 Lines(Trial.stc{'w'}.data(:),[],'k')
+
+
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+ang =Trial.ang.copy;
+ang.load(Trial);
+htdir = ButFilter(unwrap(circ_dist(ang(:,1,2,1),ang(:,5,7,1))),3,[.01,40]/(ang.sampleRate/2),'bandpass');
+htdir(~nniz(ang))=nan;
+figure,plot(htdir)
+
+[yv,fv,tv] = mtchglong(WhitenSignal(htdir),2^8,ang.sampleRate,2^7,2^7*.875,3,'linear',[],[1,30]);
+tv = tv+(2^6)/ang.sampleRate;
+ssr = 1/diff(tv(1:2));
+pad = round([tv(1),mod(ang.size(1)-2^6,2^7)/ang.sampleRate].*ssr)-[1,0];
+szy = size(yv);
+ys = MTADlfp('data',cat(1,zeros([pad(1),szy(2:end)]),yv,zeros([pad(2),szy(2:end)])),'sampleRate',ssr);
+tv = cat(1,zeros([pad(1),1]),tv,zeros([pad(2),1]));
+
+
+figure,imagesc(tv,fv,log10(ys.data'));
+
+

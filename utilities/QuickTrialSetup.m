@@ -2,7 +2,7 @@ function Trial = QuickTrialSetup(Session,varargin)
 %function QuickTrialSetup(Session,varargin)
 %[trialName,offsets,dropSyncInd,debug] = DefaultArgs(varargin,{'all',[10,0],[],false});
 
-[trialName,offsets,dropSyncInd,debug] = DefaultArgs(varargin,{'all',[10,0],[],false});
+[trialName,offsets,dropSyncInd,debug] = DefaultArgs(varargin,{'all',[0,0],[],false});
 xsync = Session.xyz.sync.copy;
 xsync = xsync+offsets;
 xsync.data(dropSyncInd,:) = [];

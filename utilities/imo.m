@@ -1,32 +1,27 @@
-function [interMarkerOrientation] = imo(xyz,Model)
+function [interMarkerOrientation] = imo(xyz)
 % Inter Marker Orientation
 
-markerDiffMat = zeros(size(xyz,1),Model.N,Model.N,3);
-for i=1:Model.N,
-    for j=1:Model.N,
-        markerDiffMat(:,i,j,:) = xyz(:,j,:)-xyz(:,i,:);
-    end
-end
+markerDiffMat = markerDiffMatrix(xyz);
 
 sessionLength = size(markerDiffMat,1);
 
-interMarkerOrientation = zeros(sessionLength,Model.N,Model.N,Model.N,Model.N,2);
-ccr = zeros(sessionLength,Model.N,Model.N,Model.N,3);
+interMarkerOrientation = zeros(sessionLength,xyz.size(2),xyz.size(2),xyz.size(2),xyz.size(2),2);
+ccr = zeros(sessionLength,xyz.size(2),xyz.size(2),xyz.size(2),3);
 dang = zeros(sessionLength,3);
 cang = zeros(sessionLength,3,3);
 bs_ang = zeros(sessionLength,3);
 bs_projection = zeros(sessionLength,3);
 
 if sessionLength==1,
-    for i = 1:Model.N,
-        for j = 1:Model.N,
-            for k = 1:Model.N,
+    for i = 1:xyz.size(2),
+        for j = 1:xyz.size(2),
+            for k = 1:xyz.size(2),
 
                 ccr(:,i,j,k,:) = cross(markerDiffMat(:,i,j,:),markerDiffMat(:,i,k,:),4);
                 ccr_mag = repmat(sum(ccr(:,i,j,k,:).^2,5).^0.5,1,3);
                 bs_ang(1,1) = atan2(norm(sq(ccr(:,i,j,k,:))),sq(dot(markerDiffMat(:,i,j,:),markerDiffMat(:,i,k,:),4)));
 
-                for l = 1:Model.N,
+                for l = 1:xyz.size(2),
                     if length(unique([i,j,k,l]))==4,
                         dang(1,1) = dot(sq(ccr(:,i,j,k,:)),sq(markerDiffMat(:,i,l,:)),find(size(sq(ccr(:,i,j,k,:)))==3));
                         cang(1,1,:) = cross(sq(ccr(:,i,j,k,:)),sq(markerDiffMat(:,i,l,:)),find(size(sq(ccr(:,i,j,k,:)))==3));
@@ -50,14 +45,14 @@ if sessionLength==1,
     end
 else
 
-    for i = 1:Model.N,
-        for j = 1:Model.N,
-            for k = 1:Model.N,
+    for i = 1:xyz.size(2),
+        for j = 1:xyz.size(2),
+            for k = 1:xyz.size(2),
                 ccr(:,i,j,k,:) = cross(markerDiffMat(:,i,j,:),markerDiffMat(:,i,k,:),4);
                 ccr_mag = repmat(sum(ccr(:,i,j,k,:).^2,5).^0.5,1,3);
-                for l = 1:Model.N,
+                for l = 1:xyz.size(2),
                     if length(unique([i,j,k,l]))==4,
-                        %                        keyboard
+                                                keyboard
                         dang(:,1) = dot(sq(ccr(:,i,j,k,:)),sq(markerDiffMat(:,i,l,:)),find(size(sq(ccr(:,i,j,k,:)))==3));
                         cang(:,1,:) = cross(sq(ccr(:,i,j,k,:)),sq(markerDiffMat(:,i,l,:)),find(size(sq(ccr(:,i,j,k,:)))==3));
                         bs_projection = sq(cross(sq(ccr(:,i,j,k,:)),(sq(-cang(:,1,:))./ccr_mag))./ccr_mag);

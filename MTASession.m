@@ -408,25 +408,7 @@ classdef MTASession < hgsetget
         
         
 
-        %% Variables from XYZ -------------------------------------------------------------%        
-        function diffMat = markerDiffMatrix(Session,varargin)
-        %diffMat = markerDiffMatrix(Session)
-        %Create a time series where the position of every marker
-        %has been substracted from one another
-        %
-        %  Output: 
-        %
-        %  diffMat - numericArray: (index,marker1,marker2,dim)
-        %
-            [xyz] = DefaultArgs(varargin,{Session.xyz});
-            diffMat = zeros(xyz.size(1),xyz.size(2),xyz.size(2),3);
-            for i=1:xyz.size(2),
-                for j=1:xyz.size(2),
-                    diffMat(:,i,j,:) = xyz(:,j,:)-xyz(:,i,:);
-                end
-            end
-        end
-
+        %% Variables from XYZ -------------------------------------------------------------%    
 
         function angles = transformOrigin(Session,varargin)               
             %angles = transformOrigin(Session, xyz, origin, orientationVector, vectorTranSet)   
@@ -435,7 +417,7 @@ classdef MTASession < hgsetget
             xyz.load(Session);
             xyz.filter(gtwin(.1,xyz.sampleRate));
 
-            diffMat = Session.markerDiffMatrix(xyz);
+            diffMat = markerDiffMatrix(xyz);
             mdvlen = size(diffMat,1);
             origin = xyz.model.gmi(origin);
             orientationVector = xyz.model.gmi(orientationVector);
@@ -464,42 +446,6 @@ classdef MTASession < hgsetget
         end
         
         
-%         function v = vel(Session,varargin)
-%         %v = vel(Session,varargin)
-%         %calculate the speed of marker(s)
-%         %[marker,dim] = DefaultArgs(varargin,{[1:Session.model.N],[1:size(Session.xyz,3)]});
-%         if Session.xyz.isempty, Session.xyz.load(Session); end    
-%         [marker,dim] = DefaultArgs(varargin,{1:Session.model.N, 1:Session.xyz.size(3)});
-%             v = sqrt(sum(diff(Session.xyz(:,marker,dim),1).^2,3)).*Session.xyz.sampleRate./10;
-%         end            
-% 
-%         function a = acc(Session,varargin)
-%         %a = acc(Session,varargin)
-%         %calculate the acceleration of marker(s)
-%         %[marker,dim] = DefaultArgs(varargin,{[1:Session.model.N],[1:size(Session.xyz,3)]});
-%             [marker,dim,padded] = DefaultArgs(varargin,{1:Session.model.N, 1:Session.xyz.size(3),1});
-%             a = diff(Session.vel(marker,dim),1);
-%             if padded==1
-%                 a = cat(1,a(1,:),a,a(end,:));
-%             end
-%         end
-
-        function center_of_mass = com(Session,Model)
-        %center_of_mass = com(Session,Model)
-        %
-        %Model - MTAModel: MTA object holding marker information
-        %
-        %Examples:
-        %  Find the center of mass of the session model
-        %    center_of_mass = Session.com(Session.xyz.model);
-        %
-        %  Select a model based on a subset of markers from a larger model
-        %    Model = Session.model.rb({'head_back','head_left','head_front','head_right'});
-        %    center_of_mass = Session.com(Model);
-        %
-            center_of_mass = mean(Session.xyz(:,Session.model.gmi(Model.ml()),:),2);
-        end
-
         %%---------------------------------------------------------------------------------%
 
         

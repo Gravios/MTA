@@ -54,7 +54,7 @@ classdef MTADang < MTAData
             [xyz] = DefaultArgs(varargin,{Session.xyz.copy});
             if xyz.isempty, xyz.load(Session); end
 
-            diffMat = Session.markerDiffMatrix(xyz);
+            diffMat = markerDiffMatrix(xyz);
             ang = zeros(xyz.size(1),xyz.size(2),xyz.size(2),3);
 
             for i=1:xyz.size(2),

@@ -196,8 +196,14 @@ classdef MTAStateCollection < hgsetget
                                     else
                                         sts{i} = MTADepoch(Stc.path,[],[],[],[],[],stsNames{i},[],[],[]);
                                     end
-                                    sts{i} = sts{i}.load(Stc.sync);
-                                    Stc.addState(sts{i});
+                                    try,
+                                        sts{i} = sts{i}.load(Stc.sync);
+                                        Stc.addState(sts{i});
+                                    catch
+                                        warning(['MTAStateCollection:subrefs:StateNotFound, state: ''' stsNames{i} ''' does not exist']);
+                                        sts{i} = {};
+                                    end
+
                                 else
                                     sts{i} =  Stc.states{stci}.copy;
                                 end
@@ -205,30 +211,35 @@ classdef MTAStateCollection < hgsetget
                             
                             while ~isempty(stsFuncs),
                                 switch stsFuncs{1}
-                                    case '&'
-                                        sts{2} = MTADepoch.intersect(sts(1:2));
-                                        sts(1) = [];
-                                    case '^'
-                                        sts{2} = MTADepoch.intersect(sts(1:2));
-                                        sts(1) = [];
-                                    case '+'
-                                        sts{2} = MTADepoch.join(sts(1:2));
-                                        sts(1) = [];
-                                    case '|'
-                                        sts{2} = MTADepoch.join(sts(1:2));
-                                        sts(1) = [];
+                                  case '&'
+                                    sts{2} = MTADepoch.intersect(sts(1:2));
+                                    sts(1) = [];
+                                  case '^'
+                                    sts{2} = MTADepoch.intersect(sts(1:2));
+                                    sts(1) = [];
+                                  case '+'
+                                    sts{2} = MTADepoch.join(sts(1:2));
+                                    sts(1) = [];
+                                  case '|'
+                                    sts{2} = MTADepoch.join(sts(1:2));
+                                    sts(1) = [];
                                 end
                                 stsFuncs(1) = [];
                             end
                             
-                            sts = sts{1}.copy;
-                            if ~isempty(stsSampleRate)
-                                sts.resample(stsSampleRate);
+                            if ~isempty(sts{1}),
+                                sts = sts{1}.copy;
+                                if ~isempty(stsSampleRate)
+                                    sts.resample(stsSampleRate);
+                                end
+                                if isempty(Stc.gsi(sts.label)),
+                                    Stc.addState(sts);
+                                end
+                                Stc = sts;
+                            else
+                                Stc = {};
                             end
-                            if isempty(Stc.gsi(sts.label)),
-                                Stc.addState(sts);
-                            end
-                            Stc = sts;
+
                         else
                             Stc = Stc.states{S(n).subs{1}}.copy;
                             Stc.resample(S(n).subs{2});

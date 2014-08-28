@@ -78,7 +78,8 @@ mrv(N<20,:) = nan;
 
 
 subplot2(numel(mode),2,m,1);
-imagescnan({vedgs,fs,mrv'},prctile(mrv(nniz(mrv(:))),[5,95]),false,1,[0,0,0]);axis xy,
+imhand = imagescnan({vedgs,fs,mrv'},prctile(mrv(nniz(mrv(:))),[5,95]),false,1,[0,0,0]);axis xy,
+set(imhand,'tag', [mfilename,'-',mode{m}])
 title(['Mean RHM psd Given ' mode{m}]);
 xlabel(xlab);
 ylabel('RHM frequency (Hz)');
@@ -92,8 +93,7 @@ ylabel('RHM frequency (Hz)');
 end
 
 suptitle([Trial.filebase ' : ' Trial.stc{s}.label]);
-reportfig(fullfile(Trial.path.data,'figures'),figH, ...
-          ['RHM_psd_distrib_' strjoin(mode)],[],[Trial.filebase ' :' Trial.stc{s}.label],200,true);
+reportfig(Trial,figH,['RHM_psd_distrib_' strjoin(mode,'_')],[],[Trial.filebase ' :' Trial.stc{s}.label],200,true);
 
 
 

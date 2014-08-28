@@ -17,6 +17,10 @@ ncp = fet_ncp(Trial,[],ncp_chan);
 wang = [rhm,ncp];
 wang = WhitenSignal(wang,[],1);
 
+wang = [rhm,ncp];
+
+
+
 [ys,fs,ts] = mtcsdglong(wang,2^9,Trial.ang.sampleRate,2^7,2^7*.875,[],'linear',[],[1,20]);
 
 
@@ -30,8 +34,9 @@ vh = xyz.vel('spine_lower',[1,2]);
 %% Construct MTADlfp to hold ys
 % adjust with padding to account for spectral window
 szy = size(ys);
-padding = zeros([round(2^6/xyz.sampleRate/diff(ts(1:2))),szy(2:end)]);
-ys = MTADlfp('data',cat(1,padding,ys,padding),'sampleRate',1/diff(ts(1:2)));
+padding = round([ts(1),mod(xyz.size(1)-2^6,2^7)/xyz.sampleRate].*1/diff(ts(1:2)))-[1,0];
+ys = MTADlfp('data',cat(1,zeros([padding(1),szy(2:end)]),ys,zeros([padding(2),szy(2:end)])),'sampleRate',1/diff(ts(1:2)));
+
 
 
 
@@ -43,10 +48,20 @@ xyz.resample(ys);
 
 nys = ys.copy;
 nys.data = log10(nys.data);
-nys.data(ys<-9) = nan;
-%nys.data(nniz(nys.data))=nan;
-nys.data = (nys.data-repmat(nanmean(nys(nniz(nys),:,:,:)),[nys.size(1),1,1]))./repmat(nanstd(nys(nniz(nys),:,:,:)),[nys.size(1),1,1]);
+nys.data(nys<-9) = nan;
+nys.data(~nniz(nys.data))=nan;
+nys.data = (nys.data-repmat(nanmedian(nys(nniz(nys),:,:,:)),[nys.size(1),1,1]))./repmat(nanstd(nys(nniz(nys),:,:,:)),[nys.size(1),1,1]);
 
+% $$$ figure,
+% $$$ sp(1)=subplot(211);
+% $$$ %plot(rhm)
+% $$$ %imagesc(ts,fs,log10(ys(:,:,1,1))'),axis xy,caxis([-6,-2.5]),
+% $$$ imagesc(ts,fs,nys(:,:,1,1)'),axis xy,%caxis([.44,.48]),
+% $$$ sp(2)=subplot(212);
+% $$$ %plot(ncp)
+% $$$ imagesc(ts,fs,nys(:,:,2,2)'),axis xy,%caxis([,6]),
+% $$$ %imagesc(ts,fs,log10(ys(:,:,2,2))'),axis xy,caxis([2,6]),
+% $$$ linkaxes(sp,'x')
 
 % $$$ rhm_maxpow = MTADlfp('data',max(log10(ys(:,fs>13&fs>5,1,1)),[],2),'sampleRate',ys.sampleRate);
 % $$$ ncp_maxpow = MTADlfp('data',max(log10(ys(:,fs>12&fs>6,2,2)),[],2),'sampleRate',ys.sampleRate);

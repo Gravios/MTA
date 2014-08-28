@@ -20,21 +20,26 @@ vel = xyz.vel([1:5,7],[1,2]);
 
 wvel=WhitenSignal(vel.data,[],1);
 
-%[yv,fv,tv,phiv,fstv] = mtchglong(wvel,2^8,vel.sampleRate,2^7,2^7*.875,3,'linear',[],[1,30]);
+[yv,fv,tv,phiv,fstv] = mtchglong(wvel,2^8,vel.sampleRate,2^7,2^7*.875,3,'linear',[],[1,30]);
+tv = tv+(2^6)/xyz.sampleRate;
+ssr = 1/diff(tv(1:2));
+pad = round([tv(1),mod(xyz.size(1)-2^6,2^7)/xyz.sampleRate].*ssr)-[1,0];
+szy = size(yv);
+yv = MTADlfp('data',cat(1,zeros([pad(1),szy(2:end)]),yv,zeros([pad(2),szy(2:end)])),...
+             'sampleRate',ssr);
+tv = cat(1,zeros([pad(1),1]),tv,zeros([pad(2),1]));
 
-szyv = size(yv);
-myv = cat(1,zeros([2^6/vel.sampleRate/diff(tv(1:2)),szyv(2:end)]),yv,zeros([round((2^6/vel.sampleRate/diff(tv(1:2))+size(yv,1)*diff(tv(1:2))-vel.size(1)/vel.sampleRate)/diff(tv(1:2))),szyv(2:end)]));
-myv = MTADlfp('data',myv,'sampleRate',1/diff(tv(1:2)));
+
+myv = yv.copy;
 
 
-
-
-figure,hold on
-col = 'brgcym';
+vl = [];
 for i= 1:6,
-plot(yv(:,1,i,i),col(i))
+vl(:,i) = yv(:,2,i,i);
 end
+hist2([mean(vl,2),var(mean(vl,2),100,100);
 
+hist2([1./(clip(mean(vl(nniz(vl),:),2),0,6).*clip(var(vl(nniz(vl),:),[],2),0,15)),vl(nniz(vl),1)],100,100);
 
 figure,sp=[];
 sp(end+1)=subplot(411);imagesc(yv(:,:,1,4)'),axis xy,caxis([0.5,1]),Lines(Trial.stc{'w',myv.sampleRate}(:)-2^6/diff(tv(1:2)),[],'w');
@@ -47,7 +52,7 @@ figure,hist(unity(log10(myv(nniz(myv),2,1,1))),1000)
 
 
 
-figure,hist2([unity(log10(myv(nniz(myv),1,1,1))),unity(log10(myv(nniz(myv),1,4,4)))],100,100),caxis([0,75])
+figure,hist2([unity(log10(myv(nniz(myv),2,1,1))),unity(log10(myv(nniz(myv),2,6,6)))],100,100),caxis([0,75])
 
 umyv = myv.copy;
 umyv.data(nniz(myv),:,:,:) = unity(log10(myv(nniz(myv),:,:,:)));

@@ -8,8 +8,9 @@ switch host_server
     
     case 'cin'
         switch data_server
-            case 'cin'
-                MTAConfiguration('/gpfs01/sirota/home/gravio/data','absolute');
+          case 'cin'
+              addpath('/gpfs01/sirota/homes/share/matlab/MTA/');
+              MTAConfiguration('/gpfs01/sirota/home/gravio/data','absolute');
             case 'bach'
               %MTAConfiguration('/gpfs01/sirota/bach/data/gravio','absolute');
                 MTAConfiguration('/gpfs01/sirota/data/bachdata/data/gravio','absolute');
@@ -18,11 +19,12 @@ switch host_server
         
     case 'bach'
         switch data_server
-            case 'cin'
-                MTAConfiguration('/mnt/gpfs/home/gravio/data','absolute');
-            case 'bach'
-              MTAConfiguration('/gpfs01/sirota/data/bachdata/data/gravio');
-              %MTAConfiguration('/data/homes/gravio/data','absolute');
+          case 'cin'
+            addpath('/data/homes/share/matlab/MTA/');
+            MTAConfiguration('/mnt/gpfs/home/gravio/data','absolute');  
+          case 'bach'
+            MTAConfiguration('/gpfs01/sirota/data/bachdata/data/gravio','absolute');
+            %MTAConfiguration('/data/homes/gravio/data','absolute');
         end
 
     case 'mypc'
@@ -47,9 +49,12 @@ if add_basic_paths
     else
         userpath = getenv('HOME');
     end
-    cd(fullfile(userpath,'../../homes/share/matlab/MTA/'));
-    addpath(genpath(fullfile(userpath,'../../homes/share/matlab/Third-Party_Toolboxes/HMM/hmmbox/')),'-END')
-    addpath(genpath(fullfile(userpath,'../../homes/share/matlab/Third-Party_Toolboxes/netlab/')),'-END')
+    addpath(genpath(fullfile(userpath,'../../homes/share/matlab/Third-Party_Toolboxes/HMM/hmmbox/')));
+    addpath(genpath(fullfile(userpath,'../../homes/share/matlab/Third-Party_Toolboxes/netlab/')));
+    addpath(genpath(fullfile(userpath,'../../homes/share/matlab/MTA/')));
+    rmpath(genpath(fullfile(userpath,'../../homes/share/matlab/MTA/.git')));
+    addpath(fullfile(userpath,'../../homes/antsiro/matlab/General'),'-END');
+    addpath(fullfile(userpath,'../../homes/antsiro/matlab/draft'),'-END');
 end
 % $$$ 
 % $$$ if add_basic_paths    

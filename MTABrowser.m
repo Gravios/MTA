@@ -750,6 +750,7 @@ if hObject ~= getappdata(handles.MTABrowserStates,'previousBState'),
         for i = 1:length(States)
             labels{i} = States{i}.label;
             keys = strcat(keys,States{i}.key);
+            States{i}.resample(Session.xyz.sampleRate);
             tmpState = States{i}.data;
             tmpState(tmpState==0) = 1;
             States{i}.data = zeros(Session.xyz.size(1),1);

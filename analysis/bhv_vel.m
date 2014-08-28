@@ -1,20 +1,23 @@
 
 Trial = MTATrial('jg05-20120310');
 xyz = Trial.xyz.copy;
+xyz.load(Trial);
 xyz.filter
-vel = Trial.transformOrigin;
-%figure,plot(hang.roll);
-%figure,hist(hang.roll,1000);
+vel = xyz.vel;
+hang = Trial.transformOrigin;
+
 
 gr = nniz(hang.roll);
 wrol = nan(size(hang.roll));
 wrol(gr) = WhitenSignal(hang.roll(gr));
 
 
+[yv,fv,tv] = mtchglong(WhitenSignal(vel(:,9)),2^8,xyz.sampleRate,2^7,2^7*.875,[],'linear',[],[1,20]);
+
 [ys,fs,ts,phi,fsta] = mtchglong(wrol,2^8,xyz.sampleRate,2^7,2^7*.875,[],'linear',[],[1,20]);
 ts = ts+(2^6)/xyz.sampleRate;
 ssr = 1/diff(ts(1:2));
-pad = round([ts(1),2^7/xyz.sampleRate].*ssr);
+pad = round([ts(1),mod(xyz.size(1)-2^6,2^7)/xyz.sampleRate].*ssr)-[1,0];
 szy = size(ys);
 ys = MTADlfp('data',cat(1,zeros([pad(1),szy(2:end)]),ys,zeros([pad(2),szy(2:end)])),...
              'sampleRate',ssr);
