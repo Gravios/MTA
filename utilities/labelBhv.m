@@ -1,9 +1,16 @@
-function Trial = labelBhv(Trial,Stc,varargin)
+function Trial = labelBhv(Trial,varargin)
 % function Trial = labelBhv(Trial,Stc,varargin)
 % Basic Set of heuristics for the most basic behavioral states
 % 
 % Note: Requires an update to include MoCap sampling rates other than 120Hz
-[winlen,nOverlap,nwinlen,nnOverlap] = DefaultArgs(varargin,{64,8,16,2});
+[Stc,winlen,nOverlap,nwinlen,nnOverlap] = DefaultArgs(varargin,{[],64,8,16,2});
+
+if isempty(Stc),
+    Stc = Trial.stc.copy;
+    Stc.updateMode('auto_wbhr');
+    Stc.states = {};
+end
+
 
 xyz = Trial.xyz.copy;
 xyzSampleRate = Trial.xyz.sampleRate;
