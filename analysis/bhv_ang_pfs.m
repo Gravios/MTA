@@ -1,5 +1,4 @@
 
-
 %% Section 1 Plot placefield and unit accgs to survey the unit population
 Trial = MTATrial('jg05-20120310');
 Trial = MTATrial('jg05-20120317');
@@ -14,12 +13,16 @@ if isempty(Trial.stc{'t'}),
 end
 
 
-units = select_units(Trial,20,'pyr');
-    
+units = select_units(Trial,18,'pyr');
+
+% $$$ Trial.stc.states{Trial.stc.gsi('c')}.data = Trial.stc{'c'}(diff(Trial.stc{'c'}.data(:,:),1,2)>20,:);
+% $$$ Trial.stc.states{Trial.stc.gsi('p')}.data = Trial.stc{'p'}(diff(Trial.stc{'p'}.data(:,:),1,2)>20,:);
+
 stss = 'twcpr';
 pfs = {};
+ow =true;
 for s = 1:numel(stss),
-    pfs{s} = MTAApfs(Trial,units,Trial.stc{stss(s)});
+    pfs{s} = MTAApfs(Trial,units,Trial.stc{stss(s)},ow);
 end
 
 [accg,tbin] = autoccg(Trial);

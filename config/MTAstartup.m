@@ -1,7 +1,9 @@
 function MTAstartup(varargin)
-%
+%[host_server,data_server,add_basic_paths] = DefaultArgs(varargin,{'cin','bach',true});
+%[host_server,data_server,add_basic_paths] = DefaultArgs(varargin,{'cin','cin',true});
 %[host_server,data_server,add_basic_paths] = DefaultArgs(varargin,{'mypc','mycy',true});
-%[host_server,data_server,add_basic_paths] = DefaultArgs(varargin,{'mypc','mycy',true});
+
+
 [host_server,data_server,add_basic_paths] = DefaultArgs(varargin,{'cin','bach',true});
 
 switch host_server
@@ -11,9 +13,10 @@ switch host_server
           case 'cin'
               addpath('/gpfs01/sirota/homes/share/matlab/MTA/');
               MTAConfiguration('/gpfs01/sirota/home/gravio/data','absolute');
-            case 'bach'
+          case 'bach'
+              addpath('/gpfs01/sirota/homes/share/matlab/MTA/');
               %MTAConfiguration('/gpfs01/sirota/bach/data/gravio','absolute');
-                MTAConfiguration('/gpfs01/sirota/data/bachdata/data/gravio','absolute');
+              MTAConfiguration('/gpfs01/sirota/data/bachdata/data/gravio','absolute');
         end
         
         
@@ -55,8 +58,9 @@ if add_basic_paths
     rmpath(genpath(fullfile(userpath,'../../homes/share/matlab/MTA/.git')));
     addpath(fullfile(userpath,'../../homes/antsiro/matlab/General'),'-END');
     addpath(fullfile(userpath,'../../homes/antsiro/matlab/draft'),'-END');
+    cd(fullfile(userpath,'../../homes/share/matlab/MTA/'));
 end
-% $$$ 
+
 % $$$ if add_basic_paths    
 % $$$     if ispc,
 % $$$         userpath = getenv('HOMEPATH');

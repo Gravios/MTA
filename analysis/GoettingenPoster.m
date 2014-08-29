@@ -2,7 +2,7 @@
 %  
 
 %% Introduction
-
+% Previous work: showed place cells specific for the rearing state.
 
 
 %% Methods
@@ -24,34 +24,47 @@ ang = Trial.ang.copy;ang.load(Trial);
 %     2. Examples of walking subtypes
 %        2.1 High walk,
 
-figure,hist(ang(Trial.stc{'c'},'head_back','head_front',2),100)
-figure,hist(ang(Trial.stc{'p'},'head_back','head_front',2),100)
-
+[rhm,fs,ts] = fet_rhm(Trial,[],'Swspectral');
 
 s='c';
-gper = find(diff(Trial.stc{s}.data,1,2)>100);
+gper = find(diff(Trial.stc{s}.data,1,2)>140);
 perind = gper(1);
-perind = Trial.stc{s}(perind,1):Trial.stc{s}(perind,2)-20;
-figure,hold on,
+perind = (Trial.stc{s}(perind,1)+20):(Trial.stc{s}(perind,1)+100);
+figure,
+subplot2(3,2,[1,2],1),hold on
 for i= 5:8;
     plot3(xyz(perind,i,1),xyz(perind,i,2),xyz(perind,i,3))
 end
+
 plotSkeleton(xyz,perind(end));
-zlm = zlim;
+zlim([0,200]);
+
+subplot2(3,2,3,1)
+imagesc(1:(diff(Trial.stc{s,rhm.sampleRate}(gper(1),:))+4),fs,log10(rhm((Trial.stc{s,rhm.sampleRate}(gper(1),1)-2): ...
+                  (Trial.stc{s,rhm.sampleRate}(gper(1),2)+2),:))'),axis xy,,caxis([-6,-4])
+
 
 %        2.2 Low walk
-
-
 s='p';
-gper = find(diff(Trial.stc{s}.data,1,2)>100);
-perind = gper(3);
-perind = Trial.stc{s}(perind,1):Trial.stc{s}(perind,2);
-figure,hold on,
+gper = find(diff(Trial.stc{s}.data,1,2)>140);
+perind = gper(4);
+perind = (Trial.stc{s}(perind,1)+20):(Trial.stc{s}(perind,1)+100);
+subplot2(3,2,[1,2],2),hold on
 for i= 5:8;
     plot3(xyz(perind,i,1),xyz(perind,i,2),xyz(perind,i,3))
 end
 plotSkeleton(xyz,perind(end));
-zlim(zlm);
+zlim([0,200]);
+
+subplot2(3,2,3,2)
+imagesc(1:(diff(Trial.stc{s,rhm.sampleRate}(gper(4),:))+4),fs,log10(rhm((Trial.stc{s,rhm.sampleRate}(gper(4),1)-2): ...
+                  (Trial.stc{s,rhm.sampleRate}(gper(4),2)+2),:))'),axis xy,,caxis([-6,-4])
+
+
+
+
+
+figure,
 
 % updateSkeleton
 % $$$ for kk=1:numel(sticks),
@@ -68,6 +81,101 @@ zlim(zlm);
 % $$$ end
 % $$$ 
 
+
+%% BHV Heirarchical segmentation
+wper = Trial.stc{'w'}.cast('TimeSeries');
+rper = Trial.stc{'r'}.cast('TimeSeries');
+
+
+%% Rearing 
+xyz = Trial.xyz.copy;
+xyz.load(Trial);
+xyz.filter(gtwin(.5,xyz.sampleRate));
+ang = Trial.ang.copy;
+ang.create(Trial,xyz);
+
+bang = ang(:,1,7,2);
+bang = log10(xyz(:,7,3)-xyz(:,1,3));
+hang = ang(:,3,4,2);
+
+figure,
+hist2([bang(nniz(bang)&nniz(hang)),...
+       hang(nniz(bang)&nniz(hang))],...
+      linspace(1,2.5,60),linspace(-.8,1.5,60)),
+caxis([0,4000])
+set(gca,'YTickLabelMode','manual');
+set(gca,'YTickLabel',{});
+set(gca,'XTickLabelMode','manual');
+set(gca,'XTickLabel',{});
+saveas(gcf,fullfile('/gpfs01/sirota/homes/gravio/','figures','GoettingenPoster','JPDF_hbZdiff_angSMSU_all.png'),'png');
+
+
+figure,
+hist2([bang(nniz(bang)&nniz(hang)&~rper.data),...
+       hang(nniz(bang)&nniz(hang)&~rper.data)],...
+      linspace(1,2.5,60),linspace(-.8,1.5,60)),
+caxis([0,4000])
+%linspace(-.1,1.5,60)
+set(gca,'YTickLabelMode','manual');
+set(gca,'YTickLabel',{});
+set(gca,'XTickLabelMode','manual');
+set(gca,'XTickLabel',{});
+saveas(gcf,fullfile('/gpfs01/sirota/homes/gravio/','figures','GoettingenPoster','JPDF_hbZdiff_angSMSU_all_wo_rear.png'),'png');
+
+
+
+figure,
+hist2([bang(nniz(bang)&nniz(hang)&rper.data),...
+       hang(nniz(bang)&nniz(hang)&rper.data)],...
+      linspace(1,2.5,60),linspace(-.8,1.5,60)),
+%linspace(-.1,1.5,60)
+caxis([0,4000])
+set(gca,'YTickLabelMode','manual');
+set(gca,'YTickLabel',{});
+set(gca,'XTickLabelMode','manual');
+set(gca,'XTickLabel',{});
+saveas(gcf,fullfile('/gpfs01/sirota/homes/gravio/','figures','GoettingenPoster','JPDF_hbZdiff_angSMSU_rear_only.png'),'png');
+
+
+%% walk, turning, immobility
+xyz = Trial.xyz.copy;
+xyz.load(Trial);
+xyz.filter(gtwin(.1,xyz.sampleRate));
+vel = xyz.vel([1:4,5,7],[1,2]);
+nembed = 90;
+N=10000;
+shift=2000;
+X = GetSegs(vel(:,end),(1+shift):(N+shift),nembed,0)'/sqrt(N);
+[U,S,V] = svd(X);
+Xa = zeros(vel.size([1,2]));
+for i = 1:vel.size(2),
+Xa(:,i) = GetSegs(vel(:,i),1:vel.size(1),nembed,0)'/sqrt(N)*V(:,1);
+end
+mXa = abs(median(Xa,2));
+vXa = var(Xa,[],2);
+vXa(vXa<.0001) = .0001;
+
+% JPDF_mVel_vVel_all_wo_walk.png
+figure,hist2([log10(abs(mXa(nniz(mXa)&nniz(vel)&~wper.data&~rper.data,1))),...
+              log10(vXa(nniz(mXa)&nniz(vel)&~wper.data&~rper.data))],...
+             linspace(-2.5,.75,60),linspace(-4,.5,60));
+caxis([0,800]);
+set(gca,'YTickLabelMode','manual');
+set(gca,'YTickLabel',{});
+set(gca,'XTickLabelMode','manual');
+set(gca,'XTickLabel',{});
+saveas(gcf,fullfile('/gpfs01/sirota/homes/gravio/','figures','GoettingenPoster','JPDF_mVel_vVel_all_wo_walk.png'),'png');
+
+% JPDF_mVel_vVel_walk_only.png'
+figure,hist2([log10(abs(mXa(nniz(mXa)&nniz(vel)&wper.data,1))),...
+              log10(vXa(nniz(mXa)&nniz(vel)&wper.data))],...
+             linspace(-2.5,.75,60),linspace(-4,.5,60));
+caxis([0,800]);
+set(gca,'YTickLabelMode','manual');
+set(gca,'YTickLabel',{});
+set(gca,'XTickLabelMode','manual');
+set(gca,'XTickLabel',{});
+saveas(gcf,fullfile('/gpfs01/sirota/homes/gravio/','figures','GoettingenPoster','JPDF_mVel_vVel_walk_only.png'),'png');
 
 
 
