@@ -69,7 +69,16 @@ switch mode
     szy = size(ys);
     rhm = MTADlfp('data',cat(1,zeros([pad(1),szy(2:end)]),ys,zeros([pad(2),szy(2:end)])),'sampleRate',ssr);
     ts = cat(1,zeros([pad(1),1]),ts,zeros([pad(2),1]));
-  
+
+  case 'Sspectral'
+    [ys,fs,ts] = mtcsdglong(bang,2^9,ang.sampleRate,2^7,2^7*.875,[],'linear',[],[1,20]);
+    ts = ts+(2^6)/xyz.sampleRate;
+    ssr = 1/diff(ts(1:2));
+    pad = round([ts(1),mod(xyz.size(1)-2^6,2^7)/xyz.sampleRate].*ssr)-[1,0];
+    szy = size(ys);
+    rhm = MTADlfp('data',cat(1,zeros([pad(1),szy(2:end)]),ys,zeros([pad(2),szy(2:end)])),'sampleRate',ssr);
+    ts = cat(1,zeros([pad(1),1]),ts,zeros([pad(2),1]));
+
   case 'default'
     rhm = MTADlfp('data',bang,'sampleRate',xyz.sampleRate);
   otherwise

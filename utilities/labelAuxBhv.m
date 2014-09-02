@@ -1,5 +1,10 @@
 function Trial = labelAuxBhv(Trial,Stc,varargin)
-[angThresh,overwrite] = DefaultArgs(varargin,{-.45,false});
+[Stc,angThresh,overwrite] = DefaultArgs(varargin,{[],-.45,false});
+
+if isempty(Stc),
+    Stc = Trial.stc.copy;
+end
+
 
 sempty = isempty(Stc{'t'});
 if sempty||overwrite,

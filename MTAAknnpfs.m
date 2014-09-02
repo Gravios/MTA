@@ -249,8 +249,20 @@ classdef MTAAknnpfs < hgsetget %< MTAAnalysis
             if isempty(unit),unit=Pfs.data.clu(1);end
             switch Pfs.parameters.type
                 case 'xy'
-                    bin1 = Pfs.adata.bins{1};
-                    bin2 = Pfs.adata.bins{2};
+
+                  %% This is only valid for the circular maze
+                  width = Pfs.adata.binSizes(1);
+                  height = Pfs.adata.binSizes(2);
+                  radius = round(Pfs.adata.binSizes(1)/2)-find(Pfs.adata.bins{1}<-420,1,'last');
+                  centerW = width/2;
+                  centerH = height/2;
+                  [W,H] = meshgrid(1:width,1:height);
+                  mask = double(sqrt((W-centerW-.5).^2 + (H-centerH-.5).^2) < radius);
+                  mask(mask==0)=nan;
+                  %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+                  
+                  bin1 = Pfs.adata.bins{1};
+                  bin2 = Pfs.adata.bins{2};
                     
                     switch nMode
                         case 'mean'
@@ -265,14 +277,15 @@ classdef MTAAknnpfs < hgsetget %< MTAAnalysis
                     end
                     
                     
-                    rateMap = reshape(rateMap',numel(bin1),numel(bin2))';
-
+                    %% Normal rateMap = reshape(rateMap',numel(bin1),numel(bin2))';
+                    rateMap = reshape(rateMap',numel(bin1),numel(bin2))'.*mask;
+                    
                     if nargout==0,                    
                         imagescnan({bin1,bin2,rateMap'},colorLimits,[],ifColorbar,[0,0,0]);
 
 
                     if ~isempty(rateMap)&&~isempty(bin1)&&~isempty(bin2),
-                        text(bin1(1)+30,bin2(end)-50,sprintf('%2.1f',max(rateMap(:))),'Color','w','FontWeight','bold','FontSize',10)
+                        text(bin1(1)+30,bin2(end)-50,sprintf('%2.1f',max(rateMap(:))),'Color','w','FontWeight','bold','FontSize',18)
                     end
                     axis xy
                     end                    

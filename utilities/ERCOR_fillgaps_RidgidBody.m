@@ -10,4 +10,24 @@ rb_xyz.data = xyz(:,rb_model.ml,:);
 rb_xyz.model = rb_model;
 
 imori = imo(rb_xyz);
-figure,plot(imori(:,1,2,2,4,2))
+
+i = 1;
+fperms = perms(1:4)';
+smori = zeros([size(imori,1),size(fperms,2)]);
+for p = fperms,
+smori(:,i) = imori(:,p(1),p(2),p(3),p(4),1);
+i = i+1;
+end
+clear('imori');
+
+%figure,imagesc(unity(smori)');
+%caxis([-.6,.6])
+
+smori = unity(smori);
+gind = 8000;
+gpat = smori(gind,:);
+epat = smori(8001,:);
+dtgmori = sqrt(sum(bsxfun(@minus,smori,gpat).^2,2));
+
+interMarDist = imd(xyz);
+figure,imagesc(log10(reshape(interMarDist,[],81)'))

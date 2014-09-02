@@ -20,6 +20,20 @@ switch varargin{1}
                 {'jg05-20120317',     'cof',     'all',   'bach',  '0x0040',       119.881035},... CA2???
                 {'jg05-20120324',     'cof',     'all',   'bach',  '0x0040',       119.881035}}; % CA3
 
+  case 'pfs'     % SessionName      MazeName   TrialName   Host    TTLValue        SampleRate
+    Sessions = {...
+                {'er01-20110719',     'cof',     'all',   'bach',  '0x4000',       119.881035},... CA3
+                {'er06-20130612',     'cof',     'all',    'cin',  'Vicon start',  199.997752},... CA1
+                ...%{'er06-20130613',     'cof', 'all-cof',    'cin',  'Vicon start',  199.997752},... CA1
+                ...%{'er06-20130614',     'cof', 'all-cof',    'cin',  'Vicon start',  199.997752},... CA1
+                {'jg04-20120129',     'cof',     'all',   'bach',  '0x4000',       119.881035},... CA1
+                {'jg04-20120130',     'cof',     'all',   'bach',  '0x4000',       119.881035},... CA1
+                {'jg05-20120309',     'cof',     'all',   'bach',  '0x0040',       119.881035},... CA1
+                {'jg05-20120310',     'cof',     'all',   'bach',  '0x0040',       119.881035},... CA1
+                {'jg05-20120315',     'cof',     'all',   'bach',  '0x0040',       119.881035},... CA1
+                {'jg05-20120317',     'cof',     'all',   'bach',  '0x0040',       119.881035},... CA2???
+                {'jg05-20120324',     'cof',     'all',   'bach',  '0x0040',       119.881035}}; % CA3
+
   case 'ncpH5B4'
     Sessions = {{'Ed01-20140707',     'cof',     'all',   'bach',  '0x0002',       119.881035},... 
                 {'Ed01-20140709',     'cof',     'all',   'bach',  '0x0002',       119.881035},... 

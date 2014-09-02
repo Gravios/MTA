@@ -52,7 +52,7 @@ else
                 ccr_mag = repmat(sum(ccr(:,i,j,k,:).^2,5).^0.5,1,3);
                 for l = 1:xyz.size(2),
                     if length(unique([i,j,k,l]))==4,
-                                                keyboard
+                        %keyboard
                         dang(:,1) = dot(sq(ccr(:,i,j,k,:)),sq(markerDiffMat(:,i,l,:)),find(size(sq(ccr(:,i,j,k,:)))==3));
                         cang(:,1,:) = cross(sq(ccr(:,i,j,k,:)),sq(markerDiffMat(:,i,l,:)),find(size(sq(ccr(:,i,j,k,:)))==3));
                         bs_projection = sq(cross(sq(ccr(:,i,j,k,:)),(sq(-cang(:,1,:))./ccr_mag))./ccr_mag);

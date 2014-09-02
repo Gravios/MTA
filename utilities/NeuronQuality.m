@@ -1,13 +1,13 @@
 function nq = NeuronQuality(Session, varargin)
-%function NeuronQuality(Session, Electrodes,Display,Batch,Overwrite)
+%function NeuronQuality(Session, Electrodes,Display,Batch,overwrite)
 
 Par = LoadXml(fullfile(Session.spath,[Session.name '.xml']));
 
-[Electrodes,Display,Batch,Overwrite] = DefaultArgs(varargin,{[1:Par.nElecGps],0,0,0});
+[Electrodes,Display,Batch,overwrite] = DefaultArgs(varargin,{[1:Par.nElecGps],0,0,0});
 nq =struct([]);
 
-if exist(fullfile(Session.spath,[Session.name '.NeuronQuality.mat']),'file') & ~Overwrite
-    fullfile(Session.spath,[Session.fileBase '.NeuronQuality.mat'])
+if exist(fullfile(Session.spath,[Session.name '.NeuronQuality.mat']),'file') & ~overwrite
+    fullfile(Session.spath,[Session.filebase '.NeuronQuality.mat'])
     return;
 end
 

@@ -21,8 +21,8 @@ pfstats.patchCOM  = nan([1,1,maxNumPatches,2]);
 pfstats.patchPFR = nan([1,1,maxNumPatches]);
 pfstats.patchMFR = nan([1,1,maxNumPatches]);
 pfstats.patchCnt = nan([1,1,maxNumPatches]);
-pfstats.patchRateInd = nan([1,1,maxNumPatches,2,prod(pf.adata.binSizes)*0.1]);
-pfstats.patchRateMap = nan([1,1,maxNumPatches,prod(pf.adata.binSizes)*0.1]);
+pfstats.patchRateInd = nan([1,1,maxNumPatches,2,round(prod(pf.adata.binSizes)*0.1)]);
+pfstats.patchRateMap = nan([1,1,maxNumPatches,round(prod(pf.adata.binSizes)*0.1)]);
 
 
 [B,L] = bwboundaries(ratemap>rateThreshold,'noholes');
