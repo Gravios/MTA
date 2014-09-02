@@ -5,12 +5,14 @@ Trial.load('nq');
 
 
 stc_mode = 'auto_wbhr';
-sesList = {{'jg05-20120309','cof','all'},...
+sesList = {{'er01-20110719','cof','all'},...
+           {'jg05-20120309','cof','all'},...
            {'jg05-20120310','cof','all'},...
            {'jg05-20120317','cof','all'}};
+           %           {'Ed10-20140812','cof','all'}};
 
-states = {'theta','rear&theta','walk&theta','hwalk&theta','lwalk&theta'};
-
+states = {'theta','rear&theta','walk&theta','hang&theta','lang&theta'};
+%states = {'theta','rear&theta','walk&theta','hwalk&theta','lwalk&theta'};
 
 %pftype = 'MTAAknnpf';
 
@@ -37,8 +39,11 @@ for ses = 1:numel(sesList),
 
     clear tpfstats,
     for i = 1:numsts,
-        pfs =     MTAAknnpfs(Trial,units,states{i},0,'numIter',1000, ...
-                            'ufrShufBlockSize',0.5,'binDims',[20,20],'distThreshold',70);
+        %pfs =     MTAAknnpfs(Trial,units,states{i},0,'numIter',1000, ...
+        %                    'ufrShufBlockSize',0.5,'binDims',[20,20],'distThreshold',70);
+        pfs =     MTAAknnpfs(Trial,units,states{i},false,'numIter',1000, ...
+                            'ufrShufBlockSize',0.5,'binDims',[30,30],'distThreshold',70);
+
         clear ts,clear tss,
         parfor u = 1:numel(units),
             [ts(u)] = PlaceFieldStats(Trial,pfs,units(u));
@@ -54,6 +59,9 @@ matlabpool('close');
 apfs = CatStruct(cat(1,pfstats{:}),[],1,[],0);
 anq = CatStruct(cat(1,anq{:}),[],1,[],0)
 
+pind = max([apfs.peakFR(:,4,1),apfs.peakFR(:,5,1)],[],2)>10&anq.eDist>18&anq.SpkWidthR>.7;
+figure,hist(apfs.peakFR(pind,4,1)-apfs.peakFR(pind,5,1),20)
+figure,hist((apfs.peakFR(pind,4,1)-apfs.peakFR(pind,5,1))./max([apfs.peakFR(pind,4,1),apfs.peakFR(pind,5,1)],[],2),20)
 
 % $$$ u  = 197;
 % $$$ p  = 1;

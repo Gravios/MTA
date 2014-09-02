@@ -63,7 +63,7 @@ imagesc(1:(diff(Trial.stc{s,rhm.sampleRate}(gper(4),:))+4),fs,log10(rhm((Trial.s
 
 
 
-%% Behaviors
+%% Example Skeletons of Behaviors
 figure,
 s='c';
 gper = find(diff(Trial.stc{s}.data,1,2)>140);
@@ -335,17 +335,24 @@ xlabel('Time (s)')
 
 MTAstartup('cin','cin');
 Trial = MTATrial('Ed10-20140812');
+%MTAstartup;
 %Trial = MTATrial('jg05-20120317');
 %Trial = MTATrial('jg05-20120310');
 %Trial = MTATrial('jg05-20120309');
 states = {'theta','rear&theta','walk&theta','hang&theta','lang&theta'};
 nsts = numel(states);
 units = select_units(Trial,18,'pyr');
-pfs = {};
-for s = 1:nsts,
-    pfs{s} =  MTAAknnpfs(Trial,units,states{s},false,'numIter',1000, ...
-                         'ufrShufBlockSize',0.5,'binDims',[30,30],'distThreshold',70);
+
+pfs ={};
+for i = 1:numel(states),
+pfs{i} = MTAAknnpfs(Trial,units,states{i},false,'numIter',1,'ufrShufBlockSize',0,'binDims',[10,10],'distThreshold',125,'nNearestNeighbors',110);
 end
+
+% $$$ pfs = {};
+% $$$ for s = 1:nsts,
+% $$$     pfs{s} =  MTAAknnpfs(Trial,units,states{s},false,'numIter',1000, ...
+% $$$                          'ufrShufBlockSize',0.5,'binDims',[30,30],'distThreshold',70);
+% $$$ end
 
 [accg,tbins] = autoccg(Trial);
 
@@ -376,15 +383,55 @@ for u = pfs{1}.data.clu,
         set(gca,'OuterPosition',get(gca,'OuterPosition').*[0,1,1.1,1.2]);
         %if s == 1,         title([Trial.filebase '-' num2str(u)]);end
     end
-    set(gcf,'paperposition',[0,0,3.6,20])
+    set(gcf,'paperposition',[0,0,3.4,21])
     saveas(gcf,fullfile('/gpfs01/sirota/homes/gravio/',...
                         'figures','GoettingenPoster',...
-                        ['pfs_' Trial.filebase '-' num2str(u) '.png']),'png');
+                        ['pfsS_' Trial.filebase '-' num2str(u) '.png']),'png');
 end
 
 
-%
+%% Segmentation of walking
 
+%MTAstartup('cin','cin');
+%Trial = MTATrial('Ed10-20140813');
+
+MTAstartup;
+%Trial = MTATrial('jg05-20120309');
+Trial = MTATrial('jg05-20120311');
+%Trial = MTATrial('er01-20110719');
+[rhm,fs,ts] = fet_rhm(Trial,[],'Sspectral');
+xyz = Trial.xyz.copy;xyz.load(Trial);xyz.filter(gtwin(.05,xyz.sampleRate));
+ang = Trial.ang.copy;ang.create(Trial,xyz);
+
+nrhm = rhm.copy;
+nrhm.data = log10(nrhm.data);
+nrhm.data(nrhm.data<-9) = nan;
+
+% $$$ mean_rhm =  nanmean(nrhm(nniz(nrhm),:));
+% $$$ std_rhm =   nanstd(nrhm(nniz(nrhm),:));
+% $$$ nrhm.data = bsxfun(@ldivide,bsxfun(@minus,nrhm.data,mean_rhm),std_rhm);
+
+%figure,imagesc(ts,fs,nrhm.data'),axis xy,
+%figure,plot(median(nrhm(:,fs>5&fs<14),2))
+
+rhmpow =median(nrhm(:,fs>5&fs<14),2);
+rhmpow = MTADlfp('data',rhmpow,'sampleRate',nrhm.sampleRate);
+ang.resample(rhmpow);
+xyz.resample(rhmpow);
+
+%hper = Trial.stc{'hang'};
+%lper = Trial.stc{'lang'};
+%rper = Trial.stc{'rear'};
+
+rhmlims = linspace(-6,-2,40);
+anglims = linspace(-1.4,1.4,40);
+figure,hist2([ang(Trial.stc{'w'},5,7,2),rhmpow(Trial.stc{'w'})],anglims,rhmlims);
+set(gca,'YTickLabelMode','manual');
+set(gca,'YTickLabel',{});
+set(gca,'XTickLabelMode','manual');
+set(gca,'XTickLabel',{});
+
+    
 %% Results
 
 % Network Dynamics 
@@ -411,6 +458,9 @@ end
 %     1. Place Field - Walk
 %     2. Place Field - High Walk
 %     3. Place Field - Low Walk
+
+
+
 
 
 %% Conclusions
