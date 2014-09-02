@@ -23,7 +23,7 @@ ang = Trial.ang.copy;ang.load(Trial);
 %        1.2 JPDF - 
 %     2. Examples of walking subtypes
 %        2.1 High walk,
-
+nn
 [rhm,fs,ts] = fet_rhm(Trial,[],'Swspectral');
 
 s='c';
@@ -359,6 +359,7 @@ end
 [accg,tbins] = autoccg(Trial);
 
 figure(28384)
+
 for u = pfs{1}.data.clu,
     mrate =zeros([1,5]);
     for s = 1:nsts,
@@ -421,7 +422,7 @@ rhmpow = MTADlfp('data',rhmpow,'sampleRate',nrhm.sampleRate);
 ang.resample(rhmpow);
 xyz.resample(rhmpow);
 
-%hper = Trial.stc{'hang'};
+p%hper = Trial.stc{'hang'};
 %lper = Trial.stc{'lang'};
 %rper = Trial.stc{'rear'};
 
@@ -454,25 +455,34 @@ figure,hist(ang(fasts==2,5,7,2),100)
 
 
 g = 2;l = 1;
+Trial.stc.states(Trial.stc.gsi('h')) = [];
 Trial.stc.addState(Trial.spath,...
                    Trial.filebase,...
-                   fasts==g,...
+                   ThreshCross(fasts==g,.5,1),...                   
                    rhmpow.sampleRate,...
-                   Trial.xyz.sync.copy,...
-                   Trial.xyz.origin,...
-                   'hswalk','h','TimeSeries');
-Trial.stc.states{Trial.stc.gsi('h')}.cast('TimePeriods');
+                   Trial.sync.copy,...
+                   Trial.sync.data(1),...
+                   'hswalk','h','TimePeriods');
+%Trial.stc.states{Trial.stc.gsi('h')}.cast('TimePeriods');
 
+Trial.stc.states(Trial.stc.gsi('l')) = [];
 Trial.stc.addState(Trial.spath,...
                    Trial.filebase,...
-                   fasts==l,...
+                   ThreshCross(fasts==l,.5,1),...
                    rhmpow.sampleRate,...
-                   Trial.xyz.sync.copy,...
-                   Trial.xyz.origin,...
-                   'lswalk','l','TimeSeries');
-Trial.stc.states{Trial.stc.gsi('l')}.cast('TimePeriods');
+                   Trial.sync.copy,...
+                   Trial.sync.data(1),...
+                   'lswalk','l','TimePeriods');
+%Trial.stc.states{Trial.stc.gsi('l')}.cast('TimePeriods');
 
-    
+bper = Trial.stc{'w'}.cast('TimeSeries');
+hper = Trial.stc{'h'}.cast('TimeSeries');
+lper = Trial.stc{'l'}.cast('TimeSeries');
+
+figure,plot(bper.data),Lines(Trial.stc{'w'}(:),[],'k');
+hold on,plot(lper.data,'g')
+hold on,plot(hper.data,'r')
+
 %% Results
 
 % Network Dynamics 
@@ -505,5 +515,71 @@ Trial.stc.states{Trial.stc.gsi('l')}.cast('TimePeriods');
 
 
 %% Conclusions
+
+%MTAstartup('cin','cin');
+%Trial = MTATrial('Ed10-20140812');
+MTAstartup;
+%Trial = MTATrial('jg05-20120317');
+Trial = MTATrial('jg05-20120310');
+%Trial = MTATrial('jg05-20120309');
+states = {'theta','rear&theta','walk&theta','hang&theta','lang&theta';'theta','rear&theta','walk&theta','hswalk&theta','lswalk&theta'};
+
+%states = {'hswalk&theta','lswalk&theta'};
+nsts = size(states,2);
+units = select_units(Trial,18,'pyr');
+
+pfs ={};
+for c = 1:size(states,1),
+for i = 1:size(states,2),
+pfs{i,c} = MTAAknnpfs(Trial,units,states{c,i},false,'numIter',1,'ufrShufBlockSize',0,'binDims',[10,10],'distThreshold',125,'nNearestNeighbors',110);
+end
+end
+
+% $$$ pfs = {};
+% $$$ for s = 1:nsts,
+% $$$     pfs{s} =  MTAAknnpfs(Trial,units,states{s},false,'numIter',1000, ...
+% $$$                          'ufrShufBlockSize',0.5,'binDims',[30,30],'distThreshold',70);
+% $$$ end
+
+[accg,tbins] = autoccg(Trial);
+
+u=units(1);
+while u~=-1,
+for c = 1:2,
+
+    mrate =zeros([1,5]);
+    for s = 1:nsts,
+        mrate(s) = max(pfs{s}.data.rateMap(:,pfs{s}.data.clu==u));
+    end
+    mrate = max(mrate);
+    if mrate<5,continue,end
+    subplot2(nsts+1,2,1,c);
+    bar(tbins,accg(:,u));axis tight;
+    set(gca,'YTickLabelMode','manual');
+    set(gca,'YTickLabel',{});
+    set(gca,'XTickLabelMode','manual');
+    set(gca,'XTickLabel',{});
+    %set(gca,'Position',get(gca,'Position').*[0,1,1,1]+[0,0,.1475,0]);
+    %set(gca,'OuterPosition',get(gca,'OuterPosition').*[0,1,1.1,1.2]);
+    for s = 1:nsts,
+        subplot2(nsts+1,2,s+1,c);
+        pfs{s,c}.plot(u,[],[],[0,mrate]);
+        set(gca,'YTickLabelMode','manual');
+        set(gca,'YTickLabel',{});
+        set(gca,'XTickLabelMode','manual');
+        set(gca,'XTickLabel',{});
+        %set(gca,'Position',get(gca,'Position').*[0,1,1,1]+[0,0,.1475,0]);
+        %set(gca,'OuterPosition',get(gca,'OuterPosition').*[0,1,1.1,1.2]);
+        %if s == 1,         title([Trial.filebase '-' num2str(u)]);end
+    end
+    %set(gcf,'paperposition',[0,0,3.4,21])
+
+    %saveas(gcf,fullfile('/gpfs01/sirota/homes/gravio/',...
+    %                    'figures','GoettingenPoster',...
+    %                    ['pfsShmm_' Trial.filebase '-' num2str(u) '.png']),'png');
+end
+u = figure_controls(gcf,u,units);
+end
+
 
 
