@@ -321,7 +321,7 @@ end
 %boundedline(tx.data(1:10000),hper.data(1:10000),2*hper.data(1:10000),'b','alpha');
 %boundedline(tx.data(1:10000),lper.data(1:10000),2*lper.data(1:10000),'g','alpha');
 
-
+p
 sp(2) = subplot(2,1,2);
 imagesc([0:(rhm.size(1)-1)]/rhm.sampleRate,fs,log10(rhm.data)');
 axis xy;
@@ -333,13 +333,15 @@ xlabel('Time (s)')
 
 %% Place fields
 
-MTAstartup('cin','cin');
-Trial = MTATrial('Ed10-20140812');
-%MTAstartup;
+%MTAstartup('cin','cin');
+%Trial = MTATrial('Ed10-20140812');
+MTAstartup;
 %Trial = MTATrial('jg05-20120317');
-%Trial = MTATrial('jg05-20120310');
+Trial = MTATrial('jg05-20120310');
 %Trial = MTATrial('jg05-20120309');
-states = {'theta','rear&theta','walk&theta','hang&theta','lang&theta'};
+%states = {'theta','rear&theta','walk&theta','hang&theta','lang&theta'};
+states = {'theta','rear&theta','walk&theta','hswalk&theta','lswalk&theta'};
+%states = {'hswalk&theta','lswalk&theta'};
 nsts = numel(states);
 units = select_units(Trial,18,'pyr');
 
@@ -386,7 +388,7 @@ for u = pfs{1}.data.clu,
     set(gcf,'paperposition',[0,0,3.4,21])
     saveas(gcf,fullfile('/gpfs01/sirota/homes/gravio/',...
                         'figures','GoettingenPoster',...
-                        ['pfsS_' Trial.filebase '-' num2str(u) '.png']),'png');
+                        ['pfsShmm_' Trial.filebase '-' num2str(u) '.png']),'png');
 end
 
 
@@ -396,8 +398,8 @@ end
 %Trial = MTATrial('Ed10-20140813');
 
 MTAstartup;
-%Trial = MTATrial('jg05-20120309');
-Trial = MTATrial('jg05-20120311');
+Trial = MTATrial('jg05-20120309');
+%Trial = MTATrial('jg05-20120310');
 %Trial = MTATrial('er01-20110719');
 [rhm,fs,ts] = fet_rhm(Trial,[],'Sspectral');
 xyz = Trial.xyz.copy;xyz.load(Trial);xyz.filter(gtwin(.05,xyz.sampleRate));
@@ -425,11 +427,50 @@ xyz.resample(rhmpow);
 
 rhmlims = linspace(-6,-2,40);
 anglims = linspace(-1.4,1.4,40);
+figure,hist2([ang(Trial.stc{'h'},5,7,2),rhmpow(Trial.stc{'h'})],anglims,rhmlims);
+figure,hist2([ang(Trial.stc{'l'},5,7,2),rhmpow(Trial.stc{'l'})],anglims,rhmlims);
 figure,hist2([ang(Trial.stc{'w'},5,7,2),rhmpow(Trial.stc{'w'})],anglims,rhmlims);
 set(gca,'YTickLabelMode','manual');
 set(gca,'YTickLabel',{});
 set(gca,'XTickLabelMode','manual');
 set(gca,'XTickLabel',{});
+
+bper = Trial.stc{'w',rhmpow.sampleRate}.copy;
+bper.cast('TimeSeries');
+xaind = nniz(ang(:,5,7,2))&nniz(rhmpow.data)&bper(1:ang.size(1));
+fet = [ang(xaind,5,7,2),rhmpow(xaind)];
+[bsts,bhmm,bdcd] = gausshmm(fet,2);
+
+fasts = zeros([ang.size(1),1]);
+fasts(xaind) = bsts;
+
+figure,
+plot(fasts),
+Lines(Trial.stc{'w'}(:,1),[],'m');
+Lines(Trial.stc{'w'}(:,2),[],'m');
+ylim([-1,3])
+figure,hist(ang(fasts==1,5,7,2),100)
+figure,hist(ang(fasts==2,5,7,2),100)
+
+
+g = 2;l = 1;
+Trial.stc.addState(Trial.spath,...
+                   Trial.filebase,...
+                   fasts==g,...
+                   rhmpow.sampleRate,...
+                   Trial.xyz.sync.copy,...
+                   Trial.xyz.origin,...
+                   'hswalk','h','TimeSeries');
+Trial.stc.states{Trial.stc.gsi('h')}.cast('TimePeriods');
+
+Trial.stc.addState(Trial.spath,...
+                   Trial.filebase,...
+                   fasts==l,...
+                   rhmpow.sampleRate,...
+                   Trial.xyz.sync.copy,...
+                   Trial.xyz.origin,...
+                   'lswalk','l','TimeSeries');
+Trial.stc.states{Trial.stc.gsi('l')}.cast('TimePeriods');
 
     
 %% Results
