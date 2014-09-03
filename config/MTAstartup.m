@@ -31,6 +31,7 @@ switch host_server
         end
 
     case 'mypc'
+        addpath('C:/Users/share/matlab/MTA/');
         switch data_server
             case 'mypc'
                 MTAConfiguration('C:\Users\justi_000\data','absolute');        

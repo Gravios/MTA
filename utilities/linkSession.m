@@ -1,7 +1,17 @@
 function linkSession(session_name,xyz_path,nlx_path)
 %function linkSession(session_name,xyz_path,nlx_path)
-    
-    Session = MTASession([]);
+
+%need to make cygwin system('C:\cygwin64\bin\bash -c CYGWIN=winsymlinks:native;/bin/ls')    
+%system('C:\cygwin64\bin\bash -c ''/bin/ln -s /cygdrive/c/Users/justi_000/Documents/MATLAB/dlmtest.txt  /cygdrive/c/Users/justi_000/Documents/MATLAB/dlmt.txt''')
+%system(['C:\cygwin64\bin\bash -c ''export CYGWIN64="winsymlinks:native";/bin/ln -s c:/Users/justi_000/Documents/MATLAB/dlmtest.txt  `c:/Users/justi_000/Documents/MATLAB/dlmt.txt;c:/Users/justi_000/Documents/MATLAB/dlmtest.txt'' -> `c:/Users/justi_000/Documents/MATLAB/dlmt.txt'''''])
+
+
+%system(['C:\cygwin64\bin\bash -c export CYGWIN="winsymlinks:native";"/bin/ln -s -v c:/Users/justi_000/Documents/MATLAB/dlmtest.txt";`/cygdrive/c/Users/justi_000/Documents/MATLAB/dlmtest.txt -> `/cygdrive/c/Users/justi_000/Documents/MATLAB/dlmt.txt"'])
+%system(['C:\cygwin64\bin\bash -c export CYGWIN="winsymlinks:native";"/bin/ln -s -v /cygdrive/c/Users/justi_000/Documents/MATLAB/dlmtest.txt";`/cygdrive/c/Users/justi_000/Documents/MATLAB/dlmtest.txt -> `/cygdrive/c/Users/justi_000/Documents/MATLAB/dlmt.txt"'])
+%system(['C:\cygwin64\bin\bash -c export CYGWIN="winsymlinks:native";"/bin/ln -s -v c:/Users/justi_000/Documents/MATLAB/dlmtest.txt";`C:\Users\justi_000\Documents\MATLAB\dlmtest.txt -> `C:\Users\justi_000\Documents\MATLAB\dlmt.txt"'])
+%system(['C:\cygwin64\bin\bash -c export CYGWIN="winsymlinks:native";"/bin/ln -s -v c:/Users/justi_000/Documents/MATLAB/dlmtest.txt c:/Users/justi_000/Documents/MATLAB/dlmt.txt";`C:\Users\justi_000\Documents\MATLAB\dlmtest.txt'' -> `C:\Users\justi_000\Documents\MATLAB\dlmt.txt'''])
+
+Session = MTASession([]);
     datDir = fullfile(Session.path.data,session_name);
     try,mkdir(datDir);end
 

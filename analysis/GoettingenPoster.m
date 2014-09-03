@@ -339,15 +339,15 @@ MTAstartup;
 %Trial = MTATrial('jg05-20120317');
 Trial = MTATrial('jg05-20120310');
 %Trial = MTATrial('jg05-20120309');
-%states = {'theta','rear&theta','walk&theta','hang&theta','lang&theta'};
-states = {'theta','rear&theta','walk&theta','hswalk&theta','lswalk&theta'};
-%states = {'hswalk&theta','lswalk&theta'};
+states = {'theta','rear&theta','walk&theta','hang&theta','lang&theta'};
+%states = {'theta','rear&theta','walk&theta','hswalk&theta','lswalk&theta'};
+states = {'hswalk&theta','lswalk&theta'};
 nsts = numel(states);
 units = select_units(Trial,18,'pyr');
 
 pfs ={};
 for i = 1:numel(states),
-pfs{i} = MTAAknnpfs(Trial,units,states{i},false,'numIter',1,'ufrShufBlockSize',0,'binDims',[10,10],'distThreshold',125,'nNearestNeighbors',110);
+pfs{i} = MTAAknnpfs(Trial,units,states{i},false,'numIter',1,'ufrShufBlockSize',0,'binDims',[30,30],'distThreshold',125,'nNearestNeighbors',110);
 end
 
 % $$$ pfs = {};
@@ -463,6 +463,7 @@ Trial.stc.addState(Trial.spath,...
                    Trial.sync.copy,...
                    Trial.sync.data(1),...
                    'hswalk','h','TimePeriods');
+Trial.stc.states{Trial.stc.gsi('h')} = Trial.stc{'h',Trial.xyz.sampleRate}&Trial.stc{'w'};
 %Trial.stc.states{Trial.stc.gsi('h')}.cast('TimePeriods');
 
 Trial.stc.states(Trial.stc.gsi('l')) = [];
@@ -474,14 +475,24 @@ Trial.stc.addState(Trial.spath,...
                    Trial.sync.data(1),...
                    'lswalk','l','TimePeriods');
 %Trial.stc.states{Trial.stc.gsi('l')}.cast('TimePeriods');
+Trial.stc.states{Trial.stc.gsi('l')} = Trial.stc{'l',Trial.xyz.sampleRate}&Trial.stc{'w'};
+
+bper = Trial.stc{'w',rhmpow.sampleRate}.cast('TimeSeries');
+hper = Trial.stc{'h'}.cast('TimeSeries');
+lper = Trial.stc{'l'}.cast('TimeSeries');
+lper = Trial.stc{'l'}&Trial.stc{'w'};
+
+figure,plot(bper.data),Lines(Trial.stc{'w',rhmpow.sampleRate}(:),[],'k');
+hold on,plot(lper.data,'g')
+hold on,plot(hper.data,'r')
 
 bper = Trial.stc{'w'}.cast('TimeSeries');
 hper = Trial.stc{'h'}.cast('TimeSeries');
 lper = Trial.stc{'l'}.cast('TimeSeries');
-
 figure,plot(bper.data),Lines(Trial.stc{'w'}(:),[],'k');
 hold on,plot(lper.data,'g')
 hold on,plot(hper.data,'r')
+
 
 %% Results
 
@@ -531,7 +542,8 @@ units = select_units(Trial,18,'pyr');
 pfs ={};
 for c = 1:size(states,1),
 for i = 1:size(states,2),
-pfs{i,c} = MTAAknnpfs(Trial,units,states{c,i},false,'numIter',1,'ufrShufBlockSize',0,'binDims',[10,10],'distThreshold',125,'nNearestNeighbors',110);
+%pfs{i,c} = MTAAknnpfs(Trial,units,states{c,i},false,'numIter',1,'ufrShufBlockSize',0,'binDims',[10,10],'distThreshold',125,'nNearestNeighbors',110);
+    pfs{i,c} = MTAAknnpfs(Trial,units,states{c,i},false,'numIter',1,'ufrShufBlockSize',0,'binDims',[30,30],'distThreshold',125,'nNearestNeighbors',110);
 end
 end
 

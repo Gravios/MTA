@@ -13,7 +13,12 @@ function reportfig(varargin)
 
 TodayDate = date;
 DefFileName = ['mrep.' TodayDate];	
-DefRepPath = fullfile(getenv('HOME'),'figures');
+    if ispc,
+        DefRepPath = fullfile(getenv('HOMEPATH'),'figures');        
+    else
+        DefRepPath = fullfile(getenv('HOME'),'figures');
+    end
+    if ~exist(DefRepPath,'dir'),mkdir(DefRepPath),end
 
 [Trial,FigHandle, FileName, Preview,Comment,Resolution,SaveFig,FigCount] = ...
     DefaultArgs(varargin,{DefRepPath,gcf,DefFileName,0,'',300,0,false});
