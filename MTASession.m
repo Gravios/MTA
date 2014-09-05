@@ -203,8 +203,14 @@ classdef MTASession < hgsetget
         %
             [field] = DefaultArgs(varargin,{[]});
             if ~isempty(field),
-                if isa(Session.(field),'MTAData')
-                    Session.(field).load(Session); 
+                if isa(Session.(field),'MTAData')                    
+                    if nargout==1,
+                        Data = Session.(field).copy;
+                        Data = Data.load(Session); 
+                        Session = Data;
+                    else
+                        Session.(field).load(Session); 
+                    end
                 else
                     switch varargin{1}
                       case 'nq'

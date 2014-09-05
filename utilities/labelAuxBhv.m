@@ -34,7 +34,7 @@ if sempty||overwrite,
     mrhmp = nanmean(rhm_distrb.CData(rhm_distrb.YData>6&rhm_distrb.YData<13,:,1));
     mrhmp(mrhmp==0) = nan;
     angThresh = rhm_distrb.XData(find(mrhmp<.5,1,'first'));
-    
+    delete(afig);
     % Split walking state into low and high walk
     Stc.states = cat(2,Stc.states,walk_ang(Trial,angThresh));
 end
