@@ -345,9 +345,11 @@ states = {'hswalk&theta','lswalk&theta'};
 nsts = numel(states);
 units = select_units(Trial,18,'pyr');
 
+%ow = false;
+ow = true;
 pfs ={};
 for i = 1:numel(states),
-pfs{i} = MTAAknnpfs(Trial,units,states{i},false,'numIter',1,'ufrShufBlockSize',0,'binDims',[30,30],'distThreshold',125,'nNearestNeighbors',110);
+pfs{i} = MTAAknnpfs(Trial,units,states{i},ow,'numIter',1,'ufrShufBlockSize',0,'binDims',[30,30],'distThreshold',125,'nNearestNeighbors',110);
 end
 
 % $$$ pfs = {};
@@ -393,107 +395,6 @@ for u = pfs{1}.data.clu,
 end
 
 
-%% Segmentation of walking
-
-%MTAstartup('cin','cin');
-%Trial = MTATrial('Ed10-20140813');
-
-MTAstartup;
-Trial = MTATrial('jg05-20120309');
-%Trial = MTATrial('jg05-20120310');
-%Trial = MTATrial('er01-20110719');
-[rhm,fs,ts] = fet_rhm(Trial,[],'Sspectral');
-xyz = Trial.xyz.copy;xyz.load(Trial);xyz.filter(gtwin(.05,xyz.sampleRate));
-ang = Trial.ang.copy;ang.create(Trial,xyz);
-
-nrhm = rhm.copy;
-nrhm.data = log10(nrhm.data);
-nrhm.data(nrhm.data<-9) = nan;
-
-% $$$ mean_rhm =  nanmean(nrhm(nniz(nrhm),:));
-% $$$ std_rhm =   nanstd(nrhm(nniz(nrhm),:));
-% $$$ nrhm.data = bsxfun(@ldivide,bsxfun(@minus,nrhm.data,mean_rhm),std_rhm);
-
-%figure,imagesc(ts,fs,nrhm.data'),axis xy,
-%figure,plot(median(nrhm(:,fs>5&fs<14),2))
-
-rhmpow =median(nrhm(:,fs>5&fs<14),2);
-rhmpow = MTADlfp('data',rhmpow,'sampleRate',nrhm.sampleRate);
-ang.resample(rhmpow);
-xyz.resample(rhmpow);
-
-p%hper = Trial.stc{'hang'};
-%lper = Trial.stc{'lang'};
-%rper = Trial.stc{'rear'};
-
-rhmlims = linspace(-6,-2,40);
-anglims = linspace(-1.4,1.4,40);
-figure,hist2([ang(Trial.stc{'h'},5,7,2),rhmpow(Trial.stc{'h'})],anglims,rhmlims);
-figure,hist2([ang(Trial.stc{'l'},5,7,2),rhmpow(Trial.stc{'l'})],anglims,rhmlims);
-figure,hist2([ang(Trial.stc{'w'},5,7,2),rhmpow(Trial.stc{'w'})],anglims,rhmlims);
-set(gca,'YTickLabelMode','manual');
-set(gca,'YTickLabel',{});
-set(gca,'XTickLabelMode','manual');
-set(gca,'XTickLabel',{});
-
-bper = Trial.stc{'w',rhmpow.sampleRate}.copy;
-bper.cast('TimeSeries');
-xaind = nniz(ang(:,5,7,2))&nniz(rhmpow.data)&bper(1:ang.size(1));
-fet = [ang(xaind,5,7,2),rhmpow(xaind)];
-[bsts,bhmm,bdcd] = gausshmm(fet,2);
-
-fasts = zeros([ang.size(1),1]);
-fasts(xaind) = bsts;
-
-figure,
-plot(fasts),
-Lines(Trial.stc{'w'}(:,1),[],'m');
-Lines(Trial.stc{'w'}(:,2),[],'m');
-ylim([-1,3])
-figure,hist(ang(fasts==1,5,7,2),100)
-figure,hist(ang(fasts==2,5,7,2),100)
-
-
-g = 2;l = 1;
-Trial.stc.states(Trial.stc.gsi('h')) = [];
-Trial.stc.addState(Trial.spath,...
-                   Trial.filebase,...
-                   ThreshCross(fasts==g,.5,1),...                   
-                   rhmpow.sampleRate,...
-                   Trial.sync.copy,...
-                   Trial.sync.data(1),...
-                   'hswalk','h','TimePeriods');
-Trial.stc.states{Trial.stc.gsi('h')} = Trial.stc{'h',Trial.xyz.sampleRate}&Trial.stc{'w'};
-%Trial.stc.states{Trial.stc.gsi('h')}.cast('TimePeriods');
-
-Trial.stc.states(Trial.stc.gsi('l')) = [];
-Trial.stc.addState(Trial.spath,...
-                   Trial.filebase,...
-                   ThreshCross(fasts==l,.5,1),...
-                   rhmpow.sampleRate,...
-                   Trial.sync.copy,...
-                   Trial.sync.data(1),...
-                   'lswalk','l','TimePeriods');
-%Trial.stc.states{Trial.stc.gsi('l')}.cast('TimePeriods');
-Trial.stc.states{Trial.stc.gsi('l')} = Trial.stc{'l',Trial.xyz.sampleRate}&Trial.stc{'w'};
-
-bper = Trial.stc{'w',rhmpow.sampleRate}.cast('TimeSeries');
-hper = Trial.stc{'h'}.cast('TimeSeries');
-lper = Trial.stc{'l'}.cast('TimeSeries');
-lper = Trial.stc{'l'}&Trial.stc{'w'};
-
-figure,plot(bper.data),Lines(Trial.stc{'w',rhmpow.sampleRate}(:),[],'k');
-hold on,plot(lper.data,'g')
-hold on,plot(hper.data,'r')
-
-bper = Trial.stc{'w'}.cast('TimeSeries');
-hper = Trial.stc{'h'}.cast('TimeSeries');
-lper = Trial.stc{'l'}.cast('TimeSeries');
-figure,plot(bper.data),Lines(Trial.stc{'w'}(:),[],'k');
-hold on,plot(lper.data,'g')
-hold on,plot(hper.data,'r')
-
-
 %% Results
 
 % Network Dynamics 
@@ -533,10 +434,13 @@ MTAstartup;
 %Trial = MTATrial('jg05-20120317');
 Trial = MTATrial('jg05-20120310');
 %Trial = MTATrial('jg05-20120309');
-states = {'theta','rear&theta','walk&theta','hang&theta','lang&theta';'theta','rear&theta','walk&theta','hswalk&theta','lswalk&theta'};
 
+states = {'theta','rear&theta','walk&theta','hang&theta','lang&theta';'theta','rear&theta','walk&theta','hswalk&theta','lswalk&theta'};
 %states = {'hswalk&theta','lswalk&theta'};
 nsts = size(states,2);
+
+
+
 units = select_units(Trial,18,'pyr');
 
 pfs ={};
@@ -580,7 +484,7 @@ for c = 1:2,
         set(gca,'YTickLabel',{});
         set(gca,'XTickLabelMode','manual');
         set(gca,'XTickLabel',{});
-        %set(gca,'Position',get(gca,'Position').*[0,1,1,1]+[0,0,.1475,0]);
+        %set(gnca,'Position',get(gca,'Position').*[0,1,1,1]+[0,0,.1475,0]);
         %set(gca,'OuterPosition',get(gca,'OuterPosition').*[0,1,1.1,1.2]);
         %if s == 1,         title([Trial.filebase '-' num2str(u)]);end
     end
@@ -593,5 +497,201 @@ end
 u = figure_controls(gcf,u,units);
 end
 
+
+
+figure,
+subplot(121),
+hist2([ang(Trial.stc{'w'},5,7,2),rhmpow(Trial.stc{'w'})],anglims,rhmlims);
+title('JPFD for Walking Periods')
+xlabel('head pitch');;
+ylabel('rhm(6-13) pow');;
+title(
+subplot(122),
+hist2([ang(Trial.stc{'r'}+[-2,0],5,7,2),rhmpow(Trial.stc{'r'}+[-2,0])],anglims,rhmlims);
+title('JPFD for Rearing Periods and 2 seconds before rear')
+xlabel('head pitch');;
+ylabel('rhm(6-13) pow');;
+
+
+%% CCGs and phases
+Trial = MTATrial('jg05-20120317');
+
+%Calculate bhv trans ccgs
+states = {'theta','rear&theta','walk&theta','hang&theta','lang&theta';'theta','rear&theta','walk&theta','hswalk&theta','lswalk&theta'};
+nsts = size(states,2);
+units = select_units(Trial,18,'pyr');
+pfs ={};
+for c = 1:size(states,1),
+for i = 1:size(states,2),
+%pfs{i,c} = MTAAknnpfs(Trial,units,states{c,i},false,'numIter',1,'ufrShufBlockSize',0,'binDims',[10,10],'distThreshold',125,'nNearestNeighbors',110);
+    pfs{i,c} = MTAAknnpfs(Trial,units,states{c,i},false,'numIter',1,'ufrShufBlockSize',0,'binDims',[10,10],'distThreshold',125,'nNearestNeighbors',110);
+end
+end
+
+cstates = {'theta','rear','walk','hswalk','lswalk'};
+%cstates = {'theta','rear','walk','hang','lang'};
+
+Sccg = {};
+Spkb = {};
+for s = 1:nsts,
+Sccg{s} = gen_bhv_ccg(Trial,cstates{s},1);
+Spkb{s} = Trial.spk.copy;
+Spkb{s}.create(Trial,Trial.xyz.sampleRate,cstates{s},[],'deburst');
+end
+
+xyz = Trial.xyz.copy;xyz.load(Trial);
+lfp = Trial.lfp.copy;
+lfp.create(Trial,[61,75,82,88]);
+lfp.resample(xyz);
+phs = lfp.phase;
+
+
+
+hfig = figure(933848);
+auto = true;
+ny = 4;
+set(hfig,'paperposition',[0,0,12,4])
+u = units(1);
+while u~=-1
+
+    onm = max([Sccg{1}.ccg(:,u,1),Sccg{2}.ccg(:,u,1),Sccg{3}.ccg(:,u,1),Sccg{4}.ccg(:,u,1),Sccg{5}.ccg(:,u,1)]);
+    ofm = max([Sccg{1}.ccg(:,u,2),Sccg{2}.ccg(:,u,2),Sccg{3}.ccg(:,u,2),Sccg{4}.ccg(:,u,2),Sccg{5}.ccg(:,u,2)]);
+    mylim = [0,max([onm,ofm])];
+    mrate =zeros([1,5]);
+    for s = 1:nsts,
+        mrate(s) = max(pfs{s}.data.rateMap(:,pfs{s}.data.clu==u));
+    end
+    mrate = max(mrate);
+    %if mrate<5,continue,end
+
+    
+    for s = 1:nsts
+        subplot2(ny,nsts,[1,2],s);
+        pfs{s,1}.plot(u,[],[],[0,mrate]);
+        set(gca,'YTickLabelMode','manual');
+        set(gca,'YTickLabel',{});
+        set(gca,'XTickLabelMode','manual');
+        set(gca,'XTickLabel',{});
+
+        %title(num2str(u));
+        subplot2(ny,nsts,3,s);
+        Sccg{s}.plot(u,1,gausswin(11)./sum(gausswin(11)));axis tight
+        ylim(mylim);
+        if s~=1,
+                    set(gca,'YTickLabelMode','manual');
+        set(gca,'YTickLabel',{});
+        set(gca,'XTickLabelMode','manual');
+        set(gca,'XTickLabel',{});
+        
+        end
+        subplot2(ny,nsts,4,s);
+        Sccg{s}.plot(u,2,gausswin(11)./sum(gausswin(11)));axis tight
+        ylim(mylim);
+        if s~=1,
+                    set(gca,'YTickLabelMode','manual');
+        set(gca,'YTickLabel',{});
+        
+        end 
+       
+        
+% $$$         subplot2(ny,nsts,[5,6],s);
+% $$$         try,circ_plot(phs(Spkb{s}(u),1),'hist',[],30,true,true),end
+% $$$ try,circ_plot(circ_dist(phs(Spkb{s}(u),4),phs(Spkb{s}(u),2)),'hist',[],30,true,true),end
+% $$$         subplot2(ny,nsts,[7,8],s);
+% $$$         try,circ_plot(phs(Spkb{s}(u),2),'hist',[],30,true,true),end
+% $$$         subplot2(ny,nsts,[9,10],s);
+% $$$         try,circ_plot(phs(Spkb{s}(u),3),'hist',[],30,true,true),end
+% $$$         subplot2(ny,nsts,[11,12],s);
+% $$$         try,circ_plot(circ_dist(phs(Spkb{s}(u),4),phs(Spkb{s}(u),3)),'hist',[],30,true,true),end
+    end
+
+    saveas(gcf,fullfile('/gpfs01/sirota/homes/gravio/',...
+                        'figures','GoettingenPoster',...
+                        ['pfsCCG_' Trial.filebase '-' num2str(u) '.png']),'png');
+
+    u = figure_controls(hfig,u,units,auto);
+end
+ 
+
+
+%% Mean RHM PSD on bhv onset
+figure
+
+mrrhm = GetSegs(rhm.data,Trial.stc{'r',rhm.sampleRate}(:,1)-24,48,nan);
+%figure,
+subplot(1,3,1)
+imagesc(linspace(-24/rhm.sampleRate,24/rhm.sampleRate,48),fs,sq(nanmean(mrrhm,2))'),axis xy
+title('mean RHM PSD triggered on rearing onset')
+ylabel('frequencey')
+xlabel('time (s)')
+caxis([0,1.1])
+
+mrrhm = GetSegs(rhm.data,Trial.stc{'h',rhm.sampleRate}(:,1)-24,48,nan);
+subplot(1,3,2)
+%figure,
+imagesc(linspace(-24/rhm.sampleRate,24/rhm.sampleRate,48),fs,sq(nanmean(mrrhm,2))'),axis xy
+title('mean RHM PSD triggered on high walk onset')
+ylabel('frequencey')
+xlabel('time (s)')
+caxis([0,1.1])
+
+mrrhm = GetSegs(rhm.data,Trial.stc{'l',rhm.sampleRate}(:,1)-24,48,nan);
+%figure,
+subplot(1,3,3)
+imagesc(linspace(-24/rhm.sampleRate,24/rhm.sampleRate,48),fs,sq(nanmean(mrrhm,2))'),axis xy
+title('mean RHM PSD triggered on low walk onset')
+ylabel('frequencey')
+xlabel('time (s)')
+caxis([0,1.1])
+
+
+
+%% Walks segmentation into low and high walk
+nrhm = rhm.copy;
+%nrhm.data = log10(nrhm.data);
+%nrhm.data(nrhm.data<-9) = nan;
+
+rhmpow =median(nrhm(:,fs>5&fs<14),2);
+rhmpow = MTADlfp('data',rhmpow,'sampleRate',nrhm.sampleRate);
+
+rang = Trial.ang.copy;rang.load(Trial);
+rang.resample(rhmpow);
+
+
+
+figure,hist2([rang(Trial.stc{'w'},5,7,2),rhmpow(Trial.stc{'w'})], ...
+           linspace(-1.2,1.2,30),linspace(-.5,2,30)),caxis([0,45])
+        set(gca,'YTickLabelMode','manual');
+        set(gca,'YTickLabel',{});
+        set(gca,'XTickLabelMode','manual');
+        set(gca,'XTickLabel',{});
+
+saveas(gcf,fullfile('/gpfs01/sirota/homes/gravio/',...
+                    'figures','GoettingenPoster',...
+                    ['walk_seg_walk' Trial.filebase '.png']),'png');
+
+figure,hist2([rang(Trial.stc{'h'},5,7,2),rhmpow(Trial.stc{'h'})],linspace(-1.2,1.2,30),linspace(-0.5,2,30)),caxis([0,45])
+        set(gca,'YTickLabelMode','manual');
+        set(gca,'YTickLabel',{});
+        set(gca,'XTickLabelMode','manual');
+        set(gca,'XTickLabel',{});
+saveas(gcf,fullfile('/gpfs01/sirota/homes/gravio/',...
+                    'figures','GoettingenPoster',...
+                    ['walk_seg_hwalk' Trial.filebase '.png']),'png');
+
+figure,hist2([rang(Trial.stc{'l'},5,7,2),rhmpow(Trial.stc{'l'})],linspace(-1.2,1.2,30),linspace(-0.5,2,30)),caxis([0,45])
+        set(gca,'YTickLabelMode','manual');
+        set(gca,'YTickLabel',{});
+        set(gca,'XTickLabelMode','manual');
+        set(gca,'XTickLabel',{});
+saveas(gcf,fullfile('/gpfs01/sirota/homes/gravio/',...
+                    'figures','GoettingenPoster',...
+                    ['walk_seg_lwalk' Trial.filebase '.png']),'png');
+
+
+
+%%Final components of  poster
+
+%% good rear ccg temporal dynamics
 
 

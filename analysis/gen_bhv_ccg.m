@@ -6,4 +6,5 @@ sper = Trial.stc.filter(Trial.lfp.sampleRate,{state,{'exclusion',{state},2},{'du
 if ~iscell(sper), sper = mat2cell(sper,size(sper,1),[1,1]);end
 
 Bccg = MTAccg(Trial,state,['CCG around' state 'and offset'], ...
-              sper,{[state ' onset'],[state ' offset']},'overwrite',true);
+              sper,{[state ' onset'],[state ' offset']},'overwrite',true,...
+              'normalization','count');

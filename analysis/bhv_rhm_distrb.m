@@ -23,8 +23,9 @@ set(figH,'pos',[14,325,1181,420+(420*(numel(mode)-1))]);
 
 
 [rhm,fs] = fet_rhm(Trial,xyz.sampleRate,'Swspectral');
+%[rhm,fs] = fet_rhm(Trial,xyz.sampleRate,'Sspectral');
 rhm.data  = log10(rhm.data);
-rhm.data(rhm<-8) = nan;
+rhm.data(rhm<-9) = nan;
 rhm.data(nniz(rhm.data))=nan;
 vel = xyz.vel(1);
 vel.resample(rhm);
@@ -78,6 +79,7 @@ mrv(N<20,:) = nan;
 
 
 subplot2(numel(mode),2,m,1);
+%figure
 imhand = imagescnan({vedgs,fs,mrv'},prctile(mrv(nniz(mrv(:))),[5,95]),false,1,[0,0,0]);axis xy,
 set(imhand,'tag', [mfilename,'-',mode{m}])
 title(['Mean RHM psd Given ' mode{m}]);

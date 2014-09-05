@@ -398,6 +398,7 @@ classdef MTASession < hgsetget
             
         end
         
+        % Is this right?
         if round(Data.origin*Data.sampleRate) ~= newOrigin;
             Data.origin = newOrigin/Data.sampleRate;
         end

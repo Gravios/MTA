@@ -3,8 +3,9 @@ Trial = MTATrial('jg05-20120317');
 Trial.load('xyz');
 lfp = Trial.lfp.copy;
 lfp.create(Trial,61);
+lfp.resample(Trial.xyz);
 phs = lfp.phase;
-phs.resample(Trial.xyz);
+
 
 %rphs = GetSegs(phs.data,round(Trial.stc{'r',lfp.sampleRate}(:,1)-3*phs.sampleRate),round(6*phs.sampleRate),0);
 %figure,imagesc(rphs(:,:)'),axis  xy,

@@ -275,7 +275,7 @@ methods
             if length(partitions) > 1 
                 axis_handel = imagescnan({Bccg.tbin,Bccg.partition_boundaries});
             else
-                bar(Bccg.tbin,Bccg.ccg(:,unit,partitions));
+                bar(Bccg.tbin/1000,Bccg.ccg(:,unit,partitions));
             end
         end
 end

@@ -5,7 +5,7 @@ Trial.load('nq');
 
 
 stc_mode = 'auto_wbhr';
-sesList = {{'er01-20110719','cof','all'},...
+sesList = {...
            {'jg05-20120309','cof','all'},...
            {'jg05-20120310','cof','all'},...
            {'jg05-20120317','cof','all'}};
@@ -19,7 +19,7 @@ states = {'theta','rear&theta','walk&theta','hang&theta','lang&theta'};
 numsts = numel(states);
 pfstats = {};
 pfshuff = {};
-%pfs={};
+pfs={};
 
 try,matlabpool('open',12);,catch,matlabpool('close');matlabpool('open',12),end
 
@@ -59,9 +59,86 @@ matlabpool('close');
 apfs = CatStruct(cat(1,pfstats{:}),[],1,[],0);
 anq = CatStruct(cat(1,anq{:}),[],1,[],0)
 
-pind = max([apfs.peakFR(:,4,1),apfs.peakFR(:,5,1)],[],2)>10&anq.eDist>18&anq.SpkWidthR>.7;
+pind = max([apfs.peakFR(:,4,1),apfs.peakFR(:,5,1)],[],2)>10&anq.eDist>25&anq.SpkWidthR>.7;
 figure,hist(apfs.peakFR(pind,4,1)-apfs.peakFR(pind,5,1),20)
-figure,hist((apfs.peakFR(pind,4,1)-apfs.peakFR(pind,5,1))./max([apfs.peakFR(pind,4,1),apfs.peakFR(pind,5,1)],[],2),20)
+figure,hist((apfs.peakFR(pind,4,1)-apfs.peakFR(pind,5,1))./ ...
+            max([apfs.peakFR(pind,4,1),apfs.peakFR(pind,5,1)],[],2),20)
+
+
+
+figure,hist((apfs.peakFR(pind,2,1)-apfs.peakFR(pind,3,1))./max([apfs.peakFR(pind,2,1),apfs.peakFR(pind,3,1)],[],2),20)
+
+figure,hist((apfs.patchMFR(pind,2,1)-apfs.patchMFR(pind,3,1))./max([apfs.patchMFR(pind,2,1),apfs.patchMFR(pind,3,1)],[],2),20)
+
+figure,
+
+set(gcf,'paperposition',[0,0,4.5,4])
+
+pind = max([apfs.peakFR(:,2,1),apfs.peakFR(:,3,1)],[],2)>2&anq.eDist>25&anq.SpkWidthR>.7;
+%figure,
+clf
+plot(apfs.patchMFR(pind,3,1),apfs.patchMFR(pind,2,1),'.')
+title('Mean Field Firing Rates')
+xlabel('Walk');
+ylabel('Rear');
+mr = max([max(apfs.patchMFR(:,2,1)),max(apfs.patchMFR(:,3,1))]);
+hold on,line([0,mr],[0,mr]);
+xlim([0,mr]);
+ylim([0,mr]);
+set(gca,'FontSize',30,'fontWeight','bold')
+set(findall(gcf,'type','text'),'FontSize',30,'fontWeight','bold')
+saveas(gcf,fullfile('/gpfs01/sirota/homes/gravio/',...
+                    'figures','GoettingenPoster',...
+                    ['Pop_pfsStats_Walk_Rear.png']),'png');
+
+pind = max([apfs.peakFR(:,2,1),apfs.peakFR(:,4,1)],[],2)>2&anq.eDist>25&anq.SpkWidthR>.7;
+%figure,
+clf
+plot(apfs.patchMFR(pind,4,1),apfs.patchMFR(pind,2,1),'.')
+title('Mean Field Firing Rates')
+xlabel('High Walk');
+ylabel('Rear');
+mr = max([max(apfs.patchMFR(:,2,1)),max(apfs.patchMFR(:,4,1))]);
+hold on,line([0,mr],[0,mr]);
+xlim([0,mr]);
+ylim([0,mr]);
+saveas(gcf,fullfile('/gpfs01/sirota/homes/gravio/',...
+                    'figures','GoettingenPoster',...
+                    ['Pop_pfsStats_HighWalk_Rear.png']),'png');
+
+
+pind = max([apfs.peakFR(:,2,1),apfs.peakFR(:,5,1)],[],2)>2&anq.eDist>25&anq.SpkWidthR>.7;
+%figure,
+clf
+plot(apfs.patchMFR(pind,5,1),apfs.patchMFR(pind,2,1),'.')
+title('Mean Field Firing Rates')
+xlabel('Low Walk');
+ylabel('Rear');
+mr = max([max(apfs.patchMFR(:,2,1)),max(apfs.patchMFR(:,5,1))]);
+hold on,line([0,mr],[0,mr]);
+xlim([0,mr]);
+ylim([0,mr]);
+saveas(gcf,fullfile('/gpfs01/sirota/homes/gravio/',...
+                    'figures','GoettingenPoster',...
+                    ['Pop_pfsStats_LowWalk_Rear.png']),'png');
+
+
+
+pind = max([apfs.peakFR(:,4,1),apfs.peakFR(:,5,1)],[],2)>2&anq.eDist>25&anq.SpkWidthR>.7;
+%figure,
+clf
+plot(apfs.patchMFR(pind,5,1),apfs.patchMFR(pind,4,1),'.')
+title('Mean Field Firing Rates')
+xlabel('Low Walk');
+ylabel('High Walk');
+mr = max([max(apfs.patchMFR(:,4,1)),max(apfs.patchMFR(:,5,1))]);
+hold on,line([0,mr],[0,mr]);
+xlim([0,mr]);
+ylim([0,mr]);
+saveas(gcf,fullfile('/gpfs01/sirota/homes/gravio/',...
+                    'figures','GoettingenPoster',...
+                    ['Pop_pfsStats_LowWalk_HighWalk.png']),'png');
+
 
 % $$$ u  = 197;
 % $$$ p  = 1;

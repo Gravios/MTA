@@ -107,12 +107,14 @@ classdef MTADepoch < MTAData
                 Data.data = Data.data+repmat(b,[Data.size(1),1]);
                 perDur = diff(Data.data,1,2);
                 Data.data(perDur<=0) = [];
+                Data.data(Data.data(:,1)<=0|Data.data(:,2)<=0,:) = [];                
             elseif isa(b,'MTADepoch')&&isvector(a)
                 Data = b.copy;
                 a = a*b.sampleRate;
                 Data.data = Data.data+repmat(a,[Data.size(1),1]);
                 perDur = diff(Data.data,1,2);
                 Data.data(perDur<=0) = [];
+                Data.data(Data.data(:,1)<=0|Data.data(:,2)<=0,:) = [];                
             elseif isa(b,'MTADepoch')&&isa(a,'MTADepoch')
                 %Data = 
             end
