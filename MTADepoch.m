@@ -11,7 +11,12 @@ classdef MTADepoch < MTAData
 %
 %  Behavior:
 %    
-%      
+%  Operators:
+%
+%    "+": (TimePeriods) Works with a 1x2 array, which contains an amount of
+%                       time, in seconds, to add to either end of each
+%                       start/stop within the collection of stored epochs
+%    
 %   
 %  Variables:
 %    
@@ -24,13 +29,24 @@ classdef MTADepoch < MTAData
 %    sampleRate:  double, Number of samples per second to which start and stop
 %                         values of the data corespond.
 %
+%    label:       string, name associated with the type of epochs
+%
+%    key:           char, single character used for keyboard shortcuts and indexing
+%
 %    syncPeriods: MTADepoch, time periods in reference to larger timescale
 %                            indicating where the data fits in a Session
 
     properties
+        %data - double: matrix of size Nx2, where N is the number of epochs
         data 
+        
+        %label - string: name associated with the type of epochs
         label
+        
+        %key - char: single character used for keyboard shortcuts and indexing
         key
+        
+        %model - Reserved for future versions
         model = [];
     end
     
@@ -50,6 +66,10 @@ classdef MTADepoch < MTAData
         end
         
         function Data = load(Data,varargin)
+        % function Data = load(Data,varargin)
+        % 
+        % Loads an MTADepoch object from the location in its path property with the
+        % filename found in its filename property
             [Session,sync] = DefaultArgs(varargin,{[],[]});
             if ~isempty(Data.filename)
                 load(Data.fpath);
@@ -73,6 +93,14 @@ classdef MTADepoch < MTAData
         end
         
         function out = save(Data,varargin)
+        % function out = save(Data,varargin)
+        % 
+        % saves an MTADepoch object under the location in its path property under the
+        % filename found in its filename property
+        % 
+        % Output:
+        %     out: boolean - true if save was successful
+        %
             [overwrite] = DefaultArgs(varargin,{0});
             out = false;
             
@@ -90,6 +118,12 @@ classdef MTADepoch < MTAData
         end
 
         function Data = create(Data,Session,funcHandle,varargin)            
+        % function Data = create(Data,Session,funcHandle,varargin)            
+        % 
+        % Calls one of the heuristic fuctions for state segmentation
+        % 
+        % Note: This fuction is not ready for general use
+        %
             [data,sampleRate,l,k] = feval(funcHandle,Session);
             [label,key] = DefaultArgs(varargin,{l,k});
             Data.path = Session.spath;
@@ -101,6 +135,20 @@ classdef MTADepoch < MTAData
         end
 
         function Data = plus(a,b)
+        %function Data = plus(a,b)
+        %
+        % Inuput takes either a two element vector which indicates a time
+        %  shift to the start and stop point of each period within the
+        %  MTADepoch object.
+        %
+        % Note: if addition or subtraction results in a period where the
+        %       start precedes the stop then that period will be removed
+        %
+        % Note: if addition or subtraction results two periods overlaping
+        %       they will be merged into a single period
+        %
+        % Future: Addition of two MTADepochs will return their intersection
+        %       
             if isa(a,'MTADepoch')&&isvector(b)
                 Data = a.copy;
                 b = b*a.sampleRate;
@@ -108,6 +156,7 @@ classdef MTADepoch < MTAData
                 perDur = diff(Data.data,1,2);
                 Data.data(perDur<=0) = [];
                 Data.data(Data.data(:,1)<=0|Data.data(:,2)<=0,:) = [];                
+
             elseif isa(b,'MTADepoch')&&isvector(a)
                 Data = b.copy;
                 a = a*b.sampleRate;
@@ -115,9 +164,19 @@ classdef MTADepoch < MTAData
                 perDur = diff(Data.data,1,2);
                 Data.data(perDur<=0) = [];
                 Data.data(Data.data(:,1)<=0|Data.data(:,2)<=0,:) = [];                
+
             elseif isa(b,'MTADepoch')&&isa(a,'MTADepoch')
                 %Data = 
             end
+            
+            if sum((Data.data(2:end,1)-Data.data(1:end-1,2))<=0)>0;
+                ndata = Data.data(1,:);
+                for i = 2:Data.size(1),
+                    ndata = JoinRanges(ndata,Data.data(i,:));
+                end
+                Data.data = ndata;
+            end
+    
         end
 
 % $$$         function perDiff = uminus(Data)
