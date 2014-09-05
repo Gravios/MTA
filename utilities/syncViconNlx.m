@@ -121,12 +121,12 @@ Session.sync.save(1);
 
 
 %% Concatenate all xyz pieces and fill gaps with zeros
-nSessions = length(xyzData);
+nViconTrials = length(xyzData);
 xyzLengths = cellfun(@length,xyzData);
 xyz = zeros([ceil(diff(syncPeriods([1,end]))*viconSampleRate),size(xyzData{1},2),size(xyzData{1},3)]);
 syncXyzStart = round((syncPeriods(1:length(syncPeriods))-syncPeriods(1))*viconSampleRate+1);
 %syncShift = [0;floor(diff([syncPeriods(1:end-1,2) syncPeriods(2:end,1)],1,2)*viconSampleRate)];
-for s=1:nSessions,
+for s=1:nViconTrials,
 % $$$     if syncShift(s),
 % $$$         xyz = cat(1,xyz,zeros(syncShift(s),size(xyzData{s},2),size(xyzData{s},3)));
 % $$$     end
@@ -147,7 +147,6 @@ Session.spk.create(Session);
 
 %% Update the synchronization periods of the LFP object
 Session.lfp.sync.sync = Session.sync.copy;
-%%!!!!!!!!!!!!!!Double Check !!!!!!!!!!!!!!!!!!!!!%%
 Session.lfp.origin =  Session.sync.data(1);
 
 %% MTAStateCollection object holds all behavioral sets of periods

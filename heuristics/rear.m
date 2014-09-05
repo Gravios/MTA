@@ -1,13 +1,23 @@
 function [rear_state] = rear(Session,method,varargin)
 
 if ~isa(Session,'MTASession'),
-    Session = MTASession(Session,{'ang'});
-elseif isempty(Session.ang),
-    Session = Session.load_ang();
+    Session = MTASession(Session);
 end
 
+ang = Session.ang.copy;
+if ang.isempty,
+    ang.load(Session);
+end
 
-rear_feature = abs(Session.xyz(:,'head_front',3)-Session.xyz(:,'spine_lower',3)).*Session.ang(:,'spine_middle','spine_upper',2);
+xyz = Session.xyz.copy;
+if xyz.isempty,
+    xyz.load(Session);
+end
+
+if xyz.sampleRate>120,xyz.resample(120);end
+if ang.sampleRate>120,ang.resample(120);end
+
+rear_feature = abs(xyz(:,'head_front',3)-xyz(:,'spine_lower',3)).*ang(:,'spine_middle','spine_upper',2);
 rear_feature(isnan(rear_feature))=0;
 switch method
     
@@ -38,16 +48,15 @@ switch method
     case 'com'
         %% Can't remember wat COM stands for
         [rearThresh,minimum_interval,display] = DefaultArgs(varargin,{50,64,0});
-        rearPeriods = ThreshCross(Filter0(gausswin(121)./sum(gausswin(121)),rear_feature)>rearThresh,...
+        rear_feature = MTADxyz('data',rear_feature,'sampleRate',xyz.sampleRate);
+        rearPeriods = ThreshCross(rear_feature.filter(gtwin(1,xyz.sampleRate))>rearThresh,...
             0.5,minimum_interval);
         
     case 'com0415'
-        [rearThresh,minimum_interval,display] = DefaultArgs(varargin,{0,50,0});
-        if isempty(Session.ang),
-            Session = Session.load_ang;
-        end
+      %%Non-Operational Code
+      [rearThresh,minimum_interval,display] = DefaultArgs(varargin,{0,50,0});
         win = 7;
-        xyz = reshape(Filter0(gausswin(win)./sum(gausswin(win)),Session.xyz),size(Session.xyz,1),size(Session.xyz,2),size(Session.xyz,3));
+        xyz = reshape(Filter0(gausswin(win)./sum(gausswin(win)),xyz.data),xyz.size);
         v = sqrt(sum(diff(xyz).^2,3));
         win = 241;
         comb = Filter0(gausswin(win)./sum(gausswin(win)),Session.com(Session.model.rb({'spine_lower','pelvis_root','spine_middle','spine_upper'})));
@@ -59,10 +68,10 @@ switch method
             comv(:,i) = ButFilter(comv(:,i),11,2./(Session.xyzSampleRate/2),'low');
             comv(:,i) = clip(comv(:,i),0.003,30);
         end
-        sfet = [circ_dist(Session.ang(:,2,3,1),Session.ang(:,1,2,1)),...
-            circ_dist(Session.ang(:,3,4,1),Session.ang(:,2,3,1)),...
-            circ_dist(Session.ang(:,4,5,1),Session.ang(:,3,4,1)),...
-            circ_dist(Session.ang(:,5,7,1),Session.ang(:,4,5,1))];
+        sfet = [circ_dist(ang(:,2,3,1),ang(:,1,2,1)),...
+            circ_dist(ang(:,3,4,1),ang(:,2,3,1)),...
+            circ_dist(ang(:,4,5,1),ang(:,3,4,1)),...
+            circ_dist(ang(:,5,7,1),ang(:,4,5,1))];
         num_fet = size(sfet,2);
         for i = 1:num_fet
             sfet(isnan(sfet(:,i)),i) = circ_mean(sfet(~isnan(sfet(:,i)),i));
@@ -71,7 +80,7 @@ switch method
         bsfet = ButFilter(sum(sfet,2),11,6./(Session.xyzSampleRate/2),'low');
         tsfet = Filter0(gausswin(141)./sum(gausswin(141)),bsfet);
         dbsfet = diff(bsfet-tsfet);
-        nfet = -Filter0(gausswin(141)./sum(gausswin(141)),abs(dbsfet.*Filter0(gausswin(141)./sum(gausswin(141)),comv(:,1)).*12))./(Session.xyz(1:end-1,7,3)./Session.ang(1:end-1,3,4,2)).*1000;
+        nfet = -Filter0(gausswin(141)./sum(gausswin(141)),abs(dbsfet.*Filter0(gausswin(141)./sum(gausswin(141)),comv(:,1)).*12))./(Session.xyz(1:end-1,7,3)./ang(1:end-1,3,4,2)).*1000;
         rear_feature = -cat(1,nfet(1),nfet);
         rearing_points = zeros(size(rear_feature));
         rearing_points(rear_feature>rearThresh)=1;

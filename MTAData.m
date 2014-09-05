@@ -331,8 +331,9 @@ classdef MTAData < hgsetget
                     case 'TimePeriods'
                         Data.data = ThreshCross(Data.data,0.5,1);
                     case 'TimeSeries'
+
                       if isempty(Data.label),
-                          tmpdata = round((Data.data./Data.sampleRate+Data.origin).*sampleRate);
+                          tmpdata = round(((Data.data)./Data.sampleRate+Data.origin).*sampleRate);
                       else
                           tmpdata = round((Data.data./Data.sampleRate+Data.sync.sync.data(1)).*sampleRate);
                       end

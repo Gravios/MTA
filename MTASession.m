@@ -336,9 +336,21 @@ classdef MTASession < hgsetget
 % $$$                   plot(syncEpoch.data+.2,'g')
 % $$$                   plot(dataEpoch.data,'c')
 % $$$                   plot(loadedData-syncEpoch.data+dataEpoch.data,'m')
-            
-
-            %%Trim ends
+% $$$ 
+% $$$                   ds = load(Data.fpath)
+% $$$                   figure,
+% $$$                   plot(ds.data(:,1,1)==eps)
+% $$$                   hold on
+% $$$                   ,plot(ds.data(:,1,1)==0,'r')+.5
+% $$$                   ylim([-3,3])
+% $$$ 
+% $$$                   figure
+% $$$                   plot(Data.data(:,1,1)==eps)
+% $$$                   hold on
+% $$$                   plot((Data.data(:,1,1)==0)+.5,'r')
+% $$$                   ylim([-3,3])
+% $$$                   
+                  %%Trim ends
             endSync = syncEpoch.size(1);
             endShiftIndex = endSync - loadedDataEnd;
             endShiftIndex(endShiftIndex==0)=1;           
