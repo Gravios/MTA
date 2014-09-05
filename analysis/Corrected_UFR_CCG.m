@@ -25,8 +25,7 @@ numClu = size(Trial.map,1);
 
 newSampleRate = downSampleRate;
 
-myxyz = Trial.xyz.copy;
-myxyz.load(Trial);
+myxyz = Trial.load('xyz');
 myxyz.filter(gausswin(9)./sum(gausswin(9)));
 myxyz.resample(newSampleRate);
 

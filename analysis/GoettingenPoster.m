@@ -8,8 +8,8 @@
 %% Methods
 MTAstartup('cin','bach')
 Trial = MTATrial('jg05-20120310');
-xyz = Trial.xyz.copy;xyz.load(Trial);
-ang = Trial.ang.copy;ang.load(Trial);
+xyz = Trial.load('xyz');
+ang = Trial.load('ang');
 % Equipment/Subjects
 %     Vicon - Arena with Cameras
 %     /data/homes/gravio/Dropbox/figures/PaperFigs/fig1c.png
@@ -149,8 +149,7 @@ rper = Trial.stc{'r'}.cast('TimeSeries');
 
 
 %% Rearing 
-xyz = Trial.xyz.copy;
-xyz.load(Trial);
+xyz = Trial.load('xyz');
 xyz.filter(gtwin(.5,xyz.sampleRate));
 ang = Trial.ang.copy;
 ang.create(Trial,xyz);
@@ -255,7 +254,7 @@ saveas(gcf,fullfile('/gpfs01/sirota/homes/gravio/','figures','GoettingenPoster',
 MTAstartup
 Trial = MTATrial('jg05-20120310');
 [rhm,fs,ts] = fet_rhm(Trial,[],'Sspectral');
-xyz = Trial.xyz.copy;xyz.load(Trial);xyz.filter(gtwin(.05,xyz.sampleRate));
+xyz = Trial.load('xyz');xyz.filter(gtwin(.05,xyz.sampleRate));
 ang = Trial.ang.copy;ang.create(Trial,xyz);
 tx = [0:(xyz.size(1)-1)]/xyz.sampleRate;
 tx = MTADxyz('data',tx,'sampleRate',xyz.sampleRate);
@@ -539,7 +538,7 @@ Spkb{s} = Trial.spk.copy;
 Spkb{s}.create(Trial,Trial.xyz.sampleRate,cstates{s},[],'deburst');
 end
 
-xyz = Trial.xyz.copy;xyz.load(Trial);
+xyz = Trial.load('xyz');
 lfp = Trial.lfp.copy;
 lfp.create(Trial,[61,75,82,88]);
 lfp.resample(xyz);
