@@ -149,18 +149,26 @@ classdef MTADepoch < MTAData
         %
         % Future: Addition of two MTADepochs will return their intersection
         %       
-            if isa(a,'MTADepoch')&&isvector(b)
+            if isa(a,'MTADepoch')&&ismatrix(b)
                 Data = a.copy;
                 b = b*a.sampleRate;
-                Data.data = Data.data+repmat(b,[Data.size(1),1]);
+                if prod(size(b) == Data.size),
+                    Data.data = Data.data+b;
+                else
+                    Data.data = bsxfun(@plus,Data.data,b);
+                end
                 perDur = diff(Data.data,1,2);
                 Data.data(perDur<=0) = [];
-                Data.data(Data.data(:,1)<=0|Data.data(:,2)<=0,:) = [];                
+                Data.data(Data.data(:,1)<=0|Data.data(:,2)<=0,:) = [];
 
-            elseif isa(b,'MTADepoch')&&isvector(a)
+            elseif isa(b,'MTADepoch')&&ismatrix(a)
                 Data = b.copy;
                 a = a*b.sampleRate;
-                Data.data = Data.data+repmat(a,[Data.size(1),1]);
+                if prod(size(a) == Data.size),
+                    Data.data = Data.data+a;
+                else
+                    Data.data = bsxfun(@plus,Data.data,a);
+                end
                 perDur = diff(Data.data,1,2);
                 Data.data(perDur<=0) = [];
                 Data.data(Data.data(:,1)<=0|Data.data(:,2)<=0,:) = [];                
@@ -176,6 +184,10 @@ classdef MTADepoch < MTAData
                 end
                 Data.data = ndata;
             end
+            if Data.sampleRate~=1,
+                  Data.data = round(Data.data);
+            end
+
     
         end
 
