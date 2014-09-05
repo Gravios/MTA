@@ -1,6 +1,23 @@
 function Trial = QuickTrialSetup(Session,varargin)
 %function QuickTrialSetup(Session,varargin)
-%[trialName,offsets,dropSyncInd,debug] = DefaultArgs(varargin,{'all',[0,0],[],false});
+%
+% Variables:
+%   trialName:      string, defarg  - 'all' 
+%                   Name of the new Trial
+%
+%   offsets:        matrix, defarg  - [0,0]  
+%                   number of seconds to skip/clip from begining/end of
+%                   each motion tracking trial
+%                   see MTA:MTADepoch for more details
+%
+%   dropSyncInd,    matrix, defarg  - []    
+%                   Indicies of the Motion Tracking segments to ignore, in
+%                   order of the Session.xyz.sync.data
+%
+%   debug:          Logical, defarg  - false 
+%                   Display some diagnostic plots
+%
+%
 
 [trialName,offsets,dropSyncInd,debug] = DefaultArgs(varargin,{'all',[0,0],[],false});
 xsync = Session.xyz.sync.copy;
@@ -8,6 +25,8 @@ xsync = xsync+offsets;
 xsync.data(dropSyncInd,:) = [];
 Trial = MTATrial(Session,trialName,[],true,xsync);
 Trial.save;
+
+assert(offsets(:,1)>=0&offsets(:,2)<=0,'MTA:utilities:QuickTrialSetup:offsets, see help QuickTrialSetup for offsets specifications');
 
 %% Run labelBhv if all required markers are present
 % labelBhv functions only on Sessions with the H5B4(H0B9) model

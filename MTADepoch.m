@@ -13,10 +13,16 @@ classdef MTADepoch < MTAData
 %    
 %  Operators:
 %
-%    "+": (TimePeriods) Works with a 1x2 array, which contains an amount of
-%                       time, in seconds, to add to either end of each
-%                       start/stop within the collection of stored epochs
-%    
+%    "+": MTADepoch + matrix (matrix values must be in seconds)
+%           (TimePeriods) Input: 1x2 matrix, which contains an amount of
+%                           time to add to either end of each start/stop 
+%                           within the collection of stored epochs
+%           (TimePeriods) Input: Nx2 matrix, the MTADepoch must have N rows
+%                           Then MTADepoch and the Array will be added normally
+%
+%    "+": MTADepoch + MTADepoch (NOT FUNCTIONAL)
+%           (TimePeriods) Future, Will use JoinRanges to form the union of
+%                           the two epoch collections
 %   
 %  Variables:
 %    
