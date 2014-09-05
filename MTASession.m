@@ -285,7 +285,7 @@ classdef MTASession < hgsetget
 
         elseif isa(Data,'MTAData'),
             % TODO: Need to deal with lfp resync eventually.
-            if isa(Data,'MTADlfp')|Data.isempty,
+            if isa(Data,'MTADlfp')||Data.isempty,
                 Data.sync.sync = Session.sync.copy;
                 return
             end
@@ -416,7 +416,7 @@ classdef MTASession < hgsetget
             
         end
         
-        % Is this right?
+        % Is this right? I think it is
         if round(Data.origin*Data.sampleRate) ~= newOrigin;
             Data.origin = newOrigin/Data.sampleRate;
         end

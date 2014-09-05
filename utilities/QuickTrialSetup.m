@@ -1,4 +1,4 @@
-function Trial = QuickTrialSetup(Session,varargin)
+function varargout = QuickTrialSetup(Session,varargin)
 %function QuickTrialSetup(Session,varargin)
 %
 % Variables:
