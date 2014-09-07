@@ -1,5 +1,6 @@
 classdef MTABhv < hgsetget
 %MTABhv(Session,varargin) 
+% DO NOT USE: OLD
 %
 %  Session - MTASession/string: Either an MTASession containing the paths to the Bhv file
 %                               or a string with the complete path filebase, where the

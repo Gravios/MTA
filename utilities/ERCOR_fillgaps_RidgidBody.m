@@ -13,9 +13,10 @@ rb_xyz.model = rb_model;
 imori = imo(rb_xyz);
 
 
-i = 1;
-fperms = perms(1:rb_xyz.model.N)';
-%sperms = 
+
+bperm = [1:rb_xyz.model.N];
+fperms = perms(bperm);
+fperms = fperms(:,1:4)';
 
 smori = zeros([size(imori,1),size(fperms,2)]);
 for p = fperms,
@@ -24,23 +25,17 @@ i = i+1;
 end
 clear('imori');
 
-figure,imagesc(unity(smori)');
-%caxis([-.6,.6])
-mean_mori = nanmean(smori(nniz(smori(:,1)),:));
-std_mori = nanstd(smori(nniz(smori(:,1)),:));
-smori = bsxfun(@ldivide,bsxfun(@minus,smori,mean_mori),std_mori);
-
 gind = 8000;
 gpat = smori(gind,:);
 epat = smori(8001,:);
 
 dtgmori = sqrt(sum(bsxfun(@minus,smori,gpat).^2,2));
 
-figure,plot(dtgmori)
+figure,plot((dtgmori))
 
 badper = ThreshCross(dtgmori,2,5);
 
-corperm = perms(1:rb.xyz.model.N);
+
 
 for i = 1:size(badper,1),
 badseg = 

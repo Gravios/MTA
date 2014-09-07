@@ -1,4 +1,5 @@
 classdef  MTAAccg
+%MTAAccg
 
 properties 
     
@@ -100,9 +101,9 @@ methods
         end
 
         startAtUnit = 1;
-        if overwrite&isempty(units),
+        if overwrite&&isempty(units),
             Bccg.calculation_completion_map = false(size(Bccg.calculation_completion_map));
-        elseif overwrite&~isempty(units),
+        elseif overwrite&&~isempty(units),
             Bccg.calculation_completion_map(units) = false;
         elseif ~isempty(units),
             if length(units)==sum(Bccg.calculation_completion_map(units)),
