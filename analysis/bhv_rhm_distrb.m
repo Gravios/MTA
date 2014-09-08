@@ -23,7 +23,7 @@ set(figH,'pos',[14,325,1181,420+(420*(numel(mode)-1))]);
 
 
 %[rhm,fs] = fet_rhm(Trial,xyz.sampleRate,'Swspectral');
-%[rhm,fs] = fet_rhm(Trial,xyz.sampleRate,'Sspectral');
+[rhm,fs] = fet_rhm(Trial,xyz.sampleRate,'Sspectral');
 rhm.data  = log10(rhm.data);
 rhm.data(rhm<-9) = nan;
 rhm.data(nniz(rhm.data))=nan;

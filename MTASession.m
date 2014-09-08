@@ -409,9 +409,15 @@ classdef MTASession < hgsetget
                 syncshift = Data.sync(1)-newOrigin-1;
                 if syncshift ==-2,syncshift=0;end
                 Data.load(syncDataPeriods,syncshift);
-            end
-            if ~isempty(find(syncZeroIndex,1)),
-                Data.data(syncZeroIndex,:,:,:,:) = 0;
+                if ~isempty(find(syncZeroIndex,1)),
+                    Data.data(syncZeroIndex,:,:,:,:) = 0;
+                end
+            else
+                if ~isempty(find(syncZeroIndex,1)),
+                    Data.data(syncZeroIndex,:,:,:,:) = 0;
+                end
+                nper = syncEpoch.copy;
+                Data.data = Data.data(find(nper==1,1,'first'):find(nper==1,1,'last'),:,:,:,:);
             end
             
         end

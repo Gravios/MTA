@@ -1,17 +1,20 @@
 %% How to 
 
+Session = 'Ed10-20140817';
+overwrite = true;
+
 xyz_path = '/gpfs01/sirota/homes/eduardo/data/xyz';
 nlx_path = '/gpfs01/sirota/homes/eduardo/data/rawnlx';
+linkSession(Session,xyz_path,nlx_path);
 
-linkSession('Ed10-20140817',xyz_path,nlx_path);
 
 
 Session = MTASession('Ed10-20140817','cof',true,'0x0002');
 
 plot(Session.xyz(:,'head_front',3));
 
-
-Trial = QuickTrialSetup(Session);
+Trial = QuickTrialSetup(Session,'dark',[],[4:8]);
+%Trial = QuickTrialSetup(Session);
 
 clear
 
