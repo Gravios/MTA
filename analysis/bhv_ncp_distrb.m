@@ -1,5 +1,29 @@
-function bhv_rhm_distrb(Trial,varargin)
-[mode,stc_mode,marker] = DefaultArgs(varargin,{{'height','hangle'},'auto_wbhr','spine_lower'});
+function bhv_ncp_distrb(Trial,varargin)
+% bhv_ncp_distrb(Trial,varargin)
+% behavioral nasal cavity pressure distribution
+%
+% The mean power spectral density of the nasal cavity pressure sensor
+%  binned by various behavioral variables.
+%
+%  varargin:
+%
+%      state -    string: label or key of behavioral state periods
+%                          you whish to include in the analysis
+%
+%      mode -     string: the name of the variable comparisons 
+%                          see the switch statement in the code
+%                          to see which options are available.
+%
+%      stc_mode - string: the MTAStateCollection which contains the
+%                          states you require for the analysis
+%
+%      marker -   string: the marker name, used for general tracking
+%
+%      ncpChan -  number: the channel number on which the nasal
+%                          cavity pressure signal was recorded
+%
+
+[state,mode,stc_mode,marker,ncpChan] = DefaultArgs(varargin,{'walk',{'height','hangle'},'auto_wbhr','spine_lower',2});
 
 % $$$ sname = 'jg05-20120317';
 % $$$ tname = 'all';
@@ -8,31 +32,26 @@ function bhv_rhm_distrb(Trial,varargin)
 % $$$ stc_mode = 'auto_wbhr';
 % $$$ Trial = MTATrial(sname,tname);
 
-
 Trial.stc.updateMode(stc_mode);
 Trial.stc.load;
+
 
 
 xyz = Trial.load('xyz');
 xyz.filter(gtwin(.2,xyz.sampleRate));
 
 
-figH = figure(22030232); 
+figH = figure(22030233); 
 set(figH,'pos',[14,325,1181,420+(420*(numel(mode)-1))]);
 
 
-% Get the rhm feature
-[rhm,fs] = fet_rhm(Trial,xyz.sampleRate,'csd');
-
-% log10 and unity
+[rhm,fs] = fet_ncp(Trial,xyz.sampleRate,'wcsd',ncpChan);
 rhm.data  = log10(rhm.data);
 rhm.data(rhm<-9) = nan;
 rhm.data(nniz(rhm.data))=nan;
-
 vel = xyz.vel(1);
 vel.resample(rhm);
 vnn = nniz(vel);
-
 rhm.data = (rhm.data-repmat(nanmean(rhm(vnn,:)),[rhm.size(1),1]))./repmat(nanstd(rhm(vnn,:)),[rhm.size(1),1]);
 
 
@@ -61,12 +80,25 @@ switch mode{m}
     vnn = nniz(vel);
     xlab = 'Log10 Body Speed (cm/s)';
     vlim =[-.5,1.5];
+  case 'DistMazeCenter'
+    xyz.addMarker('maze_center',[0,0,1],{},zeros([xyz.size(1),1,xyz.size(3)]));
+    xyz.data(:,xyz.model.gmi('head_front'),3) = 0;
+    ang = Trial.ang.copy;
+    ang.create(Trial,xyz);
+    vel = MTADxyz('data',ang(:,'maze_center','head_front',3),'sampleRate',xyz.sampleRate);
+    vel.resample(rhm);
+    vel.data = log10(vel.data);    
+    vnn = nniz(vel);
+    [out,x] = MakeUniformDistr(vel(vnn),0,2.6);
+    vel.data(vnn) = out;
+    xlab = {'Log10 Head and Maze Center Distance (mm)','Note: Distribution made Uniform'};
+    vlim =[0,2.6];
+
 end
 
 
 
-s = 'w'; % walking periods
-% Select periods by state
+s = state;
 srhm = rhm(Trial.stc{s},:);
 svel = vel(Trial.stc{s},:);
 
@@ -74,7 +106,6 @@ svel = vel(Trial.stc{s},:);
 vbins = 50;
 vedgs = linspace(vlim(1),vlim(2),vbins);
 [N,vbs] = histc(svel,vedgs);
-
 
 mrv = nan(numel(N),rhm.size(2));
 for f =1:rhm.size(2),
@@ -87,20 +118,20 @@ subplot2(numel(mode),2,m,1);
 %figure
 imhand = imagescnan({vedgs,fs,mrv'},prctile(mrv(nniz(mrv(:))),[5,95]),false,1,[0,0,0]);axis xy,
 set(imhand,'tag', [mfilename,'-',mode{m}])
-title(['Mean RHM psd Given ' mode{m}]);
+title(['Mean NCP psd Given ' mode{m}]);
 xlabel(xlab);
-ylabel('RHM frequency (Hz)');
+ylabel('NCP frequency (Hz)');
 
 subplot2(numel(mode),2,m,2);
 bar(vedgs,N,'histc')
 title(['Marginal Distrb of ' mode{m}]);
 xlabel(xlab);
-ylabel('RHM frequency (Hz)');
+ylabel('NCP frequency (Hz)');
 
 end
 
 suptitle([Trial.filebase ' : ' Trial.stc{s}.label]);
-reportfig(Trial,figH,['RHM_psd_distrib_' strjoin(mode,'_')],[],[Trial.filebase ' :' Trial.stc{s}.label],200,true);
+reportfig(Trial,figH,['NCP_psd_distrib_' strjoin(mode,'_')],[],[Trial.filebase ' :' Trial.stc{state}.label],200,true);
 
 
 
@@ -202,20 +233,20 @@ reportfig(Trial,figH,['RHM_psd_distrib_' strjoin(mode,'_')],[],[Trial.filebase '
 % $$$ figH = figure(3757),
 % $$$ subplot(131);
 % $$$ imagescnan({vA1e,vA2e,A'},prctile(A(nniz(A(:))),[5,95]),false,true,[0,0,0]),axis xy,
-% $$$ title(['Mean RHM PSD']);
+% $$$ title(['Mean NCP PSD']);
 % $$$ xlabel('Log10 Body Speed (cm/s)');
 % $$$ ylabel('Log10 Head Height (mm)');
 % $$$ 
 % $$$ subplot(132)
 % $$$ imagescnan({vA1e,vA2e,B'},prctile(B(nniz(B(:))),[5,95]),false,true,[0,0,0]),axis xy,
-% $$$ title(['Std RHM PSD']);
+% $$$ title(['Std NCP PSD']);
 % $$$ xlabel('Log10 Body Speed (cm/s)');
 % $$$ ylabel('Log10 Head Height (mm)');
 % $$$ 
 % $$$ subplot(133)
 % $$$ ABN = A'./B';
 % $$$ imagescnan({vA1e,vA2e,ABN},prctile(ABN(nniz(ABN(:))),[5,95]),false,true,[0,0,0]),axis xy,
-% $$$ title(['SNR RHM PSD']);
+% $$$ title(['SNR NCP PSD']);
 % $$$ xlabel('Log10 Body Speed (cm/s)');
 % $$$ ylabel('Log10 Head Height (mm)');
 % $$$ 
@@ -223,7 +254,7 @@ reportfig(Trial,figH,['RHM_psd_distrib_' strjoin(mode,'_')],[],[Trial.filebase '
 % $$$ set(figH,'pos',[14,325,1581,420]);
 % $$$ 
 % $$$ reportfig(fullfile(Trial.path.data,'figures'),figH, ...
-% $$$           'meanRHM_on_jpdf_bv_zh',[],[Trial.filebase ' :' Trial.stc{s}.label],200)
+% $$$           'meanNCP_on_jpdf_bv_zh',[],[Trial.filebase ' :' Trial.stc{s}.label],200)
 
 % $$$ %figure,
 % $$$ %subplot(133),imagescnan({vedges,sedges,A'},[-5,-3],[],1,[0,0,0]),axis xy,

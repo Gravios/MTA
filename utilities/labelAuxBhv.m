@@ -6,14 +6,6 @@ if isempty(Stc),
 end
 
 
-sempty = isempty(Stc{'t'});
-if sempty||overwrite,
-    if ~sempty, 
-        Stc.states(Stc.gsi('t')) = [];
-    end
-    Stc.states{end+1} = theta(Trial);
-end
-
 sempty = isempty(Stc{'p'})||isempty(Stc{'c'});
 if sempty||overwrite,
     if ~sempty, 
@@ -41,7 +33,7 @@ end
 
 sempty = isempty(Stc{'h'})||isempty(Stc{'l'});
 if sempty||overwrite,
-    [rhm,fs,ts] = fet_rhm(Trial,[],'Sspectral');
+    [rhm,fs,ts] = fet_rhm(Trial,[],'csd');
     xyz = Trial.xyz.copy;xyz.load(Trial);xyz.filter(gtwin(.05,xyz.sampleRate));
     ang = Trial.ang.copy;ang.create(Trial,xyz);
 
@@ -59,7 +51,7 @@ if sempty||overwrite,
 
     bper = Stc{'w',rhmpow.sampleRate}.copy;
     bper.cast('TimeSeries');
-    if bper.size(1)-ang.size(1)<0,bper.data=[bper.data;false];end
+    if bper.size(1)-ang.size(1)<0,bper.data=[bper.data;false([abs(bper.size(1)-ang.size(1)),1])];end
     xaind = nniz(ang(:,5,7,2))&nniz(rhmpow.data)&bper(1:ang.size(1));
     fet = [ang(xaind,5,7,2),rhmpow(xaind)];
     [bsts,bhmm,bdcd] = gausshmm(fet,2);
