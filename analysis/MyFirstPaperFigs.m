@@ -1,8 +1,7 @@
-MTAConfiguration('/gpfs01/sirota/bach/data/gravio','absolute');
- 
+MTAstartup('cin','cin')
 Trial = MTATrial('jg05-20120317','all');
-Trial.xyz.load(Trial);
-Trial.filter('xyz',gausswin(31)./sum(gausswin(31)));
+xyz = Trial.load('xyz');
+xyz.filter(gtwin(xyz.sampleRate,.25));
 
 
 
@@ -25,8 +24,8 @@ sph = [];
 
 window_figD = 1300; index_figD = 600;
 
-coms = cat(2,Trial.com(Trial.xyz.model.rb({'spine_lower','pelvis_root','spine_middle'})),...
-             Trial.com(Trial.xyz.model.rb({'head_back','head_left','head_front','head_right'})));
+coms = cat(2,xyz.com(xyz.model.rb({'spine_lower','pelvis_root','spine_middle'})),...
+             xyz.com(xyz.model.rb({'head_back','head_left','head_front','head_right'})));
 t = linspace(0,size(coms,1)/Trial.xyz.sampleRate,size(coms,1)-1)';
 vcoms = sqrt(sum(diff(coms).^2,3));
 sph(end+1) = subplot2(6,6,2,[1:6]); 

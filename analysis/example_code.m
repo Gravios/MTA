@@ -29,6 +29,17 @@ ignoredViconTrials = 4:8;
 startStopShift = [0,0]; % shift boundaries of vicon starts and 
                         % stops by some number of seconds
 
+SessionName = 'Ed10-20140817'; % what was once known as filebase
+xyz_path = '/gpfs01/sirota/homes/eduardo/data/xyz';
+nlx_path = '/gpfs01/sirota/homes/eduardo/data/rawnlx';
+MazeName = 'cof';
+TrialName = 'all'; 
+TTLValue = '0x0002'; % can be found in "SessionName".all.evt
+overwrite = true;
+ignoredViconTrials = [];
+startStopShift = [0,0]; % shift boundaries of vicon starts and 
+                        % stops by some number of seconds
+
 SessionName = 'jg05-20120310';
 xyz_path = '/gpfs01/sirota/data/bachdata/data/gravio/xyz';
 nlx_path = '/gpfs01/sirota/data/bachdata/data/gravio/nlx';
@@ -46,6 +57,17 @@ nlx_path = '/gpfs01/sirota/data/bachdata/data/gravio/nlx';
 MazeName = 'cof';
 TrialName = 'all';
 TTLValue = '0x0002' % can be found in "SessionName".all.evt
+overwrite = true;
+ignoredViconTrials = [];
+startStopShift = [18,0]; % shift boundaries of vicon starts and 
+                        % stops by some number of seconds
+
+SessionName = 'jg05-20120323';
+xyz_path = '/gpfs01/sirota/home/gravio/data/xyz';
+nlx_path = '/gpfs01/sirota/home/gravio/data/nlx';
+MazeName = 'cof';
+TrialName = 'all';
+TTLValue = '0x0040' % can be found in "SessionName".all.evt
 overwrite = true;
 ignoredViconTrials = [];
 startStopShift = [18,0]; % shift boundaries of vicon starts and 

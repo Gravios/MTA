@@ -301,11 +301,8 @@ Trial.lfp.load(Trial,[57:72]);
 
 [yl,fl,tl,phil,fstl] = mtchglong(WhitenSignal(Trial.lfp(1:1000000,9:16),[],1),2^12,Trial.lfp.sampleRate,2^10,2^10-8,5,'linear',[],[1,20]);
 tl = tl+2^9/1250;
-
 [ym,fm,tm,phim,fstm] = mtchglong(WhitenSignal(Trial.lfp(1:1000000,9:16),[],1),2^10,Trial.lfp.sampleRate,2^8,2^8*.875,5,'linear',[],[60,240]);
 tm = tm+2^7/1250;
-
-
 [yh,fh,th,phih,fsth] = mtchglong(WhitenSignal(Trial.lfp(1:1000000,9:16),[],1),2^7,Trial.lfp.sampleRate,2^6,2^6*.875,5,'linear',[],[150,250]);
 th = th+2^5/1250;
 
@@ -345,7 +342,10 @@ hold on,plot(repmat(tsf,[1,8]),bsxfun(@plus,unity(ButFilter(Trial.lfp(1:1000000,
 hold on,plot(bsxfun(@plus,unity(ButFilter(Trial.lfp(1:1000000,9:16),3,[150,250]/(Trial.lfp.sampleRate/2),'bandpass'))/4,[1:8]*2))
 
 
-rpexp = rpow(th>216.10&th<216.15,:);
+ripper = [127.05,127.12]
+%rpexp = rpow(th>216.10&th<216.15,:);
+%rpexp = rpow(th>224.99&th<225.07,:);
+rpexp = rpow(th>ripper(1)&th<ripper(2),:);
 %rpexp = rpow(tm>216.10&tm<216.15,:);
 
 for i= 1:8,rpmean(i) = mean(rpow(rpow(:,i)>2,i));end
@@ -355,18 +355,30 @@ for i= 1:8,rpstd(i) = std(rpow(rpow(:,i)>2,i));end
 urpow = (rpow-rpmean(1))./rpstd(1);
 %urpow  = rpow;
 %urpexp = bsxfun(@ldivide,bsxfun(@minus,rpexp,rpmean),rpstd);
+%.00946
+
+fsh = .00946;
+fsh = .00006;
+%fsh = 0;
 urpexp = rpexp;
 urpexp = urpexp/sum(urpexp(:));
+urpexp = urpexp-fsh;
 crp = conv2(urpow,urpexp,'same');
+skewness(unity(ButFilter(crp(:,4),3,[.1,30]/((1/diff(th(1:2)))/2),'bandpass').*max(urpow,[],2)))
+if fsh == 0,figure,plot(unity(ButFilter(crp(:,4),3,[.1,30]/((1/diff(th(1:2)))/2),'bandpass').*max(urpow,[],2)),'b'),
+else,hold on,plot(unity(ButFilter(crp(:,4),3,[.1,30]/((1/diff(th(1:2)))/2),'bandpass').*max(urpow,[],2)),'r')
+end
 
-urpexpds = urpexp([3:6,2,1]);
-crpd = conv2(urpow./sum(urpexp(:)),urpexpds,'same');
-urpexpus = urpexp([8,7,1:6]);
-crpu = conv2(urpow./sum(urpexp(:)),urpexpus,'same');
-crp = max([mean(crp(:,3:4),2),mean(crpd(:,3:4),2),mean(crpu(:,3:4),2)],[],2);
+% $$$ urpexpds = urpexp([3:6,2,1]);
+% $$$ crpd = conv2(urpow./sum(urpexp(:)),urpexpds,'same');
+% $$$ urpexpus = urpexp([8,7,1:6]);
+% $$$ crpu = conv2(urpow./sum(urpexp(:)),urpexpus,'same');
+% $$$ crp = max([mean(crp(:,3:4),2),mean(crpd(:,3:4),2),mean(crpu(:,3:4),2)],[],2);
 
 
 figure,imagesc(th,1:8,crp'),caxis([0,4])
+
+
 
 figure,plot(ButFilter(crp(:,1),3,[.1,30]/((1/diff(th(1:2)))/2),'bandpass'))
 figure,hist(ButFilter(crp(1:10:end,1),3,[.1,30]/((1/diff(th(1:2)))/2),'bandpass'),1000)
@@ -376,6 +388,7 @@ figure,imagesc(th(th>12&th<750),1:16,unity([rpow(th>12&th<750,:),tpow(tl>12&tl<7
 hold on,plot(th(th>12&th<750),crp(th>12&th<750,4)*7-15,'m')
 
 figure,plot(ButFilter(crp(:,4),3,[.1,30]/((1/diff(th(1:2)))/2),'bandpass').*max(urpow,[],2))
+figure,hist(ButFilter(crp(1:3:end,4),3,[.1,30]/((1/diff(th(1:2)))/2),'bandpass').*max(urpow,[],2),1000)
 
 ripfet = crp(:,4).*max(urpow,[],2);
 ripfet = ButFilter(ripfet,3,[5]/((1/diff(th(1:2)))/2),'high');
