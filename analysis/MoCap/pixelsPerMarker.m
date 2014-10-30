@@ -20,18 +20,19 @@ cam(3).fov = 70;
 
 
 %%p41
+cam(4).name = 'Prime 41';
 cam(4).hpx=2048;
 cam(4).vpx=2048;
-cam(4).msize=8;
+cam(4).msize=3;
 cam(4).fov = 51;
 
 
 
 
-for i=1:numel(c)
-end
+%for i=1:numel(c)
+%end
 
-i = 3
+i = 4
 
 cam(i).fov = deg2rad(cam(i).fov);
 r = [.4:.01:4]';
@@ -47,7 +48,11 @@ dr = (2.*r./sin((pi-cam(i).fov)./2)).*sqrt(1/((1-cos(cam(i).fov)).^2+sin(cam(i).
 
 
 figure
-plot([r,r,r,r],[hppm,vppm,c,dr])
-
-
-camera(1).pos = 
+plot([r,r,r,r.*2],[hppm,vppm,c,dr])
+legend(['Horizontal pixel count for the cross section of a ' num2str(cam(i).msize) ' mm marker given distance to camera'],...
+       ['Vertical pixel count for the cross section of a ' num2str(cam(i).msize) ' mm marker given distance to camera'],...
+       ['Maximum maze diameter given distance between maze center and camera'],...
+       ['Required distance between maze center and camera given maze diameter'])
+title({['Camera Name: ' cam(i).name],...
+       ['Camera Res: ' num2str(cam(i).hpx) 'x' num2str(cam(i).vpx)  'pixels'],...
+       ['Camera fov: ' num2str(rad2deg(cam(i).fov))]})

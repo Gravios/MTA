@@ -11,7 +11,7 @@ function linkSession(session_name,xyz_path,nlx_path)
 %system(['C:\cygwin64\bin\bash -c export CYGWIN="winsymlinks:native";"/bin/ln -s -v c:/Users/justi_000/Documents/MATLAB/dlmtest.txt";`C:\Users\justi_000\Documents\MATLAB\dlmtest.txt -> `C:\Users\justi_000\Documents\MATLAB\dlmt.txt"'])
 %system(['C:\cygwin64\bin\bash -c export CYGWIN="winsymlinks:native";"/bin/ln -s -v c:/Users/justi_000/Documents/MATLAB/dlmtest.txt c:/Users/justi_000/Documents/MATLAB/dlmt.txt";`C:\Users\justi_000\Documents\MATLAB\dlmtest.txt'' -> `C:\Users\justi_000\Documents\MATLAB\dlmt.txt'''])
 
-Session = MTASession([]);
+    Session = MTASession([]);
     datDir = fullfile(Session.path.data,session_name);
     try,mkdir(datDir);end
 
@@ -45,14 +45,21 @@ Session = MTASession([]);
     system(['ln -s ../nlx/' session_name '/* ' datDir ])
 
     for maze = 1:numel(xyz_maze_dirs),
+        cd(datDir);
         try,mkdir(xyz_maze_dirs(maze).name);end
-        system(['ln -s ../xyz/' session_name '/' xyz_maze_dirs(maze).name '/' ...
+        
+        try
+            system(['ln -s ../xyz/' session_name '/' xyz_maze_dirs(maze).name '/' ...
                 session_name '-' xyz_maze_dirs(maze).name '.vsk ' ...
-                datDir '/']);
-        cd(xyz_maze_dirs(maze).name)
-        system(['ln -s ../../xyz/' session_name '/' ...
+                datDir '/' session_name '-' xyz_maze_dirs(maze).name '.vsk ']);
+        end
+        cd(fullfile(datDir,xyz_maze_dirs(maze).name))
+        try,
+            system(['ln -s ../../xyz/' session_name '/' ...
                 xyz_maze_dirs(maze).name '/* ' datDir '/' ...
                xyz_maze_dirs(maze).name '/']);
+        end
+        
     end
 
     

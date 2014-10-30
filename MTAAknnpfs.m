@@ -245,7 +245,7 @@ classdef MTAAknnpfs < hgsetget %< MTAAnalysis
         function rateMap = plot(Pfs,varargin)
         % rateMap = plot(Pfs,unit,varargin)
         % [nMode,ifColorbar,colorLimits,sigDistr] = DefaultArgs(varargin,{'',0,[],[]});
-            [unit,nMode,ifColorbar,colorLimits,sigDistr] = DefaultArgs(varargin,{[],'',0,[],[]});
+            [unit,mode,ifColorbar,colorLimits,sigDistr] = DefaultArgs(varargin,{[],'slice',false,[],[]});
             if isempty(unit),unit=Pfs.data.clu(1);end
             switch Pfs.parameters.type
                 case 'xy'
@@ -263,50 +263,78 @@ classdef MTAAknnpfs < hgsetget %< MTAAnalysis
                   
                   bin1 = Pfs.adata.bins{1};
                   bin2 = Pfs.adata.bins{2};
-                    
-                    switch nMode
-                        case 'mean'
-                            rateMap = mean(Pfs.data.rateMap(:,Pfs.data.clu==unit,:),3);
-                        case 'std'
-                            rateMap = std(Pfs.data.rateMap(:,Pfs.data.clu==unit,:),[],3);
-                        case 'sig'
-                            rateMap = 1./sum((repmat(max(Pfs.data.rateMap(:,Pfs.data.clu==unit,:)),[size(Pfs.data.rateMap,1),1,1])...
-                                                     -repmat(Pfs.data.rateMap(:,Pfs.data.clu==unit,1),[1,1,Pfs.parameters.numIter]))<0,3)';
-                        otherwise
-                            rateMap = Pfs.data.rateMap(:,Pfs.data.clu==unit,1);
-                    end
-                    
-                    
-                    %% Normal rateMap = reshape(rateMap',numel(bin1),numel(bin2))';
-                    rateMap = reshape(rateMap',numel(bin1),numel(bin2))'.*mask;
-                    
-                    if nargout==0,                    
-                        imagescnan({bin1,bin2,rateMap'},colorLimits,[],ifColorbar,[0,0,0]);
+                  
+                  switch mode
+                    case 'mean'
+                      rateMap = mean(Pfs.data.rateMap(:,Pfs.data.clu==unit,:),3);
+                    case 'std'
+                      rateMap = std(Pfs.data.rateMap(:,Pfs.data.clu==unit,:),[],3);
+                    case 'sig'
+                      rateMap = 1./sum((repmat(max(Pfs.data.rateMap(:,Pfs.data.clu==unit,:)),[size(Pfs.data.rateMap,1),1,1])...
+                                        -repmat(Pfs.data.rateMap(:,Pfs.data.clu==unit,1),[1,1,Pfs.parameters.numIter]))<0,3)';
+                    otherwise
+                      if isnumeric(mode)
+                          rateMap = Pfs.data.rateMap(:,Pfs.data.clu==unit,mode);
+                      else
+                          rateMap = Pfs.data.rateMap(:,Pfs.data.clu==unit,1);
+                      end
+                      
+                  end
+                  
+                  
+                  %% Normal rateMap = reshape(rateMap',numel(bin1),numel(bin2))';
+                  rateMap = reshape(rateMap',numel(bin1),numel(bin2))'.*mask;
+                  
+                  if nargout==0,                    
+                      imagescnan({bin1,bin2,rateMap'},colorLimits,[],ifColorbar,[0,0,0]);
 
 
-                    if ~isempty(rateMap)&&~isempty(bin1)&&~isempty(bin2),
-                        text(bin1(1)+30,bin2(end)-50,sprintf('%2.1f',max(rateMap(:))),'Color','w','FontWeight','bold','FontSize',18)
-                    end
-                    axis xy
-                    end                    
+                      if ~isempty(rateMap)&&~isempty(bin1)&&~isempty(bin2),
+                          text(bin1(1)+30,bin2(end)-50,sprintf('%2.1f',max(rateMap(:))),'Color','w','FontWeight','bold','FontSize',18)
+                      end
+                      axis xy
+                  end
+                  return
               case 'xyz'
-                c = eye(3);
-                r = [1.2,3,6];
-                var = cat(2,Pfs.adata.bins, ...
-                          {permute(reshape(Pfs.data.rateMap(:,Pfs.data.clu==unit,1),Pfs.adata.binSizes'),[2,1,3])},{[]});
-                if nargout==0,                    
-                    for i = 1:3,
-                        var(end) = {max(Pfs.data.rateMap(:,Pfs.data.clu==unit,1))/r(i)};
-                        fv = isosurface(var{:});
-                        patch(fv,'facecolor',c(i,:),'edgecolor','none');
-                        alpha(1/r(i)*r(1));
+                switch mode
+                  case 'isosurface'
+                    c = eye(3);
+                    r = [1.2,3,6];
+                    var = cat(2,Pfs.adata.bins, ...
+                              {permute(reshape(Pfs.data.rateMap(:,Pfs.data.clu==unit,1),Pfs.adata.binSizes'),[2,1,3])},{[]});
+                    if nargout==0,                    
+                        for i = 1:3,
+                            var(end) = {max(Pfs.data.rateMap(:,Pfs.data.clu==unit,1))/r(i)};
+                            fv = isosurface(var{:});
+                            patch(fv,'facecolor',c(i,:),'edgecolor','none');
+                            alpha(1/r(i)*r(1));
+                        end
+                        xlim([min(Pfs.adata.bins{1}),max(Pfs.adata.bins{1})]);
+                        ylim([min(Pfs.adata.bins{2}),max(Pfs.adata.bins{2})]);
+                        zlim([min(Pfs.adata.bins{3}),max(Pfs.adata.bins{3})]);
+                        view(3)
+                    else
+                        rateMap = var;
                     end
-                    xlim([min(Pfs.adata.bins{1}),max(Pfs.adata.bins{1})]);
-                    ylim([min(Pfs.adata.bins{2}),max(Pfs.adata.bins{2})]);
-                    zlim([min(Pfs.adata.bins{3}),max(Pfs.adata.bins{3})]);
-                    view(3)
-                else
-                    rateMap = var;
+                  case 'slice'
+                    
+                    [X,Y,Z] = meshgrid(Pfs.adata.bins{:});
+                    var = permute(reshape(Pfs.data.rateMap(:,Pfs.data.clu==unit,1),Pfs.adata.binSizes'),[2,1,3]);
+                    if nargout==0,                        
+                        XS = Pfs.adata.bins{1}(round(Pfs.adata.binSizes(1)/4):round(Pfs.adata.binSizes(1)/4):Pfs.adata.binSizes(1));
+                        YS = Pfs.adata.bins{2}(round(Pfs.adata.binSizes(2)/4):round(Pfs.adata.binSizes(2)/4):Pfs.adata.binSizes(2));
+                        slice(X,Y,Z,var,XS,YS,Pfs.adata.bins{3}(round(Pfs.adata.binSizes(3)/2)))
+                        xlim([min(Pfs.adata.bins{1}),max(Pfs.adata.bins{1})]);
+                        ylim([min(Pfs.adata.bins{2}),max(Pfs.adata.bins{2})]);
+                        zlim([min(Pfs.adata.bins{3}),max(Pfs.adata.bins{3})]);
+                        %view(3)
+                        if ~isempty(colorLimits), caxis(colorLimits); end
+                        if ifColorbar, colorbar; end
+                    else
+                        rateMap = var;
+                    end
+                    
+
                 end
             end
         end

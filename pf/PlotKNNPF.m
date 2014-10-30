@@ -19,9 +19,9 @@ mywu = repmat(ufr(spind,:),[1,1,nbins]);
 if isempty(distdw)&&isempty(distIndw)
     spind = 1:round(Session.xyz.sampleRate/downSampleRate):size(pos,1);
     mywx = repmat(pos(spind,:),[1,1,nbins]);
-    xy = cell(2,1);
+    xy = cell(ndims,1);
     [xy{:}]= meshgrid(Bins{:});
-    xy = repmat(permute(reshape(cat(3,xy{:}),nbins,2),fliplr(1:3)),size(mywx,1),1);
+    xy = repmat(permute(reshape(cat(3,xy{:}),nbins,ndims),fliplr(1:3)),size(mywx,1),1);
     distw = sqrt(sum((mywx-xy).^2,2));
     [distdw,distIndw] = sort(distw,1,'ascend');  
 end
