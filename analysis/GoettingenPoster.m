@@ -1,3 +1,4 @@
+
 %% Goettingen Poster 2014
 %  
 
@@ -6,7 +7,6 @@
 
 
 %% Methods
-MTAstartup('cin','bach')
 Trial = MTATrial('jg05-20120310');
 xyz = Trial.load('xyz');
 ang = Trial.load('ang');

@@ -416,6 +416,13 @@ classdef MTASession < hgsetget
                     Data.data(syncZeroIndex,:,:,:,:) = 0;
                 end
                 nper = syncEpoch.copy;
+                 
+                if (nper.size(1)-Data.size(1))==1, 
+                    nper.data = nper.data(1:Data.size(1));
+                    warning(['Synchronization offset 1 index larger than data']);
+                end
+                
+                
                 Data.data = Data.data(find(nper==1,1,'first'):find(nper==1,1,'last'),:,:,:,:);
             end
             
