@@ -1,8 +1,8 @@
-function Session = loadVicon(Session,viconSampleRate)
+function Session = loadVicon(Session)
 
 % Load concatinate the xyz data from all c3d.mat files associated with the
 % Session
-[xyzData, markers] = concatViconFiles(Session);            
+[xyzData, markers,viconSampleRate] = concatViconFiles(Session);            
 
 % Load VSK to get marker names,colors and connections for creating the
 % model
@@ -16,8 +16,7 @@ else
 end
 
 % Create the xyzPeriods and concatinate all trials into one xyz array
-xyzDataInd = find(~cellfun(@isempty,xyzData));
-xyz = cell2mat(xyzData(xyzDataInd)');
+xyz = cell2mat(xyzData(~cellfun(@isempty,xyzData))');
 
 % Create XYZ data object
 Dxyz = MTADxyz(Session.spath,Session.filebase,...

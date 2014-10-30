@@ -1,4 +1,4 @@
-function [xyzData,markers] = concatViconFiles(Session)
+function [xyzData,markers,viconSampleRate] = concatViconFiles(Session)
 %[xyzData,markers] = concat(Session)
 % Determine number of position tracking 
 % trials and concantenates parts
@@ -25,6 +25,7 @@ end
 % This is assumed to be in order for the moment
 %Load Files and concantenate
 xyzData = cell(1,lastTrial);
+viconSampleRate = [];
 number_of_markers = 0;
 for j = 1:lastTrial,
     for k = 1:trialPartSize{j},
@@ -36,7 +37,10 @@ for j = 1:lastTrial,
         else
             number_of_markers = length(markers);
         end
+        viconSampleRate(end+1) = sampleRate;
         xyzData{j} = cat(1,xyzData{j},xyzpos);
     end
 end
+viconSampleRate = unique(viconSampleRate);
+assert(numel(viconSampleRate)==1,'MTA:utilities:concatViconFiles: Sample rate changes between files/fileparts');
 end

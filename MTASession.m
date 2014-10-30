@@ -14,7 +14,6 @@ classdef MTASession < hgsetget
 %
 %     TTLValue:        string, used to synchronize position and electrophysiological data
 %
-%     xyzSampleRate:   double, sample rate of position tracking system
 %
 %     xyzSystem:       string, name/id of the system to record position
 %    
@@ -27,7 +26,7 @@ classdef MTASession < hgsetget
 %     Session = MTASession(name,mazeName);
 %     
 %     Create new session,
-%     Session = MTASession(name,mazeName,overwrite,TTLValue,xyzSampleRate,xyzSystem,ephySystem);
+%     Session = MTASession(name,mazeName,overwrite,TTLValue,xyzSystem,ephySystem);
 %
 %---------------------------------------------------------------------------------------------------------
 %     examples:
@@ -35,7 +34,7 @@ classdef MTASession < hgsetget
 %         Session = MTASession('jg05-20120309','rof');
 %
 %       Create New Session
-%         Session = MTASession('jg05-20120309','rof',1,'0x0040',119.881035,'vicon','nlx');
+%         Session = MTASession('jg05-20120309','rof',1,'0x0040','vicon','nlx');
 %   
 %---------------------------------------------------------------------------------------------------------
 
@@ -102,8 +101,8 @@ classdef MTASession < hgsetget
         %% Session Constructor - Creation & Loading-----------------------------------------------------%
 
         function Session = MTASession(name,varargin)
-            [mazeName,overwrite,TTLValue,xyzSampleRate,xyzSystem,ephySystem] = ...
-             DefaultArgs(varargin,{'cof',0,'0x0040',119.881035,'vicon','nlx'});
+            [mazeName,overwrite,TTLValue,xyzSystem,ephySystem] = ...
+             DefaultArgs(varargin,{'cof',0,'0x0040','vicon','nlx'});
             Session.path = load('MTAPaths.mat');
 
             if isempty(name),
@@ -130,10 +129,10 @@ classdef MTASession < hgsetget
                     Session.xyz.load(Session.sync);
                 elseif overwrite
                     warning(['Overwriting Session: ' fullfile(Session.spath, [Session.filebase, '.ses.mat'])])
-                    Session.create(xyzSampleRate,TTLValue,xyzSystem,ephySystem);
+                    Session.create(TTLValue,xyzSystem,ephySystem);
                 else
                     warning(['Subsession with maze, ' Session.maze.name ', does not exist: creating session']);
-                    Session.create(xyzSampleRate,TTLValue,xyzSystem,ephySystem);
+                    Session.create(TTLValue,xyzSystem,ephySystem);
                 end  
             end
         end
@@ -144,13 +143,13 @@ classdef MTASession < hgsetget
         % data. The choice of function is dependent upon the combination of
         % recording systems used in the session.
         %  
-            [xyzSampleRate,TTLValue,xyzSystem,ephySystem] = DefaultArgs(varargin,{[],'0x8000','vicon','nlx'});
+            [TTLValue,xyzSystem,ephySystem] = DefaultArgs(varargin,{'0x8000','vicon','nlx'});
             switch ephySystem,
 
               case 'nlx',
                 switch xyzSystem,
                   case 'vicon',
-                    Session = syncViconNlx(Session,xyzSampleRate,TTLValue);
+                    Session = syncViconNlx(Session,TTLValue);
                 end
 
               case 'blackrock'
@@ -160,7 +159,7 @@ classdef MTASession < hgsetget
               otherwise
                 switch xyzSystem,
                   case 'vicon'
-                    Session = loadVicon(Session,xyzSampleRate);
+                    Session = loadVicon(Session);
                 end
             end
         end
