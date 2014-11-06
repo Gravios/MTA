@@ -73,7 +73,7 @@ classdef MTAStateCollection < hgsetget
         end
 
         function Stc = load(Stc,varargin)
-            [nMode] = DefaultArgs(varargin,{[]});
+            [Session,nMode] = DefaultArgs(varargin,{[],[]});
             if isempty(nMode)&&exist(Stc.fpath,'file')
                 ds = load(Stc.fpath);
                 %Stc = ds.Stc.copy;
@@ -91,6 +91,12 @@ classdef MTAStateCollection < hgsetget
                     Stc.(sprop{s}) = ds.Stc.(sprop{s});
                 end
                 end
+            end
+            if ~isempty(Session)
+               for s = 1:numel(Stc.states(:)),
+                   Session.resync(Stc.states{s});
+               end
+
             end
         end
 
@@ -181,8 +187,8 @@ classdef MTAStateCollection < hgsetget
                                 S(n).subs(2) = [];
                             end
                             
-                            stsFuncs = regexp(S(n).subs{1},'\&*\^*\|*\+*','match');
-                            stsNames = regexp(S(n).subs{1},'\&*\^*\|*\+*','split');
+                            stsFuncs = regexp(S(n).subs{1},'\&*\^*\|*\+*\-*','match');
+                            stsNames = regexp(S(n).subs{1},'\&*\^*\|*\+*\-*','split');
                             assert(numel(stsFuncs)+1==numel(stsNames),...
                                 'MTAStateCollection:subsref:UnequalStatesAndFunctionCount',...
                                 ['Each state name must be separated by a \n' ...
@@ -197,7 +203,7 @@ classdef MTAStateCollection < hgsetget
                                         sts{i} = MTADepoch(Stc.path,[],[],[],[],[],stsNames{i},[],[],[]);
                                     end
                                     try,
-                                        sts{i} = sts{i}.load(Stc.sync);
+                                        sts{i} = sts{i}.load([],Stc.sync);
                                         Stc.addState(sts{i});
                                     catch
                                         warning(['MTAStateCollection:subrefs:StateNotFound, state: ''' stsNames{i} ''' does not exist']);
@@ -222,6 +228,9 @@ classdef MTAStateCollection < hgsetget
                                     sts(1) = [];
                                   case '|'
                                     sts{2} = MTADepoch.join(sts(1:2));
+                                    sts(1) = [];
+                                  case '-'
+                                    sts{2} = sts{1}-sts{2};
                                     sts(1) = [];
                                 end
                                 stsFuncs(1) = [];

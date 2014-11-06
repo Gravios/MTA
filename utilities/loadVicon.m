@@ -1,8 +1,12 @@
-function Session = loadVicon(Session)
+function Session = loadVicon(Session,viconSampleRate)
 
 % Load concatinate the xyz data from all c3d.mat files associated with the
 % Session
-[xyzData, markers,viconSampleRate] = concatViconFiles(Session);            
+if isempty(viconSampleRate),
+    [xyzData, markers, viconSampleRate] = concatViconFiles(Session);            
+else
+    [xyzData, markers] = concatViconFiles(Session);            
+end
 
 % Load VSK to get marker names,colors and connections for creating the
 % model

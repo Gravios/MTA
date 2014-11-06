@@ -1,5 +1,5 @@
 function [RateMap,Bins,distdw,distIndw]= PlotKNNPF(Session,ufr,pos,varargin)
-[binDims,nnn,dthresh,downSampleRate,type,distdw,distIndw] = DefaultArgs(varargin,{50,70,60,20,'xy',[],[]});
+[binDims,nnn,dthresh,downSampleRate,type,distdw,distIndw] = DefaultArgs(varargin,{50,70,.5*Session.xyz.sampleRate,20,'xy',[],[]});
 
 ndims = numel(binDims);
 bound_lims = Session.maze.boundaries(1:ndims,:);
@@ -26,10 +26,13 @@ if isempty(distdw)&&isempty(distIndw)
     [distdw,distIndw] = sort(distw,1,'ascend');  
 end
 
-pfknnmdw = permute(median(distdw(1:nnn,:,:,:),1),[2,3,1]);
-
-s = size(mywu);
-cm = reshape(repmat([0:s(1):prod(s)-1],s(1),1),s);     
-smywut = mywu(repmat(distIndw,1,size(ufr,2))+cm);
-RateMap = permute(mean(smywut(1:nnn,:,:,:),1),[3,2,1]);
-RateMap(repmat(pfknnmdw,[1,1,size(ufr,2)])>dthresh) = nan;
+if size(distdw,1)>nnn,
+    pfknnmdw = permute(median(distdw(1:nnn,:,:,:),1),[2,3,1]);
+    s = size(mywu);
+    cm = reshape(repmat([0:s(1):prod(s)-1],s(1),1),s);     
+    smywut = mywu(repmat(distIndw,1,size(ufr,2))+cm);
+    RateMap = permute(mean(smywut(1:nnn,:,:,:),1),[3,2,1]);
+    RateMap(repmat(pfknnmdw,[1,1,size(ufr,2)])>dthresh) = nan;
+else
+    RateMap = nan([size(distw,3),size(ufr,2)]);
+end

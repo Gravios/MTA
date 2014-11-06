@@ -11,7 +11,7 @@
 % vectorized; 17.12.13 AS
 function Rips = DetectRipples(Trial, varargin)
 
-[Channels, FreqRange, Threshold,  Mode, Overwrite, Model] = DefaultArgs(varargin,{[],[160 220], 5, 'modeled',false,'ripples'});
+[Channels, FreqRange, Threshold,  Mode, Overwrite, Model,OutputType] = DefaultArgs(varargin,{[],[160 220], 5, 'modeled',false,'ripples','MTADepoch'});
 
 
 if isempty(Channels)
@@ -24,44 +24,56 @@ if isempty(Channels)
         error('Channels not specified');
     end
 else
-    if ~exist(fullfile(Trial.spath,[Trial.filebase,'.',mfilename,'.usechan']),'file')|overwrite
+    if ~exist(fullfile(Trial.spath,[Trial.filebase,'.',mfilename,'.usechan']),'file')|Overwrite
         msave(fullfile(Trial.spath,[Trial.filebase,'.',mfilename,'.usechan']),Channels)
     end    
 end
 
 
-    
 
-if ~FileExists([FileBase '.spw']) | Overwrite
-
-    eSampleRate = Par.lfpSampleRate;
-        
-        lfp = Trial.lfp.copy;
-        lfp.load(Trial,Channels); 
-        switch Mode
-          case 'modeled'
-            Rips = DetectStructuredOscillations(Trial,lfp, FreqRange, [], Threshold, Model);        
-          otherwise
-            Rips = DetectOscillations(lfp.data, FreqRange, Threshold, lfp.sampleRate, Threshold);        
-        end
-        
-%         seglen = max(spw(:,3)-spw(:,1));
-%         seglen = seglen + mod(seglen,2);
-%    
-%         [seg complete] = GetSegs(lfp,spw(:,2)-seglen/2,seglen,[]);
-%         seg = sq(seg);
-%         pow = FirFilter(seg,2,[120 230]/(eSampleRate/2),'bandpass');
-%         Rips.pow = mean(abs(pow),1)';
-% 
-%         Rips.t = spw(complete,2);
-        Rips.len = (spw(complete,3)-spw(complete,1))*1000./eSampleRate;
-
-        msave([FileBase '.spw'],[Rips.t Rips.pow(:) Rips.len(:)]);
-        MakeEvtFile(Rips.t(:), [FileBase '.rip.evt'],'rip',eSampleRate,1);
-        save([FileBase '.' mfilename '.mat'],'Rips');
+if ~FileExists([Trial.filebase '.spw']) | Overwrite
+    lfp = Trial.lfp.copy;
+    lfp.load(Trial,Channels); 
+    switch Mode
+      case 'modeled'
+        Rips = DetectStructuredOscilations(Trial,lfp, FreqRange, [], [], Threshold, Model);        
+      otherwise
+        Rips = DetectOscillations(lfp.data, FreqRange, Threshold, lfp.sampleRate, Threshold);        
     end
+    
+    %         seglen = max(spw(:,3)-spw(:,1));
+    %         seglen = seglen + mod(seglen,2);
+    %    
+    %         [seg complete] = GetSegs(lfp,spw(:,2)-seglen/2,seglen,[]);
+    %         seg = sq(seg);
+    %         pow = FirFilter(seg,2,[120 230]/(eSampleRate/2),'bandpass');
+    %         Rips.pow = mean(abs(pow),1)';
+    % 
+    %         Rips.t = spw(complete,2);
+    %        Rips.len = (spw(complete,3)-spw(complete,1))*1000./eSampleRate;
 
+    msave([Trial.filebase '.spw'],[Rips.t Rips.pow(:) Rips.len(:)]);
+    MakeEvtFile(Rips.t(:), [Trial.name '.rip.evt'],'rip',Trial.xyz.sampleRate,1);
+    save([Trial.filebase '.' mfilename '.mat'],'Rips');
+    RipPer = MTADepoch(Trial.spath,...
+                     Trial.filebase,...
+                     Rips.per,...
+                     Trial.xyz.sampleRate,...
+                     Trial.sync.copy,...
+                     Trial.sync.data(1),...
+                     'ripples','m');
+    RipPer.save(1);
 end
+
+switch OutputType
+  case 'struct'
+    Rips = load([Trial.filebase '.' mfilename '.mat']);
+  case 'MTADepoch'
+    Rips = MTADepoch(Trial.spath,'key','m');
+    Rips.load(Trial);
+end
+
+
 
 return
 
@@ -389,7 +401,7 @@ lastvec = inbuffer(end,:);
 
   
 % finds a region in data which exeeds the threshold value
-function [resvec,state] = threshres(data,thresh,state)
+vfunction [resvec,state] = threshres(data,thresh,state)
 
 data = data(:);
 

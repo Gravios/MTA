@@ -14,10 +14,11 @@ classdef MTASession < hgsetget
 %
 %     TTLValue:        string, used to synchronize position and electrophysiological data
 %
-%
 %     xyzSystem:       string, name/id of the system to record position
 %    
 %     ephySystem:      string, name/id of the system to record neural activity
+%
+%     xyzSampleRate:   numeric, samples per second for xyz tracking
 %
 %---------------------------------------------------------------------------------------------------------
 %   General Loading:
@@ -34,7 +35,7 @@ classdef MTASession < hgsetget
 %         Session = MTASession('jg05-20120309','rof');
 %
 %       Create New Session
-%         Session = MTASession('jg05-20120309','rof',1,'0x0040','vicon','nlx');
+%         Session = MTASession('jg05-20120309','rof',1,'0x0040','vicon','nlx',119.881035);
 %   
 %---------------------------------------------------------------------------------------------------------
 
@@ -101,8 +102,8 @@ classdef MTASession < hgsetget
         %% Session Constructor - Creation & Loading-----------------------------------------------------%
 
         function Session = MTASession(name,varargin)
-            [mazeName,overwrite,TTLValue,xyzSystem,ephySystem] = ...
-             DefaultArgs(varargin,{'cof',0,'0x0040','vicon','nlx'});
+            [mazeName,overwrite,TTLValue,xyzSystem,ephySystem,xyzSampleRate] = ...
+             DefaultArgs(varargin,{'cof',0,'0x0040','vicon','nlx',[]});
             Session.path = load('MTAPaths.mat');
 
             if isempty(name),
@@ -129,10 +130,10 @@ classdef MTASession < hgsetget
                     Session.xyz.load(Session.sync);
                 elseif overwrite
                     warning(['Overwriting Session: ' fullfile(Session.spath, [Session.filebase, '.ses.mat'])])
-                    Session.create(TTLValue,xyzSystem,ephySystem);
+                    Session.create(TTLValue,xyzSystem,ephySystem,xyzSampleRate);
                 else
                     warning(['Subsession with maze, ' Session.maze.name ', does not exist: creating session']);
-                    Session.create(TTLValue,xyzSystem,ephySystem);
+                    Session.create(TTLValue,xyzSystem,ephySystem,xyzSampleRate);
                 end  
             end
         end
@@ -143,13 +144,13 @@ classdef MTASession < hgsetget
         % data. The choice of function is dependent upon the combination of
         % recording systems used in the session.
         %  
-            [TTLValue,xyzSystem,ephySystem] = DefaultArgs(varargin,{'0x8000','vicon','nlx'});
+            [TTLValue,xyzSystem,ephySystem,xyzSampleRate] = DefaultArgs(varargin,{'0x8000','vicon','nlx',[]});
             switch ephySystem,
 
               case 'nlx',
                 switch xyzSystem,
                   case 'vicon',
-                    Session = syncViconNlx(Session,TTLValue);
+                    Session = syncViconNlx(Session,TTLValue,xyzSampleRate);
                 end
 
               case 'blackrock'
@@ -159,7 +160,7 @@ classdef MTASession < hgsetget
               otherwise
                 switch xyzSystem,
                   case 'vicon'
-                    Session = loadVicon(Session);
+                    Session = loadVicon(Session,xyzSampleRate);
                 end
             end
         end
@@ -277,8 +278,19 @@ classdef MTASession < hgsetget
         if isa(Data,'MTADepoch'),
             %%%%%%%%%%%%%%%%%%% REDO %%%%%%%%%%%%%%%%%%%
             %Data.resample(1);
-% $$$        Data.data = IntersectRanges(Data.data+Data.origin,Data.sync.sync.data+Data.sync.sync.origin-1)-Data.sync.sync(1);
-% $$$             Data.origin = Data.sync.sync(1)+1;
+        % $$$        Data.data = IntersectRanges(Data.data+Data.origin,Data.sync.sync.data+Data.sync.sync.origin-1)-Data.sync.sync(1);
+        % $$$             Data.origin = Data.sync.sync(1)+1;
+            if Data.origin ~= Data.sync.sync.data(1),
+                indShift = round((Data.origin - Data.sync.sync.data(1))*Data.sampleRate);                  else
+                indShift = 0;
+            end
+            syncp = Data.sync.sync.copy;
+            syncp.resample(Data.sampleRate);
+            
+            Data.data = IntersectRanges(Data.data+indShift,syncp.data-syncp.data(1)+1);
+            Data.origin = Data.sync.sync.data(1);
+
+            
             return
             %%%%%%%%%%%%%%%%%%% REDO %%%%%%%%%%%%%%%%%%%
 

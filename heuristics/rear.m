@@ -4,15 +4,8 @@ if ~isa(Session,'MTASession'),
     Session = MTASession(Session);
 end
 
-ang = Session.ang.copy;
-if ang.isempty,
-    ang.load(Session);
-end
-
-xyz = Session.xyz.copy;
-if xyz.isempty,
-    xyz.load(Session);
-end
+ang = Session.load('ang');
+xyz = Session.load('xyz');
 
 if xyz.sampleRate>120,xyz.resample(120);end
 if ang.sampleRate>120,ang.resample(120);end

@@ -14,12 +14,15 @@ function varargout = QuickTrialSetup(Session,varargin)
 %                   Indicies of the Motion Tracking segments to ignore, in
 %                   order of the Session.xyz.sync.data
 %
+%   autolabel:          Logical, defarg  - true
+%                   Try to do some automatic behavior labeling
+%
 %   debug:          Logical, defarg  - false 
 %                   Display some diagnostic plots
 %
 %
 
-[trialName,offsets,dropSyncInd,debug] = DefaultArgs(varargin,{'all',[0,0],[],false});
+[trialName,offsets,dropSyncInd,autolabel,debug] = DefaultArgs(varargin,{'all',[0,0],[],true,false});
 xsync = Session.xyz.sync.copy;
 xsync = xsync+offsets;
 xsync.data(dropSyncInd,:) = [];
@@ -34,7 +37,7 @@ rmarkers = {'spine_lower','pelvis_root', 'spine_middle', 'spine_upper',...
               'head_back',  'head_left',   'head_front',  'head_right',...
                 'head_top'};
 
-if sum(ismember(Trial.model.ml,rmarkers))==numel(rmarkers)
+if sum(ismember(Trial.model.ml,rmarkers))==numel(rmarkers)&&autolabel
     Trial.stc.updateMode('auto_wbhr');
     Trial = labelBhv(Trial,Trial.stc);
     Trial = labelAuxBhv(Trial,Trial.stc);

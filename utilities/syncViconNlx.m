@@ -1,4 +1,4 @@
-function Session = syncViconNlx(Session,TTLValue)
+function Session = syncViconNlx(Session,TTLValue,viconSampleRate)
 % Session = create(Session,TTLValue)
 % Populate a Session with xyz data synchronized to
 % electrophysiological data based on an event file
@@ -44,7 +44,11 @@ end
 
 %% Organize the Sessions trials into a cell array
 %% Return the names of the markers
-[xyzData, markers, viconSampleRate] = concatViconFiles(Session);            
+if isempty(viconSampleRate),
+    [xyzData, markers, viconSampleRate] = concatViconFiles(Session);            
+else
+    [xyzData, markers] = concatViconFiles(Session);            
+end
 
 %% Load VSK if possible 
 vsk_path = fullfile(Session.spath, [Session.name '-' Session.maze.name '.vsk']);
@@ -70,7 +74,7 @@ events.description(1:pfirstVStart)=[];
 
 vstarts = events.time(events.Clu==find(~cellfun(@isempty,regexp(events.Labels,TTLValue))));
 vstops  = events.time(find(ismember(events.Clu,find(~cellfun(@isempty,regexp(events.Labels,stopTTL)))),numel(vstarts),'first'));
-tsRanges = [vstarts,vstops+0.002];
+tsRanges = [vstarts,vstops];
             
 %% MUA HAHAHAHAHAAAaaaaaa 
 % but seriously it just finds the events with the TTLValue and then
@@ -92,8 +96,8 @@ xyzDataInd = [];
 for i=1:numel(xyzData),
     if ~isempty(xyzData{i})
         for j=1:size(tsRanges,1),
+            %diff(tsRanges(j,:))-size(xyzData{i},1)/viconSampleRate
             if abs(diff(tsRanges(j,:))*10-size(xyzData{i},1)/viconSampleRate*10)<0.2,
-                abs(diff(tsRanges(j,:))*10-size(xyzData{i},1)/viconSampleRate*10)
                 % ???Shift time back so index corresponds to
                 % syncPeriods(1) :-1/viconSampleRate???
                 syncPeriods(end+1,:) = tsRanges(j,:)-1/viconSampleRate;

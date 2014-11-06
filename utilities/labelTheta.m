@@ -13,8 +13,7 @@ if sempty||overwrite,
     end
     cpath = pwd;
     cd(Trial.spath);
-    CheckEegStates(Trial.name,[],[],[],thetaChan,[],'compute',overwrite);
-    CheckEegStates(Trial.name,[],[],[],thetaChan,[],'display',false);
+    CheckEegStates(Trial.name,[],[],[],thetaChan,[],'display',overwrite);
     Stc.states{end+1} = theta(Trial);
 end
 

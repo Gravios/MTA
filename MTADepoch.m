@@ -197,6 +197,26 @@ classdef MTADepoch < MTAData
     
         end
 
+        function Data = minus(a,b)
+        % function Data = minus(a,b)
+        % 
+        % Add assertion that when two MTADepochs are inputed that
+        % they have the same origin
+            
+            if isa(a,'MTADepoch')&&ismatrix(b)&&~isa(b,'MTADepoch'),
+                Data = a.copy;
+                Data.data = SubstractRanges(Data.data,b);
+            elseif isa(b,'MTADepoch')&&ismatrix(a)&&~isa(a,'MTADepoch'),
+                Data = b.copy;
+                Data.data = SubstractRanges(a,Data.data);
+            elseif isa(b,'MTADepoch')&&isa(a,'MTADepoch')
+                b.resample(a.sampleRate);
+                Data = a.copy;
+                Data.data = SubstractRanges(Data.data,b.data);
+            end
+             
+         end
+
 % $$$         function perDiff = uminus(Data)
 % $$$             perDiff = diff(Data.data,1,2);
 % $$$         end
@@ -263,7 +283,7 @@ classdef MTADepoch < MTAData
             
             Data = MTADepoch([],[],newData,msr,sync,origin,newLabel,newKey);
         end
-
+p
         function join(DataCell)
             samplingRates = cellfun(@getfield,DataCell,repmat({'sampleRate'},1,numel(DataCell)));
             msr = max(samplingRates);

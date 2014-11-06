@@ -84,7 +84,7 @@ classdef MTATrial < MTASession
                 
                 msg.message = 'The provided synchronization periods are empty.';
                 msg.identifier = 'MTATrial:MTAtrial:EmptySync';
-                
+                Trial.stc.updateFilename([Trial.filebase,'.stc.default.mat']);                
                 switch class(sync)
                     
                   case 'MTADepoch'
@@ -123,7 +123,7 @@ classdef MTATrial < MTASession
                     Trial.resync(prop);
                 elseif isa(prop,'MTAStateCollection')
                     if ~prop.isempty,
-                        for s = numel(prop.states(:)),
+                        for s = 1:numel(prop.states(:)),
                             Trial.resync(prop.states{s});
                         end
                     end
