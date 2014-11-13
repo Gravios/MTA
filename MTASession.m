@@ -101,9 +101,9 @@ classdef MTASession < hgsetget
 
         %% Session Constructor - Creation & Loading-----------------------------------------------------%
 
-        function Session = MTASession(name,varargin)
-            [mazeName,overwrite,TTLValue,xyzSystem,ephySystem,xyzSampleRate] = ...
-             DefaultArgs(varargin,{'cof',0,'0x0040','vicon','nlx',[]});
+        function Session = MTASession(varargin)
+            [name,mazeName,overwrite,TTLValue,xyzSystem,ephySystem,xyzSampleRate] = ...
+             DefaultArgs(varargin,{[],'cof',0,'0x0040','vicon','nlx',[]});
             Session.path = load('MTAPaths.mat');
 
             if isempty(name),

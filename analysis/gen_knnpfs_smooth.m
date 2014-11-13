@@ -35,7 +35,7 @@ if display,
     switch mode
       case 'std'
         for i = 1:nsts,
-            pfs{i} = MTAAknnpfs(Trial,units,states{i},false,'numIter',1,'ufrShufBlockSize',0,'binDims',[20,20],'distThreshold',125,'nNearestNeighbors',150);            
+            Pfs{i} = MTAAknnpfs(Trial,units,states{i},false,'numIter',1,'ufrShufBlockSize',0,'binDims',[20,20],'distThreshold',125,'nNearestNeighbors',150);            
         end
         
       case 'shuff'     
@@ -56,5 +56,19 @@ if display,
         unit = figure_controls(hfig,unit,units);
     end
 
+end
+
+
+hfig = figure;
+unit = units(1);
+while unit~=-1,
+    for i = 1:nsts,
+        subplot2(nsts,2,i,1);cla
+        pfs{i}.plot(unit,[],true);
+        subplot2(nsts,2,i,2);cla
+        pfs{i}.plot(unit,[],true);
+        title([pfs{i}.parameters.states,': ',num2str(unit)]);
+    end
+    unit = figure_controls(hfig,unit,units);
 end
 

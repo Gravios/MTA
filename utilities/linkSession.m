@@ -1,6 +1,7 @@
 function linkSession(session_name,xyz_path,nlx_path)
 %function linkSession(session_name,xyz_path,nlx_path)
-
+% TODO make linkSession windows compatible 
+    
 %need to make cygwin system('C:\cygwin64\bin\bash -c CYGWIN=winsymlinks:native;/bin/ls')    
 %system('C:\cygwin64\bin\bash -c ''/bin/ln -s /cygdrive/c/Users/justi_000/Documents/MATLAB/dlmtest.txt  /cygdrive/c/Users/justi_000/Documents/MATLAB/dlmt.txt''')
 %system(['C:\cygwin64\bin\bash -c ''export CYGWIN64="winsymlinks:native";/bin/ln -s c:/Users/justi_000/Documents/MATLAB/dlmtest.txt  `c:/Users/justi_000/Documents/MATLAB/dlmt.txt;c:/Users/justi_000/Documents/MATLAB/dlmtest.txt'' -> `c:/Users/justi_000/Documents/MATLAB/dlmt.txt'''''])
@@ -23,7 +24,7 @@ function linkSession(session_name,xyz_path,nlx_path)
         
         for maze = 1:numel(xyz_maze_dirs),
             try,mkdir(fullfile(xyzDir,xyz_maze_dirs(maze).name));end
-            system(['ln -s ' fullfile(xyz_path,session_name,xyz_maze_dirs(maze).name) '/* ' fullfile(xyzDir,xyz_maze_dirs(maze).name)]);
+            system(['ln -sif ' fullfile(xyz_path,session_name,xyz_maze_dirs(maze).name) '/* ' fullfile(xyzDir,xyz_maze_dirs(maze).name)]);
         end
     else
         
@@ -35,27 +36,29 @@ function linkSession(session_name,xyz_path,nlx_path)
     if ~strcmp(nlx_path,fullfile(Session.path.data,'nlx')),
         nlxDir = fullfile(Session.path.data,'nlx',session_name);
         mkdir(nlxDir);
-        system(['ln -s ' fullfile(nlx_path,session_name) '/* ' nlxDir]);
+        if numel(dir(fullfile(nlx_path,session_name)))>2,
+        system(['ln -sif ' fullfile(nlx_path,session_name) '/* ' nlxDir]);
+        end
     else
         % if nlx_path is within the MTA data collection
         nlxDir = fullfile(nlx_path,session_name);
     end
     
     cd(datDir);
-    system(['ln -s ../nlx/' session_name '/* ' datDir ])
+    system(['ln -sif ../nlx/' session_name '/* ' datDir ])
 
     for maze = 1:numel(xyz_maze_dirs),
         cd(datDir);
         try,mkdir(xyz_maze_dirs(maze).name);end
         
         try
-            system(['ln -s ../xyz/' session_name '/' xyz_maze_dirs(maze).name '/' ...
+            system(['ln -sif ../xyz/' session_name '/' xyz_maze_dirs(maze).name '/' ...
                 session_name '-' xyz_maze_dirs(maze).name '.vsk ' ...
                 datDir '/' session_name '-' xyz_maze_dirs(maze).name '.vsk ']);
         end
         cd(fullfile(datDir,xyz_maze_dirs(maze).name))
         try,
-            system(['ln -s ../../xyz/' session_name '/' ...
+            system(['ln -sif ../../xyz/' session_name '/' ...
                 xyz_maze_dirs(maze).name '/* ' datDir '/' ...
                xyz_maze_dirs(maze).name '/']);
         end

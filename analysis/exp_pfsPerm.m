@@ -1,0 +1,153 @@
+function Pfs = exp_pfsPerm(Trial,varargin)
+[mode,autolabel] = DefaultArgs(varargin,{'compute',true});
+
+
+
+%Trial = MTATrial('jg05-20120317');
+
+if autolabel
+    Trial.stc.states = {};
+    Trial = labelBhv(Trial);
+    Trial = labelAuxBhv(Trial);
+    Trial.stc.states{end+1} = theta(Trial);
+    Trial.stc.save(1);
+else
+    Trial.stc.states{Trial.stc.gsi('h')} = Trial.stc{'h'}+[1/Trial.xyz.sampleRate,-1/Trial.xyz.sampleRate];
+end
+
+niter = 1000;
+states = {{'rear','walk'}};%,{'rear','hswalk'},{'rear','lswalk'},{'hswalk','lswalk'}};
+
+units = select_units(Trial,18,'pyr');
+units = units(Trial.nq.SNR(units)>1);
+Pfs = {};
+
+switch mode
+  case 'compute'
+    if matlabpool('size')~=12,matlabpool('open',12);end
+    parfor s = 1:numel(states),
+        for u = units,
+            try,MTAApfsPerm(Trial,u,states{s},'numIter',niter);end
+        end
+    end
+    if matlabpool('size')==12,matlabpool('close');end
+
+  case 'return'
+    units = [];
+    for s = 1:numel(states),
+        try,Pfs{s} = MTAApfsPerm(Trial,units,states{s},'numIter',niter);end
+    end
+end
+
+
+units = [];
+aunits=repmat({[]},numel(states),1);;
+Pfs=repmat({[]},numel(states),1);
+pfs=repmat({[]},numel(states),2);
+Tlist = SessionList('pfs');
+for i= 1:numel(Tlist),
+    Trial = MTATrial(Tlist{i}{1},Tlist{i}{3},Tlist{i}{2});
+    Trial.load('nq');
+    for s = 1:numel(states),
+        pft = MTAApfsPerm(Trial,[],states{s},'numIter',niter);
+        units = select_units(Trial,18,'pyr');
+        units = units(Trial.nq.SNR(units)>1);
+        %pft = MTAApfsPerm(Trial,[],states{1},'numIter',niter);
+        units = units(ismember(units,pft.data.clu));
+        aunits{s} = [aunits{s},units];
+        Pfs{s} = cat(2,Pfs{s},pft.data.rateMap(:,ismember(pft.data.clu,units),:));
+        for t = 1:2,
+            try,pfs{s,t} = cat(2,pfs{s,t},MTAApfs(Trial,units,states{s}{t}).data.rateMap);end    
+        end
+
+    end
+end
+
+
+
+s =1;
+grm = zeros([size(Pfs{s},1),numel(units)]);
+for u = 1:numel(units),
+srm = sq(Pfs{s}(:,u,:));
+for i = 1:size(srm,1),
+    try,grm(i,u) = kstest(srm(i,1,:),'alpha',0.00001);end
+end
+end
+
+tpfss = Pfs{s};
+Pfs{s}(~repmat(grm,[1,1,size(Pfs{1},3)])) = nan;
+
+
+zr=[];zw=[];
+[z,zind] = max(Pfs{s}(:,:,1));
+for u = 1:size(pfs{s,1},2);
+zr(u) = pfs{s,1}(zind(u),u,1);
+zw(u) = pfs{s,2}(zind(u),u,1);
+end
+
+nr=[];nw=[];
+[n,nind] = min(Pfs{s}(:,:,1));
+for u = 1:size(pfs{s,1},2);
+nr(u) = pfs{s,1}(nind(u),u,1);
+nw(u) = pfs{s,2}(nind(u),u,1);
+end
+
+
+
+
+figure,plot3(zw,zr,z,'.')
+figure,plot3(nw,nr,n,'.')
+
+figure,
+subplot(2,2,1),plot(z,zr,'.')
+subplot(2,2,2),plot(z,zw,'.')
+subplot(2,2,3),plot(n,nr,'.')
+subplot(2,2,4),plot(n,nw,'.')
+
+
+figure,
+subplot(121),plot(n,z,'.'),  
+%xlim([-50,0]),ylim([0,50]),
+title('max z-scores of ratemap differences')
+xlabel('max z-scores of the walk state')
+ylabel('max z-scores of the rear state')
+
+subplot(122),plot(nw,zr,'.'),
+%xlim([0,35]), ylim([0,35])
+title('max rates of placefield ratemaps')
+xlabel('max rate of the walk state (Hz)')
+ylabel('max rate of the rear state (Hz)')
+
+
+grm = zeros([size(srm,1),numel(units)]);
+for u = 1:numel(units),
+srm = sq(Pfs{1}(:,u,:));
+for i = 1:size(srm,1),
+    try,grm(i,u) = kstest(srm(i,1,:));end
+end
+end
+
+
+srm(~grm,:) = nan;
+u = 50;figure,imagescnan({pft.adata.bins{1},pft.adata.bins{2},reshape(sq(var(srm,[],3)),pft.adata.binSizes')'},[],[],1,[0,0,0]),axis xy,
+
+u = 50;figure,imagesc(pft.adata.bins{1},pft.adata.bins{2},reshape(pfs{1,2}(:,u,:),pft.adata.binSizes')'),axis xy,colorbar
+
+
+
+
+
+
+hfig = figure(74782);
+s = 1;
+for u = 1:numel(aunits{s})
+subplot(131)
+    imagescnan({pft.adata.bins{1},pft.adata.bins{2},reshape(pfs{1,1}(:,u,:),pft.adata.binSizes')'},[],[],1,[0,0,0]),axis xy
+subplot(132)
+    imagescnan({pft.adata.bins{1},pft.adata.bins{2},reshape(pfs{1,2}(:,u,:),pft.adata.binSizes')'},[],[],1,[0,0,0]),axis xy
+subplot(133)
+    imagescnan({pft.adata.bins{1},pft.adata.bins{2},reshape(Pfs{1}(:,u,1),pft.adata.binSizes')'},[],[],1,[0,0,0]),axis xy,
+pause(.5)
+end
+
+

@@ -1,4 +1,4 @@
-classdef MTAApfs < hgsetget %< MTAAnalysis
+classdef MTAApfsPerm < hgsetget %< MTAAnalysis
 
     properties 
         path
@@ -14,10 +14,10 @@ classdef MTAApfs < hgsetget %< MTAAnalysis
 
     methods
 
-        function Pfs = MTAApfs(Obj, varargin)     
+        function Pfs = MTAApfsPerm(Obj, varargin)     
         % MTAApfs(Obj,{units,states,overwrite,tag,binDims,SmoothingWeights,type,spkShuffle,posShuffle,numIter})
             [units,states,overwrite,tag,binDims,SmoothingWeights,type,spkShuffle,posShuffle,numIter,xyz,bound_lims]=...
-            DefaultArgs(varargin,{[],'walk',0,[],[30,30],[1.2,1.2],'xy',0,0,1,MTADxyz([]),[]});
+            DefaultArgs(varargin,{[],{'rear','walk'},0,[],[30,30],[1.2,1.2],'xy',0,0,1,MTADxyz([]),[]});
 
             units = units(:)';            
 
@@ -43,13 +43,17 @@ classdef MTAApfs < hgsetget %< MTAAnalysis
                     Pfs.session.trialName   = TrialName;
                     Pfs.session.mazeName    = MazeName;
 
-                    if ischar(states),
+
+                    if prod(cellfun(@ischar,states)),
                         Pfs.parameters.states = states;
-                        pfsState = Session.stc{states,xyz.sampleRate}.copy;
+                        pfsState{1} = Session.stc{states{1},xyz.sampleRate}.copy;
+                        pfsState{2} = Session.stc{states{2},xyz.sampleRate}.copy;
                     elseif isa(states,'MTAData'),
-                        pfsState = states.copy;
-                        pfsState.resample(xyz);
-                        Pfs.parameters.states = pfsState.label;                       
+                        pfsState{1} = states{1}.copy;
+                        pfsState{2} = states{2}.copy;                        
+                        pfsState{1}.resample(xyz);
+                        pfsState{2}.resample(xyz);                        
+                        Pfs.parameters.states = {pfsState{1}.label,pfsState{2}.label};
                     end
                     
                     Pfs.parameters.type   = type;
@@ -200,90 +204,94 @@ classdef MTAApfs < hgsetget %< MTAAnalysis
             
             
             %% Get State Positions
-            sstpos = sq(xyz(pfsState,:));
+            %sstpos = sq(xyz(pfsState,:));
 
             
             %% load Units into spk object;
-            Session.spk.create(Session,xyz.sampleRate,pfsState,units);
+            Session.spk.create(Session,xyz.sampleRate,'theta',units);
 
 
+
+
+            
+            pfsState{1}.cast('TimeSeries');
+            pfsState{2}.cast('TimeSeries');
+
+            durStateA = sum(pfsState{1}.data);
+            durStateB = sum(pfsState{2}.data);
+            
+            pooledState = pfsState{1}.data+pfsState{2}.data;
+            pooledState = find(pooledState);
+            
+            assert(durStateA+durStateB==length(pooledState),['States ', ...
+                               'labeling must be non degenerate'])
+            
             i = 1;
             for unit=selected_units,
+                disp(['Calculating pfsPerm for unit: ' num2str(unit)]);
 
                 Pfs.data.clu(dind(i)) = Session.spk.map(unit,1);
                 Pfs.data.el(dind(i)) = Session.spk.map(unit,2);
                 Pfs.data.elClu(dind(i)) = Session.spk.map(unit,3);
                 res = Session.spk(unit);
-                %% Skip unit if too few spikes
-                if numel(res)>10,
 
-                    nSpk = numel(res);
-                    sstres = SelectPeriods(res,pfsState.data,'d',1,1);
+                if  numel(res)< 10,continue,end
+                sstposA = xyz(logical(pfsState{1}.data),:);
+                sstposB = xyz(logical(pfsState{2}.data),:);                    
 
-                    if ~spkShuffle
-                        res = repmat(res,1,numIter);
-                    else
-% $$$                         res = repmat(sstres,1,numIter);
-% $$$                         spkswind = round(spkShuffle*xyz.sampleRate);
-% $$$                         spkWindInd =  [1:spkswind:res(end)-spkswind;(spkswind+1):spkswind:res(end)];
-% $$$                         for s = 2:numIter,
-% $$$                             tres = [];
-% $$$                             for t = spkWindInd
-% $$$                             tres = vertcat(tres,resSelectPeriods(sstres,t,'d',1,0));
-% $$$                         end
+                nSpk = numel(res);
 
-% $$$                         shufSpkInd = zeros([nSpk,numIter]);
-% $$$                         spkswind = round(spkShuffle*xyz.sampleRate);
-% $$$                         startres = res(1);
-% $$$                         spkTSeries = false([res(end)-startres,1]);
-% $$$                         spad = spkswind-mod(numel(spkTSeries),spkswind);
-% $$$                         spkTSeries = [spkTSeries;false([spad,1])];
-% $$$                         spkTSeries(res(:,1)-res(1)+1) = true;
-% $$$                         spkTSeriesInd =  1:numel(spkTSeries);
-% $$$                         spkTSeriesInd = reshape(spkTSeriesInd,[],spkswind);
-% $$$                         nsbins = size(spkTSeriesInd,1);
-% $$$                         
-% $$$                         for s = 2:numIter,
-% $$$                             shufInd = reshape(spkTSeriesInd(randperm(nsbins),:),[],1);
-% $$$                             
-% $$$                             res(:,s) = find(spkTSeries(shufInd))+startres;
-% $$$                             %res(:,s) = find(reshape(spkTSeries(:,spkTSeries(randperm(nsbins),:),s),[],1))+startres;
-% $$$                         end
+                spkindA = ismember(res,find(pfsState{1}.data==1));
+                if sum(spkindA)~=0, 
+                    spkposA = xyz(res(spkindA),:);
+                else
+                    spkposA = [];
+                end
+                
+                spkindB = ismember(res,find(pfsState{2}.data==1));
+                if sum(spkindB)~=0,
+                    spkposB = xyz(res(spkindB),:);
+                else
+                    spkposB = [];
+                end                
+                
+                tic
+                %% Caluculate Place Fields
+                [rateMapA, Pfs.adata.bins] = PlotPF(Session,spkposA,sstposA,binDims,SmoothingWeights,type,bound_lims,xyz.sampleRate);
+                [rateMapB, Pfs.adata.bins] = PlotPF(Session,spkposB,sstposB,binDims,SmoothingWeights,type,bound_lims,xyz.sampleRate);
+                Pfs.data.rateMap(:,dind(i),1) = rateMapA-rateMapB;
+
+                if numIter>1,
+                    for bsi = 2:numIter
+                        rind = randperm(length(pooledState));
+                        permStateA = pooledState(rind(1:durStateA));
+                        permStateB = pooledState(rind(durStateA+1:end));
+
+                        sstposA = xyz(permStateA,:);
+                        sstposB = xyz(permStateB,:);                    
+
+                        spkindA = ismember(res,permStateA);
+                        if sum(spkindA)~=0,
+                            spkposA = xyz(res(spkindA),:);
+                        else
+                            spkposA = [];
+                        end
+                        
+                        spkindB = ismember(res,permStateB);
+                        if sum(spkindB)~=0,
+                            spkposB = xyz(res(spkindB),:);
+                        else
+                            spkposB = [];
+                        end
+                        
+
+                        [rateMapA, Pfs.adata.bins] = PlotPF(Session,spkposA,sstposA,binDims,SmoothingWeights,type,bound_lims,xyz.sampleRate);
+                        [rateMapB, Pfs.adata.bins] = PlotPF(Session,spkposB,sstposB,binDims,SmoothingWeights,type,bound_lims,xyz.sampleRate);
+                        Pfs.data.rateMap(:,dind(i),bsi) = rateMapA-rateMapB;
                     end
-                    
-                    
-                    sresind = sstres + repmat(randi([-posShuffle,posShuffle],1,numIter),numel(sstres),1);        % shifts the position of the res along the sstpos
-                    sresind(sresind<=0) = sresind(sresind<=0)+size(sstpos,1);                           % Wraps negative res to end of the sstpos vector
-                    sresind(sresind>size(sstpos,1)) = sresind(sresind>size(sstpos,1))-size(sstpos,1);   % Wraps res greater than the size of the sstpos vector
-                    
+                end
+                toc
 
-                    %% Caluculate Place Fields
-                    [Pfs.data.rateMap(:,dind(i),1), Pfs.adata.bins, Pfs.data.meanRate(dind(i)), Pfs.data.si(dind(i)), Pfs.data.spar(dind(i))] =  ...
-                        PlotPF(Session,sstpos(sresind(:,1),:),sstpos,binDims,SmoothingWeights,type,bound_lims,xyz.sampleRate);
-                     if numIter>1,
-                         for bsi = 2:numIter
-                             Pfs.data.rateMap(:,dind(i),bsi) = PlotPF(Session,sstpos(sresind(:,bsi),:),sstpos,binDims,SmoothingWeights,type,bound_lims);
-                         end
-                     end
-%                         Pfs.rateMap{unit} = sq(bsMap);
-%                         PlaceField.stdMap{unit} = sq(std(bsMap,0,3));
-%                     else
-%                         PlaceField.rateMap{unit} = sq(bsMap);
-%                         PlaceField.stdMap{unit} = [];
-%                     end
-                    
-%                     try
-%                         if isempty(PlaceField.rateMap{unit}), continue, end,
-%                         PlaceField.rateMap{unit}(isnan(PlaceField.rateMap{unit})) = 0;
-%                         PlaceField.maxRateInd{unit} = LocalMinima2(-PlaceField.rateMap{unit},-0.2,12);
-%                         PlaceField.rateMap{unit}(PlaceField.rateMap{unit}(:)==0) = nan;
-%                         if isempty(PlaceField.maxRateInd{unit}), continue, end,
-%                         PlaceField.maxRatePos{unit} = [PlaceField.ybin(PlaceField.maxRateInd{unit}(:,2));PlaceField.xbin(PlaceField.maxRateInd{unit}(:,1))]'*[0 1; 1 0];
-%                         PlaceField.maxRate{unit} = PlaceField.rateMap{unit}(round(size(PlaceField.rateMap{unit},1)*[PlaceField.maxRateInd{unit}(:,2)-1]+PlaceField.maxRateInd{unit}(:,1)));
-%                         [~,PlaceField.maxRateMax{unit}] = max(PlaceField.maxRate{unit});
-%                     end
-                    
-                end  
                 i = i+1;
             end
             % Save Data after Calculations
@@ -295,57 +303,88 @@ classdef MTAApfs < hgsetget %< MTAAnalysis
             end
         end
         
-        function plot(Pfs,varargin)
+        function rateMap = plot(Pfs,varargin)
             [unit,nMode,ifColorbar,colorLimits] = DefaultArgs(varargin,{[],'mean',0,[]});
 
             if isempty(unit),unit=Pfs.data.clu(1);end
             switch numel(Pfs.parameters.type)
-                case 2
-                    bin1 = Pfs.adata.bins{1};
-                    bin2 = Pfs.adata.bins{2};
-                    
-                    switch nMode
-                        case 'mean'
-                            rateMap = mean(Pfs.data.rateMap(:,Pfs.data.clu==unit,:),3);
-                        case 'std'
-                            rateMap = std(Pfs.data.rateMap(:,Pfs.data.clu==unit,:),[],3);
-                        case 'sig'
-                            rateMap = 1./sum((repmat(max(Pfs.data.rateMap(:,Pfs.data.clu==unit,:)),[size(Pfs.data.rateMap,1),1,1])...
-                                                     -repmat(Pfs.data.rateMap(:,Pfs.data.clu==unit,1),[1,1,Pfs.parameters.numIter]))<0,3)';
-                        otherwise
-                            rateMap = Pfs.data.rateMap(:,Pfs.data.clu==unit,1);
+              case 2
+                bin1 = Pfs.adata.bins{1};
+                bin2 = Pfs.adata.bins{2};
+                
+                switch nMode
+                  case 'mean'
+                    rateMap = mean(Pfs.data.rateMap(:,Pfs.data.clu==unit,2:end),3);
+                  case 'std'
+                    rateMap = std (Pfs.data.rateMap(:,Pfs.data.clu==unit,2:end),[],3);
+                  case 'sig'
+        % $$$                     rateMapT = 1./sum(repmat(Pfs.data.rateMap(:,Pfs.data.clu==unit,1),[1,1,Pfs.parameters.numIter])>Pfs.data.rateMap(:,Pfs.data.clu==unit,:),3);
+        % $$$                     rateMap = nan([Pfs.adata.binSizes']);
+        % $$$                     try,rateMap(rateMapT<0.05&nniz(rateMapT)) = rateMapT(rateMapT<0.05&nniz(rateMapT));end
+        % $$$                     try,rateMap((1-rateMapT)<0.05&nniz(rateMapT)) = -(1-rateMapT((1-rateMapT)<0.05&nniz(rateMapT)));end
+                    rateMap = zscore(Pfs.data.rateMap(:,Pfs.data.clu==unit,:),[],3);
+                    rateMap = rateMap(:,:,1);
+                    %rateMap = 1-normcdf(abs(rateMap(:,1,1)),0,1);
+                  case 'sig'
+        % $$$                     rateMapT = 1./sum(repmat(Pfs.data.rateMap(:,Pfs.data.clu==unit,1),[1,1,Pfs.parameters.numIter])>Pfs.data.rateMap(:,Pfs.data.clu==unit,:),3);
+        % $$$                     rateMap = nan([Pfs.adata.binSizes']);
+        % $$$                     try,rateMap(rateMapT<0.05&nniz(rateMapT)) = rateMapT(rateMapT<0.05&nniz(rateMapT));end
+        % $$$                     try,rateMap((1-rateMapT)<0.05&nniz(rateMapT)) = -(1-rateMapT((1-rateMapT)<0.05&nniz(rateMapT)));end
+                    rateMap = zscore(Pfs.data.rateMap(:,Pfs.data.clu==unit,:),[],3);
+                    rateMap = rateMap(:,:,1);
+                  case 'sigks'
+        % $$$                     rateMapT = 1./sum(repmat(Pfs.data.rateMap(:,Pfs.data.clu==unit,1),[1,1,Pfs.parameters.numIter])>Pfs.data.rateMap(:,Pfs.data.clu==unit,:),3);
+        % $$$                     rateMap = nan([Pfs.adata.binSizes']);
+        % $$$                     try,rateMap(rateMapT<0.05&nniz(rateMapT)) = rateMapT(rateMapT<0.05&nniz(rateMapT));end
+        % $$$                     try,rateMap((1-rateMapT)<0.05&nniz(rateMapT)) = -(1-rateMapT((1-rateMapT)<0.05&nniz(rateMapT)));end
+                    rateMap = zscore(Pfs.data.rateMap(:,Pfs.data.clu==unit,:),[],3);
+                    rateMap = rateMap(:,:,1);
+                    %rateMap = 1-normcdf(abs(rateMap(:,1,1)),0,1);
+                    for u = 1:numel(unit),
+                        mask_kstest = zeros([size(rateMap,1),numel(unit)]);
+                        for i = 1:size(rateMap,1),
+                            try,mask_kstest(i,u) = kstest(rateMap(i,u,:),'alpha',.00001);end
+                        end
                     end
-                    
-                    
-                    rateMap = reshape(rateMap,numel(bin1),numel(bin2));
-                    
-                    imagescnan({bin1,bin2,rateMap'},colorLimits,[],ifColorbar,[0,0,0]);
-                    
-                    if ~isempty(rateMap)&&~isempty(bin1)&&~isempty(bin2),
-                        text(bin1(1)+30,bin2(end)-50,sprintf('%2.1f',max(rateMap(:))),'Color','w','FontWeight','bold','FontSize',10)
-                    end
-                    axis xy
-                case 3
-                    c = eye(3);
-                    r = [1.2,3,6];
-                    var = cat(2,Pfs.adata.bins,{permute(reshape(Pfs.data.rateMap(:,Pfs.data.clu==unit,1),Pfs.adata.binSizes'),[2,1,3])},{[]});
-                    for i = 1:3,
-                        var(end) = {max(Pfs.data.rateMap(:,Pfs.data.clu==unit,1))/r(i)};
-                        fv = isosurface(var{:});
-                        patch(fv,'facecolor',c(i,:),'edgecolor','none');
-                        alpha(1/r(i)*r(1));
-                    end
-                    xlim([min(Pfs.adata.bins{1}),max(Pfs.adata.bins{1})]);
-                    ylim([min(Pfs.adata.bins{2}),max(Pfs.adata.bins{2})]);
-                    zlim([min(Pfs.adata.bins{3}),max(Pfs.adata.bins{3})]);
-                    view(3)
+                    rateMap(~repmat(mask_kstest,[1,1,size(rateMap,3)]))=nan;
+                    %rateMap = 1-normcdf(abs(rateMap(:,1,1)),0,1);
+                  otherwise
+                    rateMap = Pfs.data.rateMap(:,Pfs.data.clu==unit,1);
+                end
+                
+                
+                rateMap = reshape(rateMap,numel(bin1),numel(bin2));
+                if nargout>0,return,end
+                
+                imagescnan({bin1,bin2,rateMap'},colorLimits,[],ifColorbar,[0,0,0]);
+                
+                if ~isempty(rateMap)&&~isempty(bin1)&&~isempty(bin2),
+                    text(bin1(1)+30,bin2(end)-50,sprintf('%2.1f',max(rateMap(:))),'Color','w','FontWeight','bold','FontSize',10)
+                end
+                axis xy
+              case 3
+                c = eye(3);
+                r = [1.2,3,6];
+                var = cat(2,Pfs.adata.bins,{permute(reshape(Pfs.data.rateMap(:,Pfs.data.clu==unit,1),Pfs.adata.binSizes'),[2,1,3])},{[]});
+                for i = 1:3,
+                    var(end) = {max(Pfs.data.rateMap(:,Pfs.data.clu==unit,1))/r(i)};
+                    fv = isosurface(var{:});
+                    patch(fv,'facecolor',c(i,:),'edgecolor','none');
+                    alpha(1/r(i)*r(1));
+                end
+                xlim([min(Pfs.adata.bins{1}),max(Pfs.adata.bins{1})]);
+                ylim([min(Pfs.adata.bins{2}),max(Pfs.adata.bins{2})]);
+                zlim([min(Pfs.adata.bins{3}),max(Pfs.adata.bins{3})]);
+                view(3)
             end
         end
 
         function Pfs = updateFilename(Pfs,Session,varargin)
             Pfs.tag= varargin{1};
 
-            pfsState = Session.stc{Pfs.parameters.states,Session.xyz.sampleRate};
+            pfsState{1} = Session.stc{Pfs.parameters.states{1},Session.xyz.sampleRate};
+            pfsState{2} = Session.stc{Pfs.parameters.states{2},Session.xyz.sampleRate};
+            pfsStateLabel = [pfsState{1}.key,pfsState{2}.key];
             if isempty(Pfs.tag)
                 binDimTag = num2str(Pfs.parameters.binDims);
                 binDimTag(isspace(binDimTag)&isspace(circshift(binDimTag',1)'))=[];
@@ -354,7 +393,7 @@ classdef MTAApfs < hgsetget %< MTAAnalysis
                 smwTag(isspace(smwTag)&isspace(circshift(smwTag',1)'))=[];
                 smwTag(isspace(smwTag)) = '_';
                 Pfs.filename = [Session.filebase ...
-                    '.pfs.' Pfs.parameters.type '.' Session.trackingMarker '.' Session.stc.mode '.' pfsState.label '.' ...
+                    '.pfsPerm.' Pfs.parameters.type '.' Session.trackingMarker '.' Session.stc.mode '.' pfsStateLabel '.' ...
                     'ss' num2str(Pfs.parameters.spkShuffle) 'ps' num2str(Pfs.parameters.posShuffle) ...
                     'bs' num2str(Pfs.parameters.numIter) 'sm' smwTag...
                     'bd' binDimTag '.mat'];

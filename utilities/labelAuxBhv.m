@@ -75,6 +75,7 @@ if sempty||overwrite,
                  Trial.xyz.origin,...
                  'hswalk','h','TimePeriods');
     Stc.states{Stc.gsi('h')} = Stc{'h',Trial.xyz.sampleRate}&Stc{'w'};
+    Stc.states{Stc.gsi('h')} = Stc{'h'}+[1/Trial.xyz.sampleRate,-1/Trial.xyz.sampleRate];
     %Stc.states{Stc.gsi('h')}.cast('TimePeriods');
 
     Stc.states(Stc.gsi('l')) = [];

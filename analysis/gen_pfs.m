@@ -1,27 +1,29 @@
-Session = 'Ed10-20140815';
+function gen_pfs(Trial,varargin)
+[units,display,overwrite,tnames,maze,states,mode,niter] = DefaultArgs(varargin,{Trial.spk.map(:,1),false,false,{'all'},'cof',{'theta','rear&theta','walk&theta','hang&theta','lang&theta','hswalk&theta','lswalk&theta'},'std',10000});
+
+
+%stc = Trial.stc.copy; 
+ 
+Session = Trial.name;
 tnames = {'lof','lon'};
 maze = 'cof';
 nt = numel(tnames);
-
-Trial = MTATrial('Ed10-20140815');
-Trial = QuickTrialSetup(s,'lof',[],4:7,false);
-Trial = QuickTrialSetup(s,'lon',[],1:3,false);
-
+stc = Trial.stc.copy;
 
 %states = {'flight'};
-states = {'theta','rear&theta','walk&theta','hang&theta','lang&theta','hswalk&theta','lswalk&theta'};
+%states = {'theta','rear&theta','walk&theta','hang&theta','lang&theta','hswalk&theta','lswalk&theta'};
+states = {'theta','rear','walk','hang','lang','hswalk','lswalk'};
 nsts = size(states,2);
 
 
-display = true;
-mode = 'std';
-niter = 10000;
-overwrite = true;
-%units = select_units(Trial,18,'pyr');
+% $$$ display = true;
+% $$$ mode = 'std';
+% $$$ niter = 10000;
+% $$$ overwrite = true;
+% $$$ %units = select_units(Trial,18,'pyr')v
+;
 units = 1:100;
 
-Trial = MTATrial(Session,'all',maze);
-stc = Trial.stc.copy;
 
 pfs = {};
 for t = 1:nt,

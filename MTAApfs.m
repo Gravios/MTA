@@ -16,7 +16,7 @@ classdef MTAApfs < hgsetget %< MTAAnalysis
 
         function Pfs = MTAApfs(Obj, varargin)     
         % MTAApfs(Obj,{units,states,overwrite,tag,binDims,SmoothingWeights,type,spkShuffle,posShuffle,numIter})
-            [units,states,overwrite,tag,binDims,SmoothingWeights,type,spkShuffle,posShuffle,numIter,xyz,bound_lims]=...
+            [units,states,overwrite,tag,binDims,SmoothingWeights,type,spkShuffle,posShuffle,numIter,xyzp,bound_lims]=...
             DefaultArgs(varargin,{[],'walk',0,[],[30,30],[1.2,1.2],'xy',0,0,1,MTADxyz([]),[]});
 
             units = units(:)';            
@@ -29,7 +29,7 @@ classdef MTAApfs < hgsetget %< MTAAnalysis
                     MazeName    = Session.maze.name;
                     TrialName   = Session.trialName;
                     
-                    if xyz.isempty,
+                    if xyzp.isempty,
                         xyz = Session.xyz.copy;
                         xyz.load(Session);
                         xyz.data = sq(xyz(:,Session.trackingMarker,1:numel(binDims)));
@@ -258,7 +258,7 @@ classdef MTAApfs < hgsetget %< MTAAnalysis
                     
 
                     %% Caluculate Place Fields
-                    [Pfs.data.rateMap(:,dind(i),1), Pfs.adata.bins, Pfs.data.meanRate(dind(i)), Pfs.data.si(dind(i)), Pfs.data.spar(dind(i))] =  ...
+                    [Pfs.data.rateMap(:,dind(i),1), Pfs.adata.bins] =  ...
                         PlotPF(Session,sstpos(sresind(:,1),:),sstpos,binDims,SmoothingWeights,type,bound_lims,xyz.sampleRate);
                      if numIter>1,
                          for bsi = 2:numIter
@@ -295,7 +295,7 @@ classdef MTAApfs < hgsetget %< MTAAnalysis
             end
         end
         
-        function plot(Pfs,varargin)
+        function rateMap = plot(Pfs,varargin)
             [unit,nMode,ifColorbar,colorLimits] = DefaultArgs(varargin,{[],'mean',0,[]});
 
             if isempty(unit),unit=Pfs.data.clu(1);end
@@ -319,6 +319,8 @@ classdef MTAApfs < hgsetget %< MTAAnalysis
                     
                     rateMap = reshape(rateMap,numel(bin1),numel(bin2));
                     
+                    if nargout>0,return,end
+                    
                     imagescnan({bin1,bin2,rateMap'},colorLimits,[],ifColorbar,[0,0,0]);
                     
                     if ~isempty(rateMap)&&~isempty(bin1)&&~isempty(bin2),
@@ -328,17 +330,55 @@ classdef MTAApfs < hgsetget %< MTAAnalysis
                 case 3
                     c = eye(3);
                     r = [1.2,3,6];
-                    var = cat(2,Pfs.adata.bins,{permute(reshape(Pfs.data.rateMap(:,Pfs.data.clu==unit,1),Pfs.adata.binSizes'),[2,1,3])},{[]});
-                    for i = 1:3,
-                        var(end) = {max(Pfs.data.rateMap(:,Pfs.data.clu==unit,1))/r(i)};
-                        fv = isosurface(var{:});
-                        patch(fv,'facecolor',c(i,:),'edgecolor','none');
-                        alpha(1/r(i)*r(1));
+                    rateMap = permute(reshape(Pfs.data.rateMap(:,Pfs.data.clu==unit,1),Pfs.adata.binSizes'),[2,1,3]);
+                    %var = cat(2,Pfs.adata.bins,{permute(reshape(Pfs.data.rateMap(:,Pfs.data.clu==unit,1),Pfs.adata.binSizes'),[2,1,3])},{[]});
+                    hrate = max(Pfs.data.rateMap(:,Pfs.data.clu==unit,1))/2;
+                    [mind] = LocalMinimaN(-rateMap,-hrate,9);
+
+                    
+                    m = find(ismember('xyz',nMode));
+                    o = find(~ismember([1,2,3],m));
+                    ss = {};
+                    if ~isempty(mind),
+                        mind = mind(1,:);
+                        ss{m(1)} = ':';
+                        ss{m(2)} = ':';
+                        ss{o}    = mind(o);
+                        imagescnan({Pfs.adata.bins{m(1)},Pfs.adata.bins{m(2)},sq(nanmean(subsref(rateMap,substruct('()',ss)),o))'},colorLimits,[],ifColorbar,[0,0,0]);
+% $$$                         if ~isempty(rateMap)&&~isempty(Pfs.adata.bins{m(1)})&&~isempty(Pfs.adata.bins{m(2)}),
+% $$$                             text(Pfs.adata.bins{m(1)}+30,Pfs.adata.bins{m(1)}-50,sprintf('%2.1f',max(rateMap(:))),'Color','w','FontWeight','bold','FontSize',10)
+% $$$                         end
+                        axis xy
                     end
-                    xlim([min(Pfs.adata.bins{1}),max(Pfs.adata.bins{1})]);
-                    ylim([min(Pfs.adata.bins{2}),max(Pfs.adata.bins{2})]);
-                    zlim([min(Pfs.adata.bins{3}),max(Pfs.adata.bins{3})]);
-                    view(3)
+        % $$$ 
+        % $$$                     
+        % $$$                     [X,Y,Z] = meshgrid(Pfs.adata.bins{:});
+        % $$$                     var = permute(reshape(Pfs.data.rateMap(:,Pfs.data.clu==unit,1),Pfs.adata.binSizes'),[2,1,3]);
+        % $$$                     if nargout==0,                        
+        % $$$                         XS = Pfs.adata.bins{1}(round(Pfs.adata.binSizes(1)/4):round(Pfs.adata.binSizes(1)/4):Pfs.adata.binSizes(1));
+        % $$$                         YS = Pfs.adata.bins{2}(round(Pfs.adata.binSizes(2)/4):round(Pfs.adata.binSizes(2)/4):Pfs.adata.binSizes(2));
+        % $$$                         slice(X,Y,Z,var,XS,YS,Pfs.adata.bins{3}(round(Pfs.adata.binSizes(3)/2)))
+        % $$$                         xlim([min(Pfs.adata.bins{1}),max(Pfs.adata.bins{1})]);
+        % $$$                         ylim([min(Pfs.adata.bins{2}),max(Pfs.adata.bins{2})]);
+        % $$$                         zlim([min(Pfs.adata.bins{3}),max(Pfs.adata.bins{3})]);
+        % $$$                         %view(3)
+        % $$$                         if ~isempty(colorLimits), caxis(colorLimits); end
+        % $$$                         if ifColorbar, colorbar; end
+        % $$$                     else
+        % $$$                         rateMap = var;
+        % $$$                     end
+
+
+% $$$                     for i = 1:3,
+% $$$                         var(end) = {max(Pfs.data.rateMap(:,Pfs.data.clu==unit,1))/r(i)};
+% $$$                         fv = isosurface(var{:});
+% $$$                         patch(fv,'facecolor',c(i,:),'edgecolor','none');
+% $$$                         alpha(1/r(i)*r(1));
+% $$$                     end
+% $$$                     xlim([min(Pfs.adata.bins{1}),max(Pfs.adata.bins{1})]);
+% $$$                     ylim([min(Pfs.adata.bins{2}),max(Pfs.adata.bins{2})]);
+% $$$                     zlim([min(Pfs.adata.bins{3}),max(Pfs.adata.bins{3})]);
+% $$$                     view(3)
             end
         end
 

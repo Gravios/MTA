@@ -1,10 +1,10 @@
-function [RateMap, Bins, MRate, SI, Spar] = PlotPF(Session,spkpos,pos,varargin)
+function [RateMap, Bins] = PlotPF(Session,spkpos,pos,varargin)
 [binDims,SmoothingWeights,type,bound_lims,posSampleRate] = DefaultArgs(varargin,{50,[],'xy',[],Session.xyz.sampleRate});
 
 ndims = numel(binDims);
 
 if isempty(bound_lims),
-    bound_lims = bound_lims(1:ndims,:);
+    bound_lims = Trial.maze.boundaries(ismember('xyz',type),:);
 end
 
 Nbin = round(abs(diff(bound_lims,1,2))./binDims');
@@ -53,12 +53,15 @@ for i = 1:ndims
 end
 Occupancy = accumarray(Pos,1,msize')./posSampleRate;
 
-spkpos = round((spkpos-repmat(bound_lims(:,1)',size(spkpos,1),1)).*repmat(k',size(spkpos,1),1))+1;
-for i = 1:ndims
-    spkpos(spkpos(:,i)<1|spkpos(:,i)>Nbin(i)|~nniz(spkpos),:) = [];
+if ~isempty(spkpos),
+    spkpos = round((spkpos-repmat(bound_lims(:,1)',size(spkpos,1),1)).*repmat(k',size(spkpos,1),1))+1;
+    for i = 1:ndims
+        spkpos(spkpos(:,i)<1|spkpos(:,i)>Nbin(i)|~nniz(spkpos),:) = [];
+    end
+    SpikeCount = accumarray(spkpos,1,msize');
+else
+    SpikeCount = zeros(msize');
 end
-SpikeCount = accumarray(spkpos,1,msize');
-
 
 
 sind = cell(1,ndims);
@@ -90,7 +93,7 @@ RateMap = RateMap(:);
 RateMap(~gtind) = NaN;
 %% Find the units overall mean rate given the 
 %% current state
-MRate = sum(SCount(gtind))/TotOcc;
-SI = nansum(POcc(gtind).*(RateMap(gtind)./MRate).*log2(RateMap(gtind)./MRate));
-Spar = 1/nansum(POcc(gtind).*RateMap(gtind).^2./MRate.^2);
+% $$$ MRate = sum(SCount(gtind))/TotOcc;
+% $$$ SI = nansum(POcc(gtind).*(RateMap(gtind)./MRate).*log2(RateMap(gtind)./MRate));
+% $$$ Spar = 1/nansum(POcc(gtind).*RateMap(gtind).^2./MRate.^2);
 

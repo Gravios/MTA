@@ -37,10 +37,12 @@ for j = 1:lastTrial,
         else
             number_of_markers = length(markers);
         end
-        viconSampleRate(end+1) = sampleRate;
+        if exist('sampleRate','var'),
+            viconSampleRate(end+1) = sampleRate; 
+        end
         xyzData{j} = cat(1,xyzData{j},xyzpos);
     end
 end
 viconSampleRate = unique(viconSampleRate);
-assert(numel(viconSampleRate)==1,'MTA:utilities:concatViconFiles: Sample rate changes between files/fileparts');
+assert(numel(viconSampleRate)<=1,'MTA:utilities:concatViconFiles: Sample rate changes between files/fileparts');
 end

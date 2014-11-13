@@ -35,12 +35,16 @@ classdef MTADepoch < MTAData
 %    sampleRate:  double, Number of samples per second to which start and stop
 %                         values of the data corespond.
 %
+%    syncPeriods: MTADepoch, time periods in reference to larger timescale
+%                            indicating where the data fits in a Session
+%
+%    syncOrigin:  double, point of origin in the overall session timeline
+%                         where the obejec begins (rewrite this)
+%
 %    label:       string, name associated with the type of epochs
 %
 %    key:           char, single character used for keyboard shortcuts and indexing
 %
-%    syncPeriods: MTADepoch, time periods in reference to larger timescale
-%                            indicating where the data fits in a Session
 
     properties
         %data - double: matrix of size Nx2, where N is the number of epochs
