@@ -1,25 +1,14 @@
+function [svar,states,stateSize] = pfs_overdispertion(Trial,mode)
 
-Session = 'jg05-20120309';
-Session = 'ER06-20130612';
-trialName = 'all';
-mazeName = 'cof';
-
-downSampleRate = 20;
-
-
-
-%% Load Session if Session is not already a MTASession
-if ~isa(Session,'MTASession'),
-    Trial = MTATrial(Session,trialName,mazeName);
-end
 
 if ~strcmp(Trial.stc.mode,'auto_wbhr'),Trial.stc.updateMode('auto_wbhr');Trial.stc.load;end
-
 
 %% Get units which are of good enough quality
 units = select_units(Trial,18,'pyr');
 numClu = numel(units);
 
+display = false;
+downSampleRate = 20;
 newSampleRate = downSampleRate;
 
 xyz = Trial.load('xyz');
@@ -37,8 +26,18 @@ myufr.resample(myxyz);
 smyxyz = myxyz.copy;
 smyufr = myufr.copy;
 
-
+switch mode
+    case 'std'
 states = {'theta','rear','walk','hswalk','lswalk'};
+    case 'rnd'
+        Trial.stc.states{end+1} = rndState(Trial,'t',0.5);
+        states = {'theta','rear','walk','hswalk','lswalk','x'};
+        MTAApfs(Trial,units,states{end},true,'binDims',[20,20],'SmoothingWeights',[1.8,1.8]);
+    case 'rnd1'
+        Trial.stc.states{end+1} = rndState(Trial,'t',0.5);
+        states = {'x'};
+        MTAApfs(Trial,units,states{end},true,'binDims',[20,20],'SmoothingWeights',[1.8,1.8]);
+end
 expr = {};
 ufrwd ={};
 pfc = {};
@@ -50,18 +49,11 @@ smyufr.data = myufr(Trial.stc{states{s}},:);
 
 %% Get the expected ufr for each xy 
 %% Substract the expected ufr from the observed
-%pfc = MTAAknnpfs(Trial,units,states{s});
 pfc{s} = MTAApfs(Trial,units,states{s},'binDims',[20,20],'SmoothingWeights',[1.8,1.8]);
 twpmr = ones(smyxyz.size(1),numel(units));
 [~,indx] = min(abs(repmat(pfc{s}.adata.bins{1}',smyxyz.size(1),1)-repmat(smyxyz(:,1),1,numel(pfc{s}.adata.bins{1}))),[],2);
 [~,indy] = min(abs(repmat(pfc{s}.adata.bins{2}',smyxyz.size(1),1)-repmat(smyxyz(:,2),1,numel(pfc{s}.adata.bins{2}))),[],2);
 indrm = sub2ind(pfc{s}.adata.binSizes',indx,indy);
-
-% $$$ figure
-% $$$ subplot(121)
-% $$$ pfc{s}.plot(units(1),[],1);
-% $$$ subplot(122)
-% $$$ scatter(indx(nniz(smyufr(:,1)),1),indy(nniz(smyufr(:,1)),1),smyufr(nniz(smyufr(:,1)),1))
 
 for unit = units,
     rateMap = pfc{s}.plot(unit);
@@ -80,36 +72,66 @@ ufrwd{s} = (expr{s}-sq(sum(wpmr)))./sqrt(expr{s});
 
 end
 
-%twpmr = wpmr;
-%wpmr = pfc{s}.data.rateMap(repmat(indrm,[1,numel(units)])+size(pfc{s}.data.rateMap,1)*(ones(size(indrm,1),1)*[0:numel(units)-1]));
-%[wpmr(1:10,1),twpmr(1:10,1)]
 
-%ufrwd = (smyufr.data/smyxyz.sampleRate-wpmr)./sqrt(wpmr);
-
-
-unit =22;
-u =find(units==unit);
-for s = 1:numel(states),
-var(ufrwd{s}(nniz(ufrwd{s}(:,u))&expr{s}(:,u)>ethresh,u))
+if display,
+    hfig = figure;
+    set(hfig,'position',[360,377,1070,324])
+    unit = units(1);
+    while unit~=-1,
+        u =find(units==unit);
+        for s = 1:numel(states);
+            subplot2(2,numel(states),1,s),
+            pfc{s}.plot(unit,[],1);
+            title([states{s},': ',num2str(unit)])
+            subplot2(2,numel(states),2,s),
+            hist(ufrwd{s}(expr{s}(:,u)>2,u),100)
+            title(['var: ',num2str(var(ufrwd{s}(nniz(ufrwd{s}(:,u))&expr{s}(:,u)>ethresh,u)))])
+        end
+        unit = figure_controls(hfig,unit,units);
+    end
 end
 
 
-hfig =figure,
-set(hfig,'position',[360,377,1070,324])
-unit = units(1);
-while unit~=-1,
-u =find(units==unit);
-for s = 1:numel(states);
-subplot2(2,numel(states),1,s),
-pfc{s}.plot(unit,[],1);
-title([states{s},': ',num2str(unit)])
-subplot2(2,numel(states),2,s),
-hist(ufrwd{s}(expr{s}(:,u)>2,u),100)
-title(['var: ',num2str(var(ufrwd{s}(nniz(ufrwd{s}(:,u))&expr{s}(:,u)>ethresh,u)))])
+for s =1:numel(states),
+    svar(s) = var(ufrwd{s}(nniz(ufrwd{s}(:))&expr{s}(:)>ethresh));
+    stateSize(s) = sum(diff(Trial.stc{states{s}}.data,1,2));
 end
-unit = figure_controls(hfig,unit,units);
-end
+Trial.stc.states(end) = [];
+% how does the rate varience change with state sampleSize 
+function nstate = rndState(Trial,baseStateKey,binWidth)
+xyz = Trial.load('xyz');
+binSize = round(binWidth*xyz.sampleRate);
+tper = Trial.stc{baseStateKey};
+tper.cast('TimeSeries');
+tper.resample(xyz);
+tind = find(tper.data);
+newStateSize = sum(diff(Trial.stc{'w'}.data,1,2));
+nSamps = round(newStateSize/binSize);
+sampGrp = tind(randi(numel(tind),nSamps,1));
+ntind = unique(reshape(repmat(sampGrp,[1,binSize]) + repmat(1:binSize,[numel(sampGrp),1]),[],1));
+
+nstate = tper.copy;
+nstate.data = zeros(size(nstate.data));
+nstate.data(ntind) = 1;
+nstate.cast('TimePeriods');
+nstate.label = ['rnd' tper.label];
+nstate.key = 'x';
 
 
-for s =1:5,var(ufrwd{s}(nniz(ufrwd{s}(:))&expr{s}(:)>ethresh)),end
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
 
