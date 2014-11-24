@@ -13,7 +13,7 @@ rb = Trial.xyz.model.rb({'head_back','head_left','head_front','head_right'});
 % find the center of mass of the model
 hcom = xyz.com(rb);
 % add coordinates of the model's center of mass to the xyz object
-xyz.addMarker('fhcom',[.7,1,.7],{{'head_back','head_front',[0,0,1]}},ButFilter(hcom,3,[2]./(Trial.ang.sampleRate/2),'low'));
+xyz.addMarker('fhcom',[.7,1,.7],{{'head_back','head_front',[0,0,1]}},ButFilter(hcom,3,[2]./(Trial.xyz.sampleRate/2),'low'));
 
 
 % if xyz sampling rat e is greater than 120 Hz then resample it to 120 Hz

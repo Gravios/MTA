@@ -107,9 +107,9 @@ switch mode,
         
         
     case 'pfsExamples'
-        [units,states,overwrite] = DefaultArgs(varargin,{[],{'theta','rear&theta','walk&theta','hang&theta','lang&theta'},false});
+        [units,states,overwrite] = DefaultArgs(varargin,{[],{'theta','rear&theta','walk&theta','hswalk&theta','lswalk&theta'},true});
         
-        Trial = MTATrial('jg05-20120310');
+        %Trial = MTATrial('jg05-20120310');
         nsts = numel(states);
         
         if isempty(units),
@@ -119,12 +119,12 @@ switch mode,
 
         pfs =cell(size(states));
         for i = 1:numel(states),
-            pfs{i} = MTAApfs(Trial,units,states{i},overwrite,'binDims',[20,20],'SmoothingWeights',[1.8,1.8]);
+            pfs{i} = MTAApfs(Trial,units,states{i},overwrite,'binDims',[20,20],'SmoothingWeights',[2.4,2.4]);
         end
         
         [accg,tbins] = autoccg(Trial);
         
-        figure(28384)
+        hfig = figure(28384)
         for u = pfs{1}.data.clu,
             mrate =zeros([1,5]);
             for s = 1:nsts,
@@ -144,9 +144,9 @@ switch mode,
                 set(gca,'XTickLabelMode','manual');set(gca,'XTickLabel',{});
                 set(gca,'OuterPosition',get(gca,'OuterPosition').*[0,1,1.1,1.2]);
             end
-            set(gcf,'paperposition',[0,0,3.4,21])
-            %saveas(gcf,fullfile('/gpfs01/sirota/home/gravio/',...
-            saveas(gcf,fullfile('C:\Users\justi_000',...        
+            set(hfig,'paperposition',[0,0,3.4,21])
+            %saveas(gcf,fullfile('C:\Users\justi_000',...        
+            saveas(hfig,fullfile('/gpfs01/sirota/home/gravio/',...
                                 'figures','SFN2014',...
                                 ['pfs_' Trial.filebase '-' num2str(u) '.png']),'png');
         end

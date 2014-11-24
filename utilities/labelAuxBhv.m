@@ -21,7 +21,7 @@ if sempty||overwrite,
     end
     afig = hgload(fpath);
     rhm_distrb = get(findobj(findall(get(afig,'children')),'tag','bhv_rhm_distrb-hangle'));
-    rhm_distrb = get(rhm_distrb.Children);
+    rhm_distrb = get(rhm_distrb.Children(end));
     %figure,plot(rhm_distrb.XData,nanmean(rhm_distrb.CData(rhm_distrb.YData>6&rhm_distrb.YData<13,:,1)));    
     mrhmp = nanmean(rhm_distrb.CData(rhm_distrb.YData>6&rhm_distrb.YData<13,:,1));
     mrhmp(mrhmp==0) = nan;
@@ -33,8 +33,8 @@ end
 
 sempty = isempty(Stc{'h'})||isempty(Stc{'l'});
 if sempty||overwrite,
-    [rhm,fs,ts] = fet_rhm(Trial,[],'csd');
-    xyz = Trial.xyz.copy;xyz.load(Trial);xyz.filter(gtwin(.05,xyz.sampleRate));
+    [rhm,fs,ts] = fet_rhm(Trial,[],'wcsd');
+    xyz = Trial.xyz.copy;xyz.load(Trial);xyz.filter(gtwin(.25,xyz.sampleRate));
     ang = Trial.ang.copy;ang.create(Trial,xyz);
 
     nrhm = rhm.copy;
@@ -72,7 +72,7 @@ if sempty||overwrite,
                  ThreshCross(fasts==g,.5,1),...                   
                  rhmpow.sampleRate,...
                  Trial.sync.copy,...
-                 Trial.xyz.origin,...
+                 Trial.sync.data(1),...
                  'hswalk','h','TimePeriods');
     Stc.states{Stc.gsi('h')} = Stc{'h',Trial.xyz.sampleRate}&Stc{'w'};
     Stc.states{Stc.gsi('h')} = Stc{'h'}+[1/Trial.xyz.sampleRate,-1/Trial.xyz.sampleRate];
@@ -84,7 +84,7 @@ if sempty||overwrite,
                  ThreshCross(fasts==l,.5,1),...
                  rhmpow.sampleRate,...
                  Trial.sync.copy,...
-                 Trial.xyz.origin,...
+                 Trial.sync.data(1),...
                  'lswalk','l','TimePeriods');
     %Stc.states{Stc.gsi('l')}.cast('TimePeriods');
     Stc.states{Stc.gsi('l')} = Stc{'l',Trial.xyz.sampleRate}&Stc{'w'};

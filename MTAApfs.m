@@ -296,14 +296,28 @@ classdef MTAApfs < hgsetget %< MTAAnalysis
         end
         
         function rateMap = plot(Pfs,varargin)
-            [unit,nMode,ifColorbar,colorLimits] = DefaultArgs(varargin,{[],'mean',0,[]});
+            [unit,nMode,ifColorbar,colorLimits,isCircular] = DefaultArgs(varargin,{[],'mean',0,[],true});
 
             if isempty(unit),unit=Pfs.data.clu(1);end
             switch numel(Pfs.parameters.type)
                 case 2
                     bin1 = Pfs.adata.bins{1};
                     bin2 = Pfs.adata.bins{2};
-                    
+
+                                      if isCircular,
+                  width = Pfs.adata.binSizes(1);
+                  height = Pfs.adata.binSizes(2);
+                  radius = round(Pfs.adata.binSizes(1)/2)-find(Pfs.adata.bins{1}<-420,1,'last');
+                  centerW = width/2;
+                  centerH = height/2;
+                  [W,H] = meshgrid(1:width,1:height);           
+                  mask = double(sqrt((W-centerW-.5).^2 + (H-centerH-.5).^2) < radius);
+                  mask(mask==0)=nan;
+                  else
+                      mask = 1;
+                  end
+                  
+
                     switch nMode
                         case 'mean'
                             rateMap = mean(Pfs.data.rateMap(:,Pfs.data.clu==unit,:),3);
@@ -317,7 +331,7 @@ classdef MTAApfs < hgsetget %< MTAAnalysis
                     end
                     
                     
-                    rateMap = reshape(rateMap,numel(bin1),numel(bin2));
+                    rateMap = reshape(rateMap,numel(bin1),numel(bin2)).*mask;
                     
                     if nargout>0,return,end
                     
@@ -331,6 +345,7 @@ classdef MTAApfs < hgsetget %< MTAAnalysis
                     c = eye(3);
                     r = [1.2,3,6];
                     rateMap = permute(reshape(Pfs.data.rateMap(:,Pfs.data.clu==unit,1),Pfs.adata.binSizes'),[2,1,3]);
+                    if nargout>0,return,end
                     %var = cat(2,Pfs.adata.bins,{permute(reshape(Pfs.data.rateMap(:,Pfs.data.clu==unit,1),Pfs.adata.binSizes'),[2,1,3])},{[]});
                     hrate = max(Pfs.data.rateMap(:,Pfs.data.clu==unit,1))/2;
                     [mind] = LocalMinimaN(-rateMap,-hrate,9);

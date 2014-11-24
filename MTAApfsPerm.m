@@ -356,6 +356,10 @@ classdef MTAApfsPerm < hgsetget %< MTAAnalysis
                 rateMap = reshape(rateMap,numel(bin1),numel(bin2));
                 if nargout>0,return,end
                 
+                if isempty(colorLimits),
+                    colorLimits = [-max(abs(rateMap(:))),max(abs(rateMap(:)))];
+                end
+                
                 imagescnan({bin1,bin2,rateMap'},colorLimits,[],ifColorbar,[0,0,0]);
                 
                 if ~isempty(rateMap)&&~isempty(bin1)&&~isempty(bin2),

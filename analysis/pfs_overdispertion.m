@@ -1,10 +1,12 @@
-function [svar,states,stateSize] = pfs_overdispertion(Trial,mode)
+function [svar,states,stateSize,velMean,velStd] = pfs_overdispertion(Trial,mode)
 
 
 if ~strcmp(Trial.stc.mode,'auto_wbhr'),Trial.stc.updateMode('auto_wbhr');Trial.stc.load;end
 
 %% Get units which are of good enough quality
-units = select_units(Trial,18,'pyr');
+units = select_units(Trial,25,'pyr');
+Trial.load('nq');
+units = units(Trial.nq.SNR(units)>1);
 numClu = numel(units);
 
 display = false;
@@ -14,6 +16,8 @@ newSampleRate = downSampleRate;
 xyz = Trial.load('xyz');
 myxyz = xyz.copy;
 myxyz.filter(gtwin(.1,xyz.sampleRate));
+myvel = xyz.vel(Trial.trackingMarker,[1,2]);
+myvel.resample(newSampleRate);
 myxyz.resample(newSampleRate);
 myxyz.data = sq(myxyz(:,Trial.trackingMarker,[1,2]));
 
@@ -26,17 +30,20 @@ myufr.resample(myxyz);
 smyxyz = myxyz.copy;
 smyufr = myufr.copy;
 
+Tag = '';
 switch mode
     case 'std'
 states = {'theta','rear','walk','hswalk','lswalk'};
     case 'rnd'
         Trial.stc.states{end+1} = rndState(Trial,'t',0.5);
         states = {'theta','rear','walk','hswalk','lswalk','x'};
-        MTAApfs(Trial,units,states{end},true,'binDims',[20,20],'SmoothingWeights',[1.8,1.8]);
+        MTAApfs(Trial,units,states{end},true,'binDims',[30,30],'SmoothingWeights',[1.8,1.8]);
     case 'rnd1'
-        Trial.stc.states{end+1} = rndState(Trial,'t',0.5);
+      Trial.stc.states{end+1} = rndState(Trial,'t',0.5);
+      a=clock;
+      Tag = num2str(a(end)+a(end-1)*100);
         states = {'x'};
-        MTAApfs(Trial,units,states{end},true,'binDims',[20,20],'SmoothingWeights',[1.8,1.8]);
+        MTAApfs(Trial,units,states{end},true,Tag,'binDims',[30,30],'SmoothingWeights',[1.8,1.8]);
 end
 expr = {};
 ufrwd ={};
@@ -45,11 +52,20 @@ ethresh =5;
 for s = 1:numel(states),
 smyxyz.data = myxyz(Trial.stc{states{s}},:);
 smyufr.data = myufr(Trial.stc{states{s}},:);
+velMean = myvel(Trial.stc{states{s}});
+velMean = nanmean(log10(velMean(nniz(velMean))));
+velStd = myvel(Trial.stc{states{s}});
+velStd = nanstd(log10(velStd(nniz(velStd))));
 
 
 %% Get the expected ufr for each xy 
 %% Substract the expected ufr from the observed
-pfc{s} = MTAApfs(Trial,units,states{s},'binDims',[20,20],'SmoothingWeights',[1.8,1.8]);
+if ~isempty(Tag),
+    pfc{s} = MTAApfs(Trial,units,states{s},false,Tag,'binDims',[20,20],'SmoothingWeights',[1.8,1.8]);
+else
+    pfc{s} = MTAApfs(Trial,units,states{s},false,'binDims',[20,20],'SmoothingWeights',[1.8,1.8]);
+end
+
 twpmr = ones(smyxyz.size(1),numel(units));
 [~,indx] = min(abs(repmat(pfc{s}.adata.bins{1}',smyxyz.size(1),1)-repmat(smyxyz(:,1),1,numel(pfc{s}.adata.bins{1}))),[],2);
 [~,indy] = min(abs(repmat(pfc{s}.adata.bins{2}',smyxyz.size(1),1)-repmat(smyxyz(:,2),1,numel(pfc{s}.adata.bins{2}))),[],2);
@@ -99,6 +115,7 @@ end
 Trial.stc.states(end) = [];
 % how does the rate varience change with state sampleSize 
 function nstate = rndState(Trial,baseStateKey,binWidth)
+RandStream.setGlobalStream(RandStream('mt19937ar','seed',sum(100*clock)));
 xyz = Trial.load('xyz');
 binSize = round(binWidth*xyz.sampleRate);
 tper = Trial.stc{baseStateKey};
