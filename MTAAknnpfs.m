@@ -17,9 +17,9 @@ classdef MTAAknnpfs < hgsetget %< MTAAnalysis
         %            [units,states,overwrite,tag,binDims,nNearestNeighbors,distThreshold,...
         %             type,ufrShufBlockSize,numIter, downSampleRate]=...
 
-            [units,states,overwrite,tag,binDims,nNearestNeighbors,distThreshold,...
+            [units,states,overwrite,tag,ufr,binDims,nNearestNeighbors,distThreshold,...
                 type,ufrShufBlockSize,numIter, downSampleRate]=...
-            DefaultArgs(varargin,{[],'walk',false,[],[20,20],80,70,'xy',0,1,20});
+            DefaultArgs(varargin,{[],'walk',false,[],[],[20,20],80,70,'xy',0,1,20});
              
             units = units(:)';
         
@@ -168,7 +168,11 @@ classdef MTAAknnpfs < hgsetget %< MTAAnalysis
 
             %% load unit firing rate
             Session.ufr.create(Session,Session.xyz,pfsState.label,selected_units,0.2);
+            if isempty(ufr),
             sstufr = Session.ufr(pfsState,:);
+            else
+                sstufr = ufr(pfsState,:);
+            end
             
            
             %% Trim ufr and xyz
