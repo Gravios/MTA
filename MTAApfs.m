@@ -382,6 +382,19 @@ classdef MTAApfs < hgsetget %< MTAAnalysis
             end
         end
 
+        function [mxr,mxp] = maxRate(Pfs,units)
+            if isempty(units),
+                units = Pfs.data.clu;
+            end
+            mxr = nan(numel(units),1);
+            mxp = nan(numel(units),1);
+            for u = units,
+                [mxr(u==units),mxp(u==units)] = max(Pfs.data.rateMap(:,Pfs.data.clu==u,1));
+            end
+            mxp = Ind2Sub(Pfs.adata.binSizes',mxp);
+            mxp = [Pfs.adata.bins{1}(mxp(:,1)),Pfs.adata.bins{2}(mxp(:,2))];
+        end
+
         function Pfs = updateFilename(Pfs,Session,varargin)
             Pfs.tag= varargin{1};
 

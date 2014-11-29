@@ -201,75 +201,68 @@ end
 
 
 %% Figure 4 - Classical 2-D phase precession
-%sname = 'jg05-20120317';
+sname = 'jg05-20120317';
 %sname = 'jg05-20120310';
-sname = 'er06-20130612';
+%sname = 'er06-20130612';
 %sname = 'jg05-20120309';
 
 Trial = MTATrial(sname,'all');
-Trial.xyz.load(Trial);
+xyz = Trial.load('xyz');
 
-%Trial.load('nq');
-%Trial.lfp.load(Trial,[61,71:3:84]);
-Trial.lfp.load(Trial,[32]);
+units = select_units(Trial);
+lfp = Trial.lfp.copy;
+lfp.load(Trial,[61,71:3:84]);
+lfp.resample(xyz);
+tbp_phase = lfp.phase;
 
+state = 'walk&theta';
+ow = true;
 
-
-tbp_phase = Trial.lfp.phase;
-
-
-state = 'walk';
-
-tbp_phase.resample(Trial.xyz);
-
-
-pfs = MTAAknnpfs(Trial,[],state,0,'numIter',1,'ufrShufBlockSize',0,'binDims',[20,20],'distThresh',100,'nNearestNeighbors',120);
-
-Trial.spk.create(Trial,Trial.xyz.sampleRate,state,[],'deburst');
-
-units = pfs.data.clu(:)';
+pfs = MTAApfs(Trial,[],state,ow);
+Trial.spk.create(Trial,xyz.sampleRate,state,[],'deburst');
 
 % Get the expected ufr for each xy 
-wpmr = zeros(Trial.xyz.size(1),numel(units));
-wpmr = ones(Trial.xyz.size(1),numel(units));
-[~,indx] = min(abs(repmat(pfs.adata.bins{1}',Trial.xyz.size(1),1)-repmat(Trial.xyz(:,7,1),1,numel(pfs.adata.bins{1}))),[],2);
-[~,indy] = min(abs(repmat(pfs.adata.bins{2}',Trial.xyz.size(1),1)-repmat(Trial.xyz(:,7,2),1,numel(pfs.adata.bins{2}))),[],2);
+wpmr = zeros(xyz.size(1),numel(units));
+wpmr = ones(xyz.size(1),numel(units));
+[~,indx] = min(abs(repmat(pfs.adata.bins{1}',xyz.size(1),1)-repmat(xyz(:,Trial.trackingMarker,1),1,numel(pfs.adata.bins{1}))),[],2);
+[~,indy] = min(abs(repmat(pfs.adata.bins{2}',xyz.size(1),1)-repmat(xyz(:,Trial.trackingMarker,2),1,numel(pfs.adata.bins{2}))),[],2);
 indrm = sub2ind(pfs.adata.binSizes',indx,indy);
 
 
 for unit = units,
-    %rateMap = reshape(pfs.data.rateMap(:,unit),pfs.adata.binSizes');
     rateMap = pfs.plot(unit);
-    %rateMap = rot90(rot90(rateMap)',1);
+    %rateMap = rot90(rot90(rateMap)');
     wpmr(:,unit==units) = rateMap(indrm);
 end
 
-%wpmr(wpmr<1)=1;
-%figure,scatter(Trial.xyz(1:61:end,7,1),Trial.xyz(1:61:end,7,2),wpmr(1:61:end,20))
+% wpmr(wpmr<1)=1;
+% figure,scatter(xyz(1:61:end,7,1),xyz(1:61:end,7,2),wpmr(1:61:end,20))
 
-[pmr,pmp] = pfs.maxRate([]);
-pmr = repmat(pmr(:)',Trial.xyz.size(1),1);
-pmp = fliplr(pmp);
+[pmr,pmp] = pfs.maxRate(units);
+pmr = repmat(pmr(:)',xyz.size(1),1);
+
+
+%[pr,px] = pfs.maxRate(units)
+%pfs.plot(unit);
+%figure,imagesc(pfs.adata.bins{1},pfs.adata.bins{2},rateMap');
+%hold on,plot(px(unit==units,1),px(unit==units,2),'w*')
+
+
 
 for unit = units
-    %fprintf(['head pfs angle for unit: %i \n'],unit)
-    %pfang = MTADang;
-    pfhxy = Trial.xyz(:,{'head_back','head_front'},:);
-    pfhxy = cat(2,pfhxy,permute(repmat([pmp(unit==units,:),0],Trial.xyz.size(1),1),[1,3,2]));
-    pfhxy = MTADxyz([],[],pfhxy,Trial.xyz.sampleRate);
-
-cor = cell(1,3);
-[cor{:}] = cart2sph(pfhxy(:,2,1)-pfhxy(:,1,1),pfhxy(:,2,2)-pfhxy(:,1,2),pfhxy(:,2,3)-pfhxy(:,1,3));
-cor = cell2mat(cor);
-
-por = cell(1,3);
-[por{:}] = cart2sph(pfhxy(:,3,1)-pfhxy(:,1,1),pfhxy(:,3,2)-pfhxy(:,1,2),pfhxy(:,3,3)-pfhxy(:,1,3));
-por = cell2mat(por);
-
-pfds(:,unit==units) = circ_dist(cor(:,1),por(:,1));
-
-    %pfang.create(Trial,pfhxy);
-    %pfd(:,unit==units) = circ_dist(pfang(:,1,2,1),pfang(:,1,3,1));
+    pfhxy = xyz(:,{'head_back','head_front'},:);
+    pfhxy = cat(2,pfhxy,permute(repmat([pmp(unit==units,:),0],xyz.size(1),1),[1,3,2]));
+    pfhxy = MTADxyz([],[],pfhxy,xyz.sampleRate);
+    
+    cor = cell(1,3);
+    [cor{:}] = cart2sph(pfhxy(:,2,1)-pfhxy(:,1,1),pfhxy(:,2,2)-pfhxy(:,1,2),pfhxy(:,2,3)-pfhxy(:,1,3));
+    cor = cell2mat(cor);
+    
+    por = cell(1,3);
+    [por{:}] = cart2sph(pfhxy(:,3,1)-pfhxy(:,1,1),pfhxy(:,3,2)-pfhxy(:,1,2),pfhxy(:,3,3)-pfhxy(:,1,3));
+    por = cell2mat(por);
+    
+    pfds(:,unit==units) = circ_dist(cor(:,1),por(:,1));
 end
 
 pfd = zeros(size(pfds));
@@ -279,48 +272,51 @@ pfd(abs(pfds)>pi/2)=1;
 
 %DRZ 
 DRZ = pfd.*(1-wpmr./pmr);
-%DRZ = pfd.*(1-log10(clip(wpmr,1,100))./log10(pmr));
-%figure,scatter(Trial.xyz(1:31:end,7,1),Trial.xyz(1:31:end,7,2),clip(1./abs(DRZ(1:31:end,2)),0,50))
+%figure,scatter(xyz(1:31:end,7,1),xyz(1:31:end,7,2),clip(1./abs(DRZ(1:31:end,4)),0,50))
+
 
 phchan = 1;
-
-figure,
-for unit = units
-clf
-res = Trial.spk(unit);
-rind = SplitIntoBursts(res,3);
-res = res(unique(rind));
-
-if isempty(res),continue,end
-if numel(res)>20000||numel(res)<100,continue,end
-
-drzspk = DRZ(res,unit);
-phzspk = tbp_phase(res,phchan);
-
-gind = ~isnan(drzspk)&~isnan(phzspk);
-
-subplot2(2,3,[1,2],1),
-plot(Trial.xyz(res,7,1),Trial.xyz(res,7,2),'.');
-xlim([-500,500]),ylim([-500,500])
-
-subplot2(2,3,[1,2],2),pfs.plot(unit);
-hold on,plot(pmp(unit==units,1),pmp(unit==units,2),'w*')
-title(num2str(unit))
-
-subplot2(2,3,1,3),plot(drzspk(gind),circ_rad2ang(phzspk(gind)),'.')
-hold on,          plot(drzspk(gind),circ_rad2ang(phzspk(gind))+360,'.')
-xlim([-1,1]),
-
-subplot2(2,3,2,3)
-hist2([[drzspk(gind);drzspk(gind)],[circ_rad2ang(phzspk(gind));circ_rad2ang(phzspk(gind))+360]],30,25)
-
-
-
-pause(.1)
-waitforbuttonpress
-
-reportfig(gcf,'er06-20130613-2Dphspredb',0,num2str(unit),[],0);
-
+hfig = figure(38384);
+unit = units(1);
+while unit~=-1,
+    
+    clf
+    res = Trial.spk(unit);
+    if isempty(res),
+        unit = figure_controls(hfig,unit,units);
+        continue,
+    end
+    if numel(res)>5000||numel(res)<100,
+        unit = figure_controls(hfig,unit,units);
+        continue,
+    end
+    
+    drzspk = DRZ(res,unit==units);
+    phzspk = tbp_phase(res,phchan);
+    
+    gind = ~isnan(drzspk)&~isnan(phzspk);
+    
+    subplot2(2,3,[1,2],1),
+    plot(xyz(res,7,1),xyz(res,7,2),'.');
+    xlim([-500,500]),ylim([-500,500])
+    
+    subplot2(2,3,[1,2],2),pfs.plot(unit);
+    hold on,plot(pmp(unit==units,1),pmp(unit==units,2),'w*')
+    title(num2str(unit))
+    
+    if sum(gind)>10,
+    subplot2(2,3,1,3),plot(drzspk(gind),circ_rad2ang(phzspk(gind)),'.')
+    hold on,          plot(drzspk(gind),circ_rad2ang(phzspk(gind))+360,'.')
+    xlim([-1,1]),
+    
+    subplot2(2,3,2,3)
+    hist2([[drzspk(gind);drzspk(gind)],[circ_rad2ang(phzspk(gind));circ_rad2ang(phzspk(gind))+360]],20,15)
+    end
+    
+    unit = figure_controls(hfig,unit,units);
+    
+    %reportfig(gcf,'er06-20130613-2Dphspredb',0,num2str(unit),[],0);
+    
 end
 
 
