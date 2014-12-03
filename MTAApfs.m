@@ -397,14 +397,30 @@ classdef MTAApfs < hgsetget %< MTAAnalysis
             end
         end
 
-        function [mxr,mxp] = maxRate(Pfs,units)
+        function [mxr,mxp] = maxRate(Pfs,varargin)
+            [units,isCircular] = DefaultArgs(varargin,{[],true},false);
+
             if isempty(units),
                 units = Pfs.data.clu;
             end
+            if isCircular,
+                width = Pfs.adata.binSizes(1);
+                height = Pfs.adata.binSizes(2);
+                radius = round(Pfs.adata.binSizes(1)/2)-find(Pfs.adata.bins{1}<-420,1,'last');
+                centerW = width/2;
+                centerH = height/2;
+                [W,H] = meshgrid(1:width,1:height);           
+                mask = double(sqrt((W-centerW-.5).^2 + (H-centerH-.5).^2) < radius);
+                mask(mask==0)=nan;
+                mask = reshape(mask,[],1);
+            else
+                mask = 1;
+            end
+
             mxr = nan(numel(units),1);
             mxp = nan(numel(units),1);
             for u = units,
-                [mxr(u==units),mxp(u==units)] = max(Pfs.data.rateMap(:,Pfs.data.clu==u,1));
+                [mxr(u==units),mxp(u==units)] = max(Pfs.data.rateMap(:,Pfs.data.clu==u,1).*mask);
             end
             mxp = Ind2Sub(Pfs.adata.binSizes',mxp);
             mxp = [Pfs.adata.bins{1}(mxp(:,1)),Pfs.adata.bins{2}(mxp(:,2))];
