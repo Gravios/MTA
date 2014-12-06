@@ -1,6 +1,8 @@
-function MyFirstPaperFigs(Trial,mode),
-
-
+function MyFirstPaperFigs(Trial,mode,varargin)
+% function MyFirstPaperFigs(Trial,mode,varargin)
+% Various Figures for the first paper
+% 
+% for a list of figures and their options enter 'help' into the var mode
 
 
 switch mode,
@@ -208,10 +210,98 @@ switch mode,
 
     %% End Figure - 3
 
+    
+  case 'phaseTemp'
+    [chans,phase_chan] = DefaultArgs(varargin,{4,1});
+    xyz = Trial.load('xyz');
+    xyz.filter(gtwin(.25,xyz.sampleRate));
+
+    units = select_units(Trial,18);
+    Trial.load('nq');
+    units = units(Trial.nq.SNR(units)>.8);
+
+    lfp = Trial.lfp.copy;
+    lfp.load(Trial,chans);
+    lfp.resample(xyz);
+    tbp_phase = lfp.phase;
+
+    states = {'theta','rear&theta','walk&theta','lswalk&theta','hswalk&theta'};
+    nsts = numel(states);
+
+    ow = false;
+    spk = {};
+    for s = 1:nsts,
+        spk{s} = Trial.spk.copy;
+        spk{s}.create(Trial,xyz.sampleRate,states{s},[],'deburst');
+        pfs{s} = MTAApfs(Trial,[],states{s},ow);
+
+    end
+    spk{1}.create(Trial,xyz.sampleRate,[],[],'deburst');
+
+
+    for unit = units,
+        clf
+        for s = 1:nsts,
+            stateOnset = Trial.stc{states{s},xyz.sampleRate}.data(:,1);
+            stateOffset = Trial.stc{states{s},xyz.sampleRate}.data(:,2);
+            tShiftOnset = round(stateOnset-2*xyz.sampleRate);
+            tShiftOffset = round(stateOffset-2*xyz.sampleRate);
+
+            segLen =round(4*xyz.sampleRate);
+
+            myPhaseSegsOnset = GetSegs(tbp_phase(:,phase_chan),tShiftOnset,segLen,0);
+            myPhaseSegsOffset = GetSegs(tbp_phase(:,phase_chan),tShiftOffset,segLen,0);
+
+
+            mySpk = spk{1}(unit); 
+            if numel(mySpk) <50,continue,end
+            mySpkSegs = false([tbp_phase.size(1),1]);
+            mySpkSegs(mySpk) = true;
+            
+            mySpksegsOnset =  GetSegs(mySpkSegs,tShiftOnset,segLen,false);
+            mySpksegsOffset = GetSegs(mySpkSegs,tShiftOffset,segLen,false);
+            
+            myInd = 1:tbp_phase.size(1);
+            myResSegsOnset = GetSegs(myInd,tShiftOnset,segLen,0);
+            myResSegsOffset = GetSegs(myInd,tShiftOffset,segLen,0);
+
+            myResSegsOnset = bsxfun(@minus,myResSegsOnset,stateOnset');
+            myResSegsOffset = bsxfun(@minus,myResSegsOffset,stateOffset');
+
+            subplot2(3,nsts,1,s)
+            pfs{s}.plot(unit,[],1);
+            subplot2(3,nsts,2,s)
+            try,            hist2([[myResSegsOnset(mySpksegsOnset);myResSegsOnset(mySpksegsOnset)],...
+                                   [circ_rad2ang(myPhaseSegsOnset(mySpksegsOnset));circ_rad2ang(myPhaseSegsOnset(mySpksegsOnset))+360],...
+                                   [circ_rad2ang(myPhaseSegsOnset(mySpksegsOnset));circ_rad2ang(myPhaseSegsOnset(mySpksegsOnset))+720]],30,25);
+% $$$             plot(myResSegsOnset(mySpksegsOnset),circ_rad2ang(myPhaseSegsOnset(mySpksegsOnset)),'.')
+% $$$             hold on            
+% $$$             plot(myResSegsOnset(mySpksegsOnset),circ_rad2ang(myPhaseSegsOnset(mySpksegsOnset))+360,'.')
+% $$$             xlim([-400,400]);
+% $$$             ylim([-180,540]);
+                subplot2(3,nsts,3,s)
+                hist2([[myResSegsOffset(mySpksegsOffset);myResSegsOffset(mySpksegsOffset)],...
+                       [circ_rad2ang(myPhaseSegsOffset(mySpksegsOffset));circ_rad2ang(myPhaseSegsOffset(mySpksegsOffset))+360],...
+                       [circ_rad2ang(myPhaseSegsOffset(mySpksegsOffset));circ_rad2ang(myPhaseSegsOffset(mySpksegsOffset))+720]],30,25);
+
+% $$$             plot(myResSegsOffset(mySpksegsOffset),circ_rad2ang(myPhaseSegsOffset(mySpksegsOffset)),'.')
+% $$$             hold on 
+% $$$             plot(myResSegsOffset(mySpksegsOffset),circ_rad2ang(myPhaseSegsOffset(mySpksegsOffset))+360,'.')   
+% $$$             xlim([-400,400]);
+% $$$             ylim([-180,540]);
+            end
+        end
+        waitforbuttonpress
+    end
+
+    
+  case 'phaseZ'
+    
 
   case 'phase2d'
     %% Figure 4 - Classical 2-D phase precession
     %Trial = MTATrial(sname,'all');
+    [chans,phase_chan] = DefaultArgs(varargin,{4,1})
 
     xyz = Trial.load('xyz');
     xyz.filter(gtwin(.25,xyz.sampleRate));
@@ -220,8 +310,7 @@ switch mode,
     Trial.load('nq');
     units = units(Trial.nq.SNR(units)>.8);
     lfp = Trial.lfp.copy;
-    %lfp.load(Trial,[61,71:3:84]);
-    lfp.load(Trial,4);
+    lfp.load(Trial,chans);
     lfp.resample(xyz);
     tbp_phase = lfp.phase;
 
@@ -301,7 +390,6 @@ switch mode,
     end
 
     aIncr = true;
-    phchan = 1;
     hfig = figure(38384);
     set(hfig,'paperposition',get(hfig,'position').*[0,0,1,1]./100)
     unit = units(1);
@@ -313,7 +401,7 @@ switch mode,
             
             if numel(res) <50,continue,end
             drzspk = DRZ{s}(res,unit==units);
-            phzspk = tbp_phase(res,phchan);
+            phzspk = tbp_phase(res,phase_chan);
             
             gind = ~isnan(drzspk)&~isnan(phzspk);
             
