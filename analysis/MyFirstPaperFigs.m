@@ -239,15 +239,17 @@ switch mode,
     spk{1}.create(Trial,xyz.sampleRate,[],[],'deburst');
 
 
+    hfig = figure(487264);
+    set(hfig,'paperposition',get(hfig,'position').*[0,0,1,1]./100)
     for unit = units,
         clf
         for s = 1:nsts,
             stateOnset = Trial.stc{states{s},xyz.sampleRate}.data(:,1);
             stateOffset = Trial.stc{states{s},xyz.sampleRate}.data(:,2);
-            tShiftOnset = round(stateOnset-2*xyz.sampleRate);
-            tShiftOffset = round(stateOffset-2*xyz.sampleRate);
+            tShiftOnset = round(stateOnset-1*xyz.sampleRate);
+            tShiftOffset = round(stateOffset-1*xyz.sampleRate);
 
-            segLen =round(4*xyz.sampleRate);
+            segLen =round(2*xyz.sampleRate);
 
             myPhaseSegsOnset = GetSegs(tbp_phase(:,phase_chan),tShiftOnset,segLen,0);
             myPhaseSegsOffset = GetSegs(tbp_phase(:,phase_chan),tShiftOffset,segLen,0);
@@ -291,17 +293,104 @@ switch mode,
 % $$$             ylim([-180,540]);
             end
         end
+        saveas(hfig,['/gpfs01/sirota/home/gravio/figures/bhvPhasePrecession/',[Trial.filebase,'.bpp_temporal-',num2str(unit),'.png']],'png');
         waitforbuttonpress
     end
 
     
   case 'phaseZ'
-    
+    [chans,phase_chan] = DefaultArgs(varargin,{4,1});
+    xyz = Trial.load('xyz');
+    xyz.filter(gtwin(.25,xyz.sampleRate));
+      
+    %units =1:100;
+    units = select_units(Trial,18);
+    Trial.load('nq');
+    units = units(Trial.nq.SNR(units)>.8);
 
-  case 'phase2d'
+    lfp = Trial.lfp.copy;
+    lfp.load(Trial,chans);
+    lfp.resample(xyz);
+    tbp_phase = lfp.phase;
+
+    Trial.stc.states{end+1} = MTAHvel(Trial);
+    states = {'theta','vel&theta'};
+    %states = {'theta','vel&theta','rear&theta','walk&theta'};    
+    nsts = numel(states);
+
+    ow = false;
+    spk = {};
+    for s = 1:nsts,
+        spk{s} = Trial.spk.copy;
+        spk{s}.create(Trial,xyz.sampleRate,states{s},[],'deburst');
+        pfs{s} = MTAApfs(Trial,units,states{s},ow);
+
+    end
+    spk{1}.create(Trial,xyz.sampleRate,[],[],'deburst');
+    
+    %xyz(:,Trial.trackingMarker,3);
+    %xyz.filter(gtwin(.2,xyz.sampleRate));
+    %ang = Trial.ang.copy;
+    %ang.create(Trial,xyz);
+    %z = ang(:,'head_back','head_front',2);
+    z = xyz(:,Trial.trackingMarker,3);
+
+    aIncr = false;
+    hfig = figure(38385);
+    set(hfig,'paperposition',get(hfig,'position').*[0,0,1,1]./50)
+    unit = units(1);
+    while unit~=-1,
+        
+        clf
+        for s = 1:nsts,
+            res = spk{s}(unit);
+            
+            if numel(res) <50,continue,end
+            res(res>numel(z))=[];
+            zspk = log10(z(res));
+            phzspk = tbp_phase(res,phase_chan);
+            
+            gind = nniz(zspk)&nniz(phzspk)&isreal(zspk);
+            
+            subplot2(6,nsts,[1,2],s);
+            plot(xyz(res,Trial.trackingMarker,1),xyz(res,Trial.trackingMarker,2),'.');
+            xlim([-500,500]),ylim([-500,500])
+            title(states{s})
+            
+            subplot2(6,nsts,[3,4],s);
+            pfs{s}.plot(unit);
+            %hold on,plot(pmp{s}(unit==units,1),pmp{s}(unit==units,2),'w*')
+            title(num2str(unit))
+            
+            if sum(gind)>10,
+                subplot2(6,nsts,[5,6],s);plot(zspk(gind),circ_rad2ang(phzspk(gind)),'.');
+                hold on,          plot(zspk(gind),circ_rad2ang(phzspk(gind))+360,'.');
+                %hold on,          plot(zspk(gind),circ_rad2ang(phzspk(gind))+720,'.');
+                %xlim([-1.4,1.5]),
+                xlim([1.2,2.5]),
+                ylim([-180,540])
+% $$$                 subplot2(6,nsts,[5,6],s);
+% $$$                 try
+% $$$                     out = hist2([[zspk(gind);zspk(gind);zspk(gind)],...
+% $$$                            [circ_rad2ang(phzspk(gind));...
+% $$$                             circ_rad2ang(phzspk(gind))+360;...
+% $$$                             circ_rad2ang(phzspk(gind))+720]],linspace(1.4,2.41,30),linspace(-180,900,60));
+% $$$                 end
+            end
+        end
+        
+        saveas(hfig,['/gpfs01/sirota/home/gravio/figures/bhvPhasePrecession/',[Trial.filebase,'.bpp_1dz-',num2str(unit),'.png']],'png');
+        unit = figure_controls(hfig,unit,units,aIncr);
+        
+        %reportfig(gcf,'er06-20130613-2Dphspredb',0,num2str(unit),[],0);
+        
+    end
+
+
+  case 'phase2dDRZ'
     %% Figure 4 - Classical 2-D phase precession
     %Trial = MTATrial(sname,'all');
-    [chans,phase_chan] = DefaultArgs(varargin,{4,1})
+    [chans,phase_chan] = DefaultArgs(varargin,{4,1});
 
     xyz = Trial.load('xyz');
     xyz.filter(gtwin(.25,xyz.sampleRate));
@@ -329,7 +418,7 @@ switch mode,
     ow = true;
 
     for s = 1:nsts
-        pfs{s} = MTAApfs(Trial,[],states{s},ow);
+        pfs{s} = MTAApfs(Trial,[],states{s},ow,'binDims',[50,50],'SmoothingWeights',[1.5,1.5]);
 
         spk{s} = Trial.spk.copy;
         spk{s}.create(Trial,xyz.sampleRate,states{s},[],'deburst');
@@ -386,12 +475,21 @@ switch mode,
 
         %DRZ 
         DRZ{s} = pfd{s}.*(1-wpmr{s}./pmr{s});
-        %figure,scatter(xyz(1:31:end,7,1),xyz(1:31:end,7,2),clip(1./abs(DRZ(1:31:end,4)),0,50))
+
+% $$$         ind = nniz(xyz(:,Trial.trackingMarker,1));
+% $$$         figure,
+% $$$         plotcc(xyz(ind,Trial.trackingMarker,1),...
+% $$$                 xyz(ind,Trial.trackingMarker,2),...
+% $$$                 DRZ{1}(ind,11))
+% $$$         colorbar
+% $$$         xlim([-500,500])
+% $$$         ylim([-500,500])
+
     end
 
     aIncr = true;
     hfig = figure(38384);
-    set(hfig,'paperposition',get(hfig,'position').*[0,0,1,1]./100)
+    set(hfig,'paperposition',get(hfig,'position').*[0,0,1,1]./30)
     unit = units(1);
     while unit~=-1,
         
@@ -400,13 +498,14 @@ switch mode,
             res = spk{s}(unit);
             
             if numel(res) <50,continue,end
+            res(res>xyz.size(1))=[];            
             drzspk = DRZ{s}(res,unit==units);
             phzspk = tbp_phase(res,phase_chan);
             
             gind = ~isnan(drzspk)&~isnan(phzspk);
             
             subplot2(6,nsts,[1,2],s);
-            plot(xyz(res,7,1),xyz(res,7,2),'.');
+            plot(xyz(res,Trial.trackingMarker,1),xyz(res,Trial.trackingMarker,2),'.');
             xlim([-500,500]),ylim([-500,500])
             title(states{s})
             
@@ -428,7 +527,279 @@ switch mode,
             end
         end
         
-        saveas(hfig,['/gpfs01/sirota/home/gravio/figures/bhvPhasePrecession/',[Trial.filebase,'.bpp-',num2str(unit),'.png']],'png');
+        saveas(hfig,['/gpfs01/sirota/home/gravio/figures/bhvPhasePrecession/',[Trial.filebase,'.bpp_2dDRZ-',num2str(unit),'.png']],'png');
+        unit = figure_controls(hfig,unit,units,aIncr);
+        
+        %reportfig(gcf,'er06-20130613-2Dphspredb',0,num2str(unit),[],0);
+        
+    end
+ 
+
+  case 'phase2dRTC'
+    [chans,phase_chan] = DefaultArgs(varargin,{4,1});
+
+    xyz = Trial.load('xyz');
+    xyz.filter(gtwin(.25,xyz.sampleRate));
+
+    ang = Trial.ang.copy;
+    ang.create(Trial,xyz);
+    units = select_units(Trial,18);
+    Trial.load('nq');
+    units = units(Trial.nq.SNR(units)>.8);
+    lfp = Trial.lfp.copy;
+    lfp.load(Trial,chans);
+    lfp.resample(xyz);
+    tbp_phase = lfp.phase;
+
+
+    states = {'theta','rear&theta','walk&theta','lswalk&theta','hswalk&theta'};
+    nsts = numel(states);
+    ow = true;
+    spk = {};
+    pfs = {};
+    pmr = {};
+    pmp = {};
+    pfd = {};
+    pfr = {};
+    DRZ = {};
+
+    ow = true;
+    for s = 1:nsts,
+        pfs{s} = MTAApfs(Trial,[],states{s},ow,'binDims',[50,50],'SmoothingWeights',[1.5,1.5]);
+
+        spk{s} = Trial.spk.copy;
+        spk{s}.create(Trial,xyz.sampleRate,states{s},[],'deburst');
+
+        [pmr{s},pmp{s}] = pfs{s}.maxRate(units);
+    end
+
+    units = units(max(cell2mat(pmr),[],2)>5);
+
+    for s = 1:nsts,
+        [pmr{s},pmp{s}] = pfs{s}.maxRate(units);
+    end
+
+    for s = 1:nsts,
+        pfrs = [];
+        pfds = [];
+        for unit = units
+            pfhxy = cat(3,xyz(:,{'head_back','head_front'},[1,2]),zeros([xyz.size(1),2]));
+            pfhxy = cat(2,pfhxy,permute(repmat([pmp{s}(unit==units,:),0],xyz.size(1),1),[1,3,2]));
+            pfhxy = MTADxyz([],[],pfhxy,xyz.sampleRate);
+            
+            cor = cell(1,3);
+            [cor{:}] = cart2sph(pfhxy(:,2,1)-pfhxy(:,1,1),pfhxy(:,2,2)-pfhxy(:,1,2),pfhxy(:,2,3)-pfhxy(:,1,3));
+            cor = cell2mat(cor);
+            
+            por = cell(1,3);
+            [por{:}] = cart2sph(pfhxy(:,3,1)-pfhxy(:,1,1),pfhxy(:,3,2)-pfhxy(:,1,2),pfhxy(:,3,3)-pfhxy(:,1,3));
+            por = cell2mat(por);
+
+
+            [~,~,pfrs(:,unit==units)] = cart2sph(pfhxy(:,3,1)-pfhxy(:,2,1),pfhxy(:,3,2)-pfhxy(:,1,2),pfhxy(:,3,3)-pfhxy(:,2,3));
+
+
+            
+            %pfrs(:,unit==units) = por(:,3);
+            pfds(:,unit==units) = circ_dist(cor(:,1),por(:,1));
+        end
+        
+        pfr{s} = pfrs;
+        pfd{s} = zeros(size(pfds));
+        pfd{s}(abs(pfds)<=pi/2)=-1;
+        pfd{s}(abs(pfds)>pi/2)=1;
+
+
+        %DRZ 
+        DRZ{s} = pfd{s}.*pfr{s};
+
+    end
+
+
+    aIncr = false;
+    rtcbins = linspace(-600,600,25);
+    hfig = figure(38386);
+    set(hfig,'paperposition',get(hfig,'position').*[0,0,1,1]./30)
+    unit = units(1);
+    while unit~=-1,
+        
+        clf
+        for s = 1:nsts,
+            res = spk{s}(unit);
+            
+            if numel(res) <50,continue,end
+            res(res>xyz.size(1))=[];            
+            drzspk = DRZ{s}(res,unit==units);
+            phzspk = tbp_phase(res,phase_chan);
+            
+            gind = ~isnan(drzspk)&~isnan(phzspk);
+            
+            subplot2(6,nsts,[1,2],s);
+            plot(xyz(res,Trial.trackingMarker,1),xyz(res,Trial.trackingMarker,2),'.');
+            hold on 
+            quiver(xyz(res,Trial.trackingMarker,1),xyz(res,Trial.trackingMarker,2),cos(ang(res,'head_back','head_front',1)),sin(ang(res,'head_back','head_front',1)));
+            xlim([-500,500]),ylim([-500,500])
+            title(states{s})
+            
+            subplot2(6,nsts,[3,4],s);
+            pfs{s}.plot(unit);
+            hold on,plot(pmp{s}(unit==units,1),pmp{s}(unit==units,2),'w*')
+            title(num2str(unit))
+            
+
+                subplot2(6,nsts,[5,6],s);
+% $$$                 plot(drzspk(gind),circ_rad2ang(phzspk(gind)),'.');
+% $$$                 hold on,          plot(drzspk(gind),circ_rad2ang(phzspk(gind))+360,'.');
+% $$$                 hold on,          plot(drzspk(gind),circ_rad2ang(phzspk(gind))+720,'.');
+% $$$                 %xlim([-1,1]),
+% $$$                 ylim([-180,900])
+% $$$                 subplot2(6,nsts,6,s);
+% $$$                 hist2([[drzspk(gind);drzspk(gind)],...
+% $$$                        [circ_rad2ang(phzspk(gind));circ_rad2ang(phzspk(gind))+360],...
+% $$$                        [circ_rad2ang(phzspk(gind));circ_rad2ang(phzspk(gind))+720]],30,25);
+                
+                [~,rbin] = histc(drzspk,rtcbins);
+                gind = gind&rbin~=0;
+            if sum(gind)>10,
+                phm = circ_rad2ang(accumarray(rbin(gind),phzspk(gind),size(rtcbins'),@circ_mean));
+                phs = circ_rad2ang(accumarray(rbin(gind),phzspk(gind),size(rtcbins'),@circ_std));
+                errorbar(rtcbins,phm,phs,phs,'.')
+                hold on
+                errorbar(rtcbins,phm+360,phs,phs,'.')
+                
+            end
+        end
+        
+        saveas(hfig,['/gpfs01/sirota/home/gravio/figures/bhvPhasePrecession/',[Trial.filebase,'.bpp_2dRTCns-',num2str(unit),'.png']],'png');
+        unit = figure_controls(hfig,unit,units,aIncr);
+        
+        %reportfig(gcf,'er06-20130613-2Dphspredb',0,num2str(unit),[],0);
+        
+    end
+ 
+
+  case 'phase3dRTC'
+    [chans,phase_chan] = DefaultArgs(varargin,{4,1});
+
+    xyz = Trial.load('xyz');
+    xyz.filter(gtwin(.25,xyz.sampleRate));
+
+    units = select_units(Trial,18);
+    Trial.load('nq');
+    units = units(Trial.nq.SNR(units)>.8);
+    lfp = Trial.lfp.copy;
+    lfp.load(Trial,chans);
+    lfp.resample(xyz);
+    tbp_phase = lfp.phase;
+
+
+    states = {'theta','rear&theta','walk&theta','lswalk&theta','hswalk&theta'};
+    nsts = numel(states);
+    ow = true;
+    spk = {};
+    pfs = {};
+    pmr = {};
+    pmp = {};
+    pfd = {};
+    pfr = {};
+    pfp = {};
+    DRZ = {};
+
+    ow = true;
+    for s = 1:nsts,
+        pfs{s} = MTAApfs(Trial,[],states{s},ow,'binDims',[50,50,50],'SmoothingWeights',[1.5,1.5,1.5],'type','xyz');
+
+        spk{s} = Trial.spk.copy;
+        spk{s}.create(Trial,xyz.sampleRate,states{s},[],'deburst');
+
+        [pmr{s},pmp{s}] = pfs{s}.maxRate(units);
+    end
+
+    units = units(max(cell2mat(pmr),[],2)>5);
+
+    for s = 1:nsts,
+        [pmr{s},pmp{s}] = pfs{s}.maxRate(units);
+    end
+
+    for s = 1:nsts,
+        pfrs = [];
+        pfps = [];
+        pfds = [];
+        for unit = units
+            pfhxy = xyz(:,{'head_back','head_front'},:);
+            pfhxy = cat(2,pfhxy,permute(repmat([pmp{s}(unit==units,:)],xyz.size(1),1),[1,3,2]));
+            pfhxy = MTADxyz([],[],pfhxy,xyz.sampleRate);
+            
+            cor = cell(1,3);
+            [cor{:}] = cart2sph(pfhxy(:,2,1)-pfhxy(:,1,1),pfhxy(:,2,2)-pfhxy(:,1,2),pfhxy(:,2,3)-pfhxy(:,1,3));
+            cor = cell2mat(cor);
+            
+            por = cell(1,3);
+            [por{:}] = cart2sph(pfhxy(:,3,1)-pfhxy(:,1,1),pfhxy(:,3,2)-pfhxy(:,1,2),pfhxy(:,3,3)-pfhxy(:,1,3));
+            por = cell2mat(por);
+
+            pfrs(:,unit==units) = por(:,3);
+            pfds(:,unit==units) = circ_dist(cor(:,1),por(:,1));
+            pfps(:,unit==units) = circ_dist(cor(:,2),por(:,2));        
+        end
+        
+        pfr{s} = pfrs;
+        tangents = cat(3,sin(pfds).*cos(pfps), sin(pfds).*sin(pfps),cos(pfds));
+        mxyz = repmat(pfhxy(:,2,:)-pfhxy(:,1,:),[1,size(tangents,2),1]);
+        pfds = acos(dot(tangents,mxyz,3)./(sqrt(sum(tangents.^2,3)).*sqrt(sum(mxyz.^2,3))));
+
+        pfd{s} = zeros(size(pfds));
+        pfd{s}(abs(pfds)<=pi/2)=1;
+        pfd{s}(abs(pfds)>pi/2)=-1;
+
+
+        %DRZ 
+        DRZ{s} = pfd{s}.*pfr{s};
+
+    end
+
+    
+    aIncr = true;
+    hfig = figure(38387);
+    set(hfig,'paperposition',get(hfig,'position').*[0,0,1,1]./30)
+    unit = units(1);
+    while unit~=-1,
+        
+        clf
+        for s = 1:nsts,
+            res = spk{s}(unit);
+            
+            if numel(res) <50,continue,end
+            res(res>xyz.size(1))=[];            
+            drzspk = DRZ{s}(res,unit==units);
+            phzspk = tbp_phase(res,phase_chan);
+            
+            gind = ~isnan(drzspk)&~isnan(phzspk);
+            
+            subplot2(6,nsts,[1,2],s);
+            plot(xyz(res,Trial.trackingMarker,1),xyz(res,Trial.trackingMarker,2),'.');
+            xlim([-500,500]),ylim([-500,500])
+            title(states{s})
+            
+            subplot2(6,nsts,[3,4],s);
+            pfs{s}.plot(unit,'xy');
+            hold on,plot(pmp{s}(unit==units,1),pmp{s}(unit==units,2),'w*')
+            title(num2str(unit))
+            
+            if sum(gind)>10,
+                subplot2(6,nsts,[5,6],s);plot(drzspk(gind),circ_rad2ang(phzspk(gind)),'.');
+                hold on,          plot(drzspk(gind),circ_rad2ang(phzspk(gind))+360,'.');
+                hold on,          plot(drzspk(gind),circ_rad2ang(phzspk(gind))+720,'.');
+                %xlim([-1,1]),
+                ylim([-180,900])
+% $$$                 subplot2(6,nsts,6,s);
+% $$$                 hist2([[drzspk(gind);drzspk(gind)],...
+% $$$                        [circ_rad2ang(phzspk(gind));circ_rad2ang(phzspk(gind))+360],...
+% $$$                        [circ_rad2ang(phzspk(gind));circ_rad2ang(phzspk(gind))+720]],30,25);
+            end
+        end
+        
+        saveas(hfig,['/gpfs01/sirota/home/gravio/figures/bhvPhasePrecession/',[Trial.filebase,'.bpp_3dRTC-',num2str(unit),'.png']],'png');
         unit = figure_controls(hfig,unit,units,aIncr);
         
         %reportfig(gcf,'er06-20130613-2Dphspredb',0,num2str(unit),[],0);
@@ -1280,4 +1651,3 @@ switch mode,
 
     end
 
-end

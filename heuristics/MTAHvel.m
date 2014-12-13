@@ -1,27 +1,18 @@
-function [data,sampleRate,label,key] = MTAHvel(Session,varargin)
+function [data,sampleRate,label,key] = MTAHvel(Trial,varargin)
 
     [threshold,label,key] = DefaultArgs(varargin,{2,'vel','v'});
     
-    txyz = Session.xyz.copy;
+    xyz = Trial.load('xyz');
     
-    Session.xyz.clear;
-    Session.xyz.load(Session);
+    xyz.filter(gtwin(.25,xyz.sampleRate));
 
-    order = round(.25*Session.xyz.sampleRate);
-    if mod(order,2)==0,order = order+1;end
-
-    Session.xyz.filter(gausswin(order)./sum(gausswin(order)));
-
-    data = ThreshCross(Session.vel(Session.trackingMarker,[1,2]),threshold,10);
-    sync = Session.xyz.sync.copy;
+    data = ThreshCross(xyz.vel(Trial.trackingMarker,[1,2]),threshold,round(.5*xyz.sampleRate));
     
-    data = MTADepoch(Session.spath,...
-                     Session.filebase,...
+    data = MTADepoch(Trial.spath,...
+                     Trial.filebase,...
                      data,...
-                     Session.xyz.sampleRate,...
-                     sync,...
-                     Session.xyz.origin,...
+                     xyz.sampleRate,...
+                     Trial.sync.copy,...
+                     Trial.sync.data(1),...
                      label,key);
-
-    Session.xyz = txyz;
 end

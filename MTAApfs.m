@@ -344,7 +344,7 @@ classdef MTAApfs < hgsetget %< MTAAnalysis
                 case 3
                     c = eye(3);
                     r = [1.2,3,6];
-                    rateMap = permute(reshape(Pfs.data.rateMap(:,Pfs.data.clu==unit,1),Pfs.adata.binSizes'),[2,1,3]);
+                    rateMap = permute(reshape(Pfs.data.rateMap(:,Pfs.data.clu==unit,1),Pfs.adata.binSizes'),[1,2,3]);
                     if nargout>0,return,end
                     %var = cat(2,Pfs.adata.bins,{permute(reshape(Pfs.data.rateMap(:,Pfs.data.clu==unit,1),Pfs.adata.binSizes'),[2,1,3])},{[]});
                     hrate = max(Pfs.data.rateMap(:,Pfs.data.clu==unit,1))/2;
@@ -412,6 +412,9 @@ classdef MTAApfs < hgsetget %< MTAAnalysis
                 [W,H] = meshgrid(1:width,1:height);           
                 mask = double(sqrt((W-centerW-.5).^2 + (H-centerH-.5).^2) < radius);
                 mask(mask==0)=nan;
+                if numel(Pfs.parameters.type)>2,
+                    mask = repmat(mask,[1,1,Pfs.adata.binSizes(3)]);
+                end
                 mask = reshape(mask,[],1);
             else
                 mask = 1;
@@ -423,7 +426,15 @@ classdef MTAApfs < hgsetget %< MTAAnalysis
                 [mxr(u==units),mxp(u==units)] = max(Pfs.data.rateMap(:,Pfs.data.clu==u,1).*mask);
             end
             mxp = Ind2Sub(Pfs.adata.binSizes',mxp);
-            mxp = [Pfs.adata.bins{1}(mxp(:,1)),Pfs.adata.bins{2}(mxp(:,2))];
+            if numel(Pfs.parameters.type)>2,
+                mxp = [Pfs.adata.bins{1}(mxp(:,1)), ...
+                       Pfs.adata.bins{2}(mxp(:,2)), ...
+                       Pfs.adata.bins{3}(mxp(:,3))];                                
+            else
+                mxp = [Pfs.adata.bins{1}(mxp(:,1)), ...
+                       Pfs.adata.bins{2}(mxp(:,2))];
+            end
+            
         end
 
         function Pfs = updateFilename(Pfs,Session,varargin)

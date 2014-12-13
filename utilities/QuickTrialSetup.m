@@ -14,6 +14,10 @@ function varargout = QuickTrialSetup(Session,varargin)
 %                   Indicies of the Motion Tracking segments to ignore, in
 %                   order of the Session.xyz.sync.data
 %
+%   includeSyncInd,    matrix, defarg  - []    
+%                   Indicies of the Motion Tracking segments to include, in
+%                   order of the Session.xyz.sync.data
+%
 %   autolabel:          Logical, defarg  - true
 %                   Try to do some automatic behavior labeling
 %
@@ -22,12 +26,52 @@ function varargout = QuickTrialSetup(Session,varargin)
 %
 %
 
-[trialName,offsets,dropSyncInd,autolabel,debug] = DefaultArgs(varargin,{'all',[0,0],[],true,false});
-xsync = Session.xyz.sync.copy;
-xsync = xsync+offsets;
-xsync.data(dropSyncInd,:) = [];
-Trial = MTATrial(Session,trialName,[],true,xsync);
-Trial.save;
+[trialName,offsets,dropSyncInd,includeSyncInd,autolabel,debug] = DefaultArgs(varargin,{'all',[0,0],[],[],true,false});
+
+if ischar(trialName), 
+    Sessions = SessionList(trialName);
+
+    if isstruct(Sessions),
+        for s = 1:numel(Sessions)            
+            
+            if ~(strcmp(Session.maze.name,Sessions(s).mazeName)&&...
+                 strcmp(Session.name,Sessions(s).name)),
+                MTAstartup(host,Sessions(s).host);
+                Session = MTASession(Sessions(s).name,...
+                                 Sessions(s).mazeName);
+            end
+
+            xsync = Session.xyz.sync.copy;
+            xsync = xsync+offsets;
+            if ~isempty(Sessions(s).includeSyncInd)
+                dropSyncInd = ~ismember(1:xsync.size(1),Sessions(s).includeSyncInd);
+            end
+            xsync.data(dropSyncInd,:) = [];            
+            Trial = MTATrial(Session,...
+                             Sessions(s).trialName,...
+                             Sessions(s).mazeName,...
+                             true,...
+                             xsync);
+            Trial.save;
+        end
+    else
+        xsync = Session.xyz.sync.copy;
+        xsync = xsync+offsets;
+        if ~isempty(includeSyncInd)
+            dropSyncInd = ~ismember(1:xsync.size(1),includeSyncInd);
+        end
+        xsync.data(dropSyncInd,:) = [];
+        Trial = MTATrial(Session,trialName,[],true,xsync);
+        Trial.save;
+    end
+
+else
+    autolabel = true;
+end
+
+
+
+
 
 assert(offsets(:,1)>=0&offsets(:,2)<=0,'MTA:utilities:QuickTrialSetup:offsets, see help QuickTrialSetup for offsets specifications');
 
