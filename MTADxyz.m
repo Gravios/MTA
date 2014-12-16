@@ -89,11 +89,12 @@ classdef MTADxyz < MTAData
         %a = acc(Data,varargin)
         %calculate the acceleration of marker(s)
         %[marker,dim] = DefaultArgs(varargin,{[1:Data.model.N],[1:size(Data.xyz,3)]});
-% $$$             [marker,dim,padded] = DefaultArgs(varargin,{1:Data.model.N, 1:Data.xyz.size(3),1});
-% $$$             a = diff(Data.vel(marker,dim),1);
-% $$$             if padded==1
-% $$$                 a = cat(1,a(1,:),a,a(end,:));
-% $$$             end
+            [markers,dims,padded] = DefaultArgs(varargin,{1:Data.model.N, 1:Data.size(3),1});
+            vel = Data.vel(markers,dims);
+            a = diff(vel.data,1);
+            if padded==1
+                a = MTADxyz('data',cat(1,a,a(end,:)),'sampleRate',Data.sampleRate);
+            end
         end
 
          function Data = addMarker(Data,name,color,sticks,data)
