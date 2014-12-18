@@ -9,8 +9,8 @@ xyz.filter(gtwin(.1,xyz.sampleRate));
 vel = xyz.vel([1:3,5,7],[1,2]);
 
 
-vel = MTADxyz('data',[0;diff(circ_dist(s.ang(:,1,3,1),s.ang(:,5,7,1)))],'sampleRate',xyz.sampleRate);
-vel = fet_rhm(Trial,[],'default');
+%vel = MTADxyz('data',[0;diff(circ_dist(s.ang(:,1,3,1),s.ang(:,5,7,1)))],'sampleRate',xyz.sampleRate);
+%vel = fet_rhm(Trial,[],'default');
 ncp = fet_ncp(Trial,[],'default');
 
 N=10000;

@@ -1,6 +1,6 @@
 function fet = fetset_generic(Trial)
 
-Trial = MTATrial('jg05-20120310');
+Trial = MTATrial('jg05-20120309');
 ang = Trial.ang.copy;
 xyz = Trial.load('xyz');
 
@@ -22,24 +22,35 @@ rolf = fet_roll(Trial,[],'default');
 fet =[];
 fet = [fet,fpv,fpz];
 fet = [fet,xyz(:,'head_front',3)-xyz(:,'spine_lower',3)];
+fet = [fet,ang(:,'pelvis_root','spine_middle',2)];
 fet = [fet,ang(:,'spine_middle','spine_upper',2)];
 fet = [fet,ang(:,'head_back','head_front',2)];
 fet = [fet,circ_dist(ang(:,'spine_middle','spine_upper',1),ang(:,'head_back','head_front',1))];
 fet = [fet,rolf.data];
 
-% $$$ xyz.filter(dwin);
-% $$$ ang.create(Trial,xyz);
 xyz.filter(dwin);
 ang.create(Trial,xyz);
 
 fet = [fet,abs([0;diff(ang(:,'spine_lower','spine_middle',2))])];
 fet = [fet,abs([0;diff(ang(:,'head_back','head_front',2))])];
 
-%fet = [fet,fet.^3];
-%fet = MTADxyz([],[],Filter0(fwin,fet),Trial.xyz.sampleRate);
-% $$$ fet.data(fet.data==0) = nan;
+
 nz = nniz(fet);
 fet(nz,:) = unity(fet(nz,:));
+
+
+% $$$ mset = [1,2];
+% $$$ xl = -1.5:.03:1.5;
+% $$$ yl = -.6:.05:1.4;
+% $$$ s = 'w';
+% $$$ figure,hist2([rolf(nniz(rolf)),ang(nniz(rolf),mset(1),mset(2),2)],100,100);caxis([0,1000])
+% $$$ figure,hist2([xyz(nniz(rolf),1,3),ang(nniz(rolf),mset(1),mset(2),2)],100,100);caxis([0,100])
+% $$$ figure,hist2([xyz(nniz(rolf),1,3),ang(nniz(rolf),mset(1),mset(2),2)],xl,yl);caxis([0,10000])
+% $$$ figure,hist2([xyz(Trial.stc{s},1,3),ang(Trial.stc{s},mset(1),mset(2),2)],xl,yl);caxis([0,1000])
+% $$$ sd = xyz.copy;
+% $$$ sd.data = circ_dist(ang(:,'spine_middle','spine_upper',1),ang(:,'head_back','head_front',1));
+% $$$ figure,hist2([sd(nniz(rolf)),ang(nniz(rolf),mset(1),mset(2),2)],xl,yl);caxis([0,4000])
+% $$$ figure,hist2([sd(Trial.stc{s}),ang(Trial.stc{s},mset(1),mset(2),2)],xl,yl);caxis([0,400])
 
 
 
@@ -63,7 +74,8 @@ end
 
 
 
-rhm  = fet_rhm (Trial,[],'wcsd');
+[rhm,fs,ts]  = fet_rhm (Trial,[],'wcsd');
+%figure,imagesc(ts,fs,log10(rhm.data)'),caxis([-6,-4]),axis xy
 swag = fet_swag(Trial,[],'wcsd');
 roll = fet_roll(Trial,[],'wcsd');
 
