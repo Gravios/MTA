@@ -1,4 +1,7 @@
 function ppf(bin1,bin2,rateMap)
+%function ppf(bin1,bin2,rateMap)
+% plot a place field given the bins and the rateMap
+%
 imagesc(bin1,bin2,rateMap)
 colorbar
 colormap('default')

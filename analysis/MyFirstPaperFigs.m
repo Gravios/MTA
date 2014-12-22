@@ -809,88 +809,67 @@ switch mode,
   case 'phase3dRTCVTC'
     [chans,phase_chan] = DefaultArgs(varargin,{4,1});
 
+         
+    %vars for er06-20130612
+    %units = [33,87,115,121,151];
+    %chans = 4; phase_chan = 1;
+    
+    %vars for jg05-20120310
+    Trial = MTATrial('jg05-20120310');
+    units = [10,13,20,25,42,69];
+    chans = [65:2:96]; phase_chan = 1;
+
     xyz = Trial.load('xyz');
     xyz.filter(gtwin(.25,xyz.sampleRate));
 
-    units = select_units(Trial,18);
-    Trial.load('nq');
-    units = units(Trial.nq.SNR(units)>.8);
- 
-    units = [33,87,115,121,151];
+    %units = select_units(Trial,18);
+    %Trial.load('nq');
+    %units = units(Trial.nq.SNR(units)>.8);
     
     lfp = Trial.lfp.copy;
     lfp.load(Trial,chans);
     lfp.resample(xyz);
     tbp_phase = lfp.phase;
 
-
-    states = {'theta','rear&theta','walk&theta','lswalk&theta','hswalk&theta'};
+    ow = false;    
+    %states = {'theta','rear&theta','walk&theta','lswalk&theta','hswalk&theta'};
+    states = {'theta'};
     nsts = numel(states);
-    ow = true;
-    spk = {};
-    pfs = {};
-    pmr = {};
-    pmp = {};
-    pfd = {};
-    pfr = {};
-    pfp = {};
-    DRZ = {};
 
-    ow = true;
+    spk = {};    
+    pfs = {};    pmr = {};    pmp = {};
+    DRZ = {};    VTC = {};
+
     for s = 1:nsts,
         pfs{s} = MTAApfs(Trial,[],states{s},ow,'binDims',[50,50,50],'SmoothingWeights',[1.5,1.5,1.5],'type','xyz');
-
+        [pmr{s},pmp{s}] = pfs{s}.maxRate(units);
+        
         spk{s} = Trial.spk.copy;
         spk{s}.create(Trial,xyz.sampleRate,states{s},[],'deburst');
-
-        [pmr{s},pmp{s}] = pfs{s}.maxRate(units);
     end
 
-    units = units(max(cell2mat(pmr),[],2)>5);
+%    units = units(max(cell2mat(pmr),[],2)>5);
+%     for s = 1:nsts,
+%         [pmr{s},pmp{s}] = pfs{s}.maxRate(units);
+%     end
 
+    %get DRZ and VTC
+    txyz = xyz.copy;
+    txyz.data = xyz(:,{'head_back','head_front'},[1,2]);
+    sxyz = xyz.copy;
+    sxyz.data = cat(2,xyz(:,'head_back',[1,2]),circshift(xyz(:,'head_back',[1,2]),round(xyz.sampleRate/2)));
     for s = 1:nsts,
-        [pmr{s},pmp{s}] = pfs{s}.maxRate(units);
+        DRZ{s} = pfDRZ(txyz,pmp{s});
+        VTC{s} = pfDRZ(sxyz,pmp{s});
     end
+    
+    vel = xyz.vel('head_front',[1,2]);
+    vel.data = log10(vel.data);
 
-    for s = 1:nsts,
-        pfrs = [];
-        pfps = [];
-        pfds = [];
-        for unit = units
-            pfhxy = xyz(:,{'head_back','head_front'},:);
-            pfhxy = cat(2,pfhxy,permute(repmat([pmp{s}(unit==units,:)],xyz.size(1),1),[1,3,2]));
-            pfhxy = MTADxyz([],[],pfhxy,xyz.sampleRate);
-            
-            cor = cell(1,3);
-            [cor{:}] = cart2sph(pfhxy(:,2,1)-pfhxy(:,1,1),pfhxy(:,2,2)-pfhxy(:,1,2),pfhxy(:,2,3)-pfhxy(:,1,3));
-            cor = cell2mat(cor);
-            
-            por = cell(1,3);
-            [por{:}] = cart2sph(pfhxy(:,3,1)-pfhxy(:,1,1),pfhxy(:,3,2)-pfhxy(:,1,2),pfhxy(:,3,3)-pfhxy(:,1,3));
-            por = cell2mat(por);
-
-            pfrs(:,unit==units) = por(:,3);
-            pfds(:,unit==units) = circ_dist(cor(:,1),por(:,1));
-            pfps(:,unit==units) = circ_dist(cor(:,2),por(:,2));        
-        end
-        
-        pfr{s} = pfrs;
-        tangents = cat(3,sin(pfds).*cos(pfps), sin(pfds).*sin(pfps),cos(pfds));
-        mxyz = repmat(pfhxy(:,2,:)-pfhxy(:,1,:),[1,size(tangents,2),1]);
-        pfds = acos(dot(tangents,mxyz,3)./(sqrt(sum(tangents.^2,3)).*sqrt(sum(mxyz.^2,3))));
-
-        pfd{s} = zeros(size(pfds));
-        pfd{s}(abs(pfds)<=pi/2)=1;
-        pfd{s}(abs(pfds)>pi/2)=-1;
-
-
-        %DRZ 
-        DRZ{s} = pfd{s}.*pfr{s};
-
-    end
-
-    aIncr = true;
-    hfig = figure(38387);
+    %aIncr = true;
+    phase_chan = 6;
+    aIncr = false;
+    hfig = figure(38338);
     set(hfig,'paperposition',get(hfig,'position').*[0,0,1,1]./30)
     unit = units(1);
     while unit~=-1,
@@ -902,9 +881,12 @@ switch mode,
             if numel(res) <50,continue,end
             res(res>xyz.size(1))=[];            
             drzspk = DRZ{s}(res,unit==units);
+            vtcspk = VTC{s}(res,unit==units);
+            zspk = xyz(res,'head_front',3);
+            vspk = vel(res);
             phzspk = tbp_phase(res,phase_chan);
             
-            gind = ~isnan(drzspk)&~isnan(phzspk);
+            gind = ~isnan(drzspk)&~isnan(vtcspk)&~isnan(phzspk);
             
             subplot2(6,nsts,[1,2],s);
             plot(xyz(res,Trial.trackingMarker,1),xyz(res,Trial.trackingMarker,2),'.');
@@ -917,19 +899,45 @@ switch mode,
             title(num2str(unit))
             
             if sum(gind)>10,
-                subplot2(6,nsts,[5,6],s);plot(drzspk(gind),circ_rad2ang(phzspk(gind)),'.');
-                hold on,          plot(drzspk(gind),circ_rad2ang(phzspk(gind))+360,'.');
-                hold on,          plot(drzspk(gind),circ_rad2ang(phzspk(gind))+720,'.');
-                %xlim([-1,1]),
-                ylim([-180,900])
-% $$$                 subplot2(6,nsts,6,s);
-% $$$                 hist2([[drzspk(gind);drzspk(gind)],...
-% $$$                        [circ_rad2ang(phzspk(gind));circ_rad2ang(phzspk(gind))+360],...
-% $$$                        [circ_rad2ang(phzspk(gind));circ_rad2ang(phzspk(gind))+720]],30,25);
+                subplot2(6,nsts,[5,6],s);
+                %chsv = jet;
+                %chsv = hsv;
+                %cim = linspace(-pi,pi,64);
+                %[xx,xi] = NearestNeighbour(cim,phzspk(gind));
+                %scatter(drzspk(gind),vspk(gind),10,chsv(xi,:),'filled');
+                %scatter(drzspk(gind),zspk(gind),10,chsv(xi,:),'filled');
+                 %dvzp = (drzspk>0&vtcspk<0)|(drzspk<0&vtcspk>0);
+                 %dvzn = (drzspk>0&vtcspk>0)|(drzspk<0&vtcspk<0);
+                 %subplot2(6,nsts,[5,6],s);
+%                  subplot(121)
+%                   plot(drzspk(gind),circ_rad2ang(phzspk(gind)),'.');
+%                   hold on,          plot(drzspk(gind),circ_rad2ang(phzspk(gind))+360,'.');
+%                   hold on,          plot(drzspk(gind),circ_rad2ang(phzspk(gind))+720,'.');
+%                   ylim([-180,900])
+                  %plot(vtcspk(gind),circ_rad2ang(phzspk(gind)),'.');
+                  %hold on,          plot(vtcspk(gind),circ_rad2ang(phzspk(gind))+360,'.');
+                  %hold on,          plot(vtcspk(gind),circ_rad2ang(phzspk(gind))+720,'.');
+                  %ylim([-180,580])
+%                  plot(drzspk(gind&dvzn),circ_rad2ang(phzspk(gind&dvzn)),'.');
+%                  hold on,          plot(drzspk(gind&dvzn),circ_rad2ang(phzspk(gind&dvzn))+360,'.');
+%                  hold on,          plot(drzspk(gind&dvzn),circ_rad2ang(phzspk(gind&dvzn))+720,'.');
+%                  ylim([-180,900])
+%                 %plotcc(drzspk(gind),vtcspk(gind),circ_rad2ang(phzspk(gind)),'hsv');
+%                  %subplot2(8,nsts,[7,8],s);
+%                  subplot(122)
+%                  plot(vtcspk(gind&dvzp),circ_rad2ang(phzspk(gind&dvzp)),'.');
+%                  hold on,          plot(vtcspk(gind&dvzp),circ_rad2ang(phzspk(gind&dvzp))+360,'.');
+%                  hold on,          plot(vtcspk(gind&dvzp),circ_rad2ang(phzspk(gind&dvzp))+720,'.');
+%                  %xlim([-1,1]),
+%                  ylim([-180,900])
+% % $$$                 subplot2(6,nsts,6,s);
+                 hist2([[drzspk(gind);drzspk(gind)],...
+                        [circ_rad2ang(phzspk(gind));circ_rad2ang(phzspk(gind))+360],...
+                        ],40,30);
             end
         end
         
-        saveas(hfig,['/gpfs01/sirota/home/gravio/figures/bhvPhasePrecession/',[Trial.filebase,'.bpp_3dRTC-',num2str(unit),'.png']],'png');
+        %saveas(hfig,['/gpfs01/sirota/home/gravio/figures/bhvPhasePrecession/',[Trial.filebase,'.bpp_3dRTCVTC-',num2str(unit),'.png']],'png');
         unit = figure_controls(hfig,unit,units,aIncr);
         
         %reportfig(gcf,'er06-20130613-2Dphspredb',0,num2str(unit),[],0);
