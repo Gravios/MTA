@@ -811,10 +811,15 @@ switch mode,
 
          
     %vars for er06-20130612
-    Trial = MTATrial('er06-20130612');
-    units = [33,87,115,121,151];
-    chans = 4; phase_chan = 1;
+    %Trial = MTATrial('er06-20130612');
+    %units = [33,87,115,121,151];
+    %chans = 4; phase_chan = 1;
     
+    %vars for jg05-20120310
+    %Trial = MTATrial('jg05-20120310');
+    %units = [10,13,20,25,42,69];
+    %chans = [65:2:96]; phase_chan = 1;
+
     %vars for jg05-20120310
     %Trial = MTATrial('jg05-20120310');
     %units = [10,13,20,25,42,69];
@@ -823,7 +828,7 @@ switch mode,
     xyz = Trial.load('xyz');
     xyz.filter(gtwin(.25,xyz.sampleRate));
 
-    units = select_units(Trial,18);
+    units = select_units(Trial,30);
     Trial.load('nq');
     units = units(Trial.nq.SNR(units)>.8);
     
@@ -871,9 +876,11 @@ switch mode,
     ang.create(Trial,xyz);
     ael = circ_dist(ang(:,'head_back','head_front',1),circshift(ang(:,'head_back','head_front',1),10));
     ael = ang(:,'head_back','head_front',2);
+
+    [accg,tbins] = autoccg(Trial,units);
     
     %aIncr = true;
-    phase_chan = 1;
+    phase_chan = 3;
     aIncr = false;
     hfig = figure(38338);
     set(hfig,'paperposition',get(hfig,'position').*[0,0,1,1]./30)
@@ -895,55 +902,51 @@ switch mode,
             
             gind = ~isnan(drzspk)&~isnan(vtcspk)&~isnan(phzspk);
             
-            subplot2(6,nsts,[1,2],s);
+            subplot2(3,3,1,1);
             plot(xyz(res,Trial.trackingMarker,1),xyz(res,Trial.trackingMarker,2),'.');
             xlim([-500,500]),ylim([-500,500])
             title(states{s})
             
-            subplot2(6,nsts,[3,4],s);
+            subplot2(3,3,2,1);
             pfs{s}.plot(unit,'xy');
             hold on,plot(pmp{s}(unit==units,1),pmp{s}(unit==units,2),'w*')
             title(num2str(unit))
             
-            if sum(gind)>10,
-                subplot2(6,nsts,[5,6],s);
+            subplot2(3,4,3,1);
+            bar(tbins,accg(:,unit)),
+            axis tight
+            title(['accg: ' num2str(unit)]);
+            if sum(gind)>10,                
                 %chsv = jet;
                 chsv = hsv;
                 cim = linspace(-pi,pi,64);
                 [xx,xi] = NearestNeighbour(cim,phzspk(gind));
-                %plot3(vtcspk(gind),vspk(gind),phzspk(gind),'.');
-                scatter(vtcspk(gind),aspk(gind),10,chsv(xi,:),'filled');
-                %scatter(vtcspk(gind),vspk(gind),10,chsv(xi,:),'filled');
-                %scatter(drzspk(gind),vspk(gind),10,chsv(xi,:),'filled');
-                %scatter(drzspk(gind),zspk(gind),10,chsv(xi,:),'filled');
-                 %dvzp = (drzspk>0&vtcspk<0)|(drzspk<0&vtcspk>0);
-                 %dvzn = (drzspk>0&vtcspk>0)|(drzspk<0&vtcspk<0);
-                 %subplot2(6,nsts,[5,6],s);
-%                  subplot(121)
-%                   plot(drzspk(gind),circ_rad2ang(phzspk(gind)),'.');
-%                   hold on,          plot(drzspk(gind),circ_rad2ang(phzspk(gind))+360,'.');
-%                   hold on,          plot(drzspk(gind),circ_rad2ang(phzspk(gind))+720,'.');
-%                   ylim([-180,900])
-                  %plot(vtcspk(gind),circ_rad2ang(phzspk(gind)),'.');
-                  %hold on,          plot(vtcspk(gind),circ_rad2ang(phzspk(gind))+360,'.');
-                  %hold on,          plot(vtcspk(gind),circ_rad2ang(phzspk(gind))+720,'.');
-                  %ylim([-180,580])
-%                  plot(drzspk(gind&dvzn),circ_rad2ang(phzspk(gind&dvzn)),'.');
-%                  hold on,          plot(drzspk(gind&dvzn),circ_rad2ang(phzspk(gind&dvzn))+360,'.');
-%                  hold on,          plot(drzspk(gind&dvzn),circ_rad2ang(phzspk(gind&dvzn))+720,'.');
-%                  ylim([-180,900])
-%                 %plotcc(drzspk(gind),vtcspk(gind),circ_rad2ang(phzspk(gind)),'hsv');
-%                  %subplot2(8,nsts,[7,8],s);
-%                  subplot(122)
-%                  plot(vtcspk(gind&dvzp),circ_rad2ang(phzspk(gind&dvzp)),'.');
-%                  hold on,          plot(vtcspk(gind&dvzp),circ_rad2ang(phzspk(gind&dvzp))+360,'.');
-%                  hold on,          plot(vtcspk(gind&dvzp),circ_rad2ang(phzspk(gind&dvzp))+720,'.');
-%                  %xlim([-1,1]),
-%                  ylim([-180,900])
-% % $$$                 subplot2(6,nsts,6,s);
-%                  hist2([[drzspk(gind);drzspk(gind)],...
-%                        [circ_rad2ang(phzspk(gind));circ_rad2ang(phzspk(gind))+360],...
-%                        ],40,30);
+                
+                % 3D VTC
+                subplot2(3,3,1,2);
+                scatter(drzspk(gind),vspk(gind),7,chsv(xi,:),'filled');xlim([-500,500])
+                subplot2(3,3,2,2);
+                scatter(drzspk(gind),zspk(gind),7,chsv(xi,:),'filled');xlim([-500,500])
+                subplot2(3,3,3,2);
+                hist2([[drzspk(gind);drzspk(gind)],...
+                      [circ_rad2ang(phzspk(gind));circ_rad2ang(phzspk(gind))+360]],40,30);
+
+%                 plot(drzspk(gind),circ_rad2ang(phzspk(gind)),'.'); hold on
+%                    plot(drzspk(gind),circ_rad2ang(phzspk(gind))+360,'.');
+%                    ylim([-180,540])
+                % 2D VTC
+                subplot2(3,3,1,3);
+                scatter(vtcspk(gind),aspk(gind),7,chsv(xi,:),'filled');xlim([-500,500])
+                subplot2(3,3,2,3);
+                scatter(vtcspk(gind),vspk(gind),7,chsv(xi,:),'filled');xlim([-500,500])
+                subplot2(3,3,3,3);
+                hist2([[vtcspk(gind);vtcspk(gind)],...
+                      [circ_rad2ang(phzspk(gind));circ_rad2ang(phzspk(gind))+360]],40,30);
+
+%                 plot(vtcspk(gind),circ_rad2ang(phzspk(gind)),'.'); hold on
+%                    plot(vtcspk(gind),circ_rad2ang(phzspk(gind))+360,'.');
+%                    ylim([-180,540])
+
             end
         end
         
