@@ -811,20 +811,21 @@ switch mode,
 
          
     %vars for er06-20130612
-    %units = [33,87,115,121,151];
-    %chans = 4; phase_chan = 1;
+    Trial = MTATrial('er06-20130612');
+    units = [33,87,115,121,151];
+    chans = 4; phase_chan = 1;
     
     %vars for jg05-20120310
-    Trial = MTATrial('jg05-20120310');
-    units = [10,13,20,25,42,69];
-    chans = [65:2:96]; phase_chan = 1;
+    %Trial = MTATrial('jg05-20120310');
+    %units = [10,13,20,25,42,69];
+    %chans = [65:2:96]; phase_chan = 1;
 
     xyz = Trial.load('xyz');
     xyz.filter(gtwin(.25,xyz.sampleRate));
 
-    %units = select_units(Trial,18);
-    %Trial.load('nq');
-    %units = units(Trial.nq.SNR(units)>.8);
+    units = select_units(Trial,18);
+    Trial.load('nq');
+    units = units(Trial.nq.SNR(units)>.8);
     
     lfp = Trial.lfp.copy;
     lfp.load(Trial,chans);
@@ -866,8 +867,13 @@ switch mode,
     vel = xyz.vel('head_front',[1,2]);
     vel.data = log10(vel.data);
 
+    ang = Trial.ang.copy;
+    ang.create(Trial,xyz);
+    ael = circ_dist(ang(:,'head_back','head_front',1),circshift(ang(:,'head_back','head_front',1),10));
+    ael = ang(:,'head_back','head_front',2);
+    
     %aIncr = true;
-    phase_chan = 6;
+    phase_chan = 1;
     aIncr = false;
     hfig = figure(38338);
     set(hfig,'paperposition',get(hfig,'position').*[0,0,1,1]./30)
@@ -884,6 +890,7 @@ switch mode,
             vtcspk = VTC{s}(res,unit==units);
             zspk = xyz(res,'head_front',3);
             vspk = vel(res);
+            aspk = ael(res);
             phzspk = tbp_phase(res,phase_chan);
             
             gind = ~isnan(drzspk)&~isnan(vtcspk)&~isnan(phzspk);
@@ -901,9 +908,12 @@ switch mode,
             if sum(gind)>10,
                 subplot2(6,nsts,[5,6],s);
                 %chsv = jet;
-                %chsv = hsv;
-                %cim = linspace(-pi,pi,64);
-                %[xx,xi] = NearestNeighbour(cim,phzspk(gind));
+                chsv = hsv;
+                cim = linspace(-pi,pi,64);
+                [xx,xi] = NearestNeighbour(cim,phzspk(gind));
+                %plot3(vtcspk(gind),vspk(gind),phzspk(gind),'.');
+                scatter(vtcspk(gind),aspk(gind),10,chsv(xi,:),'filled');
+                %scatter(vtcspk(gind),vspk(gind),10,chsv(xi,:),'filled');
                 %scatter(drzspk(gind),vspk(gind),10,chsv(xi,:),'filled');
                 %scatter(drzspk(gind),zspk(gind),10,chsv(xi,:),'filled');
                  %dvzp = (drzspk>0&vtcspk<0)|(drzspk<0&vtcspk>0);
@@ -931,9 +941,9 @@ switch mode,
 %                  %xlim([-1,1]),
 %                  ylim([-180,900])
 % % $$$                 subplot2(6,nsts,6,s);
-                 hist2([[drzspk(gind);drzspk(gind)],...
-                        [circ_rad2ang(phzspk(gind));circ_rad2ang(phzspk(gind))+360],...
-                        ],40,30);
+%                  hist2([[drzspk(gind);drzspk(gind)],...
+%                        [circ_rad2ang(phzspk(gind));circ_rad2ang(phzspk(gind))+360],...
+%                        ],40,30);
             end
         end
         
