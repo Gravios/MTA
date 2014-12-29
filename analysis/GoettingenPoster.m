@@ -23,7 +23,7 @@ ang = Trial.load('ang');
 %        1.2 JPDF - 
 %     2. Examples of walking subtypes
 %        2.1 High walk,
-nn
+
 [rhm,fs,ts] = fet_rhm(Trial,[],'Swspectral');
 
 s='c';
@@ -248,6 +248,46 @@ set(gca,'XTickLabelMode','manual');
 set(gca,'XTickLabel',{});
 saveas(gcf,fullfile('/gpfs01/sirota/homes/gravio/','figures','GoettingenPoster','JPDF_mVel_vVel_walk_only.png'),'png');
 
+
+%% head marker error
+Trial = MTATrial('jg05-20120310');
+
+xyz = Trial.load('xyz');
+ang = Trial.ang.copy;
+ang.create(Trial,xyz);
+
+vel = xyz.vel([5:9]);
+vel.data(vel<0.01) = 0.01;
+vel.data = log10(vel.data);
+
+m = {'head_back','head_front'};
+vbins = -1.5:.05:2;
+[~,mb(:,1)] = histc(vel(:,m{1}),vbins);
+[~,mb(:,2)] = histc(vel(:,m{2}),vbins);
+
+mb = MTADxyz('data',mb,'sampleRate',xyz.sampleRate);
+
+ind = Trial.stc{'a'}.cast('TimeSeries')&nniz(mb);
+%ind = ':';
+
+
+A = accumarray(mb(ind,:),ang(ind,m{1},m{2},3),repmat(numel(vbins),[1,2]),@mean);
+B = accumarray(mb(ind,:),ang(ind,m{1},m{2},3),repmat(numel(vbins),[1,2]),@std);
+S = accumarray(mb(ind,:),ind(ind),repmat(numel(vbins),[1,size(mb,2)]),@sum);
+A(S<100)=nan;
+B(S<100)=nan;
+
+figure,imagescnan({vbins,vbins,A'},[],[],true,[0,0,0]),axis xy
+figure,imagescnan({vbins,vbins,B'},[],[],true,[0,0,0]),axis xy
+
+figure,
+hist(ang(Trial.stc{'a'},'head_back','head_front',3),20:.02:37)
+figure,
+hist(ang(Trial.stc{'a'},'head_right','head_front',3),20:.02:37)
+figure,
+hist(ang(Trial.stc{'a'},'head_right','head_left',3),20:.02:37)
+figure,
+hist(ang(Trial.stc{'a'},'head_back','head_right',3),10:.02:37)
 
 
 %% Time Series Example of sniffing sub-behavior

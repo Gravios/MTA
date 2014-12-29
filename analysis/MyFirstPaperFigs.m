@@ -811,9 +811,9 @@ switch mode,
 
          
     %vars for er06-20130612
-    %Trial = MTATrial('er06-20130612');
-    %units = [33,87,115,121,151];
-    %chans = 4; phase_chan = 1;
+    Trial = MTATrial('er06-20130612');
+    units = [33,87,115,121,151];
+    chans = 4; phase_chan = 1;
     
     %vars for jg05-20120310
     %Trial = MTATrial('jg05-20120310');
@@ -847,7 +847,8 @@ switch mode,
     DRZ = {};    VTC = {};
 
     for s = 1:nsts,
-        pfs{s} = MTAApfs(Trial,[],states{s},ow,'binDims',[50,50,50],'SmoothingWeights',[1.5,1.5,1.5],'type','xyz');
+        %pfs{s} = MTAApfs(Trial,[],states{s},ow,'binDims',[50,50,50],'SmoothingWeights',[1.5,1.5,1.5],'type','xyz');
+        pfs{s} = MTAApfs(Trial,[],states{s},ow,'binDims',[50,50],'SmoothingWeights',[1.5,1.5],'type','xy');
         [pmr{s},pmp{s}] = pfs{s}.maxRate(units);
         
         spk{s} = Trial.spk.copy;
@@ -880,7 +881,7 @@ switch mode,
     [accg,tbins] = autoccg(Trial,units);
     
     %aIncr = true;
-    phase_chan = 3;
+    phase_chan = 1;
     aIncr = false;
     hfig = figure(38338);
     set(hfig,'paperposition',get(hfig,'position').*[0,0,1,1]./30)
@@ -926,7 +927,17 @@ switch mode,
                 subplot2(3,3,1,2);
                 scatter(drzspk(gind),vspk(gind),7,chsv(xi,:),'filled');xlim([-500,500])
                 subplot2(3,3,2,2);
-                scatter(drzspk(gind),zspk(gind),7,chsv(xi,:),'filled');xlim([-500,500])
+
+                drzbins = -500:10:500;
+                zbins = 1.4:.02:2.5;
+                [~,rbin] = histc(drzspk,drzbins);
+                [~,zbin] = histc(log10(zspk),zbins);
+                tind = (gind&rbin~=0)&(gind&zbin~=0);
+                A = accumarray([rbin(tind),zbin(tind)],phzspk(tind),[numel(drzbins),numel(zbins)],@circ_mean,nan);
+                imagescnan({drzbins,zbins,A'},[],1,1,[0,0,0]);axis xy
+
+                %scatter(drzspk(gind),log10(zspk(gind)),7,chsv(xi,:),'filled');
+                %xlim([-500,500]),ylim([1.4,2.5])
                 subplot2(3,3,3,2);
                 hist2([[drzspk(gind);drzspk(gind)],...
                       [circ_rad2ang(phzspk(gind));circ_rad2ang(phzspk(gind))+360]],40,30);
@@ -936,9 +947,18 @@ switch mode,
 %                    ylim([-180,540])
                 % 2D VTC
                 subplot2(3,3,1,3);
-                scatter(vtcspk(gind),aspk(gind),7,chsv(xi,:),'filled');xlim([-500,500])
-                subplot2(3,3,2,3);
                 scatter(vtcspk(gind),vspk(gind),7,chsv(xi,:),'filled');xlim([-500,500])
+                subplot2(3,3,2,3);
+                %scatter(vtcspk(gind),log10(zspk(gind)),7,chsv(xi,:),'filled');
+
+                vtcbins = -500:10:500;
+                zbins = 1.4:.02:2.5;
+                [~,rbin] = histc(vtcspk,vtcbins);
+                [~,zbin] = histc(log10(zspk),zbins);
+                tind = (gind&rbin~=0)&(gind&zbin~=0);
+                A = accumarray([rbin(tind),zbin(tind)],phzspk(tind),[numel(vtcbins),numel(zbins)],@circ_mean,nan);
+                imagescnan({vtcbins,zbins,A'},[],1,1,[0,0,0]);axis xy
+             %xlim([-500,500]),ylim([1.4,2.5])
                 subplot2(3,3,3,3);
                 hist2([[vtcspk(gind);vtcspk(gind)],...
                       [circ_rad2ang(phzspk(gind));circ_rad2ang(phzspk(gind))+360]],40,30);
@@ -955,21 +975,80 @@ switch mode,
         
         %reportfig(gcf,'er06-20130613-2Dphspredb',0,num2str(unit),[],0);
         
-    end
- 
+    end 
+
 
     %% End Figure 4
 
 
-  case 'BreathingExamples'
+  case 'markerDistJPDF'
     xyz = Trial.load('xyz');
-    xyz.filter(gtwin(.5,xyz.sampleRate));
+    xyz.filter(gtwin(.1,xyz.sampleRate));
     ang = Trial.ang.copy;
     ang.create(Trial,xyz);
-    figure,plot(ang(:,'spine_middle','spine_upper',3))
 
+    figure,plot(diff(ang(:,'spine_lower','pelvis_root',3)-ang(:,'pelvis_root','spine_middle',3)))
+    hold on,plot(diff(ang(:,'pelvis_root','spine_middle',3)-ang(:,'spine_lower','spine_upper',3)),'r')
+    figure,plot(diff(ang(:,'spine_lower','pelvis_root',3)-ang(:,'pelvis_root','spine_middle',3))-diff(ang(:,'pelvis_root','spine_middle',3)-ang(:,'spine_lower','spine_upper',3)))
+
+    hold on,Lines(Trial.stc{'w'}(:),[],'k');
+    
+    fet = MTADxyz('data',[diff([0;Filter0(gausswin(5)./sum(gausswin(5)),diff(ang(:,'pelvis_root','spine_middle',3)-ang(:,'spine_lower','spine_middle',3)))]);0],'sampleRate',ang.sampleRate);
+    fet = MTADxyz('data',[diff([0;Filter0(gausswin(5)./sum(gausswin(5)),diff(ang(:,'pelvis_root','spine_middle',2)-ang(:,'spine_lower','spine_middle',2)))]);0],'sampleRate',ang.sampleRate);
+    
+    [ys,fs,ts] = fet_spec(Trial,fet,[],'wcsd','overwrite',true);
+    figure,imagesc(ts,fs,nunity(log10(ys.data))'),axis xy
+
+    [U,S,V] = svd(cov(log10(ys(nniz(ys),:))));
+
+    nfet = zeros([ys.size(1),1]);
+    nfet(nniz(ys)) = log10(ys(nniz(ys),:))*V(:,1);
+    pfet1 = nfet;
+    pfet2 = nfet;
+    figure,plot(nfet)
+    hold on,Lines(Trial.stc{'w',ys.sampleRate}(:),[],'k');
+
+    figure,hold on
+    plot([diff([0;Filter0(gausswin(5)./sum(gausswin(5)),diff(ang(:,'pelvis_root','spine_middle',3)-ang(:,'spine_lower','spine_middle',3)))]);0],'b')
+    plot([diff([0;Filter0(gausswin(5)./sum(gausswin(5)),diff(ang(:,'pelvis_root','spine_middle',2)-ang(:,'spine_lower','spine_middle',2)))]);0],'r')
+
+
+
+    figure,
+    mp = {{'spine_lower','pelvis_root'},{'pelvis_root','spine_upper'};...
+          {'spine_lower','pelvis_root'},{'spine_middle','spine_upper'};...
+          {'spine_middle','pelvis_root'},{'spine_lower','spine_upper'};...
+          {'spine_middle','spine_upper'},{'pelvis_root','spine_upper'}};
+    ind = {'gper','walk','rear'};
+    for i = 1:size(mp,1),
+        for j = 1:numel(ind),
+        subplot2(numel(ind),size(mp,1),j,i);
+        if j == 1,
+            U = cell(3,1);
+            Am = [];
+            As = [];            
+        else
+            U = cell(1,1); 
+        end
+        [U{:}] = nunity([ang(Trial.stc{ind{j}},...
+                          mp{i,1}{1},...
+                          mp{i,1}{2},3),...
+                      ang(Trial.stc{ind{j}},...
+                          mp{i,2}{1},...
+                          mp{i,2}{2},3)],...
+                     @inf,Am,As);
+        if j==1,
+            Am = U{2};
+            As = U{3}; 
+        end
+        hist2(U{1},-2:.05:2,-2:.05:2);
+        end
+    end
+    
+
+    
     %moving PCA maximization of breathing feature
-    [U,mu,vars] = pca(cov(sq(xyz(294500:297500,1,:))));
+    [U,mu,vars] = pca(cov(sq(xyz(912800:914000,3,:))));
     txyz = multiprod(U,sq(xyz(:,1,:)),[1,2],2);
 
   case 'StateUFR'

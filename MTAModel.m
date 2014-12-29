@@ -57,8 +57,20 @@ classdef MTAModel
     end
 
     methods
-        function Model = MTAModel(model_base,flag)
-            switch flag
+        function Model = MTAModel(varargin)
+            if isempty (varargin),
+                Model.name = '';
+                Model.Markers = {};
+                Model.Connections = {};
+                Model.imdMean = [];
+                Model.imdStd  = [];
+                Model.index = 0;
+                return
+            else
+                [model_base,mflag] = DefaultArgs(varargin,{[],[]},true);
+            end
+
+            switch mflag
               case '-vsk'
                 Markers = {};
                 model_xml = parseXML(model_base);
@@ -128,7 +140,7 @@ classdef MTAModel
                         Model.Connections{end+1} = MTAStick(MTAMarkerConnections{j}{1},MTAMarkerConnections{j}{2},[0,0,0]);
                     end
                 end
-
+              
             end
         end 
 
@@ -198,9 +210,27 @@ classdef MTAModel
             end
         end
 
+        function DataCopy = copy(Data)
+        % Make a copy of a handle object.
+        % Instantiate new object of the same class.
+            DataCopy = feval(class(Data));
+            % Copy all non-hidden properties.
+            p = properties(Data);
+            for i = 1:length(p)
+                if isa(Data.(p{i}),'MTAData'),
+                    DataCopy.(p{i}) = Data.(p{i}).copy;
+                else
+                    DataCopy.(p{i}) = Data.(p{i});
+                end
+            end
+        end
+
+    
+
     end
 
 
+    
 
     
     methods(Static)
@@ -226,9 +256,9 @@ classdef MTAModel
                 error('InvalidMarkerError: One or more markers do not exist in MTAMarkers.mat')
             end
         end
-       
-        
-    end
     
+    end
+
+
 end
 

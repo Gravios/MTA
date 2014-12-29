@@ -400,7 +400,7 @@ classdef MTAData < hgsetget
                         
 
                         % Antialias filter - lowpass ButFilter
-                        if newSampleRate<Data.sampleRate
+                        if newSampleRate<Data.sampleRate&~isa(Data,'MTADepoch'),
                             zind = Data.data==0;
                             Data.data = ButFilter(Data.data,3,[newSampleRate/2]/(Data.sampleRate/2),'low');
                             Data.data(zind)=0;

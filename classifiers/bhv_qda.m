@@ -2,40 +2,45 @@ function Stc = bhv_qda(Trial,Stc,varargin)
 [train,states,model_filename,display] = DefaultArgs(varargin,{false,[],'MTA_manual_mknsrw_QDA_model.mat',true});
 
 
-fwin =gtwin(0.75,Trial.xyz.sampleRate);
-dwin= gtwin(0.5,Trial.xyz.sampleRate);
+fwin = gtwin(0.75,Trial.xyz.sampleRate);
+dwin = gtwin(0.50,Trial.xyz.sampleRate);
 
-xyz = Trial.xyz.copy;
-xyz.load(Trial);
+
+xyz = Trial.load('xyz');
 xyz.filter(fwin);
 
 ang = Trial.ang.copy; 
 ang.create(Trial,xyz);
 
 
+xyz.addMarker('fhcom',[.7,1,.7],...
+              {{'head_back','head_front',[0,0,1]}},...
+              xyz.com(xyz.model.rb({'head_left','head_front','head_right'})));
 
-rb = xyz.model.rb({'head_left','head_front','head_right'});
-xyz.addMarker('fhcom',[.7,1,.7],{{'head_back','head_front',[0,0,1]}},xyz.com(rb));
-
-rbb = xyz.model.rb({'spine_lower','pelvis_root'});
-xyz.addMarker('fbcom',[.7,0,.7],{{'spine_lower','pelvis_root',[0,0,1]}},xyz.com(rbb));
-
-rbu = xyz.model.rb({'spine_middle','spine_upper'});
-xyz.addMarker('fscom',[.7,0,.7],{{'spine_middle','spine_upper',[0,0,1]}},xyz.com(rbu));
+xyz.addMarker('fbcom',[.7,0,.7],...
+              {{'spine_lower','pelvis_root',[0,0,1]}},...
+              xyz.com(xyz.model.rb({'spine_lower','pelvis_root'})));
 
 
-fpv = cat(1,[-2,-2,-2],log10(xyz.vel({'fbcom','fscom','fhcom'},[1,2])));
-fpz = cat(1,[-2,-2],log10(xyz.vel({'spine_lower','fhcom'},[3])));
+xyz.addMarker('fscom',[.7,0,.7],...
+              {{'spine_middle','spine_upper',[0,0,1]}},...
+              xyz.com(xyz.model.rb({'spine_middle','spine_upper'})));
+
+
+fpv = xyz.vel({'fbcom','fscom','fhcom'},[1,2]);
+fpv.data(fpv.data<.01) = .01;
 
 fet =[];
-fet = [fet,fpv,fpz];
+fet = [fet,fpv.data];
 fet = [fet,xyz(:,'fhcom',3)-xyz(:,'fbcom',3)];
 fet = [fet,ang(:,3,4,2)];
 fet = [fet,ang(:,5,7,2)];
-fet = [fet,ang(:,2,7,3)];
+fet = [fet,ang(:,1,4,3)];
+fet = [fet,ang(:,1,3,3)];
+fet = [fet,ang(:,2,3,3)];
 fet = [fet,fet_turn(Trial)];
 fet = [fet,circshift(fet,round(.2*xyz.sampleRate)),circshift(fet,-round(.2*xyz.sampleRate))];
-%fet = [fet,fet.^2];
+
 fet = MTADxyz('data',fet,'sampleRate',Trial.xyz.sampleRate);
 fet.data(fet.data==0) = nan;
 fet_not_nan = prod(~isnan(fet.data),2)==1;

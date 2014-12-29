@@ -80,9 +80,20 @@ classdef MTADxyz < MTAData
         %zeros are added to the the beginning to for padding; reinterpolate
         %later to match xyz vector.
             [markers,dims] = DefaultArgs(varargin,{1:Data.model.N, 1:Data.size(3)});
+
+            if iscell(markers)||ischar(markers),
+                markers = Data.model.gmi(markers);
+            elseif islogical(markers)
+                markers = find(markers);
+            end
+
             if ischar(markers),markers ={markers};end
             v = MTADxyz('data',cat(1,zeros([1,numel(markers)]),sqrt(sum(diff(Data.subsref(substruct('()',{':',markers,dims})),1,1).^2,3)).*Data.sampleRate./10),...
                         'sampleRate',Data.sampleRate);
+            v.model = Data.model.copy;
+            v.model.N = numel(markers);
+            %v.model.Connections = 
+            v.model.Markers = v.model.Markers(markers);
         end            
 
         function a = acc(Data,varargin)
@@ -95,6 +106,7 @@ classdef MTADxyz < MTAData
             if padded==1
                 a = MTADxyz('data',cat(1,a,a(end,:)),'sampleRate',Data.sampleRate);
             end
+            a.model = vel.model.copy;
         end
 
          function Data = addMarker(Data,name,color,sticks,data)
