@@ -382,7 +382,7 @@ wper = SubstractRanges(wper,rper+repmat([-64,24],size(rper,1),1));
 
 
 aper = Trial.sync.copy;
-aper.resample(Trial.xyz.sampleRate);
+aper.resample(txyz.sampleRate);
 aper.data = aper.data-aper.data(1)+1;
 aper = aper+[5,-5];
 

@@ -813,24 +813,28 @@ switch mode,
     %vars for er06-20130612
     Trial = MTATrial('er06-20130612');
     units = [33,87,115,121,151];
+    units = [115];
+    chans = 4; phase_chan = 1;
+    
+    Trial = MTATrial('er06-20130614','all-cof');
     chans = 4; phase_chan = 1;
     
     %vars for jg05-20120310
-    %Trial = MTATrial('jg05-20120310');
-    %units = [10,13,20,25,42,69];
-    %chans = [65:2:96]; phase_chan = 1;
+    Trial = MTATrial('jg05-20120310');
+    units = [10,13,20,25,42,69];
+    chans = [72]; phase_chan = 1;
 
     %vars for jg05-20120310
-    %Trial = MTATrial('jg05-20120310');
+    Trial = MTATrial('jg05-20120309');
     %units = [10,13,20,25,42,69];
-    %chans = [65:2:96]; phase_chan = 1;
+    chans = [72]; phase_chan = 1;
 
     xyz = Trial.load('xyz');
     xyz.filter(gtwin(.25,xyz.sampleRate));
 
-    units = select_units(Trial,30);
+    units = select_units(Trial,20);
     Trial.load('nq');
-    units = units(Trial.nq.SNR(units)>.8);
+    units = units(Trial.nq.SNR(units)>.6);
     
     lfp = Trial.lfp.copy;
     lfp.load(Trial,chans);
@@ -847,8 +851,8 @@ switch mode,
     DRZ = {};    VTC = {};
 
     for s = 1:nsts,
-        %pfs{s} = MTAApfs(Trial,[],states{s},ow,'binDims',[50,50,50],'SmoothingWeights',[1.5,1.5,1.5],'type','xyz');
-        pfs{s} = MTAApfs(Trial,[],states{s},ow,'binDims',[50,50],'SmoothingWeights',[1.5,1.5],'type','xy');
+        pfs{s} = MTAApfs(Trial,[],states{s},ow,'binDims',[50,50,50],'SmoothingWeights',[1.5,1.5,1.5],'type','xyz');
+        %pfs{s} = MTAApfs(Trial,[],states{s},ow,'binDims',[50,50],'SmoothingWeights',[1.5,1.5],'type','xy');
         [pmr{s},pmp{s}] = pfs{s}.maxRate(units);
         
         spk{s} = Trial.spk.copy;
@@ -861,10 +865,11 @@ switch mode,
 %     end
 
     %get DRZ and VTC
+    drzdims = [1,2,3];
     txyz = xyz.copy;
-    txyz.data = xyz(:,{'head_back','head_front'},[1,2]);
+    txyz.data = xyz(:,{'head_back','head_front'},drzdims);
     sxyz = xyz.copy;
-    sxyz.data = cat(2,xyz(:,'head_back',[1,2]),circshift(xyz(:,'head_back',[1,2]),round(xyz.sampleRate/2)));
+    sxyz.data = cat(2,xyz(:,'head_back',drzdims),circshift(xyz(:,'head_back',drzdims),-round(xyz.sampleRate/2)));
     for s = 1:nsts,
         DRZ{s} = pfDRZ(txyz,pmp{s});
         VTC{s} = pfDRZ(sxyz,pmp{s});
@@ -879,13 +884,16 @@ switch mode,
     ael = ang(:,'head_back','head_front',2);
 
     [accg,tbins] = autoccg(Trial,units);
-    
+
+
     %aIncr = true;
     phase_chan = 1;
     aIncr = false;
     hfig = figure(38338);
     set(hfig,'paperposition',get(hfig,'position').*[0,0,1,1]./30)
     unit = units(1);
+    pname = '3dVTCZ';
+    %unit = 115;
     while unit~=-1,
         
         clf
@@ -913,7 +921,7 @@ switch mode,
             hold on,plot(pmp{s}(unit==units,1),pmp{s}(unit==units,2),'w*')
             title(num2str(unit))
             
-            subplot2(3,4,3,1);
+            subplot2(3,3,3,1);
             bar(tbins,accg(:,unit)),
             axis tight
             title(['accg: ' num2str(unit)]);
@@ -923,46 +931,57 @@ switch mode,
                 cim = linspace(-pi,pi,64);
                 [xx,xi] = NearestNeighbour(cim,phzspk(gind));
                 
-                % 3D VTC
+                %% 2D VTC of head direction
                 subplot2(3,3,1,2);
-                scatter(drzspk(gind),vspk(gind),7,chsv(xi,:),'filled');xlim([-500,500])
+                %x = log10(abs(drzspk(gind))-2).*sign(drzspk(gind));     xl=[-.7,.7];
+                x = drzspk(gind);                                     xl=[-500,500];
+                scatter(x,log10(zspk(gind)),7,chsv(xi,:),'filled');xlim(xl)
+                ylim([1.5,2.5])
+                title('phase(drzH,log10(Z))')
                 subplot2(3,3,2,2);
 
-                drzbins = -500:10:500;
-                zbins = 1.4:.02:2.5;
+                drzbins = -500:20:500;
+                zbins = 1.4:.04:2.5;
                 [~,rbin] = histc(drzspk,drzbins);
                 [~,zbin] = histc(log10(zspk),zbins);
                 tind = (gind&rbin~=0)&(gind&zbin~=0);
                 A = accumarray([rbin(tind),zbin(tind)],phzspk(tind),[numel(drzbins),numel(zbins)],@circ_mean,nan);
                 imagescnan({drzbins,zbins,A'},[],1,1,[0,0,0]);axis xy
-
+                title('mean phase(drzH,log10(Z))')
+                
                 %scatter(drzspk(gind),log10(zspk(gind)),7,chsv(xi,:),'filled');
                 %xlim([-500,500]),ylim([1.4,2.5])
                 subplot2(3,3,3,2);
                 hist2([[drzspk(gind);drzspk(gind)],...
                       [circ_rad2ang(phzspk(gind));circ_rad2ang(phzspk(gind))+360]],40,30);
-
+                title('JPDF drzH vs phase')
 %                 plot(drzspk(gind),circ_rad2ang(phzspk(gind)),'.'); hold on
 %                    plot(drzspk(gind),circ_rad2ang(phzspk(gind))+360,'.');
 %                    ylim([-180,540])
-                % 2D VTC
+
+                %% 2D VTC of Trajectory direction
                 subplot2(3,3,1,3);
-                scatter(vtcspk(gind),vspk(gind),7,chsv(xi,:),'filled');xlim([-500,500])
+                %x = log10(abs(vtcspk(gind))-2).*sign(vtcspk(gind));  xl=[-.7,.7];
+                x = vtcspk(gind);                                  xl=[-500,500];
+                scatter(x,log10(zspk(gind)),7,chsv(xi,:),'filled');xlim(xl);
+                ylim([1.5,2.5])
+                title('phase(drzT,log10(Z))')
                 subplot2(3,3,2,3);
                 %scatter(vtcspk(gind),log10(zspk(gind)),7,chsv(xi,:),'filled');
-
-                vtcbins = -500:10:500;
-                zbins = 1.4:.02:2.5;
+                
+                vtcbins = -500:20:500;
+                zbins = 1.4:.04:2.5;
                 [~,rbin] = histc(vtcspk,vtcbins);
                 [~,zbin] = histc(log10(zspk),zbins);
                 tind = (gind&rbin~=0)&(gind&zbin~=0);
                 A = accumarray([rbin(tind),zbin(tind)],phzspk(tind),[numel(vtcbins),numel(zbins)],@circ_mean,nan);
                 imagescnan({vtcbins,zbins,A'},[],1,1,[0,0,0]);axis xy
-             %xlim([-500,500]),ylim([1.4,2.5])
+                title('mean phase(drzT,log10(Z))')
+                %xlim([-500,500]),ylim([1.4,2.5])
                 subplot2(3,3,3,3);
                 hist2([[vtcspk(gind);vtcspk(gind)],...
                       [circ_rad2ang(phzspk(gind));circ_rad2ang(phzspk(gind))+360]],40,30);
-
+                title('JPDF drzT vs phase')
 %                 plot(vtcspk(gind),circ_rad2ang(phzspk(gind)),'.'); hold on
 %                    plot(vtcspk(gind),circ_rad2ang(phzspk(gind))+360,'.');
 %                    ylim([-180,540])
@@ -970,14 +989,51 @@ switch mode,
             end
         end
         
-        %saveas(hfig,['/gpfs01/sirota/home/gravio/figures/bhvPhasePrecession/',[Trial.filebase,'.bpp_3dRTCVTC-',num2str(unit),'.png']],'png');
-        unit = figure_controls(hfig,unit,units,aIncr);
-        
-        %reportfig(gcf,'er06-20130613-2Dphspredb',0,num2str(unit),[],0);
+
+        figname = ['/gpfs01/sirota/home/gravio/figures/PIM20150112/PhasePrecession/',[Trial.filebase,'.bpp_',pname,'-',num2str(unit),'.png']];
+        unit = figure_controls(hfig,unit,units,aIncr,figname);
         
     end 
 
 
+    %% break it down the the trajectories
+    unit = 115;
+    mar = 'head_front';
+
+    res = spk{1}(unit);    
+    sper = Trial.stc{'w',xyz.sampleRate}.copy;
+    sper.data = [res-1,res+1];
+    sper = sper+[-.5,.5];
+    sper.cast('TimeSeries');
+      
+   [pmr{1},pmp{1}] = pfs{s}.maxRate(units,true);
+    pfc = pmp{1}(units==unit,:);
+    pfcd = sqrt(sum(bsxfun(@minus,sq(xyz(:,mar,:)),pfc).^2,2));
+    
+    ufr = Trial.ufr.copy;
+    ufr.create(Trial,xyz,'theta',115,.5);
+
+    
+    figure,
+    
+    sp(1) = subplot(1,2,1);
+    ind = sign(DRZ{1}(:,units==unit))==-1&pfcd<300&sper&xyz(:,7,3)<180;
+    c = jet(100);
+    %scatter3(xyz(ind,mar,1),xyz(ind,mar,2),xyz(ind,mar,3),7,c(ufr(ind)+1,:))
+    scatter(xyz(ind,mar,1),xyz(ind,mar,2),7,c(ufr(ind)+1,:))
+    hold on,
+    scatter(pfc(1),pfc(2),pfc(3));
+    
+    sp(2) = subplot(1,2,2);
+    ind = sign(DRZ{1}(:,units==unit))==1&pfcd<300&sper&xyz(:,7,3)<180;
+    %scatter3(xyz(ind,mar,1),xyz(ind,mar,2),xyz(ind,mar,3),7,c(ufr(ind)+1,:))
+    scatter(xyz(ind,mar,1),xyz(ind,mar,2),7,c(ufr(ind)+1,:))
+    hold on,
+    scatter(pfc(1),pfc(2),pfc(3));
+    linkprop(sp,{'cameraposition','cameraupvector'});
+
+
+    
     %% End Figure 4
 
 

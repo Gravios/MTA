@@ -36,12 +36,12 @@ for i = 1:npc,
 end
 
 if xyz.size(3)>2,
-tangents = cat(3,sin(pfds).*cos(pfps), sin(pfds).*sin(pfps),cos(pfds));
-mxyz = repmat(pfhxy(:,2,:)-pfhxy(:,1,:),[1,size(tangents,2),1]);
-tpfds = acos(dot(tangents,mxyz,3)./(sqrt(sum(tangents.^2,3)).*sqrt(sum(mxyz.^2,3))));
-pfds = zeros(size(tpfds));
-pfds(abs(tpfds)<=pi/2)=1;
-pfds(abs(tpfds)>pi/2)=-1;
+    tangents = cat(3,sin(pfds).*cos(pfps), sin(pfds).*sin(pfps),cos(pfds));
+    mxyz = repmat(pfhxy(:,2,:)-pfhxy(:,1,:),[1,size(tangents,2),1]);
+    tpfds = acos(dot(tangents,mxyz,3)./(sqrt(sum(tangents.^2,3)).*sqrt(sum(mxyz.^2,3))));
+    pfds = zeros(size(tpfds));
+    pfds(abs(tpfds)<=pi/2)=1;
+    pfds(abs(tpfds)>pi/2)=-1;
 else
     tpfds = pfds;
     pfds(abs(tpfds)<=pi/2)=-1;

@@ -2,7 +2,7 @@ function index = figure_controls(hfig,index,varargin)
 %function index = figure_controls(hfig,index,varargin)
 %[indmap,autoIncr] = DefaultArgs(varargin,{[],false});
 
-[indmap,autoIncr] = DefaultArgs(varargin,{[],false});
+[indmap,autoIncr,figname] = DefaultArgs(varargin,{[],false,[]});
 
 
 if autoIncr,
@@ -53,6 +53,9 @@ switch double(whatkey)
     else
         index=index-1;
     end
+    
+  case double('s')
+    saveas(hfig,figname,'png');
     
   case double('q')
     index = -1;

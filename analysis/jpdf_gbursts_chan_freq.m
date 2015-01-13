@@ -7,8 +7,8 @@ ds = load(fullfile(Trial.spath,[Trial.name '.SelectBursts3.lfpinterp.all.1-96.ma
 numsts = numel(Trial.stc.states);
 
 figure(32342)
-skeys = Trial.stc.list_state_attrib('key');
-%skeys = {'t','r','g','l'};
+%skeys = Trial.stc.list_state_attrib('key');
+skeys = {'a','t','r','w','h','l'};
 skeys = cell2mat(skeys);
 numsts = numel(skeys);
 fbins = linspace(29,190,33);
@@ -20,7 +20,11 @@ for s = skeys,
     for i = channels,
         bchanc(:,end+1) = histc(ds.BurstFreq(ismember(ds.BurstChan,i)&binds),fbins);
     end
-    subplot2(1,numsts,1,find(s==skeys));imagesc(fbins,channels,bchanc'/sum(bchanc(:)));title(Trial.stc{s}.label);xlabel('Burst Frequency');
+    subplot2(1,numsts,1,find(s==skeys));imagesc(fbins,channels,1-bsxfun(@rdivide,bsxfun(@minus,sum(bchanc,2),bchanc),sum(bchanc,2))');title(Trial.stc{s}.label);xlabel('Burst Frequency');
+    %subplot2(1,numsts,1,find(s==skeys));imagesc(fbins,channels,bsxfun(@rdivide,bchanc,sum(bchanc,2))');title(Trial.stc{s}.label);xlabel('Burst Frequency');
+    %subplot2(1,numsts,1,find(s==skeys));imagesc(fbins,channels,bsxfun(@rdivide,bchanc,sum(bchanc))');title(Trial.stc{s}.label);xlabel('Burst Frequency');
+    %subplot2(1,numsts,1,find(s==skeys));imagesc(fbins,channels,bchanc');title(Trial.stc{s}.label);xlabel('Burst Frequency');caxis([0,max(bchanc(:)/2)]);
+    %subplot2(1,numsts,1,find(s==skeys));imagesc(fbins,channels,bchanc'/sum(bchanc(:)));title(Trial.stc{s}.label);xlabel('Burst Frequency');
     if s==1,ylabel('Channel'),end
 end
 suptitle('JPDF of detected bursts between channel and frequency given a behavioral or neural state');
