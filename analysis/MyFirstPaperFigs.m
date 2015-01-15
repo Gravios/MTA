@@ -819,7 +819,7 @@ switch mode,
     Trial = MTATrial('er06-20130614','all-cof');
     chans = 4; phase_chan = 1;
     
-    %vars for jg05-20120310
+     %vars for jg05-20120310
     Trial = MTATrial('jg05-20120310');
     units = [10,13,20,25,42,69];
     chans = [72]; phase_chan = 1;
@@ -829,20 +829,22 @@ switch mode,
     %units = [10,13,20,25,42,69];
     chans = [72]; phase_chan = 1;
 
-    xyz = Trial.load('xyz');
-    xyz.filter(gtwin(.25,xyz.sampleRate));
 
     units = select_units(Trial,20);
     Trial.load('nq');
     units = units(Trial.nq.SNR(units)>.6);
+
+    xyz = Trial.load('xyz');
+    xyz.filter(gtwin(.25,xyz.sampleRate));
     
     lfp = Trial.lfp.copy;
     lfp.load(Trial,chans);
     lfp.resample(xyz);
     tbp_phase = lfp.phase;
 
-    ow = false;    
+    ow = true;    
     %states = {'theta','rear&theta','walk&theta','lswalk&theta','hswalk&theta'};
+    states = {'walk'};
     states = {'theta'};
     nsts = numel(states);
 
@@ -851,10 +853,11 @@ switch mode,
     DRZ = {};    VTC = {};
 
     for s = 1:nsts,
-        pfs{s} = MTAApfs(Trial,[],states{s},ow,'binDims',[50,50,50],'SmoothingWeights',[1.5,1.5,1.5],'type','xyz');
+        pfs{s} = MTAApfs(Trial,[],'theta',ow,'binDims',[50,50,50],'SmoothingWeights',[1.5,1.5,1.5],'type','xyz');
         %pfs{s} = MTAApfs(Trial,[],states{s},ow,'binDims',[50,50],'SmoothingWeights',[1.5,1.5],'type','xy');
         [pmr{s},pmp{s}] = pfs{s}.maxRate(units);
-        
+        pmp{s}(pmp{s}(:,3)<50,3) = 75;        
+
         spk{s} = Trial.spk.copy;
         spk{s}.create(Trial,xyz.sampleRate,states{s},[],'deburst');
     end
@@ -871,8 +874,10 @@ switch mode,
     sxyz = xyz.copy;
     sxyz.data = cat(2,xyz(:,'head_back',drzdims),circshift(xyz(:,'head_back',drzdims),-round(xyz.sampleRate/2)));
     for s = 1:nsts,
-        DRZ{s} = pfDRZ(txyz,pmp{s});
-        VTC{s} = pfDRZ(sxyz,pmp{s});
+        %DRZ{s} = pfDRZ(txyz,pmp{s});
+        %VTC{s} = pfDRZ(sxyz,pmp{s});
+        DRZ{s} = pfDRD(txyz,pmp{s});
+        VTC{s} = pfDRD(sxyz,pmp{s});
     end
     
     vel = xyz.vel('head_front',[1,2]);
@@ -892,15 +897,15 @@ switch mode,
     hfig = figure(38338);
     set(hfig,'paperposition',get(hfig,'position').*[0,0,1,1]./30)
     unit = units(1);
-    pname = '3dVTCZ';
-    %unit = 115;
+    pname = '3dVTDZ';
+    %unit = 71;
     while unit~=-1,
         
         clf
         for s = 1:nsts,
             res = spk{s}(unit);
             
-            if numel(res) <50,continue,end
+            if numel(res) <150,continue,end
             res(res>xyz.size(1))=[];            
             drzspk = DRZ{s}(res,unit==units);
             vtcspk = VTC{s}(res,unit==units);
@@ -995,8 +1000,36 @@ switch mode,
         
     end 
 
+    
 
-    %% break it down the the trajectories
+    ufr = Trial.ufr.copy;
+    ufr.create(Trial,xyz,'theta',units,.25);
+
+    figure,
+    sp(1) = subplot(211);
+    plotyy(1:xyz.size-1,diff(Filter0(gtwin(5,xyz.sampleRate),spor(:,3))),1:xyz.size,por(:,3)),ylim([-5,5]),Lines([],0,'k');Lines([],-2.5,'k');
+    hold on,Lines(Trial.stc{'w'}(:),[],'k');
+    hold on,Lines(Trial.stc{'r'}(:),[],'r');
+    Lines(res(phzspk<0&drzspk>100),[],'m');
+    sp(2) = subplot(212);
+    plot([res;res],[phzspk;phzspk+2*pi]*180/pi,'.');
+    linkaxes(sp,'x');
+    
+
+    
+
+    figure,sp = [];
+    sp(1) = subplot(211);
+    plot(find(DRZ{1}(:,1)<0),DRZ{1}(DRZ{1}(:,1)<0,1),'.r')
+    hold on
+    plot(find(DRZ{1}(:,1)>0),-DRZ{1}(DRZ{1}(:,1)>0,1),'.b')
+    sp(2) = subplot(212),
+    plot(find(DRZ{1}(:,1)<0),DRZ{1}(DRZ{1}(:,1)<0,1),'.r')
+    hold on
+    plot(find(DRZ{1}(:,1)>0),-DRZ{1}(DRZ{1}(:,1)>0,1),'.b')
+    linkaxes(sp,'xy');
+    
+    %% break it down to the trajectories
     unit = 115;
     mar = 'head_front';
 

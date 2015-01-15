@@ -27,26 +27,13 @@ for i = 1:npc,
     por = cell2mat(por);
     if xyz.size(3)>2,
         pfrs(:,i) = por(:,3);
+        pfds(:,i) = sign(acos(dot(sq(diff(pfhxy(:,[1,2],:),1,2)),sq(diff(pfhxy(:,[1,3],:),1,2)),2)./(sqrt(sum(sq(diff(pfhxy(:,[1,2],:),1,2)).^2,2)).*sqrt(sum(sq(diff(pfhxy(:,[1,3],:),1,2)).^2,2))))-pi/2);    
     else
+        pfds(:,i) = sign(circ_dist(cor(:,1),por(:,1))-pi/2);
         pfrs(:,i) = por(:,3).*cos(por(:,2));
     end
-    pfds(:,i) = circ_dist(cor(:,1),por(:,1));
-    pfps(:,i) = circ_dist(cor(:,2),por(:,2));
-    
 end
 
-if xyz.size(3)>2,
-    tangents = cat(3,sin(pfds).*cos(pfps), sin(pfds).*sin(pfps),cos(pfds));
-    mxyz = repmat(pfhxy(:,2,:)-pfhxy(:,1,:),[1,size(tangents,2),1]);
-    tpfds = acos(dot(tangents,mxyz,3)./(sqrt(sum(tangents.^2,3)).*sqrt(sum(mxyz.^2,3))));
-    pfds = zeros(size(tpfds));
-    pfds(abs(tpfds)<=pi/2)=1;
-    pfds(abs(tpfds)>pi/2)=-1;
-else
-    tpfds = pfds;
-    pfds(abs(tpfds)<=pi/2)=-1;
-    pfds(abs(tpfds)>pi/2)=1;
-end
 
 %DRZ
 drz = pfds.*pfrs;

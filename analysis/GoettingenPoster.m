@@ -24,7 +24,7 @@ ang = Trial.load('ang');
 %     2. Examples of walking subtypes
 %        2.1 High walk,
 
-[rhm,fs,ts] = fet_rhm(Trial,[],'Swspectral');
+[rhm,fs,ts] = fet_rhm(Trial,[],'wcsd');
 
 s='c';
 gper = find(diff(Trial.stc{s}.data,1,2)>140);
@@ -65,7 +65,7 @@ imagesc(1:(diff(Trial.stc{s,rhm.sampleRate}(gper(4),:))+4),fs,log10(rhm((Trial.s
 
 %% Example Skeletons of Behaviors
 figure,
-s='c';
+s='h';
 gper = find(diff(Trial.stc{s}.data,1,2)>140);
 perind = gper(1);
 perind = (Trial.stc{s}(perind,1)+20):(Trial.stc{s}(perind,1)+100);
@@ -86,7 +86,7 @@ set(gca,'ZTickLabel',{});
 
 
 
-s='p';
+s='l';
 gper = find(diff(Trial.stc{s}.data,1,2)>140);
 perind = gper(4);
 perind = (Trial.stc{s}(perind,1)+20):(Trial.stc{s}(perind,1)+100);
@@ -293,7 +293,7 @@ hist(ang(Trial.stc{'a'},'head_back','head_right',3),10:.02:37)
 %% Time Series Example of sniffing sub-behavior
 MTAstartup
 Trial = MTATrial('jg05-20120310');
-[rhm,fs,ts] = fet_rhm(Trial,[],'Sspectral');
+[rhm,fs,ts] = fet_rhm(Trial,[],'wcsd');
 xyz = Trial.load('xyz');xyz.filter(gtwin(.05,xyz.sampleRate));
 ang = Trial.ang.copy;ang.create(Trial,xyz);
 tx = [0:(xyz.size(1)-1)]/xyz.sampleRate;
@@ -360,7 +360,7 @@ end
 %boundedline(tx.data(1:10000),hper.data(1:10000),2*hper.data(1:10000),'b','alpha');
 %boundedline(tx.data(1:10000),lper.data(1:10000),2*lper.data(1:10000),'g','alpha');
 
-p
+
 sp(2) = subplot(2,1,2);
 imagesc([0:(rhm.size(1)-1)]/rhm.sampleRate,fs,log10(rhm.data)');
 axis xy;

@@ -1,7 +1,7 @@
 
 Trial = MTATrial('jg05-20120310');
 % $$$ Trial = MTATrial('jg05-20120309');
-Trial = MTATrial('er06-20130612');
+%Trial = MTATrial('er06-20130612');
 %Trial = MTATrial('Ed10-20140812');
 
 
@@ -42,8 +42,9 @@ lrfet = MTADxyz('data',[vel(:,'spine_lower'),...
                         vel(:,'head_front'),...
                         dsx(:,'spine_lower',3),...
                         dsa(:,'spine_lower','pelvis_root',3),...
-                        dsa(:,'spine_lower','pelvis_root',2),...
+                        dsa(:,'spine_middle','spine_upper',2),...
                         dsa(:,'pelvis_root','spine_middle',3),...
+                        dsa(:,'spine_lower','pelvis_root',2),...
                         dsa(:,'spine_lower','head_front',3)],...
                 'sampleRate',ufet.sampleRate);
 lrfet.data = [lrfet.data,circshift(lrfet.data,-7),circshift(lrfet.data,7)];
@@ -58,18 +59,21 @@ lrfet.data = [lrfet.data,circshift(lrfet.data,-7),circshift(lrfet.data,7)];
 
 
 
-%B = mnrfit(lrfet(Trial.stc{'a'},:),[wper(Trial.stc{'a'})+1+rper(Trial.stc{'a'}).*2],'model','nominal');
+B = mnrfit(lrfet(Trial.stc{'a'},:),[wper(Trial.stc{'a'})+1+rper(Trial.stc{'a'}).*2],'model','nominal');
 
 
 y = mnrval(B,lrfet.data);
 
 [~,w] = max(y,[],2);
 
-figure,plot(y)
+figure,
+sp(1) = subplot(211);imagesc(nunity(lrfet(:,1:7))');caxis([0,2]),colormap hot
+sp(2) = subplot(212);plot(y)
 hold on,Lines(Trial.stc{'w',ufet.sampleRate}(:),[],'k');
 hold on,Lines(Trial.stc{'r',ufet.sampleRate}(:),[],'r');
 hold on,Lines(Trial.stc{'a',ufet.sampleRate}(:),[],'k');
 
+linkaxes(sp,'x');
 
 
 
