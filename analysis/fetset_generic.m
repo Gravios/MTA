@@ -1,6 +1,6 @@
 function fet = fetset_generic(Trial)
 
-Trial = MTATrial('jg05-20120309');
+Trial = MTATrial('jg05-20120310');
 ang = Trial.ang.copy;
 xyz = Trial.load('xyz');
 
@@ -54,33 +54,33 @@ fet(nz,:) = unity(fet(nz,:));
 
 
 
-figure,imagesc((1:size(fet,1))/xyz.sampleRate,1:size(fet,2),fet'),caxis([-2,3])
-Lines(Trial.stc{'r'}(:)/xyz.sampleRate,[],'g',[],5); Lines(Trial.stc{'w'}(:)/xyz.sampleRate,[],'k',[],5);
-colormap hot
- 
-fet = MTADxyz('data',fet,'sampleRate',Trial.xyz.sampleRate);
-
-nz = Trial.stc{'h'}.copy;
-I = [];
-for i = 1:fet.size(2),
-    for j = 1:fet.size(2),
-        h = hist2([fet(nz,i),fet(nz,j)],-4:.2:4,-4:.2:4);
-        h = h/sum(h(:));
-        lh1 = log(sum(h,1));
-        lh2 = log(sum(h,2));
-        I(i,j) = nansum(nansum(h .* bsxfun(@minus,bsxfun(@minus,log(h),lh1),lh2) ));        
-    end
-end
-
-
-
-[rhm,fs,ts]  = fet_rhm (Trial,[],'wcsd');
-%figure,imagesc(ts,fs,log10(rhm.data)'),caxis([-6,-4]),axis xy
-swag = fet_swag(Trial,[],'wcsd');
-roll = fet_roll(Trial,[],'wcsd');
-
-[U,S,V] = svd(unity(rhm(Trial.stc{'w'},1:5:end)));
-urhm = unity(rhm(:,1:5:end));
-for i=1:rhm.size(1),score(i,:) = V(:,1:4)'*urhm(i,:)';end
-
-
+% $$$ figure,imagesc((1:size(fet,1))/xyz.sampleRate,1:size(fet,2),fet'),caxis([-2,3])
+% $$$ Lines(Trial.stc{'r'}(:)/xyz.sampleRate,[],'g',[],5); Lines(Trial.stc{'w'}(:)/xyz.sampleRate,[],'k',[],5);
+% $$$ colormap hot
+% $$$  
+% $$$ fet = MTADxyz('data',fet,'sampleRate',Trial.xyz.sampleRate);
+% $$$ 
+% $$$ nz = Trial.stc{'h'}.copy;
+% $$$ I = [];
+% $$$ for i = 1:fet.size(2),
+% $$$     for j = 1:fet.size(2),
+% $$$         h = hist2([fet(nz,i),fet(nz,j)],-4:.2:4,-4:.2:4);
+% $$$         h = h/sum(h(:));
+% $$$         lh1 = log(sum(h,1));
+% $$$         lh2 = log(sum(h,2));
+% $$$         I(i,j) = nansum(nansum(h .* bsxfun(@minus,bsxfun(@minus,log(h),lh1),lh2) ));        
+% $$$     end
+% $$$ end
+% $$$ 
+% $$$ 
+% $$$ 
+% $$$ [rhm,fs,ts]  = fet_rhm (Trial,[],'wcsd');
+% $$$ %figure,imagesc(ts,fs,log10(rhm.data)'),caxis([-6,-4]),axis xy
+% $$$ swag = fet_swag(Trial,[],'wcsd');
+% $$$ roll = fet_roll(Trial,[],'wcsd');
+% $$$ 
+% $$$ [U,S,V] = svd(unity(rhm(Trial.stc{'w'},1:5:end)));
+% $$$ urhm = unity(rhm(:,1:5:end));
+% $$$ for i=1:rhm.size(1),score(i,:) = V(:,1:4)'*urhm(i,:)';end
+% $$$ 
+% $$$ 

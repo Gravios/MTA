@@ -66,14 +66,28 @@ y = mnrval(B,lrfet.data);
 
 [~,w] = max(y,[],2);
 
+perind =[31600,33700];
 figure,
-sp(1) = subplot(211);imagesc(nunity(lrfet(:,1:7))');caxis([0,2]),colormap hot
-sp(2) = subplot(212);plot(y)
-hold on,Lines(Trial.stc{'w',ufet.sampleRate}(:),[],'k');
-hold on,Lines(Trial.stc{'r',ufet.sampleRate}(:),[],'r');
-hold on,Lines(Trial.stc{'a',ufet.sampleRate}(:),[],'k');
+sp(1) = subplot(9,1,[1:4]);
+imagesc((1:size(ufet,1))/ufet.sampleRate,1:7,nunity(lrfet(:,1:7))');caxis([0,2]),colormap jet
+
+% $$$ sp(2) = subplot(9,1,5);
+% $$$ rper = Trial.stc{'r'};
+% $$$ wper = Trial.stc{'w'};
+% $$$ rind(1) = find(rper(:,1)>perind(1)-1000,1,'first');
+% $$$ rind(2) = find(rper(:,2)<perind(2)+1000,1,'last');
+% $$$ wind(1) = find(wper(:,1)>perind(1)-1000,1,'first');
+% $$$ wind(2) = find(wper(:,2)<perind(2)+1000,1,'last');
+sp(2) = subplot(9,1,[6:9]);
+plot((1:size(ufet,1))/ufet.sampleRate,y)
+ylim([-.1,1.1])
+
+hold on,Lines(Trial.stc{'w',1}(:),[],'k');
+hold on,Lines(Trial.stc{'r',1}(:),[],'r');
+hold on,Lines(Trial.stc{'a',1}(:),[],'k');
 
 linkaxes(sp,'x');
+xlim(perind/xyz.sampleRate)
 
 
 

@@ -25,7 +25,7 @@ xyz.filter(gausswin(5)./sum(gausswin(5)));
 ang = Trial.ang.copy;
 ang.create(Trial,xyz);
 bang = ButFilter(ang(:,'head_back','fhcom',3),3,[1,30]./(Trial.ang.sampleRate/2),'bandpass');
-bang = [0;diff(ButFilter(diff(bang),3,[1,30]/(ang.sampleRate/2),'bandpass'));0];
+%bang = [0;diff(ButFilter(diff(bang),3,[1,30]/(ang.sampleRate/2),'bandpass'));0];
 switch mode
 
   case 'csd'

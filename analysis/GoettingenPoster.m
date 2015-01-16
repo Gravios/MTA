@@ -5,7 +5,7 @@
 %% Introduction
 % Previous work: showed place cells specific for the rearing state.
 
-
+nn
 %% Methods
 Trial = MTATrial('jg05-20120310');
 xyz = Trial.load('xyz');
@@ -116,6 +116,31 @@ end
 plotSkeleton(xyz,perind(end));
 zlim([0,300]);
 title('Rearing')
+set(gca,'YTickLabelMode','manual');
+set(gca,'YTickLabel',{});
+set(gca,'XTickLabelMode','manual');
+set(gca,'XTickLabel',{});
+set(gca,'ZTickLabelMode','manual');
+set(gca,'ZTickLabel',{});
+
+
+
+
+Trial = MTATrial('jg05-20120310');
+xyz = Trial.load('xyz');
+
+%31600- 33700 turn -> walk -> rear
+
+ftit = 'Turning';
+ind = 14500;
+perind = (ind-40):(ind+80);
+figure,hold on
+for i= 1:4;
+    plot3(xyz(perind,i,1),xyz(perind,i,2),xyz(perind,i,3))
+end
+plotSkeleton(xyz,perind(end));
+zlim([0,300]);
+title(ftit)
 set(gca,'YTickLabelMode','manual');
 set(gca,'YTickLabel',{});
 set(gca,'XTickLabelMode','manual');
@@ -291,7 +316,6 @@ hist(ang(Trial.stc{'a'},'head_back','head_right',3),10:.02:37)
 
 
 %% Time Series Example of sniffing sub-behavior
-MTAstartup
 Trial = MTATrial('jg05-20120310');
 [rhm,fs,ts] = fet_rhm(Trial,[],'wcsd');
 xyz = Trial.load('xyz');xyz.filter(gtwin(.05,xyz.sampleRate));
