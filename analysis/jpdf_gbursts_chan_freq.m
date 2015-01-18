@@ -38,19 +38,19 @@ fedgs = [fbins(1:end-1);fbins(2:end)];
 pedgs = linspace(-pi,pi,13);
 skeys = Trial.stc.list_state_attrib('key');
 
-j=4;
+j=3;
 chans = [1:j:32];
 figure(12325)
-skeys = {'t','r','g','l'};
+skeys = {'t','r','h','l'};
 numsts = numel(skeys);
 for s = 1:numsts,
 sper = Trial.stc{skeys{s},lfp.sampleRate};
-[~,bind] = SelectPeriods(round(ds.BurstTime*lfp.sampleRate-sper.origin),sper.data,'d',1,0);
+[~,bind] = SelectPeriods(round(ds.BurstTime*lfp.sampleRate-sper.origin.*lfp.sampleRate),sper.data,'d',1,0);
 binds = false([numel(ds.BurstTime),1]);binds(bind)=true;
 pchanc = zeros([length(pedgs),length(fedgs)]);
 for c = chans
 for f = fedgs,
-    btms = round(ds.BurstTime(ismember(ds.BurstChan,[64:(64+j-1)]+c)&binds&ds.BurstFreq>f(1)&ds.BurstFreq<=f(2))*lfp.sampleRate-sper.origin);
+    btms = round(ds.BurstTime(ismember(ds.BurstChan,[64:(64+j-1)]+c)&binds&ds.BurstFreq>f(1)&ds.BurstFreq<=f(2))*lfp.sampleRate-sper.origin*lfp.sampleRate);
     btms(btms<0|btms>lfp.size(1))=[];
     if numel(btms)<3,continue,end
     if ~isempty(btms), pchanc(:,f(1)==fedgs(1,:)) = histc(lfp(btms),pedgs);end
@@ -60,5 +60,39 @@ subplot2(numel(chans),numsts,find(c==chans),s);imagesc(pedgs,fbins,(pchanc./repm
 end
 end
 
+s = 3;
+bci = 82;
+skeys = {'t','r','w','h','l'};
+sper = Trial.stc{skeys{s}};
+
+BinSize = 100;
+HalfBins = 50;
+Normalization = 'count';
+SampleRate = sper.sampleRate;
+GSubset = [];
+Epochs = [];
 
 
+bind = ds.BurstChanIndex==bci;
+T = round((ds.BurstTime(bind)-sper.origin).*Trial.xyz.sampleRate);
+rtind = T<0;
+T(rtind) = [];
+G = round(ds.BurstFreq(bind),-1);
+G(rtind) = [];
+
+[tccg, t, pairs] = Trains2CCG({sper(:,1),sper(:,2),T},{1,2,G}, BinSize, HalfBins, SampleRate, Normalization, Epochs);
+tfq = unique(G);
+
+
+
+
+frqs = unique(G);
+figure,
+for f = 3:19,
+subplot(211)
+bar(t,gccg(:,1,f)),axis tight
+subplot(212)
+bar(t,gccg(:,2,f)),axis tight
+title(num2str(frqs(f-2)))
+waitforbuttonpress
+end

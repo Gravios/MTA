@@ -22,20 +22,10 @@ SessionName = 'Ed10-20140817'; % what was once known as filebase
 xyz_path = '/gpfs01/sirota/homes/eduardo/data/xyz';
 nlx_path = '/gpfs01/sirota/homes/eduardo/data/rawnlx';
 MazeName = 'cof';
-TrialName = 'dark'; 
-TTLValue = '0x0002'; % can be found in "SessionName".all.evt
-overwrite = true;
-ignoredViconTrials = 4:8;
-startStopShift = [0,0]; % shift boundaries of vicon starts and 
-                        % stops by some number of seconds
-
-SessionName = 'Ed10-20140817'; % what was once known as filebase
-xyz_path = '/gpfs01/sirota/homes/eduardo/data/xyz';
-nlx_path = '/gpfs01/sirota/homes/eduardo/data/rawnlx';
-MazeName = 'cof';
 TrialName = 'all'; 
 TTLValue = '0x0002'; % can be found in "SessionName".all.evt
 overwrite = true;
+xyzSampleRate = 119.881035;
 ignoredViconTrials = [];
 startStopShift = [0,0]; % shift boundaries of vicon starts and 
                         % stops by some number of seconds
@@ -46,28 +36,7 @@ nlx_path = '/gpfs01/sirota/data/bachdata/data/gravio/nlx';
 MazeName = 'cof';
 TrialName = 'all';
 TTLValue = '0x0002' % can be found in "SessionName".all.evt
-overwrite = true;
-ignoredViconTrials = [];
-startStopShift = [18,0]; % shift boundaries of vicon starts and 
-                        % stops by some number of seconds
-
-SessionName = 'jg05-20120309';
-xyz_path = '/gpfs01/sirota/data/bachdata/data/gravio/xyz';
-nlx_path = '/gpfs01/sirota/data/bachdata/data/gravio/nlx';
-MazeName = 'cof';
-TrialName = 'all';
-TTLValue = '0x0002' % can be found in "SessionName".all.evt
-overwrite = true;
-ignoredViconTrials = [];
-startStopShift = [18,0]; % shift boundaries of vicon starts and 
-                        % stops by some number of seconds
-
-SessionName = 'jg05-20120323';
-xyz_path = '/gpfs01/sirota/home/gravio/data/xyz';
-nlx_path = '/gpfs01/sirota/home/gravio/data/nlx';
-MazeName = 'cof';
-TrialName = 'all';
-TTLValue = '0x0040' % can be found in "SessionName".all.evt
+xyzSampleRate = 119.881035;
 overwrite = true;
 ignoredViconTrials = [];
 startStopShift = [18,0]; % shift boundaries of vicon starts and 
@@ -75,58 +44,78 @@ startStopShift = [18,0]; % shift boundaries of vicon starts and
 
 
 
+
+% Link data from specified path to the MTA root directory of
+% the current user.
 if ~isempty(xyz_path) && ~isempty(nlx_path)
-    % Link data from specified path to the MTA root directory of
-    % the current user.
     linkSession(SessionName,xyz_path,nlx_path);
 end
 
 
+
 if overwrite,
-    Session = MTASession(SessionName,MazeName,overwrite,TTLValue);
+
+    Session = MTASession(SessionName,    ...
+                         MazeName,       ...
+                         overwrite,      ...
+                         TTLValue,       ...
+                         'xyzSampleRate', xyzSampleRate);
+
+    
     %plots the height of the front marker on the rats head against time
     plot(Session.xyz(:,Session.trackingMarker,3));
     %plots x versus y 
     plot(Session.xyz(:,Session.trackingMarker,1),Session.xyz(:,Session.trackingMarker,2),'.');
 
-    % This will pull the data from the Session object and do the
-    % behavioral segmentation automatically
-    Trial = QuickTrialSetup(Session,TrialName,startStopShift,ignoredViconTrials);
+    
+    % Returns a Trial object from the data of the Session object 
+    % and do automatic behavioral segmentation
+    Trial = QuickTrialSetup(Session,         ...
+                            TrialName,       ...
+                            startStopShift,  ...
+                            ignoredViconTrials);
 
 end
 
 %% Loading stuff
 
 % This loads a trial
-Trial = MTATrial(SessionName,TrialName,MazeName);
+%Trial = MTATrial('Ed10-20140817','all'    ,'cof');
+Trial = MTATrial (SessionName,    TrialName,MazeName);
+
 
 % This performs a deep copy of an object
 xyz = Trial.xyz.copy;
-
 % This loads data into the object from file
 xyz.load(Trial);
 
-% But this performs a deep copy and loads the data
+
+% Does the same thing as above in a single line.
 xyz = Trial.load('xyz');
 
-% You can filter data with an arbitrary window
-xyz.filter(gtwin(.1,xyz.sampleRate));
 
-% but maybe you want angles between the markers relative to the room?
+% You can filter data with an arbitrary window
+%xyz.filter(ones([1,7])./7);
+xyz.filter(gtwin(.1,xyz.sampleRate)); %see help gtwin for gaussian kernals
+                                      
+
+
+% but maybe you want angles of the marker segments relative to the room?
 ang = Trial.load('ang');
 
 % this is crapy though since the angles are not easily smoothed in
 % the time domain, so we can create a new set based on a smoothed xyz
 xyz = Trial.load('xyz');
-xyz.filter(gtwin(.1,xyz.sampleRate));
+xyz.filter(gtwin(.2,xyz.sampleRate)); 
 ang = Trial.ang.copy;
 ang.create(Trial,xyz);
 
-% angles are relative to the room
-% the following code plots the distribution of head pitch during rearing
+
+% Marker segment angles are relative to the room coordinate system.
+% The following code plots the distribution of head pitch during rearing
 figure,hist(ang(Trial.stc{'r'},'head_back','head_front',2),100)
-% does the same thing but if your sessions don't all have the same
-% number of markers your kinda screwed
+
+% Doing the same thing with numerical indexing
 figure,hist(ang(Trial.stc{'r'},5,7,2),100)
 
 
@@ -162,10 +151,12 @@ lfp_olf.load(Trial,65:96);
 % you can see which states are available by the following commands
 disp(Trial.stc.list_state_attrib('label'))
 disp(Trial.stc.list_state_attrib('key'))
-% you can reference timperiods of other objects with periods
-% the periods will automatically be resampled if they don't match
-figure,hist(ang(Trial.stc{'r'},'head_back','head_front',2),100)
 
+% You can reference timeperiods of MTADepoch objects. These are
+% stored in the Trial.stc property: stc = "State Collection".
+% The periods will automatically be resampled if they don't match
+% the sampling rate of the calling object.
+figure,hist(ang(Trial.stc{'r'},'head_back','head_front',2),100)
 
 
 

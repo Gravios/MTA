@@ -1,53 +1,70 @@
 function MTAstartup(varargin)
+%function MTAstartup(varargin)
 %[host_server,data_server,add_basic_paths] = DefaultArgs(varargin,{'cin','bach',true});
-%[host_server,data_server,add_basic_paths] = DefaultArgs(varargin,{'cin','cin',true});
 %[host_server,data_server,add_basic_paths] = DefaultArgs(varargin,{'mypc','mycy',true});
+%[host_server,data_server,add_basic_paths] = DefaultArgs(varargin,{'mypc','mycy',true});
+%
+% variables:
+%   
+%   host_server: string, your personal tag which denotes the working
+%                        environment you are currently using.
+%
+%   data_server: string, your personal tag which denote in which
+%                        mounted, file system your target data is located.
+%
+%   add_basic_paths: logical, flag which adds a set of paths which
+%                    are important to the functionality of MTA,
+%                    please ensure they point to the correct locations.
+%                    (These paths can be found at the end of the script)
 
+[host_server,data_server,add_basic_paths] = DefaultArgs(varargin,{'cin','cin',true});
 
-[host_server,data_server,add_basic_paths] = DefaultArgs(varargin,{'cin','bach',true});
-
-switch host_server
+switch host_server % The severer where matlab is running. 
+                   % Note: the addpath statement must point to 
+                   % the "local" version of MTA.
     
-    case 'cin'
-        switch data_server
-          case 'cin'
-              addpath('/gpfs01/sirota/homes/share/matlab/MTA/');
-              MTAConfiguration('/gpfs01/sirota/home/gravio/data','absolute');
-          case 'bach'
-              addpath('/gpfs01/sirota/homes/share/matlab/MTA/');
-              %MTAConfiguration('/gpfs01/sirota/bach/data/gravio','absolute');
-              MTAConfiguration('/gpfs01/sirota/data/bachdata/data/gravio','absolute');
-        end
-        
-        
-    case 'bach'
-        switch data_server
-          case 'cin'
-            addpath('/data/homes/share/matlab/MTA/');
-            MTAConfiguration('/mnt/gpfs/home/gravio/data','absolute');  
-          case 'bach'
-            MTAConfiguration('/gpfs01/sirota/data/bachdata/data/gravio','absolute');
-            %MTAConfiguration('/data/homes/gravio/data','absolute');
-        end
+  case 'cin'
+    addpath('/gpfs01/sirota/homes/share/matlab/MTA/');
 
-    case 'mypc'
-        addpath('C:/Users/share/matlab/MTA/');
-        switch data_server
-            case 'mypc'
-                MTAConfiguration('C:\Users\justi_000\data','absolute');        
-            case 'myhd'
-                MTAConfiguration('F:\data','absolute');        
-            case 'mysd'
-                MTAConfiguration('E:\data','absolute');      
-            case 'mycy'
-                MTAConfiguration('C:\cygwin64\home\justi_000\data','absolute');
-        end
-        return
-        
-        
+    switch data_server % Where the data is located
+      case 'cin'
+        MTAConfiguration('/gpfs01/sirota/home/gravio/data','absolute');
+      case 'bach'
+        %MTAConfiguration('/gpfs01/sirota/bach/data/gravio','absolute');
+        MTAConfiguration('/gpfs01/sirota/data/bachdata/data/gravio','absolute');
+    end
+
+  case 'bach'
+    addpath('/data/homes/share/matlab/MTA/');
+
+    switch data_server % Where the data is located
+      case 'cin'
+        MTAConfiguration('/mnt/gpfs/home/gravio/data','absolute');  
+      case 'bach'
+        MTAConfiguration('/gpfs01/sirota/data/bachdata/data/gravio','absolute');
+        %MTAConfiguration('/data/homes/gravio/data','absolute');
+    end
+
+  case 'mypc'
+
+    switch data_server % Where the data is located
+      case 'mypc'
+        MTAConfiguration('C:\Users\justi_000\data','absolute');        
+      case 'myhd'
+        MTAConfiguration('F:\data','absolute');        
+      case 'mysd'
+        MTAConfiguration('E:\data','absolute');      
+      case 'mycy'
+        MTAConfiguration('C:\cygwin64\home\justi_000\data','absolute');
+    end
+    return
+
 end
 
-if add_basic_paths    
+% most likely will need corrections when you set
+% up MTA for the first time
+if add_basic_paths 
+                   
     if ispc,
         userpath = getenv('HOMEPATH');
     else
@@ -57,18 +74,8 @@ if add_basic_paths
     addpath(genpath(fullfile(userpath,'../../homes/share/matlab/Third-Party_Toolboxes/netlab/')));
     addpath(genpath(fullfile(userpath,'../../homes/share/matlab/MTA/')));
     rmpath(genpath(fullfile(userpath,'../../homes/share/matlab/MTA/.git')));
+    rmpath( '/gpfs01/sirota/homes/share/matlab/MTA/config');
+    cd(fullfile(userpath,'../../homes/share/matlab/MTA/'));
     addpath(fullfile(userpath,'../../homes/antsiro/matlab/General'),'-END');
     addpath(fullfile(userpath,'../../homes/antsiro/matlab/draft'),'-END');
-    cd(fullfile(userpath,'../../homes/share/matlab/MTA/'));
 end
-
-% $$$ if add_basic_paths    
-% $$$     if ispc,
-% $$$         userpath = getenv('HOMEPATH');
-% $$$     else
-% $$$         userpath = getenv('HOME');
-% $$$     end
-% $$$     cd(fullfile(userpath,'../share/matlab/MTA/'));
-% $$$     addpath(genpath(fullfile(userpath,'../share/matlab/Third-Party_Toolboxes/HMM/hmmbox/')),'-END')
-% $$$     addpath(genpath(fillfile(userpath,'../share/matlab/Third-Party_Toolboxes/netlab/')),'-END')
-% $$$ endC:\cygwin64\home
