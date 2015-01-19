@@ -201,15 +201,19 @@ classdef MTASession < hgsetget
         %                           data file and synchronized with the
         %                           current sync.
         %
+            fvarargin = {};
+            if numel(varargin)>1,
+                fvarargin = varargin(2:end);
+            end
             [field] = DefaultArgs(varargin,{[]});
             if ~isempty(field),
                 if isa(Session.(field),'MTAData')                    
                     if nargout==1,
                         Data = Session.(field).copy;
-                        Data = Data.load(Session); 
+                        Data = Data.load(Session,fvarargin{:}); 
                         Session = Data;
                     else
-                        Session.(field).load(Session); 
+                        Session.(field).load(Session,fvarargin{:}); 
                     end
                 else
                     switch varargin{1}
