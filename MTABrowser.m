@@ -1314,7 +1314,7 @@ else
     stc.updatePath(filepath);
     stc.updateFilename(filename);    
     stc.updateSync(Session.sync.copy);
-    stc.load;    
+    stc.load(Session);    
     States = stc.states;
     if ~isempty(States)
         keys = cell2mat(stc.list_state_attrib('key'));

@@ -1,4 +1,4 @@
-function xyz = ERCOR_fillgaps_RidgidBody(xyz,rb_model)
+function xyz = ERCOR_fillgaps_RidgidBody(xyz,rb_model,gind)
 
 %% Testing Vars
 Trial = MTATrial('jg05-20120310');

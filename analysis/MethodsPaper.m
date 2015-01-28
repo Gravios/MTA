@@ -110,9 +110,28 @@ figure,imagesc(ts,fs,ys(:,:,1,2)'),axis xy
 
 
 %% Figure 2 Trajectories and behavioral labeling
-Trial = MTATrial('jg05-20120310');
-xyz = Trial.load('xyz');
+Trial = MTATrial('jg05-20120317');
+labelMode = 'auto_wbhr';
+labelMode = 'manual_mknsrw';
 
+xyz = Trial.load('xyz');
+Trial.stc.load(Trial,labelMode); 
+
+
+% repair origins of epochs ( use to be in sampling rate of the
+% object, now in the absolute timeline in seconds
+
+Trial.stc.updateMode(labelMode);Trial.stc.updatePath(Trial.spath);Trial.stc.load;Trial.stc.updatePath(Trial.spath)
+Trial.stc.updateMode('hand_labeled');
+Trial.stc.save(1);
+for i = 1:numel(Trial.stc.states),
+    %Trial.stc.states{i}.origin = Trial.stc.states{i}.origin/Trial.stc.states{i}.sampleRate;
+    Trial.resync(Trial.stc.states{i});
+end
+Trial.stc.save(1);
+
+
+% jg05-20120310
 %31600 - 33700 turn -> walk -> rear
 
 ftit = 'Turning';
@@ -144,6 +163,11 @@ set(gca,'YTickLabelMode','manual');
 set(gca,'YTickLabel',{});
 ylabel('Features');
 xlabel('Time (s)')
+
+% 2 c
+Trial.stc.updateMode('hand_labeled');
+
+
 
 
 %% Figure 3 JPDFs

@@ -524,6 +524,19 @@ classdef MTAStateCollection < hgsetget
                                             states{1}.sync.copy,states{1}.origin,newStateName,keys,[],[]);
             end
         end
+
+        function collectionList = cList(Stc)
+            d = dir(fullfile(Stc.path,'*.stc.*'));
+            collectionList = {d.name};
+        end
+        
+        function modeList = mList(Stc);
+            cl = Stc.cList;
+            modes = regexp(cl,'stc\.(\w*)\.mat','tokens');
+            modeList = cellfun(@subsref,modes,repmat({substruct('{}',{':'})},1,numel(modes)));
+        end
+        
+        
         
         function out = isempty(Stc)
             out = isempty(Stc.states);
