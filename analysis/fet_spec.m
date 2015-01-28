@@ -2,23 +2,19 @@ function [rhm,varargout] = fet_spec(Trial,fet,varargin)
 
 parspec = empty_spec;
 
-[mode,wsig,defspec,overwrite] = ...
-    DefaultArgs(varargin,{'raw',true,...
+[mode,wsig,sampleRate,defspec,overwrite] = ...
+    DefaultArgs(varargin,{'raw',true,120,...
                     struct('nFFT',2^9,'Fs',fet.sampleRate,...
                            'WinLength',2^7,'nOverlap',2^7*.875,...
-                           'FreqRange',[1,20]),...
+                           'FreqRange',[]),...
                     false});
 
 
 varargout = cell([1,nargout-1]);
 
 
-% if xyz sampling rate is greater than 120 Hz then resample it to
-% 120 Hz
+fet.resample(sampleRate); 
 
-if fet.sampleRate > 120, 
-    fet.resample(120); 
-end
 fet.filter(gausswin(5)./sum(gausswin(5)));
 
 

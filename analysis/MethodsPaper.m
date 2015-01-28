@@ -268,3 +268,17 @@ xlabel('Time (s)')
 linkaxes(sp,'xy');
 xlim([700,860])
 
+
+Trial = MTATrial('Ed10-20140812');
+
+lfp = Trial.lfp.copy;
+lfp.load(Trial,[8,35]);
+
+specParms = struct('nFFT',2^9,...
+                    'Fs',lfp.sampleRate,...
+                    'WinLength',2^8,...
+                    'nOverlap',2^8*.875,...
+                    'FreqRange',[20,150]);
+
+[ys,fs,ts] = fet_spec(Trial,lfp,'mtchglong',true,lfp.sampleRate,specParms);
+

@@ -346,25 +346,25 @@ classdef MTAData < hgsetget
                                     .*sampleRate),1);
 
                         
-% $$$                         if isa(Data.sync,'MTAData'),
-% $$$                             Data.sync.resample(Data.sampleRate);
-% $$$                             data = false(round(Data.sync.data(end)./Data.sampleRate.*sampleRate),1);
-% $$$                         else
-% $$$                             data = false(round(Data.sync(end)./Data.sampleRate.*sampleRate),1);
-% $$$                         end                                
+        % $$$                         if isa(Data.sync,'MTAData'),
+        % $$$                             Data.sync.resample(Data.sampleRate);
+        % $$$                             data = false(round(Data.sync.data(end)./Data.sampleRate.*sampleRate),1);
+        % $$$                         else
+        % $$$                             data = false(round(Data.sync(end)./Data.sampleRate.*sampleRate),1);
+        % $$$                         end                                
                         for j = 1:size(tmpdata,1),
                             data(tmpdata(j,1):tmpdata(j,2)) = true;
                         end         
                         switch syncflag
-                            case 'relative'
-                                try
-                                    data = [data(round(Data.sync.sync.data(1)*sampleRate)+1:round(Data.sync.sync.data(end)*sampleRate));0];
-                                catch err
-                                    data = cat(1,data,zeros(round(Data.sync.sync.data(end)*sampleRate)-round(Data.sync.data(end)*sampleRate),1));
-                                    data = data(round(Data.sync.sync.data(1)*sampleRate)+1:round(Data.sync.sync.data(end)*sampleRate));
-                                end
-                            case 'absolute' % Reserved for future versions
-                                %data = [0;data];
+                          case 'relative'
+                            try
+                                data = [data(round(Data.sync.sync.data(1)*sampleRate)+1:round(Data.sync.sync.data(end)*sampleRate));0];
+                            catch err
+                                data = cat(1,data,zeros(round(Data.sync.sync.data(end)*sampleRate)-round(Data.sync.data(end)*sampleRate),1));
+                                data = data(round(Data.sync.sync.data(1)*sampleRate)+1:round(Data.sync.sync.data(end)*sampleRate));
+                            end
+                          case 'absolute' % Reserved for future versions
+                                          %data = [0;data];
                         end
                         
                         Data.data = data;
@@ -382,90 +382,115 @@ classdef MTAData < hgsetget
         % WARNING - Doesn't modify the sync if sizes don't match
         % WARNING - uses lowpass ButFilter as antialias filter
         % WARNING - upsampling uses spline ( Not Ready )
-         
-            %Data = Data.copy;
+            
+        %Data = Data.copy;
             switch Data.type
+              case 'TimeSeries'
+                [interpMethod] = DefaultArgs(varargin,{'spline'},true);
+                isMTA = isa(DataObj,'MTAData');
+                if isMTA,
+                    newSampleRate = DataObj.sampleRate;
+                else
+                    newSampleRate = DataObj;
+                end
+
+                if isa(Data,'MTADepoch'),
+                    interpMethod = 'nearest';
+                end
                 
-                case 'TimeSeries'
-
-                    if isa(DataObj,'MTAData')
-                        assert(~DataObj.isempty,'DataObj must be loaded for resampling');
-                        newSampleRate = DataObj.sampleRate;
-                        % Assume the two objects have their starting
-                        % points synchronized
-                        % Get the tail difference in seconds
-                        dosize = DataObj.size(1)./newSampleRate;
-                        dsize = Data.size(1)./Data.sampleRate;                        
-                        dsdiff = dsize-dosize;
-                        
-
-                        % Antialias filter - lowpass ButFilter
-                        if newSampleRate<Data.sampleRate&~isa(Data,'MTADepoch'),
-                            zind = Data.data==0;
-                            Data.data = ButFilter(Data.data,3,[newSampleRate/2]/(Data.sampleRate/2),'low');
-                            Data.data(zind)=0;
-                        end                        
-
-                        uind = round(linspace(ceil(Data.sampleRate/newSampleRate),Data.size(1)-round(dsdiff*Data.sampleRate),DataObj.size(1)));
-                        if dsdiff < 0,
-                            padding = abs(round(dsdiff*Data.sampleRate));
-                            Data.data = cat(1,Data.data,zeros([padding,Data.size([2,3,4,5])]));
-                        end
-                    else
-                        newSampleRate = DataObj;                        
-                        dsize = round(Data.size(1)./Data.sampleRate.*newSampleRate);
-                        uind = round(linspace(ceil(Data.sampleRate/newSampleRate),Data.size(1),dsize));
-                    end
-
-                    Data.data = Data.data(uind,:,:,:,:);
-
-% $$$                     if isa(Data.sync,'MTAData'),
-% $$$                         Data.sync.resample(newSampleRate);
-% $$$                         Data.origin = round(Data.origin/Data.sampleRate*newSampleRate);
-% $$$                     end
+                if isMTA
+                    ntvec = (1:DataObj.size(1))./newSampleRate;
+                    xtvec = (1:Data.size(1))./Data.sampleRate;
+                    Data.data = interp1(xtvec,Data.data,ntvec,interpMethod);
                     Data.sampleRate = newSampleRate;
-    
-                case 'TimePeriods'
-                  % Needs some more corrections for resampling
-                  if DataObj == 1
-                      newSampleRate = DataObj;
-                      rf = @(x)x;
-                      indshift = 0;
-                  elseif isa(DataObj,'MTAData')
-                      newSampleRate = DataObj.sampleRate;
-                      rf = @round;
-                  else
-                      newSampleRate = DataObj;
-                      rf = @round;
-                  end
+                else
+                    ntvec = (1:(Data.size(1)./Data.sampleRate.*newSampleRate))./newSampleRate;
+                    xtvec = (1:Data.size(1))./Data.sampleRate;
+                    Data.data = interp1(xtvec,Data.data,ntvec,interpMethod);
+                    Data.sampleRate = newSampleRate;
+                end
 
-                  if newSampleRate==1&&Data.sampleRate==1,
-                      indshift = 0;
-                  elseif  newSampleRate~=1&&Data.sampleRate==1,
-                      indshift = 1/newSampleRate;
-                  elseif  newSampleRate==1&&Data.sampleRate~=1,
-                      indshift = -1/Data.sampleRate;
-                  else
-                      indshift = 0;
-                  end                  
+% $$$                 if newSampleRate<Data.sampleRate,
+% $$$                     if isMTA
+% $$$                         assert(~DataObj.isempty,'DataObj must be loaded for resampling');
+% $$$                         % Assume the two objects have their starting
+% $$$                         % points synchronized
+% $$$                         % Get the tail difference in seconds
+% $$$                         dosize = DataObj.size(1)./newSampleRate;
+% $$$                         dsize = Data.size(1)./Data.sampleRate;                        
+% $$$                         dsdiff = dsize-dosize;
+% $$$                         
+% $$$                         % Antialias filter - lowpass ButFilter
+% $$$                         if newSampleRate<Data.sampleRate&~isa(Data,'MTADepoch'),
+% $$$                             zind = Data.data==0;
+% $$$                             Data.data = ButFilter(Data.data,...
+% $$$                                                   3,...
+% $$$                                                   [newSampleRate/2]/(Data.sampleRate/2),...
+% $$$                                                   'low');
+% $$$                             Data.data(zind)=0;
+% $$$                         end                        
+% $$$ 
+% $$$                         uind = round(linspace(ceil(Data.sampleRate/newSampleRate),...
+% $$$                                               Data.size(1)-round(dsdiff*Data.sampleRate),...
+% $$$                                               DataObj.size(1)));
+% $$$                         if dsdiff < 0,
+% $$$                             padding = abs(round(dsdiff*Data.sampleRate));
+% $$$                             Data.data = cat(1,Data.data,zeros([padding,Data.size([2,3,4,5])]));
+% $$$                         end
+% $$$                     else
+% $$$                         dsize = round(Data.size(1)./Data.sampleRate.*newSampleRate);
+% $$$                         uind = round(linspace(ceil(Data.sampleRate/newSampleRate),...
+% $$$                                               Data.size(1),...
+% $$$                                               dsize));
+% $$$                     end
+% $$$                     Data.data = Data.data(uind,:,:,:,:);
+% $$$                     Data.sampleRate = newSampleRate;
+% $$$                 else
+                    %                end
+                
+
+                  
+              case 'TimePeriods'
+                % Needs some more corrections for resampling
+                if DataObj == 1
+                    newSampleRate = DataObj;
+                    rf = @(x)x;
+                    indshift = 0;
+                elseif isa(DataObj,'MTAData')
+                    newSampleRate = DataObj.sampleRate;
+                    rf = @round;
+                else
+                    newSampleRate = DataObj;
+                    rf = @round;
+                end
+
+                if newSampleRate==1&&Data.sampleRate==1,
+                    indshift = 0;
+                elseif  newSampleRate~=1&&Data.sampleRate==1,
+                    indshift = 1/newSampleRate;
+                elseif  newSampleRate==1&&Data.sampleRate~=1,
+                    indshift = -1/Data.sampleRate;
+                else
+                    indshift = 0;
+                end                  
 
 
-                  Data.data = rf(Data.data/Data.sampleRate*newSampleRate+indshift);
-                  while sum(Data.data(:)==0)>1
-                      Data.data(1,:) = [];
-                  end
-                  mind = find(Data.data(2:end,1)-Data.data(1:end-1,2)==0)+1;
-                  if ~isempty(mind)
-                      Data.data(mind-1,2)=Data.data(mind,2);
-                      Data.data(mind,:)=[];
-                  end
-% $$$                   if isa(Data.sync,'MTAData'),
-% $$$                       Data.origin = rf(Data.origin/Data.sampleRate*newSampleRate); 
-% $$$                   else
-% $$$                       Data.sync = rf(Data.sync/Data.sampleRate*newSampleRate);
-% $$$                   end            
-                  Data.sampleRate = newSampleRate;
-                otherwise
+                Data.data = rf(Data.data/Data.sampleRate*newSampleRate+indshift);
+                while sum(Data.data(:)==0)>1
+                    Data.data(1,:) = [];
+                end
+                mind = find(Data.data(2:end,1)-Data.data(1:end-1,2)==0)+1;
+                if ~isempty(mind)
+                    Data.data(mind-1,2)=Data.data(mind,2);
+                    Data.data(mind,:)=[];
+                end
+        % $$$                   if isa(Data.sync,'MTAData'),
+        % $$$                       Data.origin = rf(Data.origin/Data.sampleRate*newSampleRate); 
+        % $$$                   else
+        % $$$                       Data.sync = rf(Data.sync/Data.sampleRate*newSampleRate);
+        % $$$                   end            
+                Data.sampleRate = newSampleRate;
+              otherwise
             end
         end
         

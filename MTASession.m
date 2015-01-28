@@ -207,7 +207,7 @@ classdef MTASession < hgsetget
             end
             [field] = DefaultArgs(varargin,{[]});
             if ~isempty(field),
-                if isa(Session.(field),'MTAData')                    
+                if isa(Session.(field),'MTAData')||isa(Session.(field),'MTASpk'),                    
                     if nargout==1,
                         Data = Session.(field).copy;
                         Data = Data.load(Session,fvarargin{:}); 

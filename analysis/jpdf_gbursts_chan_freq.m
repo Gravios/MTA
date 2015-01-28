@@ -33,15 +33,15 @@ lfp = Trial.lfp.copy;
 lfp.load(Trial,80);% LM Phase? or pyrmidal phase?
 lfp = lfp.phase;
 
-fbins = linspace(29,190,15);
+fbins = linspace(29,190,30);
 fedgs = [fbins(1:end-1);fbins(2:end)];
-pedgs = linspace(-pi,pi,13);
+pedgs = linspace(-pi,pi,30);
 skeys = Trial.stc.list_state_attrib('key');
 
-j=3;
-chans = [1:j:32];
+j=5;
+chans = [2:j:32];
 figure(12325)
-skeys = {'t','r','h','l'};
+skeys = {'a','t','r','h','l'};
 numsts = numel(skeys);
 for s = 1:numsts,
 sper = Trial.stc{skeys{s},lfp.sampleRate};
@@ -59,6 +59,8 @@ subplot2(numel(chans),numsts,find(c==chans),s);imagesc(pedgs,fbins,(pchanc./repm
 %title(Trial.stc.states{s}.label);xlabel('Burst Frequency');
 end
 end
+
+
 
 s = 3;
 bci = 82;
