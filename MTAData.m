@@ -249,7 +249,8 @@ classdef MTAData < hgsetget
                         
                         if numel(S.subs)==0,
                             Data = Data.data;
-                        elseif all(cellfun(@isnumeric,S.subs))||strcmp(S.subs{1},':'),
+                        elseif all(cellfun(@isnumeric,S.subs)+...
+                                   cellfun(@strcmp,S.subs,repmat({':'},[1,numel(S.subs)]))),
                             if strcmp(S.subs{1},':'),
                                 Data = builtin('subsref',Data.data,S);
                             elseif size(S.subs{1},1)==1&&size(S.subs{1},2)>2,
