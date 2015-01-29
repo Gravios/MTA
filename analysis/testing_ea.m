@@ -1,12 +1,11 @@
 
-Trial = MTATrial('jg05-20120310');
+Trial = MTATrial('jg05-20120317');
 % $$$ Trial = MTATrial('jg05-20120309');
 %Trial = MTATrial('er06-20130612');
 %Trial = MTATrial('Ed10-20140812');
 
 
-xyz = Trial.load('xyz');
-xyz.filter(gtwin(.05,xyz.sampleRate));
+xyz = Trial.load('xyz').filter(gtwin(.05,xyz.sampleRate));
 
 % $$$ [ys,fs,ts] = fet_spec(Trial,xyz.acc(1,3),'mtcsdglong','overwrite',true);
 % $$$ [U,S,V] = svd(cov(log10(ys(Trial.stc{'a'},:,1,1))));
@@ -19,13 +18,12 @@ xyz.filter(gtwin(.05,xyz.sampleRate));
 
 
 
-
 dsx = xyz.copy;
 ufet = dsx;
 ufet.resample(30);
 
 dsx.filter(gtwin(.5,dsx.sampleRate));
-dsx.resample(ufet)
+dsx.resample(ufet);
 
 dsa = Trial.ang.copy;
 dsa.create(Trial,dsx);
@@ -34,9 +32,28 @@ vel = dsx.vel([],[1,2]);
 vel.data(vel.data<0.0001) = 0.0001;
 vel.data = log10(vel.data);
 
+
+
+% $$$ aper = Trial.sync.copy;
+% $$$ aper.resample(xyz.sampleRate);
+% $$$ aper.data = aper.data-aper.data(1)+1;
+% $$$ aper = aper+[5,-5];
+% $$$ 
+% $$$ Trial.stc.addState(Trial.spath,...
+% $$$                    Trial.filebase,...
+% $$$                    aper.data,...
+% $$$                    xyz.sampleRate,...
+% $$$                    Trial.sync.copy,...
+% $$$                    Trial.sync.data(1),...
+% $$$                    'gper','a');
+
+dsv = [0;Filter0(ones(1,7)./7,abs(diff(circ_dist(dsa(:,'spine_lower','spine_middle',1),dsa(:,'spine_middle','head_front',1)))))];
+
+
 wper = resample(Trial.stc{'w'}.cast('TimeSeries'),ufet);
 rper = resample(Trial.stc{'r'}.cast('TimeSeries'),ufet);
 aper = resample(Trial.stc{'a'}.cast('TimeSeries'),ufet);
+
 
 lrfet = MTADxyz('data',[vel(:,'spine_lower'),...
                         vel(:,'head_front'),...
@@ -45,9 +62,11 @@ lrfet = MTADxyz('data',[vel(:,'spine_lower'),...
                         dsa(:,'spine_middle','spine_upper',2),...
                         dsa(:,'pelvis_root','spine_middle',3),...
                         dsa(:,'spine_lower','pelvis_root',2),...
+                        dsa(:,'spine_upper','head_back',3),...
+                        dsv,...
                         dsa(:,'spine_lower','head_front',3)],...
                 'sampleRate',ufet.sampleRate);
-lrfet.data = [lrfet.data,circshift(lrfet.data,-7),circshift(lrfet.data,7)];
+%lrfet.data = [lrfet.data,circshift(lrfet.data,-7),circshift(lrfet.data,7)];
 
 
 % $$$ lrp = prctile(lrfet(logical(aper.data),:),[5,95])';
@@ -55,11 +74,14 @@ lrfet.data = [lrfet.data,circshift(lrfet.data,-7),circshift(lrfet.data,7)];
 % $$$ for i=1:lrfet.size(2),
 % $$$ fbound(i,:) = [median(lrfet((lrfet(:,i)<lrp(i,1))&aper,i)),median(lrfet((lrfet(:,i)>lrp(i,2))&aper,i))];
 % $$$ end
-% $$$ lrfet.data = bsxfun(@rdivide,bsxfun(@minus,lrfet.data,fbound(:,1)'),diff(fbound,1,2)');
+% $$$ lrfet.data = bsxfun(@rdivide,bsxfun(@minus,lrfet.data,fbound(:,1)'),diff(fbound,1,2)')
 
 
+smat = max(stc2mat(Trial.stc,ufet),[],2);
 
-B = mnrfit(lrfet(Trial.stc{'a'},:),[wper(Trial.stc{'a'})+1+rper(Trial.stc{'a'}).*2],'model','nominal');
+% smat = [wper(Trial.stc{'a'})+1+rper(Trial.stc{'a'}).*2];
+ind = any(smat,2);
+B = mnrfit(lrfet(ind,:),smat(ind),'model','nominal');
 
 
 y = mnrval(B,lrfet.data);
@@ -67,6 +89,7 @@ y = mnrval(B,lrfet.data);
 [~,w] = max(y,[],2);
 
 perind =[31600,33700];
+
 figure,
 sp(1) = subplot(9,1,[1:4]);
 imagesc((1:size(ufet,1))/ufet.sampleRate,1:7,nunity(lrfet(:,1:7))');caxis([0,2]),colormap jet
@@ -84,7 +107,7 @@ ylim([-.1,1.1])
 
 hold on,Lines(Trial.stc{'w',1}(:),[],'k');
 hold on,Lines(Trial.stc{'r',1}(:),[],'r');
-hold on,Lines(Trial.stc{'a',1}(:),[],'k');
+hold on,Lines(Trial.stc{'m',1}(:),[],'m');
 
 linkaxes(sp,'x');
 xlim(perind/xyz.sampleRate)

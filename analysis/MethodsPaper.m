@@ -113,22 +113,24 @@ figure,imagesc(ts,fs,ys(:,:,1,2)'),axis xy
 Trial = MTATrial('jg05-20120317');
 labelMode = 'auto_wbhr';
 labelMode = 'manual_mknsrw';
+labelMode = 'hand_labeled';
 
 xyz = Trial.load('xyz');
 Trial.stc.load(Trial,labelMode); 
 
 
+
+
 % repair origins of epochs ( use to be in sampling rate of the
 % object, now in the absolute timeline in seconds
-
-Trial.stc.updateMode(labelMode);Trial.stc.updatePath(Trial.spath);Trial.stc.load;Trial.stc.updatePath(Trial.spath)
-Trial.stc.updateMode('hand_labeled');
-Trial.stc.save(1);
-for i = 1:numel(Trial.stc.states),
-    %Trial.stc.states{i}.origin = Trial.stc.states{i}.origin/Trial.stc.states{i}.sampleRate;
-    Trial.resync(Trial.stc.states{i});
-end
-Trial.stc.save(1);
+% $$$ Trial.stc.updateMode(labelMode);Trial.stc.updatePath(Trial.spath);Trial.stc.load;Trial.stc.updatePath(Trial.spath)
+% $$$ Trial.stc.updateMode('hand_labeled');
+% $$$ Trial.stc.save(1);
+% $$$ for i = 1:numel(Trial.stc.states),
+% $$$     %Trial.stc.states{i}.origin = Trial.stc.states{i}.origin/Trial.stc.states{i}.sampleRate;
+% $$$     Trial.resync(Trial.stc.states{i});
+% $$$ end
+% $$$ Trial.stc.save(1);
 
 
 % jg05-20120310
@@ -164,8 +166,17 @@ set(gca,'YTickLabel',{});
 ylabel('Features');
 xlabel('Time (s)')
 
-% 2 c
-Trial.stc.updateMode('hand_labeled');
+% sp.2c expert labels
+stc = Trial.stc.load(Trial,'hand_labeled');
+
+nsts = numel(stc.states);
+c = jet(nsts);
+for i = 1:nsts;
+    tper = stc.states{i}.copy;
+    xind = [tper(:,1),tper(:,1),tper(:,2),tper(:,2)]';
+    figure, patch(xind,repmat([0;1;1;0],[1,size(xind,2)]),'r')
+end
+
 
 
 

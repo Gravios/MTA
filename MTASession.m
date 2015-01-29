@@ -254,10 +254,14 @@ classdef MTASession < hgsetget
         %Data = Data.copy;
         
         switch class(Data)
-            case 'MTADepoch'
-                if exist(Data.fpath,'file'),
-                    Data.load;
-                end
+          case 'MTADepoch'
+            if ~strcmp(Data.path,Session.spath),
+                Data.updatePath(Session.spath);
+            end
+            
+            if exist(Data.fpath,'file'),
+                Data.load;
+            end
         end
         
         if ~isempty(sync)

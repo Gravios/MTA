@@ -74,6 +74,7 @@ classdef MTAStateCollection < hgsetget
 
         function Stc = load(Stc,varargin)
             [Session,nMode] = DefaultArgs(varargin,{[],[]});
+
             if isempty(nMode)&&exist(Stc.fpath,'file')
                 ds = load(Stc.fpath);
                 %Stc = ds.Stc.copy;
@@ -84,7 +85,7 @@ classdef MTAStateCollection < hgsetget
             else
                 Stc.updateMode(nMode);
                 Stc.states = {};
-
+                ds = load(Stc.fpath);
                 if exist(Stc.fpath,'file')
                 sprop = properties(Stc);
                 for s = 1:numel(sprop)

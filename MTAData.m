@@ -249,22 +249,19 @@ classdef MTAData < hgsetget
                         
                         if numel(S.subs)==0,
                             Data = Data.data;
-                        elseif numel(S.subs)==1,
-                            if (size(S.subs{1},1)==1&&size(S.subs{1},2)>2)||...
-                                    (size(S.subs{1},2)==1&&size(S.subs{1},1)>2)||...
-                                    strcmp(S.subs{1},':'),
+                        elseif all(cellfun(@isnumeric,S.subs))||strcmp(S.subs{1},':'),
+                            if strcmp(S.subs{1},':'),
                                 Data = builtin('subsref',Data.data,S);
-                                return
+                            elseif size(S.subs{1},1)==1&&size(S.subs{1},2)>2,
+                                Data = builtin('subsref',Data.data,S);
+                            elseif size(S.subs{1},2)==1,
+                                Data = builtin('subsref',Data.data,S);
                             else
                                 S.subs = S.subs(~cellfun(@isempty,S.subs));
                                 Sa = S;
                                 Sa.subs{1} = ':';
                                 Data = SelectPeriods(builtin('subsref',Data.data,Sa),S.subs{1},'c');
                             end
-                        elseif (size(S.subs{1},1)==1&&size(S.subs{1},2)>2)||...
-                                (size(S.subs{1},2)==1&&size(S.subs{1},1)>=2)||...
-                                strcmp(S.subs{1},':'),
-                            Data = builtin('subsref',Data.data,S);
                         else
                             S.subs = S.subs(~cellfun(@isempty,S.subs));
                             Sa = S;

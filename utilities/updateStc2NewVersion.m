@@ -1,4 +1,6 @@
-function updateStc2NewVersion(stc);
+function stc = updateStc2NewVersion(stc);
 ds = load(fullfile(stc.path,stc.filename));
 stc.states = ds.states;
-stc.save(1);
+if nargout==0,
+    stc.save(1);
+end
