@@ -5,7 +5,7 @@ classdef MTASession < hgsetget
 %   name - string: Same name as the directory of the session
 %
 %   varargin:
-%     [mazeName,overwrite,TTLValue,xyzSampleRate,xyzSystem,ephySystem]
+%     [mazeName, overwrite, TTLValue, xyzSystem, ephySystem, xyzSampleRate]
 %
 %     mazeName:        string, 3-4 letter name of the testing arena 
 %                      (e.g. 'rof' := rectangular open-field)
@@ -207,7 +207,8 @@ classdef MTASession < hgsetget
             end
             [field] = DefaultArgs(varargin,{[]});
             if ~isempty(field),
-                if isa(Session.(field),'MTAData')||isa(Session.(field),'MTASpk'),                    
+                if any(~cellfun(@isempty,regexp(class(Session.(field)),{'MTAData','MTASpk','MTAStateCollection'})))
+                    %if isa(Session.(field),'MTAData')||isa(Session.(field),'MTASpk'),                    
                     if nargout==1,
                         Data = Session.(field).copy;
                         Data = Data.load(Session,fvarargin{:}); 

@@ -20,9 +20,15 @@ function xyz = ERCOR_fillgaps_RidgidBody(xyz,rb_model,gind)
 %% Testing Vars
 % $$$ Session = MTASession('jg05-20120310');
 % $$$ gind = 8000;
+% $$$ Session = MTASession('jg05-20120317');
+% $$$ gind = 314500;
 % $$$ xyz = Session.load('xyz');
 % $$$ rb_model = xyz.model.rb({'head_back','head_left','head_right','head_front','head_top'});
 %%
+
+if iscell(rb_model)&&~isa(rb_model,'MTAModel'),
+    rb_model = xyz.model.rb(rb_model);
+end
 
 
 assert(rb_model.N<=6,['MTA:utilities:ERCOR_fillgaps_RidgidBody, ' ...
@@ -98,6 +104,7 @@ for i = 1:nerrors,
     % Best permutation
     [bpVal,bpInd] =min(mean(ectry));
     
+    %%check this bpVal since it changes with each model.
     if bpVal<0.01,
         smar = subsref(rb_model.ml,substruct('()',{bperm(bpInd,:)}));
         [~,rind] = sort(xyz.model.gmi(rb_model.ml));
@@ -105,11 +112,11 @@ for i = 1:nerrors,
         corInd = sort(marInd);
         xyz.data(eid==i,corInd,:) = xyz(eid==i,marInd,:);
     else
-% $$$         drb_xyz = imd(rb_xyz);
-% $$$         ndrb_xyz = bsxfun(@minus,drb_xyz,drb_xyz(gind,:,:));
-% $$$ 
-% $$$         log10(abs(mean(drb_xyz(eid==2,:,:))))
-% $$$         gperms = find(abs(mean(efet(bids,:))-gpat)<.2);
+        drb_xyz = imd(rb_xyz);
+        ndrb_xyz = bsxfun(@minus,drb_xyz,drb_xyz(gind,:,:));
+
+        log10(abs(mean(drb_xyz(eid==2,:,:))))
+        gperms = find(abs(mean(efet(bids,:))-gpat)<.2);
 
         % Try some other correction method
         % probably by reconstructing the bad 

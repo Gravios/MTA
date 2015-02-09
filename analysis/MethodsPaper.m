@@ -1,5 +1,5 @@
 
-% figure 1
+%% figure 1
 Trial = MTATrial('Ed10-20140812');
 Trial = MTASession('jg05-20120317');
 Trial = MTASession('er06-20130612');
@@ -12,6 +12,7 @@ ang = Trial.ang.copy;
 ang.create(Trial,xyz);
 
 
+%% Fig:1:E
 % marker error
 hfig = figure(838884);
 edges = 43:.05:45;
@@ -65,47 +66,72 @@ figure,
 hist(ang(Trial.stc{'a'},'head_back','head_right',3),10:.02:37)
 
 
-% subplot f
+%% Fig:1:F Breathing (maybe)
 
+Trial = MTASession('Ed10-20140815');
 
-Trial = MTASession('Ed10-20140812');
-
-
-xyz = Trial.load('xyz');
-
-% lfp = Trial.lfp.copy;
-% lfp.create(Trial,66);
-% lfp.resample(xyz);
-% 
-% 
-% 
-% specParms = struct('nFFT',2^11,...
-%                    'Fs',lfp.sampleRate,...
-%                    'WinLength',2^10,...
-%                    'nOverlap',2^10*.875,...
-%                    'FreqRange',[1,15]);
-% 
-% 
-% lfp.data = cat(2,lfp.data,xyz(:,1,3));
-% lfp.data = cat(2,lfp.data,xyz(:,3,3));
-
-xyz.filter(gtwin(.5,xyz.sampleRate));
+xyz = Trial.load('xyz').filter(gtwin(.25,Trial.xyz.sampleRate));;
 ang = Trial.ang.copy;
 ang.create(Trial,xyz);
 
-figure,
-plot(sq(ButFilter(xyz(:,[1:3],3)));
 
-figure,plot(ang(:,1,3,3));
+ind = 866330:867110;
+mar = {'pelvis_root','spine_upper'};
+
+hfig = figure(8482838);
+sp=[];
+sp(1) = subplot(211);
+plot(round((ind-ind(1))/xyz.sampleRate,2),ang(ind,mar{1},mar{2},3));
+%ylim([131.9,132.6])
+title('Distance Between the Pelvis and the Upper Spine')
+ylabel('Distance (mm)')
+sp(2) = subplot(212);
+plot(round((ind-ind(1))/xyz.sampleRate,2),lfp.data(ind));
+title('Nasal Cavity Pressure Sensor')
+ylabel('NCP (mV)')
+ylim([-4000,2800])
+xlabel('Time (s)')
+linkaxes(sp,'x')
+xlim([.25,6]);
+
+saveas(hfig,'/gpfs01/sirota/homes/gravio/Documents/Manuscripts/Vicon_Methods_2015/Fig1F-alt1.png','png');
+saveas(hfig,'/gpfs01/sirota/homes/gravio/Documents/Manuscripts/Vicon_Methods_2015/Fig1F-alt1.eps','eps');
 
 
-rhm = fet_rhm(Trial);
-lfp.data = cat(2,lfp.data,rhm);
-
-[ys,fs,ts,phi,fstat] = fet_spec(Trial,lfp,'mtchglong','overwrite',true);
-
-
-figure,imagesc(ts,fs,ys(:,:,1,2)'),axis xy
+% $$$ xyz = Trial.load('xyz');
+% $$$ % lfp = Trial.lfp.copy;
+% $$$ % lfp.create(Trial,66);
+% $$$ % lfp.resample(xyz);
+% $$$ % 
+% $$$ % 
+% $$$ % 
+% $$$ % specParms = struct('nFFT',2^11,...
+% $$$ %                    'Fs',lfp.sampleRate,...
+% $$$ %                    'WinLength',2^10,...
+% $$$ %                    'nOverlap',2^10*.875,...
+% $$$ %                    'FreqRange',[1,15]);
+% $$$ % 
+% $$$ % 
+% $$$ % lfp.data = cat(2,lfp.data,xyz(:,1,3));
+% $$$ % lfp.data = cat(2,lfp.data,xyz(:,3,3));
+% $$$ 
+% $$$ 
+% $$$ xyz.filter(gtwin(.5,xyz.sampleRate));
+% $$$ ang = Trial.ang.copy;
+% $$$ ang.create(Trial,xyz);
+% $$$ 
+% $$$ figure,
+% $$$ plot(sq(ButFilter(xyz(:,[1:3],3)));
+% $$$ 
+% $$$ figure,plot(ang(:,1,3,3));
+% $$$ 
+% $$$ 
+% $$$ rhm = fet_rhm(Trial);
+% $$$ lfp.data = cat(2,lfp.data,rhm);
+% $$$ 
+% $$$ [ys,fs,ts,phi,fstat] = fet_spec(Trial,lfp,'mtchglong','overwrite',true);
+% $$$ 
+% $$$ figure,imagesc(ts,fs,ys(:,:,1,2)'),axis xy
 
 
 
@@ -119,11 +145,14 @@ xyz = Trial.load('xyz');
 Trial.stc.load(Trial,labelMode); 
 
 
-
+%% Fig:2:A
 
 % repair origins of epochs ( use to be in sampling rate of the
 % object, now in the absolute timeline in seconds
-% $$$ Trial.stc.updateMode(labelMode);Trial.stc.updatePath(Trial.spath);Trial.stc.load;Trial.stc.updatePath(Trial.spath)
+% $$$ Trial.stc.updateMode(labelMode);
+% $$$ Trial.stc.updatePath(Trial.spath);
+% $$$ Trial.stc.load;
+% $$$ Trial.stc.updatePath(Trial.spath)
 % $$$ Trial.stc.updateMode('hand_labeled');
 % $$$ Trial.stc.save(1);
 % $$$ for i = 1:numel(Trial.stc.states),
@@ -134,16 +163,21 @@ Trial.stc.load(Trial,labelMode);
 
 
 % jg05-20120310
-%31600 - 33700 turn -> walk -> rear
+% 31600 - 33700 turn -> walk -> rear
+
+% jg05-20120317
+% 26800 - 27800 turn -> walk -> rear
+%# create coordinates
+
 
 ftit = 'Turning';
-ind = 14500;
-perind = (ind-40):(ind+80);
+ind = 26764;
+perind = (ind-140):(ind);
 figure,hold on
-for i= 1:4;
+for i= [1:4,5,7];
     plot3(xyz(perind,i,1),xyz(perind,i,2),xyz(perind,i,3))
 end
-plotSkeleton(xyz,perind(end));
+plotSkeleton(xyz,perind(end),'surface');
 zlim([0,300]);
 title(ftit)
 set(gca,'YTickLabelMode','manual');
@@ -166,99 +200,77 @@ set(gca,'YTickLabel',{});
 ylabel('Features');
 xlabel('Time (s)')
 
-% sp.2c expert labels
-stc = Trial.stc.load(Trial,'hand_labeled');
-
-nsts = numel(stc.states);
-c = jet(nsts);
-for i = 1:nsts;
-    tper = stc.states{i}.copy;
-    xind = [tper(:,1),tper(:,1),tper(:,2),tper(:,2)]';
-    figure, patch(xind,repmat([0;1;1;0],[1,size(xind,2)]),'r')
-end
-
 
 
 
 
 %% Figure 3 JPDFs
 
-rind = Trial.stc{'r'}.cast('TimeSeries');
-wind = Trial.stc{'w'}.cast('TimeSeries');
-nind = ~(rind.data|wind.data);
-figure,hist2([vel(nind,'spine_lower'),vel(nind,'head_front')],-.5:.05:2,-.5:.05:2)
-
 
 Trial = MTATrial('jg05-20120310');
+
+% Vars of interest 
 xyz = Trial.load('xyz');
 ang = Trial.load('ang');
-
-figure,
-nind = nniz(xyz);
-subplot(121)
-hist2([xyz(nind,'spine_lower',3),...
-       ang(nind,'spine_middle','spine_upper',3)],...
-      0:1:100,30:.5:70),
-caxis([0,2000])
-
-subplot(122)
-nind = Trial.stc{'w'};
-hist2([xyz(nind,'spine_lower',3),...
-       ang(nind,'spine_middle','spine_upper',3)],...
-      0:2:100,30:1:70),
-caxis([0,1000])
-
-figure
-subplot(121)
-nind = Trial.stc{'l'};
-hist2([xyz(nind,'spine_lower',3),...
-       ang(nind,'spine_middle','spine_upper',3)],...
-      0:2:100,30:1:70),
-caxis([0,200])
+vxy = vel(Trial.load('xyz').filter(gtwin(.5,xyz.sampleRate)),{'spine_lower','head_front'},[1,2])
+vxy.data(vxy.data<.001) = 0.001;
+rol = fet_roll(Trial,[],'default');
 
 
-subplot(122)
-nind = Trial.stc{'h'};
-hist2([xyz(nind,'spine_lower',3),...
-       ang(nind,'spine_middle','spine_upper',3)],...
-      0:2:100,30:1:70),
-caxis([0,200])
+%% Fig:3:A - Rearing from everything else
 
-vel = xyz.vel('spine_lower',[1,2]);
-vel.data = log10(vel.data);
+tag = 'Rearing-Everything';
+v1 = Trial.ang.copy;
+v1.data = ang(:,2,3,3);
+v2 = Trial.ang.copy;
+v2.data = ang(:,3,4,2);
+bhv_JPDF(Trial,v1,v2,70,70,...
+         'Distance(Pelvis,Spine Middle) (mm)',...
+         'Upper Spine Pitch (rad)',{'a-r','r'},tag)
 
 
-figure
-subplot(121)
-nind = Trial.stc{'l'};
-hist2([vel(nind,'spine_lower'),...
-       ang(nind,'spine_middle','spine_upper',3)],...
-      -.5:0.1:2,30:1:70),
-caxis([0,200])
+tag = 'pelvis2spineM_vs_headroll';
+v1 = Trial.ang.copy;
+v1.data = ang(:,2,3,3);pp
+v2 = rol.copy;
+bhv_JPDF(Trial,v1,v2,70,70,...
+         'Distance(Pelvis,Spine Middle) (mm)',...
+         'Head roll (rad)','rwhl',tag)
 
-subplot(122)
-nind = Trial.stc{'h'};
-hist2([vel(nind,'spine_lower'),...
-       ang(nind,'spine_middle','spine_upper',3)],...
-      -.5:0.1:2,30:1:70),
-caxis([0,200])
+
+%% Fig:3:B - walk from everything else
+tag = 'speed_SpineL_vs_HeadF';
+v1 = vxy.copy;
+v1.data = log10(vxy(:,1));
+v2 = vxy.copy;
+v2.data = log10(vxy(:,2));
+bhv_JPDF(Trial,v1,v2,70,70,...
+         'Speed (Lower Spine) log10(mm)',...
+         'Speed (Head Front) log10(mm)',{'a-r','w','a-w'},tag)
 
 
 
-figure
-subplot(121)
-nind = Trial.stc{'l'};
-hist2([ang(nind,'spine_lower','pelvis_root',3),...
-       ang(nind,'spine_middle','spine_upper',3)],...
-      30:1:70,30:1:70),
-caxis([0,200])
+%% Fig:3:C - walk to high and low walk
 
-subplot(122)
-nind = Trial.stc{'h'};
-hist2([ang(nind,'spine_lower','pelvis_root',3),...
-       ang(nind,'spine_middle','spine_upper',3)],...
-      30:1:70,30:1:70),
-caxis([0,200])
+tag = 'Walk_High-low';
+v1 = Trial.ang.copy;
+v1.data = ang(:,5,7,3);
+v2 = Trial.ang.copy;
+v1.data = ang(:,4,5,3);
+bhv_JPDF(Trial,v1,v2,70,70,...
+         'Distance(SpineU,HeadB) (mm)',...
+         'Head roll (rad)',{'w','h','l'},tag)
+
+
+tag = 'HeightSL_vs_headPitch';
+v1 = Trial.xyz.copy;
+v1.data = xyz(:,1,3);
+v2 = Trial.ang.copy;
+v2.data = ang(:,5,7,2);
+bhv_JPDF(Trial,v1,v2,70,70,...
+         'Hight(SpineL) (mm)',...
+         'Head Pitch (rad)','whl',tag)
+
 
 
 %% Figure 4 Fine movement characterization
@@ -286,7 +298,7 @@ Trial = MTATrial('Ed10-20140815');
 
 %generate features
 [rhm,fs,ts] = fet_rhm(Trial,[],'wcsd');
-ncp = fet_ncp(Trial,[],'wcsd');
+ncp = fet_ncp(Trial,[],'wcsd',66);
 %plot features with linked axes
 
 figure,

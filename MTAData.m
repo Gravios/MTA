@@ -407,6 +407,7 @@ classdef MTAData < hgsetget
                     Data.data = interp1(xtvec,Data.data,ntvec,interpMethod);
                     Data.sampleRate = newSampleRate;
                 end
+                if Data.size(1)==1; Data.data = Data.data'; end
 
 % $$$                 if newSampleRate<Data.sampleRate,
 % $$$                     if isMTA

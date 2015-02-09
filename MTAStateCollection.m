@@ -309,13 +309,25 @@ classdef MTAStateCollection < hgsetget
         end
         
         function state_index = gsi(Stc,state)
+
             state_index = [];
-            for i = 1:numel(Stc.states),
-                if strcmp(Stc.states{i}.label,state)||strcmp(Stc.states{i}.key,state),
-                    state_index = i;
-                    return;
+            if ~ischar(state),
+                for j = 1:numel(state)
+                    for i = 1:numel(Stc.states),
+                        if strcmp(Stc.states{i}.label,state{j})||strcmp(Stc.states{i}.key,state{j}),
+                            state_index(j) = i;
+                        end
+                    end
+                end
+            else
+                for i = 1:numel(Stc.states),
+                    if strcmp(Stc.states{i}.label,state)||strcmp(Stc.states{i}.key,state),
+                        state_index = i;
+                        return;
+                    end
                 end
             end
+
         end
 
         function state_attrib_list = list_state_attrib(Stc,varargin)

@@ -5,7 +5,7 @@ Trial = MTATrial('jg05-20120317');
 %Trial = MTATrial('Ed10-20140812');
 
 
-xyz = Trial.load('xyz').filter(gtwin(.05,xyz.sampleRate));
+xyz = Trial.load('xyz').filter(gtwin(.05,Trial.xyz.sampleRate));
 
 % $$$ [ys,fs,ts] = fet_spec(Trial,xyz.acc(1,3),'mtcsdglong','overwrite',true);
 % $$$ [U,S,V] = svd(cov(log10(ys(Trial.stc{'a'},:,1,1))));

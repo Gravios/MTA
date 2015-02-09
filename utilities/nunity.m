@@ -4,14 +4,22 @@
 % i.e. [signal-mean(signal)] / std(signal)
 
 function [U,meanA,stdA] = nunity(A,varargin)
-[ifnniz,meanA,stdA] = DefaultArgs(varargin,{@nan,[],[]},true);
+[ifnniz,meanA,stdA,drpOutPrctile] = DefaultArgs(varargin,{@nan,[],[],[]},true);
 
 nind = nniz(A);
+
+if ~isempty(drpOutPrctile),
+    Ao = prctile(A(nind,:),drpOutPrctile);
+else
+    Ao = A(nind,:);
+end
+
+
 if isempty(meanA)
-    meanA = mean(A(nind,:));
+    meanA = mean(Ao);
 end
 if isempty(stdA)
-    stdA = std(A(nind,:));
+    stdA = std(Ao);
 end
 
 

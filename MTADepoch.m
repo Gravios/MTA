@@ -217,6 +217,8 @@ classdef MTADepoch < MTAData
                 b.resample(a.sampleRate);
                 Data = a.copy;
                 Data.data = SubstractRanges(Data.data,b.data);
+                Data.label = [Data.label '-' b.label];
+                Data.key = '';
             end
              
          end
