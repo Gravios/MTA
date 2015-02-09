@@ -750,14 +750,7 @@ if hObject ~= getappdata(handles.MTABrowserStates,'previousBState'),
         for i = 1:length(States)
             labels{i} = States{i}.label;
             keys = strcat(keys,States{i}.key);
-            States{i}.resample(Session.xyz.sampleRate);
-            tmpState = States{i}.data;
-            tmpState(tmpState==0) = 1;
-            States{i}.data = zeros(Session.xyz.size(1),1);
-            for j = 1:size(tmpState,1),
-                States{i}.data(tmpState(j,1):tmpState(j,2)) = 1;
-            end
-            States{i}.type = 'TimeSeries';            
+            resample(States{i}.cast('TimeSeries'),Session.xyz.sampleRate);
         end
     else
         labels = {'default'};
@@ -1320,10 +1313,7 @@ else
         keys = cell2mat(stc.list_state_attrib('key'));
         labels = stc.list_state_attrib('label');
         for i = 1:numel(States)
-            if States{i}.sampleRate~=Session.xyz.sampleRate
-                States{i}.resample(Session.xyz.sampleRate);
-            end
-            States{i}.cast('TimeSeries');
+            resample(States{i}.cast('TimeSeries'),Session.xyz.sampleRate);
         end        
     end
     

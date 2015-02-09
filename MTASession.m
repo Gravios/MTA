@@ -207,7 +207,7 @@ classdef MTASession < hgsetget
             end
             [field] = DefaultArgs(varargin,{[]});
             if ~isempty(field),
-                if any(~cellfun(@isempty,regexp(superclasses(Session.(field)),{'MTAData','MTASpk','MTAStateCollection'})))
+                if any(~cellfun(@isempty,regexp(cat(1,superclasses(Session.(field)),class(Session.(field))),{'MTAData','MTASpk','MTAStateCollection'})))
                     %if isa(Session.(field),'MTAData')||isa(Session.(field),'MTASpk'),                    
                     if nargout==1,
                         Data = Session.(field).copy;

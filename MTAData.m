@@ -336,20 +336,22 @@ classdef MTAData < hgsetget
                           tmpdata = round((Data.data./Data.sampleRate+Data.sync.sync.data(1)).*sampleRate);
                       end
                         tmpdata(tmpdata==0) = 1;
-% $$$                         if isa(Data.sync,'MTAData'),
-% $$$                             Data.sync.resample(Data.sampleRate);
-% $$$                         end
-                        data = false(round(Data.subsref(substruct('.','sync','()',...
-                                    {numel(Data.subsref(substruct('.','sync','()',{':'})))}))...
-                                    .*sampleRate),1);
+
+% $$$                         data = false(round(Data.subsref(substruct('.','sync','()',...
+% $$$                                     {prod(size(Data.subsref(substruct('.','sync','()',{':'}))))}))...
+% $$$                                     .*sampleRate),1);
 
                         
-        % $$$                         if isa(Data.sync,'MTAData'),
-        % $$$                             Data.sync.resample(Data.sampleRate);
-        % $$$                             data = false(round(Data.sync.data(end)./Data.sampleRate.*sampleRate),1);
-        % $$$                         else
-        % $$$                             data = false(round(Data.sync(end)./Data.sampleRate.*sampleRate),1);
-        % $$$                         end                                
+                        if isa(Data.subsref(substruct('.','sync')),'MTAData'),
+                            data = false(round(Data.subsref(substruct('.','sync','.','data','()',...
+                                                                      {prod(size(Data.subsref(substruct('.','sync','()',{':'}))))}))...
+                                               .*sampleRate),1);
+                        else
+                            data = false(round(Data.subsref(substruct('.','sync','()',...
+                                                                      {prod(size(Data.subsref(substruct('.','sync','()',{':'}))))}))...
+                                               .*sampleRate),1);
+                        end                                
+
                         for j = 1:size(tmpdata,1),
                             data(tmpdata(j,1):tmpdata(j,2)) = true;
                         end         
@@ -377,9 +379,13 @@ classdef MTAData < hgsetget
         %
         % Assumes the two objects have their starting points synchronized
         %
+        %    upsampling 
+        %         MTADxyz - uses spline ( Not Ready )
+        %         MTADepoch - uses nearest neighbor
+        %
         % WARNING - Doesn't modify the sync if sizes don't match
         % WARNING - uses lowpass ButFilter as antialias filter
-        % WARNING - upsampling uses spline ( Not Ready )
+        % 
             
         %Data = Data.copy;
             switch Data.type
@@ -451,6 +457,7 @@ classdef MTAData < hgsetget
                   
               case 'TimePeriods'
                 % Needs some more corrections for resampling
+
                 if DataObj == 1
                     newSampleRate = DataObj;
                     rf = @(x)x;
@@ -463,6 +470,8 @@ classdef MTAData < hgsetget
                     rf = @round;
                 end
 
+                if newSampleRate == Data.sampleRate, return,end                
+                
                 if newSampleRate==1&&Data.sampleRate==1,
                     indshift = 0;
                 elseif  newSampleRate~=1&&Data.sampleRate==1,
@@ -478,7 +487,13 @@ classdef MTAData < hgsetget
                 while sum(Data.data(:)==0)>1
                     Data.data(1,:) = [];
                 end
-                mind = find(Data.data(2:end,1)-Data.data(1:end-1,2)==0)+1;
+                
+                if Data.size(1)>1,
+                    mind = find(Data.data(2:end,1)-Data.data(1:end-1,2)==0)+1;
+                else
+                    mind = [];
+                end
+                
                 if ~isempty(mind)
                     Data.data(mind-1,2)=Data.data(mind,2);
                     Data.data(mind,:)=[];
