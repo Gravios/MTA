@@ -110,7 +110,7 @@ end
 
 for s =1:numel(states),
     svar(s) = var(ufrwd{s}(nniz(ufrwd{s}(:))&expr{s}(:)>ethresh));
-    stateSize(s) = sum(diff(Trial.stc{states{s}}.data,1,2));
+    stateSize(s) = sum(diff(Trial.stc{states{s}.data,1,2));
 end
 Trial.stc.states(end) = [];
 % how does the rate varience change with state sampleSize 
