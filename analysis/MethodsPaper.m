@@ -10,7 +10,7 @@ xyz = Trial.load('xyz');
 xyz.filter(gtwin(.3,xyz.sampleRate));
 ang = Trial.ang.copy;
 ang.create(Trial,xyz);
-
+figPath = '/gpfs01/sirota/homes/gravio/Documents/Manuscripts/Vicon_Methods_2015/Figures/Figure_1';
 
 %% Fig:1:E
 % marker error
@@ -40,7 +40,6 @@ vbins = -.5:.05:2;
 mb = MTADxyz('data',mb,'sampleRate',xyz.sampleRate);
 
 ind = resample(Trial.stc{'r'}.cast('TimeSeries'),xyz)&nniz(mb);
-
 
 
 A = accumarray(mb(ind,:),ang(ind,m{1},m{2},3),repmat(numel(vbins),[1,2]),@mean);
@@ -94,118 +93,214 @@ xlabel('Time (s)')
 linkaxes(sp,'x')
 xlim([.25,6]);
 
-saveas(hfig,'/gpfs01/sirota/homes/gravio/Documents/Manuscripts/Vicon_Methods_2015/Fig1F-alt1.png','png');
-saveas(hfig,'/gpfs01/sirota/homes/gravio/Documents/Manuscripts/Vicon_Methods_2015/Fig1F-alt1.eps','eps');
+saveas(hfig,[fullfile(figPath,'Fig1F-alt1.png'),'png');
+saveas(hfig,[fullfile(figPath,'Fig1F-alt1.eps'),'eps2');
 
 
-% $$$ xyz = Trial.load('xyz');
-% $$$ % lfp = Trial.lfp.copy;
-% $$$ % lfp.create(Trial,66);
-% $$$ % lfp.resample(xyz);
-% $$$ % 
-% $$$ % 
-% $$$ % 
-% $$$ % specParms = struct('nFFT',2^11,...
-% $$$ %                    'Fs',lfp.sampleRate,...
-% $$$ %                    'WinLength',2^10,...
-% $$$ %                    'nOverlap',2^10*.875,...
-% $$$ %                    'FreqRange',[1,15]);
-% $$$ % 
-% $$$ % 
-% $$$ % lfp.data = cat(2,lfp.data,xyz(:,1,3));
-% $$$ % lfp.data = cat(2,lfp.data,xyz(:,3,3));
-% $$$ 
-% $$$ 
-% $$$ xyz.filter(gtwin(.5,xyz.sampleRate));
-% $$$ ang = Trial.ang.copy;
-% $$$ ang.create(Trial,xyz);
-% $$$ 
-% $$$ figure,
-% $$$ plot(sq(ButFilter(xyz(:,[1:3],3)));
-% $$$ 
-% $$$ figure,plot(ang(:,1,3,3));
-% $$$ 
-% $$$ 
-% $$$ rhm = fet_rhm(Trial);
-% $$$ lfp.data = cat(2,lfp.data,rhm);
-% $$$ 
-% $$$ [ys,fs,ts,phi,fstat] = fet_spec(Trial,lfp,'mtchglong','overwrite',true);
-% $$$ 
-% $$$ figure,imagesc(ts,fs,ys(:,:,1,2)'),axis xy
 
 
 
 %% Figure 2 Trajectories and behavioral labeling
 Trial = MTATrial('jg05-20120317');
-labelMode = 'auto_wbhr';
-labelMode = 'manual_mknsrw';
-labelMode = 'hand_labeled';
-
-xyz = Trial.load('xyz');
-Trial.stc.load(Trial,labelMode); 
-
-
-%% Fig:2:A
-
-% repair origins of epochs ( use to be in sampling rate of the
-% object, now in the absolute timeline in seconds
-% $$$ Trial.stc.updateMode(labelMode);
-% $$$ Trial.stc.updatePath(Trial.spath);
-% $$$ Trial.stc.load;
-% $$$ Trial.stc.updatePath(Trial.spath)
-% $$$ Trial.stc.updateMode('hand_labeled');
-% $$$ Trial.stc.save(1);
-% $$$ for i = 1:numel(Trial.stc.states),
-% $$$     %Trial.stc.states{i}.origin = Trial.stc.states{i}.origin/Trial.stc.states{i}.sampleRate;
-% $$$     Trial.resync(Trial.stc.states{i});
-% $$$ end
-% $$$ Trial.stc.save(1);
+Stc = Trial.load('stc','hand_labeled_rev1'); 
+figPath = '/gpfs01/sirota/homes/gravio/Documents/Manuscripts/Vicon_Methods_2015/Figures/Figure_2';
+%exPer = [26664,27100];
+%exPer = [26000,26480];
+exPer = [25200,25580];
+xyz = Trial.load('xyz').filter(gtwin(.25,Trial.xyz.sampleRate));
+ang = create(Trial.ang.copy,Trial,xyz);
+stateColors = 'brcgym';
 
 
-% jg05-20120310
-% 31600 - 33700 turn -> walk -> rear
-
-% jg05-20120317
-% 26800 - 27800 turn -> walk -> rear
-%# create coordinates
+hfig = figure(38239384);clf
+set(hfig,'position',[836   110   775   792]);
+%% Fig:2:A Skeleton examples
 
 
-ftit = 'Turning';
-ind = 26764;
-perind = (ind-140):(ind);
-figure,hold on
-for i= [1:4,5,7];
-    plot3(xyz(perind,i,1),xyz(perind,i,2),xyz(perind,i,3))
+
+axes('Position',[0.13,0.5,0.775,0.45]);hold on;
+
+Stc = Trial.load('stc','hand_labeled_rev1'); 
+nper = Stc{'n'}&exPer;
+wper = Stc{'w'}&exPer;
+rper = Stc{'r'}&exPer;
+sper = Stc{'s'}&exPer;
+
+plotSkeleton(xyz,exPer(1),'surface',ang);              % Skeleton @ Begining of trajectory
+plotSkeleton(xyz,round(mean(nper.data)),'surface',ang);% Skeleton @ During Turn
+plotSkeleton(xyz,round(mean(wper.data)),'surface',ang);% Skeleton @ During walk
+plotSkeleton(xyz,exPer(2),'surface',ang);              % Skeleton @ end of trajectory
+
+
+if ~sper.isempty, 
+    for s = 1:sper.size(1),
+        for i= [1:4,5,7],
+            p=plot3(xyz(sper(s,:),i,1),xyz(sper(s,:),i,2),xyz(sper(s,:),i,3),'.c');
+            set(p,'MarkerSize',4)
+        end
+    end
 end
-plotSkeleton(xyz,perind(end),'surface');
+if ~nper.isempty, 
+    for s = 1:nper.size(1),    
+        for i= [1:4,5,7],
+            p=plot3(xyz(nper(s,:),i,1),xyz(nper(s,:),i,2),xyz(nper(s,:),i,3),'.g');
+            set(p,'MarkerSize',4)
+        end
+    end
+end
+if ~wper.isempty, 
+    for s = 1:wper.size(1),
+        for i= [1:4,5,7],
+            p=plot3(xyz(wper(s,:),i,1),xyz(wper(s,:),i,2),xyz(wper(s,:),i,3),'.b');
+            set(p,'MarkerSize',4)
+        end,
+    end
+end
+if ~rper.isempty,
+    for s = 1:rper.size(1),
+        for i= [1:4,5,7],
+            p = plot3(xyz(rper(s,:),i,1),xyz(rper(s,:),i,2),xyz(rper(s,:),i,3),'.r');
+            set(p,'MarkerSize',4)
+        end
+    end
+end
+
+
 zlim([0,300]);
-title(ftit)
-set(gca,'YTickLabelMode','manual');
-set(gca,'YTickLabel',{});
-set(gca,'XTickLabelMode','manual');
-set(gca,'XTickLabel',{});
-set(gca,'ZTickLabelMode','manual');
-set(gca,'ZTickLabel',{});
+% $$$ set(gca,'YTickLabelMode','manual');
+% $$$ set(gca,'YTickLabel',{});
+% $$$ set(gca,'XTickLabelMode','manual');
+% $$$ set(gca,'XTickLabel',{});
+% $$$ set(gca,'ZTickLabelMode','manual');
+% $$$ set(gca,'ZTickLabel',{});
 
-% features
 
-figure,imagesc((1:size(fet,1))/xyz.sampleRate,1:size(fet,2),fet'),caxis([-2,3])
-Lines(Trial.stc{'r'}(:)/xyz.sampleRate,[],'r',[],3);
-Lines(Trial.stc{'w'}(:)/xyz.sampleRate,[],'k',[],3);
-colormap jet
-xlim([31600,33700]/xyz.sampleRate)
-title('Behavioral Segmentation Features');
-set(gca,'YTickLabelMode','manual');
-set(gca,'YTickLabel',{});
-ylabel('Features');
-xlabel('Time (s)')
+
+% Fig:2:B - feature matrix
+figName = 'Fig2B_feature_matrix';
+fet = fet_lgr(Trial);
+
+%subplot2(10,1,[1:4],1)
+axes('Position',[0.13,0.25,0.775,0.2])
+imagesc((1:fet.size(1))./fet.sampleRate,1:fet.size(2),nunity(fet)');
+caxis([-2,2]);
+xlim(round(exPer./xyz.sampleRate)+[-10,10])
+Lines(round(exPer./xyz.sampleRate),[],'k');
+%xlabel('Time (s)')
+flabels = {'speed SL'   ,...
+           'speed HF'   ,...
+           'height SL'  ,...
+           'pitch SL_PR',...
+           'pitch SM_SU',...
+           'dist SL_PR' ,...
+           'dist PR_SM' ,...
+           'dist SU_HB' ,...
+           'dist SL_HB' ,...
+           'av_SLSM_SMHF'};
+set(gca,'YTickLabelMode','manual',...
+        'YTickMode','manual',...
+        'YTick',1:numel(flabels),...
+        'YTickLabel',flabels);
+set(gca,'XTickLabelMode','manual',...
+        'XTickMode','manual',...
+        'XTick',[],...
+        'XTickLabel',{});
+%saveas(hfig,fullfile(figPath,[figName,'.png']),'png');
+%saveas(hfig,fullfile(figPath,[figName,'.eps']),'eps2');
+
+
+
+
+% Fig:2:C - Expert Labels
+stateLabels = {'walk','rear'};
+stateColors = 'br';
+
+figName = 'Fig2C_expert_labels';
+Stc = Trial.load('stc','hand_labeled_rev1');
+%hfig = figure(10161);
+%subplot2(10,1,5,1)
+axes('Position',[0.13,0.20,0.775,0.04])
+plotSTC(Stc,1,'patch',stateLabels,'br');
+xlim(round(exPer./xyz.sampleRate)+[-10,10])
+set(gca,'YTickLabelMode','manual',...
+        'YTickMode','manual',...
+        'YTick',.5,...
+        'YTickLabel',{'EXP'});
+set(gca,'XTickLabelMode','manual',...
+        'XTickMode','manual',...
+        'XTick',[],...
+        'XTickLabel',{});
+%title('Expert Labels');
+%saveas(hfig,fullfile(figPath,[figName,'.png']),'png');
+%saveas(hfig,fullfile(figPath,[figName,'.eps']),'eps2');
+
+
+
+% Fig:2:D - Empirical Labels
+figName = 'Fig2D_empirical_labels';
+stateColors = 'br';
+Stc = Trial.load('stc','auto_wbhr');
+%hfig = figure(10171);
+%subplot2(10,1,6,1)
+axes('Position',[0.13,0.15,0.775,0.04])
+plotSTC(Stc,1,'patch',stateLabels,stateColors);
+xlim(round(exPer./xyz.sampleRate)+[-10,10])
+set(gca,'YTickLabelMode','manual',...
+        'YTickMode','manual',...
+        'YTick',.5,...
+        'YTickLabel',{'EMP'});
+set(gca,'XTickLabelMode','manual',...
+        'XTickMode','manual',...
+        'XTick',[],...
+        'XTickLabel',{});
+%title('Empirical Labels');
+%saveas(hfig,fullfile(figPath,[figName,'.png']),'png');
+%saveas(hfig,fullfile(figPath,[figName,'.eps']),'eps2');
+
+
+
+% Fig:2:E - LGR Model Labels
+figName = 'Fig2E_LGR_labels';
+Stc = Trial.load('stc','LGR_wrsnkm');
+%hfig = figure(10181);
+%subplot2(10,1,7,1)
+axes('Position',[0.13,0.10,0.775,0.04])
+plotSTC(Stc,1,'patch',stateLabels,stateColors);
+xlim(round(exPer./xyz.sampleRate)+[-10,10])
+set(gca,'YTickLabelMode','manual',...
+        'YTickMode','manual',...
+        'YTick',.5,...
+        'YTickLabel',{'LGR'});
+set(gca,'XTickLabelMode','manual',...
+        'XTickMode','manual',...
+        'XTick',[],...
+        'XTickLabel',{});
+%title('Logistic Regression Labels');
+%saveas(hfig,fullfile(figPath,[figName,'.png']),'png');
+%saveas(hfig,fullfile(figPath,[figName,'.eps']),'eps2');
+
+
+% Fig:2:F - LDA Model Labels
+figName = 'Fig2F_LDA_labels';
+Stc = Trial.load('stc','LDA_wrsnkm');
+%hfig = figure(10191);
+axes('Position',[0.13,0.05,0.775,0.04])
+plotSTC(Stc,1,'patch',stateLabels,stateColors);
+xlim(round(exPer./xyz.sampleRate)+[-10,10])
+set(gca,'YTickLabelMode','manual',...
+        'YTickMode','manual',...
+        'YTick',.5,...
+        'YTickLabel',{'LDA'});
+xlabel('Time (s)');
+%saveas(hfig,fullfile(figPath,[figName,'.png']),'png');
+%saveas(hfig,fullfile(figPath,[figName,'.eps']),'eps2');
 
 
 
 
 
 %% Figure 3 JPDFs
-
+figPath = '/gpfs01/sirota/homes/gravio/Documents/Manuscripts/Vicon_Methods_2015/Figures/Figure_3';
 
 Trial = MTATrial('jg05-20120310');
 
@@ -254,7 +349,7 @@ bhv_JPDF(Trial,v1,v2,70,70,...
 
 tag = 'Walk_High-low';
 v1 = Trial.ang.copy;
-v1.data = ang(:,5,7,3);
+eev1.data = ang(:,5,7,3);
 v2 = Trial.ang.copy;
 v1.data = ang(:,4,5,3);
 bhv_JPDF(Trial,v1,v2,70,70,...
@@ -273,12 +368,29 @@ bhv_JPDF(Trial,v1,v2,70,70,...
 
 
 
+
+%% Fig:3:D - d-prime metrics
+
+
+
+dprime = (mean(SelectPeriods(xyz(:,7,3),Trial.stc{'r'}.data,'c',0))+mean(xyz(Trial.stc{'r'},7,3)))...
+          ./sqrt((var(SelectPeriods(xyz(:,7,3),Trial.stc{'r'}.data,'c',0))+var(xyz(Trial.stc{'r'},7,3))).*.5);
+
+
+
+[~,dstates] = bhv_lgr(Trial,false);
+figure,hist(log10(dstates(:,2)),1000)
+figure,hist2(log10(dstates(:,[1,6])),linspace(-10,0,70),linspace(-8,0,70)),caxis([0,600])
+
+
+
 %% Figure 4 Fine movement characterization
 Trial = MTATrial('jg05-20120310');
 xyz = Trial.load('xyz');
 xyz.filter(gtwin(.2,xyz.sampleRate));
 ang = Trial.ang.copy;
 ang.create(Trial,xyz);
+figPath = '/gpfs01/sirota/homes/gravio/Documents/Manuscripts/Vicon_Methods_2015/Figures/Figure_4';
 
 figure,
 mp = [1,2;2,3;3,4;4,5;5,7]';
@@ -294,6 +406,8 @@ Lines(Trial.stc{'w'}(:),[],'k',[],3);
 
 
 %% Figure 5 RHM (rythmic head motion) feature versus NCP (nasal cavity pressure)
+figPath = '/gpfs01/sirota/homes/gravio/Documents/Manuscripts/Vicon_Methods_2015/Figures/Figure_5';
+
 Trial = MTATrial('Ed10-20140815');
 
 %generate features
@@ -301,22 +415,39 @@ Trial = MTATrial('Ed10-20140815');
 ncp = fet_ncp(Trial,[],'wcsd',66);
 %plot features with linked axes
 
-figure,
+
+% Fig:5:A - Spectrums of the rhythmic head motion and the nasal
+%             cavity pressure sensor 
+figFileName = 'RHM_NCP_spec_ex2';
+hfig =p figure(3929439);
 sp(1) = subplot(211);
-imagesc(ts,fs,log10(rhm.data)'),axis xy,caxis([-5,-3.1])
+imagesc(ts,fs,log10(rhm.data)'),axis xy,caxis([-5,-3.1])%caxis([-7,-4.2])%
 title('Rhythmic Head Motion (RHM)')
 ylabel('frequency (Hz)')
 xlabel('Time (s)')
 sp(2) = subplot(212);
-imagesc(ts,fs,log10(ncp.data)'),axis xy,caxis([3,4.2])
+imagesc(ts,fs,log10(ncp.data)'),axis xy,caxis([3.5,4.4])
 title('Nasal Cavity Pressure (NCP)')
 ylabel('frequency (Hz)')
 xlabel('Time (s)')
 linkaxes(sp,'xy');
-xlim([700,860])
+%xlim([700,860])
+xlim([2991,3151])
+saveas(hfig,fullfile(figPath,[figFileName '.png']),'png');
+saveas(hfig,fullfile(figPath,[figFileName '.eps']),'eps2');
 
 
+% Fig:5:B - Mean Coherence as a function of head pitch and
+%             frequency 
 Trial = MTATrial('Ed10-20140812');
+figFileName = ['bhv_rhm_ncp_distrb_' Trial.filebase '_ex1'];
+hfig = bhv_rhm_ncp_distrb(Trial,[],[],66);
+saveas(hfig,fullfile(figPath,[figFileName '.png']),'png');
+saveas(hfig,fullfile(figPath,[figFileName '.eps']),'eps2');
+
+
+
+
 
 lfp = Trial.lfp.copy;
 lfp.load(Trial,[8,35]);

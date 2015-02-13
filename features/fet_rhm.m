@@ -17,15 +17,17 @@ xyz.addMarker('fhcom',[.7,1,.7],{{'head_back','head_front',[0,0,1]}},ButFilter(h
 
 
 % if xyz sampling rat e is greater than 120 Hz then resample it to 120 Hz
-if xyz.sampleRate > 120, 
+if isa(sampleRate,'MTAData'),
+    xyz.resample(sampleRate);    
+elseif sampleRate > 120, 
     xyz.resample(120); 
 end
 xyz.filter(gausswin(5)./sum(gausswin(5)));
 
 ang = Trial.ang.copy;
 ang.create(Trial,xyz);
-bang = ButFilter(ang(:,'head_back','fhcom',3),3,[1,30]./(Trial.ang.sampleRate/2),'bandpass');
-%bang = [0;diff(ButFilter(diff(bang),3,[1,30]/(ang.sampleRate/2),'bandpass'));0];
+bang = ButFilter(ang(:,'head_back','fhcom',3),3,[2,30]./(Trial.ang.sampleRate/2),'bandpass');
+%bang = [0;diff(ButFilter(diff(bang),3,[2,30]/(ang.sampleRate/2),'bandpass'));0];
 switch mode
 
   case 'csd'

@@ -16,7 +16,9 @@ if ~isempty(chans),
 end
 
 %SampleRate is always xyz sampleRate at the moment
-if Trial.xyz.sampleRate<120,
+if isa(sampleRate,'MTAData'),
+    fncp.resample(sampleRate);    
+elseif Trial.xyz.sampleRate<120,
     Trial.load('xyz');
     fncp.resample(Trial.xyz);
 else

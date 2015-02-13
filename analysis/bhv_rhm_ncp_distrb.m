@@ -1,4 +1,19 @@
-function bhv_rhm_ncp_distrb(Trial,varargin)
+function [figH] = bhv_rhm_ncp_distrb(Trial,varargin)
+%function bhv_rhm_ncp_distrb(Trial,varargin)
+%
+%
+%  varargin:
+%
+%    mode:    string/cellArray - predetermined 
+%             Def({'height','hangle'})
+%
+%
+%    ncp_thresh: duno    - Def([]), duno what it's for
+%
+%    ncp_chan:   numeric - Def(2), 
+%
+%    stc_mode:   string  - Def('auto_wbhr'), 
+
 [mode,ncp_thresh,ncp_chan,stc_mode] = DefaultArgs(varargin,{{'height','hangle'},[],2,'auto_wbhr'});
 
 
@@ -8,42 +23,34 @@ Trial.stc.updateMode(stc_mode);
 Trial.stc.load;
 
 %% Load Rythmic Head Motion(RHM) feature
-rhm = fet_rhm(Trial);
+rhm = fet_rhm(Trial,[],'default');
 
 %% Load Nasal Cavity Pressure(NCP) feature
-ncp = fet_ncp(Trial,[],ncp_chan);
+ncp = fet_ncp(Trial,rhm,'default',ncp_chan);
 
 %% Whiten RHM and NCP for spectral comparison (PSD&CSD)
-wang = [rhm,ncp];
-wang = WhitenSignal(wang,[],1);
+% $$$ wang = [rhm.data,ncp.data];
+% $$$ wang = WhitenSignal(wang,[],1);
 
-wang = [rhm,ncp];
+rhm.data = [rhm.data,ncp.data];
+
+sparm = struct('nFFT'     ,2^9,...
+               'Fs'       ,rhm.sampleRate,...
+               'WinLength',2^7,...
+               'nOverlap' ,2^7*.875,...
+               'FreqRange',[1,20]);
+
+[ys,fs,ts] = fet_spec(Trial,rhm,'mtcsdglong',false);
 
 
+%% Get smoothed speed of the Body
+xyz = Trial.load('xyz').filter(gtwin(1,Trial.xyz.sampleRate));
 
-[ys,fs,ts] = mtcsdglong(wang,2^9,Trial.ang.sampleRate,2^7,2^7*.875,[],'linear',[],[1,20]);
-
-
-%% Get Speed of the Body
-xyz = Trial.xyz.copy;
-xyz.load(Trial);
-xyz.filter(gtwin(1,Trial.xyz.sampleRate));
 vh = xyz.vel('spine_lower',[1,2]);
-
-
-%% Construct MTADlfp to hold ys
-% adjust with padding to account for spectral window
-szy = size(ys);
-padding = round([ts(1),mod(xyz.size(1)-2^6,2^7)/xyz.sampleRate].*1/diff(ts(1:2)))-[1,0];
-ys = MTADlfp('data',cat(1,zeros([padding(1),szy(2:end)]),ys,zeros([padding(2),szy(2:end)])),'sampleRate',1/diff(ts(1:2)));
-
-
-
-
-%% Resample Variable to match PSD&CSD data
 vh.resample(ys);
 vh.data = log10(abs(vh.data));
 vh.data(~nniz(vh(:))) = nan;
+
 xyz.resample(ys);
 
 nys = ys.copy;
@@ -52,33 +59,16 @@ nys.data(nys<-9) = nan;
 nys.data(~nniz(nys.data))=nan;
 nys.data = (nys.data-repmat(nanmedian(nys(nniz(nys),:,:,:)),[nys.size(1),1,1]))./repmat(nanstd(nys(nniz(nys),:,:,:)),[nys.size(1),1,1]);
 
-% $$$ figure,
-% $$$ sp(1)=subplot(211);
-% $$$ %plot(rhm)
-% $$$ %imagesc(ts,fs,log10(ys(:,:,1,1))'),axis xy,caxis([-6,-2.5]),
-% $$$ imagesc(ts,fs,nys(:,:,1,1)'),axis xy,%caxis([.44,.48]),
-% $$$ sp(2)=subplot(212);
-% $$$ %plot(ncp)
-% $$$ imagesc(ts,fs,nys(:,:,2,2)'),axis xy,%caxis([,6]),
-% $$$ %imagesc(ts,fs,log10(ys(:,:,2,2))'),axis xy,caxis([2,6]),
-% $$$ linkaxes(sp,'x')
-
-% $$$ rhm_maxpow = MTADlfp('data',max(log10(ys(:,fs>13&fs>5,1,1)),[],2),'sampleRate',ys.sampleRate);
-% $$$ ncp_maxpow = MTADlfp('data',max(log10(ys(:,fs>12&fs>6,2,2)),[],2),'sampleRate',ys.sampleRate);
-
 rhm_maxpow = MTADlfp('data',max(nys(:,fs>13&fs>5,1,1),[],2),'sampleRate',ys.sampleRate);
 ncp_maxpow = MTADlfp('data',max(nys(:,fs>12&fs>6,2,2),[],2),'sampleRate',ys.sampleRate);
-% $$$ if isempty(ncp_thresh),
-% $$$     ncp_thresh =  mean(ncp_maxpow.data);
-% $$$ end
-
 
     
 chan_labels = {'Rhythmic Head Motion','Nasal Cavity Pressure'};
 
 figH = figure(238482);
 %set(figH,'Position',[268    80   985   692]);
-pos =[20, 452, 1642, 471];
+pos =[67,441,1607,482];
+%pos =[20, 452, 1642, 471];
 set(figH,'Position',pos);
 for s = 1;%:numel(Trial.stc.states)
 
@@ -178,7 +168,7 @@ for s = 1;%:numel(Trial.stc.states)
         %% RHM psd
         subplot2(numel(mode),4,m,1);
         imagesc(vedgs,fs,mrv(:,:,1)',[.1,max(prctile(mrv(nniz(mrv),:,1),[95]),[],2)]),axis xy
-        title([chan_labels{j} ' mean PSD Binned by ' vh_label])
+        title([chan_labels{1} ' mean PSD Binned by ' vh_label])
         xlabel(['Binned ' vh_label ' (' vh_units ')']);
         ylabel('Frequency Hz')
         colorbar
@@ -186,7 +176,7 @@ for s = 1;%:numel(Trial.stc.states)
         %% NCP psd
         subplot2(numel(mode),4,m,2);
         imagesc(vedgs,fs,mrv(:,:,2)',[.1,max(prctile(mrv(nniz(mrv),:,2),[95]),[],2)]),axis xy
-        title([chan_labels{j} ' mean PSD Binned by ' vh_label])
+        title([chan_labels{2} ' mean PSD Binned by ' vh_label])
         xlabel(['Binned ' vh_label ' (' vh_units ')']);
         ylabel('Frequency Hz')
         colorbar
