@@ -3,7 +3,7 @@ function fet = fet_lgr(Trial,varargin)
 if ~isempty(varargin)
 sampleRate = varargin{1};
 else 
-    sampleRate = Traial.xyz.sampleRate;
+    sampleRate = Trial.xyz.sampleRate;
 end
 
 dsx = Trial.load('xyz').filter(gtwin(.5,Trial.xyz.sampleRate));
