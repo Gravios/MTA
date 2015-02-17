@@ -1,10 +1,28 @@
 function [Stc,d_state] = bhv_lda(Trial,varargin)
+%function [Stc,d_state] = bhv_lda(Trial,varargin)
+%
+% varargin:
+%
+%   train:       logical, def - false
+%
+%   states:    cellArray, def - Trial.stc.list_state_attrib('label')
+%
+%   fet:          string, def - 'fet_lda'
+%
+%   model_name:   string, def - ['MTAC_' Trial.stc.mode '_LDA']
+%
+%   display:     logical, def - true
+%
+%
+%
+%
+
 MODEL_TYPE = 'LDA';
 
 %Default Args
-[train,states,fet,model_filename,display] = DefaultArgs(varargin,...
+[train,states,fet,model_name,display] = DefaultArgs(varargin,...
     {false,Trial.stc.list_state_attrib('label'),'fet_lda',...
-     ['MTA_' Trial.stc.mode '_' MODEL_TYPE],true});
+     ['MTAC_' Trial.stc.mode '_' MODEL_TYPE],true});
 
 
 sind = Trial.stc.gsi(states);
@@ -13,14 +31,9 @@ keys = subsref(Trial.stc.list_state_attrib('key'),...
 Trial.stc.states = Trial.stc.states(sind);
 ns = numel(states);
 
-Stc = Trial.stc.copy;
-Stc.updateMode([MODEL_TYPE '_' cell2mat(keys)]);
-Stc.states = {};
-
-model_filename = [model_filename '-' cell2mat(keys) '-model.mat'];
+model_name = [model_name '-' fet '-model.mat'];
 model_path = fileparts(mfilename('fullpath'));
-model_loc = fullfile(model_path,model_filename);
-
+model_loc = fullfile(model_path,model_name);
 
 fet = feval(fet,Trial);
 nind = nniz(fet);
@@ -29,7 +42,7 @@ nind = nniz(fet);
 if train||~exist(model_loc,'file'),
 
     Model_Information = struct(...
-        'filename',              model_filename,         ...
+        'filename',              model_name,         ...
         'path',                  model_path,             ...
         'description',           '',                     ...
         'StcMode',               Trial.stc.mode,         ...
@@ -48,9 +61,13 @@ if train||~exist(model_loc,'file'),
     save(model_loc,'fet_mean_state','fet_cov_state','Model_Information');
     return
 else
-    load(model_filename);
+    load(model_name);
 end
 
+
+Stc = Trial.stc.copy;
+Stc.updateMode([MODEL_TYPE '_' Model_Information.StcMode '-' cell2mat(Model_Information.state_keys)]);
+Stc.states = {};
 
 
 states = Model_Information.state_labels;

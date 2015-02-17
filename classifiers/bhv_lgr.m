@@ -1,17 +1,34 @@
 function [Stc,d_state] = bhv_lgr(Trial,varargin)
+%function [Stc,d_state] = bhv_lgr(Trial,varargin)
+%
+% varargin:
+%
+%   train:       logical, def - false
+%
+%   states:    cellArray, def - Trial.stc.list_state_attrib('label')
+%
+%   fet:          string, def - 'fet_lgr'
+%
+%   model_name:   string, def - ['MTAC_' Trial.stc.mode '_LGR']
+%
+%   display:     logical, def - true
+%
+%
+%
+%
+
 MODEL_TYPE = 'LGR';
-[train,states,model_name,display] = DefaultArgs(varargin,...
-    {false,Trial.stc.list_state_attrib('label'),...
+
+[train,states,fet,model_name,display] = DefaultArgs(varargin,...
+    {false,Trial.stc.list_state_attrib('label'),'fet_lgr',...
     ['MTAC_' Trial.stc.mode '_' MODEL_TYPE],true});
 
 keys = subsref(Trial.stc.list_state_attrib('key'),...
                substruct('()',{Trial.stc.gsi(states)}));
 
-
-model_name = [model_name  '-model.mat'];
+model_name = [model_name '-' fet '-model.mat'];
 model_path = fileparts(mfilename('fullpath'));
 model_loc = fullfile(model_path,model_name);
-
 
 lrfet = fet_lgr(Trial);
 nind = nniz(lrfet);
@@ -20,7 +37,7 @@ nind = nniz(lrfet);
 if train||~exist(model_loc,'file'),
 
     Model_Information = struct(...
-        'filename',              model_filename,         ...
+        'filename',              model_name,         ...
         'path',                  model_path,             ...
         'description',           '',                     ...
         'StcMode',               Trial.stc.mode,         ...

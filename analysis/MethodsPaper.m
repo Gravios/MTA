@@ -12,6 +12,29 @@ ang = Trial.ang.copy;
 ang.create(Trial,xyz);
 figPath = '/gpfs01/sirota/homes/gravio/Documents/Manuscripts/Vicon_Methods_2015/Figures/Figure_1';
 
+%% Fig:1:A Recording setup ( Maze and Cameras )
+hfig = figure(83832);
+pic_path = '';
+img = imread(pic_path);
+imagesc(img);
+
+%% Fig:1:B Rat with Markers
+hfig = figure(83832);
+pic_path = '';
+img = imread(pic_path);
+imagesc(img);
+
+
+
+%% Fig:1:C Marker Skeleton Recontruction
+
+
+
+%% Fig:1:D Body motion and feature types
+
+
+
+
 %% Fig:1:E
 % marker error
 hfig = figure(838884);
@@ -98,9 +121,11 @@ saveas(hfig,[fullfile(figPath,'Fig1F-alt1.eps'),'eps2');
 
 
 
-
+ 
 
 %% Figure 2 Trajectories and behavioral labeling
+
+
 Trial = MTATrial('jg05-20120317');
 Stc = Trial.load('stc','hand_labeled_rev1'); 
 figPath = '/gpfs01/sirota/homes/gravio/Documents/Manuscripts/Vicon_Methods_2015/Figures/Figure_2';
@@ -114,9 +139,8 @@ stateColors = 'brcgym';
 
 hfig = figure(38239384);clf
 set(hfig,'position',[836   110   775   792]);
+
 %% Fig:2:A Skeleton examples
-
-
 
 axes('Position',[0.13,0.5,0.775,0.45]);hold on;
 
@@ -297,6 +321,22 @@ xlabel('Time (s)');
 
 
 
+% Fig:2:G - LDA Model Classifier scores
+figName = 'Fig2G_LDA_clsfr';
+[Stc,d_state] = bhv_lda(Trial,false);
+hfig = figure(10194);
+plot((1:size(d_state,1))/30,d_state)
+xlim(round(exPer./xyz.sampleRate)+[-10,10])
+ylim([-100,10])
+ylabel('A.U.');
+xlabel('Time (s)');
+saveas(hfig,fullfile(figPath,[figName,'.png']),'png');
+saveas(hfig,fullfile(figPath,[figName,'.eps']),'eps2');
+
+
+%% NEED CONFUSION MATRIX STATS
+%Newest lgr model as of 2014.02.17
+[Stc,d_state] = bhv_lgr(Trial,false,'model_name','MTAC_testLGRnewfet');
 
 
 %% Figure 3 JPDFs
@@ -312,8 +352,7 @@ vxy.data(vxy.data<.001) = 0.001;
 rol = fet_roll(Trial,[],'default');
 
 
-%% Fig:3:A - Rearing from everything else
-
+% Fig:3:A - Rearing from everything else
 tag = 'Rearing-Everything';
 v1 = Trial.ang.copy;
 v1.data = ang(:,2,3,3);
@@ -333,7 +372,7 @@ bhv_JPDF(Trial,v1,v2,70,70,...
          'Head roll (rad)','rwhl',tag)
 
 
-%% Fig:3:B - walk from everything else
+% Fig:3:B - walk from everything else
 tag = 'speed_SpineL_vs_HeadF';
 v1 = vxy.copy;
 v1.data = log10(vxy(:,1));
@@ -345,8 +384,7 @@ bhv_JPDF(Trial,v1,v2,70,70,...
 
 
 
-%% Fig:3:C - walk to high and low walk
-
+% Fig:3:C - walk to high and low walk
 tag = 'Walk_High-low';
 v1 = Trial.ang.copy;
 eev1.data = ang(:,5,7,3);
@@ -369,8 +407,7 @@ bhv_JPDF(Trial,v1,v2,70,70,...
 
 
 
-%% Fig:3:D - d-prime metrics
-
+% Fig:3:D - d-prime metrics
 
 
 dprime = (mean(SelectPeriods(xyz(:,7,3),Trial.stc{'r'}.data,'c',0))+mean(xyz(Trial.stc{'r'},7,3)))...
@@ -444,6 +481,7 @@ figFileName = ['bhv_rhm_ncp_distrb_' Trial.filebase '_ex1'];
 hfig = bhv_rhm_ncp_distrb(Trial,[],[],66);
 saveas(hfig,fullfile(figPath,[figFileName '.png']),'png');
 saveas(hfig,fullfile(figPath,[figFileName '.eps']),'eps2');
+saveas(hfig,fullfile(figPath,[figFileName '.pdf']),'pdf');
 
 
 
@@ -459,4 +497,69 @@ specParms = struct('nFFT',2^9,...
                     'FreqRange',[20,150]);
 
 [ys,fs,ts] = fet_spec(Trial,lfp,'mtchglong',true,lfp.sampleRate,specParms);
+
+
+
+%%Testing Grounds: Enter at Own Risk
+
+Stc = Trial.load('stc','hand_labeled_rev1');
+
+xyz = Trial.load('xyz').filter(gtwin(.25,Trial.xyz.sampleRate));
+
+
+xyz.addMarker('fhcom',[.7,1,.7],...
+              {{'head_back','head_front',[0,0,1]}},...
+              xyz.com(xyz.model.rb({'head_left','head_front','head_right'})));
+
+xyz.addMarker('fbcom',[.7,0,.7],...
+              {{'spine_lower','pelvis_root',[0,0,1]}},...
+              xyz.com(xyz.model.rb({'spine_lower','pelvis_root'})));
+
+
+xyz.addMarker('fscom',[.7,0,.7],...
+              {{'spine_middle','spine_upper',[0,0,1]}},...
+              xyz.com(xyz.model.rb({'spine_middle','spine_upper'})));
+
+fps = xyz.vel({'spine_lower','spine_middle','head_front'},[1,2]);
+fps = xyz.vel({'fbcom','fscom','fhcom'},[1,2]);
+fps.data(fps.data<.0001) = .0001;
+fps.data = log10(fps.data);
+
+[ys,fs,ts,ps] = fet_spec(Trial,fps,'mtchglong',true);
+
+
+
+figure,imagesc(ts,fs,ys(:,:,1,7)');axis xy,
+Lines(Trial.stc{'w',ys.sampleRate}(:),[],'k',[],3);
+
+
+figure,imagesc(ts,fs,log10(ys(:,:,1,1))');axis xy,
+Lines(Trial.stc{'w',ys.sampleRate}(:),[],'k',[],3);
+
+
+ys(~nniz(ys(:)))==1e-10;
+ind = nniz(ys(:,1,1,1));
+ind = Stc{'r',ys}.cast('TimeSeries');
+ind.data(1:10) = 0;
+
+figure,hist2(sq([nanmean(log10(ys(ind(1:end-5)==1,fs<4,1,1)),2),...
+                 nanmean(log10(ys(ind(1:end-5)==1,fs<4,3,3)),2)]),linspace(-8,.5,100),linspace(-7,.5,100))
+
+
+figure,hist2([fps(:,1),fps(:,3)],linspace(-3,1.5,100),linspace(-3,1.5,100)),caxis([0,1000])
+
+vind = Trial.stc{'w'};
+figure,hist2([fps(vind,1),fps(vind,2)],linspace(-3,1.5,100),linspace(-3,1.5,100)),caxis([0,1000])
+
+
+
+
+
+
+
+
+
+
+
+
 
