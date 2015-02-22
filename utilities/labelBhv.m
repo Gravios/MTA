@@ -378,11 +378,11 @@ rper_height_thresh = 170;
 rper = cur_rper(mrh>rper_height_thresh,:);
 
 %% @(BHV-FILTER,REMOVE_REARING_PERIODS)
-wper = SubstractRanges(wper,rper+repmat([-64,24],size(rper,1),1));
+if ~isempty(rper),
+    wper = SubstractRanges(wper,rper+repmat([-64,24],size(rper,1),1));
+end
 
-
-aper = Trial.sync.copy;
-aper.resample(txyz.sampleRate);
+aper = resample(Trial.sync.copy,txyz.sampleRate);
 aper.data = aper.data-aper.data(1)+1;
 aper = aper+[5,-5];
 
