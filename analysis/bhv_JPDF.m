@@ -1,5 +1,10 @@
 function bhv_JPDF(Trial,var1,var2,varargin)
-[v1nbins,v2nbins,v1Label,v2Label,states,tag] = DefaultArgs(varargin,{50,50,'','',Trial.stc.list_state_attrib('key'),'default'});
+
+ind = Trial.stc{'a'};
+
+[v1nbins,v2nbins,v1lim,v2lim,v1Label,v2Label,states,tag] = DefaultArgs(varargin,{50,50,...
+       prctile(var1(ind),[1,99]),prctile(var2(ind),[1,99]),'','',...
+       Trial.stc.list_state_attrib('key'),'default'});
 
 
 if ischar(states), states = mat2cell(states,1,ones(size(states))); end
@@ -12,12 +17,10 @@ ind = Trial.stc{'a'};
 states(cellfun(@strcmp,states,repmat({'a'},size(states))))=[];
 nsts = numel(states);
 
-v1lim =prctile(var1(ind),[1,99]);
-v2lim =prctile(var2(ind),[1,99]);
 v1edgs = linspace(v1lim(1),v1lim(2),v1nbins);
 v2edgs = linspace(v2lim(1),v2lim(2),v2nbins);
 
-
+caxmax = [];
 N = hist2([var1(ind),var2(ind)],v1edgs,v2edgs);
 axes('outerposition',[0,0,1/(nsts+1),1]);
 imagesc(v1edgs,v2edgs,N',[0,mean(N(nniz(N(:))))*5]),
@@ -27,6 +30,7 @@ xlabel(v1Label);
 title(ind.label);
 xlim(v1edgs([1,end]))
 ylim(v2edgs([1,end]))
+caxmax(1) = subsref(caxis,substruct('()',{[1],[2]}));
 
 slab = {};
 for i = 1:nsts
@@ -42,9 +46,11 @@ for i = 1:nsts
     title(ind.label);
     xlim(v1edgs([1,end]))
     ylim(v2edgs([1,end]))
+    caxmax(i+1) = subsref(caxis,substruct('()',{[1],[2]}));
 end
-%suptitle(['JPDF : ' states ' : ' Trial.filebase ])
 
+
+ForAllSubplots(['caxis([0,' num2str(median(caxmax)) '])']);
 
 imtype = 'png';
 
@@ -76,11 +82,11 @@ set(hfig,'paperposition',get(hfig,'position').*[0,0,1,1]/2)
 
 
 saveas(hfig,fullfile(Trial.path.data,'figures',mfilename,...
-                     [Trial.filebase '.' mfilename '.' tag '.' imtype]),imtype);
+                     [Trial.filebase '.' mfilename '.' Trial.stc.mode '.' tag '.' imtype]),imtype);
 
 imtype = 'eps';
 saveas(hfig,fullfile(Trial.path.data,'figures',mfilename,...
-                     [Trial.filebase '.' mfilename '.' tag '.' imtype]),'epsc2');
+                     [Trial.filebase '.' mfilename '.' Trial.stc.mode '.' tag '.' imtype]),'epsc2');
 
 
 % $$$ savefig(fullfile(Trial.path.data,'figures',mfilename,...

@@ -142,13 +142,28 @@ set(hfig,'position',[836   110   775   792]);
 
 %% Fig:2:A Skeleton examples
 
+
 axes('Position',[0.13,0.5,0.775,0.45]);hold on;
+set(gca,'CameraPositionMode', 'manual'                    ,...
+	'YLim', [-200 200],...
+        'XLim', [-300 400],...
+	'ZLim', [0 300],...
+	'CameraPosition',     [-1909.49 3535.01 1621.08],...
+	'CameraTargetMode',   'manual'                    ,...
+	'CameraTarget',       [50 0 150]                ,...
+ 	'CameraUpVectorMode', 'manual'                    ,...
+ 	'CameraUpVector',     [0 0 1]                   ,...
+ 	'CameraViewAngleMode','manual'                  ,...
+ 	'CameraViewAngle',    [6.88708]);
+daspect([1,1,1])
+
 
 Stc = Trial.load('stc','hand_labeled_rev1'); 
 nper = Stc{'n'}&exPer;
 wper = Stc{'w'}&exPer;
 rper = Stc{'r'}&exPer;
 sper = Stc{'s'}&exPer;
+
 
 plotSkeleton(xyz,exPer(1),'surface',ang);              % Skeleton @ Begining of trajectory
 plotSkeleton(xyz,round(mean(nper.data)),'surface',ang);% Skeleton @ During Turn
@@ -191,6 +206,7 @@ end
 
 
 zlim([0,300]);
+print('-depsc','-r600',fullfile(figPath,['Fig2A_skeleton_test_20150218Z2032']))
 % $$$ set(gca,'YTickLabelMode','manual');
 % $$$ set(gca,'YTickLabel',{});
 % $$$ set(gca,'XTickLabelMode','manual');
@@ -198,22 +214,29 @@ zlim([0,300]);
 % $$$ set(gca,'ZTickLabelMode','manual');
 % $$$ set(gca,'ZTickLabel',{});
 
+clf
 
-
+%figure
 % Fig:2:B - feature matrix
 figName = 'Fig2B_feature_matrix';
 fet = fet_lgr(Trial);
 
 %subplot2(10,1,[1:4],1)
 axes('Position',[0.13,0.25,0.775,0.2])
-imagesc((1:fet.size(1))./fet.sampleRate,1:fet.size(2),nunity(fet)');
+ts = (1:fet.size(1))./fet.sampleRate;
+per = round(exPer./xyz.sampleRate)+[-10,10];
+ind = ts>per(1)&ts<per(2);
+ufet = nunity(fet);
+imc = imagesc(ts(ind),1:fet.size(2),ufet(ind,:)');
 caxis([-2,2]);
 xlim(round(exPer./xyz.sampleRate)+[-10,10])
 Lines(round(exPer./xyz.sampleRate),[],'k');
 %xlabel('Time (s)')
 flabels = {'speed SL'   ,...
+           'speed SM'   ,...
            'speed HF'   ,...
            'height SL'  ,...
+           'Z-diff SL_HF',...
            'pitch SL_PR',...
            'pitch SM_SU',...
            'dist SL_PR' ,...
@@ -320,6 +343,9 @@ xlabel('Time (s)');
 %saveas(hfig,fullfile(figPath,[figName,'.eps']),'eps2');
 
 
+export_fig(fullfile(figPath,['Fig2A-F_complete_test_20150218Z1347']),'eps','-r300')
+print('-depsc','-r300',fullfile(figPath,['Fig2A-F_complete_test_20150218Z1218']))
+
 
 % Fig:2:G - LDA Model Classifier scores
 figName = 'Fig2G_LDA_clsfr';
@@ -331,7 +357,7 @@ ylim([-100,10])
 ylabel('A.U.');
 xlabel('Time (s)');
 saveas(hfig,fullfile(figPath,[figName,'.png']),'png');
-saveas(hfig,fullfile(figPath,[figName,'.eps']),'eps2');
+saveas(hfig,fullfile(figPath,[figName,'.eps']),'epsc');
 
 
 %% NEED CONFUSION MATRIX STATS
@@ -345,9 +371,10 @@ figPath = '/gpfs01/sirota/homes/gravio/Documents/Manuscripts/Vicon_Methods_2015/
 Trial = MTATrial('jg05-20120310');
 
 % Vars of interest 
+%Trial.load('stc','hand_labeled_rev1');
 xyz = Trial.load('xyz');
 ang = Trial.load('ang');
-vxy = vel(Trial.load('xyz').filter(gtwin(.5,xyz.sampleRate)),{'spine_lower','head_front'},[1,2])
+vxy = vel(Trial.load('xyz').filter(gtwin(.25,xyz.sampleRate)),{'spine_lower','head_front'},[1,2]);
 vxy.data(vxy.data<.001) = 0.001;
 rol = fet_roll(Trial,[],'default');
 
@@ -358,7 +385,7 @@ v1 = Trial.ang.copy;
 v1.data = ang(:,2,3,3);
 v2 = Trial.ang.copy;
 v2.data = ang(:,3,4,2);
-bhv_JPDF(Trial,v1,v2,70,70,...
+bhv_JPDF(Trial,v1,v2,70,70,[],[],...
          'Distance(Pelvis,Spine Middle) (mm)',...
          'Upper Spine Pitch (rad)',{'a-r','r'},tag)
 
@@ -367,7 +394,7 @@ tag = 'pelvis2spineM_vs_headroll';
 v1 = Trial.ang.copy;
 v1.data = ang(:,2,3,3);pp
 v2 = rol.copy;
-bhv_JPDF(Trial,v1,v2,70,70,...
+bhv_JPDF(Trial,v1,v2,70,70,[],[],...
          'Distance(Pelvis,Spine Middle) (mm)',...
          'Head roll (rad)','rwhl',tag)
 
@@ -378,19 +405,19 @@ v1 = vxy.copy;
 v1.data = log10(vxy(:,1));
 v2 = vxy.copy;
 v2.data = log10(vxy(:,2));
-bhv_JPDF(Trial,v1,v2,70,70,...
+bhv_JPDF(Trial,v1,v2,70,70,[-2,2],[-2,2],...
          'Speed (Lower Spine) log10(mm)',...
-         'Speed (Head Front) log10(mm)',{'a-r','w','a-w'},tag)
-
+         'Speed (Head Front) log10(mm)',{'a-r','w','a-w-r'},...
+         tag)
 
 
 % Fig:3:C - walk to high and low walk
 tag = 'Walk_High-low';
 v1 = Trial.ang.copy;
-eev1.data = ang(:,5,7,3);
+v1.data = ang(:,5,7,3);
 v2 = Trial.ang.copy;
-v1.data = ang(:,4,5,3);
-bhv_JPDF(Trial,v1,v2,70,70,...
+v2.data = ang(:,4,5,3);
+bhv_JPDF(Trial,v1,v2,70,70,[],[],...
          'Distance(SpineU,HeadB) (mm)',...
          'Head roll (rad)',{'w','h','l'},tag)
 
@@ -400,7 +427,7 @@ v1 = Trial.xyz.copy;
 v1.data = xyz(:,1,3);
 v2 = Trial.ang.copy;
 v2.data = ang(:,5,7,2);
-bhv_JPDF(Trial,v1,v2,70,70,...
+bhv_JPDF(Trial,v1,v2,70,70,[],[],...
          'Hight(SpineL) (mm)',...
          'Head Pitch (rad)','whl',tag)
 
