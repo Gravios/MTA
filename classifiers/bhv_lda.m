@@ -52,6 +52,7 @@ if train||~exist(model_loc,'file'),
         'state_keys',            {keys});
 
     fet_mean_state = zeros([1,size(fet,2),ns]);
+    fet_cov_state = [];
     for i = 1:ns
         fet_state = fet(Trial.stc{states{i}},:);
         fet_state(~nniz(fet_state),:) = [];
@@ -90,6 +91,11 @@ d_state = Filter0(gtwin(0.50,30),d_state);
 
 [~,maxState] = max(d_state,[],2);
 
+% Smooth decision boundaries - 200 ms state minimum
+bwin = round(.2*fet.sampleRate)+double(mod(round(.2*fet.sampleRate),2)==0);
+mss = GetSegs(maxState,1:size(maxState,1),bwin,nan);
+maxState=circshift(sq(mode(mss))',floor(bwin/2));
+
 
 % Push the new labels into the MTAStateCollection.
 for i = 1:ns,
@@ -102,6 +108,7 @@ Stc.addState(Trial.spath,...
              states{i},...
              Model_Information.state_keys{i},...
              'TimePeriods');
+Stc.states{i} = Stc.states{i}+[1/fet.sampleRate,0];
 end
 
 

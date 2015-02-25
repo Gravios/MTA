@@ -364,6 +364,37 @@ saveas(hfig,fullfile(figPath,[figName,'.eps']),'epsc');
 %Newest lgr model as of 2014.02.17
 [Stc,d_state] = bhv_lgr(Trial,false,'model_name','MTAC_testLGRnewfet');
 
+% Training
+bhv_lda(Trial,true,'fet',fet,'model_name','MTAC_testLDAnewfet');
+
+% Classification
+[Stc,d_state] = bhv_lda(Trial,'fet','fet_lgr','model_name','MTAC_testLDAnewfet');
+
+
+fet = fet_lgr(Trial);
+fet.data = nunity(fet.data);
+nind = nniz(fet);
+[U,S,V] = svd(cov(fet(nind,:)));
+
+figure
+hist2([fet(nind,:)*V(:,1),fet(nind,:)*V(:,2)],linspace(-8,5,100),linspace(-6,4.5,100)),caxis([0,300])
+
+
+figure
+per = Trial.stc{'r'};
+hist2([fet(per,:)*V(:,1),fet(per,:)*V(:,2)],linspace(-8,5,100),linspace(-6,4.5,100)),caxis([0,300])
+
+fet.data
+nind = Trial.stc{'a-r'};
+[U,S,V] = svd(cov(fet(nind,:)));
+figure
+hist2([fet(nind,:)*V(:,1),fet(nind,:)*V(:,2)],linspace(-8,5,100),linspace(-6,4.5,100)),caxis([0,300])
+
+
+figure
+per = Trial.stc{'n'};
+hist2([fet(per,:)*V(:,1),fet(per,:)*V(:,2)],linspace(-8,5,100),linspace(-6,4.5,100)),caxis([0,300])
+
 
 %% Figure 3 JPDFs
 figPath = '/gpfs01/sirota/homes/gravio/Documents/Manuscripts/Vicon_Methods_2015/Figures/Figure_3';
@@ -449,54 +480,86 @@ figure,hist2(log10(dstates(:,[1,6])),linspace(-10,0,70),linspace(-8,0,70)),caxis
 
 
 %% Figure 4 Fine movement characterization
-Trial = MTATrial('jg05-20120310');
-xyz = Trial.load('xyz');
-xyz.filter(gtwin(.2,xyz.sampleRate));
-ang = Trial.ang.copy;
-ang.create(Trial,xyz);
 figPath = '/gpfs01/sirota/homes/gravio/Documents/Manuscripts/Vicon_Methods_2015/Figures/Figure_4';
 
-figure,
-mp = [1,2;2,3;3,4;4,5;5,7]';
-vang = [];
-for i = mp,
-vang(:,end+1) = circ_dist(ang(:,i(1),i(2),1),circshift(ang(:,i(1),i(2),1),-20));
-end
-plot(diff(vang))
-%xlim([31600,33700]);
-Lines(Trial.stc{'r'}(:),[],'r',[],3);
-Lines(Trial.stc{'w'}(:),[],'k',[],3);
+
+Trial = MTATrial('jg05-20120317');
+xyz = Trial.load('xyz').filter(gtwin(.05,Trial.xyz.sampleRate));
+ang = create(Trial.ang.copy,Trial,xyz);
+
+
+% %%%%%%%%%%%%%%%%%%%%%%%%%%%%
+%Fig:4:A - Fast scans of head
+%                            
+% Description: {}
+%
+hfig = figure(401);
+
+plot([circ_dist(ang(:,5,7,1),ang(:,2,3,1)),...
+      circ_dist(ang(:,1,2,1),ang(:,3,4,1))]);
+
+figure,plot(diff([circ_dist(ang(:,5,7,1),ang(:,2,3,1))]))
+
+dang = Trial.ang.copy;
+%dang.data = diff([0;[circ_dist(ang(:,5,7,1),ang(:,2,3,1))-...
+%             circ_dist(ang(:,3,4,1),ang(:,1,2,1))]]);
+dang.data = diff(circ_dist(ang(:,5,7,1),ang(:,2,3,1)));
+
+sparm = struct('nFFT',2^9,...
+               'Fs',dang.sampleRate,...
+               'WinLength',2^7,...
+               'nOverlap',2^7*.875,...
+               'FreqRange',[1,20]);
+
+
+[ys,fs,ts,ps] = fet_spec(Trial,dang,'mtchglong',false,'defspec',sparm);
+
+figure,imagesc(ts,fs,(log10(ys(:,:,1,1)))');axis xy,
+
+figure,imagesc(ts,fs,ys(:,:,1,2)');axis xy,
+Lines(Trial.stc{'w',ys.sampleRate}(:),[],'k',[],3);
+
+figure,sp = [];
+sp(1) = subplot(211),imagesc(ts,fs,log10(ys(:,:,1,1))');axis xy,
+sp(2) = subplot(212),imagesc(ts,fs,log10(ys(:,:,2,2))');axis xy,
+linkaxes(sp,'xy');
+Lines(Trial.stc{'w',ys.sampleRate}(:),[],'k',[],3);
 
 
 
 %% Figure 5 RHM (rythmic head motion) feature versus NCP (nasal cavity pressure)
 figPath = '/gpfs01/sirota/homes/gravio/Documents/Manuscripts/Vicon_Methods_2015/Figures/Figure_5';
 
-Trial = MTATrial('Ed10-20140815');
+Trial = MTATrial('Ed10-20140820','all','rov');
 
 %generate features
-[rhm,fs,ts] = fet_rhm(Trial,[],'wcsd');
-ncp = fet_ncp(Trial,[],'wcsd',66);
+
+[rhm,fs,ts] = fet_rhm(Trial,[],'csd');
+ncp = fet_ncp(Trial,[],'csd',66);
 %plot features with linked axes
+
+drhm = fet_rhm(Trial,[],'raw');
+dncp = fet_ncp(Trial,[],'raw',66);
 
 
 % Fig:5:A - Spectrums of the rhythmic head motion and the nasal
 %             cavity pressure sensor 
 figFileName = 'RHM_NCP_spec_ex2';
-hfig =p figure(3929439);
+hfig = figure(3929439);
 sp(1) = subplot(211);
-imagesc(ts,fs,log10(rhm.data)'),axis xy,caxis([-5,-3.1])%caxis([-7,-4.2])%
+imagesc(ts,fs,log10(rhm.data)'),axis xy,caxis([-4.7,-2.5])
 title('Rhythmic Head Motion (RHM)')
 ylabel('frequency (Hz)')
 xlabel('Time (s)')
 sp(2) = subplot(212);
-imagesc(ts,fs,log10(ncp.data)'),axis xy,caxis([3.5,4.4])
+imagesc(ts,fs,log10(ncp.data)'),axis xy,caxis([4.8,7])
 title('Nasal Cavity Pressure (NCP)')
 ylabel('frequency (Hz)')
 xlabel('Time (s)')
 linkaxes(sp,'xy');
+xlim([600,860])
 %xlim([700,860])
-xlim([2991,3151])
+%xlim([2991,3151])
 saveas(hfig,fullfile(figPath,[figFileName '.png']),'png');
 saveas(hfig,fullfile(figPath,[figFileName '.eps']),'eps2');
 

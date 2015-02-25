@@ -19,10 +19,11 @@ end
 if isa(sampleRate,'MTAData'),
     fncp.resample(sampleRate);    
 elseif Trial.xyz.sampleRate<120,
-    Trial.load('xyz');
-    fncp.resample(Trial.xyz);
+    xyz = Trial.load('xyz');
+    fncp.resample(xyz);
 else
-    fncp.resample(120);
+    xyz = Trial.load('xyz').resample(120);
+    fncp.resample(xyz);
 end
 
 

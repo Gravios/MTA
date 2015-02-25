@@ -56,26 +56,37 @@ else
 end    
 
 
+% Create new Stc
 Stc = Trial.stc.copy;
 Stc.updateMode([MODEL_TYPE '-' Model_Information.StcMode '-' cell2mat(Model_Information.state_keys)]);
 Stc.states = {};
 
 
+% Compute scores for the logistic regression
 d_state = mnrval(B,lrfet.data);
 
+
+% Separate the winners from the losers
 [~,maxState] = max(d_state,[],2);
 maxState(~nind,:) = 0;
 
+% Smooth decision boundaries - 200 ms state minimum
+bwin = round(.2*lrfet.sampleRate)+double(mod(round(.2*lrfet.sampleRate),2)==0);
+mss = GetSegs(maxState,1:size(maxState,1),bwin,nan);
+maxState=circshift(sq(mode(mss))',floor(bwin/2));
+
+% Populate Stc object with the new states
 for i = 1:numel(Model_Information.state_labels),
 Stc.addState(Trial.spath,...
              Trial.filebase,...
-             ThreshCross(maxState==i,0.5,10),...
+             ThreshCross(maxState==i,0.5,1),...
              lrfet.sampleRate,...
              lrfet.sync.copy,...
              lrfet.origin,...
              Model_Information.state_labels{i},...
              Model_Information.state_keys{i},...
              'TimePeriods');
+Stc.states{i} = Stc.states{i}+[1/lrfet.sampleRate,0];
 end
 
 
