@@ -23,6 +23,18 @@ switch host_server % The severer where matlab is running.
                    % Note: the addpath statement must point to 
                    % the "local" version of MTA.
     
+  case 'lmu'
+    addpath('/storage/share/matlab/MTA/');
+
+    switch data_server % Where the data is located
+      case 'lmu'
+        if isempty(project_name),
+            MTAConfiguration(['/storage/gravio/data/project/' project_name],'absolute');
+        else
+            MTAConfiguration(['/storage/gravio/data/project/general' ],'absolute');
+        end
+    end
+  
   case 'cin'
     addpath('/gpfs01/sirota/homes/share/matlab/MTA/');
 
@@ -70,12 +82,26 @@ if add_basic_paths
     else
         userpath = getenv('HOME');
     end
-    addpath(genpath(fullfile(userpath,'../../homes/share/matlab/Third-Party_Toolboxes/HMM/hmmbox/')));
-    addpath(genpath(fullfile(userpath,'../../homes/share/matlab/Third-Party_Toolboxes/netlab/')));
-    addpath(genpath(fullfile(userpath,'../../homes/share/matlab/MTA/')));
-    rmpath(genpath(fullfile(userpath,'../../homes/share/matlab/MTA/.git')));
-    rmpath( '/gpfs01/sirota/homes/share/matlab/MTA/config');
-    cd(fullfile(userpath,'../../homes/share/matlab/MTA/'));
-    addpath(fullfile(userpath,'../../homes/antsiro/matlab/General'),'-END');
-    addpath(fullfile(userpath,'../../homes/antsiro/matlab/draft'),'-END');
+
+    switch data_server
+      case 'lmu'
+        addpath(genpath('/storage/share/matlab/Third-Party_Toolboxes/HMM/hmmbox/'));
+        addpath(genpath('/storage/share/matlab/Third-Party_Toolboxes/netlab/'));
+        addpath(genpath('/storage/share/matlab/MTA/'));
+        rmpath(genpath('/storage/share/matlab/MTA/.git'));
+        rmpath(genpath('/storage/share/matlab/MTA/config'));
+        cd('/storage/share/matlab/MTA/');
+        addpath('home/antsiro/matlab/General','-END');
+        addpath('home/antsiro/matlab/draft','-END');
+      
+      otherwise        
+        addpath(genpath(fullfile(userpath,'../../homes/share/matlab/Third-Party_Toolboxes/HMM/hmmbox/')));
+        addpath(genpath(fullfile(userpath,'../../homes/share/matlab/Third-Party_Toolboxes/netlab/')));
+        addpath(genpath(fullfile(userpath,'../../homes/share/matlab/MTA/')));
+        rmpath(genpath(fullfile(userpath,'../../homes/share/matlab/MTA/.git')));
+        rmpath( '../sirota/homes/share/matlab/MTA/config');
+        cd(fullfile(userpath,'../../homes/share/matlab/MTA/'));
+        addpath(fullfile(userpath,'../../homes/antsiro/matlab/General'),'-END');
+        addpath(fullfile(userpath,'../../homes/antsiro/matlab/draft'),'-END');
+    end
 end

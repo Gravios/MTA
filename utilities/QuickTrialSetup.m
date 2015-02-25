@@ -78,8 +78,7 @@ assert(offsets(:,1)>=0&offsets(:,2)<=0,'MTA:utilities:QuickTrialSetup:offsets, s
 %% Run labelBhv if all required markers are present
 % labelBhv functions only on Sessions with the H5B4(H0B9) model
 rmarkers = {'spine_lower','pelvis_root', 'spine_middle', 'spine_upper',...
-              'head_back',  'head_left',   'head_front',  'head_right',...
-                'head_top'};
+              'head_back',  'head_left',   'head_front',  'head_right'};
 
 if sum(ismember(Trial.model.ml,rmarkers))==numel(rmarkers)&&autolabel
     Trial.stc.updateMode('auto_wbhr');
