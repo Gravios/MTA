@@ -371,29 +371,11 @@ bhv_lda(Trial,true,'fet',fet,'model_name','MTAC_testLDAnewfet');
 [Stc,d_state] = bhv_lda(Trial,'fet','fet_lgr','model_name','MTAC_testLDAnewfet');
 
 
-fet = fet_lgr(Trial);
-fet.data = nunity(fet.data);
-nind = nniz(fet);
-[U,S,V] = svd(cov(fet(nind,:)));
-
-figure
-hist2([fet(nind,:)*V(:,1),fet(nind,:)*V(:,2)],linspace(-8,5,100),linspace(-6,4.5,100)),caxis([0,300])
 
 
-figure
-per = Trial.stc{'r'};
-hist2([fet(per,:)*V(:,1),fet(per,:)*V(:,2)],linspace(-8,5,100),linspace(-6,4.5,100)),caxis([0,300])
-
-fet.data
-nind = Trial.stc{'a-r'};
-[U,S,V] = svd(cov(fet(nind,:)));
-figure
-hist2([fet(nind,:)*V(:,1),fet(nind,:)*V(:,2)],linspace(-8,5,100),linspace(-6,4.5,100)),caxis([0,300])
 
 
-figure
-per = Trial.stc{'n'};
-hist2([fet(per,:)*V(:,1),fet(per,:)*V(:,2)],linspace(-8,5,100),linspace(-6,4.5,100)),caxis([0,300])
+
 
 
 %% Figure 3 JPDFs
