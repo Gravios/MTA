@@ -97,7 +97,10 @@ xyz = Trial.load('xyz');
 % You can filter data with an arbitrary window
 %xyz.filter(ones([1,7])./7);
 xyz.filter(gtwin(.1,xyz.sampleRate)); %see help gtwin for gaussian kernals
-                                      
+
+% Load xyz without an existing Trial object... still makes a
+% temporary one though so it's not super useful but it can do it
+xyz = MTATrial('jg05-20120309').load('xyz').filter(gtwin(.25,120));
 
 
 % but maybe you want angles of the marker segments relative to the room?

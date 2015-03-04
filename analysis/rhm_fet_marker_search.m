@@ -1,5 +1,5 @@
 %Trial = MTATrial('Ed05-20140528');
-MTAstartup('cin','cin');Trial = MTATrial('Ed10-20140814');
+Trial = MTATrial('Ed10-20140814');
 %Trial = MTATrial('jg05-20120317');
 %stc_mode = 'qda_filtf1p5';
 stc_mode = 'auto_wbhr';
@@ -13,9 +13,9 @@ xyz.load(Trial);
 rb = Trial.xyz.model.rb({'head_back','head_left','head_front','head_right'});
 hcom = xyz.com(rb);
 % not filtered
-xyz.addMarker('hcom',[.7,0,.7],{{'head_back','head_front',[0,0,1]}},hcom);
+xyz.addMarker('hcom',[.7,0,.7],{{'head_back','head_front',[0,0,255]}},hcom);
 % filtered
-xyz.addMarker('fhcom',[.7,1,.7],{{'head_back','head_front',[0,0,1]}},ButFilter(hcom,3,[2]./(Trial.ang.sampleRate/2),'low'));
+xyz.addMarker('fhcom',[.7,1,.7],{{'head_back','head_front',[0,0,255]}},ButFilter(hcom,3,[2]./(Trial.ang.sampleRate/2),'low'));
 
 
 
@@ -48,7 +48,7 @@ j =1:3;
 % Rotated marker;
 nmark = permute(sum(head_rotMat.*permute(reshape(xyz_hb_b(:,j(ones(3,1),:)),[size(head_norm,1),3,3]),[2,3,1]),2),[3,1,2]);
 
-xyz.addMarker('head_br45',[.7,0,.7],{{'head_back','head_right',[0,0,1]}},permute(nmark,[1,3,2])+hcom)
+xyz.addMarker('head_br45',[.7,0,.7],{{'head_back','head_right',[0,0,255]}},permute(nmark,[1,3,2])+hcom)
 
 
 

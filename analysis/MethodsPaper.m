@@ -643,13 +643,66 @@ figure,hist2([fps(vind,1),fps(vind,2)],linspace(-3,1.5,100),linspace(-3,1.5,100)
 
 
 
+%PPCA figure
+
+
+
+
+TrialList = {'jg05-20120309','jg05-20120310','jg05-20120311','jg05-20120317'};
+nt = numel(TrialList);
+
+states = 'arw';
+nsts = numel(states);
+
+Trial = MTATrial(TrialList{1});
+fet = fet_lgr(Trial);
+Stc = Trial.stc.copy;
+for t = 2:nt
+    Trial = MTATrial(TrialList{t});
+    fet.data = cat(1,fet.data,...
+                   subsref(fet_lgr(Trial),substruct('.',{'data'})));
+    
+    for s = 1:nsts,
+        sti = Stc.gsi(states{s});
+        nstate = Trial.stc.states{Trial.stc.gsi(states{s})};
+        nstate.resample(Stc.states{sti}.sampleRate);
+        nstate.data = nstate.data+diff(Trial.stc.sync([1,end]))/Stc.states{sti}.sampleRate;
+        Stc.states{sti}.data = cat(1,Stc{states{s}}.data,nstate.data);
+    end
+
+end
+
+
+
+figure,
+for t = 0:nt
+    if t>0,fet = fet_lgr(MTATrial(TrialList{t}));end
+
+    fet.data = nunity(fet.data);
+
+    nind = nniz(fet);
+    [U,S,V] = svd(cov(fet(nind,:)));
+
+    subplot2(2,nt+1,1,t+1);
+    hist2([fet(nind,:)*V(:,1),fet(nind,:)*V(:,2)],...
+          linspace(-8,5,100),linspace(-6,4.5,100)),
+    if t<1,caxis([0,3000]);else,caxis([0,300]);end
+
+    nind = Trial.stc{'a-r'};
+    [U,S,V] = svd(cov(fet(nind,:)));
+
+    subplot2(2,nt+1,2,t+1);
+    hist2([fet(nind,:)*V(:,1),fet(nind,:)*V(:,2)],...
+          linspace(-8,5,100),linspace(-6,4.5,100))
+    if t<1,caxis([0,3000]);else,caxis([0,300]);end
+end
+
+% $$$ figure
+% $$$ per = Trial.stc{'w'};
+% $$$ hist2([fet(per,:)*V(:,1),fet(per,:)*V(:,2)],linspace(-8,5,100),linspace(-6,4.5,100)),caxis([0,300])
 
 
 
 
 
-
-
-
-
-
+ 
