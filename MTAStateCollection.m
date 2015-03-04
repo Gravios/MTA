@@ -362,14 +362,14 @@ classdef MTAStateCollection < hgsetget
                   case 'join'
                     tname = 'bhvj';
                     assert(~isempty(Stc.subsref(substruct('{}',{command_list{1}{2}{1},sampleRate}))),ENFT.type,ENFT.msg,command_list{1}{2}{1});
-                    bhvp{1} = Stc.subsref(substruct('{}',{command_list{1}{2}{1},sampleRate},'.','copy'));
+                    bhvp{1} = Stc.subsref(substruct('{}',{command_list{1}{2}{1},sampleRate}));
                     tname = strcat(tname,'_',command_list{1}{2}{1});
                     for s = 2:numel(command_list{1}{2}),                                          
                         assert(~isempty(Stc.subsref(substruct('{}',{command_list{1}{2}{s},sampleRate}))),ENFT.type,ENFT.msg,command_list{1}{2}{s});
                         bhvp{s} = Stc.subsref(substruct('{}',{command_list{1}{2}{s},sampleRate},'.','data'));                                                                        
                         tname = strcat(tname,'_',command_list{1}{2}{1});
                     end
-                    sts_periods = JoinRanges(bhvp);
+                    sts_periods = JoinRanges(bhvp{:});
 
                   case 'intersect' 
                     tname = 'bhvi';         
@@ -390,7 +390,7 @@ classdef MTAStateCollection < hgsetget
             else 
                 tname = strcat('Stcs_',command_list{1});
                 assert(~isempty(Stc.subsref(substruct('{}',{command_list{1},sampleRate},'.','data'))),ENFT.type,ENFT.msg,command_list{1});
-                sts_periods = Stc.subsref(substruct('{}',{command_list{1},sampleRate},'.','data'));
+                sts_periods = Stc.subsref(substruct('{}',{command_list{1},sampleRate}));
             end
 
             Sts_onset_ind  = true(size(sts_periods,1),1);
@@ -410,7 +410,7 @@ classdef MTAStateCollection < hgsetget
                     if iscell(command_list{1}{2}),
                         ExState = Stc.JoinStates(command_list{1}{2});                       
                     else
-                        ExState = Stc.subsref(substruct('{}',{command_list{1}{2}},'.','copy'));
+                        ExState = Stc.subsref(substruct('{}',{command_list{1}{2}}));
                     end
                     ExState.resample(sampleRate);
                     filterName = strcat(filterName,filter_tag,ExState.key,num2str(command_list{1}{3}));                    
@@ -472,7 +472,7 @@ classdef MTAStateCollection < hgsetget
                   case 'duration', filter_tag = 'd';
 
                     filterName = strcat(filterName,filter_tag,num2str(command_list{1}{2}));
-                    bdur = diff(sts_periods,1,2)/sampleRate;
+                    bdur = diff(sts_periods.data,1,2)/sampleRate;
 
                     temp_sts_onset_ind  = false(size(sts_periods,1),1);
                     temp_sts_offset_ind = false(size(sts_periods,1),1);
@@ -524,17 +524,24 @@ classdef MTAStateCollection < hgsetget
             if numel(states) == 1,
                 composite_state = Stc.subsref(substruct('{}',states(1)));
             else
-                sampleRate = Stc.subsref(substruct('{}',states(1),'.','sampleRate'));
+                fstate = Stc.subsref(substruct('{}',states(1)));
                 oper = cell(numel(states),1);
                 keys = '';
+
                 for i=1:numel(states)
-                    oper{i} = Stc.subsref(substruct('{}',{states{i},sampleRate},'.','data'));
+                    oper{i} = Stc.subsref(substruct('{}',...
+                                                    {states{i},fstate.sampleRate},'.','data'));
                     keys(end+1) = Stc.subsref(substruct('{}',states(i),'.','key'));
                 end
                 newStateName = ['COMP_' keys];
-                uper = JoinRanges(oper);
-                composite_state = MTADepoch([],uper,sampleRate, ...
-                                            states{1}.sync.copy,states{1}.origin,newStateName,keys,[],[]);
+                while numel(oper)~=1
+                    oper{2} = JoinRanges(oper{1},oper{2});
+                    oper(1) = [];
+                end
+                
+                composite_state = MTADepoch([],[],oper{1},fstate.sampleRate, ...
+                                            fstate.sync.copy,fstate.origin,...
+                                            newStateName,keys,[],[]);
             end
         end
 

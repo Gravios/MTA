@@ -1979,3 +1979,49 @@ switch mode,
 
     end
 
+
+  case 'head_motion'
+    Trial = MTATrial('jg05-20120317')
+    fs = []; ts = [];
+
+    xyz = Trial.load('xyz');
+    % create a ridgid body model
+    rb = Trial.xyz.model.rb({'head_back','head_left','head_front','head_right'});
+    % find the center of mass of the model
+    hcom = xyz.com(rb);
+    % add coordinates of the model's center of mass to the xyz object
+    xyz.addMarker('fhcom',[.7,1,.7],{{'head_back','head_front',[0,0,1]}},ButFilter(hcom,3,[2]./(Trial.xyz.sampleRate/2),'low'));
+
+    xyz.filter(gausswin(5)./sum(gausswin(5)));
+
+    ang = create(Trial.ang.copy,Trial,xyz);
+    bang = ButFilter(ang(:,'head_back','fhcom',3),3,[2,30]./(Trial.ang.sampleRate/2),'bandpass');
+    bang = [bang,ButFilter(ang(:,'head_right','fhcom',3),3,[2,30]./(Trial.ang.sampleRate/2),'bandpass')];
+    bang = [bang,ButFilter(ang(:,'head_top','fhcom',3),3,[2,30]./(Trial.ang.sampleRate/2),'bandpass')];
+
+    bfet = Trial.xyz.copy;
+    bfet.data = bang;
+
+    [ys,fs,ts,phi,fst] = fet_spec(Trial,bfet,'mtchglong');
+
+    
+    figure,sp = [];
+    for i = 1:3,
+        sp(i) = subplot(3,1,i);imagesc(ts,fs,log10(ys(:,:,i,i))'),caxis([-7,-2]),axis xy
+    end
+    linkaxes(sp,'xy');
+
+    c = 3;
+    f = 15;
+    figure,hist2(log10([ys(:,35,1,1),ys(:,f,c,c)]),linspace(-7,-2,100),linspace(-7,-2,100));
+
+    nind = Trial.stc{'m'};
+    figure,hist2(log10([ys(nind,35,1,1),ys(nind,f,c,c)]),linspace(-7,-2,100),linspace(-7,-2,100));
+
+    nind = Trial.stc{'w'};
+    figure,hist2(log10([ys(nind,35,1,1),ys(nind,f,c,c)]),linspace(-7,-2,100),linspace(-7,-2,100));
+
+    nind = Trial.stc{'r'};
+    figure,hist2(log10([ys(nind,35,1,1),ys(nind,f,c,c)]),linspace(-7,-2,100),linspace(-7,-2,100));
+
+end

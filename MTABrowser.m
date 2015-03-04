@@ -59,7 +59,7 @@ function MTABrowser_OpeningFcn(hObject, eventdata, handles, varargin)
 % handles    structure with handles and user data (see GUIDATA)
 % varargin   command line arguments to MTABrowser (see VARARGIN)
 
-if ~ispc,javax.swing.UIManager.setLookAndFeel('com.sun.java.swing.plaf.gtk.GTKLookAndFeel');end
+%if ~ispc,javax.swing.UIManager.setLookAndFeel('com.sun.java.swing.plaf.gtk.GTKLookAndFeel');end
 
 %% Loads Default Session 
 setappdata(handles.MTABrowser,'SESSION_DATA',MTASession([]));

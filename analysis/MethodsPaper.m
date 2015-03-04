@@ -631,7 +631,7 @@ figure,hist2([fps(vind,1),fps(vind,2)],linspace(-3,1.5,100),linspace(-3,1.5,100)
 
 
 TrialList = {'jg05-20120309','jg05-20120310','jg05-20120311','jg05-20120317'};
-TrialList = {'jg05-20120310','jg05-20120317'};
+%TrialList = {'jg05-20120310','jg05-20120317'};
 nt = numel(TrialList);
 
 states = {'a','r','w'};
