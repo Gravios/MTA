@@ -7,18 +7,15 @@ setappdata(figureId,'oldFigName',get(figureId,'Name'));
 set(figureId,'Name',mfilename)
 
 
-hold on;
+tax = gca;
+setappdata(figureId,'target_axes', tax);
 
-
-
-setappdata(figureId,'target_axes', gca);
-
-h = findobj(figureId,'Type','line');
+h = findobj(tax,'Type','line');
 x = get(h,'Xdata');
 y = get(h,'Ydata');
 if isempty(x) || isempty(y)
    warning(['The current figure is empty or does not exist'])
-   cluster_points=[];
+   cpnts=[];
    close(figureId)
    return
 else
@@ -27,6 +24,11 @@ else
     setappdata(figureId,'cluster_points',zeros(size(getappdata(figureId,'x'))));
 end
 
+setappdata(figureId,'axis_hold_status',ishold(tax));
+oldAxisTitle = copyobj(get(tax,'Title'),tax);
+set(oldAxisTitle,'Visible','off');
+setappdata(figureId,'axis_title',oldAxisTitle);
+hold(tax,'on');
 
 setappdata(figureId,'local_x',[]);
 setappdata(figureId,'local_y',[]);
@@ -254,6 +256,15 @@ function KeyPressFun (figureId,eventdata)
             set(figureId, 'WindowButtonDownFcn'  ,[]);
             set(figureId, 'WindowButtonMotionFcn',[]);
             delete(getappdata(figureId,'clu_sh'));
+            
+            tax = getappdata(figureId,'target_axes');
+            ahold = getappdata(figureId,'axis_hold_status');
+            if ~ahold, hold(tax,'off'); end                
+            delete(get(tax,'Title'));
+            oldAxisTitle = getappdata(figureId,'axis_title');
+            set(tax,'Title',oldAxisTitle);
+            set(oldAxisTitle,'Visible','on');
+            set(figureId,'Name',getappdata(figureId,'oldFigName'));
         end
     end
     
