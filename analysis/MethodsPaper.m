@@ -609,7 +609,7 @@ figure,imagesc(ts,fs,log10(ys(:,:,1,1))');axis xy,
 Lines(Trial.stc{'w',ys.sampleRate}(:),[],'k',[],3);
 
 
-ys(~nniz(ys(:)))==1e-10;
+ys(~nniz(ys(:)))=1e-10;
 ind = nniz(ys(:,1,1,1));
 ind = Stc{'r',ys}.cast('TimeSeries');
 ind.data(1:10) = 0;
@@ -625,58 +625,82 @@ figure,hist2([fps(vind,1),fps(vind,2)],linspace(-3,1.5,100),linspace(-3,1.5,100)
 
 
 
-%PPCA figure
+%% PPCA figure
 
 
 
 
 TrialList = {'jg05-20120309','jg05-20120310','jg05-20120311','jg05-20120317'};
+TrialList = {'jg05-20120310','jg05-20120317'};
 nt = numel(TrialList);
 
-states = 'arw';
+states = {'a','r','w'};
 nsts = numel(states);
 
 Trial = MTATrial(TrialList{1});
 fet = fet_lgr(Trial);
 Stc = Trial.stc.copy;
+syncCount = diff(Trial.stc.sync([1,end]));
 for t = 2:nt
     Trial = MTATrial(TrialList{t});
+    Trial.stc.updateMode('auto_wbhr');
+    Trial.stc.load;
     fet.data = cat(1,fet.data,...
-                   subsref(fet_lgr(Trial),substruct('.',{'data'})));
-    
+                   subsref(fet_lgr(Trial),substruct('.',{'data'})));    
     for s = 1:nsts,
         sti = Stc.gsi(states{s});
-        nstate = Trial.stc.states{Trial.stc.gsi(states{s})};
+        nstate = Trial.stc.states{Trial.stc.gsi(states{s})}.copy;
         nstate.resample(Stc.states{sti}.sampleRate);
-        nstate.data = nstate.data+diff(Trial.stc.sync([1,end]))/Stc.states{sti}.sampleRate;
+        nstate.data = nstate.data+round(syncCount*Stc.states{sti}.sampleRate);
         Stc.states{sti}.data = cat(1,Stc{states{s}}.data,nstate.data);
     end
-
+    syncCount = syncCount + diff(Trial.stc.sync([1,end]));
 end
 
 
 
 figure,
 for t = 0:nt
-    if t>0,fet = fet_lgr(MTATrial(TrialList{t}));end
+    if t>0,
+        Trial = MTATrial(TrialList{t});
+        fet = fet_lgr(Trial);
+        Stc = Trial.load('stc','auto_wbhr');
+    end
 
     fet.data = nunity(fet.data);
 
     nind = nniz(fet);
     [U,S,V] = svd(cov(fet(nind,:)));
 
-    subplot2(2,nt+1,1,t+1);
+    subplot2(5,nt+1,1,t+1);
     hist2([fet(nind,:)*V(:,1),fet(nind,:)*V(:,2)],...
           linspace(-8,5,100),linspace(-6,4.5,100)),
-    if t<1,caxis([0,3000]);else,caxis([0,300]);end
+    if t<1,caxis([0,3000]);else caxis([0,300]);end
 
-    nind = Trial.stc{'a-r'};
+    nind = Stc{'a-r'};
+    subplot2(5,nt+1,2,t+1);
+    hist2([fet(nind,:)*V(:,1),fet(nind,:)*V(:,2)],...
+          linspace(-8,5,100),linspace(-6,4.5,100)),
+    if t<1,caxis([0,3000]);else caxis([0,300]);end
+
     [U,S,V] = svd(cov(fet(nind,:)));
-
-    subplot2(2,nt+1,2,t+1);
+    subplot2(5,nt+1,3,t+1);
     hist2([fet(nind,:)*V(:,1),fet(nind,:)*V(:,2)],...
           linspace(-8,5,100),linspace(-6,4.5,100))
-    if t<1,caxis([0,3000]);else,caxis([0,300]);end
+    if t<1,caxis([0,3000]);else caxis([0,300]);end
+
+    nind = Stc{'a-r-w'};
+    subplot2(5,nt+1,4,t+1);
+    hist2([fet(nind,:)*V(:,1),fet(nind,:)*V(:,2)],...
+          linspace(-8,5,100),linspace(-6,4.5,100))
+    if t<1,caxis([0,3000]);else caxis([0,300]);end
+
+    [U,S,V] = svd(cov(fet(nind,:)));
+    subplot2(5,nt+1,5,t+1);
+    hist2([fet(nind,:)*V(:,1),fet(nind,:)*V(:,2)],...
+          linspace(-8,5,100),linspace(-6,4.5,100))
+    if t<1,caxis([0,3000]);else caxis([0,300]);end
+
 end
 
 % $$$ figure

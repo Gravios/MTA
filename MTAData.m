@@ -603,6 +603,24 @@ classdef MTAData < hgsetget
             [varargout{:}] = GetSegs(Data.data,start_points,segment_length,if_not_complete);
 
         end
+%         
+%         function out = cat(dim,A,B)
+%             if ~isnumeric(A)&&~isnumeric(B)
+%             out = A.copy;
+%             out.data = cat(dim,A.data,B.data);
+%             if dim==1,
+%                     out.sync = cat(1,A.sync,B.sync);
+%             end
+%             else
+%                 out = builtin('cat',dim,A,B);
+%             end
+%         end
+%         
+%         function out = vertcat(varargin)
+%         end
+%         function out = horzcat(varargin)
+%         end
+%         
             
 
 
