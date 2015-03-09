@@ -1981,7 +1981,7 @@ switch mode,
 
 
   case 'head_motion'
-    Trial = MTATrial('jg05-20120317')
+    Trial = MTATrial('jg05-20120317');
     fs = []; ts = [];
 
     xyz = Trial.load('xyz');
@@ -1998,21 +1998,37 @@ switch mode,
     bang = ButFilter(ang(:,'head_back','fhcom',3),3,[2,30]./(Trial.ang.sampleRate/2),'bandpass');
     bang = [bang,ButFilter(ang(:,'head_right','fhcom',3),3,[2,30]./(Trial.ang.sampleRate/2),'bandpass')];
     bang = [bang,ButFilter(ang(:,'head_top','fhcom',3),3,[2,30]./(Trial.ang.sampleRate/2),'bandpass')];
+    bang = [bang,circ_dist(ang(:,'head_back','head_front',2),ang(:,'head_back','fhcom',2))];
+    bang = nunity(bang);
+    
+    figure,plot(circ_dist(ang(:,'head_back','head_front',2),ang(:,'head_back','fhcom',2)))
 
     bfet = Trial.xyz.copy;
     bfet.data = bang;
 
-    [ys,fs,ts,phi,fst] = fet_spec(Trial,bfet,'mtchglong');
+    [ys,fs,ts,phi,fst] = fet_spec(Trial,bfet,'mtchglong',true,'overwrite',true);
 
+    xyz.resample(ys);
+    wang = create(Trial.ang.copy,Trial,xyz);    
     
+    c = 4;
+    f = 35;
+    nind = nniz(wang(:,1,2,1));
+    figure,hist2([wang(nind,5,7,2),log10(ys(nind,f,c,c))],linspace(-1.5,1.5,100),linspace(-7,-2,100));
+    s = 'w';
+    nind = Trial.stc{s};
+    figure,hist2([wang(nind,5,7,2),log10(ys(nind,f,c,c))],linspace(-1.5,1.5,100),linspace(-7,-2,100));
+    
+    
+    nc = ys.size(3);
     figure,sp = [];
-    for i = 1:3,
-        sp(i) = subplot(3,1,i);imagesc(ts,fs,log10(ys(:,:,i,i))'),caxis([-7,-2]),axis xy
+    for i = 1:nc,
+        sp(i) = subplot(nc,1,i);imagesc(ts,fs,log10(ys(:,:,i,i))'),caxis([-7,-2]),axis xy
     end
     linkaxes(sp,'xy');
 
-    c = 3;
-    f = 15;
+    c = 2;
+    f = 35;
     figure,hist2(log10([ys(:,35,1,1),ys(:,f,c,c)]),linspace(-7,-2,100),linspace(-7,-2,100));
 
     nind = Trial.stc{'m'};
@@ -2024,4 +2040,29 @@ switch mode,
     nind = Trial.stc{'r'};
     figure,hist2(log10([ys(nind,35,1,1),ys(nind,f,c,c)]),linspace(-7,-2,100),linspace(-7,-2,100));
 
+    
+    vfet = vel(Trial.load('xyz')
+    [ys,fs,ts,phi,fst] = fet_spec(Trial,bfet,'mtchglong',true,'overwrite',true);
+    
+     pbins = linspace(-9,-1,100);
+     pfd = histc(log10(ys(:,:,1,1)),pbins,1);
+     figure,imagesc(pbins,fs,pfd'),axis xy
+     
+     
+     fet = fet_lgr(Trial);
+     [isig] = fastica(cov(fet(nind,:)));
+     nind = nniz(fet);figure,N = hist2([fet(nind,:)*isig(11,:)',fet(nind,:)*isig(2,:)'],linspace(-10,10,100),linspace(-15,15,100));
+     
+
 end
+
+
+
+
+
+
+
+
+
+
+
