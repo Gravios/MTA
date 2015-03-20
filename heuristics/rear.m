@@ -1,11 +1,11 @@
-function [rear_state] = rear(Session,method,varargin)
+function [rear_state] = rear(Trial,method,varargin)
 
-if ~isa(Session,'MTASession'),
-    Session = MTASession(Session);
+if ~isa(Trial,'MTASession'),
+    Trial = MTATrial(Trial);
 end
 
-ang = Session.load('ang');
-xyz = Session.load('xyz');
+ang = Trial.load('ang');
+xyz = Trial.load('xyz');
 
 if xyz.sampleRate>120,xyz.resample(120);end
 if ang.sampleRate>120,ang.resample(120);end
@@ -52,13 +52,13 @@ switch method
         xyz = reshape(Filter0(gausswin(win)./sum(gausswin(win)),xyz.data),xyz.size);
         v = sqrt(sum(diff(xyz).^2,3));
         win = 241;
-        comb = Filter0(gausswin(win)./sum(gausswin(win)),Session.com(Session.model.rb({'spine_lower','pelvis_root','spine_middle','spine_upper'})));
-        comh = Filter0(gausswin(win)./sum(gausswin(win)),Session.com(Session.model.rb({'head_back','head_left','head_front','head_right'})));
+        comb = Filter0(gausswin(win)./sum(gausswin(win)),Trial.com(Trial.model.rb({'spine_lower','pelvis_root','spine_middle','spine_upper'})));
+        comh = Filter0(gausswin(win)./sum(gausswin(win)),Trial.com(Trial.model.rb({'head_back','head_left','head_front','head_right'})));
         comb = sqrt(sum(diff(comb(:,[1,2])).^2,2));
         comh = sqrt(sum(diff(comh(:,[1,2])).^2,2));
         comv = [comb,comh];
         for i =1:2,
-            comv(:,i) = ButFilter(comv(:,i),11,2./(Session.xyzSampleRate/2),'low');
+            comv(:,i) = ButFilter(comv(:,i),11,2./(Trial.xyzSampleRate/2),'low');
             comv(:,i) = clip(comv(:,i),0.003,30);
         end
         sfet = [circ_dist(ang(:,2,3,1),ang(:,1,2,1)),...
@@ -70,10 +70,10 @@ switch method
             sfet(isnan(sfet(:,i)),i) = circ_mean(sfet(~isnan(sfet(:,i)),i));
         end
         sfet = Filter0(gausswin(7)./sum(gausswin(7)),sfet);
-        bsfet = ButFilter(sum(sfet,2),11,6./(Session.xyzSampleRate/2),'low');
+        bsfet = ButFilter(sum(sfet,2),11,6./(Trial.xyzSampleRate/2),'low');
         tsfet = Filter0(gausswin(141)./sum(gausswin(141)),bsfet);
         dbsfet = diff(bsfet-tsfet);
-        nfet = -Filter0(gausswin(141)./sum(gausswin(141)),abs(dbsfet.*Filter0(gausswin(141)./sum(gausswin(141)),comv(:,1)).*12))./(Session.xyz(1:end-1,7,3)./ang(1:end-1,3,4,2)).*1000;
+        nfet = -Filter0(gausswin(141)./sum(gausswin(141)),abs(dbsfet.*Filter0(gausswin(141)./sum(gausswin(141)),comv(:,1)).*12))./(Trial.xyz(1:end-1,7,3)./ang(1:end-1,3,4,2)).*1000;
         rear_feature = -cat(1,nfet(1),nfet);
         rearing_points = zeros(size(rear_feature));
         rearing_points(rear_feature>rearThresh)=1;
@@ -81,7 +81,10 @@ switch method
         
     case 'fet'
         rearPeriods = rear_feature;
-        
+
+    case 'MTA'
+        rearPeriods = MTADxyz(Trial.spath,[],rear_feature,ang.sampleRate,ang.sync.copy,ang.origin,[],[],'stf');
+
 end
 
 rear_state = rearPeriods;
@@ -95,7 +98,7 @@ rear_state = rearPeriods;
 % $$$ for i = 1:size(rearPeriods,1),
 % $$$ rint(i) = sum(rear_feature(rearPeriods(i,1):rearPeriods(i,2)));
 % $$$ rmax(i) = max(rear_feature(rearPeriods(i,1):rearPeriods(i,2)));
-% $$$ rhmax(i) = max(Session.xyz(rearPeriods(i,1):rearPeriods(i,2),Session.model.gmi('head_front'),3));
+% $$$ rhmax(i) = max(Trial.xyz(rearPeriods(i,1):rearPeriods(i,2),Trial.model.gmi('head_front'),3));
 % $$$ end
 % $$$ figure
 % $$$ hist(log10(rint),100)
@@ -103,9 +106,9 @@ rear_state = rearPeriods;
 % $$$
 % $$$ rear_state = rearPeriods(find(rmax>160),:);
 % $$$
-% $$$ plot(Session.xyz(:,7,3)),Lines(rear_state(:,1),[],'g');,Lines(rear_state(:,2),[],'r');
+% $$$ plot(Trial.xyz(:,7,3)),Lines(rear_state(:,1),[],'g');,Lines(rear_state(:,2),[],'r');
 % $$$
-% $$$ Session.Bhv.States{1}.state = rear_state;
-% $$$ Session.Bhv.save(Session,1)
-% $$$ Session.save
+% $$$ Trial.stc.States{1}.state = rear_state;
+% $$$ Trial.stc.save(Trial,1)
+% $$$ Trial.save
 

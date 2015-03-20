@@ -380,11 +380,11 @@ classdef MTAData < hgsetget
         % Assumes the two objects have their starting points synchronized
         %
         %    upsampling 
-        %         MTADxyz - uses spline ( Not Ready )
+        %         MTADxyz - uses spline
         %         MTADepoch - uses nearest neighbor
         %
         % WARNING - Doesn't modify the sync if sizes don't match
-        % WARNING - uses lowpass ButFilter as antialias filter
+        % WARNING - uses interp1 with spline as default
         % 
             
         %Data = Data.copy;
@@ -594,13 +594,15 @@ classdef MTAData < hgsetget
         % returned.  A list of complete segments extracted is returned in Complete.
         % Default value for IfNotComplete: NaN.
         %
-            [start_points,segment_length,if_not_complete] = DefaultArgs(varargin,{1:Data.size(1),round(.5*Data.sampleRate),nan});
-            if numel(varargout)>1,
+            [start_points,segment_length,if_not_complete] = ...
+                DefaultArgs(varargin,{1:Data.size(1),round(.5*Data.sampleRate),nan});
+            oriDataSize = size(Data);
+            if numel(nargout)>1,
                 varargout = cell(1,2);
             else
                 varargout = cell(1,1);
             end
-            [varargout{:}] = GetSegs(Data.data,start_points,segment_length,if_not_complete);
+            [varargout{:}] = reshape(GetSegs(Data.data,start_points,segment_length,if_not_complete),[segment_length,oriDataSize]);
 
         end
 %         

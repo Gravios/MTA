@@ -3,141 +3,105 @@ function Trial = bhv_auto(Trial,Stc)
 % 
 % Note: Requires an update to include MoCap sampling rates other than 120Hz
 
-if Trial.xyz.isempty, Trial.load('xyz'); end    
-if Trial.ang.isempty, Trial.load('ang'); end    
+%% Testing Vars
 
-Trial.filter('xyz');
-xyzlen = size(Trial.xyz,1);
-
-winlen = 64;
-nOverlap = 8;
-trajSampleRate = (Trial.xyz.sampleRate/winlen)*nOverlap;
-
-zpad = mod(xyzlen,winlen);
-if zpad~=0,
-xyz = Trial.xyz(1:end-zpad,{'spine_lower','pelvis_root','spine_middle','head_back'},[1,2]);
-ang = Trial.ang(1:end-zpad,:,:,:);
-else 
-xyz = Trial.xyz(:,{'spine_lower','pelvis_root','spine_middle','head_back'},[1,2]);
-ang = Trial.ang.data;
-end 
+Trial = MTATrial('jg05-20120317');
+marks = Trial.xyz.model.gmi({'spine_lower','pelvis_root','head_back','head_front'});
+%%%%%%%%%%%%%%%%
 
 
-xyzlen = size(xyz,1);
-trlen = xyzlen/winlen*nOverlap;
+
+% Load Marker Positions and down sample to 30 Hz
+
+vfet = vel(resample(Trial.load('xyz'),8),marks,[1,2]);
+
+xyz = resample(Trial.load('xyz'),36);
+% Get segments for .5 second periods
+xyzs = xyz.segs(1:xyz.size(1),9,0);
+xyzs = xyzs(:,:,:,[1,2]);
+% Calculate distances
+dxyzs = sqrt(sum(bsxfun(@minus,xyzs,xyzs(5,:,:,:)).^2,4));
+
+% Movement Feature 
+%a bit better than the sum of the marker vels
+mfet = xyz.copy;
+mfet.data = circshift(log10(abs(sq(sum(prod(bsxfun(@minus,dxyzs(:,:,marks),median(dxyzs(:,:,marks))),3)))').*sq(mean(dxyzs(:,:,marks(1))))'),5);
+
+rfet = rear(Trial,'MTA')
+
+vfet.resample(mfet);
+
+vvf = xyz.copy;
+vvf.data = var(log10(vfet.data),[],2);
+% $$$ nind = Trial.stc{'a'};
+% $$$ nind = Trial.stc{'m'};
+% $$$ nind = Trial.stc{'n'};
+% $$$ nind = Trial.stc{'w'};
+% $$$ nind = Trial.stc{'a-r'};
+% $$$ nind = Trial.stc{'a-r-w'};
+% $$$ figure,bar(linspace(-8,12,1000),histc(mfet(nind)-log10(vvf(nind)),linspace(-8,12,1000)),'histc')
+% $$$ % $$$ nind = nniz(vfet)&nniz(vvf);
+% $$$ % $$$ nind = Trial.stc{'w'};
+% $$$ % $$$ nind = Trial.stc{'a-r-w'};
+% $$$ figure,hist2([sum(log10(vfet(nind,:)),2),log10(vvf(nind))],linspace(-8,8,100),linspace(-5,.5,100))
+% $$$ 
+% $$$ figure,hist2([sum(log10(vfet(nind,:)),2),log10(xyz(nind,1,3))],linspace(-8,8,100),linspace(0,2,100))
+% $$$ figure,hist2([mfet(nind,:),log10(vvf(nind))],linspace(-8,8,100),linspace(-5,.5,100))
 
 
-sfet = [circ_dist(ang(:,2,3,1),ang(:,1,2,1)),...
+ang = create(Trial.ang.copy,Trial,xyz);
+
+sfet = xyz.copy;
+sfet.data = [circ_dist(ang(:,2,3,1),ang(:,1,2,1)),...
         circ_dist(ang(:,3,4,1),ang(:,2,3,1)),...
         circ_dist(ang(:,4,5,1),ang(:,3,4,1)),...
         circ_dist(ang(:,5,7,1),ang(:,4,5,1))];
-bfet = [ang(:,1,2,1),ang(:,2,3,1),ang(:,3,4,1),ang(:,4,5,1),ang(:,5,7,1)];
-afet = [ang(:,1,2,1),ang(:,2,3,1),ang(:,3,4,1)];
-hfet = [ang(:,3,4,1),ang(:,5,7,1)];
-rfet = rear(Trial,'fet');
-rfet = rfet(1:end-zpad);
 
 
-vtraj =[];
-for i = 1:nOverlap,
-tvtraj = reshape(circshift(xyz,-(i-1).*winlen/nOverlap),[],xyzlen/winlen,size(xyz,2),size(xyz,3));
-tvtraj = reshape(tvtraj,size(tvtraj,1),size(tvtraj,2),[]);
-vtraj(:,i:nOverlap:trlen,:) = tvtraj-repmat(tvtraj(1,:,:),winlen,1);
-end
-vtrajCov  = zeros(size(vtraj,2),size(vtraj,3),size(vtraj,3));
-for i=1:size(vtraj,2),
-vtrajCov(i,:,:) = cov(sq(vtraj(:,i,:)));
-end
-vtrajVar =  zeros(size(vtraj,2),size(vtraj,3));
- for i=1:size(vtrajCov,1),
-vtrajVar(i,:) = diag(sq(vtrajCov(i,:,:)));
-end
-vtrajVarD = sqrt(sum(reshape(vtrajVar,size(vtrajVar,1),size(xyz,2),2).^2,3));
-vtrajMean  = zeros(size(vtraj,2),size(vtraj,3));
-for i=1:size(vtraj,2),
-   vtrajMean(i,:) = mean(sq(vtraj(:,i,:)));
-end
-vtrajMeanD = sqrt(sum(reshape(vtrajMean,size(vtrajMean,1),size(xyz,2),2).^2,3));
+figure,plot(diff(sum( sfet,2)))
+Lines(Trial.stc{'w',ang.sampleRate}(:),[],'k');
+Lines(Trial.stc{'n',ang.sampleRate}(:),[],'g');
+Lines(Trial.stc{'m',ang.sampleRate}(:),[],'m');
+
+san = xyz.copy;
+san.data = [ang(:,1,4,1),ang(:,1,3,1),ang(:,2,4,1),ang(:,4,7,1)];
+san = san.segs(1:san.size(1),9,0);
+san = bsxfun(@circ_dist,san,san(5,:,:,:));
+
+afet = xyz.copy;
+afet.data = circshift(log10(abs(sum(prod(bsxfun(@circ_dist,san,circ_mean(san)),3))').*abs(sq(circ_mean(san(:,:,1)))')),5);
 
 
-straj =[];
-for i = 1:nOverlap,
-tstraj = reshape(circshift(sfet,-(i-1).*winlen/nOverlap),[],xyzlen/winlen,size(sfet,2));
-tstraj = reshape(tstraj,size(tstraj,1),size(tstraj,2),[]);
-straj(:,i:nOverlap:trlen,:) = tstraj-repmat(tstraj(1,:,:),winlen,1);
-end
-strajVar  = zeros(size(straj,2),size(straj,3));
-for i=1:size(straj,2),
-    for j=1:size(straj,3),
-        strajVar(i,j) = circ_var(sq(straj(:,i,j)));
-    end
-end
-strajVarD = sqrt(sum(strajVar.^2,2));
-strajMean  = zeros(size(straj,2),size(straj,3));
-for i=1:size(straj,2),
-    strajMean(i,:) = circ_mean(sq(straj(:,i,:)));
-end
-strajMeanD = sqrt(sum(strajMean.^2,2));
 
 
-atraj =[];
-for i = 1:nOverlap,
-tatraj = reshape(circshift(afet,-(i-1).*winlen/nOverlap),[],xyzlen/winlen,size(afet,2));
-tatraj = reshape(tatraj,size(tatraj,1),size(tatraj,2),[]);
-atraj(:,i:nOverlap:trlen,:) = tatraj-repmat(tatraj(1,:,:),winlen,1);
-end
-atrajVar  = zeros(size(atraj,2),size(atraj,3));
-for i=1:size(atraj,2),
-    for j=1:size(atraj,3),
-        atrajVar(i,j) = circ_var(sq(atraj(:,i,j)));
-    end
-end
-atrajVarD = sqrt(sum(atrajVar.^2,2));
-atrajMean  = zeros(size(atraj,2),size(atraj,3));
-for i=1:size(atraj,2),
-    atrajMean(i,:) = circ_mean(sq(atraj(:,i,:)));
-end
-atrajMeanD = sqrt(sum(atrajMean.^2,2));
+
+nind = Trial.stc{'a'};
+nind = Trial.stc{'m'};
+nind = Trial.stc{'n'};
+nind = Trial.stc{'w'};
+nind = Trial.stc{'a-r'};
+nind = Trial.stc{'a-r-w'};
+figure,hist2([mfet(nind),afet(nind)],linspace(-8,8,100),linspace(-20,2,100))
+
+figure,hist2(log10([vfet(nind,1),vfet(nind,4)]),linspace(-2,2,100),linspace(-2,2,100))
 
 
-htraj =[];
-for i = 1:nOverlap,
-thtraj = reshape(circshift(hfet,-(i-1).*winlen/nOverlap),[],xyzlen/winlen,size(hfet,2));
-thtraj = reshape(thtraj,size(thtraj,1),size(thtraj,2),[]);
-htraj(:,i:nOverlap:trlen,:) = thtraj-repmat(thtraj(1,:,:),winlen,1);
-end
-htrajVar  = zeros(size(htraj,2),size(htraj,3));
-for i=1:size(htraj,2),
-    for j=1:size(htraj,3),
-        htrajVar(i,j) = circ_var(sq(htraj(:,i,j)));
-    end
-end
-htrajVarD = sqrt(sum(htrajVar.^2,2));
-htrajMean  = zeros(size(htraj,2),size(htraj,3));
-for i=1:size(htraj,2),
-    htrajMean(i,:) = circ_mean(sq(htraj(:,i,:)));
-end
-htrajMeanD = sqrt(sum(htrajMean.^2,2));
+xyzs = xyz.segs(1:xyz.size(1),18,0);
+xyzs = xyzs(:,:,:,[1,2]);
+
+dtraj = sq(xyzs(end,:,:,:)-xyzs(1,:,:,:));
+mdtraj = permute(reshape(repmat(sum(dtraj.*dtraj,3),2,1),size(dtraj,1),2,size(xyz,2)),[1,3,2]);
+ndtraj = dtraj./mdtraj;
+ndvtm = dot(dtraj,sq(mean(xyzs)),3);
+
+%% START HERE
+figure,plot(ndvtm(:,1:8))
+Lines(Trial.stc{'w',ang.sampleRate}(:),[],'k');
+Lines(Trial.stc{'n',ang.sampleRate}(:),[],'g');
+Lines(Trial.stc{'m',ang.sampleRate}(:),[],'m');
+Lines(Trial.stc{'r',ang.sampleRate}(:),[],'r');
 
 
-btraj =[];
-for i = 1:nOverlap,
-tbtraj = reshape(circshift(hfet,-(i-1).*winlen/nOverlap),[],xyzlen/winlen,size(hfet,2));
-tbtraj = reshape(tbtraj,size(tbtraj,1),size(tbtraj,2),[]);
-btraj(:,i:nOverlap:trlen,:) = tbtraj-repmat(tbtraj(1,:,:),winlen,1);
-end
-btrajVar  = zeros(size(btraj,2),size(btraj,3));
-for i=1:size(btraj,2),
-    for j=1:size(btraj,3),
-        btrajVar(i,j) = circ_var(sq(btraj(:,i,j)));
-    end
-end
-btrajVarD = sqrt(sum(btrajVar.^2,2));
-btrajMean  = zeros(size(btraj,2),size(btraj,3));
-for i=1:size(btraj,2),
-    btrajMean(i,:) = circ_mean(sq(btraj(:,i,:)));
-end
-btrajMeanD = sqrt(sum(btrajMean.^2,2));
 
 
 %% BASE_FEATURES

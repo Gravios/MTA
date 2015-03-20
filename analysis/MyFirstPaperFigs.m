@@ -1999,7 +1999,7 @@ switch mode,
     bang = [bang,ButFilter(ang(:,'head_right','fhcom',3),3,[2,30]./(Trial.ang.sampleRate/2),'bandpass')];
     bang = [bang,ButFilter(ang(:,'head_top','fhcom',3),3,[2,30]./(Trial.ang.sampleRate/2),'bandpass')];
     bang = [bang,circ_dist(ang(:,'head_back','head_front',2),ang(:,'head_back','fhcom',2))];
-    bang = nunity(bang);
+    bang = WhitenSignal(bang,[],1);
     
     figure,plot(circ_dist(ang(:,'head_back','head_front',2),ang(:,'head_back','fhcom',2)))
 
@@ -2044,12 +2044,29 @@ switch mode,
     vfet = vel(Trial.load('xyz')
     [ys,fs,ts,phi,fst] = fet_spec(Trial,bfet,'mtchglong',true,'overwrite',true);
     
-     pbins = linspace(-9,-1,100);
+     pbins = linspace(-7,-3,100);
      pfd = histc(log10(ys(:,:,1,1)),pbins,1);
      figure,imagesc(pbins,fs,pfd'),axis xy
+
+
+     hfig = figure(848283); 
+     nind = nniz(ys);
+     for s = 'arwms';
+         clf(hfig)
+         nind = Trial.stc{'w'};
+         pfd = histc(log10(ys(nind,:,1,1)),pbins,1);
+         imagesc(pbins,fs,pfd'),axis xy
+         saveas(
+     end
      
      
-     fet = fet_lgr(Trial);
+     fet =e fet_lgr(Trial);
+     nind = nniz(fet);
+
+     
+     
+     
+     
      [isig] = fastica(cov(fet(nind,:)));
      nind = nniz(fet);figure,N = hist2([fet(nind,:)*isig(11,:)',fet(nind,:)*isig(2,:)'],linspace(-10,10,100),linspace(-15,15,100));
      

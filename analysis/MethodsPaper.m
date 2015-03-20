@@ -11,6 +11,7 @@ xyz.filter(gtwin(.3,xyz.sampleRate));
 ang = Trial.ang.copy;
 ang.create(Trial,xyz);
 figPath = '/gpfs01/sirota/homes/gravio/Documents/Manuscripts/Vicon_Methods_2015/Figures/Figure_1';
+figPath = '/home/gravio/Documents/man2015-jgEd-MoCap/Figures/Figure_1';
 
 %% Fig:1:A Recording setup ( Maze and Cameras )
 hfig = figure(83832);
@@ -30,13 +31,189 @@ imagesc(img);
 
 
 
-%% Fig:1:D Body motion and feature types
+%% Fig:1:D Head motion and feature types
+    Trial = MTATrial('jg05-20120317');
+    fs = []; ts = [];
 
+    xyz = Trial.load('xyz');
+    % create a ridgid body model
+    rb = Trial.xyz.model.rb({'head_back','head_left','head_front','head_right'});
+    % find the center of mass of the model
+    hcom = xyz.com(rb);
+
+    % add coordinates of the model's center of mass to the xyz object
+    xyz.addMarker('fhcom',[.7,1,.7],{{'head_back','head_front',[0,0,1]}},...
+                  ButFilter(hcom,3,[2]./(Trial.xyz.sampleRate/2),'low'));
+
+    xyz.addMarker('hcom',[.7,1,.7],{{'head_back','head_front',[0,0,1]}},hcom);
+
+    nm = cross(xyz(:,'head_back',:)-hcom,xyz(:,'head_right',:)-hcom);
+    nm = bsxfun(@rdivide,nm,sqrt(sum((nm).^2,3))).*20+hcom;
+
+    xyz.addMarker('htx',[.7,1,.7],{{'head_back','head_front',[0,0,1]}},nm);
+
+    nm = cross(xyz(:,'htx',:)-hcom,xyz(:,'head_back',:)-hcom);
+    nm = bsxfun(@rdivide,nm,sqrt(sum((nm).^2,3))).*20+hcom;
+    
+    xyz.addMarker('hrx',[.7,1,.7],{{'head_back','head_front',[0,0,1]}},nm);
+
+    nm = cross(xyz(:,'hrx',:)-hcom,xyz(:,'htx',:)-hcom);
+    nm = bsxfun(@rdivide,nm,sqrt(sum((nm).^2,3))).*20+hcom;
+    
+    xyz.addMarker('hbx',[.7,1,.7],{{'head_back','head_front',[0,0,1]}},nm);
+    
+    ind = 1000;;
+    figure,plot3(nm(ind,1,1),nm(ind,1,2),nm(ind,1,3),'.m')
+    hold on,plot3(xyz(ind,7,1),xyz(ind,7,2),xyz(ind,7,3),'.b')
+    hold on,plot3(xyz(ind,5,1),xyz(ind,5,2),xyz(ind,5,3),'.b')
+    hold on,plot3(xyz(ind,6,1),xyz(ind,6,2),xyz(ind,6,3),'.g')
+    hold on,plot3(xyz(ind,8,1),xyz(ind,8,2),xyz(ind,8,3),'.r')
+    
+    
+    xyz.filter(gausswin(5)./sum(gausswin(5)));
+
+    ang = create(Trial.ang.copy,Trial,xyz);
+    ang.data(~nniz(ang(:,1,2,1)),:,:,:)=0;
+    bang = [];
+% $$$     bang = [bang,ButFilter(ang(:,'hbx','fhcom',3),3,[2,55]./(ang.sampleRate/2),'bandpass')];
+% $$$     bang = [bang,ButFilter(ang(:,'hrx','fhcom',3),3,[2,55]./(ang.sampleRate/2),'bandpass')];
+% $$$     bang = [bang,ButFilter(ang(:,'htx','fhcom',3),3,[2,55]./(ang.sampleRate/2),'bandpass')];
+
+    bang = [bang,ang(:,'hbx','fhcom',3)];
+    bang = [bang,ang(:,'hrx','fhcom',3)];
+    bang = [bang,ang(:,'htx','fhcom',3)];
+    bang = [zeros([1,size(bang,2)]);diff(bang)];
+    bang = [bang,circ_dist(ang(:,'hbx','hcom',2),ang(:,'hbx','fhcom',2))];
+    bang = [bang,circ_dist(ang(:,'hbx','hcom',1),ang(:,'hbx','fhcom',1))];
+    bang = [bang,fet_roll(Trial,[],'raw')];
+     
+    bfet = Trial.xyz.copy;
+    bfet.data = bang;
+
+    [ys,fs,ts,phi,fst] = fet_spec(Trial,bfet,'mtchglong',true,'overwrite',true);
+
+    xyz.resample(ys);
+    wang = create(Trial.ang.copy,Trial,xyz);    
+    
+    c = 4;
+    f = 35;
+    nind = nniz(wang(:,1,2,1));
+    figure,hist2([wang(nind,5,7,2),log10(ys(nind,f,c,c))],linspace(-1.5,1.5,100),linspace(-7,-2,100));
+    s = 'w';
+    nind = Trial.stc{s};
+    figure,hist2([wang(nind,5,7,2),log10(ys(nind,f,c,c))],linspace(-1.5,1.5,100),linspace(-7,-2,100));
+    
+    
+    nc = ys.size(3);
+    figure,sp = [];
+    for i = 1:nc,
+        sp(i) = subplot(nc,1,i);imagesc(ts,fs,log10(ys(:,:,i,i))'),axis xy
+        if i<4,caxis([-7,-2]),else,caxis([-9,-4]),end
+    end
+    linkaxes(sp,'xy');
+
+    ind = 1:3:ys.size(1);
+    ind = resample(Trial.stc{'w'}.cast('TimeSeries'),ys)&nniz(ys(:,1,1,1));
+
+    ind = Trial.stc{'a'};    
+    figure,plot3(log10(ys(ind,40,1,1)),log10(ys(ind,40,2,2)),log10(ys(ind,40,3,3)),'.');
+    line([-9,0],[-9,0],[-9,0])    
+    c = 2;
+    f = 35;
+    figure,hist2(log10([ys(:,35,1,1),ys(:,f,c,c)]),linspace(-7,-2,100),linspace(-7,-2,100));
+
+    nind = Trial.stc{'m'};
+    figure,hist2(log10([ys(nind,35,1,1),ys(nind,f,c,c)]),linspace(-7,-2,100),linspace(-7,-2,100));
+
+    nind = Trial.stc{'w'};
+    figure,hist2(log10([ys(nind,35,1,1),ys(nind,f,c,c)]),linspace(-7,-2,100),linspace(-7,-2,100));
+
+    nind = Trial.stc{'r'};
+    figure,hist2(log10([ys(nind,35,1,1),ys(nind,f,c,c)]),linspace(-7,-2,100),linspace(-7,-2,100));
+
+    
+    vfet = vel(Trial.load('xyz')
+    [ys,fs,ts,phi,fst] = fet_spec(Trial,bfet,'mtchglong',true,'overwrite',true);
+    
+     pbins = linspace(-7,-3,100);
+     pfd = histc(log10(ys(:,:,1,1)),pbins,1);
+     figure,imagesc(pbins,fs,pfd'),axis xy
+
+
+     hfig = figure(848283); 
+     for s = 'arwms';
+         clf(hfig);
+         nind = Trial.stc{s};
+         pfd = histc(log10(ys(nind,:,1,1)),pbins,1);
+         imagesc(pbins,fs,pfd'),axis xy
+         title(['PSD PDF by freq for ' nind.label ' peridos']);
+         xlabel('Power (Roentgens)');
+         ylabel('Frequency');
+         saveas(hfig,fullfile(figPath,['Fig1D-sts-' nind.label '.png']),'png');
+         saveas(hfig,fullfile(figPath,['Fig1D-sts-' nind.label '.eps']),'eps2');
+     end
+     
+     
+     fet = fet_lgr(Trial);
+     nind = nniz(fet);
+
+     
+     
+ 
+     [isig] = fastica(cov(fet(nind,:)));
+     nind = nniz(fet);figure,N = hist2([fet(nind,:)*isig(11,:)',fet(nind,:)*isig(2,:)'],linspace(-10,10,100),linspace(-15,15,100));
 
 
 
 %% Fig:1:E
-% marker error
+% marker error ridgid body marker distance PSD
+Trial = MTATrial('jg05-20120317');
+ang = create(Trial.ang.copy,Trial,Trial.load('xyz'));
+ang.data = ang(Trial.stc{'a'},'head_back','head_front',3)-...
+           median(ang(Trial.stc{'a'},'head_back','head_front',3));
+[ys,fs,ts] = fet_spec(Trial,ang,'mtchglong',false);
+pedges = linspace(-6,-1,125);
+N = histc(log10(ys(nniz(ys),:)),pedges,1);
+figure,imagesc(fs,pedges,N),axis xy;
+xlabel('Frequency (Hz)')
+ylabel('log10 mm^2/Hz')
+title({'PSD of distance between two markers','of a ridgid body structure'})
+
+
+
+Trial = MTATrial('jg05-20120317');
+ang = create(Trial.ang.copy,Trial,Trial.load('xyz'));
+bt = circ_dist(ang(:,'spine_lower','spine_middle',1),ang(:,'spine_middle','head_front',1));
+vng = Trial.ang.copy;
+vng.data = [0;diff(bt)];
+[ys,fs,ts] = fet_spec(Trial,vng,'mtchglong',false);
+figure,imagesc(ts,fs,log10(ys(:,:))'),axis xy;caxis([-9,-4])
+
+[A,W] = fastica(log10(ys(Trial.stc{'a'},:))');
+
+[A,W] = fastica(log10(ys({Trial.stc{'w'}},:))');
+
+figure,hist2([log10(ys(Trial.stc{'a'},:))*A(:,166),log10(ys(Trial.stc{'a'},:))*A(:,95)],100,100)
+v1 = linspace(-8,-4,100);
+v2 = linspace(-90,-50,100);
+figure,hist2([log10(ys(Trial.stc{'a'},:))*A(:,166),log10(ys(Trial.stc{'a'},:))*A(:,95)],v1,v2)
+figure,hist2([log10(ys(Trial.stc{'m'},:))*A(:,166),log10(ys(Trial.stc{'m'},:))*A(:,95)],v1,v2)
+
+sfet = (median(ys.data(:,30:60),2)+median(ys.data(:,78:100),2))./(mean(ys(:,1:25),2)+mean(ys(:,65:75),2)+mean(ys(:,105:166),2));
+ss = ys.copy;
+ss.data = log10(sfet);
+
+figure,plot(ss.data)
+Lines(Trial.stc{'m',ys.sampleRate}(:),[],'r')
+
+vfet = vel(resample(Trial.load('xyz').filter(gtwin(.3,Trial.xyz.sampleRate)),ys.sampleRate),7);
+vfet.data = log10(vfet.data);
+
+nind = Trial.stc{'a'};
+figure, hist2([vfet(nind),ss(nind)],linspace(-2,2,100),linspace(-2,1.5,100))
+
+
+
 hfig = figure(838884);
 edges = 43:.05:45;
 %rTrial.stc{'w'}
@@ -132,6 +309,7 @@ figPath = '/gpfs01/sirota/homes/gravio/Documents/Manuscripts/Vicon_Methods_2015/
 %exPer = [26664,27100];
 %exPer = [26000,26480];
 exPer = [25200,25580];
+exPer = [55200,60000];
 xyz = Trial.load('xyz').filter(gtwin(.25,Trial.xyz.sampleRate));
 ang = create(Trial.ang.copy,Trial,xyz);
 stateColors = 'brcgym';
@@ -164,11 +342,17 @@ wper = Stc{'w'}&exPer;
 rper = Stc{'r'}&exPer;
 sper = Stc{'s'}&exPer;
 
+for i= [1:4,5,7],
+p=plot3(xyz(exPer(1):exPer(2),i,1),xyz(exPer(1):exPer(2),i,2),xyz(exPer(1):exPer(2),i,3),'.k');
+set(p,'MarkerSize',4)
+end
 
-plotSkeleton(xyz,exPer(1),'surface',ang);              % Skeleton @ Begining of trajectory
-plotSkeleton(xyz,round(mean(nper.data)),'surface',ang);% Skeleton @ During Turn
-plotSkeleton(xyz,round(mean(wper.data)),'surface',ang);% Skeleton @ During walk
-plotSkeleton(xyz,exPer(2),'surface',ang);              % Skeleton @ end of trajectory
+pMode = [];%'surface';
+plotSkeleton(xyz,exPer(1),pMode,ang);              % Skeleton @ Begining of trajectory
+plotSkeleton(xyz,round(mean(nper.data)),pMode,ang);% Skeleton @ During Turn
+plotSkeleton(xyz,round(mean(wper.data)),pMode,ang);% Skeleton @ During walk
+plotSkeleton(xyz,exPer(2),pMode,ang);              % Skeleton @ end of trajectory
+
 
 
 if ~sper.isempty, 
