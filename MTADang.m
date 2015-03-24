@@ -59,9 +59,15 @@ classdef MTADang < MTAData
 
             for i=1:xyz.size(2),
                 for j=1:xyz.size(2),
-                    if i==j,continue,end
-                    tang =cell(1,3);
-                    [tang{:}] = cart2sph(diffMat(:,i,j,1),diffMat(:,i,j,2),diffMat(:,i,j,3));
+                    if i==j,continue,end                    
+                    switch xyz.size
+                        case 3
+                            tang =cell(1,3);
+                            [tang{:}] = cart2sph(diffMat(:,i,j,1),diffMat(:,i,j,2),diffMat(:,i,j,3));
+                        case 2
+                            tang =cell(1,2);
+                            [tang{:}] = cart2pol(diffMat(:,i,j,1),diffMat(:,i,j,2),diffMat(:,i,j,3));
+                    end
                     ang(:,i,j,:) = cell2mat(tang);
                 end
             end

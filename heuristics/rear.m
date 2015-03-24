@@ -4,8 +4,9 @@ if ~isa(Trial,'MTASession'),
     Trial = MTATrial(Trial);
 end
 
-ang = Trial.load('ang');
+
 xyz = Trial.load('xyz');
+ang = create(Trial.ang.copy,Trial,xyz);
 
 if xyz.sampleRate>120,xyz.resample(120);end
 if ang.sampleRate>120,ang.resample(120);end
