@@ -10,98 +10,51 @@ marks = Trial.xyz.model.gmi({'spine_lower','pelvis_root','head_back','head_front
 %%%%%%%%%%%%%%%%
 
 
-
-% Load Marker Positions and down sample to 30 Hz
-
-vfet = vel(resample(Trial.load('xyz'),8),marks,[1,2]);
-
-xyz = resample(Trial.load('xyz'),36);
-% Get segments for .5 second periods
-xyzs = xyz.segs(1:xyz.size(1),9,0);
-xyzs = xyzs(:,:,:,[1,2]);
-% Calculate distances
-dxyzs = sqrt(sum(bsxfun(@minus,xyzs,xyzs(5,:,:,:)).^2,4));
-
-% Movement Feature 
-%a bit better than the sum of the marker vels
-mfet = xyz.copy;
-mfet.data = circshift(log10(abs(sq(sum(prod(bsxfun(@minus,dxyzs(:,:,marks),median(dxyzs(:,:,marks))),3)))').*sq(mean(dxyzs(:,:,marks(1))))'),5);
-
-rfet = rear(Trial,'MTA')
-
-vfet.resample(mfet);
-
-vvf = xyz.copy;
-vvf.data = var(log10(vfet.data),[],2);
-% $$$ nind = Trial.stc{'a'};
-% $$$ nind = Trial.stc{'m'};
-% $$$ nind = Trial.stc{'n'};
-% $$$ nind = Trial.stc{'w'};
-% $$$ nind = Trial.stc{'a-r'};
-% $$$ nind = Trial.stc{'a-r-w'};
-% $$$ figure,bar(linspace(-8,12,1000),histc(mfet(nind)-log10(vvf(nind)),linspace(-8,12,1000)),'histc')
-% $$$ % $$$ nind = nniz(vfet)&nniz(vvf);
-% $$$ % $$$ nind = Trial.stc{'w'};
-% $$$ % $$$ nind = Trial.stc{'a-r-w'};
-% $$$ figure,hist2([sum(log10(vfet(nind,:)),2),log10(vvf(nind))],linspace(-8,8,100),linspace(-5,.5,100))
-% $$$ 
-% $$$ figure,hist2([sum(log10(vfet(nind,:)),2),log10(xyz(nind,1,3))],linspace(-8,8,100),linspace(0,2,100))
-% $$$ figure,hist2([mfet(nind,:),log10(vvf(nind))],linspace(-8,8,100),linspace(-5,.5,100))
-
-
+% Load marker positions and calculate inter marker angles
+% Down-sample to 120 Hz if necessary
+xyz = Trial.load('xyz');
+if xyz.sampleRate>120,
+    xyz.resample(120);
+end
 ang = create(Trial.ang.copy,Trial,xyz);
 
-sfet = xyz.copy;
-sfet.data = [circ_dist(ang(:,2,3,1),ang(:,1,2,1)),...
-        circ_dist(ang(:,3,4,1),ang(:,2,3,1)),...
-        circ_dist(ang(:,4,5,1),ang(:,3,4,1)),...
-        circ_dist(ang(:,5,7,1),ang(:,4,5,1))];
+vfet = xyz.vel(marks,[1,2]);
+vfet.data = ButFilter(vfet.data,3,8/(xyz.sampleRate/2));
 
+% Movement of markers in general body direction feature
+% Get segments for .5 second periods
+winds = round(.3*xyz.sampleRate);
+hwin = round(winds/2);
+dtraj = sq(circshift(xyz.data,-hwin)-circshift(xyz.data,hwin));
+otraj = ButFilter(xyz(:,4,:),3,4/xyz.sampleRate*.5,'low')-ButFilter(xyz(:,1,:),3,4/xyz.sampleRate*.5,'low');
+ndvtm = dot(dtraj,repmat(otraj,[1,size(dtraj,2),1]),3);
+ndat = [ndvtm(:,1),ndvtm(:,4)];
+sd = sign(ndat);
+ndat(ndat<1&ndat>-1)=1;
+ndat(~nniz(ndat(:))) = 1;
+ndat = log10(abs(ndat)).*sd;
+tfet = xyz.copy;
+tfet.data = ndat*[.5;.5];
 
-figure,plot(diff(sum( sfet,2)))
-Lines(Trial.stc{'w',ang.sampleRate}(:),[],'k');
-Lines(Trial.stc{'n',ang.sampleRate}(:),[],'g');
-Lines(Trial.stc{'m',ang.sampleRate}(:),[],'m');
+% figure,plot(tfet.data*[.5;.5])
+% figure,bar(linspace(-5,5,1000),hist(tfet.data*[.5;.5],linspace(-5,5,1000)),'histc'),ylim([0,1000])
+% figure,bar(linspace(-5,5,1000),hist(tfet(Trial.stc{'w'},:)*[.5;.5],linspace(-5,5,1000)),'histc'),ylim([0,1000])
+% figure,bar(linspace(-5,5,1000),hist(tfet(Trial.stc{'r'},:)*[.5;.5],linspace(-5,5,1000)),'histc'),ylim([0,1000])
+% figure,bar(linspace(-5,5,1000),hist(tfet(Trial.stc{'n'},:)*[.5;.5],linspace(-5,5,1000)),'histc'),ylim([0,1000])
+% figure,bar(linspace(-5,5,1000),hist(tfet(Trial.stc{'m'},:)*[.5;.5],linspace(-5,5,1000)),'histc'),ylim([0,1000])
+% figure,bar(linspace(-5,5,1000),hist(tfet(Trial.stc{'s'},:)*[.5;.5],linspace(-5,5,1000)),'histc'),ylim([0,1000])
+% nind = Trial.stc{'w'};
+% figure,hist2(tfet(nind,:),linspace(-5,5,100),linspace(-5,5,100))
+% caxis([0,200])
 
-san = xyz.copy;
-san.data = [ang(:,1,4,1),ang(:,1,3,1),ang(:,2,4,1),ang(:,4,7,1)];
-san = san.segs(1:san.size(1),9,0);
-san = bsxfun(@circ_dist,san,san(5,:,:,:));
+rfet = rear(Trial,'MTA');
 
-afet = xyz.copy;
-afet.data = circshift(log10(abs(sum(prod(bsxfun(@circ_dist,san,circ_mean(san)),3))').*abs(sq(circ_mean(san(:,:,1)))')),5);
-
-
-
-
-
-nind = Trial.stc{'a'};
-nind = Trial.stc{'m'};
-nind = Trial.stc{'n'};
-nind = Trial.stc{'w'};
-nind = Trial.stc{'a-r'};
-nind = Trial.stc{'a-r-w'};
-figure,hist2([mfet(nind),afet(nind)],linspace(-8,8,100),linspace(-20,2,100))
-
-figure,hist2(log10([vfet(nind,1),vfet(nind,4)]),linspace(-2,2,100),linspace(-2,2,100))
-
-
-xyzs = xyz.segs(1:xyz.size(1),18,0);
-xyzs = xyzs(:,:,:,[1,2]);
-
-dtraj = sq(xyzs(end,:,:,:)-xyzs(1,:,:,:));
-mdtraj = permute(reshape(repmat(sum(dtraj.*dtraj,3),2,1),size(dtraj,1),2,size(xyz,2)),[1,3,2]);
-ndtraj = dtraj./mdtraj;
-ndvtm = dot(dtraj,sq(mean(xyzs)),3);
-
-%% START HERE
-figure,plot(ndvtm(:,1:8))
-Lines(Trial.stc{'w',ang.sampleRate}(:),[],'k');
-Lines(Trial.stc{'n',ang.sampleRate}(:),[],'g');
-Lines(Trial.stc{'m',ang.sampleRate}(:),[],'m');
-Lines(Trial.stc{'r',ang.sampleRate}(:),[],'r');
-
-
+% Total spine curvature
+sfet = ang.copy;
+sfet.data = sum(abs([circ_dist(ang(:,2,3,1),ang(:,1,2,1)),...
+                     circ_dist(ang(:,3,4,1),ang(:,2,3,1)),...
+                     circ_dist(ang(:,4,5,1),ang(:,3,4,1)),...
+                     circ_dist(ang(:,5,7,1),ang(:,4,5,1))]),2);
 
 
 %% BASE_FEATURES
@@ -114,16 +67,6 @@ bf =  Filter0(gausswin(21)./sum(gausswin(21)),circ_mean(btrajMean,[],2).*mean(bt
 hf =  Filter0(gausswin(21)./sum(gausswin(21)),circ_mean(htrajMean,[],2).*mean(htrajVarD,2));
 ind = ~isnan(wf)&~isnan(af)&wf>1.5&(af>.001|af<-.001);
  
-
-% vtraj projected onto a com vector 
-dtraj= xyz(round(linspace(winlen,size(xyz,1),size(vtraj,2))),:,:)-repmat(xyz(round(linspace(winlen,size(xyz,1),size(vtraj,2))),1,:),1,size(xyz,2));
-mdtraj = permute(reshape(repmat(sum(dtraj.*dtraj,3),2,1),size(dtraj,1),2,size(xyz,2)),[1,3,2]);
-ndtraj = dtraj./mdtraj;
-nvtrajMean = reshape(vtrajMean,[],size(xyz,2),2);
-mvtrajm = permute(reshape(repmat(sum(nvtrajMean.*nvtrajMean,3),2,1),size(nvtrajMean,1),2,size(xyz,2)),[1,3,2]);
-nvtrajm = nvtrajMean./mvtrajm;
-dvtm = dot(nvtrajm,ndtraj,3);
-ndvtm = dot(dtraj,nvtrajMean,3);
 
 
 %% @(BHV-BASE-FILTER,MOVEMENT)
