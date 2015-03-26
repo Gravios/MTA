@@ -1,16 +1,15 @@
-MTAConfiguration('/gpfs01/sirota/bach/data/gravio','absolute');
+
 
 Trial = MTATrial('jg05-20120317')
 
-vel = MTADxyz([],[],Trial.vel,Trial.xyz.sampleRate,[],[],Trial.xyz.model);
-vel.filter(gausswin(11)./sum(gausswin(11)));
+vl = vel(Trial.load('xyz'),[],[1,2]),;;
+vl.data =  ButFilter(vl.data,3,4/(vl.sampleRate/2),'low');
 
-
-edges = linspace(-2,2,64);
+edges = linspace(-.5,2,64);
 sbound = -40:40;
 state = 'w';
 
-v = vel(Trial.stc{state},1:8,1);
+v = vl(Trial.stc{state},1:8,1);
 
 v = vel(:,1:8,1);
 

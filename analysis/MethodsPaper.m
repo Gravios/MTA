@@ -300,8 +300,17 @@ saveas(hfig,[fullfile(figPath,'Fig1F-alt1.png'),'png');
 saveas(hfig,[fullfile(figPath,'Fig1F-alt1.eps'),'eps2');
 
 
+%% new Figure2 
+Trial = MTATrial('jg05-20120317');
+xyz = Trial.load('xyz');
+xyz.data = ButFilter(xyz.data,3,8/(xyz.sampleRate/2),'low');
+vl = xyz.vel(1:8,[1,2]);
+%vl.data =  ButFilter(vl.data,3,4/(vl.sampleRate/2),'low');
 
- 
+figure,plot((1:vl.size(1))/vl.sampleRate,[mean(vl(:,1:3),2),mean(vl(:,5:8),2)])
+title('xy speed of head and body')
+xlabel('Time (s)')
+ylabel('Speed (cm/s)');
 
 %% Figure 2 Trajectories and behavioral labeling
 

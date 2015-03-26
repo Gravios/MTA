@@ -1,22 +1,18 @@
 
 
 Trial = MTATrial('jg05-20120317');
-%v = Trial.vel;
 
-edges = linspace(-3.5e4,3.5e4,64);
-edges = linspace(-.5,3.5e4,64);
-%filts = 20;
-%filtn = 5;
+vl = vel(Trial.load('xyz'),[],[1,2]);
+vl.data =  ButFilter(vl.data,3,4/(vl.sampleRate/2),'low');
+v = log10(abs(vl(:,1:8)));
+
+
+edges = linspace(-.5,2,64);
 sbound = -30:30;
-ixy = zeros([numel(sbound),size(v,2),size(v,2)]);%,filtn);
+ixy = zeros([numel(sbound),size(v,2),size(v,2)]);
 
-%for f = 1:filtn;
-
-%v = Trial.vel;
-%v = Filter0(gausswin(1+f*filts)./sum(gausswin(1+f*filts)),v);
-
-padding = [-.25,.25];
-vind = logical(subsref(cast(resample(Trial.stc{'n'}+padding,xyz),'TimeSeries'),substruct('.',{'data'})));
+padding = [0,0];%[-.5,.5];
+vind = logical(subsref(cast(resample(Trial.stc{'a'}+padding,xyz),'TimeSeries'),substruct('.',{'data'})));
 nind = numel(vind);
 
 s = 1;
@@ -35,7 +31,7 @@ end
 s = 1;
 end
 end
-%end
+
 
 [mixy,sixy] = max(ixy);
 mixy = sq(mixy);
@@ -115,4 +111,3 @@ subplot2(5,8,4,m),hist(log10(v(v(:,m)~=0,m)),128);
 v = MTADxyz([],[],Trial.vel,Trial.xyz.sampleRate);
 v.filter(gausswin(961)./sum(gausswin(961)));
 subplot2(5,8,5,m),hist(log10(v(v(:,m)~=0,m)),128);
-end
