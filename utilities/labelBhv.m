@@ -19,7 +19,7 @@ Stc.states = {};
 txyz = Trial.xyz.copy;
 if txyz.isempty,txyz.load(Trial); end    
 tang = Trial.ang.copy;
-if tang.isempty,tang.load(Trial); end    
+if tang.isempty,tang.create(Trial,txyz); end    
 if txyz.sampleRate>120,txyz.resample(120);end
 if tang.sampleRate>120,tang.resample(120);end
 

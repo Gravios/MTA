@@ -6,7 +6,7 @@ function Trial = bhv_auto(Trial,Stc)
 %% Testing Vars
 
 Trial = MTATrial('jg05-20120317');
-marks = Trial.xyz.model.gmi({'spine_lower','pelvis_root','head_back','head_front'});
+marks = Trial.xyz.model.gmi({'spine_lower','pelvis_root','spine_middle','head_back','head_front'});
 %%%%%%%%%%%%%%%%
 
 
