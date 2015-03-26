@@ -20,6 +20,12 @@ ang = create(Trial.ang.copy,Trial,xyz);
 
 vfet = xyz.vel(marks,[1,2]);
 vfet.data = ButFilter(vfet.data,3,8/(xyz.sampleRate/2));
+ind = nniz(vfet);
+figure,hist2(log10([mean(vfet(ind,1),2),mean(vfet(ind,4),2)]),linspace(-.5,2,100),linspace(-.5,2,100))
+ind = Trial.stc{'w'};
+figure,hist2(log10([mean(vfet(ind,1),2),mean(vfet(ind,4),2)]),linspace(-.5,2,100),linspace(-.5,2,100))
+ind = Trial.stc{'n'};
+figure,hist2(log10([mean(vfet(ind,1),2),mean(vfet(ind,4),2)]),linspace(-.5,2,100),linspace(-.5,2,100))
 
 % Movement of markers in general body direction feature
 % Get segments for .5 second periods

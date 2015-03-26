@@ -171,8 +171,11 @@ Trial = MTATrial('jg05-20120317');
 ang = create(Trial.ang.copy,Trial,Trial.load('xyz'));
 ang.data = ang(Trial.stc{'a'},'head_back','head_front',3)-...
            median(ang(Trial.stc{'a'},'head_back','head_front',3));
-[ys,fs,ts] = fet_spec(Trial,ang,'mtchglong',false);
-pedges = linspace(-6,-1,125);
+pstr = struct('nFFT',2^11,'Fs',ang.sampleRate,...
+              'WinLength',2^10,'nOverlap',2^10*.875,...
+              'FreqRange',[0.1,40]);
+[ys,fs,ts] = fet_spec(Trial,ang,'mtchglong',false,[],pstr);
+pedges = linspace(-7,-1,125);
 N = histc(log10(ys(nniz(ys),:)),pedges,1);
 figure,imagesc(fs,pedges,N),axis xy;
 xlabel('Frequency (Hz)')
