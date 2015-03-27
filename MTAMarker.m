@@ -22,9 +22,7 @@ classdef MTAMarker
         end
         
         function strout = short(Marker)
-            t = 'head_front';
-            p = '(^.)|(_.)';
-            ts = strjoin(regexpi(t,p,'match'),'');
+            ts = strjoin(regexpi(Marker.name,'(^.)|(_.)','match'),'');
             strout = upper(ts([1:2:numel(ts)]));
         end
         

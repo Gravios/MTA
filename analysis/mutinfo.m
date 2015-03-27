@@ -2,7 +2,10 @@
 
 Trial = MTATrial('jg05-20120317');
 
-vl = vel(Trial.load('xyz'),[],[1,2]);
+marks = {'spine_lower','pelvis_root','spine_middle','spine_upper',...
+         'head_back',  'head_left',  'head_front',  'head_right'};
+
+vl = vel(Trial.load('xyz'),marks,[1,2]);
 vl.data =  ButFilter(vl.data,3,4/(vl.sampleRate/2),'low');
 v = log10(abs(vl(:,1:8)));
 
@@ -34,80 +37,24 @@ end
 
 
 [mixy,sixy] = max(ixy);
-mixy = sq(mixy);
+mixy = sq(mixy;)
 sixy = sq(sixy)-ceil(numel(sbound)/2);
 
 
 figure,
-subplot2(1,2,1,1),imagesc(mixy(:,:))
-subplot2(1,2,1,2),imagesc(sixy(:,:))
+subplot2(1,2,1,1);
+imagesc(mixy(:,:));
+caxis([0,2]);
+colorbar
+title('mutual information between marker speeds');
+set(gca,'YtickMode','manual');
+set(gca,'Ytick',1:8);
+set(gca,'YtickLabelMode','manual');
+set(gca,'YtickLabel',vl.model.ml('short'));
+subplot2(1,2,1,2);
+imagesc(sixy(:,:)/vl.sampleRate*1000);
+colorbar
+title('time lag of maximum mutual information (ms)')
+set(gcf,'position',[520, 443, 1046, 289]);
 
 
-
-
-
-
-
-%% Vel Seg
-
-MTAConfiguration('/gpfs01/sirota/bach/data/gravio','absolute');
-
-Trial = MTATrial('jg05-20120317')
-
-figure,
-hold on,
-
-v = MTADxyz([],[],Trial.vel,Trial.xyz.sampleRate);
-v.filter(gausswin(121)./sum(gausswin(121)));
-plot(log10(v(:,1)))
-
-v = MTADxyz([],[],Trial.vel,Trial.xyz.sampleRate);
-v.filter(gausswin(241)./sum(gausswin(241)));
-plot(log10(v(:,1)),'r')
-
-v = MTADxyz([],[],Trial.vel,Trial.xyz.sampleRate);
-v.filter(gausswin(481)./sum(gausswin(481)));
-plot(log10(v(:,1)),'g')
-
-
-figure % Spine Lower
-v = MTADxyz([],[],Trial.vel,Trial.xyz.sampleRate);
-v.filter(gausswin(121)./sum(gausswin(121)));
-subplot(4,1,1),hist(log10(v(v(:,1)~=0,1)),1000)
-
-v = MTADxyz([],[],Trial.vel,Trial.xyz.sampleRate);
-v.filter(gausswin(241)./sum(gausswin(241)));
-subplot(4,1,2),hist(log10(v(v(:,1)~=0,1)),1000)
-
-v = MTADxyz([],[],Trial.vel,Trial.xyz.sampleRate);
-v.filter(gausswin(481)./sum(gausswin(481)));
-subplot(4,1,3),hist(log10(v(v(:,1)~=0,1)),1000)
-
-v = MTADxyz([],[],Trial.vel,Trial.xyz.sampleRate);
-v.filter(gausswin(961)./sum(gausswin(961)));
-subplot(4,1,4),hist(log10(v(v(:,1)~=0,1)),1000)
-
-
-figure % head front
-
-
-for m = 1:8,
-v = MTADxyz([],[],Trial.vel,Trial.xyz.sampleRate);
-v.filter(gausswin(11)./sum(gausswin(11)));
-subplot2(5,8,1,m),hist(log10(v(v(:,m)~=0,m)),128);
-
-v = MTADxyz([],[],Trial.vel,Trial.xyz.sampleRate);
-v.filter(gausswin(121)./sum(gausswin(121)));
-subplot2(5,8,2,m),hist(log10(v(v(:,m)~=0,m)),128);
-
-v = MTADxyz([],[],Trial.vel,Trial.xyz.sampleRate);
-v.filter(gausswin(241)./sum(gausswin(241)));
-subplot2(5,8,3,m),hist(log10(v(v(:,m)~=0,m)),128);
-
-v = MTADxyz([],[],Trial.vel,Trial.xyz.sampleRate);
-v.filter(gausswin(481)./sum(gausswin(481)));
-subplot2(5,8,4,m),hist(log10(v(v(:,m)~=0,m)),128);
-
-v = MTADxyz([],[],Trial.vel,Trial.xyz.sampleRate);
-v.filter(gausswin(961)./sum(gausswin(961)));
-subplot2(5,8,5,m),hist(log10(v(v(:,m)~=0,m)),128);

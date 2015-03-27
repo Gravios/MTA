@@ -170,7 +170,7 @@ classdef MTAModel
             end
         end
 
-        function markerList = ml(Model)
+        function markerList = ml(Model,varargin)
         %List model marker names
         %
         %Example:
@@ -179,10 +179,10 @@ classdef MTAModel
         %Output:
         %  markerList - cellArray<-string: list of marker names
         %
-            markerList = {};
-            for i = 1:Model.N,
-                markerList{end+1} = Model.Markers{i}.name;
-            end
+            [mode] = DefaultArgs(varargin,{'name'},true);
+            markerList = cellfun(@subsref,Model.Markers,...
+                         repmat({substruct('.',{mode})},size(Model.Markers)),...
+                         'Uniformoutput',false);
         end
 
         function rigidBody = rb(Model,markerSet)
