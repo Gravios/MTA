@@ -303,14 +303,23 @@ saveas(hfig,[fullfile(figPath,'Fig1F-alt1.eps'),'eps2');
 %% new Figure2 
 Trial = MTATrial('jg05-20120317');
 xyz = Trial.load('xyz');
-xyz.data = ButFilter(xyz.data,3,8/(xyz.sampleRate/2),'low');
-vl = xyz.vel(1:8,[1,2]);
-%vl.data =  ButFilter(vl.data,3,4/(vl.sampleRate/2),'low');
+vl = vel(xyz,1:8,[1,2]);
+vl.data = ButFilter(vl.data,3,4/(vl.sampleRate/2),'low');
 
+
+% TimeSeries - Head/Body speed 
 figure,plot((1:vl.size(1))/vl.sampleRate,[mean(vl(:,1:3),2),mean(vl(:,5:8),2)])
 title('xy speed of head and body')
 xlabel('Time (s)')
 ylabel('Speed (cm/s)');
+
+% JPDF - Head/Body speed
+figure,
+hist2(log10(vl(nniz(vl),[1,7])),linspace(-2,2,75),linspace(-2,2,75));
+xlabel('log10 body speed (cm/s)');
+ylabel('log10 head speed (cm/s)');
+title('JPDF of log10 head and body speeds');
+
 
 %% Figure 2 Trajectories and behavioral labeling
 
