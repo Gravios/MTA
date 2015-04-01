@@ -346,20 +346,20 @@ swg.data = circ_dist(ang(:,1,4,1),ang(:,2,4,1));
 % title(Trial.stc{sts(i)}.label)
 % end
 
-vs = vel(xyz,1:8,[1,2]);
-vs.resample(30);
-vs.data = log10(abs(vs.data));
-bspc.resample(30);
-
-i = 3;
-b = log10([bspc(Trial.stc{sts(i)},freq),vs(Trial.stc{sts(i)},7)]);
-figure,hold on
-hist2(b,linspace(-10,-3,100),linspace(-2,2,100))
-
-for i = 1:6,
-    b = log10([bspc(Trial.stc{sts(i)},freq),vs(Trial.stc{sts(i)},7)]);
-    error_ellipse(abs(cov(b)),mean(b),'markercolor',)
-end
+% $$$ vs = vel(xyz,1:8,[1,2]);
+% $$$ vs.resample(30);
+% $$$ vs.data = log10(abs(vs.data));
+% $$$ bspc.resample(30);
+% $$$ 
+% $$$ i = 3;
+% $$$ b = log10([bspc(Trial.stc{sts(i)},freq),vs(Trial.stc{sts(i)},7)]);
+% $$$ figure,hold on
+% $$$ hist2(b,linspace(-10,-3,100),linspace(-2,2,100))
+% $$$ 
+% $$$ for i = 1:6,
+% $$$     b = log10([bspc(Trial.stc{sts(i)},freq),vs(Trial.stc{sts(i)},7)]);
+% $$$     error_ellipse(abs(cov(b)),mean(b),'markercolor',)
+% $$$ end
 
 
 
@@ -381,51 +381,54 @@ ind = ind(1):ind(2);
 i = 1;
 
 %figure(201) % SPEED head and body
-subplot(ns,1,i);i=i+1;
+subplot2(ns,4,i,[1:3]);i=i+1;
 plot(ind/vl.sampleRate,[median(vl(ind,1:2),2),median(vl(ind,5:8),2)]),axis tight
 title('xy speed of head and body')
 xlabel('Time (s)')
 ylabel('Speed (cm/s)');
+ylim([0,80])
 %set(gcf,'position',figPos);
 %saveas(hfig,[fullfile(figPath,'Fig1F-alt1.png'),'png');
 %saveas(hfig,[fullfile(figPath,'Fig1F-alt1.eps'),'eps2');
 
 
 %figure(202) % DIRECTION head and body
-subplot(ns,1,i);i=i+1;
+subplot2(ns,4,i,[1:3]);i=i+1;
 plot(ind/vl.sampleRate,[ang(ind,1,3,1),ang(ind,4,7,1)]),axis tight
 title('Direction of head and body')
 xlabel('Time (s)')
 ylabel('Direction (radians)');
+
 %%set(gcf,'position',figPos);
 %saveas(hfig,[fullfile(figPath,'Fig1F-alt1.png'),'png');
 %saveas(hfig,[fullfile(figPath,'Fig1F-alt1.eps'),'eps2');
 
 
 %figure(203)%  PITCH SLPR and SMSU
-subplot(ns,1,i);i=i+1;
+subplot2(ns,4,i,[1:3]);i=i+1;
 plot(ind/vl.sampleRate,[ang(ind,1,2,2),ang(ind,3,4,2)]),axis tight
 title('Pitch of SLPR and SMSU')
 xlabel('Time (s)')
-ylabel('Direction (radians)');
+ylabel('Pitch (radians)');
+%ylim([-pi/2,pi/2]);
 %set(gcf,'position',figPos);
 %saveas(hfig,[fullfile(figPath,'Fig1F-alt1.png'),'png');
 %saveas(hfig,[fullfile(figPath,'Fig1F-alt1.eps'),'eps2');
 
 
 %figure(204) 
-subplot(ns,1,i);i=i+1;
+subplot2(ns,4,i,[1:3]);i=i+1;
 plot(ind/vl.sampleRate,[ang(ind,4,5,3)]),axis tight%,ang(ind,4,7,3)])
 title('Intermarker Distance of head and body')
 xlabel('Time (s)')
-ylabel('Direction (radians)');
+ylabel('Distance (mm)');
 %set(gcf,'position',figPos);
 %saveas(hfig,[fullfile(figPath,'Fig1F-alt1.png'),'png');
 %saveas(hfig,[fullfile(figPath,'Fig1F-alt1.eps'),'eps2');
 
 
 %figure(205)
-subplot(ns,1,i);i=i+1;
+subplot2(ns,4,i,[1:3]);i=i+1;
 plot(ind/vl.sampleRate,abs(sfet(ind,:))),axis tight%,ang(ind,4,7,3)])
 title('Intermarker Distance of head and body')
 xlabel('Time (s)')
@@ -437,7 +440,7 @@ ylabel('Direction (radians)');
 
 
 %figure(206) RHM Rhythmic Head Motion
-subplot(ns,1,i);i=i+1;
+subplot2(ns,4,i,[1:3]);i=i+1;
 sind = round(xpers(s,:).*rhm.sampleRate);
 sind = sind(1):sind(2);
 imagesc(ts(sind),fs,log10(rhm(sind,:))'),axis xy ,caxis([-5.2,-2.5])
@@ -445,6 +448,14 @@ imagesc(ts(sind),fs,log10(rhm(sind,:))'),axis xy ,caxis([-5.2,-2.5])
 
 saveas(hfig,[fullfile(figPath,['Fig2-Features-sample_' num2str(s) '_' Trial.filebase '.png']),'png');
 saveas(hfig,[fullfile(figPath,['Fig2-Features-sample_' num2str(s) '_' Trial.filebase '.eps']),'eps2');
+
+
+% JPDF - Head/Body speed
+hist2(log10([median(vl(nniz(vl),[1:2]),2),median(vl(nniz(vl),[5:8]),2)]),linspace(-2,2,75),linspace(-2,2,75));
+xlabel('log10 body speed (cm/s)');
+ylabel('log10 head speed (cm/s)');
+title('JPDF of log10 head and body speeds');
+
 
 end
 
@@ -456,34 +467,34 @@ end
 
 
 F = [.05 .1 .05; .1 .4 .1; .05 .1 .05];
-ZC = conv2(ZN,F,'same');
+o = conv2(o,F,'same');
 
 figure
 contour(ZC, clevels)
 axis([0,100,0,100])
 title('Noisy Surface (smoothed once)')
 
-% JPDF - Head/Body speed
-figure,
-hist2(log10([median(vl(nniz(vl),[1:2]),2),median(vl(nniz(vl),[5:8]),2)]),linspace(-2,2,75),linspace(-2,2,75));
-xlabel('log10 body speed (cm/s)');
-ylabel('log10 head speed (cm/s)');
-title('JPDF of log10 head and body speeds');
 
 
-figure,
+
 sts = 'rwnms';
 stc = 'rcymg';
-b = log10(vl(Trial.stc{'a'},[1,7]));
-hist2(b,linspace(-.5,2,75),linspace(-.5,2,75));
+edgs    = {linspace(-2,2,75)};
+edgs(2) = {linspace(-2,2,75)};
+[edgs{:}] = get_histBinCenters(edgs);
+[X,Y] = meshgrid(edgs{:});
+
+figure,
+b = log10([median(vl(nniz(vl),[1:2]),2),median(vl(nniz(vl),[5:8]),2)]);
+hist2(b,edgs{1},edgs{2});
 
 hold on,
 for i = 1:numel(sts),
-b = log10(vl(Trial.stc{sts(i)},[1,7]));
-b(nniz(b)) = -3;
-hist2(b,linspace(-.5,2,75),linspace(-.5,2,75));
-h = error_ellipse(cov(real(b(nniz(b),:))),mean(real(b(nniz(b),:))));
-set(h,'MarkerfaceColor',stc(i))
+    b = log10([median(vl(Trial.stc{sts(i)},[1:2]),2),median(vl(Trial.stc{sts(i)},[5:8]),2)]);
+    o = hist2(b,linspace(-1.5,2,75),linspace(-1.5,2,75));
+    F = [.05 .1 .05; .1 .4 .1; .05 .1 .05];
+    o = conv2(o,F,'same');
+    contour(X,Y,o',[10,10],'Color',stc(i))
 end
 
 
@@ -494,11 +505,6 @@ for i = 1:8,
     lvp(:,:,i) = log10(vspc(Trial.stc{'a'},:,i,i));
 end
 
-figure,plot(fs,sq(kurtosis(lvp,[],1)))
-legend(gca,vh.model.ml('short'))
-
-figure,plot(fs,sq(var(lvp,[],1)))
-legend(gca,vh.model.ml('short'))
 
 
 %% Figure 2 Trajectories and behavioral labeling
