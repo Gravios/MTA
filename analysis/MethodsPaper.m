@@ -63,7 +63,7 @@ imagesc(img);
     
     xyz.addMarker('hbx',[.7,1,.7],{{'head_back','head_front',[0,0,1]}},nm);
     
-    ind = 1000;;
+    ind = 1000;
     figure,plot3(nm(ind,1,1),nm(ind,1,2),nm(ind,1,3),'.m')
     hold on,plot3(xyz(ind,7,1),xyz(ind,7,2),xyz(ind,7,3),'.b')
     hold on,plot3(xyz(ind,5,1),xyz(ind,5,2),xyz(ind,5,3),'.b')
@@ -337,14 +337,14 @@ swg.data = circ_dist(ang(:,1,4,1),ang(:,2,4,1));
 % $$$ mind =nniz(bspc(:,1)); 
 
 
-freq = find(fs>4,1,'first');
-edgs = linspace(-10,-2,100);
-figure,
-sts = 'arwnms';
-for i = 1:numel(sts),
-subplot(numel(sts),1,i),hist(log10(bspc(Trial.stc{sts(i)},freq)),edgs)
-title(Trial.stc{sts(i)}.label)
-end
+% freq = find(fs>4,1,'first');
+% edgs = linspace(-10,-2,100);
+% figure,
+% sts = 'arwnms';
+% for i = 1:numel(sts),
+% subplot(numel(sts),1,i),hist(log10(bspc(Trial.stc{sts(i)},freq)),edgs)
+% title(Trial.stc{sts(i)}.label)
+% end
 
 vs = vel(xyz,1:8,[1,2]);
 vs.resample(30);
@@ -371,17 +371,18 @@ end
 xpers = bsxfun(@plus,Trial.stc{'w',1}(1:3:end,1),[-15,15]);
 xpers(xpers(:,1)<1,:) = [];
 xpers((xpers(:,2)-Trial.sync(end))>0,:) = [];
-
+s = 20;
 
 hfig = figure(2);
-for s = 1:size(xpers,1),
-ind = round(xper(s,:).*xyz.sampleRate);
+ns = 6;
+%for s = 1:size(xpers,1),
+ind = round(xpers(s,:).*xyz.sampleRate);
 ind = ind(1):ind(2);
 i = 1;
 
 %figure(201) % SPEED head and body
 subplot(ns,1,i);i=i+1;
-plot(ind/vl.sampleRate,[mean(vl(ind,1:3),2),mean(vl(ind,5:8))])
+plot(ind/vl.sampleRate,[median(vl(ind,1:2),2),median(vl(ind,5:8),2)]),axis tight
 title('xy speed of head and body')
 xlabel('Time (s)')
 ylabel('Speed (cm/s)');
@@ -392,7 +393,7 @@ ylabel('Speed (cm/s)');
 
 %figure(202) % DIRECTION head and body
 subplot(ns,1,i);i=i+1;
-plot(ind/vl.sampleRate,[ang(ind,1,3,1),ang(ind,4,7,1)])
+plot(ind/vl.sampleRate,[ang(ind,1,3,1),ang(ind,4,7,1)]),axis tight
 title('Direction of head and body')
 xlabel('Time (s)')
 ylabel('Direction (radians)');
@@ -403,7 +404,7 @@ ylabel('Direction (radians)');
 
 %figure(203)%  PITCH SLPR and SMSU
 subplot(ns,1,i);i=i+1;
-plot(ind/vl.sampleRate,[ang(ind,1,2,2),ang(ind,3,4,2)])
+plot(ind/vl.sampleRate,[ang(ind,1,2,2),ang(ind,3,4,2)]),axis tight
 title('Pitch of SLPR and SMSU')
 xlabel('Time (s)')
 ylabel('Direction (radians)');
@@ -414,7 +415,7 @@ ylabel('Direction (radians)');
 
 %figure(204) 
 subplot(ns,1,i);i=i+1;
-plot(ind/vl.sampleRate,[ang(ind,4,5,3)])%,ang(ind,4,7,3)])
+plot(ind/vl.sampleRate,[ang(ind,4,5,3)]),axis tight%,ang(ind,4,7,3)])
 title('Intermarker Distance of head and body')
 xlabel('Time (s)')
 ylabel('Direction (radians)');
@@ -425,7 +426,7 @@ ylabel('Direction (radians)');
 
 %figure(205)
 subplot(ns,1,i);i=i+1;
-plot(ind/vl.sampleRate,abs(sfet(ind,:)))%,ang(ind,4,7,3)])
+plot(ind/vl.sampleRate,abs(sfet(ind,:))),axis tight%,ang(ind,4,7,3)])
 title('Intermarker Distance of head and body')
 xlabel('Time (s)')
 ylabel('Direction (radians)');
@@ -437,7 +438,7 @@ ylabel('Direction (radians)');
 
 %figure(206) RHM Rhythmic Head Motion
 subplot(ns,1,i);i=i+1;
-sind = round(xper(s,:).*rhm.sampleRate);
+sind = round(xpers(s,:).*rhm.sampleRate);
 sind = sind(1):sind(2);
 imagesc(ts(sind),fs,log10(rhm(sind,:))'),axis xy ,caxis([-5.2,-2.5])
 
