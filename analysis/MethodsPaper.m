@@ -326,9 +326,9 @@ swg = Trial.ang.copy;
 swg.data = circ_dist(ang(:,1,4,1),ang(:,2,4,1));
 
 
+v = log10(vl.data);
 
-
-edges = linspace(-.5,2,64);
+edges = linspace(-2,2,64);
 sbound = -30:30;
 ixy = zeros([numel(sbound),size(v,2),size(v,2)]);
 
@@ -355,7 +355,7 @@ end
 
 
 [mixy,sixy] = max(ixy);
-mixy = sq(mixy;)
+mixy = sq(mixy);
 sixy = sq(sixy)-ceil(numel(sbound)/2);
 
 
@@ -368,6 +368,7 @@ edgs    = {linspace(-2,2,75)};
 edgs(2) = {linspace(-2,2,75)};
 [edgs{:}] = get_histBinCenters(edgs);
 [X,Y] = meshgrid(edgs{:});
+ns = 6;
 
 xpers = bsxfun(@plus,Trial.stc{'w',1}(1:3:end,1),[-15,15]);
 xpers(xpers(:,1)<1,:) = [];
@@ -376,59 +377,9 @@ s = 20;
 
 
 
+
 hfig = figure(2);
-ns = 6;
-for s = 1:size(xpers,1),
-    ind = round(xpers(s,:).*xyz.sampleRate);
-    ind = ind(1):ind(2);
-    i = 1;
-    
-    %figure(201) % SPEED head and body
-    subplot2(ns,4,i,[1:3]);i=i+1;
-    plot(ind/vl.sampleRate,[median(vl(ind,1:2),2),median(vl(ind,5:8),2)]),axis tight
-    title('xy speed of head and body')
-    xlabel('Time (s)')
-    ylabel('Speed (cm/s)');
-    ylim([0,80])
-    
-    %figure(202) % DIRECTION head and body
-    subplot2(ns,4,i,[1:3]);i=i+1;
-    plot(ind/vl.sampleRate,[ang(ind,1,3,1),ang(ind,4,7,1)]),axis tight
-    title('Direction of head and body')
-    xlabel('Time (s)')
-    ylabel('Direction (radians)');
-    
-    %figure(203)%  PITCH SLPR and SMSU
-    subplot2(ns,4,i,[1:3]);i=i+1;
-    plot(ind/vl.sampleRate,[ang(ind,1,2,2),ang(ind,3,4,2)]),axis tight
-    title('Pitch of SLPR and SMSU')
-    xlabel('Time (s)')
-    ylabel('Pitch (radians)');
-    
-    %figure(204)
-    subplot2(ns,4,i,[1:3]);i=i+1;
-    plot(ind/vl.sampleRate,[ang(ind,4,5,3)]),axis tight%,ang(ind,4,7,3)])
-    title('Intermarker Distance of head and body')
-    xlabel('Time (s)')
-    ylabel('Distance (mm)');
-    
-    %figure(205)
-    subplot2(ns,4,i,[1:3]);i=i+1;
-    plot(ind/vl.sampleRate,abs(sfet(ind,:))),axis tight%,ang(ind,4,7,3)])
-    title('Intermarker Distance of head and body')
-    xlabel('Time (s)')
-    ylabel('Direction (radians)');
-    
-    %figure(206) RHM Rhythmic Head Motion
-    subplot2(ns,4,i,[1:3]);i=i+1;
-    sind = round(xpers(s,:).*rhm.sampleRate);
-    sind = sind(1):sind(2);
-    imagesc(ts(sind),fs,log10(rhm(sind,:))'),axis xy ,caxis([-5.2,-2.5])
-    
-    
-    saveas(hfig,[fullfile(figPath,['Fig2-Features-sample_' num2str(s) '_' Trial.filebase '.png']),'png');
-    saveas(hfig,[fullfile(figPath,['Fig2-Features-sample_' num2str(s) '_' Trial.filebase '.eps']),'eps2');
-    
+
     
     % JPDF - Head/Body speed
     subplot2(ns,4,[3,4],4);
@@ -444,25 +395,90 @@ for s = 1:size(xpers,1),
         o = hist2(b,linspace(-1.5,2,75),linspace(-1.5,2,75));
         F = [.05 .1 .05; .1 .4 .1; .05 .1 .05];
         o = conv2(o,F,'same');
-        contour(X,Y,o',[10,10],'Color',stc(i))
+        contour(X,Y,o',[20,20],'Color',stc(i),'linewidth',1.5)
     end
 
     
-    
+    ndag = double(~eye(8));
     subplot2(ns,4,[1,2],4);
-    imagesc(mixy(:,:));
-    caxis([0,2]);
-    colorbar
+    imagesc(mixy(:,:).*ndag);
+
     title('mutual information between marker speeds');
     set(gca,'YtickMode','manual');
     set(gca,'Ytick',1:8);
     set(gca,'YtickLabelMode','manual');
     set(gca,'YtickLabel',vl.model.ml('short'));
 
-    subplot2(1,2,1,2);
+    subplot2(ns,4,[5,6],4);
     imagesc(sixy(:,:)/vl.sampleRate*1000);
     colorbar
     title('time lag of maximum mutual information (ms)')
+
+
+ns = 6;
+for s = 1:size(xpers,1),
+    ind = round(xpers(s,:).*xyz.sampleRate);
+    ind = ind(1):ind(2);
+    i = 1;
+    
+    %figure(201) % SPEED head and body
+    subplot2(ns,4,i,[1:3]);i=i+1;
+    plot(ind/vl.sampleRate,[median(vl(ind,1:2),2),median(vl(ind,5:8),2)]),axis tight
+    title('xy speed of head and body')
+    %xlabel('Time (s)')
+    ylabel('Speed (cm/s)');
+    ylim([0,80])
+    set(gca,'XTickLabelMode','manual');
+    set(gca,'XTickLabel',{});
+    
+    %figure(202) % DIRECTION head and body
+    subplot2(ns,4,i,[1:3]);i=i+1;
+    plot(ind/vl.sampleRate,[ang(ind,1,3,1),ang(ind,4,7,1)]),axis tight
+    title('Direction of head and body')
+    %xlabel('Time (s)')
+    ylabel('Direction (radians)');
+    ylim([-pi,pi])
+    set(gca,'XTickLabelMode','manual');
+    set(gca,'XTickLabel',{});
+    
+    %figure(203)%  PITCH SLPR and SMSU
+    subplot2(ns,4,i,[1:3]);i=i+1;
+    plot(ind/vl.sampleRate,[ang(ind,1,2,2),ang(ind,3,4,2)]),axis tight
+    title('Pitch of SLPR and SMSU')
+    %xlabel('Time (s)')
+    ylabel('Pitch (radians)');
+    ylim([-pi/2,pi/2])
+    set(gca,'XTickLabelMode','manual');
+    set(gca,'XTickLabel',{});
+    
+    %figure(204)
+    subplot2(ns,4,i,[1:3]);i=i+1;
+    plot(ind/vl.sampleRate,[ang(ind,4,5,3)]),axis tight%,ang(ind,4,7,3)])
+    title('Intermarker Distance of head and body')
+    %xlabel('Time (s)')
+    ylabel('Distance (mm)');
+    set(gca,'XTickLabelMode','manual');
+    set(gca,'XTickLabel',{});
+
+    
+    %figure(205)
+    subplot2(ns,4,i,[1:3]);i=i+1;
+    plot(ind/vl.sampleRate,abs(sfet(ind,:))),axis tight%,ang(ind,4,7,3)])
+    title('Cummulative Spine Angle')
+    %xlabel('Time (s)')
+    ylabel('Cummulative Angle (radians)');
+    set(gca,'XTickLabelMode','manual');
+    set(gca,'XTickLabel',{});
+   
+    
+    %figure(206) RHM Rhythmic Head Motion
+    subplot2(ns,4,i,[1:3]);i=i+1;
+    sind = round(xpers(s,:).*rhm.sampleRate);
+    sind = sind(1):sind(2);
+    title('RHM Rhythmic Head Motion')
+    imagesc(ts(sind),fs,log10(rhm(sind,:))'),axis xy ,caxis([-5.2,-2.5])
+    xlabel('Time (s)')
+    
     
     saveas(hfig,fullfile(figPath,['Fig2-Features-sample_' num2str(s) '_' Trial.filebase '.png']),'png');
     saveas(hfig,fullfile(figPath,['Fig2-Features-sample_' num2str(s) '_' Trial.filebase '.eps']),'eps2');
