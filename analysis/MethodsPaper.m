@@ -326,6 +326,7 @@ swg = Trial.ang.copy;
 swg.data = circ_dist(ang(:,1,4,1),ang(:,2,4,1));
 
 
+%% mutinfo crap
 v = log10(vl.data);
 
 edges = linspace(-2,2,64);
@@ -353,7 +354,6 @@ s = 1;
 end
 end
 
-
 [mixy,sixy] = max(ixy);
 mixy = sq(mixy);
 sixy = sq(sixy)-ceil(numel(sbound)/2);
@@ -370,6 +370,8 @@ edgs(2) = {linspace(-2,2,75)};
 [X,Y] = meshgrid(edgs{:});
 ns = 6;
 
+smat = stc2mat(Trial.stc);;
+Trial.stc{'w'}(1:3:end,1)
 xpers = bsxfun(@plus,Trial.stc{'w',1}(1:3:end,1),[-15,15]);
 xpers(xpers(:,1)<1,:) = [];
 xpers((xpers(:,2)-Trial.sync(end))>0,:) = [];
@@ -377,42 +379,41 @@ s = 20;
 
 
 
-
 hfig = figure(2);
 
-    
-    % JPDF - Head/Body speed
-    subplot2(ns,4,[3,4],4);
-    b = log10([median(vl(nniz(vl),[1:2]),2),median(vl(nniz(vl),[5:8]),2)]);
-    hist2(b,edgs{1},edgs{2});
-    xlabel('log10 body speed (cm/s)');
-    ylabel('log10 head speed (cm/s)');
-    title('JPDF of log10 head and body speeds');
 
-    hold on,
-    for i = 1:numel(sts),
-        b = log10([median(vl(Trial.stc{sts(i)},1:2),2),median(vl(Trial.stc{sts(i)},5:8),2)]);
-        o = hist2(b,linspace(-1.5,2,75),linspace(-1.5,2,75));
-        F = [.05 .1 .05; .1 .4 .1; .05 .1 .05];
-        o = conv2(o,F,'same');
-        contour(X,Y,o',[20,20],'Color',stc(i),'linewidth',1.5)
-    end
+% JPDF - Head/Body speed
+subplot2(ns,4,[3,4],4);
+b = log10([median(vl(nniz(vl),[1:2]),2),median(vl(nniz(vl),[5:8]),2)]);
+hist2(b,edgs{1},edgs{2});
+xlabel('log10 body speed (cm/s)');
+ylabel('log10 head speed (cm/s)');
+title('JPDF of log10 head and body speeds');
 
-    
-    ndag = double(~eye(8));
-    subplot2(ns,4,[1,2],4);
-    imagesc(mixy(:,:).*ndag);
+hold on,
+for i = 1:numel(sts),
+    b = log10([median(vl(Trial.stc{sts(i)},1:2),2),median(vl(Trial.stc{sts(i)},5:8),2)]);
+    o = hist2(b,linspace(-1.5,2,75),linspace(-1.5,2,75));
+    F = [.05 .1 .05; .1 .4 .1; .05 .1 .05];
+    o = conv2(o,F,'same');
+    contour(X,Y,o',[20,20],'linewidth',1.5,'Color',stc(i))
+end
 
-    title('mutual information between marker speeds');
-    set(gca,'YtickMode','manual');
-    set(gca,'Ytick',1:8);
-    set(gca,'YtickLabelMode','manual');
-    set(gca,'YtickLabel',vl.model.ml('short'));
 
-    subplot2(ns,4,[5,6],4);
-    imagesc(sixy(:,:)/vl.sampleRate*1000);
-    colorbar
-    title('time lag of maximum mutual information (ms)')
+ndag = double(~eye(8));
+subplot2(ns,4,[1,2],4);
+imagesc(mixy(:,:).*ndag);
+colorbar
+title('mutual information between marker speeds');
+set(gca,'YtickMode','manual');
+set(gca,'Ytick',1:8);
+set(gca,'YtickLabelMode','manual');
+set(gca,'YtickLabel',vl.model.ml('short'));
+
+subplot2(ns,4,[5,6],4);
+imagesc(sixy(:,:)/vl.sampleRate*1000);
+colorbar
+title('time lag of maximum mutual information (ms)')
 
 
 ns = 6;
@@ -467,6 +468,7 @@ for s = 1:size(xpers,1),
     title('Cummulative Spine Angle')
     %xlabel('Time (s)')
     ylabel('Cummulative Angle (radians)');
+    ylim([0,8])
     set(gca,'XTickLabelMode','manual');
     set(gca,'XTickLabel',{});
    
@@ -481,7 +483,7 @@ for s = 1:size(xpers,1),
     
     
     saveas(hfig,fullfile(figPath,['Fig2-Features-sample_' num2str(s) '_' Trial.filebase '.png']),'png');
-    saveas(hfig,fullfile(figPath,['Fig2-Features-sample_' num2str(s) '_' Trial.filebase '.eps']),'eps2');
+    saveas(hfig,fullfile(figPath,['Fig2-Features-sample_' num2str(s) '_' Trial.filebase '.eps']),'eps');
 
 
 end
