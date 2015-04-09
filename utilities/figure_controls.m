@@ -2,7 +2,7 @@ function index = figure_controls(hfig,index,varargin)
 %function index = figure_controls(hfig,index,varargin)
 %[indmap,autoIncr] = DefaultArgs(varargin,{[],false});
 
-[indmap,autoIncr,figname] = DefaultArgs(varargin,{[],false,[]});
+[indmap,autoIncr,figname,flags] = DefaultArgs(varargin,{[],false,[],''});
 
 
 if autoIncr,
@@ -60,3 +60,17 @@ switch double(whatkey)
   case double('q')
     index = -1;
 end
+
+
+for f = flags,
+    switch f
+      case '-'
+      case 'v'
+        sprintf('Figure Id: %d\nIndex: %i\n',[hfig,index])
+      otherwise
+        warning(['flag: ' f ' does not exist in figure_controls.m, ' ...
+                            'will ignore.']);
+    end
+end
+
+    

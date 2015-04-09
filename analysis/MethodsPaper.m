@@ -509,7 +509,8 @@ end
 
 Trial = MTATrial('jg05-20120317');
 Stc = Trial.load('stc','hand_labeled_rev1'); 
-figPath = '/gpfs01/sirota/homes/gravio/Documents/Manuscripts/Vicon_Methods_2015/Figures/Figure_2';
+figPath = '/storage/gravio/manuscripts/man2015-jgEd-MoCap/Figures/Figure_3';
+%figPath = '/gpfs01/sirota/homes/gravio/Documents/Manuscripts/Vicon_Methods_2015/Figures/Figure_2';
 %exPer = [26664,27100];
 %exPer = [26000,26480];
 %exPer = [25200,25580];

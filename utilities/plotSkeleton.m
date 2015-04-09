@@ -1,11 +1,16 @@
-function [markers,sticks,markerConnections] = plotSkeleton(xyz,ind,varargin)
-[plot_type,ang] = DefaultArgs(varargin,{'line',[]},true);
+function [markers,sticks,markerConnections,traj] = plotSkeleton(xyz,ind,varargin)
+%function [markers,sticks,markerConnections] = plotSkeleton(xyz,ind,varargin)
+%[plot_type,ang,t_ante,t_post] = DefaultArgs(varargin,{'line',[],0,0},true);
+[plot_type,ang,t_per,t_markers] = DefaultArgs(varargin, ...
+{'line',[],[0,0],{'spine_lower','pelvis_root','spine_middle',...
+                  'spine_upper','head_left','head_right'}});
 
 
 Rx = @(theta) [1,0,0;0,cos(theta),-sin(theta);0,sin(theta),cos(theta)];
 Ry = @(theta) [cos(theta),0,sin(theta);0,1,0;-sin(theta),0,cos(theta)];
 Rz = @(theta) [cos(theta),-sin(theta),0;sin(theta),cos(theta),0;0,0,1];
 
+traj = [];
 markerConnections=[];
 for i = 1:length(xyz.model.Connections)
     markerConnections= cat(1,markerConnections,....
@@ -13,6 +18,7 @@ for i = 1:length(xyz.model.Connections)
 end
 
 sticks = repmat({0},1,length(xyz.model.Connections));
+
 for l=1:length(xyz.model.Connections), 
     switch plot_type
       case 'line'
@@ -29,6 +35,20 @@ for l=1:length(xyz.model.Connections),
          'EraseMode', 'normal',...
          'Visible','on');
 
+         % dotted trajectory before and/or after the ind
+         if any(t_per~=0), 
+             for i= 1:numel(t_markers)
+                 traj(end+1)=line(xyz(ind+(t_per(1):1:t_per(2)),t_markers{i},1),...
+                                  xyz(ind+(t_per(1):1:t_per(2)),t_markers{i},2),...
+                                  xyz(ind+(t_per(1):1:t_per(2)),t_markers{i},3));
+                 set(traj(end),'linestyle',  '.',...
+                               'color',[.5,.5,.5],...
+                               'tag',t_markers{i});
+                 set(traj(end),'MarkerSize',4)
+             end
+         end
+
+         
       case 'surface'
         mang = sq(ang(ind(end),markerConnections(l,1),markerConnections(l,2),:));
         mxyz = permute(mean(xyz(ind(end),markerConnections(l,:),:),2),[1,3,2]);

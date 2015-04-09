@@ -226,3 +226,91 @@ for i = 1:nsts
 subplot(nsts,1,i);bar(ned,histc(sfet(Trial.stc{sts(i)}),ned),'histc'),title(Trial.stc{sts(i)}.label)
 end
 
+%% new figure 3
+Trial = MTATrial('jg05-20120317');
+Stc = Trial.load('stc','hand_labeled_rev1'); 
+figPath = '/storage/gravio/manuscripts/man2015-jgEd-MoCap/Figures/Figure_3';
+
+xyz = Trial.load('xyz');
+
+figure
+plotSkeleton(xyz,Trial.stc{'r'}(1,1)+40,'t_per',[-60,0])
+plotSkeleton(xyz,Trial.stc{'w'}(1,1)+40,'t_per',[-60,0])
+
+clf,plotSkeleton(xyz,Trial.stc{'m'}(2,1)+120,'t_per',[-160,0])
+
+sts = Trial.stc{'n'}.data;
+i = 9;
+while i~=-1,
+    clf,plotSkeleton(xyz,sts(i,1)+40,'t_per',[-80,0]);
+    i = figure_controls(gcf,i,'flags','-v');
+end
+
+
+%Segmentation JPDF rear
+ang = create(Trial.ang.copy,Trial,xyz);
+vxy.data = [ang(:,1,2,2),xyz(:,7,3)];
+vxy.data = ButFilter(vxy.data,3,4/(xyz.sampleRate/2),'low');
+tag = 'Head_HeightVSlower_spine_pitch';
+v1 = vxy.copy;
+v1.data = vxy(:,1);
+v2 = vxy.copy;
+v2.data = log10(vxy(:,2));
+bhv_JPDF(Trial,v1,v2,70,70,[-.7,2],[-.7,2],...
+         'Pitch (Lower Spine) radians',...
+         'Height (Head Front) log10(mm)',{'a-r','r'},...
+         tag)
+
+
+sts = 'w';
+stc = 'r';
+hedgs    = {linspace(-.75,2,75)};
+hedgs(2) = {linspace(-.75,2,75)};
+edgs    = {linspace(-.75,2,75)};
+edgs(2) = {linspace(-.75,2,75)};
+[edgs{:}] = get_histBinCenters(edgs);
+[X,Y] = meshgrid(edgs{:});
+
+hold on,
+for i = 1:numel(sts),
+    b = log10(vxy(Trial.stc{sts(i)},:));
+    o = hist2(b,hedgs{1},hedgs{2});
+    F = [.05 .1 .05; .1 .4 .1; .05 .1 .05];
+    o = conv2(o,F,'same');
+    contour(X,Y,o',[20,20],'linewidth',2.5,'Color',stc(i))
+end
+
+
+
+%Segmentation JPDF walk
+vxy = xyz.vel([1,7],[1,2]);
+vxy.data = ButFilter(vxy.data,3,4/(xyz.sampleRate/2),'low');
+tag = 'speed_SpineL_vs_HeadF';
+v1 = vxy.copy;
+v1.data = log10(vxy(:,1));
+v2 = vxy.copy;
+v2.data = log10(vxy(:,2));
+bhv_JPDF(Trial,v1,v2,70,70,[-.7,2],[-.7,2],...
+         'Speed (Lower Spine) log10(mm)',...
+         'Speed (Head Front) log10(mm)',{'a-r','w','a-w-r'},...
+         tag)
+
+
+sts = 'w';
+stc = 'r';
+hedgs    = {linspace(-.75,2,75)};
+hedgs(2) = {linspace(-.75,2,75)};
+edgs    = {linspace(-.75,2,75)};
+edgs(2) = {linspace(-.75,2,75)};
+[edgs{:}] = get_histBinCenters(edgs);
+[X,Y] = meshgrid(edgs{:});
+
+hold on,
+for i = 1:numel(sts),
+    b = log10(vxy(Trial.stc{sts(i)},:));
+    o = hist2(b,hedgs{1},hedgs{2});
+    F = [.05 .1 .05; .1 .4 .1; .05 .1 .05];
+    o = conv2(o,F,'same');
+    contour(X,Y,o',[20,20],'linewidth',2.5,'Color',stc(i))
+end
+
