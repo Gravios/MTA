@@ -73,7 +73,8 @@ set(figH,'Position',pos);
 for s = 1;%:numel(Trial.stc.states)
 
     clf;
-    sind = Trial.stc.states{s}.copy;
+    %sind = Trial.stc.states{s}.copy;
+    sind = Trial.resync(Trial.stc{'a'}+[1,-1]);
     %sind.resample(ys);
 
     for m = 1:numel(mode),
@@ -151,7 +152,7 @@ for s = 1;%:numel(Trial.stc.states)
                 for k = 1:size(yss,3),
                     if sum(ind)~=0,
                         if k~=j,
-                            vsc(find(i(1)==edges(1,:)),:,k,j) = nanmean(abs(yss(ind,:,k,j)))./mean(sqrt(yss(ind,:,k,k).*yss(ind,:,j,j)));
+                            vsc(find(i(1)==edges(1,:)),:,k,j) = nanmean(abs(yss(ind,:,k,j)))./nanmean(sqrt(yss(ind,:,k,k).*yss(ind,:,j,j)));
                         else
                             vsc(find(i(1)==edges(1,:)),:,k,j) = nanmean(yss(ind,:,k,j));
                         end
