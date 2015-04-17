@@ -850,51 +850,6 @@ figure,hist2(log10(dstates(:,[1,6])),linspace(-10,0,70),linspace(-8,0,70)),caxis
 
 
 
-%% Figure 4 Fine movement characterization
-figPath = '/gpfs01/sirota/homes/gravio/Documents/Manuscripts/Vicon_Methods_2015/Figures/Figure_4';
-
-
-Trial = MTATrial('jg05-20120317');
-xyz = Trial.load('xyz').filter(gtwin(.05,Trial.xyz.sampleRate));
-ang = create(Trial.ang.copy,Trial,xyz);
-
-
-% %%%%%%%%%%%%%%%%%%%%%%%%%%%%
-%Fig:4:A - Fast scans of head
-%                            
-% Description: {}
-%
-hfig = figure(401);
-
-plot([circ_dist(ang(:,5,7,1),ang(:,2,3,1)),...
-      circ_dist(ang(:,1,2,1),ang(:,3,4,1))]);
-
-figure,plot(diff([circ_dist(ang(:,5,7,1),ang(:,2,3,1))]))
-
-dang = Trial.ang.copy;
-%dang.data = diff([0;[circ_dist(ang(:,5,7,1),ang(:,2,3,1))-...
-%             circ_dist(ang(:,3,4,1),ang(:,1,2,1))]]);
-dang.data = diff(circ_dist(ang(:,5,7,1),ang(:,2,3,1)));
-
-sparm = struct('nFFT',2^9,...
-               'Fs',dang.sampleRate,...
-               'WinLength',2^7,...
-               'nOverlap',2^7*.875,...
-               'FreqRange',[1,20]);
-
-
-[ys,fs,ts,ps] = fet_spec(Trial,dang,'mtchglong',false,'defspec',sparm);
-
-figure,imagesc(ts,fs,(log10(ys(:,:,1,1)))');axis xy,
-
-figure,imagesc(ts,fs,ys(:,:,1,2)');axis xy,
-Lines(Trial.stc{'w',ys.sampleRate}(:),[],'k',[],3);
-
-figure,sp = [];
-sp(1) = subplot(211),imagesc(ts,fs,log10(ys(:,:,1,1))');axis xy,
-sp(2) = subplot(212),imagesc(ts,fs,log10(ys(:,:,2,2))');axis xy,
-linkaxes(sp,'xy');
-Lines(Trial.stc{'w',ys.sampleRate}(:),[],'k',[],3);
 
 
 

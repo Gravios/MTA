@@ -9,14 +9,10 @@ function [rhm,varargout] = fet_spec(Trial,fet,varargin)
 %                    true});
 %
 %
-    parspec = empty_spec;
+parspec = empty_spec;
 
 [mode,wsig,sampleRate,defspec,overwrite] = ...
-    DefaultArgs(varargin,{'raw',true,120,...
-                    struct('nFFT',2^9,'Fs',fet.sampleRate,...
-                           'WinLength',2^7,'nOverlap',2^7*.875,...
-                           'FreqRange',[1,40]),...
-                    true});
+ DefaultArgs(varargin,{'raw',true,120,def_spec_parm(fet),true});
 
 
 varargout = cell([1,nargout-1]);
@@ -33,7 +29,7 @@ end
 
 switch mode
 
-  case 'default'
+  case 'mta'
     rhm = MTADlfp('data',fet.data,'sampleRate',fet.sampleRate);
   case 'raw'
     rhm = fet.data;

@@ -381,10 +381,58 @@ for i = 1:5;
 h = line(xyz.data(tt,[10,11+i],1),xyz.data(tt,[10,11+i],2),xyz.data(tt,[10,11+i],3)),set(h,'color',[1,0,0])
 end
 
-
-
-
-
-
 % phase difference vs mean ncp[6,12] power
+
+
+
+
+
+
+xyz = Trial.load('xyz');
+rb = Trial.xyz.model.rb({'head_back','head_left','head_front','head_right'});
+% find the center of mass of the model
+hcom = xyz.com(rb);
+% add coordinates of the model's center of mass to the xyz object
+xyz.addMarker('fhcom',[.7,1,.7],{{'head_back','head_front',[0,0,1]}},ButFilter(hcom,3,[2]./(Trial.xyz.sampleRate/2),'low'));
+xyz.addMarker('fbcom',[.7,1,.7],{{'head_back','head_front',[0,0,1]}},ButFilter(xyz(:,4,:),3,[2]./(Trial.xyz.sampleRate/2),'low'));
+% if xyz sampling rat e is greater than 120 Hz then resample it to 120 Hz
+xyz.filter(gausswin(5)./sum(gausswin(5)));
+
+
+ang = create(MTADang,Trial,xyz);
+
+fet = Trial.xyz.copy;
+fet.data = ButFilter([ang(:,5,10,3),ang(:,6,10,3),ang(:,9,10,3)],3,[2,50]/(ang.sampleRate/2),'bandpass');
+%bang = ButFilter(ang(:,'head_back','fhcom',3),3,[2,50]./(Trial.ang.sampleRate/2),'bandpass');
+%bang = [bang,ButFilter(ang(:,'head_right','fhcom',3),3,[2,50]./(Trial.ang.sampleRate/2),'bandpass')];
+%bang = [bang,ButFilter(ang(:,'head_top','fhcom',3),3,[2,50]./(Trial.ang.sampleRate/2),'bandpass')];
+
+[rhm,fs,ts,phi,fst] = fet_spec(Trial,fet,'mtchglong',true);
+
+figure,sp = [];
+sp(1) = subplot(311)
+imagesc(ts,fs,log10(rhm(:,:,1,1))');
+caxis([-7,-2]),axis xy
+sp(2) = subplot(312)
+imagesc(ts,fs,(rhm(:,:,1,3))');
+axis xy
+sp(3) = subplot(313)
+imagesc(ts,fs,log10(rhm(:,:,3,3))');
+caxis([-7,-2]),axis xy
+linkaxes(sp,'xy')
+
+[U,S,V] = svd(cov(fet(nniz(fet),:)));
+nfet = fet.copy;
+nfet.data = ButFilter(diff(fet.data*V(1,:)'),3,[2,50]./(Trial.ang.sampleRate/2),'bandpass');
+nfet.data = ButFilter(diff(fet.data*V(:,1)),3,[2,50]./(Trial.ang.sampleRate/2),'bandpass');
+[nrhm,fs,ts] = fet_spec(Trial,nfet,'mtchglong',false);
+
+figure,imagesc(ts,fs,log10(nrhm(:,:))');
+caxis([-4,-2]),axis xy
+
+
+[U,S,V] = svd(cov([mean(rhm(nniz(rhm(:,:,1,1)),fs<15&fs>6,1,1),2),...
+                   mean(rhm(nniz(rhm(:,:,1,1)),fs<15&fs>6,2,2),2),...
+                   mean(rhm(nniz(rhm(:,:,1,1)),fs<15&fs>6,3,3),2)]));
+
 

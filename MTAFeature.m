@@ -44,6 +44,10 @@ classdef MTAFeature
 
         function Feature = compute(Feature,Session)            
             Feature.feature = eval(Feature.expression);
+            if isa(Feature.feature,'MTAData'),
+                Feature.feature = Feature.feature.data;
+            end
+            
         end
 
     end

@@ -23,10 +23,10 @@ Trial.stc.updateMode(stc_mode);
 Trial.stc.load;
 
 %% Load Rythmic Head Motion(RHM) feature
-rhm = fet_rhm(Trial,[],'default');
+rhm = fet_rhm(Trial);
 
 %% Load Nasal Cavity Pressure(NCP) feature
-ncp = fet_ncp(Trial,rhm,'default',ncp_chan);
+ncp = fet_ncp(Trial,rhm,'mta',ncp_chan);
 
 %% Whiten RHM and NCP for spectral comparison (PSD&CSD)
 % $$$ wang = [rhm.data,ncp.data];

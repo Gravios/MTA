@@ -1,99 +1,105 @@
-function [fncp,fs,ts] = fet_ncp(Trial,varargin)
-%function [fncp,fs,ts] = fet_ncp(Trial,varargin)
+function [ncp,fs,ts] = fet_ncp(Trial,varargin)
+%function [ncp,fs,ts] = fet_ncp(Trial,varargin)
 %[sampleRate,mode,chans] = DefaultArgs(varargin,{'xyz','',2});
 %SampleRate is always xyz sampleRate at the moment
-[sampleRate,mode,chans,overwrite] = DefaultArgs(varargin,{'xyz','',2,false});
+%
+%
+%
 
-if ischar(sampleRate), sampleRate = Trial.(sampleRate).sampleRate;end
+parspec = empty_spec;
+xyz = Trial.load('xyz');
+varargout = cell([1,nargout-1]);
 
-fs = [];
-ts = [];
+[sampleRate,mode,chans,defspec,overwrite,newSR,type] = DefaultArgs(varargin,{'xyz','mta',2,def_spec_parm(xyz),false,[],'mta'});
 
-fncp = Trial.lfp.copy;
+fs = []; ts = [];
 
+% load NCP channel from lfp file
+fet = Trial.lfp.copy;
 if ~isempty(chans),
-    fncp.load(Trial,chans);
+    fet.load(Trial,chans);
 end
 
+
+
+
 %SampleRate is always xyz sampleRate at the moment
+if ischar(sampleRate), sampleRate = Trial.(sampleRate).sampleRate;end
 if isa(sampleRate,'MTAData'),
-    fncp.resample(sampleRate);    
+    fet.resample(sampleRate);    
 elseif Trial.xyz.sampleRate<120,
     xyz = Trial.load('xyz');
-    fncp.resample(xyz);
+    fet.resample(xyz);
 else
     xyz = Trial.load('xyz').resample(120);
-    fncp.resample(xyz);
+    fet.resample(xyz);
 end
 
 
 switch mode
-  case 'wcsd'
-% $$$     try,load(fullfile(Trial.path.MTAPath,'fet_ncp.arm.mat'));end
-% $$$     if exist('ARmodel','var')||overwrite,
-% $$$         bang = WhitenSignal(fncp.data,[],true,ARmodel);
-% $$$     else
-% $$$         [bang,ARmodel] = WhitenSignal(fncp.data,[],true);
-% $$$         save(fullfile(Trial.path.MTAPath,'fet_rhm.arm.mat'),'ARmodel');
-% $$$     end
-    fncp = WhitenSignal(fncp.data,[],1);
-
-    [ys,fs,ts] = mtcsdglong(fncp,2^9,Trial.xyz.sampleRate,2^7,2^7*.875,[],'linear',[],[1,20]);
-    ts = ts+(2^6)/Trial.xyz.sampleRate;
-    ssr = 1/diff(ts(1:2));
-    pad = round([ts(1),mod(Trial.xyz.size(1)-2^6,2^7)/Trial.xyz.sampleRate].*ssr)-[1,0];
-    szy = size(ys);
-    fncp = MTADlfp('data',cat(1,zeros([pad(1),szy(2:end)]),ys,zeros([pad(2),szy(2:end)])),'sampleRate',ssr);
-    ts = cat(1,zeros([pad(1),1]),ts,zeros([pad(2),1]));
-
-  case 'csd'
-    
-    [ys,fs,ts] = mtcsdglong(fncp.data,2^9,Trial.xyz.sampleRate,2^7,2^7*.875,[],'linear',[],[1,20]);
-    ts = ts+(2^6)/Trial.xyz.sampleRate;
-    ssr = 1/diff(ts(1:2));
-    pad = round([ts(1),mod(Trial.xyz.size(1)-2^6,2^7)/Trial.xyz.sampleRate].*ssr)-[1,0];
-    szy = size(ys);
-    fncp = MTADlfp('data',cat(1,zeros([pad(1),szy(2:end)]),ys,zeros([pad(2),szy(2:end)])),'sampleRate',ssr);
-    ts = cat(1,zeros([pad(1),1]),ts,zeros([pad(2),1]));
-
-% $$$   case 'spectral'
-% $$$     [ys,fs,ts] = mtcsdglong(nang,2^8,Trial.xyz.sampleRate,2^7,2^7-1,[],'linear',[],[1,30]);
-% $$$     fncp = zeros(Trial.xyz.size(1),size(ys,2));
-% $$$     fncp((2^6+1):(size(ys)+2^6),:) = ys;
-% $$$     fncp = MTADlfp('data',fncp,'sampleRate',Trial.xyz.sampleRate);
-% $$$   case 'wspectral'
-% $$$     load(fullfile(Trial.path.MTAPath,'fet_rhm.arm'),'-mat');
-% $$$     [nang] = WhitenSignal(fncp.data,[],[],ARmodel);
-% $$$     [ys,fs,ts] = mtcsdglong(nang,2^8,fncp.sampleRate,2^7,2^7-1,[],'linear',[],[1,30]);
-% $$$     ts = ts+2^6/Trial.xyz.sampleRate;
-% $$$     fncp = zeros(Trial.xyz.size(1),size(ys,2));
-% $$$     fncp((2^6+1):(size(ys)+2^6),:) = ys;
-% $$$     fncp = MTADlfp('data',fncp,'sampleRate',Trial.xyz.sampleRate);
-% $$$     ts = cat(1,ts(1)-1/fncp.sampleRate*flipud(cumsum(padding(:,1)+1)),ts,ts(end)+1/fncp.sampleRate*cumsum(padding(:,1)+1));
-% $$$     
-% $$$   case 'Swspectral'
-% $$$     try,load(fullfile(Trial.path.MTAPath,'fet_ncp.arm.mat'));end
-% $$$     if exist('ARmodel','var')||overwrite,
-% $$$         bang = WhitenSignal(bang,[],true,ARmodel);
-% $$$     else
-% $$$         [bang,ARmodel] = WhitenSignal(bang,[],true);
-% $$$         save(fullfile(Trial.path.MTAPath,'fet_rhm.arm.mat'),'ARmodel');
-% $$$     end
-% $$$     fncp = WhitenSignal(fncp.data);
-% $$$ 
-% $$$     [ys,fs,ts] = mtcsdglong(fncp,2^9,Trial.xyz.sampleRate,2^7,2^7*.875,[],'linear',[],[1,20]);
-% $$$     ts = ts+(2^6)/Trial.xyz.sampleRate;
-% $$$     ssr = 1/diff(ts(1:2));
-% $$$     pad = round([ts(1),mod(Trial.xyz.size(1)-2^6,2^7)/Trial.xyz.sampleRate].*ssr)-[1,0];
-% $$$     szy = size(ys);
-% $$$     fncp = MTADlfp('data',cat(1,zeros([pad(1),szy(2:end)]),ys,zeros([pad(2),szy(2:end)])),'sampleRate',ssr);
-% $$$     ts = cat(1,zeros([pad(1),1]),ts,zeros([pad(2),1]));
-
-    
-  case 'default'
-    fncp = MTADlfp('data',fncp.data,'sampleRate',Trial.xyz.sampleRate);
+  case 'mta'
+    ncp = MTADlfp('data',fet.data,'sampleRate',fet.sampleRate);
+  case 'raw'
+    ncp = fet.data;
   otherwise
-    fncp = fncp.data;
+    dsf = fieldnames(defspec);
+    for i = 1:length(dsf),parspec.(dsf{i}) = defspec.(dsf{i});end
+    data = zeros(fet.size);
+    
+    if 0%wsig,
+        try,load(fullfile(Trial.path.MTAPath,[mfilename,'.arm.mat']));end
+
+        if exist('ARmodel','var')||overwrite,
+            data(nniz(fet.data),:) = WhitenSignal(fet.data(nniz(fet.data),:),...
+                                                      [],...
+                                                      true,...
+                                                      ARmodel);
+        else
+            [data(nniz(fet.data),:),ARmodel] = WhitenSignal(fet.data(nniz(fet.data),:),...
+                                                                [],...
+                                                                true);
+            save(fullfile(Trial.path.MTAPath,[mfilename,'.arm.mat']),'ARmodel');
+        end
+    else
+        data(nniz(fet.data),:) = fet.data(nniz(fet.data),:);
+    end
+
+     svout = cell([1,nargout-3]);
+    [ys,fs,ts,svout{:}] = spec(str2func(mode),data,parspec);
+
+
+    % Modify time stamps and spec; add padding (0's)
+    ts = ts+(parspec.WinLength/2)/fet.sampleRate;
+    ssr = 1/diff(ts(1:2));
+    pad = round([ts(1),mod(fet.size(1)-round(parspec.WinLength/2),parspec.WinLength)/fet.sampleRate].*ssr)-[1,0];
+    szy = size(ys);
+    ncp = MTADlfp('data',cat(1,zeros([pad(1),szy(2:end)]),ys,zeros([pad(2),szy(2:end)])),'sampleRate',ssr);
+
+    ts = cat(2,([1:pad(1)]./ssr),ts',([pad(1)+size(ts,1)]+[1:pad(2)])./ssr)';
+
+    if numel(svout)>0,
+        for i = 1:numel(svout),
+        svout{i} = cat(1,zeros([pad(1),size(svout{i},2),size(svout{i},3),size(svout{i},4)]),...
+                         svout{i},...
+                         zeros([pad(2),size(svout{i},2),size(svout{i},3),size(svout{i},4)]));
+        end
+    end
+
+    if ~isempty(newSR),
+        rhm.resample(newSR);
+        temp_ts = Trial.xyz.copy;
+        temp_ts.data = ts;
+        temp_ts.resample(newSR);
+        ts = temp_ts.data;
+    end
+
+    if strcmp(type,'raw'),
+        ncp = ncp.data;
+    end
+
+    
+    tvout = cat(2,fs,ts,svout);
+    varargout = tvout(1:length(varargout));
 end
 
 

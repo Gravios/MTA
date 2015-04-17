@@ -51,6 +51,9 @@ classdef MTADang < MTAData
         %Data = create(Data,Session,xyzData)
         %Calculate the spherical coordinates of each marker relative to
         %each other.
+
+            if Data.isempty,Data = Session.ang.copy;end
+                
             [xyz] = DefaultArgs(varargin,{Session.xyz.copy});
             if xyz.isempty, xyz.load(Session); end
 
