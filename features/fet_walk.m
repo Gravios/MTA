@@ -62,7 +62,8 @@ figure,hist2([log10(abs(mXa(nniz(mXa)&rper.data))),log10(vXa(nniz(mXa)&rper.data
 
 %% ANG VEL
 Trial = MTATrial('jg05-20120317');
-xyz = Trial.load('xyz').filter(.25,Trial.xyz.sampleRate);
+xyz = Trial.load('xyz');
+xyz.data = ButFilter(xyz.data,3,[4]/(xyz.sampleRate/2),'low');
 vfet = xyz.vel([1,7],[1,2]);
 vfet.data = diff(vfet.data,1,2);
 ang = create(Trial.ang.copy,Trial,xyz);
@@ -141,13 +142,14 @@ ind = Trial.stc{'n'};
 hist2(log10([afet(ind),vfet(ind)]),aedgs,vedgs);colormap jet,caxis([0,100])
 
 
-vedgs = linspace(1.2,1.7,100);
+vedgs = linspace(1.8,2.5,100);
+vedgs = linspace(-1,.2,100);
 figure
 ind = Trial.stc{'w'};
-hist2(log10([afet(ind),ang(ind,1,4,3)]),aedgs,vedgs);colormap jet,caxis([0,100])
+hist2([afet(ind),log10(ang(ind,1,2,2))],aedgs,vedgs);colormap jet,caxis([0,100])
 figure
 ind = Trial.stc{'n'};
-hist2(log10([afet(ind),ang(ind,1,4,3)]),aedgs,vedgs);colormap jet,caxis([0,100])
+hist2([afet(ind),log10(ang(ind,1,2,2))],aedgs,vedgs);colormap jet,caxis([0,100])
 
 vedgs = linspace(-1,0.5,100);
 dat = MTADxyz('data',[afet(:),ang(:,1,2,2)+ang(:,2,3,2)],'sampleRate',xyz.sampleRate);
@@ -167,20 +169,59 @@ figure
 ind = Trial.stc{'n'};
 hist2(log10([afet(ind),ang(ind,1,3,3)]),aedgs,vedgs);colormap jet,caxis([0,100])
 
-d = circshift(circ_dist(circshift(ang(:,2,7,1),-30),ang(:,2,7,1)),15);
-d = circshift(sum(GetSegs(d,1:size(d,1),30,nan))',15);
+nper = Trial.stc{'n'}.cast('TimeSeries');nper = logical(nper.data);
+wper = Trial.stc{'w'}.cast('TimeSeries');wper = logical(wper.data);
+wa = 10:5:100;
+lwa = 10:5:180;
+dp = zeros([numel(wa),numel(lwa)]);
+i = 1;
+for w = wa
+    j = 1;
+    for lw = lwa
+        %w = 20;
+        %lw = 60;
+        h = round(w/2);
+        lh = round(lw/2);
+        d = circshift(circ_dist(circshift(ang(:,2,4,1),-w),ang(:,2,4,1)),h);
+        d = circshift(nanmean(GetSegs(d,1:size(d,1),lw,nan))',lh);
+        ds = circshift(circ_dist(circshift(ang(:,2,8,1),-w),ang(:,2,8,1)),h);
+        ds = circshift(nanmean(GetSegs(ds,1:size(ds,1),lw,nan))',lh);
+        da = circshift(circ_dist(circshift(ang(:,2,6,1),-w),ang(:,2,6,1)),h);
+        da = circshift(nanmean(GetSegs(da,1:size(da,1),lw,nan))',lh);
 
-ds = circshift(circ_dist(circshift(ang(:,1,4,1),-30),ang(:,1,4,1)),15);
-ds = circshift(sum(GetSegs(d,1:size(d,1),30,nan))',15);
-d = abs(ds)+abs(d);
+        dd = log10(max([abs(d),abs(ds),abs(da)],[],2));
 
-afet.data = abs(d);
+        dp(i,j) = (nanmean(dd(nper))-nanmean(dd(wper)))/...
+                  sqrt(.5*(nanvar(dd(nper))+nanvar(dd(wper))));
+        
+        j = j+1;
+    end
+    i = i+1;
+end
 
-figure,plot(abs(d)),Lines(Trial.stc{'n'}(:),[],'r');
 
+w = 70;
+lw = 90;
+h = round(w/2);
+lh = round(lw/2);
 
+d = circshift(circ_dist(circshift(ang(:,2,4,1),-w),ang(:,2,4,1)),h);
+d = circshift(nanmean(GetSegs(d,1:size(d,1),lw,nan))',lh);
+ds = circshift(circ_dist(circshift(ang(:,2,8,1),-w),ang(:,2,8,1)),h);
+ds = circshift(nanmean(GetSegs(ds,1:size(ds,1),lw,nan))',lh);
+da = circshift(circ_dist(circshift(ang(:,2,6,1),-w),ang(:,2,6,1)),h);
+da = circshift(nanmean(GetSegs(da,1:size(da,1),lw,nan))',lh);
 
-ind = Trial.stc{'a'};
+afet.data = log10(max([abs(d),abs(ds),abs(da)],[],2));
+
+%figure,plot(abs(d)),Lines(Trial.stc{'n'}(:),[],'r');
+
+figure, 
+subplot(211)
 ind = Trial.stc{'n'};
+bar(aedgs,histc(afet(ind),aedgs),'histc')
+subplot(212)
 ind = Trial.stc{'w'};
-figure,bar(aedgs,histc(log10(afet(ind)),aedgs),'histc')
+bar(aedgs,histc(afet(ind),aedgs),'histc')
+
+

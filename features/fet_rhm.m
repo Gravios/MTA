@@ -32,8 +32,7 @@ end
 xyz.filter(gausswin(5)./sum(gausswin(5)));
 
 
-ang = Trial.ang.copy;
-ang.create(Trial,xyz);
+ang = create(MTADang,Trial,xyz);
 
 fet = Trial.xyz.copy;
 %fet.data = ButFilter(ang(:,'head_back','fhcom',3),3,[2,50]./(Trial.ang.sampleRate/2),'bandpass');

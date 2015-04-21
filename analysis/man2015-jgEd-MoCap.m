@@ -8,9 +8,16 @@ xyz = Trial.load('xyz');
 vl = vel(xyz,1:8,[1,2]);
 vl.data = ButFilter(vl.data,3,4/(vl.sampleRate/2),'low');
 
-[rhm,fs,ts] = fet_rhm(Trial,[],'mtchglong');
 
-xyz.filter(gtwin(.1,Trial.xyz.sampleRate));
+dsp.nFFT= 512;
+dsp.Fs = 119.881035;
+dsp.WinLength = 128;
+dsp.nOverlap = 112;
+dsp.FreqRange = [1 30];
+
+[rhm,fs,ts] = fet_rhm(Trial,[],'mtchglong','defspec',dsp);
+
+xyz.data = ButFilter(xyz.data,3,[4]/(xyz.sampleRate/2),'low');
 
 ang = create(Trial.ang.copy,Trial,xyz);
 
@@ -113,7 +120,7 @@ imagesc(sixy(:,:)/vl.sampleRate*1000);
 colorbar
 title('time lag of maximum mutual information (ms)')
 
-
+set (hfig,'position',[0,0,1000,700])
 set (hfig,'paperposition',[0,0,1000,700])
 ns = 6;
 periodInds = 1:size(xpers,1);
@@ -132,6 +139,7 @@ for s = periodInds
     ylim([0,80])
     set(gca,'XTickLabelMode','manual');
     set(gca,'XTickLabel',{});
+    set(gca,'TickDir','out');
     
     %figure(202) % DIRECTION head and body
     subplot2(ns,4,i,[1:3]);i=i+1;cla
@@ -141,15 +149,19 @@ for s = periodInds
     ylabel('Circular difference normalized (AU)');
     set(gca,'XTickLabelMode','manual');
     set(gca,'XTickLabel',{});
+    set(gca,'TickDir','out');
+
     
     %figure(203)%  PITCH SLPR and SMSU
     subplot2(ns,4,i,[1:3]);i=i+1;cla
-    plot(ind/vl.sampleRate,[ang(ind,3,4,2),ang(ind,5,7,2)]),axis tight
+    plot(ind/vl.sampleRate,[ang(ind,1,3,2),ang(ind,5,7,2)]),axis tight
     title('Pitch of Body and Head')
     ylabel('Pitch (radians)');
     ylim([-pi/2,pi/2])
-    set(gca,'XTickLabelMode','manual');
     set(gca,'XTickLabel',{});
+    set(gca,'TickDir','out');    
+    set(gca,'TickDir','out');
+
     
     %figure(204)
     subplot2(ns,4,i,[1:3]);i=i+1;cla
@@ -158,7 +170,7 @@ for s = periodInds
     ylabel('Distance (mm)');
     set(gca,'XTickLabelMode','manual');
     set(gca,'XTickLabel',{});
-
+    set(gca,'TickDir','out');
     
     %figure(205)
     subplot2(ns,4,i,[1:3]);i=i+1;cla
@@ -166,6 +178,7 @@ for s = periodInds
     title('hand labeling')
     xlim(xpers(s,:));
     ylim([0,1])
+    set(gca,'TickDir','out');
     set(gca,'XTickLabelMode','manual');
     set(gca,'XTickLabel',{});
    
@@ -178,10 +191,14 @@ for s = periodInds
     imagesc(ts(sind),fs,log10(rhm(sind,:))'),axis xy ,caxis([-6,-3.5])
     ylabel('Frequency (Hz)')
     xlabel('Time (s)')
+    set(gca,'TickDir','out');
+    ca = colorbar;
+    set(ca,'positon',[0.13,0.11,0.568882978723404,0.102587412587413])
+
     
     
-    saveas(hfig,fullfile(figPath,['Fig2-Features-sample_' num2str(s) '_' Trial.filebase '.png']),'png');
-    saveas(hfig,fullfile(figPath,['Fig2-Features-sample_' num2str(s) '_' Trial.filebase '.eps']),'epsc');
+    %    saveas(hfig,fullfile(figPath,['Fig2-Features-sampleN_' num2str(s) '_' Trial.filebase '.png']),'png');
+    saveas(hfig,fullfile(figPath,['Fig2-Features-sampleN_' num2str(s) '_' Trial.filebase '.eps']),'epsc');
 
 
 end
