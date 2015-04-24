@@ -18,12 +18,12 @@ function xyz = ERCOR_fillgaps_RidgidBody(xyz,rb_model,gind)
 % Note: the number of markers in rb_model must be <= 6.
 %
 %% Testing Vars
-% $$$ Session = MTASession('jg05-20120310');
-% $$$ gind = 8000;
+Session = MTASession('jg05-20120310');
+gind = 8000;
 % $$$ Session = MTASession('jg05-20120317');
 % $$$ gind = 314500;
-% $$$ xyz = Session.load('xyz');
-% $$$ rb_model = xyz.model.rb({'head_back','head_left','head_right','head_front','head_top'});
+xyz = Session.load('xyz');
+rb_model = xyz.model.rb({'head_back','head_left','head_right','head_front','head_top'});
 %%
 
 if iscell(rb_model)&&~isa(rb_model,'MTAModel'),

@@ -200,21 +200,23 @@ for w = wa
 end
 
 
-w = 70;
-lw = 90;
+w = 90;
+lw = 70;
 h = round(w/2);
 lh = round(lw/2);
-
 d = circshift(circ_dist(circshift(ang(:,2,4,1),-w),ang(:,2,4,1)),h);
 d = circshift(nanmean(GetSegs(d,1:size(d,1),lw,nan))',lh);
 ds = circshift(circ_dist(circshift(ang(:,2,8,1),-w),ang(:,2,8,1)),h);
 ds = circshift(nanmean(GetSegs(ds,1:size(ds,1),lw,nan))',lh);
 da = circshift(circ_dist(circshift(ang(:,2,6,1),-w),ang(:,2,6,1)),h);
 da = circshift(nanmean(GetSegs(da,1:size(da,1),lw,nan))',lh);
+afet.data = max([abs(d),abs(ds),abs(da)],[],2);
 
-afet.data = log10(max([abs(d),abs(ds),abs(da)],[],2));
+figure,plot(abs(d)),
+Lines(Trial.stc{'n'}(:),[],'r');
+Lines(Trial.stc{'w',bas.sampleRate}(:),[],'k');
 
-%figure,plot(abs(d)),Lines(Trial.stc{'n'}(:),[],'r');
+
 
 figure, 
 subplot(211)
@@ -223,5 +225,6 @@ bar(aedgs,histc(afet(ind),aedgs),'histc')
 subplot(212)
 ind = Trial.stc{'w'};
 bar(aedgs,histc(afet(ind),aedgs),'histc')
+
 
 

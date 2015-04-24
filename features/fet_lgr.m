@@ -11,9 +11,18 @@ dsa = create(Trial.ang.copy,Trial,dsx);
 vel = dsx.vel([],[1,2]);
 vel.data(vel.data<0.0001) = 0.0001;
 vel.data = log10(vel.data);
-dsv = [0;Filter0(ones(1,7)./7,...
-                 abs(diff(circ_dist(dsa(:,'spine_lower','spine_middle',1),...
-                                     dsa(:,'spine_middle','head_front',1)))))];
+
+w = 90;
+lw = 70;
+h = round(w/2);
+lh = round(lw/2);
+d = circshift(circ_dist(circshift(dsa(:,2,4,1),-w),dsa(:,2,4,1)),h);
+d = circshift(nanmean(GetSegs(d,1:size(d,1),lw,nan))',lh);
+ds = circshift(circ_dist(circshift(dsa(:,2,8,1),-w),dsa(:,2,8,1)),h);
+ds = circshift(nanmean(GetSegs(ds,1:size(ds,1),lw,nan))',lh);
+da = circshift(circ_dist(circshift(dsa(:,2,6,1),-w),dsa(:,2,6,1)),h);
+da = circshift(nanmean(GetSegs(da,1:size(da,1),lw,nan))',lh);
+dsv = max([abs(d),abs(ds),abs(da)],[],2);
 
 
 fet = MTADxyz('data',[vel(:,'spine_lower')  ,...

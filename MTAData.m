@@ -306,12 +306,21 @@ classdef MTAData < hgsetget
             end
 
         end
-        function DataCopy = copy(Data)
+        function DataCopy = copy(Data,varargin)
         % Make a copy of a handle object.
         % Instantiate new object of the same class.
+        %
+        % TODO varargin should contain a property/value pair for setting 
+        % properties during the copy.
+        %
+            
             DataCopy = feval(class(Data),[]);
             % Copy all non-hidden properties.
             p = properties(Data);
+            
+            if numel(varargin)>2,
+                
+            end
             for i = 1:length(p)
                 if isa(Data.(p{i}),'MTAData'),
                     DataCopy.(p{i}) = Data.(p{i}).copy;
@@ -509,10 +518,14 @@ classdef MTAData < hgsetget
         end
         
         function Data = filter(Data,varargin)
-        % Data = filter(Data,win)
+        % Data = filter(Data,varargin)
         % Data.data = reshape(Filter0(win,Data.data),Data.size);
+        % 
+        % TODO Adding ButFilter
+            [mode,freq,type] = DefaultArgs(varargin,{'ButFilter',[4],'low'});
             switch Data.type
-                case 'TimeSeries'
+              
+              case 'TimeSeries'
                     [Window] = DefaultArgs(varargin,{gausswin(9)./sum(gausswin(9))});
                     zind = Data.data==0;
                     Data.data = reshape(Filter0(Window,Data.data),Data.size);
