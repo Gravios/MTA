@@ -38,7 +38,10 @@ end
 
 switch mode
   case 'mta'
-    ncp = MTADlfp('data',fet.data,'sampleRate',fet.sampleRate);
+    ncp = MTADlfp('data',fet.data,...
+                  'sampleRate',fet.sampleRate,...
+                  'syncPeriods',fet.sync.copy,...
+                  'syncOrigin',fet.origin);
   case 'raw'
     ncp = fet.data;
   otherwise

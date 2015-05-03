@@ -1,4 +1,7 @@
 function fet = fet_lgr(Trial,varargin)
+%function fet = fet_lgr(Trial,sampleRate)
+%
+
 
 if ~isempty(varargin)
 sampleRate = varargin{1};

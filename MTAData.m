@@ -311,7 +311,7 @@ classdef MTAData < hgsetget
         % Instantiate new object of the same class.
         %
         % TODO varargin should contain a property/value pair for setting 
-        % properties during the copy.
+        % and modifying properties during the copy.
         %
             
             DataCopy = feval(class(Data),[]);
@@ -618,7 +618,7 @@ classdef MTAData < hgsetget
             [varargout{:}] = reshape(GetSegs(Data.data,start_points,segment_length,if_not_complete),[segment_length,oriDataSize]);
 
         end
-%         
+
 %         function out = cat(dim,A,B)
 %             if ~isnumeric(A)&&~isnumeric(B)
 %             out = A.copy;
@@ -638,9 +638,23 @@ classdef MTAData < hgsetget
 %         
             
 
+function phs = phase(Data,varargin)
+    [freq_range,n] = DefaultArgs(varargin,{[6,12],3});
+    tbp = ButFilter(Data.data(:,:),n,freq_range./(Data.sampleRate/2),'bandpass');
+    tbp_hilbert = Shilbert(tbp);
+    tbp_phase = phase(tbp_hilbert);
+    DataClass = class(Data);
+    phs = feval(DataClass,'data',tbp_phase,...
+                          'sampleRate',Data.sampleRate,...
+                          'sync',Data.sync.copy,...
+                           'origin',Data.origin);
+end
+
 
     end
+    
 
+    
     methods (Abstract)        
         Data = create(Data,varargin);      
     end

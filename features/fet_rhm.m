@@ -43,7 +43,10 @@ fet.data = [0;ButFilter(diff(bang),3,[2,50]/(ang.sampleRate/2),'bandpass')];
 
 switch mode
   case 'mta'
-    rhm = MTADxyz('data',fet.data,'sampleRate',fet.sampleRate);
+    rhm = MTADlfp('data',fet.data,...
+                  'sampleRate',fet.sampleRate,...
+                  'syncPeriods',fet.sync.copy,...
+                  'syncOrigin',fet.origin);
   case 'raw'
     rhm = fet.data;
   otherwise

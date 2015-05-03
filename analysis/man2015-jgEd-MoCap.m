@@ -595,22 +595,8 @@ figure,hist2([ang(nind,1,4,3),ang(nind,2,3,3)],linspace(110,170,100),linspace(30
 figPath = '/gpfs01/sirota/homes/gravio/Documents/Manuscripts/Vicon_Methods_2015/Figures/Figure_4';
 
 
-Trial = MTATrial('jg05-20120317');
-xyz = Trial.load('xyz').filter(gtwin(.05,Trial.xyz.sampleRate));
-ang = create(MTADang,Trial,xyz);
 
 
-% %%%%%%%%%%%%%%%%%%%%%%%%%%%%
-%Fig:5:A - Fast scans of head
-%                            
-% Description: {}
-
-xyz = Trial.load('xyz');
-xyz.data = ButFilter(xyz.data,3,[55]/(xyz.sampleRate/2),'low');
-rb = Trial.xyz.model.rb({'head_back','head_left','head_front','head_right'});
-hcom = xyz.com(rb);
-xyz.addMarker('fhcom',[.7,1,.7],{{'head_back','head_front',[0,0,1]}},ButFilter(hcom,3,[2]./(Trial.xyz.sampleRate/2),'low'));
-ang = create(MTADang,Trial,xyz);
 
 
 figure,plot(circ_dist(ang(:,5,7,1),ang(:,5,10,1)))
@@ -697,7 +683,9 @@ Lines(Trial.stc{'w',ys.sampleRate}(:),[],'k',[],3);
 figPath = '/storage/gravio/manuscripts/man2015-jgEd-MoCap/Figures/Figure_5';
 
 
-% FIG6A Time series RHM NCP scaled signals
+% SUBPLOT 6.A
+% NAME Time series RHM NCP scaled signals
+% DESCRIPTION 
 Trial = MTATrial('Ed05-20140529','all','ont');
 rhm = fet_rhm(Trial);
 ncp = fet_ncp(Trial);
@@ -750,6 +738,29 @@ linkaxes(sp,'xy')
 
 %saveas(hfig,fullfile(figPath,['Fig5-RHM_NCP_PSD-' Trial.filebase '.png']),'png');
 %saveas(hfig,fullfile(figPath,['Fig5-RHM_NCP_PSD-' Trial.filebase '.eps']),'epsc');
+
+
+% SUBPLOT 6.F
+% NAME RHM NCP phase diff
+% DESCRIPTION > The trough of each breathing cycle was
+% detected and created a JPDF The circular difference 
+% between the RHM and NCP phases and the trough pressure 
+Trial = MTATrial('Ed05-20140529','all','ont');
+[ncp] = fet_ncp(Trial,'chans',2);
+[rhm] = fet_rhm(Trial);
+nphs = ncp.phase([6,14]);
+rphs = rhm.phase([6,14]);
+mind = LocalMinima(ncp.data,8,0);
+
+mind = LocalMinima(ncp.data,8,0);
+out = PPC([nphs(mind),rphs(mind)]);
+figure,
+hist2([circ_dist(nphs(mind),rphs(mind)),ncp(mind)],30,linspace(-6000,-1000,30))
+xlabel('Phase Difference (radians)')
+ylabel('Peak Negative Presure (A.U.)')
+title(['NCP RHM Phase Difference at Inhalation [PPC: ' ...
+       num2str(round(out,4)) ']'])
+
 
 %% Group stats for RHM NCP
 %

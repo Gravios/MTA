@@ -30,7 +30,10 @@ end
 switch mode
 
   case 'mta'
-    rhm = MTADlfp('data',fet.data,'sampleRate',fet.sampleRate);
+    rhm = MTADlfp('data',fet.data,...
+                  'sampleRate',fet.sampleRate,...
+                  'syncPeriods',fet.sync.copy,...
+                  'syncOrigin',fet.origin);
   case 'raw'
     rhm = fet.data;
   otherwise % mode {mtcsdglong,mtchglong,...}
@@ -68,7 +71,9 @@ switch mode
     pad = round([ts(1),mod(fet.size(1)-round(parspec.WinLength/2),parspec.WinLength)/fet.sampleRate].*ssr)-[1,0];
     szy = size(ys);
     rhm = MTADlfp('data',cat(1,zeros([pad(1),szy(2:end)]),ys,zeros([pad(2),szy(2:end)])),'sampleRate',ssr);
-    ts = cat(1,zeros([pad(1),1]),ts,zeros([pad(2),1]));        
+
+    %ts = cat(1,zeros([pad(1),1]),ts,zeros([pad(2),1]));        
+    ts = cat(2,([1:pad(1)]./ssr),ts',([pad(1)+size(ts,1)]+[1:pad(2)])./ssr)';
 
     if numel(svout)>0,
         for i = 1:numel(svout),

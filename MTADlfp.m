@@ -64,13 +64,6 @@ classdef MTADlfp < MTAData
             %[channels,gselect,periods] = DefaultArgs(varargin,{[],{'AnatGrps',1,1},[]});
             Data.load(Session,varargin{:});
         end
-        function phs = phase(Data,varargin)
-            [freq_range,n] = DefaultArgs(varargin,{[6,12],2^11});
-            tbp = ButFilter(Data.data(:,:),3,freq_range./(Data.sampleRate/2),'bandpass');
-            tbp_hilbert = Shilbert(tbp);
-            tbp_phase = phase(tbp_hilbert);
-            phs = MTADlfp([],[],tbp_phase,Data.sampleRate,Data.sync.copy,Data.origin);
-        end
         function Data = embed(Data,win,overlap)
         %Data = embed(Data,win,overlap)
         %not implemented in this version            
