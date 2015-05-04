@@ -37,14 +37,15 @@ classdef MTADxyz < MTAData
     
     methods
         function Data = MTADxyz(varargin)
-            [path,filename,data,sampleRate,syncPeriods,syncOrigin,model,type,ext] = ...
-                DefaultArgs(varargin,{[],[],[],[],[],[],[],'TimeSeries','pos'});
+            [path,filename,data,sampleRate,syncPeriods,syncOrigin,model,type,ext,name,label,key] = ...
+                DefaultArgs(varargin,{[],[],[],[],[],[],[],'TimeSeries','pos',[],'position','x'});
             if ~isempty(filename),
                 if ~strcmp(filename(end-3:end),'.mat'),
                     filename= [filename '.' ext '.mat'];
                 end
             end            
-            Data = Data@MTAData(path,filename,data,sampleRate,syncPeriods,syncOrigin,type,ext);            Data.model = model;
+            Data = Data@MTAData(path,filename,data,sampleRate,syncPeriods,syncOrigin,type,ext,name,label,key);            
+            Data.model = model;
         end
         function Data = create(Data,varargin)
         %Data = create(Data,varargin)

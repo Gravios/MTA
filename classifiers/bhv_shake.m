@@ -1,9 +1,9 @@
-function [sper] = fet_shake(Trial)
+function [sper] = bhv_shake(Trial)
 
-Trial = MTATrial('jg05-20120317');
-Trial = MTATrial('Ed05-20140529','all','ont');
-Trial = MTATrial('Ed01-20140709');
-Trial = MTATrial('Ed03-20140625');
+% Trial = MTATrial('jg05-20120317');
+% Trial = MTATrial('Ed05-20140529','all','ont');
+% Trial = MTATrial('Ed01-20140709');
+% Trial = MTATrial('Ed03-20140625');
 
 
 xyz = Trial.load('xyz');
@@ -25,7 +25,8 @@ sparm = struct('nFFT',2^7,...
 
 fet = xyz.copy;
 fet.ext = 'fet';
-fet.updateFileName;
+fet.label = 'shake';
+fet.key = 'k';
 fet.data = [diff(circ_dist(circ_dist(ang(:,3,11,1),ang(:,3,4,1)),pi).*double(ix)),...
             diff(circ_dist(circ_dist(ang(:,3,5,1),ang(:,3,10,1)),0).*double(ix)),...
             diff(circ_dist(circ_dist(ang(:,1,11,1),ang(:,2,4,1)),0).*double(ix))];;

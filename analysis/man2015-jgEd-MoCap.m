@@ -595,7 +595,10 @@ figure,hist2([ang(nind,1,4,3),ang(nind,2,3,3)],linspace(110,170,100),linspace(30
 figPath = '/gpfs01/sirota/homes/gravio/Documents/Manuscripts/Vicon_Methods_2015/Figures/Figure_4';
 
 
-
+% %%%%%%%%%%%%%%%%%%%%%%%%%%%%
+%Fig:5:A - Fast scans of head
+%                            
+% Description: {}
 
 
 

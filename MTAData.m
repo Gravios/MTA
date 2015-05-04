@@ -69,6 +69,15 @@ classdef MTAData < hgsetget
         %filename - string: the file name of the .mat file which contains the objects data
         filename
 
+        %name - object name (i.e. a subject name jg05)
+        name
+
+        %label - string: name associated with the type of data
+        label
+        
+        %key - char: single character used for keyboard shortcuts and indexing
+        key
+        
         %type - string: a short string which denotes the type of data held by the object
         type        
         
@@ -83,7 +92,6 @@ classdef MTAData < hgsetget
         
         %syncOrigin - double: time of data origin in seconds with respect to the syncPeriods
         origin = 0;
-                
     end
     
     properties( Transient=true )
@@ -96,15 +104,18 @@ classdef MTAData < hgsetget
         
         %model - MTAModel: holds the names of the features for indexing purposes
         model
+        
     end
     
     methods
-        function Data = MTAData(path,filename,data,sampleRate,syncPeriods,syncOrigin,type,ext)
+        function Data = MTAData(path,filename,data,sampleRate,syncPeriods,syncOrigin,type,ext,name,label,key)
             Data.filename = filename;
             Data.path = path;
             Data.data = data;
             Data.type = type;
             Data.ext = ext;
+            Data.name = name;
+            Data.label = label;
             Data.sampleRate = sampleRate;
             Data.sync = syncPeriods;
             Data.origin = syncOrigin;
@@ -159,7 +170,7 @@ classdef MTAData < hgsetget
         function fpath = fpath(Data)
         %fpath = fpath(Data)
         % Concatenate the path and filename fields to create the full path
-        % to the file containing the object's data
+                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                    % to the file containing the object's data
         %
             fpath = fullfile(Data.path,Data.filename);
         end
