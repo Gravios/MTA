@@ -179,23 +179,38 @@ BView(handles,...
        struct('type','MLView_features',...
               'layout',{{struct('object',handles.MLviewer,...
                                'properties',struct(...
-                                   'Position',[0.004768392370572207,0.005861664712778429,0.6539509536784741,0.9446952595936793],...
+                                   'Position',[0.004768392370572207,... x
+                                               0.005861664712778429,... y
+                                               0.6539509536784741,...   w
+                                               0.9446952595936793],...  h
                                    'Visible' ,'off')),...
                         struct('object',handles.MLauxdata,...
                                'properties',struct(...
-                                   'Position',[0.6614928282256478,0.005861664712778429,0.3355542095699576,0.9446952595936793],...
+                                   'Position',[0.6614928282256478,...
+                                               0.005861664712778429,...
+                                               0.3355542095699576,...
+                                               0.9446952595936793],...
                                    'Visible' ,'on')),...                              
                         struct('object',handles.MLSapp,...
                                'properties',struct(...
-                                   'Position',[0.004768392370572207,0.005861664712778429,0.3301934604904632,0.9446952595936793],...
+                                   'Position',[0.004768392370572207,...
+                                               0.005861664712778429,...
+                                               0.3301934604904632,...
+                                               0.9446952595936793],...
                                    'Visible' ,'off')),...
                         struct('object',handles.MLFapp,...
                                'properties',struct(...
-                                   'Position',[0.004768392370572207,0.005861664712778429,0.6532697547683922,0.9446952595936793],...
+                                   'Position',[0.004768392370572207,...
+                                               0.005861664712778429,...
+                                               0.6532697547683922,...
+                                               0.9446952595936793],...
                                    'Visible' ,'on')),...
                         struct('object',handles.MLVOapp,...
                                'properties',struct(...
-                                   'Position',[0.004768392370572207,0.005861664712778429,0.3301934604904632,0.9446952595936793],...
+                                   'Position',[0.004768392370572207,...
+                                               0.005861664712778429,...
+                                               0.3301934604904632,...
+                                               0.9446952595936793],...
                                    'Visible' ,'off')),}})...                                            
                                );
     
@@ -204,19 +219,31 @@ BView(handles,...
        struct('type','MLView_viewoptions',...
               'layout',{{struct('object',handles.MLviewer,...
                                'properties',struct(...
-                                   'Position',[0.3399182561307902,0.005861664712778429,0.6539509536784741,0.9446952595936793],...
+                                   'Position',[0.3399182561307902,...
+                                               0.005861664712778429,...
+                                               0.6539509536784741,...
+                                               0.9446952595936793],...
                                    'Visible' ,'on')),...
                         struct('object',handles.MLauxdata,...
                                'properties',struct(...
-                                   'Position',[0.6614928282256478,0.005861664712778429,0.3355542095699576,0.9446952595936793],...
+                                   'Position',[0.6614928282256478,...
+                                               0.005861664712778429,...
+                                               0.3355542095699576,...
+                                               0.9446952595936793],...
                                    'Visible' ,'off')),...                                 
                         struct('object',handles.MLSapp,...
                                'properties',struct(...
-                                   'Position',[0.004768392370572207,0.005861664712778429,0.3301934604904632,0.9446952595936793],...
+                                   'Position',[0.004768392370572207,...
+                                               0.005861664712778429,...
+                                               0.3301934604904632,...
+                                               0.9446952595936793],...
                                    'Visible' ,'off')),...
                         struct('object',handles.MLFapp,...
                                'properties',struct(...
-                                   'Position',[0.004768392370572207,0.005861664712778429,0.6532697547683922,0.9446952595936793],...
+                                   'Position',[0.004768392370572207,...
+                                               0.005861664712778429,...
+                                               0.6532697547683922,...
+                                               0.9446952595936793],...
                                    'Visible' ,'on')),...
                         struct('object',handles.MLVOapp,...
                                'properties',struct(...
@@ -368,12 +395,11 @@ if getappdata(handles.DMapp,'load_sessions'),
 
     % Select Valid Sessions
     files = dir(Session.path.data);
-    re = '\d\d[-]\d\d\d\d\d\d\d\d$'; % regular expression
+    re = '^[a-zA-Z]{1,2}[0-9]{2}[-][0-9]{8,8}$';% regular expression
     sessionList = {files(~cellfun(@isempty,regexp({files.name},re))).name};
     
     
-    
-        % Recursive maze and trial search
+    % Recursive maze and trial search
     files = cellfun(@dir,cellfun(@fullfile,repmat({Session.path.data},1,length(sessionList)), sessionList,'UniformOutput',false),'UniformOutput',false);
     mazelist = cell(1,length(files));
     triallist = cell(1,length(files));
@@ -415,7 +441,7 @@ if getappdata(handles.DMapp,'load_sessions'),
     
     
    % Organize lists by subject
-    re = '\d\d[-]\d\d\d\d\d\d\d\d$';
+    re = '[0-9]{2,2}[-][0-9]{8,8}$';% regular expression
     dateList = {};
     mazeList = {};
     trialList = {};
@@ -430,8 +456,6 @@ if getappdata(handles.DMapp,'load_sessions'),
     uniqueSubject = [];
 
     for i = 2:length(sessionList),
-
-
         tsubject = sessionList{i}(1:regexp(sessionList{i},re)+1);
         uniqueSubject = ~cellfun(@strcmp,...
                                  subjectList,...
@@ -490,31 +514,20 @@ end
 
 guidata(hObject,handles);
 function DMsessionTable_CreateFcn(hObject, eventdata, handles)
-function SubjectList_Callback(hObject, eventdata, handles)
-% hObject    handle to SubjectList (see GCBO)
-% eventdata  reserved - to be defined in a future version of MATLAB
-% handles    structure with handles and user data (see GUIDATA)
 
+function SubjectList_Callback(hObject, eventdata, handles)
 % Populate datelist based on Subject Selection
 subjectIndex = get(handles.SubjectList,'Value');
 dateList = getappdata(handles.DMapp,'dateList');
 set(handles.DateList,'String',dateList{subjectIndex});
 DateList_Callback(hObject, eventdata, handles)
-function SubjectList_CreateFcn(hObject, eventdata, handles)
-% hObject    handle to SubjectList (see GCBO)
-% eventdata  reserved - to be defined in a future version of MATLAB
-% handles    empty - handles not created until after all CreateFcns called
 
-% Hint: listbox controls usually have a white background on Windows.
-%       See ISPC and COMPUTER.
+function SubjectList_CreateFcn(hObject, eventdata, handles)
 if ispc && isequal(get(hObject,'BackgroundColor'), get(0,'defaultUicontrolBackgroundColor'))
     set(hObject,'BackgroundColor','white');
 end
-function DateList_Callback(hObject, eventdata, handles)
-% hObject    handle to DateList (see GCBO)
-% eventdata  reserved - to be defined in a future version of MATLAB
-% handles    structure with handles and user data (see GUIDATA)
 
+function DateList_Callback(hObject, eventdata, handles)
 subjectIndex = get(handles.SubjectList,'Value');
 dateIndex = get(handles.DateList,'Value');
 mazeList = getappdata(handles.DMapp,'mazeList');
@@ -523,20 +536,11 @@ if ~isempty(mazeList{subjectIndex}{dateIndex}),
     MazeList_Callback(hObject, eventdata, handles);
 end
 function DateList_CreateFcn(hObject, eventdata, handles)
-% hObject    handle to DateList (see GCBO)
-% eventdata  reserved - to be defined in a future version of MATLAB
-% handles    empty - handles not created until after all CreateFcns called
-
-% Hint: listbox controls usually have a white background on Windows.
-%       See ISPC and COMPUTER.
 if ispc && isequal(get(hObject,'BackgroundColor'), get(0,'defaultUicontrolBackgroundColor'))
     set(hObject,'BackgroundColor','white');
 end
-function MazeList_Callback(hObject, eventdata, handles)
-% hObject    handle to MazeList (see GCBO)
-% eventdata  reserved - to be defined in a future version of MATLAB
-% handles    structure with handles and user data (see GUIDATA)
 
+function MazeList_Callback(hObject, eventdata, handles)
 subjectIndex = get(handles.SubjectList,'Value');
 dateIndex = get(handles.DateList,'Value');
 mazeIndex = get(handles.MazeList,'Value');
@@ -553,21 +557,12 @@ if mazeIndex,
 %     end
 end
 function MazeList_CreateFcn(hObject, eventdata, handles)
-% hObject    handle to MazeList (see GCBO)
-% eventdata  reserved - to be defined in a future version of MATLAB
-% handles    empty - handles not created until after all CreateFcns called
-
-% Hint: listbox controls usually have a white background on Windows.
-%       See ISPC and COMPUTER.
 if ispc && isequal(get(hObject,'BackgroundColor'), get(0,'defaultUicontrolBackgroundColor'))
     set(hObject,'BackgroundColor','white');
 end
+
+
 function TrialList_Callback(hObject, eventdata, handles)
-% hObject    handle to TrialList (see GCBO)
-% eventdata  reserved - to be defined in a future version of MATLAB
-% handles    structure with handles and user data (see GUIDATA)
-
-
 if sum(strcmp(get(handles.TrialList,'String'),''))|strcmp(get(handles.MazeList,'String'),''), 
     return;
 end
@@ -607,12 +602,6 @@ else
     setappdata(handles.MTABrowser,'Session',Trial);
 end
 function TrialList_CreateFcn(hObject, eventdata, handles)
-% hObject    handle to TrialList (see GCBO)
-% eventdata  reserved - to be defined in a future version of MATLAB
-% handles    empty - handles not created until after all CreateFcns called
-
-% Hint: listbox controls usually have a white background on Windows.
-%       See ISPC and COMPUTER.
 if ispc && isequal(get(hObject,'BackgroundColor'), get(0,'defaultUicontrolBackgroundColor'))
     set(hObject,'BackgroundColor','white');
 end
@@ -623,11 +612,7 @@ end
 
 %% SUapp code start
 function BSSetup_Callback(hObject, eventdata, handles)
-% hObject    handle to BSSetup (see GCBO)
-% eventdata  reserved - to be defined in a future version of MATLAB
-% handles    structure with handles and user data (see GUIDATA)
-
-%% Set Browser State
+% Set Browser State
 BStateChange(hObject,eventdata,handles); 
 
 if hObject ~= getappdata(handles.MTABrowserStates,'previousBState'),
@@ -636,15 +621,12 @@ end
 %% SUapp code end
 
 
+
+
 %% MLapp code start
 function BSmotionLabeling_Callback(hObject, eventdata, handles)
-% hObject    handle to BSmotionLabeling (see GCBO)
-% eventdata  reserved - to be defined in a future version of MATLAB
-% handles    structure with handles and user data (see GUIDATA)
 
 if hObject ~= getappdata(handles.MTABrowserStates,'previousBState'),
-    
-
 
     MLData = getappdata(handles.MTABrowser,'MLData');
     MLData.record = {};
@@ -943,9 +925,6 @@ end
 setappdata(handles.MTABrowser,'MLData',MLData);
 
 function MLposition_slider_Callback(hObject, eventdata, handles)
-% hObject    handle to MLposition_slider (see GCBO)
-% eventdata  reserved - to be defined in a future version of MATLAB
-% handles    structure with handles and user data (see GUIDATA)
 idx = round(get(hObject,'Value'));
 MLData = getappdata(handles.MTABrowser,'MLData');
 MLData.idx = idx;
@@ -953,21 +932,18 @@ updateCircle(hObject,handles,0)
 setappdata(handles.MTABrowser,'MLData',MLData);
 set(hObject,'Value',MLData.idx);
 guidata(hObject,handles);
+
 function MLplayspeed_slider_Callback(hObject, eventdata, handles)
-% hObject    handle to MLplayspeed_slider (see GCBO)
-% eventdata  reserved - to be defined in a future version of MATLAB
-% handles    structure with handles and user data (see GUIDATA)
 setappdata(handles.MLapp,'play_speed',get(hObject,'Value'));
 set(hObject,'Value', getappdata(handles.MLapp,'play_speed'));
+
 function MLplayforward_Callback(hObject, eventdata, handles)
-% hObject    handle to MLplayforward (see GCBO)
-% eventdata  reserved - to be defined in a future version of MATLAB
-% handles    structure with handles and user data (see GUIDATA)
 setappdata(handles.MLapp,'animation',~getappdata(handles.MLapp,'animation'));
 setappdata(handles.MLapp,'paused',0);
 while getappdata(handles.MLapp,'animation')
     updateCircle(hObject,handles,1);
 end
+
 function MLjumpforward_Callback(hObject, eventdata, handles)
 MLData = getappdata(handles.MTABrowser,'MLData');
 current_label = MLData.current_label;
@@ -991,15 +967,14 @@ if current_label~=0
 else
     updateCircle(hObject,handles,50)
 end
+
 function MLplayreverse_Callback(hObject, eventdata, handles)
-% hObject    handle to MLplayreverse (see GCBO)
-% eventdata  reserved - to be defined in a future version of MATLAB
-% handles    structure with handles and user data (see GUIDATA)
 setappdata(handles.MLapp,'animation',~getappdata(handles.MLapp,'animation'));
 setappdata(handles.MLapp,'paused',0);
 while getappdata(handles.MLapp,'animation')
     updateCircle(hObject, handles,-1);
 end
+
 function MLjumpback_Callback(hObject, eventdata, handles)
 MLData = getappdata(handles.MTABrowser,'MLData');
 current_label = MLData.current_label;
@@ -1023,60 +998,40 @@ if current_label~=0
 else
     updateCircle(hObject,handles,-50)
 end
+
 function MLindexinput_Callback(hObject, eventdata, handles)
-% hObject    handle to MLindexinput (see GCBO)
-% eventdata  reserved - to be defined in a future version of MATLAB
-% handles    structure with handles and user data (see GUIDATA)
 MLData = getappdata(handles.MTABrowser,'MLData');
 MLData.idx = str2double(get(hObject,'String'));
 setappdata(handles.MTABrowser,'MLData',MLData);
+
 function MLtimeinput_Callback(hObject, eventdata, handles)
-% hObject    handle to MLtimeinput (see GCBO)
-% eventdata  reserved - to be defined in a future version of MATLAB
-% handles    structure with handles and user data (see GUIDATA)
 MLData = getappdata(handles.MTABrowser,'MLData');
 MLData.idx = NearestNeighbor(MLData.t,str2double(get(hObject,'String')));
 setappdata(handles.MTABrowser,'MLData',MLData);
 
-%CreateFcn's
+
 function MLtimeinput_CreateFcn(hObject, eventdata, handles)
-% hObject    handle to MLtimeinput (see GCBO)
-% eventdata  reserved - to be defined in a future version of MATLAB
-% handles    empty - handles not created until after all CreateFcns called
-
-% Hint: edit controls usually have a white background on Windows.
-%       See ISPC and COMPUTER.
 if ispc && isequal(get(hObject,'BackgroundColor'), get(0,'defaultUicontrolBackgroundColor'))
     set(hObject,'BackgroundColor','white');
 end
+
 function MLposition_slider_CreateFcn(hObject, eventdata, handles)
-% hObject    handle to MLposition_slider (see GCBO)
-% eventdata  reserved - to be defined in a future version of MATLAB
-% handles    empty - handles not created until after all CreateFcns called
 set(hObject, 'Value', 1);
-% Hint: slider controls usually have a light gray background.
 if isequal(get(hObject,'BackgroundColor'), get(0,'defaultUicontrolBackgroundColor'))
     set(hObject,'BackgroundColor',[.9 .9 .9]);
 end
-function MLindexinput_CreateFcn(hObject, eventdata, handles)
-% hObject    handle to MLindexinput (see GCBO)
-% eventdata  reserved - to be defined in a future version of MATLAB
-% handles    empty - handles not created until after all CreateFcns called
 
-% Hint: edit controls usually have a white background on Windows.
-%       See ISPC and COMPUTER.
+function MLindexinput_CreateFcn(hObject, eventdata, handles)
 if ispc && isequal(get(hObject,'BackgroundColor'), get(0,'defaultUicontrolBackgroundColor'))
     set(hObject,'BackgroundColor','white');
 end
+
 function MLplayspeed_slider_CreateFcn(hObject, eventdata, handles)
-% hObject    handle to MLplayspeed_slider (see GCBO)
-% eventdata  reserved - to be defined in a future version of MATLAB
-% handles    empty - handles not created until after all CreateFcns called
 set(hObject, 'Value', 32);
-% Hint: slider controls usually have a light gray background.
 if isequal(get(hObject,'BackgroundColor'), get(0,'defaultUicontrolBackgroundColor'))
     set(hObject,'BackgroundColor',[.9 .9 .9]);
 end
+
 function MLjumpback_CreateFcn(hObject, eventdata, handles)
 icon = imread('skip_backward.png');
 set(hObject,'CData',icon);

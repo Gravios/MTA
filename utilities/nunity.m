@@ -1,4 +1,5 @@
-% function U = unity(A) 
+%function [U,meanA,stdA] = nunity(A,varargin)
+%[ifnniz,meanA,stdA,drpOutPrctile] = DefaultArgs(varargin,{@nan,[],[],[]},true);
 % A is n x m  matrix, and each column is a signal.
 % the function gives a unity signal for each column
 % i.e. [signal-mean(signal)] / std(signal)
