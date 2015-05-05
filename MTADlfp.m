@@ -29,14 +29,14 @@ classdef MTADlfp < MTAData
     end
     methods
         function Data = MTADlfp(varargin)
-            [path,filename,data,sampleRate,syncPeriods,syncOrigin,model,type,ext] = ...
-                DefaultArgs(varargin,{[],[],[],[],[],[],[],'TimeSeries','lfp'});
+            [path,filename,data,sampleRate,syncPeriods,syncOrigin,model,type,ext,name,label,key] = ...
+                DefaultArgs(varargin,{[],[],[],[],[],[],[],'TimeSeries','lfp',[],'lfp','l'});
             if ~isempty(filename),
                 if ~strcmp(filename(end-3:end),['.' ext]),
                     filename = [filename '.' ext];
                 end
             end            
-            Data = Data@MTAData(path,filename,data,sampleRate,syncPeriods,syncOrigin,type,ext);
+            Data = Data@MTAData(path,filename,data,sampleRate,syncPeriods,syncOrigin,type,ext,name,label,key);
         end        
         function Data = load(Data,Session,varargin)
             %load(Data,Session,varargin)

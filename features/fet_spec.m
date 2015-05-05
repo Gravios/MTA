@@ -11,7 +11,7 @@ function [rhm,varargout] = fet_spec(Trial,fet,varargin)
 %
 parspec = empty_spec;
 
-[mode,wsig,sampleRate,defspec,overwrite,ARmodName] = ...
+[mode,wsig,sampleRate,defspec,overwrite] = ...
  DefaultArgs(varargin,{'raw',true,120,def_spec_parm(fet),true});
 
 
@@ -41,8 +41,8 @@ switch mode
     data = zeros(fet.size);
     
     if wsig,
-        %FUTURE: load(fullfile(Trial.path.MTAPath,[mfilename,fet.label,'_' fet.key '.arm.mat']));end
-        try,load(fullfile(Trial.path.MTAPath,[mfilename,'.arm.mat']));end
+        try,load(fullfile(Trial.path.MTAPath,[mfilename,fet.label,'_' fet.key '.arm.mat']));end
+        %OLD try,load(fullfile(Trial.path.MTAPath,[mfilename,'.arm.mat']));end
         
         if ~exist('ARmodel','var'), overwrite = true; end
         
@@ -50,7 +50,7 @@ switch mode
             [data(nniz(fet.data),:),ARmodel] = WhitenSignal(fet.data(nniz(fet.data),:),...
                                                                 [],...
                                                                 true);
-            save(fullfile(Trial.path.MTAPath,[mfilename,'.arm.mat']),'ARmodel');
+            save(fullfile(Trial.path.MTAPath,[mfilename,fet.label,'_' fet.key '.arm.mat']),'ARmodel');
         else
             data(nniz(fet.data),:) = WhitenSignal(fet.data(nniz(fet.data),:),...
                                                       [],...

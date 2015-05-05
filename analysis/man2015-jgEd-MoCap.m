@@ -1,4 +1,4 @@
-%% new Figure2 
+% new Figure2 
 Trial = MTATrial('jg05-20120317');
 figPath = '/storage/gravio/manuscripts/man2015-jgEd-MoCap/Figures/Figure_2';
 

@@ -171,7 +171,7 @@ classdef MTAStateCollection < hgsetget
             assert(isempty(Stc.gsi(key)),...
                    'MTAStateCollection:addState:ExistingKey',...
                    ['State: ' label ', already exists in this collection']);
-            Stc.states{end+1} = MTADepoch(path,filename,data,sampleRate,sync,origin,label,key,type,ext);
+            Stc.states{end+1} = MTADepoch(path,filename,data,sampleRate,sync,origin,type,ext,[],label,key);
         end
         
         function [Stc,varargout] = subsref(Stc,S)
@@ -199,9 +199,9 @@ classdef MTAStateCollection < hgsetget
                                 stci = Stc.gsi(stsNames{i});
                                 if isempty(stci)
                                     if numel(stsNames{i})==1,
-                                        sts{i} = MTADepoch(Stc.path,[],[],[],[],[],[],stsNames{i},[],[]);
+                                        sts{i} = MTADepoch(Stc.path,[],[],[],[],[],[],[],[],[],stsNames{i});
                                     else
-                                        sts{i} = MTADepoch(Stc.path,[],[],[],[],[],stsNames{i},[],[],[]);
+                                        sts{i} = MTADepoch(Stc.path,[],[],[],[],[],[],[],[],stsNames{i},[]);
                                     end
                                     try,
                                         sts{i} = sts{i}.load([],Stc.sync);
@@ -541,7 +541,7 @@ classdef MTAStateCollection < hgsetget
                 
                 composite_state = MTADepoch([],[],oper{1},fstate.sampleRate, ...
                                             fstate.sync.copy,fstate.origin,...
-                                            newStateName,keys,[],[]);
+                                            [],[],[],newStateName,keys);
             end
         end
 

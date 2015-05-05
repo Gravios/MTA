@@ -14,7 +14,7 @@ if xyz.sampleRate > 120,
     xyz.resample(120); 
 end
 
-xyz.filter(gtwin(.1,xyz.sampleRate));
+xyz.data = ButFilter(xyz.data,3,[3]./(xyz.sampleRate/2),'low');
 
 bang = Trial.transformOrigin(xyz,'head_back','head_front',{'head_left','head_right'});
 bang.roll(isnan(bang.roll))=0;

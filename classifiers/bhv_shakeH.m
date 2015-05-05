@@ -1,4 +1,4 @@
-function [sfet] = bhv_shake(Trial,varargin)
+function [sfet] = bhv_shakeH(Trial,varargin)
 % function [sper] = bhv_shake(Trial,varargin)
 % [mode,thresh,overwrite] = DefaultArgs(varargin,{'per',5,false},false);
 % 

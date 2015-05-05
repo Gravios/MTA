@@ -470,9 +470,11 @@ classdef MTASession < hgsetget
             %angles = transformOrigin(Session, xyz, origin, orientationVector, vectorTranSet)   
             [xyz,origin,orientationVector,vectorTranSet] = DefaultArgs(varargin,{Session.xyz.copy,'head_back','head_front',{'head_left','head_right'}});
             
-            xyz.load(Session);
-            xyz.filter(gtwin(.1,xyz.sampleRate));
-
+            if xyz.isempty,
+                xyz.load(Session);
+                xyz.filter(gtwin(.1,xyz.sampleRate));
+            end
+            
             diffMat = markerDiffMatrix(xyz);
             mdvlen = size(diffMat,1);
             origin = xyz.model.gmi(origin);

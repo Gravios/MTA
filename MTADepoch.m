@@ -1,5 +1,5 @@
 classdef MTADepoch < MTAData
-% MTADepoch(path,filename,data,sampleRate,syncPeriods,syncOrigin,label,key,datatype,extension)
+% MTADepoch(path,filename,data,sampleRate,syncPeriods,syncOrigin,type,ext,name,label,key)
 % MTADepoch is a container for periods of time as defined by start and stop
 % instances recorded in a Nx2 array, within the context of a dynamic
 % temporal domain (e.g. MTASession or MTATrial).
@@ -50,12 +50,6 @@ classdef MTADepoch < MTAData
         %data - double: matrix of size Nx2, where N is the number of epochs
         data 
         
-        %label - string: name associated with the type of epochs
-        label
-        
-        %key - char: single character used for keyboard shortcuts and indexing
-        key
-        
         %model - Reserved for future versions
         model = [];
     end
@@ -63,8 +57,8 @@ classdef MTADepoch < MTAData
     methods
         
         function Data = MTADepoch(varargin)
-            [path,filename,data,sampleRate,syncPeriods,syncOrigin,label,key,type,ext,name,label,key] = ...
-                DefaultArgs(varargin,{[],[],[],[],[],[],[],[],'TimePeriods','sst','epoch',[],[]});
+            [path,filename,data,sampleRate,syncPeriods,syncOrigin,type,ext,name,label,key] = ...
+                DefaultArgs(varargin,{[],[],[],[],[],[],'TimePeriods','sst','epochs',[],[]});
             if ~isempty(filename),
                 if ~strcmp(filename(end-3:end),'.mat'),
                     filename = [filename '.' ext '.' label '.' key '.mat'];
@@ -285,7 +279,7 @@ classdef MTADepoch < MTAData
                 DataCell(1) = [];
             end            
             
-            Data = MTADepoch([],[],newData,msr,sync,origin,newLabel,newKey);
+            Data = MTADepoch([],[],newData,msr,sync,origin,[],[],[],newLabel,newKey);
         end
 p
         function join(DataCell)
@@ -309,7 +303,7 @@ p
             newData = DataCell{1}.data;
             DataCell(1) = [];
 
-            Data = MTADepoch([],[],newData,msr,sync,origin,newLabel,newKey);
+            Data = MTADepoch([],[],newData,msr,sync,origin,[],[],[],newLabel,newKey);
         end
 
 % $$$         function Data = plus(a,b)
