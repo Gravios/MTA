@@ -19,9 +19,9 @@ function [Stc,d_state] = bhv_lgr(Trial,varargin)
 
 MODEL_TYPE = 'LGR';
 
-[train,states,fet,model_name,display] = DefaultArgs(varargin,...
+[train,states,fet,model_name,display,other_state] = DefaultArgs(varargin,...
     {false,Trial.stc.list_state_attrib('label'),'fet_lgr',...
-    ['MTAC_' Trial.stc.mode '_' MODEL_TYPE],true});
+    ['MTAC_' Trial.stc.mode '_' MODEL_TYPE],true,false});
 
 keys = subsref(Trial.stc.list_state_attrib('key'),...
                substruct('()',{Trial.stc.gsi(states)}));
@@ -36,6 +36,8 @@ nind = nniz(lrfet);
 %% Get or Train LGR Model
 if train||~exist(model_loc,'file'),
 
+    [smat] = max(stc2mat(Trial.stc,lrfet,states),[],2);
+    
     Model_Information = struct(...
         'filename',              model_name,         ...
         'path',                  model_path,             ...
@@ -46,8 +48,16 @@ if train||~exist(model_loc,'file'),
         'state_labels',          {states},               ...
         'state_keys',            {keys});
 
-    [smat] = max(stc2mat(Trial.stc,lrfet,states),[],2);
-    ind = any(smat,2);
+    if other_state, 
+        ind = nniz(lrfet);
+        smat(ind) = smat(ind)+1;
+        if sum(smat(ind)==1)>0,
+            Model_Information.state_labels =  {'other', Model_Information.state_labels{:}};
+            Model_Information.state_keys   =  {'o'    , Model_Information.state_keys{:}};
+        end
+    else,
+        ind = any(smat,2);
+    end
     B = mnrfit(lrfet(ind,:),smat(ind),'model','nominal');
     save(model_loc,'B','Model_Information');
     return
