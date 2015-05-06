@@ -50,7 +50,7 @@ if train||~exist(model_loc,'file'),
 
     if other_state, 
         ind = nniz(lrfet);
-        smat(ind) = smat(ind)+1;
+        smat(ind) = smat(ind)+1;%numel(states);
         if sum(smat(ind)==1)>0,
             Model_Information.state_labels =  {'other', Model_Information.state_labels{:}};
             Model_Information.state_keys   =  {'o'    , Model_Information.state_keys{:}};
