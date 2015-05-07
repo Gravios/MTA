@@ -50,7 +50,8 @@ if train||~exist(model_loc,'file'),
         'state_keys',            {keys});
 
     if other_state, 
-        ind = nniz(lrfet);
+        ind = resample(Trial.stc{'a'}.cast('TimeSeries'),lrfet);
+        ind = logical(ind.data);
         smat(smat==0) = numel(states)+1;
         if sum(smat(ind)==1)>0,
             Model_Information.state_labels =  [Model_Information.state_labels{:}, {'other'}];

@@ -387,7 +387,7 @@ classdef MTAData < hgsetget
                           case 'absolute' % Reserved for future versions
                                           %data = [0;data];
                         end
-                        
+                        %Data.data = logical(data);                        
                         Data.data = data;
                 end
             end            

@@ -18,7 +18,7 @@ model_names = {};
 sws = '';
 for i = 1:numel(states),
     model_names(end+1) = {[Trial.filebase,'-','pop_lgr-' states{i}]};%mfilename]};
-    bhv_lgr(Trial,train,[states(i),Trial.stc{['a' sws]}.label],fet,model_names{end},false,false);
+    bhv_lgr(Trial,train,[states(i),Trial.stc{['a-' states{i} sws]}.label],fet,model_names{end},false,false);
 end
 
 

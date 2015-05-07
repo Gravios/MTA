@@ -12,7 +12,8 @@ keys = {};
 labels = {};
 g = 1;
 for i = Stc.gsi(states),
-    tper = resample(Stc.states{i}.cast('TimeSeries'),Data);
+    tper = resample(Stc.states{i},Data);
+    tper.cast('TimeSeries');
     smat(tper==1,g) = g;
     if nargout>1,
         keys(g) = {tper.key};
