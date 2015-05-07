@@ -31,6 +31,7 @@ model_path = fileparts(mfilename('fullpath'));
 model_loc = fullfile(model_path,model_name);
 
 lrfet = fet_lgr(Trial);
+lrfet.resample(30);
 nind = nniz(lrfet);
 
 %% Get or Train LGR Model
@@ -50,16 +51,16 @@ if train||~exist(model_loc,'file'),
 
     if other_state, 
         ind = nniz(lrfet);
-        smat(ind) = smat(ind)+1;%numel(states);
+        smat(smat==0) = numel(states)+1;
         if sum(smat(ind)==1)>0,
-            Model_Information.state_labels =  {'other', Model_Information.state_labels{:}};
-            Model_Information.state_keys   =  {'o'    , Model_Information.state_keys{:}};
+            Model_Information.state_labels =  [Model_Information.state_labels{:}, {'other'}];
+            Model_Information.state_keys   =  [Model_Information.state_keys{:},       {'o'}];
         end
     else,
         ind = any(smat,2);
     end
-    B = mnrfit(lrfet(ind,:),smat(ind),'model','nominal');
-    save(model_loc,'B','Model_Information');
+    [B,dev,stats] = mnrfit(lrfet(ind,:),smat(ind),'model','nominal');
+    save(model_loc,'B','dev','stats','Model_Information');
     return
 else
     load(model_loc);
@@ -73,8 +74,11 @@ Stc.states = {};
 
 
 % Compute scores for the logistic regression
+% You know this is irresposible code... don't give me that look
 d_state = mnrval(B,lrfet.data);
-
+d_state = MTADxyz('data',d_state,'sampleRate',lrfet.sampleRate);
+d_state.resample(Trial.load('xyz'));
+d_state = d_state.data
 
 % Separate the winners from the losers
 [~,maxState] = max(d_state,[],2);

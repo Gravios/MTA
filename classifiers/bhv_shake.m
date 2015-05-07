@@ -27,26 +27,35 @@ xyz.addMarker('fbcom',[.7,1,.7],{{'spine_lower','spine_middle',[0,0,1]}},ButFilt
 ang = create(MTADang,Trial,xyz);
 
 
-
 fet = xyz.copy;
+fet.clear;
 fet.ext = 'fet';
 fet.label = 'shake';
 fet.key = 'k';
 fet.data = [diff(circ_dist(circ_dist(ang(:,3,11,1),ang(:,3,4,1)),pi).*double(ix)),...
-            diff(circ_dist(circ_dist(ang(:,3,5,1),ang(:,3,10,1)),0).*double(ix)),...
-            diff(circ_dist(circ_dist(ang(:,1,11,1),ang(:,2,4,1)),0).*double(ix))];;
-
+             diff(circ_dist(circ_dist(ang(:,3,5,1),ang(:,3,10,1)),0).*double(ix)),...
+             diff(circ_dist(circ_dist(ang(:,1,11,1),ang(:,2,4,1)),0).*double(ix))];
+% fvec = bsxfun(@minus,xyz(:,[1,3],:),xyz(:,2,:));
+% fet.data = cat(2,fet.data,abs(acos(dot(fvec(:,1,:),fvec(:,1,:),3)./prod(sqrt(sum(fvec.^2,3)),2))));
+% fvec = bsxfun(@minus,xyz(:,[4,2],:),xyz(:,3,:));
+% fet.data = cat(2,fet.data,abs(acos(dot(fvec(:,1,:),fvec(:,1,:),3)./prod(sqrt(sum(fvec.^2,3)),2))));
+% fvec = bsxfun(@minus,xyz(:,[5,3],:),xyz(:,4,:));
+% fet.data = cat(2,fet.data,abs(acos(dot(fvec(:,1,:),fvec(:,1,:),3)./prod(sqrt(sum(fvec.^2,3)),2))));
+% fet.data = diff(fet.data);
+        
+        
 sparm = struct('nFFT',2^7,...
-               'Fs',ang.sampleRate,...
+               'Fs',fet.sampleRate,...
                'WinLength',2^5,...
                'nOverlap',2^5*.875,...
-               'FreqRange',[10,25]);
+               'FreqRange',[1,55]);
 [ys,fs,ts] = fet_spec(Trial,fet,...
                       'mode','mtchglong',...
                       'wsig',true,...
                       'defspec',sparm,...
                       'overwrite',false);
 
+find = 15<fs&fs<35;
 % Load Normalization parameters
 try,load([mfilename('fullpath') '-MTAC_bhv_model_' fet.label '_' fet.key '.mat']),end
 if ~exist('ysMean','var')||overwrite;

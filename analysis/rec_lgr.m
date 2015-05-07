@@ -7,23 +7,18 @@
 
 %% Model Info
 train = true;
-%states = {'walk','rear'};
 states = {'walk','rear','sit','turn','shake','groom'};
 fet = 'fet_lgr';
-s.name = 'jg05-20120317';
-s.trialName = 'all';
-s.mazeName = 'cof';
-
+Trial = MTATrial('jg05-20120317','all','cof');    
 model_names = {};
-sWinner = 'r';
-states =  states(~cellfun(@isempty,regexp(states,Trial.stc{sWinner}.label)));
 
+%sWinner = 'r';
+%states =  states(~cellfun(@isempty,regexp(states,Trial.stc{sWinner}.label)));
+
+sws = '';
 for i = 1:numel(states),
-%for s = Sessions
-    Trial = MTATrial(s.name,s.trialName,s.mazeName);    
     model_names(end+1) = {[Trial.filebase,'-','pop_lgr-' states{i}]};%mfilename]};
-    bhv_lgr(Trial,train,[states(i),Trial.stc{['a' sws]}.label],fet,model_names{end},false,true);
-%end
+    bhv_lgr(Trial,train,[states(i),Trial.stc{['a' sws]}.label],fet,model_names{end},false,false);
 end
 
 
@@ -45,4 +40,5 @@ for i = 1:ns,
     scatter(1:13,pB(:,2,i),30,c(i,:));
 end
 
-figure,imagesc(sq(pB(:,2,:)))
+
+

@@ -116,6 +116,7 @@ classdef MTAData < hgsetget
             Data.ext = ext;
             Data.name = name;
             Data.label = label;
+            Data.key = key;
             Data.sampleRate = sampleRate;
             Data.sync = syncPeriods;
             Data.origin = syncOrigin;
