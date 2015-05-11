@@ -23,16 +23,26 @@ MODEL_TYPE = 'LGR';
     {false,Trial.stc.list_state_attrib('label'),'fet_lgr',...
     ['MTAC_' Trial.stc.mode '_' MODEL_TYPE],true,false});
 
+
 keys = subsref(Trial.stc.list_state_attrib('key'),...
                substruct('()',{Trial.stc.gsi(states)}));
 
-model_name = [model_name '-' fet '-model.mat'];
+% LOAD fet if fet is a feature name
+if ischar(fet),
+    lrfet = feval(fet,Trial);
+else
+    lrfet = fet;    
+end
+
+% RESAMPLE to conserve memory during model fitting
+% lrfet.resample(30); for now leave it to the input SR
+nind = nniz(lrfet);
+
+model_name = [model_name '-' fet.label '-model.mat'];
 model_path = fileparts(mfilename('fullpath'));
 model_loc = fullfile(model_path,model_name);
 
-lrfet = fet_lgr(Trial);
-lrfet.resample(30);
-nind = nniz(lrfet);
+
 
 %% Get or Train LGR Model
 if train||~exist(model_loc,'file'),
@@ -79,7 +89,7 @@ Stc.states = {};
 d_state = mnrval(B,lrfet.data);
 d_state = MTADxyz('data',d_state,'sampleRate',lrfet.sampleRate);
 d_state.resample(Trial.load('xyz'));
-d_state = d_state.data
+d_state = d_state.data;
 
 % Separate the winners from the losers
 [~,maxState] = max(d_state,[],2);

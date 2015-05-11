@@ -80,7 +80,9 @@ end
 % upsample to xyz sample rate
 ys.resample(xyz);
 data = nunity(prod(ys.data,2),[],sMean,sStd);
-
+mask = Trial.stc{'a',xyz.sampleRate}.cast('TimeSeries');
+mask.resample(xyz);
+data = data.*mask.data;
 if overwrite,
     save([mfilename('fullpath'),...
         '-MTAC_bhv_model_' fet.label '_' fet.key '.mat'],...

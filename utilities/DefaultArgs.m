@@ -164,7 +164,7 @@ if numel(FuncPath)>1,
         if ~isempty(MatchedArgsInd)        
             mai = MatchedArgsInd;
             while ~isempty(mai)
-                ArgInd = find(~cellfun(@isempty,regexpi(ParsedArgs,Args(mai(1)))));
+                ArgInd = find(~cellfun(@isempty,regexpi(ParsedArgs,{['^',Args{mai(1)},'$']})));
                 NewMAI(numel(NewMAI)+1) = ArgInd;
                 MatchedArgs{ArgInd} = Args{mai(1)+1};
                 mai(1) = [];
@@ -209,7 +209,7 @@ else
     end
     nDefArgs = length(DefArgs);
     nInArgs = length(Args);
-    if (nargout~=nDefArgs) ...
+    if (nargout~=nDefArgs), ...
                  error('number of defaults is different from assigned'); 
     end
     

@@ -423,6 +423,10 @@ classdef MTAData < hgsetget
                     interpMethod = 'nearest';
                 end
                 
+                if newSampleRate<Data.sampleRate,
+                    Data.filter('ButFilter',3,newSampleRate/2.0000001,'low');
+                end
+                
                 if isMTA
                     ntvec = (1:DataObj.size(1))./newSampleRate;
                     xtvec = (1:Data.size(1))./Data.sampleRate;
@@ -529,22 +533,30 @@ classdef MTAData < hgsetget
             end
         end
         
-        function Data = filter(Data,varargin)
+        function Data = filter(Data,mode,varargin)
         % Data = filter(Data,varargin)
         % Data.data = reshape(Filter0(win,Data.data),Data.size);
-        % 
+        %
         % TODO Adding ButFilter
-            [mode,freq,type] = DefaultArgs(varargin,{'ButFilter',[4],'low'});
-            switch Data.type
-              
-              case 'TimeSeries'
-                    [Window] = DefaultArgs(varargin,{gausswin(9)./sum(gausswin(9))});
-                    zind = Data.data==0;
-                    Data.data = reshape(Filter0(Window,Data.data),Data.size);
-                    Data.data(zind) = 0;
-              otherwise
-                    return
-            end
+        switch Data.type
+            case 'TimeSeries'
+                switch mode
+                    case 'gauss'
+                        [Window] = DefaultArgs(varargin,{.05});
+                        Window = round(Window.*Data.sampleRate);
+                        Window = gausswin(Window)./sum(gausswin(Window));
+                        zind = nniz(Data);
+                        Data.data = reshape(Filter0(Window,Data.data),Data.size);
+                        Data.data(zind) = 0;
+                    case 'ButFilter'
+                        [order,freq,flag] = DefaultArgs(varargin,{3,4,'low'});
+                        freq = freq/(Data.sampleRate/2);
+                        Data.data = ButFilter(Data.data,order,freq,flag);
+                    otherwise
+                end
+            otherwise
+                return
+        end
         end
 
         function out = ne(a,b)

@@ -1,9 +1,18 @@
-function [sper] = fet_shake(Trial)
+function [sfet] = fet_shake(Trial,varargin)
+% function [sper] = bhv_shake(Trial,varargin)
+% [mode,thresh,overwrite] = DefaultArgs(varargin,{'per',5,false},false);
+% 
+%  varargin:
+%
+%    mode:    string  - def('per'):{mta,raw,per}, output type
+%
+%    thresh:  numeric - def(5), Threshold for classification
+%
+%    overwrite: logical - def(false), overwrite the normalization
+%                         coeficients
+%
 
-Trial = MTATrial('jg05-20120317');
-Trial = MTATrial('Ed05-20140529','all','ont');
-Trial = MTATrial('Ed01-20140709');
-Trial = MTATrial('Ed03-20140625');
+[mode,thresh,overwrite] = DefaultArgs(varargin,{'per',5,false},false);
 
 
 xyz = Trial.load('xyz');
@@ -17,87 +26,99 @@ xyz.addMarker('fhcom',[.7,1,.7],{{'head_back','head_front',[0,0,1]}},ButFilter(h
 xyz.addMarker('fbcom',[.7,1,.7],{{'spine_lower','spine_middle',[0,0,1]}},ButFilter(bcom,3,[2]./(Trial.xyz.sampleRate/2),'low'));
 ang = create(MTADang,Trial,xyz);
 
-sparm = struct('nFFT',2^7,...
-               'Fs',ang.sampleRate,...
-               'WinLength',2^5,...
-               'nOverlap',2^5*.875,...
-               'FreqRange',[5,50]);
 
 fet = xyz.copy;
+fet.clear;
 fet.ext = 'fet';
-fet.updateFileName;
+fet.label = 'shake';
+fet.key = 'k';
 fet.data = [diff(circ_dist(circ_dist(ang(:,3,11,1),ang(:,3,4,1)),pi).*double(ix)),...
-            diff(circ_dist(circ_dist(ang(:,3,5,1),ang(:,3,10,1)),0).*double(ix)),...
-            diff(circ_dist(circ_dist(ang(:,1,11,1),ang(:,2,4,1)),0).*double(ix))];;
+             diff(circ_dist(circ_dist(ang(:,3,5,1),ang(:,3,10,1)),0).*double(ix)),...
+             diff(circ_dist(circ_dist(ang(:,1,11,1),ang(:,2,4,1)),0).*double(ix))];
+% fvec = bsxfun(@minus,xyz(:,[1,3],:),xyz(:,2,:));
+% fet.data = cat(2,fet.data,abs(acos(dot(fvec(:,1,:),fvec(:,1,:),3)./prod(sqrt(sum(fvec.^2,3)),2))));
+% fvec = bsxfun(@minus,xyz(:,[4,2],:),xyz(:,3,:));
+% fet.data = cat(2,fet.data,abs(acos(dot(fvec(:,1,:),fvec(:,1,:),3)./prod(sqrt(sum(fvec.^2,3)),2))));
+% fvec = bsxfun(@minus,xyz(:,[5,3],:),xyz(:,4,:));
+% fet.data = cat(2,fet.data,abs(acos(dot(fvec(:,1,:),fvec(:,1,:),3)./prod(sqrt(sum(fvec.^2,3)),2))));
+% fet.data = diff(fet.data);
+        
+        
+sparm = struct('nFFT',2^7,...
+               'Fs',fet.sampleRate,...
+               'WinLength',2^5,...
+               'nOverlap',2^5*.875,...
+               'FreqRange',[15,35]);
 [ys,fs,ts] = fet_spec(Trial,fet,...
                       'mode','mtchglong',...
                       'wsig',true,...
                       'defspec',sparm,...
                       'overwrite',false);
 
-% load normalization vars
-load('MTAFet_model_shake_k.mat'
-ysMean = [];
-ysStd = [];
+%find = 15<fs&fs<35;
+% Load Normalization parameters
+try,load([mfilename('fullpath') '-MTAC_bhv_model_' fet.label '_' fet.key '.mat']),end
+if ~exist('ysMean','var')||overwrite;
+    ysMean = [];
+    ysStd = [];
+end
 
-find = fs<25&fs>10;
-[ys.data,ysMmean,ysStd] = nunity(cat(2,median(log10(ys(:,find,1,1)),2),...
-                                       median(log10(ys(:,find,2,2)),2),...
-                                       median(log10(ys(:,find,3,3)),2)),...
+%FIX THIS you bald monkey!!
+[ys.data,ysMean,ysStd] = nunity(cat(2,median(log10(ys(:,:,1,1)),2),...
+                                       median(log10(ys(:,:,2,2)),2),...
+                                       median(log10(ys(:,:,3,3)),2)),...
                                  [],ysMean,ysStd);
-        
-[sfet,sMean,sStd] = nunity(prod(ys.data,2));
-
-
-% fet.data = diff(circ_dist(circ_dist(ang(:,3,11,1),ang(:,3,4,1)),pi).*double(ix));
-% [ys,fs,ts] = fet_spec(Trial,fet,'mtchglong',true,'defspec',sparm);
-% 
-% fet.data = diff(circ_dist(circ_dist(ang(:,3,5,1),ang(:,3,10,1)),0).*double(ix));
-% [rs,fs,ts] = fet_spec(Trial,fet,'mtchglong',true,'defspec',sparm);
-% 
-% fet.data = diff(circ_dist(circ_dist(ang(:,1,11,1),ang(:,2,4,1)),0).*double(ix));
-% [gs,fs,ts] = fet_spec(Trial,fet,'mtchglong',true,'defspec',sparm);
-% 
-% figure,imagesc(ts,fs,log10(gs.data)'),axis xy
-% Lines(Trial.stc{'k',1}(:),[],'m');
 
 
 
-hfig = figure(11);clf,hold on,
-set(hfig,'PaperType','A3')
-set(hfig,'paperposition',[0,0,10,5])
-plot(ts,nunity(log10(median(ys(:,fs<20&fs>10),2)))),
-plot(ts,nunity(log10(median(rs(:,fs<20&fs>10),2))),'r'),
-plot(ts,nunity(log10(median(gs(:,fs<20&fs>10),2))),'c'),
-Lines(Trial.stc{'k',1}(:),[],'m');
-Lines(Trial.stc{'r',1}(:),[],'r');
-Lines([],-5.5,'b');
-Lines([],-6.5,'r');
-title([Trial.filebase ': Shake Feature k_1 and k_2'])
-xlabel('Time (s)')
-legend('k_1','k_2')
-saveas(hfig,fullfile('/storage/gravio/figures/BHV_detection/Shake',...
-                     [Trial.filebase '-Fet-k_1_2.eps']),'epsc');
 
-ind = Trial.stc{'a'};
-[~,Am,As] = nunity(log10([median(ys(ind,fs<20&fs>10),2),...
-                    median(rs(ind,fs<20&fs>10),2)]));
+mask = resample(cast(Trial.stc{'a'}+[-4,4],'TimeSeries'),ys);
+ys.data = clip(prod(ys.data,2),-200,200).*mask.data;
 
-ind = Trial.stc{'a'};
-figure
-hist2(nunity(log10([median(ys(ind,fs<20&fs>10),2),...
-                    median(rs(ind,fs<20&fs>10),2)]),[],Am,As),...
-      linspace(-3,6,100),...
-      linspace(-3,6,100))
+                             
+% Set normalization parameters
+if ~exist('sMean','var')||overwrite;
+    sMean = [];
+    sStd = [];
+else
+    [~,sMean,sStd] = nunity(ys.data,[],sMean,sStd);
+end
 
-ind = Trial.stc{'a'};
-figure,plot(nunity(log10([median(ys(ind,fs<20&fs>10),2),...
-                    median(rs(ind,fs<20&fs>10),2)]),[],Am,As))
+% upsample to xyz sample rate
+ys.resample(xyz);
+data = nunity(ys.data,[],sMean,sStd);
 
-hist2(nunity(log10([median(ys(ind,fs<20&fs>10),2),...
-                    median(rs(ind,fs<20&fs>10),2)]),[],Am,As),...
-      linspace(-3,6,100),...
-      linspace(-3,6,100))
+if overwrite,
+    save([mfilename('fullpath'),...
+        '-MTAC_bhv_model_' fet.label '_' fet.key '.mat'],...
+        'ysMean','ysStd','sMean','sStd'),
+end
 
-                
+switch mode
+    case 'mta'
+        sfet = MTADfet('path',       Trial.spath,...
+                       'filename',   Trial.filebase,...
+                       'data',       data,...
+                       'sampleRate', xyz.sampleRate,...
+                       'syncPeriods',Trial.sync.copy,...
+                       'syncOrigin', Trial.sync.data(1),...
+                       'label',      'shake',...
+                       'key',        'k');
+                       
+    case 'raw'
+        sfet = data;
+    case 'per'
+        sfet = MTADepoch('path',        Trial.spath,...
+                         'filename',    Trial.filebase,...
+                         'data',        ThreshCross(data,thresh,round(.1*xyz.sampleRate)),...
+                         'sampleRate',  xyz.sampleRate,...
+                         'syncPeriods', Trial.sync.copy,...
+                         'syncOrigin',  Trial.sync.data(1),...
+                         'label',       'shake',...
+                         'key',         'k');
+        assert(~isempty(Trial.stc.gsi('rear')),'MTA:classifiers:bhv_shake:REAR_PERIODS_ABSENT');
+        rper = Trial.stc{'rear'};
+        rper.resample(sfet);
+        sfet = sfet-rper.data;        
+end
 
