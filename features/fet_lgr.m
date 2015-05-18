@@ -41,24 +41,24 @@ bs = bs(1:end-(size(bs,1)-dsx.size(1)));
 fet = MTADfet('data',[vl(:,'spine_lower')  ,...                         1. [walk] Low pass filtered speed of the lower body
                       vl(:,'spine_middle') ,...                         2. [walk] Low pass filtered speed of the mid body
                       vl(:,'head_front')   ,...                         3. [walk] Low pass filtered speed of the head
-                      dsv,...                                           13. smoothed angular speed
-                      bs,...                                            14. shake feature
-                      dsx(:,'spine_lower',3),...                         4. Height of the lower body
-                      dsx(:,'head_front',3)-dsx(:,'spine_lower',3),...   5. Difference in height between head and body
-                      dsa(:,'spine_lower','pelvis_root',2) ,...          6. Pitch of the lower back
-                      dsa(:,'spine_middle','spine_upper',2),...          7. Pitch of the upper spine
+                      dsv,...                                           4. smoothed angular speed
+                      bs,...                                            5. shake feature
+                      dsx(:,'spine_lower',3),...                        6. Height of the lower body
+                      dsx(:,'head_front',3)-dsx(:,'spine_lower',3),...  7. Difference in height between head and body
+                      dsa(:,'spine_lower','pelvis_root',2) ,...         8. Pitch of the lower back
+                      dsa(:,'spine_middle','spine_upper',2),...         9. Pitch of the upper spine
                       ... differential YAW of Joints
-                      abs(circ_dist(dsa(:,'spine_lower','pelvis_root',1),dsa(:,'spine_lower','spine_middle',1))),... 8. [groom] difference in direction of lower back and body
-                      abs(circ_dist(dsa(:,'spine_lower','pelvis_root',1),dsa(:,'spine_lower','spine_upper',1))),... 9. [turn]  difference in direction of lower and upper body
-                      abs(circ_dist(dsa(:,'pelvis_root','spine_middle',1),dsa(:,'pelvis_root','spine_upper',1))),...
-                      abs(circ_dist(dsa(:,'spine_middle','spine_upper',1),dsa(:,'spine_middle','head_back',1))),...
-                      abs(circ_dist(dsa(:,'spine_upper','head_back',1),dsa(:,'spine_upper','head_front',1))),...                      
+                      abs(circ_dist(dsa(:,'spine_lower','pelvis_root',1),dsa(:,'spine_lower','spine_middle',1))),... 10. [groom] difference in direction of lower back and body
+                      abs(circ_dist(dsa(:,'spine_lower','pelvis_root',1),dsa(:,'spine_lower','spine_upper',1))),...  11. [turn]  difference in direction of lower and upper body
+                      abs(circ_dist(dsa(:,'pelvis_root','spine_middle',1),dsa(:,'pelvis_root','spine_upper',1))),... 12.
+                      abs(circ_dist(dsa(:,'spine_middle','spine_upper',1),dsa(:,'spine_middle','head_back',1))),...  13.
+                      abs(circ_dist(dsa(:,'spine_upper','head_back',1),dsa(:,'spine_upper','head_front',1))),...     14.               
                       ... differential PITCH of Joints
-                      abs(circ_dist(dsa(:,'spine_lower','pelvis_root',2),dsa(:,'spine_lower','spine_middle',2))),... 
-                      abs(circ_dist(dsa(:,'spine_lower','pelvis_root',2),dsa(:,'spine_lower','spine_upper',2))),... 
-                      abs(circ_dist(dsa(:,'pelvis_root','spine_middle',2),dsa(:,'pelvis_root','spine_upper',2))),...
-                      abs(circ_dist(dsa(:,'spine_middle','spine_upper',2),dsa(:,'spine_middle','head_back',2))),...
-                      abs(circ_dist(dsa(:,'spine_upper','head_back',2),dsa(:,'spine_upper','head_front',2)))],...                      
+                      abs(circ_dist(dsa(:,'spine_lower','pelvis_root',2),dsa(:,'spine_lower','spine_middle',2))),... 15.
+                      abs(circ_dist(dsa(:,'spine_lower','pelvis_root',2),dsa(:,'spine_lower','spine_upper',2))),...  16.
+                      abs(circ_dist(dsa(:,'pelvis_root','spine_middle',2),dsa(:,'pelvis_root','spine_upper',2))),... 17.
+                      abs(circ_dist(dsa(:,'spine_middle','spine_upper',2),dsa(:,'spine_middle','head_back',2))),...  18.
+                      abs(circ_dist(dsa(:,'spine_upper','head_back',2),dsa(:,'spine_upper','head_front',2)))],...    19.               
               'sampleRate', dsx.sampleRate,...
               'syncPeriods',Trial.sync.copy,...
               'syncOrigin', Trial.sync.data(1),...

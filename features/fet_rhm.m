@@ -29,7 +29,7 @@ if isa(sampleRate,'MTAData'),
 elseif sampleRate > 120, 
     xyz.resample(120); 
 end
-xyz.filter(gausswin(5)./sum(gausswin(5)));
+xyz.filter('ButFilter',3,55);
 
 
 ang = create(MTADang,Trial,xyz);

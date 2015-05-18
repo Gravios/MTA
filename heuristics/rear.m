@@ -43,7 +43,7 @@ switch method
         %% Can't remember wat COM stands for
         [rearThresh,minimum_interval,display] = DefaultArgs(varargin,{50,64,0});
         rear_feature = MTADxyz('data',rear_feature,'sampleRate',xyz.sampleRate);
-        rearPeriods = ThreshCross(rear_feature.filter(gtwin(1,xyz.sampleRate))>rearThresh,...
+        rearPeriods = ThreshCross(rear_feature.filter('ButFilter',3,1)>rearThresh,...
             0.5,minimum_interval);
         
     case 'com0415'

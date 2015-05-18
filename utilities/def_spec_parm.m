@@ -12,7 +12,7 @@ function parspec = def_spec_parm(fet,varargin)
 %[mode] = DefaultArgs(varargin,{'high'},true);
 
 parspec = empty_spec;
-if any(~cellfun(@isempty,regexp(fet.ext,{'ang','pos'})))
+if any(~cellfun(@isempty,regexp(fet.ext,{'ang','pos','fet'}))),
 
     
     parspec = struct('nFFT',2^9,...
@@ -25,7 +25,7 @@ if any(~cellfun(@isempty,regexp(fet.ext,{'ang','pos'})))
                      'FreqRange',[1,50]);
 
 
-elseif strcmpi('lfp',fet.ext)
+elseif any(~cellfun(@isempty,regexp(fet.ext,{'lfp'}))),
 
 % $$$     switch mode
 % $$$       case 'high'

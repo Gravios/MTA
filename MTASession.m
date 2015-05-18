@@ -264,7 +264,7 @@ classdef MTASession < hgsetget
                 Data.updatePath(Session.spath);
             end
             
-            if exist(Data.fpath,'file'),
+            if exist(Data.fpath,'file')&&~isempty(Data.filename),
                 Data.load;
             end
         end
@@ -472,7 +472,7 @@ classdef MTASession < hgsetget
             
             if xyz.isempty,
                 xyz.load(Session);
-                xyz.filter(gtwin(.1,xyz.sampleRate));
+                xyz.filter('gauss',gtwin(.1,xyz.sampleRate));
             end
             
             diffMat = markerDiffMatrix(xyz);

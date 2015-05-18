@@ -168,11 +168,11 @@ Session.xyz.save;
 
 Session.ang = MTADang(Session.spath,Session.filebase,[],viconSampleRate,...
                       Session.xyz.sync,Session.xyz.origin,Session.model);
-xyz = Session.xyz.copy;
-xyz.filter(gtwin(0.1,viconSampleRate));
-Session.ang.create(Session,xyz);
-Session.ang.data(~nniz(Session.xyz),:,:,:) = 0;
-Session.ang.save;
+%xyz = Session.xyz.copy;
+%xyz.filter(gtwin(0.1,viconSampleRate));
+%Session.ang.create(Session,xyz);
+%Session.ang.data(~nniz(Session.xyz),:,:,:) = 0;
+%Session.ang.save;
 
 Session.ufr = MTADufr(Session.spath,Session.filebase);
 

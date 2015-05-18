@@ -33,9 +33,9 @@ sempty = isempty(Stc{'p'})||isempty(Stc{'c'});
 
 sempty = isempty(Stc{'h'})||isempty(Stc{'l'});
 if sempty||overwrite,
-    [rhm,fs,ts] = fet_rhm(Trial,[],'wcsd');
-    xyz = Trial.xyz.copy;xyz.load(Trial);xyz.filter(gtwin(.25,xyz.sampleRate));
-    ang = Trial.ang.copy;ang.create(Trial,xyz);
+    [rhm,fs,ts] = fet_rhm(Trial,[],'mtcsdglong',true);
+    xyz = Trial.xyz.copy;xyz.load(Trial);xyz.filter('ButFilter',3,4);
+    ang = create(MTADang,Trial,xyz);
 
     nrhm = rhm.copy;
     nrhm.data = log10(nrhm.data);

@@ -440,45 +440,6 @@ classdef MTAData < hgsetget
                 end
                 if Data.size(1)==1; Data.data = Data.data'; end
 
-% $$$                 if newSampleRate<Data.sampleRate,
-% $$$                     if isMTA
-% $$$                         assert(~DataObj.isempty,'DataObj must be loaded for resampling');
-% $$$                         % Assume the two objects have their starting
-% $$$                         % points synchronized
-% $$$                         % Get the tail difference in seconds
-% $$$                         dosize = DataObj.size(1)./newSampleRate;
-% $$$                         dsize = Data.size(1)./Data.sampleRate;                        
-% $$$                         dsdiff = dsize-dosize;
-% $$$                         
-% $$$                         % Antialias filter - lowpass ButFilter
-% $$$                         if newSampleRate<Data.sampleRate&~isa(Data,'MTADepoch'),
-% $$$                             zind = Data.data==0;
-% $$$                             Data.data = ButFilter(Data.data,...
-% $$$                                                   3,...
-% $$$                                                   [newSampleRate/2]/(Data.sampleRate/2),...
-% $$$                                                   'low');
-% $$$                             Data.data(zind)=0;
-% $$$                         end                        
-% $$$ 
-% $$$                         uind = round(linspace(ceil(Data.sampleRate/newSampleRate),...
-% $$$                                               Data.size(1)-round(dsdiff*Data.sampleRate),...
-% $$$                                               DataObj.size(1)));
-% $$$                         if dsdiff < 0,
-% $$$                             padding = abs(round(dsdiff*Data.sampleRate));
-% $$$                             Data.data = cat(1,Data.data,zeros([padding,Data.size([2,3,4,5])]));
-% $$$                         end
-% $$$                     else
-% $$$                         dsize = round(Data.size(1)./Data.sampleRate.*newSampleRate);
-% $$$                         uind = round(linspace(ceil(Data.sampleRate/newSampleRate),...
-% $$$                                               Data.size(1),...
-% $$$                                               dsize));
-% $$$                     end
-% $$$                     Data.data = Data.data(uind,:,:,:,:);
-% $$$                     Data.sampleRate = newSampleRate;
-% $$$                 else
-                    %                end
-                
-
                   
               case 'TimePeriods'
                 % Needs some more corrections for resampling
@@ -543,15 +504,27 @@ classdef MTAData < hgsetget
                 switch mode
                     case 'gauss'
                         [Window] = DefaultArgs(varargin,{.05});
-                        Window = round(Window.*Data.sampleRate);
-                        Window = gausswin(Window)./sum(gausswin(Window));
+                        if numel(Window)==1,
+                            Window = round(Window.*Data.sampleRate);
+                            Window = Window+double(mod(Window,2)==0);
+                            Window = gausswin(Window)./sum(gausswin(Window));
+                        end
                         zind = nniz(Data);
                         Data.data = reshape(Filter0(Window,Data.data),Data.size);
                         Data.data(zind) = 0;
                     case 'ButFilter'
                         [order,freq,flag] = DefaultArgs(varargin,{3,4,'low'});
                         freq = freq/(Data.sampleRate/2);
+                        nind = ~nniz(Data);
+                        nd = [];
+                        if sum(nind)>0,
+                            nd = Data.data(nind,:,:,:,:);
+                            Data.data(nind,:,:,:,:) = 0;
+                        end
                         Data.data = ButFilter(Data.data,order,freq,flag);
+                        if ~isempty(nd),
+                            Data.data(nind,:,:,:,:) = nd;
+                        end
                     otherwise
                 end
             otherwise

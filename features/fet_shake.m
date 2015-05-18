@@ -87,7 +87,7 @@ end
 % upsample to xyz sample rate
 ys.resample(xyz);
 data = nunity(ys.data,[],sMean,sStd);
-
+data(isnan(data)) = 0;
 if overwrite,
     save([mfilename('fullpath'),...
         '-MTAC_bhv_model_' fet.label '_' fet.key '.mat'],...

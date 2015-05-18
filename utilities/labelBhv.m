@@ -18,12 +18,10 @@ xyzSampleRate = Trial.xyz.sampleRate;
 Stc.states = {};
 txyz = Trial.xyz.copy;
 if txyz.isempty,txyz.load(Trial); end    
-tang = Trial.ang.copy;
-if tang.isempty,tang.create(Trial,txyz); end    
 if txyz.sampleRate>120,txyz.resample(120);end
-if tang.sampleRate>120,tang.resample(120);end
+tang = create(MTADang,Trial,txyz);
 
-txyz.filter;
+txyz.filter('gauss');
 xyzlen = size(txyz,1);
 
 trajSampleRate = (txyz.sampleRate/winlen)*nOverlap;

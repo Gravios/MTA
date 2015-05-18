@@ -83,7 +83,7 @@ rmarkers = {'spine_lower','pelvis_root', 'spine_middle', 'spine_upper',...
 if sum(ismember(Trial.model.ml,rmarkers))==numel(rmarkers)&&autolabel
     Trial.stc.updateMode('auto_wbhr');
     Trial = labelBhv(Trial,Trial.stc);
-    Trial = labelAuxBhv(Trial,Trial.stc);
+    %Trial = labelAuxBhv(Trial,Trial.stc);
     Trial.save;
 end
 

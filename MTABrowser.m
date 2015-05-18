@@ -257,6 +257,7 @@ BView(handles,...
 setappdata(handles.DMapp,'load_sessions',true);
 guidata(hObject,handles);
 setappdata(handles.MTABrowserStates,'previousBState',0);
+
 set(handles.BSdataManagement,'Value',1);
 BSdataManagement_Callback(handles.BSdataManagement, eventdata, handles)
 
@@ -395,7 +396,7 @@ if getappdata(handles.DMapp,'load_sessions'),
 
     % Select Valid Sessions
     files = dir(Session.path.data);
-    re = '^[a-zA-Z]{1,2}[0-9]{2}[-][0-9]{8,8}$';% regular expression
+    re = '^[a-zA-Z]{1,2}[0-9]{2}[-][0-9]{8,8}$';% regular expression to match Session naming convention
     sessionList = {files(~cellfun(@isempty,regexp({files.name},re))).name};
     
     
@@ -521,7 +522,6 @@ subjectIndex = get(handles.SubjectList,'Value');
 dateList = getappdata(handles.DMapp,'dateList');
 set(handles.DateList,'String',dateList{subjectIndex});
 DateList_Callback(hObject, eventdata, handles)
-
 function SubjectList_CreateFcn(hObject, eventdata, handles)
 if ispc && isequal(get(hObject,'BackgroundColor'), get(0,'defaultUicontrolBackgroundColor'))
     set(hObject,'BackgroundColor','white');
@@ -555,6 +555,7 @@ if mazeIndex,
 %     else
 %         set(handles.TrialList,'String','');
 %     end
+    TrialList_Callback(hObject, eventdata, handles)
 end
 function MazeList_CreateFcn(hObject, eventdata, handles)
 if ispc && isequal(get(hObject,'BackgroundColor'), get(0,'defaultUicontrolBackgroundColor'))
@@ -668,7 +669,7 @@ if hObject ~= getappdata(handles.MTABrowserStates,'previousBState'),
                           'YLim',[Session.maze.visible_volume(2,1) Session.maze.visible_volume(2,2)],...
                           'ZLim',[Session.maze.visible_volume(3,1) Session.maze.visible_volume(3,2)],...
                           'View', [322.5 30],...
-                          'Drawmode','fast',...
+                          'SortMethod','depth',...
                           'NextPlot','add',...
                           'Projection','perspective',...
                           'XMinorGrid','on',...
@@ -683,15 +684,15 @@ if hObject ~= getappdata(handles.MTABrowserStates,'previousBState'),
     end
     MLData.sticks = repmat({0},1,length(Session.xyz.model.Connections));
     for l=1:length(Session.xyz.model.Connections),
-        MLData.sticks{l} =line('Parent',handles.MLxyzView,...
-            'Tag',[Session.xyz.model.Connections{l}.marker1 ':' Session.xyz.model.Connections{l}.marker2],...
-            'XData',[xyzpos(1,markerConnections(l,1),1),xyzpos(1,markerConnections(l,2),1)],...
-            'YData',[xyzpos(1,markerConnections(l,1),2),xyzpos(1,markerConnections(l,2),2)],...
-            'ZData',[xyzpos(1,markerConnections(l,1),3),xyzpos(1,markerConnections(l,2),3)],...
-            'LineWidth', stick_options.width, ...
-            ...%'Color'    , Session.model.Connections{l}.color./255, ...
-            'EraseMode', stick_options.erase,...
-            'Visible','on');
+        MLData.sticks{l} = animatedline;
+        MLData.sticks{l}.Parent = handles.MLxyzView;
+        MLData.sticks{l}.Tag = [Session.xyz.model.Connections{l}.marker1 ':' Session.xyz.model.Connections{l}.marker2];
+        MLData.sticks{l}.addpoints([xyzpos(1,markerConnections(l,1),1),xyzpos(1,markerConnections(l,2),1)],...
+                                   [xyzpos(1,markerConnections(l,1),2),xyzpos(1,markerConnections(l,2),2)],...
+                                   [xyzpos(1,markerConnections(l,1),3),xyzpos(1,markerConnections(l,2),3)]);
+        MLData.sticks{l}.LineWidth =  stick_options.width;
+        %MLData.sticks{l}.Color    , Session.model.Connections{l}.color./255, ...
+        MLData.sticks{l}.Visible = 'on';
         guidata(MLData.sticks{l},handles);
     end
     
@@ -707,17 +708,17 @@ if hObject ~= getappdata(handles.MTABrowserStates,'previousBState'),
     end
     MLData.markers = repmat({0},1,Session.model.N);
     for l=1:Session.xyz.model.N,
-        MLData.markers{l} =line('Parent',handles.MLxyzView, ...
-            'Tag',Session.xyz.model.Markers{l}.name,...
-            'XData',[xyzpos(1,l,1),xyzpos(1,l,1)],...
-            'YData',[xyzpos(1,l,2),xyzpos(1,l,2)],...
-            'ZData',[xyzpos(1,l,3),xyzpos(1,l,3)],...
-            'Marker'         , marker_options.style, ...
-            'MarkerEdgeColor', Session.xyz.model.Markers{l}.color./255, ...
-            'MarkerSize'     , marker_options.size, ...
-            'MarkerFaceColor', Session.xyz.model.Markers{l}.color./255, ...
-            'EraseMode'      , marker_options.erase,...
-            'Visible','on');
+        MLData.markers{l} = animatedline;
+        MLData.markers{l}.Parent = handles.MLxyzView;
+        MLData.markers{l}.Tag = Session.xyz.model.Markers{l}.name;
+        MLData.markers{l}.addpoints([xyzpos(1,l,1),xyzpos(1,l,1)],...
+                                    [xyzpos(1,l,2),xyzpos(1,l,2)],...
+                                    [xyzpos(1,l,3),xyzpos(1,l,3)]);
+        MLData.markers{l}.Marker           = marker_options.style;
+        MLData.markers{l}.MarkerEdgeColor  = Session.xyz.model.Markers{l}.color./255;
+        MLData.markers{l}.MarkerSize       = marker_options.size;
+        MLData.markers{l}.MarkerFaceColor  = Session.xyz.model.Markers{l}.color./255;
+        MLData.markers{l}.Visible          = 'on';
         guidata(MLData.markers{l},handles);
     end
 
@@ -770,15 +771,16 @@ if hObject ~= getappdata(handles.MTABrowserStates,'previousBState'),
 
    
     for l=1:num_of_states,
-        MLData.state_lines{l} =line('Parent', handles.MLstateView,...
-                          'Tag',       labels{l},...
-                          'XData',     1:windowSize,...
-                          'YData',     States{l}.data(1:windowSize),...
-                          'LineWidth', state_line_options.width, ...
-                          'Color'    , f_line_colors(l,:), ...
-                          'EraseMode', state_line_options.erase,...
-                          'LineStyle', state_line_options.line_style,...
-                          'Visible',   'on');
+        MLData.state_lines{l} = animatedline;
+        MLData.state_lines{l}.Parent = handles.MLstateView;
+        MLData.state_lines{l}.Tag    = labels{l};
+        MLData.state_lines{l}.addpoints(1:windowSize,...
+                                        States{l}.data(1:windowSize));
+        MLData.state_lines{l}.LineWidth = state_line_options.width;
+        MLData.state_lines{l}.Color    = f_line_colors(l,:);
+        MLData.state_lines{l}.LineStyle = state_line_options.line_style;
+        MLData.state_lines{l}.Visible =   'on';
+        
         guidata(MLData.state_lines{l},handles);
     end
     
@@ -793,12 +795,14 @@ if hObject ~= getappdata(handles.MTABrowserStates,'previousBState'),
                                                 repmat({')'},1,length(labels))) ,...
                             'YTickMode','manual');
     
-    MLData.state_centerline = line([1,1], [statesRange(1),statesRange(2)],...
-                           'Tag','state_centerline',...
-                           'Color','r',...
-                           'LineStyle','--',...
-                           'LineWidth',1,...
-                           'Parent', handles.MLstateView);
+    MLData.state_centerline = animatedline;
+    MLData.state_centerline.addpoints([1,1], [statesRange(1),statesRange(2)]);
+    MLData.state_centerline.Tag       = 'state_centerline';
+    MLData.state_centerline.Color     = 'r';
+    MLData.state_centerline.LineStyle = '--';
+    MLData.state_centerline.LineWidth = 1;
+    MLData.state_centerline.Parent    =  handles.MLstateView;
+    
     guidata(MLData.state_centerline,handles)
 
     %% Initialize MLauxData
@@ -881,7 +885,7 @@ if hObject ~= getappdata(handles.MTABrowserStates,'previousBState'),
     
     set(handles.MLposition_slider,'Value',1,'Min',1,'Max',MLData.sessionLength-MLData.windowSize, 'SliderStep', [10 100]./MLData.sessionLength);
 
-    setappdata(handles.MLapp,'play_speed',1);
+    setappdata(handles.MLapp,'play_speed',.5);
     setappdata(handles.MLapp,'animation',0);
     setappdata(handles.MLapp,'paused',0);
     setappdata(handles.MTABrowser,'MLData',MLData);
@@ -1075,17 +1079,18 @@ ssl = 1;
 for l=selected_states,
     MLData.States{l}.data(MLData.States{l}.data(:)>0)=MLData.States{l}.data(MLData.States{l}.data(:)>0)./max(MLData.States{l}.data)-1+ssl/2;
     if l>length(MLData.state_lines),
-        MLData.state_lines{l} =line('Parent', handles.MLstateView,...
-            'XData',     1:MLData.windowSize+1,...
-            'YData',     MLData.States{l}.data(MLData.idx:MLData.idx+MLData.windowSize),...
-            'LineWidth', MLData.state_line_options.width, ...
-            'Color'    , f_line_colors(ssl,:), ...
-            'EraseMode', MLData.state_line_options.erase,...
-            'LineStyle', MLData.state_line_options.line_style,...
-            'Visible',   'on');   
+        MLData.state_lines{l} = animatedline;
+        
+        MLData.state_lines{l}.Parent = handles.MLstateView;
+        MLData.state_lines{l}.addpoints(1:MLData.windowSize+1,...
+                                        MLData.States{l}.data(MLData.idx:MLData.idx+MLData.windowSize));
+        MLData.state_lines{l}.LineWidth = MLData.state_line_options.width;
+        MLData.state_lines{l}.Color     = f_line_colors(ssl,:);
+        MLData.state_lines{l}.LineStyle = MLData.state_line_options.line_style;
+        MLData.state_lines{l}.Visible   = 'on';
         guidata(MLData.state_lines{l},handles)
     else
-        set(MLData.state_lines{l},'Visible','on');
+        MLData.state_lines{l}.Visible = 'on';
     end
     ssl = ssl+1;
 end
@@ -1301,19 +1306,26 @@ if ~ischar(filename)||~ischar(filepath),
     return
 else    
     stc = MTAStateCollection;
-    inds = find(ismember(filename,'.'),2,'last')+[1,-1];
-    stc.updateFilename(filename);
-    stc.updateMode(stc.filename(inds(1):inds(2)));
-    stc.updatePath(filepath);
+    filebase = regexp(filename,'(?<=^).*(?=.stc)','match','once');
+    if ~isempty(regexp(fliplr(filename),'^tam\.','once')),
+        mode = fliplr(regexp(fliplr(filename), '((?<=(tam\.)))([^\.])+(?=\.)', 'match','once'));
+    else
+        mode = fliplr(regexp(fliplr(filename), '((?<=^))([^\.])+(?=\.)', 'match','once'));
+    end
     stc.ext = 'stc';
-    %stc.updateFilename(filename);    
+    stc.mode = mode;
+    stc.updatePath(filepath);
+    stc.updateFilename(filebase);    
+    
     stc.updateSync(Session.sync);
     stc.origin = 0;
     for s = 1:MLData.num_of_states,
         state = MLData.States{s}.copy;
         state.data(state.data>0)=1;
         state.cast('TimePeriods');
-        state.data(:,1) = state.data(:,1) + 1;
+        if ~state.isempty,
+            state.data(:,1) = state.data(:,1) + 1;
+        end
         stc.states{s} = state;
     end
     stc.save(1);
@@ -1423,15 +1435,16 @@ for l=selected_features,
                 'XLim',   [-MLData.windowSize,MLData.windowSize],...
                 'YLimMode','auto',...
                 'FontSize',6,...
-                'DrawMode',  'fast');
+                'SortMethod',  'childorder');
             guidata(MLData.feature_display_axes{l},handles);            
             
-            MLData.feature_display_centerlines{l} = line([1,1], ...
-                ylim(MLData.feature_display_axes{l}),...
-                'Color','r',...
-                'LineStyle','--',...
-                'LineWidth',1,...
-                'Parent', MLData.feature_display_axes{l});
+            MLData.feature_display_centerlines{l} = animatedline;
+            MLData.feature_display_centerlines{l}.addpoints([1,1], ...
+                                                            ylim(MLData.feature_display_axes{l}));
+            MLData.feature_display_centerlines{l}.Color     = 'r';
+            MLData.feature_display_centerlines{l}.LineStyle = '--';
+            MLData.feature_display_centerlines{l}.LineWidth = 1;
+            MLData.feature_display_centerlines{l}.Parent    = MLData.feature_display_axes{l};
             guidata(MLData.feature_display_centerlines{l},handles);
             
             MLData.feature_display_slider{l} = uicontrol(MLData.feature_display_panels{l},...
@@ -1460,13 +1473,13 @@ for l=selected_features,
         switch MLData.Features{l}.plot_type,
             case 'line'
                 if size(MLData.Features{l}.feature,2)==1,
-                    MLData.feature_display_handles{l} =line('Parent', MLData.feature_display_axes{l},...
-                        'XData',     1:MLData.windowSize+1,...
-                        'YData',     MLData.Features{l}.feature(MLData.idx:MLData.idx+MLData.windowSize),...
-                        'LineWidth', MLData.state_line_options.width, ...
-                        'EraseMode', MLData.state_line_options.erase,...
-                        'LineStyle', MLData.state_line_options.line_style,...
-                        'Visible',   'on');                                       
+                    MLData.feature_display_handles{l} = animatedline;
+                    MLData.feature_display_handles{l}.Parent = MLData.feature_display_axes{l};
+                    MLData.feature_display_handles{l}.addpoints(1:MLData.windowSize+1,...
+                                                                MLData.Features{l}.feature(MLData.idx:MLData.idx+MLData.windowSize));
+                    MLData.feature_display_handles{l}.LineWidth = MLData.state_line_options.width;
+                    MLData.feature_display_handles{l}.LineStyle = MLData.state_line_options.line_style;
+                    MLData.feature_display_handles{l}.Visible   = 'on';
                     guidata(MLData.feature_display_handles{l},handles);
                 else
                     MLData.feature_display_handles{l} = [];                    
@@ -1477,12 +1490,13 @@ for l=selected_features,
                         guidata(MLData.feature_display_handles{l}(k),handles);
                     end
                     % Very Quick Fix - Don't leave it like this
-                    MLData.feature_display_centerlines{l} = line([1,1], ...
-                        ylim(MLData.feature_display_axes{l}),...
-                        'Color','r',...
-                        'LineStyle','--',...
-                        'LineWidth',1,...
-                        'Parent', MLData.feature_display_axes{l});
+                    MLData.feature_display_centerlines{l} = animatedline;
+                    MLData.feature_display_centerlines{l}.addpoints([1,1], ...
+                                                                    ylim(MLData.feature_display_axes{l}));
+                    MLData.feature_display_centerlines{l}.Color      = 'r';
+                    MLData.feature_display_centerlines{l}.LineStyle  = '--';
+                    MLData.feature_display_centerlines{l}.LineWidth   = 1;
+                    MLData.feature_display_centerlines{l}.Parent     = MLData.feature_display_axes{l};
                     guidata(MLData.feature_display_centerlines{l},handles);
                 end
                 
@@ -1492,12 +1506,13 @@ for l=selected_features,
                 MLData.feature_display_handles{l} = ...
                     imagesc(MLData.Features{l}.feature(MLData.idx:MLData.idx+MLData.windowSize,:)',...
                     'Parent',MLData.feature_display_axes{l});
-                MLData.feature_display_centerlines{l} = line([1,1], ...
-                    ylim(MLData.feature_display_axes{l}),...
-                    'Color','r',...
-                    'LineStyle','--',...
-                    'LineWidth',1,...
-                    'Parent', MLData.feature_display_axes{l});
+                MLData.feature_display_centerlines{l} = animatedline;
+                MLData.feature_display_centerlines{l}.addpoints([1,1], ...
+                                                                ylim(MLData.feature_display_axes{l}));
+                MLData.feature_display_centerlines{l}.Color      ='r';
+                MLData.feature_display_centerlines{l}.LineStyle  = '--';
+                MLData.feature_display_centerlines{l}.LineWidth  = 1;
+                MLData.feature_display_centerlines{l}.Parent = MLData.feature_display_axes{l};
                 guidata(MLData.feature_display_handles{l},handles);
         end
     end
@@ -1538,13 +1553,14 @@ if ~isempty(selectedFeatureIndex)
     switch MLData.Features{selectedFeatureIndex}.plot_type,
         case 'line'            
             if size(MLData.Features{selectedFeatureIndex}.feature,2)==1,
-                MLData.feature_display_handles{selectedFeatureIndex} =line('Parent', MLData.feature_display_axes{selectedFeatureIndex},...
-                    'XData',     1:MLData.windowSize+1,...
-                    'YData',     MLData.Features{selectedFeatureIndex}.feature(MLData.idx:MLData.idx+MLData.windowSize),...
-                    'LineWidth', MLData.state_line_options.width, ...
-                    'EraseMode', MLData.state_line_options.erase,...
-                    'LineStyle', MLData.state_line_options.line_style,...
-                    'Visible',   'on');
+                
+                MLData.feature_display_handles{selectedFeatureIndex} = animatedline;
+                MLData.feature_display_handles{selectedFeatureIndex}.Parent = MLData.feature_display_axes{selectedFeatureIndex};
+                MLData.feature_display_handles{selectedFeatureIndex}.addpoints(1:MLData.windowSize+1,...
+                        MLData.Features{selectedFeatureIndex}.feature(MLData.idx:MLData.idx+MLData.windowSize));
+                MLData.feature_display_handles{selectedFeatureIndex}.LineWidth = MLData.state_line_options.width;
+                MLData.feature_display_handles{selectedFeatureIndex}.LineStyle = MLData.state_line_options.line_style;
+                MLData.feature_display_handles{selectedFeatureIndex}.Visible   = 'on';
                 guidata(MLData.feature_display_handles{selectedFeatureIndex},handles);                
             else                
                     MLData.feature_display_handles{selectedFeatureIndex} = [];                    
@@ -1555,12 +1571,14 @@ if ~isempty(selectedFeatureIndex)
                         guidata(MLData.feature_display_handles{selectedFeatureIndex}(k),handles);
                     end
                     % Very Quick Fix - Don't leave it like this
-                    MLData.feature_display_centerlines{selectedFeatureIndex} = line([1,1], ...
-                        ylim(MLData.feature_display_axes{selectedFeatureIndex}),...
-                        'Color','r',...
-                        'LineStyle','--',...
-                        'LineWidth',1,...
-                        'Parent', MLData.feature_display_axes{selectedFeatureIndex});
+                    MLData.feature_display_centerlines{selectedFeatureIndex} = animatedline;
+                    MLData.feature_display_centerlines{selectedFeatureIndex}.addpoints([1,1], ...
+                            ylim(MLData.feature_display_axes{selectedFeatureIndex}));
+                    MLData.feature_display_centerlines{selectedFeatureIndex}.Color     = 'r';
+                    MLData.feature_display_centerlines{selectedFeatureIndex}.LineStyle = '--';
+                    MLData.feature_display_centerlines{selectedFeatureIndex}.LineWidth = 1;
+                    MLData.feature_display_centerlines{selectedFeatureIndex}.Parent    = MLData.feature_display_axes{selectedFeatureIndex};
+
                     guidata(MLData.feature_display_centerlines{selectedFeatureIndex},handles);
               
             end
@@ -1573,12 +1591,13 @@ if ~isempty(selectedFeatureIndex)
             guidata(MLData.feature_display_handles{selectedFeatureIndex},handles);
             set(MLData.feature_display_axes{selectedFeatureIndex},'YDir','normal')
     end
-    MLData.feature_display_centerlines{selectedFeatureIndex} = line([1,1], ...
-        ylim(MLData.feature_display_axes{selectedFeatureIndex}),...
-        'Color','r',...
-        'LineStyle','--',...
-        'LineWidth',1,...
-        'Parent', MLData.feature_display_axes{selectedFeatureIndex});
+    MLData.feature_display_centerlines{selectedFeatureIndex} = animatedline;
+    MLData.feature_display_centerlines{selectedFeatureIndex}.addpoints([1,1], ...
+                ylim(MLData.feature_display_axes{selectedFeatureIndex}));
+    MLData.feature_display_centerlines{selectedFeatureIndex}.Color     = 'r';
+    MLData.feature_display_centerlines{selectedFeatureIndex}.LineStyle = '--';
+    MLData.feature_display_centerlines{selectedFeatureIndex}.LineWidth = 1;
+    MLData.feature_display_centerlines{selectedFeatureIndex}.Parent    = MLData.feature_display_axes{selectedFeatureIndex};
     guidata(MLData.feature_display_centerlines{selectedFeatureIndex},handles);
 end
 
@@ -2077,23 +2096,33 @@ function updateCircle(hObject,handles,idx)
 %% UpdateCircle
 
 play_speed = getappdata(handles.MLapp,'play_speed');
-pause(0.05/play_speed);
+%pause(0.001/play_speed);
 if ~getappdata(handles.MLapp,'paused'),
     MLData = getappdata(handles.MTABrowser,'MLData');
 
-    skip = round(play_speed/10);
+    skip = round(5*(play_speed^.5));
+    
+    if sign(idx) == 1;
+        idx = MLData.idx-skip:MLData.idx+skip;
+        MLData.idx = idx(end);
+    elseif sign(idx) == -1;
+        idx = MLData.idx-skip:MLData.idx;
+        MLData.idx = idx(1);
+    else
+        idx = MLData.idx;
+    end
     
     selected_states = find(MLData.selected_states);
     % Label state
-    if MLData.flag_tag&MLData.current_label,
-        MLData.States{selected_states(MLData.current_label)}.data(MLData.idx:MLData.idx+skip*idx+idx) = MLData.current_label/2;
+    if MLData.flag_tag&&MLData.current_label,
+        MLData.States{selected_states(MLData.current_label)}.data(idx) = MLData.current_label/2;
     end
     % Erase state
-    if MLData.erase_tag&MLData.current_label,
-        MLData.States{selected_states(MLData.current_label)}.data(MLData.idx:MLData.idx+skip*idx+idx) = 0;
+    if MLData.erase_tag&&MLData.current_label,
+        MLData.States{selected_states(MLData.current_label)}.data(idx) = 0;
     end
 
-    MLData.idx = MLData.idx+skip*idx+idx;
+    
 
     if ( MLData.idx < 1 ), 
         MLData.idx = MLData.sessionLength-MLData.windowSize; 
@@ -2103,54 +2132,65 @@ if ~getappdata(handles.MLapp,'paused'),
 
     set(handles.MLposition_slider,'Value', MLData.idx)
     for kk=1:MLData.num_of_sticks,
-        set(MLData.sticks{kk},'XData',[MLData.xyzpos(MLData.idx,MLData.markerConnections(kk,1),1),MLData.xyzpos(MLData.idx,MLData.markerConnections(kk,2),1)],...
-                               'YData',[MLData.xyzpos(MLData.idx,MLData.markerConnections(kk,1),2),MLData.xyzpos(MLData.idx,MLData.markerConnections(kk,2),2)],...
-                               'ZData',[MLData.xyzpos(MLData.idx,MLData.markerConnections(kk,1),3),MLData.xyzpos(MLData.idx,MLData.markerConnections(kk,2),3)])
+        MLData.sticks{kk}.clearpoints;
+        MLData.sticks{kk}.addpoints([MLData.xyzpos(MLData.idx,MLData.markerConnections(kk,1),1),MLData.xyzpos(MLData.idx,MLData.markerConnections(kk,2),1)],...
+                                    [MLData.xyzpos(MLData.idx,MLData.markerConnections(kk,1),2),MLData.xyzpos(MLData.idx,MLData.markerConnections(kk,2),2)],...
+                                    [MLData.xyzpos(MLData.idx,MLData.markerConnections(kk,1),3),MLData.xyzpos(MLData.idx,MLData.markerConnections(kk,2),3)]);
     end
     for kk=1:MLData.num_of_markers,
-        set(MLData.markers{kk},'XData',[MLData.xyzpos(MLData.idx,kk,1),MLData.xyzpos(MLData.idx,kk,1)],...
-                               'YData',[MLData.xyzpos(MLData.idx,kk,2),MLData.xyzpos(MLData.idx,kk,2)],...
-                               'ZData',[MLData.xyzpos(MLData.idx,kk,3),MLData.xyzpos(MLData.idx,kk,3)])
+        MLData.markers{kk}.clearpoints;
+        MLData.markers{kk}.addpoints([MLData.xyzpos(MLData.idx,kk,1),MLData.xyzpos(MLData.idx,kk,1)],...
+                                     [MLData.xyzpos(MLData.idx,kk,2),MLData.xyzpos(MLData.idx,kk,2)],...
+                                     [MLData.xyzpos(MLData.idx,kk,3),MLData.xyzpos(MLData.idx,kk,3)]);
     end
     for kk=find(MLData.selected_states),
-        set(MLData.state_lines{kk},'XData',MLData.index_range(MLData.idx,1):MLData.index_range(MLData.idx,2),...
-                                   'YData',MLData.States{kk}.data(MLData.index_range(MLData.idx,1):MLData.index_range(MLData.idx,2)),...
-                                   'LineStyle','-')
+        MLData.state_lines{kk}.clearpoints;
+        MLData.state_lines{kk}.addpoints(MLData.index_range(MLData.idx,1):MLData.index_range(MLData.idx,2),...
+                                         MLData.States{kk}.data(MLData.index_range(MLData.idx,1):MLData.index_range(MLData.idx,2)));
+        MLData.state_lines{kk}.LineStyle = '-';
     end
     for kk=find(MLData.selected_features),
         switch MLData.Features{kk}.plot_type,
             case 'line'
                 if length(MLData.feature_display_handles{kk})==1,                
-                set(MLData.feature_display_handles{kk},...
-                    'XData',MLData.index_range(MLData.idx,1):MLData.index_range(MLData.idx,2),...
-                    'YData',MLData.Features{kk}.feature(MLData.index_range(MLData.idx,1):MLData.index_range(MLData.idx,2)),...
-                    'LineStyle','-')
+                MLData.feature_display_handles{kk}.clearpoints;
+                MLData.feature_display_handles{kk}.addpoints(...
+                    MLData.index_range(MLData.idx,1):MLData.index_range(MLData.idx,2),...
+                    MLData.Features{kk}.feature(MLData.index_range(MLData.idx,1):MLData.index_range(MLData.idx,2)));
+                MLData.feature_display_handles{kk}.LineStyle = '-';
                 else
                     for l = 1:length(MLData.feature_display_handles{kk}),
-                        set(MLData.feature_display_handles{kk}(l),...
-                            'XData',MLData.index_range(MLData.idx,1):MLData.index_range(MLData.idx,2),...
-                            'YData',MLData.Features{kk}.feature(MLData.index_range(MLData.idx,1):MLData.index_range(MLData.idx,2),l),...
-                            'LineStyle','-')
+                        MLData.feature_display_handles{kk}(l).clearpoints;
+                        MLData.feature_display_handles{kk}(l).addpoints(...
+                            MLData.index_range(MLData.idx,1):MLData.index_range(MLData.idx,2),...
+                            MLData.Features{kk}.feature(MLData.index_range(MLData.idx,1):MLData.index_range(MLData.idx,2),l));
+                        MLData.feature_display_handles{kk}(l).LineStyle = '-';
                     end
                 end
                 
-                set(MLData.feature_display_centerlines{kk},'XData',[MLData.idx,MLData.idx],...
-                    'YData',[min(min(MLData.Features{kk}.feature(MLData.index_range(MLData.idx,1):MLData.index_range(MLData.idx,2))))-1,max(max(MLData.Features{kk}.feature(MLData.index_range(MLData.idx,1):MLData.index_range(MLData.idx,2))))+1]);
+                MLData.feature_display_centerlines{kk}.clearpoints;
+                MLData.feature_display_centerlines{kk}.addpoints(...
+                    [MLData.idx,MLData.idx],...
+                    [min(min(MLData.Features{kk}.feature(MLData.index_range(MLData.idx,1):MLData.index_range(MLData.idx,2))))-1,max(max(MLData.Features{kk}.feature(MLData.index_range(MLData.idx,1):MLData.index_range(MLData.idx,2))))+1]);
                 
             case 'imagesc'
                 set(MLData.feature_display_handles{kk},...
                     'XData',[MLData.index_range(MLData.idx,1):MLData.index_range(MLData.idx,2)]',...
                     'YData',1:size(MLData.Features{kk}.feature,2),...
                     'CData',MLData.Features{kk}.feature(MLData.index_range(MLData.idx,1):MLData.index_range(MLData.idx,2),:)');
-                set(MLData.feature_display_centerlines{kk},'XData',[MLData.idx,MLData.idx],...
-                    'YData',[1,size(MLData.Features{kk}.feature,2)])
+                MLData.feature_display_centerlines{kk}.clearpoints;
+                MLData.feature_display_centerlines{kk}.addpoints(...
+                    [MLData.idx,MLData.idx],...
+                    [1,size(MLData.Features{kk}.feature,2)]);
 
         end
     end
     
     set(cell2mat(MLData.feature_display_axes(MLData.selected_features)),'XLim',[MLData.idx-MLData.windowSize, MLData.idx+MLData.windowSize])
     set(handles.MLstateView,'XLim',[MLData.idx-MLData.windowSize, MLData.idx+MLData.windowSize],'YLim',[MLData.statesRange(1) MLData.statesRange(2)])
-    set(MLData.state_centerline,'Xdata',[MLData.idx,MLData.idx] )
+    [~,y] = MLData.state_centerline.getpoints;
+    MLData.state_centerline.clearpoints;
+    MLData.state_centerline.addpoints([MLData.idx,MLData.idx] ,y);
     setappdata(handles.MTABrowser,'MLData',MLData);
     set(handles.MLindexinput,'String',num2str(MLData.idx));
     set(handles.MLtimeinput,'String',num2str(MLData.t(MLData.idx)));
