@@ -2100,8 +2100,8 @@ play_speed = getappdata(handles.MLapp,'play_speed');
 if ~getappdata(handles.MLapp,'paused'),
     MLData = getappdata(handles.MTABrowser,'MLData');
 
-    skip = round(5*(play_speed^.5));
-    
+    skip = round(1.15*(play_speed^1.2));
+    if skip==0,skip = 1;pause(.1);end
     if sign(idx) == 1;
         idx = MLData.idx-skip:MLData.idx+skip;
         MLData.idx = idx(end);

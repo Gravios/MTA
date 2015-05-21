@@ -13,7 +13,7 @@ switch mode
     wind = Trial.stc{'w'}.copy;
     lang = Trial.stc{'w'}.copy;
     ang = Trial.ang.copy;
-    ang.load(Trial);
+    ang.create(Trial,Trial.load('xyz'));
     lang.data = ThreshCross(ang(:,5,7,2)<angThresh,.5,20);
     lang.label = 'lang';
     lang.key = 'p';

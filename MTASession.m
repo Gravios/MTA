@@ -587,7 +587,7 @@ classdef MTASession < hgsetget
          %  depth - int: default is 3, leave it alone
          %
              [depth] = DefaultArgs(varargin,{3});
-             if Session.ang.isempty, Session.ang.load(Session);end             
+             if Session.ang.isempty, Session.ang.create(Session);end 
              dist = Session.ang(:,:,:,3);
              dist_std = zeros(Session.model.N,Session.model.N,depth);
              dist_mean = zeros(Session.model.N,Session.model.N,depth);
