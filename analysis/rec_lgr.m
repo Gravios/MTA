@@ -99,7 +99,7 @@ tfet = abs(diff(circ_dist(ang(:,1,4,1),circshift(ang(:,1,4,1),-1))));
 % Lines(Trial.stc{'w'}(:),[],'b')
 
 %% Detect Change Points
-tpnts = LocalMinima(-tfet,round(.20*dsx.sampleRate),-6e-6);
+tpnts = LocalMinima(-tfet,round(.20*dsx.sampleRate),-7e-6);
 tprs = [tpnts,circshift(tpnts,-1)];
 tprs(end,:) = [];
 
@@ -400,57 +400,73 @@ Trial = MTATrial('jg05-20120317');
 Trial = MTATrial('Ed05-20140529','all','ont');
 Trial = MTATrial('Ed01-20140707');
 
-dsx = Trial.load('xyz');
 
-vxy = dsx.vel([1,7],[1,2]);
-vxy.filter('ButFilter',3,10,'low');
-
-
-vl = dsx.vel([1,2,7],[1,2]);
-%vl.filter('ButFilter',3,.75,'low');
-vl.data = cat(1,diff(vxy.data),zeros([1,vxy.size(2)]));
-vl.filter('ButFilter',3,.6,'low');
-
-%vz = dsx.vel(7,3);
-vz = dsx.copy;
-vz.data = [0;diff(dsx(:,7,3))];
-vz.filter('ButFilter',3,.6,'low');
-
-dsx.filter('ButFilter',3,.5,'low');
-ang = create(MTADang,Trial,dsx);
-tfet = abs(diff(circ_dist(ang(:,1,4,1),circshift(ang(:,1,4,1),-1))));
+Trials = SessionList('mypc_test_grp');
+nstuff = {};
+tc = 1;
+for t = Trials,
+    
+    Trial = MTATrial(t.name,t.trialName,t.mazeName);
 
 
+    dsx = Trial.load('xyz');
 
-thr_vls = .1:.1:10;
-fet = tfet;
+    vxy = dsx.vel([1,7],[1,2]);
+    vxy.filter('ButFilter',3,10,'low');
 
-thr_vls = .1:.1:10;
+    % Walking Feature
+    vl = dsx.vel([1,2,7],[1,2]);
+    %vl.filter('ButFilter',3,.75,'low');
+    vl.data = cat(1,diff(vxy.data),zeros([1,vxy.size(2)]));
+    vl.filter('ButFilter',3,.6,'low');
 
+    wl = dsx.copy;
+    wl.data = sqrt(sum(sum(circshift(dsx(:,1:4,[1,2]),-6)-dsx(:,1:4,[1,2]),2).^2,3));
+    wl.filter('ButFilter',3,10,'low');    
+    wl.data = cat(1,diff(wl.data),zeros([1,wl.size(2)]));
+    wl.filter('ButFilter',3,.6,'low');
+    
+    % Rearing Feature
+    %vz = dsx.vel(7,3);
+    vz = dsx.copy;
+    vz.data = [0;diff(dsx(:,7,3))];
+    vz.filter('ButFilter',3,.6,'low');
 
-fet = vz(:,1);
+    % Turning Feature
+    dsx.filter('ButFilter',3,.5,'low');
+    ang = create(MTADang,Trial,dsx);
+    tfet = abs(diff(circ_dist(ang(:,1,4,1),circshift(ang(:,1,4,1),-1))));
 
-thr_vls = -2:.1:10;
-fet = vl(:,1);
-
-
-nsmp_vl = [];
-n = [];
-for thr_vl = thr_vls;
-vpnts = LocalMinima(-log10(abs(fet)),round(.20*dsx.sampleRate),thr_vl);
-%if numel(vpnts)>10,pause(.1);bar(linspace(1,6,100),histc(log10(diff(vpnts)),linspace(1,6,100)),'histc');end
-if numel(vpnts)>10,
-    n = cat(2,n,histc(log10(diff(vpnts)),linspace(1,6,100)));
-else
-    n = cat(2,n,zeros([100,1]));
+    fet = {};
+    fet{1} = vz(:,1);
+    fet{2} = vl(:,1);
+    fet{3} = tfet;
+    fet{4} = wl(:,1);
+    
+    thr_vls = -2:.1:10;
+    
+% nstuff = {Trial,fet}
+for f = 1:numel(fet),
+    nsmp_vl = [];
+    n = [];
+    for thr_vl = thr_vls;
+        vpnts = LocalMinima(-log10(abs(fet{f})),round(.20*dsx.sampleRate),thr_vl);
+        %if numel(vpnts)>10,pause(.1);bar(linspace(1,6,100),histc(log10(diff(vpnts)),linspace(1,6,100)),'histc');end
+        if numel(vpnts)>10,
+            n = cat(2,n,histc(log10(diff(vpnts)),linspace(1,6,100)));
+        else
+            n = cat(2,n,zeros([100,1]));
+        end
+        nsmp_vl(end+1) = numel(vpnts)-1;
+    end
+    nstuff{tc,f} = skewness(n);
 end
+%     figure,imagesc(bsxfun(@ldivide,sum(n),n)');
+% 
+%     figure,plot(thr_vls,skewness(n))
+    tc = tc+1;
 
-nsmp_vl(end+1) = numel(vpnts)-1;
 end
-
-figure,imagesc(bsxfun(@ldivide,sum(n),n)');
-
-figure,plot(thr_vls,skewness(n))
 
 figure,plot(thr_vls,nsmp_vl)
 figure,plot(thr_vls(1:end-1),diff(nsmp_vl))
@@ -459,18 +475,154 @@ polyfit(thr_vls(10:30),nsmp_vl(10:30),1)
 
 %jg05-20120310 pfit: 2485.74025974026         -1691.14718614719
 
-thr_vl = 2.3;
-%thr_vl = thr_vls(find(nsmp_vl>=max(nsmp_vl)/2,1,'first'));
-vpnts = LocalMinima(-log10(abs(fet)),round(.20*dsx.sampleRate),thr_vl);
 
+nn = cell2mat(nstuff);
+nn = reshape(nn,9,121,4);
+figure,plot(thr_vls,mean(nn(:,:,2))')
+
+thr_vl = 2.3;
+
+vpnts = LocalMinima(-log10(abs(fet{1})),round(.20*dsx.sampleRate),thr_vl);
 vprs = [vpnts,circshift(vpnts,-1)];
 vprs(end,:) = [];
 figure, plot(log10(abs(fet))),Lines(vprs(:),[],'c');Lines(Trial.stc{'r'}(:),[],'r');
 
+ofet = [xyz(:,7,3),...
+       vxy(:,1),...
+       circ_dist(ang(:,1,4,1),circshift(ang(:,1,4,1),-30))];
 
-vsc = [];
-for i = vprs'
-    vsc(end+1) = median(vxy(i(1):i(2),1));
+%% Thresholds found by peak in the skewness of iei of distributions over increasing feature thresholds
+thr_fet = [2.3,1.5,7.1,1.2];
+
+xyz = Trial.load('xyz');
+fxyz = xyz.copy;
+fxyz.filter('ButFilter',3,.6,'low');
+ang = create(MTADang,Trial,fxyz);
+
+
+wf = sqrt(sum(sum(circshift(xyz(:,1:4,[1,2]),-6)-xyz(:,1:4,[1,2]),2).^2,3));
+wf = MTADxyz('data',wf,'sampleRate',xyz.sampleRate);
+%wf.filter('ButFilter',3,1,'low');
+
+vsc = zeros([xyz.size(1),6]);
+for f = 1:numel(fet),
+    vpnts = LocalMinima(-log10(abs(fet{f})),round(.20*dsx.sampleRate),thr_fet(f));
+    vprs = [vpnts,circshift(vpnts,-1)];
+    vprs(end,:) = [];
+    
+    for i = vprs'
+        %    vsc(i(1):i(2),f) = median(ofet(i(1):i(2),f));
+        if f == 1,
+            vsc(i(1):i(2),f) = median(ofet(i(1):i(2),f));
+        elseif f==2,
+            %vsc(i(1):i(2),f) = median(ofet(i(1):i(2),f));
+            %vsc(i(1):i(2),f) = median(ofet(i(1):i(2),f));
+            vsc(i(1):i(2),f) = abs(sqrt(sum(diff(dsx(i,1,[1,2])).^2,3)));
+            vang = sq(diff(dsx(i,1,[1,2])));
+            vang = atan2(vang(2),vang(1));
+            vsc(i(1):i(2),5) = cos(circ_dist(circ_mean(ang(i(1):i(2),1,4,1)),vang));    
+            
+        elseif f==3,
+            vsc(i(1):i(2),f) = abs(circ_dist(ang(i(1),1,4,1),ang(i(2),1,4,1)))/diff(i);
+            vang = sq(diff(dsx(i,4,[1,2])));
+            vang = atan2(vang(2),vang(1));
+            vsc(i(1):i(2),6) = sin(circ_dist(circ_mean(ang(i(1):i(2),1,4,1)),vang));            
+        elseif f==4,
+            vsc(i(1):i(2),f) = median(wf(i'));    
+        end
+        
+        
+    end
 end
+
+mvsc = MTADxyz('data',vsc,'sampleRate',xyz.sampleRate);
+
+
+%% Confirm Quality of segmentation visually
+edgs = linspace(-5,3,100);
+figure,hold on
+    bar(edgs,histc(unique(log10(abs(mvsc(Trial.stc{'a-w-r-n'},4)))),edgs),'histc');
+h = bar(edgs,histc(unique(log10(abs(mvsc(Trial.stc{'w'},4)))),edgs),'histc');
+h.FaceColor = 'r';
+h.FaceAlpha = .5;
+
+edgs = linspace(-5,3,100);
+figure,hold on
+bar(edgs,histc((log10(abs(mvsc(Trial.stc{'a-n-w-r'},2)))),edgs),'histc');
+h = bar(edgs,histc((log10(abs(mvsc(Trial.stc{'w'},2)))),edgs),'histc');
+h.FaceColor = 'r';
+h.FaceAlpha = .5;
+
+
+edgs = linspace(-1,2,100);
+figure,hold on
+bar(edgs,histc(log10(abs(mvsc(Trial.stc{'a-w-n-r-m'},2).*mvsc(Trial.stc{'a-w-n-r-m'},4))),edgs),'histc');
+h = bar(edgs,histc(log10(abs(mvsc(Trial.stc{'w'},2).*mvsc(Trial.stc{'w'},4))),edgs),'histc');
+h.FaceColor = 'r';
+h.FaceAlpha = .5;
+h = bar(edgs,histc(log10(abs(mvsc(Trial.stc{'n'},2).*mvsc(Trial.stc{'n'},4))),edgs),'histc');
+h.FaceColor = 'g';
+h.FaceAlpha = .5;
+
+figure,plot(abs(vsc(:,4))),
+hold on,plot(log10(vsc(:,2)),'r')
+Lines(Trial.stc{'w'}(:),[],'m');
+Lines(Trial.stc{'n'}(:),[],'g');
+
+figure,hold on
+edgs = linspace(-8,-1,100);
+edgs = linspace(-3,2,100);
+aind = Trial.stc{'a-w-r'};
+sind = Trial.stc{'w'};
+afet = log10(abs(mvsc(aind,4)).*abs(mvsc(aind,2)));
+sfet = log10(abs(mvsc(sind,4)).*abs(mvsc(sind,2)));
+bar(edgs,histc(afet,edgs),'histc');
+h = bar(edgs,histc(sfet,edgs),'histc');
+h.FaceColor = 'r';
+h.FaceAlpha = .5;
+
+
+%% Recreate for continous situation for speed X coherent movement of LS marker with direction of body movement
+
+% .5 sec lag
+lag = 20;
+vang = {circshift(dsx(:,1,1),lag)-circshift(dsx(:,1,1),-lag),circshift(dsx(:,1,2),lag)-circshift(dsx(:,1,2),-lag)};
+vang = atan2(vang{:});
+vang = abs(cos(circ_dist(circ_mean(GetSegs(ang(:,1,3,1),1:ang.size(1),30,nan))',vang)));    
+
+bang = {circshift(dsx(:,3,1),lag)-circshift(dsx(:,3,1),-lag),circshift(dsx(:,3,2),lag)-circshift(dsx(:,3,2),-lag)};
+bang = atan2(bang{:});
+bang = abs(cos(circ_dist(circ_mean(GetSegs(ang(:,1,3,1),1:ang.size(1),30,nan))',bang)));    
+
+
+
+
+% msx = Trial.load('xyz');
+% mxy = msx.vel([],[1,2]);
+% mxy.filter('ButFilter',3,2,'low');
+
+figure,hold on
+plot(mxy(:,1))
+plot(vang*20,'r')
+Lines(Trial.stc{'w'}(:),[],'b');
+Lines(Trial.stc{'n'}(:),[],'g');            
+
+figure,plot(median(mxy(:,1:3),2).*vang.*bang)
+Lines(Trial.stc{'w'}(:),[],'b');
+Lines(Trial.stc{'n'}(:),[],'g');            
+
+vang = MTADxyz('data',vang,'sampleRate',dsx.sampleRate);
+bang = MTADxyz('data',bang,'sampleRate',dsx.sampleRate);
+
+figure,hold on
+edgs = linspace(-3,2.5,100);
+aind = Trial.stc{'a-w-r'};
+sind = Trial.stc{'w'};
+afet = log10(abs(median(mxy(aind,1:3),2).*vang(aind).*bang(aind)));
+sfet = log10(abs(median(mxy(sind,1:3),2).*vang(sind).*bang(sind)));
+bar(edgs,histc(afet,edgs),'histc');
+h = bar(edgs,histc(sfet,edgs),'histc');
+h.FaceColor = 'r';
+h.FaceAlpha = .5;
 
 

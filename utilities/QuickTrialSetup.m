@@ -25,32 +25,38 @@ function varargout = QuickTrialSetup(Session,varargin)
 %                   Display some diagnostic plots
 %
 %
+HostConf = load('MTAConf');
 
-[trialName,offsets,dropSyncInd,includeSyncInd,autolabel,debug] = DefaultArgs(varargin,{'all',[0,0],[],[],true,false});
+[trialName, offsets, dropSyncInd, includeSyncInd,autolabel, debug,                 host, local, overwrite] = DefaultArgs(varargin,...
+    {'all',   [0,0],          [],             [],    false, false, HostConf.host_server, false,     false});
 
-if ischar(trialName), 
-    Sessions = SessionList(trialName);
+if ischar(Session), 
+    Sessions = SessionList(Session);
 
     if isstruct(Sessions),
-        for s = 1:numel(Sessions)            
-            
-            if ~(strcmp(Session.maze.name,Sessions(s).mazeName)&&...
-                 strcmp(Session.name,Sessions(s).name)),
-                MTAstartup(host,Sessions(s).host);
-                Session = MTASession(Sessions(s).name,...
-                                 Sessions(s).mazeName);
-            end
+        for s = Sessions,
+            if local,
+                MTAstartup(host,HostConf.data_server);
+            else
+                MTAstartup(host,s.host);
+            end            
+
+            Session = MTASession(s.name,...
+                                 s.mazeName);
 
             xsync = Session.xyz.sync.copy;
             xsync = xsync+offsets;
-            if ~isempty(Sessions(s).includeSyncInd)
-                dropSyncInd = ~ismember(1:xsync.size(1),Sessions(s).includeSyncInd);
+            if isfield(s,'includeSyncInd'),
+                if ~isempty(s.includeSyncInd)
+                    dropSyncInd = ~ismember(1:xsync.size(1),s.includeSyncInd);
+                end
             end
+
             xsync.data(dropSyncInd,:) = [];            
             Trial = MTATrial(Session,...
-                             Sessions(s).trialName,...
-                             Sessions(s).mazeName,...
-                             true,...
+                             s.trialName,...
+                             s.mazeName,...
+                             overwrite,...
                              xsync);
             Trial.save;
         end

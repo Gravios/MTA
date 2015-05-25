@@ -31,7 +31,7 @@ function MTAConfiguration(root_dir,varargin)
 %       Defined connections between markers (Not required if vsk file is
 %       present)
 % 
-[flag] = DefaultArgs(varargin,{''});
+[flag,host_server,data_server] = DefaultArgs(varargin,{'','',''});
 
 if ispc, 
     userdir= getenv('USERPROFILE'); 
@@ -104,10 +104,11 @@ MTAMarkerConnections = ...
     {'tail_proximal','spine_lower'}};
 
 %% Save configuations
-save(fullfile(MTAPath, 'MTAPaths.mat'  ),'MTAPath','data')
-save(fullfile(MTAPath, 'MTAMarkers.mat'),'MTAMarkers')
-save(fullfile(MTAPath, 'MTAMazes.mat'  ),'MTAMazes')
-save(fullfile(MTAPath, 'MTAMarkerConnections.mat'),'MTAMarkerConnections')
+save(fullfile(MTAPath, 'MTAConf.mat'  ),'host_server','data_server');
+save(fullfile(MTAPath, 'MTAPaths.mat'  ),'MTAPath','data');
+save(fullfile(MTAPath, 'MTAMarkers.mat'),'MTAMarkers');
+save(fullfile(MTAPath, 'MTAMazes.mat'  ),'MTAMazes');
+save(fullfile(MTAPath, 'MTAMarkerConnections.mat'),'MTAMarkerConnections');
 
 addpath(MTAPath)
 try

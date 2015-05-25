@@ -29,8 +29,8 @@ end
 
 if ~exist(Session.spath,'dir')
     if ~exist(Session.spath,'dir') && ...
-        exist(fullfile(Sesssion.path.data,'nlx',Session.name),'dir') && ...
-        exist(fullfile(Sesssion.path.data,'xyz',Session.name),'dir')
+        exist(fullfile(Session.path.data,'nlx',Session.name),'dir') && ...
+        exist(fullfile(Session.path.data,'xyz',Session.name),'dir')
         mkdir(Session.spath);
         
     else

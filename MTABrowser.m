@@ -1107,8 +1107,10 @@ set(handles.MLstateView,'Xlim',[-MLData.windowSize,MLData.windowSize],...
                         repmat({')'},1,length(selected_states))) ,...
     'YTickMode','manual');
 
-set(MLData.state_centerline,'YData',[MLData.statesRange(1),MLData.statesRange(2)]);
-
+%set(MLData.state_centerline,'YData',[MLData.statesRange(1),MLData.statesRange(2)]);
+[pnts,~] = MLData.state_centerline.getpoints;
+MLData.state_centerline.clearpoints;
+MLData.state_centerline.addpoints(pnts,[MLData.statesRange(1),MLData.statesRange(2)]);
 
 if find(selected_states==MLData.current_label),
     for l = selected_states,
@@ -1221,8 +1223,10 @@ MLData.keys(end+1) = newStateKey;
 stateSync = Session.xyz.sync.copy;
 stateSync.resample(Session.xyz.sampleRate);
 MLData.States{end+1} = MTADepoch([],[],zeros(length(MLData.xyzpos),1),...
-                                 Session.xyz.sampleRate,stateSync,Session.xyz.origin,newStateName,newStateKey,...
-                                 'TimeSeries');
+                                 Session.xyz.sampleRate,stateSync,Session.xyz.origin,...
+                                 'TimeSeries',...
+                                 'label',newStateName,...
+                                 'key',newStateKey);
 MLData.num_of_states = MLData.num_of_states + 1;
 MLData.selected_states(end+1) = true;
 setappdata(handles.MTABrowser,'MLData',MLData);

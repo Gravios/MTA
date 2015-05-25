@@ -1,12 +1,9 @@
 function QuickSessionSetup(SessionParm,varargin)
-
-    if ~isempty(varargin),
-        host = varargin{1};
-    else
-        host = 'cin';
-    end
+HostConf = load('MTAConf');
+[host,local] = DefaultArgs(varargin,{HostConf.host_server,false},1);
     
     
+        
     if ischar(SessionParm), 
         Sessions = SessionList(SessionParm);
     else
@@ -14,9 +11,14 @@ function QuickSessionSetup(SessionParm,varargin)
     end
 
     if isstruct(Sessions),
-        for s = 1:numel(Sessions)            
-            MTAstartup(host,Sessions(s).host);
-            if all(isfield(Sessions(s),{'xyz_host','nlx_host'})),
+        for s = 1:numel(Sessions)
+            if local,
+                MTAstartup(host,HostConf.data_server);
+            else
+                MTAstartup(host,Sessions(s).host);
+            end
+                
+            if all(isfield(Sessions(s),{'xyz_host','nlx_host'}))&&~ispc,
                 linkSession(Sessions(s).name,...
                             Sessions(s).xyz_host,...
                             Sessions(s).nlx_host);
