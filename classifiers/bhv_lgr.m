@@ -67,9 +67,12 @@ if train||~exist(model_loc,'file'),
             Model_Information.state_labels =  [Model_Information.state_labels{:}, {'other'}];
             Model_Information.state_keys   =  [Model_Information.state_keys{:},       {'o'}];
         end
-    else,
+    else
         ind = any(smat,2);
     end
+    
+    
+    
     [B,dev,stats] = mnrfit(lrfet(ind,:),smat(ind),'model','nominal');
     save(model_loc,'B','dev','stats','Model_Information');
     return

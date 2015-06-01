@@ -149,9 +149,12 @@ classdef MTADepoch < MTAData
         % Note: if addition or subtraction results two periods overlaping
         %       they will be merged into a single period
         %
-        % Future: Addition of two MTADepochs will return their intersection
+        % Future: Addition of two MTADepochs will return their union
         %       
-            if isa(a,'MTADepoch')&&ismatrix(b)
+        % Future: suport TimeSeries versions
+        
+        if isa(a,'MTADepoch')&&ismatrix(b)
+            if strcmp(a.type,'TimePeriods'),
                 Data = a.copy;
                 b = b*a.sampleRate;
                 if prod(size(b) == Data.size),
@@ -159,11 +162,12 @@ classdef MTADepoch < MTAData
                 else
                     Data.data = bsxfun(@plus,Data.data,b);
                 end
-                perDur = diff(Data.data,1,2);
-                Data.data(perDur<=0) = [];
-                Data.data(Data.data(:,1)<=0|Data.data(:,2)<=0,:) = [];
-
-            elseif isa(b,'MTADepoch')&&ismatrix(a)
+                Data.clean();
+            elseif strcmp(a.type,'TimeSeries'),
+            end
+            
+        elseif isa(b,'MTADepoch')&&ismatrix(a)
+            if strcmp(a.type,'TimePeriods'),
                 Data = b.copy;
                 a = a*b.sampleRate;
                 if prod(size(a) == Data.size),
@@ -171,26 +175,40 @@ classdef MTADepoch < MTAData
                 else
                     Data.data = bsxfun(@plus,Data.data,a);
                 end
-                perDur = diff(Data.data,1,2);
-                Data.data(perDur<=0) = [];
-                Data.data(Data.data(:,1)<=0|Data.data(:,2)<=0,:) = [];                
-
-            elseif isa(b,'MTADepoch')&&isa(a,'MTADepoch')
-                %Data = 
+                
+                Data.clean();
+            elseif strcmp(a.type,'TimeSeries'),
             end
             
-            if sum((Data.data(2:end,1)-Data.data(1:end-1,2))<=0)>0;
-                ndata = Data.data(1,:);
-                for i = 2:Data.size(1),
-                    ndata = JoinRanges(ndata,Data.data(i,:));
-                end
-                Data.data = ndata;
+        elseif isa(a,'MTADepoch')&&isa(b,'MTADepoch')
+            if strcmp(a.type,'TimePeriods')&&strcmp(b.type,'TimePeriods'),
+                Data = a.copy;
+                Data.path = [];
+                Data.filename = [];
+                Data.label = [a.label '+' b.label];
+                Data.key = [];
+                if b.sampleRate ~= a.sampleRate, b.resample(a); end
+                Data.data = JoinRanges(a.data,b.data);
+                
+                Data.clean();
+            elseif strcmp(a.type,'TimeSeries'),
             end
-            if Data.sampleRate~=1,
-                  Data.data = round(Data.data);
+            
+        end
+        
+        % Join the new periods if they overlap
+        if sum((Data.data(2:end,1)-Data.data(1:end-1,2))<=0)>0;
+            ndata = Data.data(1,:);
+            for i = 2:Data.size(1),
+                ndata = JoinRanges(ndata,Data.data(i,:));
             end
-
-    
+            Data.data = ndata;
+        end
+        if Data.sampleRate~=1,
+            Data.data = round(Data.data);
+        end
+        
+        
         end
 
         function Data = minus(a,b)
@@ -221,8 +239,9 @@ classdef MTADepoch < MTAData
                 Data.key = '';
             end
              
-         end
+        end
 
+         
 % $$$         function perDiff = uminus(Data)
 % $$$             perDiff = diff(Data.data,1,2);
 % $$$         end
@@ -233,6 +252,8 @@ classdef MTADepoch < MTAData
         %If one of the imputs is a normal array then
         %the array elements are assumed to be in the 
         %sampling rate of the MTADepoch object.
+        %
+        % TODO - add MTADepoch/MTADepoch comparisions
             Data = [];
             if isa(a,'MTADepoch')&&ismatrix(b)
                 Data = a.copy;
@@ -261,8 +282,86 @@ classdef MTADepoch < MTAData
             end
         end
         
+        function Data = clean(Data)
+        % function Data = clean(Data)
+        % Internal utility to clean up periods after set operations
+        %
+        % Drop periods with zero or negative duration. eg([5,3] or [[10,10])
+        % Drop periods which exist before or conains the origin
+        % Drop periods which exceed the end of the sync
+        % Truncate periods which terminate after end of the sync
+        %
+            % Drop periods with zero or negative duration. eg([5,3] or [[10,10])
+            perDur = diff(Data.data,1,2);
+            Data.data(perDur<=0) = [];
+            % Drop periods which exist before or conains the origin
+            Data.data(Data.data(:,1)<=0|Data.data(:,2)<=0,:) = [];
+            % Drop periods which exceed the end of the sync
+            Data.data(Data.data(:,1)>round(Data.sync.data(end)*Data.sampleRate)) = [];
+            % Truncate periods which terminate after end of the sync
+            Data.data( Data.data(:,1)<round(Data.sync.data(end)*Data.sampleRate)...
+                &Data.data(:,2)>round(Data.sync.data(end)*Data.sampleRate),2)...
+                = round(Data.sync.data(end)*Data.sampleRate);
+        end
+        
+        function Data = fillgaps(Data,varargin)
+        % function Data = fillgaps(Data,gap_size)
+        % fills gaps between epochs which are smaller than the specified
+        % size
+        %
+        % varargin:
+        %   gap_size: numeric, gap size in seconds
+        %
+        % NOTE: Only functions for TimePeriods
+        %
+            if ~isempty(varargin),
+                gap_size = varargin{1};
+            else
+                gap_size = round(.1*Data.sampleRate);
+            end
+        
+        
+            switch Data.type
+                case 'TimePeriods'
+                    if size(Data.data,1)>1,
+                        interPerDur = Data.data(1:end-1,2)-Data.data(2:end,1);
+                        c = 1;
+                        while ~isempty(interPerDur)
+                            if interPerDur(1)<gap_size,
+                                Data.data(c,:)   = [Data.data(c,1),Data.data(c+1,2)];
+                                Data.data(c+1,:) = [];
+                            else
+                                c = c+1;
+                            end
+                            interPerDur(1) = [];
+                        end
+                    end
+                case 'TimeSeries'
+                    perStart = find(diff(double(Data.data))== 1)+1;
+                    perStop =  find(diff(double(Data.data))== -1);
+                    
+                    if ~isempty(perStart)&&~isempty(perStop),
+                        if perStop(1)<perStart(1),perStart = [1;perStart]; end
+                        if perStop(end)<perStart(end),perStop = [perStop;size(Data,1)]; end
+                        
+                        interPerDur = perStop(1:end-1)-perStart(2:end);
+                        c = 1;
+                        while ~isempty(interPerDur)
+                            if interPerDur(1)<gap_size,
+                                Data.data(perStop(c):perStart(c+1)) = 1;
+                                Data.data(c+1,:) = [];
+                            else
+                                c = c+1;
+                            end
+                            interPerDur(1) = [];
+                        end
+                    end
+                otherwise
+                    error('MTA:MTADepoch:WhatDidYouDO!!!')
 
-     
+            end
+        end
+            
     end
     
     methods (Static)
@@ -289,7 +388,7 @@ classdef MTADepoch < MTAData
             
             Data = MTADepoch([],[],newData,msr,sync,origin,[],[],[],newLabel,newKey);
         end
-p
+
         function join(DataCell)
             samplingRates = cellfun(@getfield,DataCell,repmat({'sampleRate'},1,numel(DataCell)));
             msr = max(samplingRates);

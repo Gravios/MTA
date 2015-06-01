@@ -21,59 +21,61 @@ function varargout = QuickTrialSetup(Session,varargin)
 %   autolabel:          Logical, defarg  - true
 %                   Try to do some automatic behavior labeling
 %
-%   debug:          Logical, defarg  - false 
+%   debug:          Logical, defarg  - false
 %                   Display some diagnostic plots
 %
 %
 HostConf = load('MTAConf');
 
-[trialName, offsets, dropSyncInd, includeSyncInd,autolabel, debug,                 host, local, overwrite] = DefaultArgs(varargin,...
-    {'all',   [0,0],          [],             [],    false, false, HostConf.host_server, false,     false});
+[trialName,mazeName, offsets, dropSyncInd, includeSyncInd,autolabel, debug,                 host, local, overwrite] = DefaultArgs(varargin,...
+    {'all',   'cof',   [0,0],          [],             [],    false, false, HostConf.host_server, false,     false});
 
-if ischar(Session), 
-    Sessions = SessionList(Session);
-
-    if isstruct(Sessions),
-        for s = Sessions,
-            if local,
-                MTAstartup(host,HostConf.data_server);
-            else
-                MTAstartup(host,s.host);
-            end            
-
-            Session = MTASession(s.name,...
-                                 s.mazeName);
-
-            xsync = Session.xyz.sync.copy;
-            xsync = xsync+offsets;
-            if isfield(s,'includeSyncInd'),
-                if ~isempty(s.includeSyncInd)
-                    dropSyncInd = ~ismember(1:xsync.size(1),s.includeSyncInd);
-                end
-            end
-
-            xsync.data(dropSyncInd,:) = [];            
-            Trial = MTATrial(Session,...
-                             s.trialName,...
-                             s.mazeName,...
-                             overwrite,...
-                             xsync);
-            Trial.save;
+% Try to grab a session list if one exists otherwise pass on the 
+Sessions = SessionList(Session);
+if isstruct(Sessions),
+    for s = Sessions,
+        if local,
+            MTAstartup(host,HostConf.data_server);
+        else
+            MTAstartup(host,s.host);
         end
-    else
+        
+        Session = MTASession(s.name,...
+            s.mazeName);
+        
         xsync = Session.xyz.sync.copy;
         xsync = xsync+offsets;
-        if ~isempty(includeSyncInd)
-            dropSyncInd = ~ismember(1:xsync.size(1),includeSyncInd);
+        if isfield(s,'includeSyncInd'),
+            if ~isempty(s.includeSyncInd)
+                dropSyncInd = ~ismember(1:xsync.size(1),s.includeSyncInd);
+            end
         end
+        
         xsync.data(dropSyncInd,:) = [];
-        Trial = MTATrial(Session,trialName,[],true,xsync);
+        Trial = MTATrial(Session,...
+            s.trialName,...
+            s.mazeName,...
+            overwrite,...
+            xsync);
         Trial.save;
     end
-
-else
-    autolabel = true;
+elseif (isa(Sessions,'MTASession')&&~isa(Sessions,'MTATrial'))||ischar(Sessions),
+    Session = Sessions;
+    if ischar(Session),
+        Session = MTASession(Session,mazeName); 
+    end
+    xsync = Session.xyz.sync.copy;
+    xsync = xsync+offsets;
+    if ~isempty(includeSyncInd)
+        dropSyncInd = ~ismember(1:xsync.size(1),includeSyncInd);
+    end
+    xsync.data(dropSyncInd,:) = [];
+    Trial = MTATrial(Session,trialName,[],true,xsync);
+    Trial.save;
 end
+
+
+
 
 
 
@@ -84,7 +86,7 @@ assert(offsets(:,1)>=0&offsets(:,2)<=0,'MTA:utilities:QuickTrialSetup:offsets, s
 %% Run labelBhv if all required markers are present
 % labelBhv functions only on Sessions with the H5B4(H0B9) model
 rmarkers = {'spine_lower','pelvis_root', 'spine_middle', 'spine_upper',...
-              'head_back',  'head_left',   'head_front',  'head_right'};
+    'head_back',  'head_left',   'head_front',  'head_right'};
 
 if sum(ismember(Trial.model.ml,rmarkers))==numel(rmarkers)&&autolabel
     Trial.stc.updateMode('auto_wbhr');

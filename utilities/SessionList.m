@@ -496,5 +496,5 @@ switch varargin{1}
 
   otherwise
     warning('SessionList:ListName the provided list name was not recognized')
-    Sessions ={};
+    Sessions = Seslist;
 end

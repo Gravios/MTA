@@ -32,7 +32,7 @@ cam(4).fov = 51;
 %for i=1:numel(c)
 %end
 
-i = 4
+i = 1
 
 cam(i).fov = deg2rad(cam(i).fov);
 r = [.4:.01:4]';
