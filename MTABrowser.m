@@ -1095,7 +1095,9 @@ for l=selected_states,
     ssl = ssl+1;
 end
 unselected_states = setdiff(1:length(MLData.state_lines),selected_states);
-set(cell2mat(MLData.state_lines(unselected_states)),'Visible','off');
+for i = 1:numel(unselected_states), 
+    MLData.state_lines{unselected_states(i)}.Visible = 'off';
+end
 
 MLData.statesRange = [-0.5,num_of_selected_states/2+0.5];
 set(handles.MLstateView,'Xlim',[-MLData.windowSize,MLData.windowSize],...

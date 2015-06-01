@@ -749,7 +749,7 @@ sacc = bsxfun(@rdivide,diag(cmat),sum(cmat,2));
 Data.fillgaps(.2);
 
 
-Trial = MTATrial('jg05-20120309');
+Trial = MTATrial('jg05-20120310');
 sampleRate = 30;
 fet = fet_lgr(Trial);
 fet.resample(sampleRate);
