@@ -264,6 +264,8 @@ BSdataManagement_Callback(handles.BSdataManagement, eventdata, handles)
 set(handles.MLdisplay,'Value',1);
 setappdata(handles.MLapp,'previousAppState',handles.MLdisplay);
 
+setappdata(handles.MTABrowser,'doLoadSession',false)
+
 % Choose default command line output for MTABrowser
 handles.output = hObject;
 
@@ -582,25 +584,28 @@ maze = mazes{mazeIndex};
 
 
 % load Session
-old_Session = getappdata(handles.MTABrowser,'SESSION_DATA');
-if ~strcmp([subject '-' date '.' maze '.all'],old_Session.filebase),
-    clear('old_Session');
-    setappdata(handles.MTABrowser,'Session',MTASession([]));
-    Session = MTASession([subject '-' date],maze);
-    setappdata(handles.MTABrowser,'SESSION_DATA',Session);
-else
-    Session = getappdata(handles.MTABrowser,'SESSION_DATA');
-end
 
-
-trialIndex = get(handles.TrialList,'Value');
-trials = get(handles.TrialList,'String');
-
-if strcmp(trials{trialIndex},'full session'),
-    setappdata(handles.MTABrowser,'Session',getappdata(handles.MTABrowser,'SESSION_DATA'));
-else
-    Trial = MTATrial(Session,trials{trialIndex});
-    setappdata(handles.MTABrowser,'Session',Trial);
+if getappdata(handles.MTABrowser,'doLoadSession'),
+    old_Session = getappdata(handles.MTABrowser,'SESSION_DATA');
+    if ~strcmp([subject '-' date '.' maze '.all'],old_Session.filebase),
+        clear('old_Session');
+        setappdata(handles.MTABrowser,'Session',MTASession([]));
+        Session = MTASession([subject '-' date],maze);
+        setappdata(handles.MTABrowser,'SESSION_DATA',Session);
+    else
+        Session = getappdata(handles.MTABrowser,'SESSION_DATA');
+    end
+    
+    
+    trialIndex = get(handles.TrialList,'Value');
+    trials = get(handles.TrialList,'String');
+    
+    if strcmp(trials{trialIndex},'full session'),
+        setappdata(handles.MTABrowser,'Session',getappdata(handles.MTABrowser,'SESSION_DATA'));
+    else
+        Trial = MTATrial(Session,trials{trialIndex});
+        setappdata(handles.MTABrowser,'Session',Trial);
+    end
 end
 function TrialList_CreateFcn(hObject, eventdata, handles)
 if ispc && isequal(get(hObject,'BackgroundColor'), get(0,'defaultUicontrolBackgroundColor'))
@@ -628,7 +633,9 @@ end
 function BSmotionLabeling_Callback(hObject, eventdata, handles)
 
 if hObject ~= getappdata(handles.MTABrowserStates,'previousBState'),
-
+    setappdata(handles.MTABrowser,'doLoadSession',true)
+    TrialList_Callback(hObject, eventdata, handles)
+    
     MLData = getappdata(handles.MTABrowser,'MLData');
     MLData.record = {};
     MLData.recording=0;

@@ -606,13 +606,13 @@ classdef MTAData < hgsetget
         %
             [start_points,segment_length,if_not_complete] = ...
                 DefaultArgs(varargin,{1:Data.size(1),round(.5*Data.sampleRate),nan});
-            oriDataSize = size(Data);
+            oriDataSize = Data.size(2:5);
             if numel(nargout)>1,
                 varargout = cell(1,2);
             else
                 varargout = cell(1,1);
             end
-            [varargout{:}] = reshape(GetSegs(Data.data,start_points,segment_length,if_not_complete),[segment_length,oriDataSize]);
+            [varargout{:}] = reshape(GetSegs(Data.data,start_points,segment_length,if_not_complete),[segment_length,numel(start_points),oriDataSize]);
 
         end
 

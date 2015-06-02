@@ -724,6 +724,20 @@ nper = ThreshCross(dind-1,.5,10);
 aper = aper-nper;
 end
 
+d_sit = mnrval(B{1},fet.data);
+B_sit = B{1}(2:end);
+f_sit = find(abs(B_sit)>1);
+
+B_sel = {};
+[smat] = max(stc2mat(Trial.stc,fet,{'sit'}),[],2);
+ind = resample(cast(aper.copy,'TimeSeries'),fet);
+ind.data(isnan(ind.data)) = 0;
+ind = logical(ind.data);
+[B_sel{end+1}] = mnrfit(fet(ind,f_sit),smat(ind)+1,'model','nominal');
+
+d_sit_sel = mnrval(B_sel{1},fet.data(:,f_sit));
+
+figure,hold on,plot(d_sit),plot(d_sit_sel)
 
 % hierarchy lies in the order of states
 tnew_smat = new_smat;

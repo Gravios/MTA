@@ -444,3 +444,28 @@ h = bar(edgs,n,'histc');
 h.FaceColor = 'r';
 h.FaceAlpha = .5;
 
+
+% Had a Thought, How does the sitting periods distributions relate to their
+% durations
+Trial = MTATrial('jg05-20120317');
+xyz = Trial.load('xyz');
+vxy = xyz.vel(1,[1,2]);
+vxy.filter('ButFilter',3,4,'low');
+
+ms = [];
+vs = [];
+ds = diff(Trial.stc{'w'}.data,1,2);
+for s = Trial.stc{'w'}.data',
+    ms(end+1) = mean(vxy(s'));
+    vs(end+1) = var(vxy(s'));
+end
+
+figure,plot(log10(ms),log10(ds),'.')
+figure,plot(log10(ms),log10(vs),'.')
+figure,plot(log10(ds),log10(ms.*vs),'.')
+
+figure,hist2(log10([ds,vs']),50,50)
+
+
+
+
