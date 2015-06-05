@@ -1,8 +1,8 @@
-function [smat,labels,keys] = stc2mat(Stc,Data,varargin)
+function [smat,labels,keys] = mat2stc(mstc,Stc,sampleRate,varargin)
 %function [smat,labels,keys] = stc2mat(Stc,Data)
 % assumes no heirarchical relationships between states
 % each is mutually exclusive from all others
-[states] = DefaultArgs(varargin,{Stc.list_state_attrib('key')},true);
+[labels,keys,sync,origin] = DefaultArgs(varargin,{Stc.list_state_attrib('key'),T},true);
 
 Stc = Stc.copy; % Don't mess up the Stc in other workspaces
 
@@ -12,8 +12,8 @@ keys = {};
 labels = {};
 g = 1;
 for i = Stc.gsi(states),
-    tper = [Stc.states{i}];
-    tper = resample(tper.cast('TimeSeries'),Data);
+    tper = resample(Stc.states{i},Data);
+    tper.cast('TimeSeries');
     smat(tper==1,g) = g;
     if nargout>1,
         keys(g) = {tper.key};

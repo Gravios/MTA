@@ -1,4 +1,4 @@
-function fet = fet_lgr(Trial,varargin)
+function fet = fet_lgrN(Trial,varargin)
 %function fet = fet_lgr(Trial,sampleRate)
 %
 
@@ -67,4 +67,4 @@ fet = MTADfet('data',[vl(:,'spine_lower')  ,...                         1. [walk
               'label','fet_lgr',...
               'key','g');
               
-
+fet.data = nunity(fet.data);

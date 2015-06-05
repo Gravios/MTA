@@ -225,7 +225,8 @@ classdef MTAStateCollection < hgsetget
                                     sts{2} = MTADepoch.intersect(sts(1:2));
                                     sts(1) = [];
                                   case '+'
-                                    sts{2} = MTADepoch.join(sts(1:2));
+                                    sts{2} = sts{1}+sts{2};
+                                    %sts{2} = MTADepoch.join(sts(1:2));
                                     sts(1) = [];
                                   case '|'
                                     sts{2} = MTADepoch.join(sts(1:2));

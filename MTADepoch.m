@@ -153,7 +153,7 @@ classdef MTADepoch < MTAData
         %       
         % Future: suport TimeSeries versions
         
-        if isa(a,'MTADepoch')&&ismatrix(b)
+        if isa(a,'MTADepoch')&&~isa(b,'MTADepoch')
             if strcmp(a.type,'TimePeriods'),
                 Data = a.copy;
                 b = b*a.sampleRate;
@@ -166,7 +166,7 @@ classdef MTADepoch < MTAData
             elseif strcmp(a.type,'TimeSeries'),
             end
             
-        elseif isa(b,'MTADepoch')&&ismatrix(a)
+        elseif isa(b,'MTADepoch')&&~isa(a,'MTADepoch')
             if strcmp(a.type,'TimePeriods'),
                 Data = b.copy;
                 a = a*b.sampleRate;
