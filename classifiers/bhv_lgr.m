@@ -91,7 +91,7 @@ Stc.states = {};
 % You know this is irresposible code... don't give me that look
 d_state = mnrval(B,lrfet.data);
 d_state = MTADxyz('data',d_state,'sampleRate',lrfet.sampleRate);
-d_state.resample(Trial.load('xyz'));
+%d_state.resample(Trial.load('xyz'));
 d_state = d_state.data;
 
 % Separate the winners from the losers
@@ -99,9 +99,9 @@ d_state = d_state.data;
 maxState(~nind,:) = 0;
 
 % Smooth decision boundaries - 200 ms state minimum
-bwin = round(.2*lrfet.sampleRate)+double(mod(round(.2*lrfet.sampleRate),2)==0);
-mss = GetSegs(maxState,1:size(maxState,1),bwin,nan);
-maxState=circshift(sq(mode(mss))',floor(bwin/2));
+% $$$ bwin = round(.2*lrfet.sampleRate)+double(mod(round(.2*lrfet.sampleRate),2)==0);
+% $$$ mss = GetSegs(maxState,1:size(maxState,1),bwin,nan);
+% $$$ maxState=circshift(sq(mode(mss))',floor(bwin/2));
 
 % Populate Stc object with the new states
 for i = 1:numel(Model_Information.state_labels),
@@ -114,7 +114,7 @@ Stc.addState(Trial.spath,...
              Model_Information.state_labels{i},...
              Model_Information.state_keys{i},...
              'TimePeriods');
-Stc.states{i} = Stc.states{i}+[1/lrfet.sampleRate,0];
+%Stc.states{end} = Stc.states{end}+[1/lrfet.sampleRate,0];
 end
 
 

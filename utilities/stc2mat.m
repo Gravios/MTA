@@ -11,7 +11,7 @@ smat = zeros([Data.size(1),nsts]);
 keys = {};
 labels = {};
 g = 1;
-for i = Stc.gsi(states),
+for i = Stc.gsi(states), % change this for loop to something better
     tper = [Stc.states{i}];
     tper = resample(tper.cast('TimeSeries'),Data);
     smat(tper==1,g) = g;

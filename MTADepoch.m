@@ -242,9 +242,6 @@ classdef MTADepoch < MTAData
         end
 
          
-% $$$         function perDiff = uminus(Data)
-% $$$             perDiff = diff(Data.data,1,2);
-% $$$         end
 
         function Data = and(a,b)
         %function Data = and(a,b)
@@ -324,7 +321,7 @@ classdef MTADepoch < MTAData
             switch Data.type
                 case 'TimePeriods'
                     if size(Data.data,1)>1,
-                        interPerDur = Data.data(1:end-1,2)-Data.data(2:end,1);
+                        interPerDur = Data.data(2:end,1)-Data.data(1:end-1,2);
                         c = 1;
                         while ~isempty(interPerDur)
                             if interPerDur(1)<gap_size,
@@ -344,7 +341,7 @@ classdef MTADepoch < MTAData
                         if perStop(1)<perStart(1),perStart = [1;perStart]; end
                         if perStop(end)<perStart(end),perStop = [perStop;size(Data,1)]; end
                         
-                        interPerDur = perStop(1:end-1)-perStart(2:end);
+                        interPerDur = perStart(2:end)-perStop(1:end-1);
                         c = 1;
                         while ~isempty(interPerDur)
                             if interPerDur(1)<gap_size,
@@ -431,9 +428,6 @@ classdef MTADepoch < MTAData
 % $$$             end
 % $$$         end
 
-% $$$         function perDiff = uminus(Data)
-% $$$             perDiff = diff(Data.data,1,2);
-% $$$         end
 
     end
 end

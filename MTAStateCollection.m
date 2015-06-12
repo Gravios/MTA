@@ -94,6 +94,7 @@ classdef MTAStateCollection < hgsetget
                 end
             end
             if ~isempty(Session)
+                Stc.path = Session.spath;
                for s = 1:numel(Stc.states(:)),
                    Session.resync(Stc.states{s});
                end

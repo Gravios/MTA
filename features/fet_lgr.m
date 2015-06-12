@@ -12,9 +12,9 @@ end
 dsx = Trial.load('xyz');
 
 vl = dsx.vel([1,3,7],[1,2]);
+vl.resample(sampleRate);
 vl.filter('ButFilter',3,2);
 vl.data(vl.data<0.0001) = 0.0001;
-vl.resample(sampleRate);
 vl.data = log10(vl.data);
 
 dsx.resample(sampleRate);
@@ -35,14 +35,14 @@ da = circshift(circ_dist(circshift(dsa(:,'pelvis_root','head_left',1),-w),dsa(:,
 da = circshift(nanmean(GetSegs(da,1:size(da,1),lw,nan))',lh);
 dsv = max([abs(d),abs(ds),abs(da)],[],2);
 
-bs = fet_shake(Trial,'raw');
-bs = bs(1:end-(size(bs,1)-dsx.size(1)));
+% $$$ bs = fet_shake(Trial,'raw');
+% $$$ bs = bs(1:end-(size(bs,1)-dsx.size(1)));
 
 fet = MTADfet('data',[vl(:,'spine_lower')  ,...                         1. [walk] Low pass filtered speed of the lower body
                       vl(:,'spine_middle') ,...                         2. [walk] Low pass filtered speed of the mid body
                       vl(:,'head_front')   ,...                         3. [walk] Low pass filtered speed of the head
                       dsv,...                                           4. smoothed angular speed
-                      bs,...                                            5. shake feature
+                      ...bs,...                                            5. shake feature
                       dsx(:,'spine_lower',3),...                        6. Height of the lower body
                       dsx(:,'head_front',3)-dsx(:,'spine_lower',3),...  7. Difference in height between head and body
                       dsa(:,'spine_lower','pelvis_root',2) ,...         8. Pitch of the lower back
