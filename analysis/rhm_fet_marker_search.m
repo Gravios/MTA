@@ -1,37 +1,38 @@
-%Trial = MTATrial('Ed05-20140528');
+Trial = MTATrial('Ed05-20140528');
 Trial = MTATrial('Ed10-20140814');
 %Trial = MTATrial('jg05-20120317');
 %stc_mode = 'qda_filtf1p5';
 stc_mode = 'auto_wbhr';
 Trial.stc.updateMode(stc_mode);Trial.stc.load;
 
-xyz = Trial.xyz.copy;
-xyz.load(Trial);
+
+xyz = Trial.load('xyz');
 
 
 %% Calculate the Center of Mass of the head for each frame
 rb = Trial.xyz.model.rb({'head_back','head_left','head_front','head_right'});
-hcom = xyz.com(rb);
-% not filtered
-xyz.addMarker('hcom',[.7,0,.7],{{'head_back','head_front',[0,0,255]}},hcom);
-% filtered
-xyz.addMarker('fhcom',[.7,1,.7],{{'head_back','head_front',[0,0,255]}},ButFilter(hcom,3,[2]./(Trial.ang.sampleRate/2),'low'));
+
+hcom = MTADxyz('data',xyz.com(rb),'sampleRate',xyz.sampleRate);
+xyz.addMarker('hcom',[.7,0,.7],{{'head_back','head_front',[0,0,255]}},hcom.data);
+
+hcom.filter('ButFilter',3,2,'low');
+xyz.addMarker('fhcom',[.7,1,.7],{{'head_back','head_front',[0,0,255]}},hcom.data);
 
 
 
 %% Calculate Rotation Matrix: normal of the head plane as axis of rotation
 
-
 xyz_hb_b = sq(xyz(:,'head_back',:)-xyz(:,'hcom',:));
 xyz_hb_r = sq(xyz(:,'head_right',:)-xyz(:,'hcom',:) );
-xyz_hb_l = sq(xyz(:,'head_right',:)-xyz(:,'hcom',:) );
-xyz_hf_r = sq(xyz(:,'head_right',:)-xyz(:,'hcom',:) );
-xyz_hf_l = sq(xyz(:,'head_right',:)-xyz(:,'hcom',:) );
+%xyz_hb_l = sq(xyz(:,'head_right',:)-xyz(:,'hcom',:) );
+%xyz_hf_r = sq(xyz(:,'head_right',:)-xyz(:,'hcom',:) );
+%xyz_hf_l = sq(xyz(:,'head_right',:)-xyz(:,'hcom',:) );
 
-
+ax_ord = [2,3,1];
 head_norm = cross(xyz_hb_b,xyz_hb_r);
 head_norm = multiprod(head_norm,1./sqrt(sum(head_norm.^2,2)),2);
 j =1:3;
+head_norm = head_norm(:,ax_ord);
 head_kron = reshape(repmat(head_norm',3,1).*head_norm(:,j(ones(3,1),:)).',[3,3,size(head_norm,1)]);
 j = [ 0,-1, 1;...
       1, 0,-1;...
@@ -39,18 +40,75 @@ j = [ 0,-1, 1;...
 k = [1,3,2;...
      3,1,1;...
      2,1,1];
-head_cpm = reshape(head_norm(:,k)',3,3,size(head_norm,1)).*repmat(j,[1,1,size(head_norm,1)]);
+head_cpm = reshape(head_norm(:,k)',3,3,size(head_norm,1))...
+           .*repmat(j,[1,1,size(head_norm,1)]);
 rot_ang = deg2rad(45);
-head_rotMat = cos(rot_ang)*repmat(eye(3),[1,1,size(head_norm,1)])+sin(rot_ang)*head_cpm+(1-cos(rot_ang))*head_kron;
+head_rotMat = cos(rot_ang)*repmat(eye(3),[1,1,size(head_norm,1)])...
+              +sin(rot_ang)*head_cpm...
+              +(1-cos(rot_ang))*head_kron;
 
 j =1:3;
 
 % Rotated marker;
 nmark = permute(sum(head_rotMat.*permute(reshape(xyz_hb_b(:,j(ones(3,1),:)),[size(head_norm,1),3,3]),[2,3,1]),2),[3,1,2]);
 
-xyz.addMarker('head_br45',[.7,0,.7],{{'head_back','head_right',[0,0,255]}},permute(nmark,[1,3,2])+hcom)
+xyz.addMarker('head_br45',[.7,0,.7],{{'head_back','head_right',[0,0,255]}},permute(nmark,[1,3,2])+hcom.data);
 
 
+%% END marker rotation within head reference system
+
+%% New head coordinate refrences with equal norms
+  Trial = MTATrial('jg05-20120317');
+    fs = []; ts = [];
+
+    xyz = Trial.load('xyz');
+    % create a ridgid body model
+    rb = Trial.xyz.model.rb({'head_back','head_left','head_front','head_right'});
+    % find the center of mass of the model
+    hcom = xyz.com(rb);
+
+    % add coordinates of the model's center of mass to the xyz object
+    xyz.addMarker('fhcom',[.7,1,.7],{{'head_back','head_front',[0,0,1]}},...
+                  ButFilter(hcom,3,[2]./(Trial.xyz.sampleRate/2),'low'));
+
+    xyz.addMarker('hcom',[.7,1,.7],{{'head_back','head_front',[0,0,1]}},hcom);
+
+    nm = cross(xyz(:,'head_back',:)-hcom,xyz(:,'head_right',:)-hcom);
+    nm = bsxfun(@rdivide,nm,sqrt(sum((nm).^2,3))).*20+hcom;
+
+    xyz.addMarker('htx',[.7,1,.7],{{'head_back','head_front',[0,0,1]}},nm);
+
+    nm = cross(xyz(:,'htx',:)-hcom,xyz(:,'head_back',:)-hcom);
+    nm = bsxfun(@rdivide,nm,sqrt(sum((nm).^2,3))).*20+hcom;
+    
+    xyz.addMarker('hrx',[.7,1,.7],{{'head_back','head_front',[0,0,1]}},nm);
+
+    nm = cross(xyz(:,'hrx',:)-hcom,xyz(:,'htx',:)-hcom);
+    nm = bsxfun(@rdivide,nm,sqrt(sum((nm).^2,3))).*20+hcom;
+    
+    xyz.addMarker('hbx',[.7,1,.7],{{'head_back','head_front',[0,0,1]}},nm);
+    
+    
+    
+    
+    ind = 1000;
+    figure,plot3(nm(ind,1,1),nm(ind,1,2),nm(ind,1,3),'.m')
+    hold on,plot3(xyz(ind,7,1),xyz(ind,7,2),xyz(ind,7,3),'.b')
+    hold on,plot3(xyz(ind,5,1),xyz(ind,5,2),xyz(ind,5,3),'.r')
+    hold on,plot3(xyz(ind,6,1),xyz(ind,6,2),xyz(ind,6,3),'.b')
+    hold on,plot3(xyz(ind,8,1),xyz(ind,8,2),xyz(ind,8,3),'.b')
+    hold on,plot3(xyz(ind,12,1),xyz(ind,12,2),xyz(ind,12,3),'.m')
+    hold on,plot3(xyz(ind,13,1),xyz(ind,13,2),xyz(ind,13,3),'.m')
+    hold on,plot3(xyz(ind,14,1),xyz(ind,14,2),xyz(ind,14,3),'.m')
+    hold on,plot3(mean(xyz(ind,12:14,1)),mean(xyz(ind,12:14,2)),mean(xyz(ind,12:14,3)),'.c')
+    
+    xyz.filter(gausswin(5)./sum(gausswin(5)));
+
+    ang = create(Trial.ang.copy,Trial,xyz);
+    ang.data(~nniz(ang(:,1,2,1)),:,:,:)=0;
+    bang = [];
+% 
+%%
 
 plot3(xyz_hb_b(1:1000,1),xyz_hb_b(1:1000,2),xyz_hb_b(1:1000,3)),
 old on,
@@ -61,7 +119,9 @@ plot3(nmark(1:1000,1),nmark(1:1000,2),nmark(1:1000,3),'g')
 
 txyz = xyz.data;
 txyz = txyz-repmat(txyz(:,10,:),[1,size(txyz,2),1]);
-cxbr1 = (txyz(:,8,:)+txyz(:,5,:))./repmat(sqrt(sum((txyz(:,8,:)+txyz(:,5,:)).^2,3)),[1,1,3]).*repmat(sqrt(sum(txyz(:,5,:).^2,3)),[1,1,3])+xyz(:,10,:);
+cxbr1 = (txyz(:,8,:)+txyz(:,5,:))...
+        ./repmat(sqrt(sum((txyz(:,8,:)+txyz(:,5,:)).^2,3)),[1,1,3])...
+        .*repmat(sqrt(sum(txyz(:,5,:).^2,3)),[1,1,3])+xyz(:,10,:);
 cxbr1(~nniz(cxbr1(:)))=0;
 xyz.addMarker(['hm_' num2str(1)],[.7,0,.7],{{'head_back','head_front',[0,0,1]}},cxbr1);
 
@@ -387,40 +447,43 @@ end
 
 
 
-
+Trial = MTATrial('Ed05-20140528');
 xyz = Trial.load('xyz');
+xyz.filter('ButFilter',3,55,'low');
 rb = Trial.xyz.model.rb({'head_back','head_left','head_front','head_right'});
-% find the center of mass of the model
-hcom = xyz.com(rb);
-% add coordinates of the model's center of mass to the xyz object
-xyz.addMarker('fhcom',[.7,1,.7],{{'head_back','head_front',[0,0,1]}},ButFilter(hcom,3,[2]./(Trial.xyz.sampleRate/2),'low'));
-xyz.addMarker('fbcom',[.7,1,.7],{{'head_back','head_front',[0,0,1]}},ButFilter(xyz(:,4,:),3,[2]./(Trial.xyz.sampleRate/2),'low'));
-% if xyz sampling rat e is greater than 120 Hz then resample it to 120 Hz
-xyz.filter(gausswin(5)./sum(gausswin(5)));
 
+hcom = MTADxyz('data',xyz.com(rb),'sampleRate',xyz.sampleRate);
+hcom.filter('ButFilter',3,2,'low');
+xyz.addMarker('fhcom',[.7,1,.7],{{'head_back','head_front',[0,0,1]}},hcom.data);
 
 ang = create(MTADang,Trial,xyz);
 
 fet = Trial.xyz.copy;
-fet.data = ButFilter([ang(:,5,10,3),ang(:,6,10,3),ang(:,9,10,3)],3,[2,50]/(ang.sampleRate/2),'bandpass');
-%bang = ButFilter(ang(:,'head_back','fhcom',3),3,[2,50]./(Trial.ang.sampleRate/2),'bandpass');
-%bang = [bang,ButFilter(ang(:,'head_right','fhcom',3),3,[2,50]./(Trial.ang.sampleRate/2),'bandpass')];
-%bang = [bang,ButFilter(ang(:,'head_top','fhcom',3),3,[2,50]./(Trial.ang.sampleRate/2),'bandpass')];
+fet.data =[ang(:,5,10,3),ang(:,6,10,3),ang(:,9,10,3)];
+fet.filter('ButFilter',3,[2,50],'bandpass');
+fet.data =  diff(fet.data);
+fet.filter('ButFilter',3,[2,50],'bandpass');
+
 
 [rhm,fs,ts,phi,fst] = fet_spec(Trial,fet,'mtchglong',true);
+
 
 figure,sp = [];
 sp(1) = subplot(311)
 imagesc(ts,fs,log10(rhm(:,:,1,1))');
-caxis([-7,-2]),axis xy
+caxis([-7,-2]),axis xy,colormap jet
 sp(2) = subplot(312)
-imagesc(ts,fs,(rhm(:,:,1,3))');
+imagesc(ts,fs,(rhm(:,:,1,3))');colormap jet
 axis xy
 sp(3) = subplot(313)
 imagesc(ts,fs,log10(rhm(:,:,3,3))');
-caxis([-7,-2]),axis xy
+caxis([-7,-2]),axis xy,colormap jet
 linkaxes(sp,'xy')
 
+fsi = fs>6&fs<14;
+mrhm = sq(median(cat(3,rhm(:,fsi,1,1),rhm(:,fsi,2,2),rhm(:,fsi,3,3)),2));
+
+[U,S,V] = svd(cov(log10(mrhm(nniz(mrhm),:))));
 [U,S,V] = svd(cov(fet(nniz(fet),:)));
 nfet = fet.copy;
 nfet.data = ButFilter(diff(fet.data*V(1,:)'),3,[2,50]./(Trial.ang.sampleRate/2),'bandpass');
@@ -435,4 +498,13 @@ caxis([-4,-2]),axis xy
                    mean(rhm(nniz(rhm(:,:,1,1)),fs<15&fs>6,2,2),2),...
                    mean(rhm(nniz(rhm(:,:,1,1)),fs<15&fs>6,3,3),2)]));
 
+
+figure,sp = [];
+sp(1) = subplot(311)
+imagesc(ts,fs,log10(ys(:,:,1))');
+caxis([-7,-2]),axis xy,colormap jet
+sp(2) = subplot(312)
+imagesc(ts,fs,log10(ys(:,:,3))');
+caxis([-7,-2]),axis xy,colormap jet
+linkaxes(sp,'xy')
 

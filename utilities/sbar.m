@@ -10,9 +10,9 @@ astates = ['a-' states];
 figure(hfig),
 hold on
 ind = Trial.stc{astates};
-bar(hax,edgs,histc(log10(fet(ind,1)),edgs),'histc');
+bar(hax,edgs,histc(fet(ind,1),edgs),'histc');
 ind = Trial.stc{states};
-h = bar(hax,edgs,histc(log10(fet(ind,1)),edgs),'histc');
+h = bar(hax,edgs,histc(fet(ind,1),edgs),'histc');
 h.FaceColor = 'r';
 h.FaceAlpha = .5;
 hold off
