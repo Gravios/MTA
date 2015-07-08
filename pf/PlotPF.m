@@ -55,7 +55,7 @@ SOcc = convn(Occupancy,Smoother,'same');
 SCount = convn(SpikeCount,Smoother,'same');
 
 
-OccThresh = 1;%0.06;0.12;%
+OccThresh = .1;%0.06;0.12;%
 %% Find the total occupancy and each pixels 
 %% probability of occupancy
 gtind = SOcc>OccThresh;

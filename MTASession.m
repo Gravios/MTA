@@ -472,7 +472,7 @@ classdef MTASession < hgsetget
             
             if xyz.isempty,
                 xyz.load(Session);
-                xyz.filter('gauss',gtwin(.1,xyz.sampleRate));
+                xyz.filter('ButFilter',3,50,'low');
             end
             
             diffMat = markerDiffMatrix(xyz);
@@ -490,12 +490,12 @@ classdef MTASession < hgsetget
             
             % Transform other marker difference vectors
             if ~isempty(vectorTranSet),
-                vecTSet = zeros(mdvlen,length(vectorTranSet),3);
+                vecTSet = zeros(mdvlen,numel(vectorTranSet),3);
                 for i = 1:length(vectorTranSet),
-                    rztrans = sum(rzMat.* repmat(permute(shiftdim(squeeze(diffMat(:,origin,Session.model.gmi(vectorTranSet(i)),:)),-1),[2 1 3]),[1 3 1]),3);
+                    rztrans = sum(rzMat.* repmat(permute(shiftdim(squeeze(diffMat(:,origin,xyz.model.gmi(vectorTranSet(i)),:)),-1),[2 1 3]),[1 3 1]),3);
                     rytrans = sum(ryMat.* repmat(permute(shiftdim(rztrans,-1),[2 1 3]),[1 3 1]),3);
                     vecTSet(:,i,:) = rytrans;
-                    tCMarkers(end+1) = Session.model.gmi(vectorTranSet(i)); %#ok<*AGROW>
+                    tCMarkers(end+1) = xyz.model.gmi(vectorTranSet(i)); %#ok<*AGROW>
                 end
                 % detect head roll and remove by transformation
                 [tCoordinates, roll] = detectRoll(vecTSet);

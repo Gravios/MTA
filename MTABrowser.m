@@ -457,42 +457,48 @@ if getappdata(handles.DMapp,'load_sessions'),
     tmaze{1} = mazelist{1};
     ttrial{1} = triallist{1};
     uniqueSubject = [];
+ 
+    if numel(sessionList)>1,
+        for i = 2:length(sessionList),
+            tsubject = sessionList{i}(1:regexp(sessionList{i},re)+1);
+            uniqueSubject = ~cellfun(@strcmp,...
+                                     subjectList,...
+                                     repmat({sessionList{i}(1:regexp(sessionList{i},re)+1)},...
+                                            1,length(subjectList))...
+                                     );
 
-    for i = 2:length(sessionList),
-        tsubject = sessionList{i}(1:regexp(sessionList{i},re)+1);
-        uniqueSubject = ~cellfun(@strcmp,...
-                                 subjectList,...
-                                 repmat({sessionList{i}(1:regexp(sessionList{i},re)+1)},...
-                                        1,length(subjectList))...
-                                 );
-
-        if length(uniqueSubject)==sum(uniqueSubject),
             if length(uniqueSubject)==sum(uniqueSubject),
-                subjectList{end+1} = tsubject; %#ok<*AGROW>
+                if length(uniqueSubject)==sum(uniqueSubject),
+                    subjectList{end+1} = tsubject; %#ok<*AGROW>
+                end
+                dateList{end+1} = tdate;
+                tdate = {};
+                mazeList{end+1} = tmaze;
+                tmaze = {};
+                trialList{end+1} = ttrial;
+                ttrial = {};
+
             end
-            dateList{end+1} = tdate;
-            tdate = {};
-            mazeList{end+1} = tmaze;
-            tmaze = {};
-            trialList{end+1} = ttrial;
-            ttrial = {};
+
+            tdate{end+1} = sessionList{i}(regexp(sessionList{i},re)+3:end);
+            tmaze{end+1} = mazelist{i};
+            ttrial{end+1} = triallist{i};
+
+            if i==length(sessionList),
+                dateList{end+1} = tdate;
+                tdate = {};
+                mazeList{end+1} = tmaze;
+                tmaze = {};
+                trialList{end+1} = ttrial;
+                ttrial = {};
+
+            end
 
         end
-
-        tdate{end+1} = sessionList{i}(regexp(sessionList{i},re)+3:end);
-        tmaze{end+1} = mazelist{i};
-        ttrial{end+1} = triallist{i};
-
-        if i==length(sessionList),
-            dateList{end+1} = tdate;
-            tdate = {};
-            mazeList{end+1} = tmaze;
-            tmaze = {};
-            trialList{end+1} = ttrial;
-            ttrial = {};
-
-        end
-
+    else
+        dateList{end+1} = tdate;
+        mazeList{end+1} = tmaze;
+        trialList{end+1} = ttrial;
     end
 
 

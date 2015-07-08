@@ -242,7 +242,7 @@ Stc.save(1)
 %     end
 % 
 %     
-% % compute lgr coefficients
+p% % compute lgr coefficients
 % smat = zeros([size(amv,1),1]);
 % smat = cat(1,smat,ones([size(smv,1),1]));
 % [Bp{end+1}] = mnrfit([amv;smv],smat+1,'model','nominal');
@@ -521,7 +521,7 @@ save(fullfile(Trial.spath,[Trial.filebase '-rec_lgr-randClassHeir-4.mat']), ...
               'iter_new_smat')
 ds = load(fullfile(Trial.spath,[Trial.filebase '-rec_lgr-randClassHeir-4.mat']));
 
-ds
+
 
 fileList = dir(Trial.spath);
 files = {};
@@ -546,6 +546,8 @@ for file = files',
 end    
     
 iters = numel(ds.iter_B);
+
+iters = 5;
 
 iter_cmat = nan([iters,numel(states)+1,numel(states)+1]);
 iter_tpr = nan([iters,numel(states)+1]);
@@ -627,3 +629,5 @@ figure,hist(iter_ppv(:,1),edgs)
 figure,hist(iter_ppv(:,2),edgs)
 figure,hist(iter_ppv(:,3),edgs)
 figure,hist(iter_ppv(:,4),
+
+

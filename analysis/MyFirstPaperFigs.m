@@ -94,8 +94,7 @@ switch mode,
     MTAConfiguration('/gpfs01/sirota/bach/data/gravio','absolute');
 
     Trial = MTATrial('jg05-20120317','all');
-    Trial.xyz.load(Trial);
-    Trial.filter('xyz',gausswin(31)./sum(gausswin(31)));
+    xyz = Trial.load('xyz');
 
     states = 'twr';
     states = 'wgl';
@@ -111,8 +110,8 @@ switch mode,
 
 
     dmax = 100;dmin =0.1;
-    dxys = Trial.vel(1:Trial.xyz.size(2),[1,2]).*Trial.xyz.sampleRate./10;
-    dxys = MTADxyz([],[],dxys,Trial.xyz.sampleRate,[],[],Trial.xyz.model);
+    dxys = xyz.vel([],[1,2]);
+    dxys.filter('ButFilter',3,4,'low');
 
     figure,set(0,'defaulttextinterpreter','none')
     for state=states,subplot(3,1,find(state==states));

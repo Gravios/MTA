@@ -41,8 +41,11 @@ switch mode
     data = zeros(fet.size);
     
     if wsig,
-        try,load(fullfile(Trial.path.MTAPath,[mfilename,fet.label,'_' fet.key '.arm.mat']));end
-        %OLD try,load(fullfile(Trial.path.MTAPath,[mfilename,'.arm.mat']));end
+        if ischar(wsig),
+            try,load(fullfile(Trial.path.MTAPath,wsig));end
+        else
+            try,load(fullfile(Trial.path.MTAPath,[mfilename,fet.label,'_' fet.key '.arm.mat']));end
+        end
         
         if ~exist('ARmodel','var'), overwrite = true; end
         

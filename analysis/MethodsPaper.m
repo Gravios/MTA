@@ -63,13 +63,19 @@ imagesc(img);
     
     xyz.addMarker('hbx',[.7,1,.7],{{'head_back','head_front',[0,0,1]}},nm);
     
+    
+    
+    
     ind = 1000;
     figure,plot3(nm(ind,1,1),nm(ind,1,2),nm(ind,1,3),'.m')
     hold on,plot3(xyz(ind,7,1),xyz(ind,7,2),xyz(ind,7,3),'.b')
-    hold on,plot3(xyz(ind,5,1),xyz(ind,5,2),xyz(ind,5,3),'.b')
-    hold on,plot3(xyz(ind,6,1),xyz(ind,6,2),xyz(ind,6,3),'.g')
-    hold on,plot3(xyz(ind,8,1),xyz(ind,8,2),xyz(ind,8,3),'.r')
-    
+    hold on,plot3(xyz(ind,5,1),xyz(ind,5,2),xyz(ind,5,3),'.r')
+    hold on,plot3(xyz(ind,6,1),xyz(ind,6,2),xyz(ind,6,3),'.b')
+    hold on,plot3(xyz(ind,8,1),xyz(ind,8,2),xyz(ind,8,3),'.b')
+    hold on,plot3(xyz(ind,12,1),xyz(ind,12,2),xyz(ind,12,3),'.m')
+    hold on,plot3(xyz(ind,13,1),xyz(ind,13,2),xyz(ind,13,3),'.m')
+    hold on,plot3(xyz(ind,14,1),xyz(ind,14,2),xyz(ind,14,3),'.m')
+    hold on,plot3(mean(xyz(ind,12:14,1)),mean(xyz(ind,12:14,2)),mean(xyz(ind,12:14,3)),'.c')
     
     xyz.filter(gausswin(5)./sum(gausswin(5)));
 

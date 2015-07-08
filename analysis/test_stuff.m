@@ -468,4 +468,26 @@ figure,hist2(log10([ds,vs']),50,50)
 
 
 
+%% Checking out Pfs stuff to see if it still works
+pfs = {};
+pfs{1} = MTAApfs(Trial,[],'gper');
+pfs{2} = MTAApfs(Trial,[],'rear');
+pfs{3} = MTAApfs(Trial,[],'groom');
+pfs{4} = MTAApfs(Trial,[],'walk');
+
+
+units = pfs{1}.data.clu;
+unit = 1;
+spo = [1,2,3,4];
+hfig = figure(13939);
+while unit~=-1,    
+    for s = 1:numel(pfs),
+        subplot(2,2,spo(s));
+        pfs{s}.plot(unit);
+        title([pfs{s}.parameters.states ' :' num2str(unit)]);
+    end
+    unit = figure_controls(hfig,unit,units);
+end    
+
+        
 
