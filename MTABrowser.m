@@ -2083,6 +2083,15 @@ switch eventdata.Key
             setappdata(handles.MLapp,'play_speed',newPlaySpeed);
             set(handles.MLplayspeed_slider,'Value', newPlaySpeed);
 
+      case '1'
+            view(handles.MLxyzView,[1,0,0])
+    
+      case '2'
+            view(handles.MLxyzView,[0,1,0])
+  
+      case '3'
+             view(handles.MLxyzView,[0,0,1])
+    
         
         
     otherwise
