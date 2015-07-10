@@ -96,22 +96,19 @@ xyz = Trial.load('xyz');
 
 % You can filter data with an arbitrary window
 %xyz.filter(ones([1,7])./7);
-xyz.filter(gtwin(.1,xyz.sampleRate)); %see help gtwin for gaussian kernals
+xyz.filter('ButFilter',3,50,'low'); %see help gtwin for gaussian kernals
 
 % Load xyz without an existing Trial object... still makes a
 % temporary one though so it's not super useful but it can do it
-xyz = MTATrial('jg05-20120309').load('xyz').filter(gtwin(.25,120));
+xyz = MTATrial('jg05-20120309').load('xyz').filter('ButFilter',3,50,'low');
 
 
-% but maybe you want angles of the marker segments relative to the room?
-ang = Trial.load('ang');
 
 % this is crapy though since the angles are not easily smoothed in
 % the time domain, so we can create a new set based on a smoothed xyz
 xyz = Trial.load('xyz');
-xyz.filter(gtwin(.2,xyz.sampleRate)); 
-ang = Trial.ang.copy;
-ang.create(Trial,xyz);
+xyz.filter('ButFilter',3,50,'low'); 
+ang = create(MTADang,Trial,xyz);
 
 
 % Marker segment angles are relative to the room coordinate system.

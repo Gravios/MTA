@@ -93,12 +93,14 @@ data = getappdata(figureId);
 
 
 figure;
-line(data.x(data.cluster_points==0),data.y(data.cluster_points==0),'LineStyle','.','Color',[.8 .8 .8])
+line(data.x(data.cluster_points==0),data.y(data.cluster_points==0),...
+     'LineStyle','-.',...
+     'Color',[.8 .8 .8])
 hold on
 color=colormap(hsv(max(data.cluster_points)));
 for cl=1:max(data.cluster_points),
     line(data.x(data.cluster_points==cl),data.y(data.cluster_points==cl),...
-         'LineStyle',  '.',                                    ...
+         'LineStyle',  '--',                                    ...
          'Color',      color(cl,:))
 
 end

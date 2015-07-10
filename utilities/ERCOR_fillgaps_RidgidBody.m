@@ -71,10 +71,17 @@ end
 dfet = bsxfun(@minus,efet,efet(gind,:));
 dtgmori = var(bsxfun(@minus,efet,efet(gind,:)),[],2);
 
+
+
+figure,imagesc(dfet(1:100000,:)');
+figure,  plot(dfet( 7000:10000,68),dfet( 7000:10000,69),'b.');
+hold on, plot(dfet(13000:14000,68),dfet(13000:14000,69),'r.');
+
 %% Manually select error groups
 hfig = figure(39293);
 plot(dtgmori)
 eid = ClusterPP(hfig);
+
 
 %% given errors find best marker swap solution
 % test on subset
