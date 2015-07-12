@@ -490,4 +490,32 @@ while unit~=-1,
 end    
 
         
+Trial = MTATrial('jg05-20120317');
+xyz = Trial.load('xyz');
+vl = xyz.vel(1,[1,2]);
+vl.filter('ButFilter',3,2,'low');
+vl.data(nniz(vl)) = log10(vl(nniz(vl)));
+
+ed = linspace(-.5,2,100);
+figure,hold on
+ind = Trial.stc{'a-w'};
+bar(ed,histc(vl(ind),ed),'histc')
+ind = Trial.stc{'w'};
+h = bar(ed,histc(vl(ind),ed),'histc');
+h.FaceColor = 'r';
+h.FaceAlpha = .5;
+
+wper = ThreshCross(vl.data,.5,25);
+figure,hist(log10(diff(wper,1,2)),100)
+figure,hist(log10(diff(Trial.stc{'w'}.data,1,2)),100)
+
+wmax = [];
+for w = wper',wmax(end+1,1)=max(vl(w'));end
+wdur = abs(log10(diff(wper,1,2)));
+figure,hist2([wdur,wmax],100,100)
+
+
+
+
+
 
