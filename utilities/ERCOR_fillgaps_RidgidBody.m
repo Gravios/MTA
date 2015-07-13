@@ -72,13 +72,8 @@ dfet = bsxfun(@minus,efet,efet(gind,:));
 dtgmori = var(bsxfun(@minus,efet,efet(gind,:)),[],2);
 
 
-
-figure,imagesc(dfet(1:100000,:)');
-figure,  plot(dfet( 7000:10000,68),dfet( 7000:10000,69),'b.');
-hold on, plot(dfet(13000:14000,68),dfet(13000:14000,69),'r.');
-
 %% Manually select error groups
-hfig = figure(39293);
+hfig = figure(39293);clf
 plot(dtgmori)
 eid = ClusterPP(hfig);
 
@@ -87,11 +82,11 @@ eid = ClusterPP(hfig);
 % test on subset
 nSamp = 100;
 
-nerrors = unique(eid)-1;
+errors = unique(eid);
 ectry = zeros([nSamp,nperm]);
 tectry = zeros([nSamp,nperm]);
 
-for i = 1:nerrors,
+for i = errors(2:end),
     bids = find(eid==i,nSamp,'first');
     
     k = 1;
@@ -119,11 +114,11 @@ for i = 1:nerrors,
         corInd = sort(marInd);
         xyz.data(eid==i,corInd,:) = xyz(eid==i,marInd,:);
     else
-        drb_xyz = imd(rb_xyz);
-        ndrb_xyz = bsxfun(@minus,drb_xyz,drb_xyz(gind,:,:));
-
-        log10(abs(mean(drb_xyz(eid==2,:,:))))
-        gperms = find(abs(mean(efet(bids,:))-gpat)<.2);
+% $$$         drb_xyz = imd(rb_xyz);
+% $$$         ndrb_xyz = bsxfun(@minus,drb_xyz,drb_xyz(gind,:,:));
+% $$$ 
+% $$$         log10(abs(mean(drb_xyz(eid==2,:,:))))
+% $$$         gperms = find(abs(mean(efet(bids,:))-gpat)<.2);
 
         % Try some other correction method
         % probably by reconstructing the bad 

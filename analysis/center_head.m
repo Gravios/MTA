@@ -19,7 +19,6 @@ hcom.filter('ButFilter',3,2,'low');
 xyz.addMarker('fhcom',[.7,1,.7],{{'head_back','head_front',[0,0,255]}},hcom.data);
 
 
-
 %% Calculate Rotation Matrix: normal of the head plane as axis of rotation
 
 xyz_hb_b = sq(xyz(:,'head_back',:)-xyz(:,'hcom',:));
@@ -110,9 +109,9 @@ hold on,plot3(sxyz(ind,'htx',1),sxyz(ind,'htx',2),sxyz(ind,'htx',3),'*m')
 hold on,plot3(sxyz(ind,'hcom',1),sxyz(ind,'hcom',2),sxyz(ind,'hcom',3),'+g')
 
 
-i = [-100:2:100];
-j = [-100:2:100];
-k = [-100:2:100];
+i = [-100:5:100];
+j = [-100:5:100];
+k = [-100:5:100];
 ind = Trial.stc{'a'};
 vz = [];
 vxy = [];
