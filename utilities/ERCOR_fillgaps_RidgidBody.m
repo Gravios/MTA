@@ -29,6 +29,11 @@ function xyz = ERCOR_fillgaps_RidgidBody(Session,varargin)
 %        Make memory use automatic (will probably occur upon the rapture :() 
 %
 
+if ischar(Session),
+    Session = MTASession(Session);
+end
+
+
 xyz = Session.load('xyz');
 
 defArgs = ...
@@ -53,8 +58,11 @@ LastPiece = (NumChunks*BufferSize+1):xyz.size(1);
 if isempty(good_index),
     pfig = PlotSessionErrors(Session);
     dcm_obj = datacursormode(gcf);
+    disp(['Please select a point on the x-axis with the data cursor ' ...
+          'and then press enter']);
     waitfor(pfig,'CurrentCharacter',char(13));
     good_index = dcm_obj.getCursorInfo.Position(1);
+    disp(['Index = ' num2str(good_index)])
     delete(pfig);
 end
 
@@ -67,6 +75,7 @@ assert(rb_model.N<=6,['MTA:utilities:ERCOR_fillgaps_RidgidBody, ' ...
                       'number of markers in rb correction must be eq or lt 6']);
 
 hfig = figure(3848283);
+hfig.CurrentCharacter = ' ';
 
 while ~strcmp(get(hfig,'CurrentCharacter'),'q'),
     
@@ -101,7 +110,15 @@ while ~strcmp(get(hfig,'CurrentCharacter'),'q'),
     dtgmori = var(bsxfun(@minus,efet,efet(good_index,:)),[],2);
     
     %% Manually select error groups
+    clf(hfig)
     plot(dtgmori)
+    disp('******************************');
+    disp('* Select each error group:   *')
+    disp('*   add point:   left click  *')
+    disp('*   close group: right click *')
+    disp('*   quit:        escape key  *')
+    disp('******************************'); 
+    
     eid = ClusterPP(hfig);
     
     
@@ -112,8 +129,13 @@ while ~strcmp(get(hfig,'CurrentCharacter'),'q'),
     errors = unique(eid);
     ectry = zeros([nSamp,nperm]);
     tectry = zeros([nSamp,nperm]);
+   
+    disp('')
+    disp(['Number of error groups: ' num2str(numel(errors)-1)]);
+    disp('')
     
     for i = errors(2:end),
+        
         bids = find(eid==i,nSamp,'first');
         
         k = 1;
@@ -134,7 +156,10 @@ while ~strcmp(get(hfig,'CurrentCharacter'),'q'),
         [bpVal,bpInd] =min(mean(ectry));
         
         %%check this bpVal since it changes with each model.
+
         if bpVal < MarkerSwapErrorThreshold,
+            disp('')
+            disp(['Error Group: ' num2str(i) ' , bpVal = ' num2str(bpVal)])
             smar = subsref(rb_model.ml,substruct('()',{bperm(bpInd,:)}));
             [~,rind] = sort(xyz.model.gmi(rb_model.ml));
             marInd = xyz.model.gmi(smar(rind));
@@ -142,7 +167,13 @@ while ~strcmp(get(hfig,'CurrentCharacter'),'q'),
             xyz.data(eid==i,corInd,:) = xyz(eid==i,marInd,:);
             xyz.save;
         else
-            warning('ERCOR_fillgaps_RidgidBody:MarkerSwapFailed, procceding to attemtep marker reconstruction from rigid body');
+            disp('')
+            disp(['Error Group: ' num2str(i) ' , bpVal = ' num2str(bpVal)])
+            dsip('No options, ignoring error')
+            % 
+            %warning(['ERCOR_fillgaps_RidgidBody:MarkerSwapFailed, ' ...
+            %         'procceding to attemtep marker reconstruction from rigid body']);
+            
             
             % $$$         drb_xyz = imd(rb_xyz);
             % $$$         ndrb_xyz = bsxfun(@minus,drb_xyz,drb_xyz(good_index,:,:));
@@ -156,6 +187,9 @@ while ~strcmp(get(hfig,'CurrentCharacter'),'q'),
         end
         
     end
+    disp('Press <any key> to initiate another round of corrections')
+    disp('Press <q> to quit')
+    waitfor(hfig,'CurrentCharacter')
     
 end
 
