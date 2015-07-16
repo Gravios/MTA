@@ -12,7 +12,7 @@ function [rhm,varargout] = fet_spec(Trial,fet,varargin)
 parspec = empty_spec;
 
 [mode,wsig,sampleRate,defspec,overwrite] = ...
- DefaultArgs(varargin,{'raw',true,120,def_spec_parm(fet),true});
+ DefaultArgs(varargin,{'mtchglong',true,120,def_spec_parm(fet),true});
 
 
 varargout = cell([1,nargout-1]);

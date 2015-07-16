@@ -1,6 +1,6 @@
 Trial = MTATrial('Ed05-20140528');
 Trial = MTATrial('Ed10-20140814');
-%Trial = MTATrial('jg05-20120317');
+Trial = MTATrial('jg05-20120317');
 %stc_mode = 'qda_filtf1p5';
 stc_mode = 'auto_wbhr';
 Trial.stc.updateMode(stc_mode);Trial.stc.load;
@@ -109,46 +109,101 @@ hold on,plot3(sxyz(ind,'htx',1),sxyz(ind,'htx',2),sxyz(ind,'htx',3),'*m')
 hold on,plot3(sxyz(ind,'hcom',1),sxyz(ind,'hcom',2),sxyz(ind,'hcom',3),'+g')
 
 
-i = [-100:5:100];
-j = [-100:5:100];
-k = [-100:5:100];
+i = [-100:10:100];
+j = [-100:10:100];
+k = [-100:10:0];
 ind = Trial.stc{'a'};
 vz = [];
 vxy = [];
+vxyz = [];
 x = 51;
 y = 51;
 z = 32; 
 
 %pool = parpool(10);
 
-for x = 95:numel(i)
+nhm = {'hcom','hbx','hrx','htx','hbt','hbr','hbrt','hrt'};
+for x = 1:numel(i)
     for y = 1:numel(j)
+        for z = 1:numel(k)
 
-        nhm = {'hcom','hbx','hrx','htx','hbt','hbr','hbrt','hrt'};
+            sxyz = xyz.copy;
+            sxyz.data = xyz(:,nhm,:);
+            sxyz.model = xyz.model.rb(nhm);
+            sxyz.data = bsxfun(@plus,nx*i(x)+ny*j(y)+nz*k(z),sxyz.data);
 
-sxyz = xyz.copy;
-sxyz.data = xyz(:,nhm,:);
-sxyz.model = xyz.model.rb(nhm);
-sxyz.data = bsxfun(@plus,nx*i(x)+ny*j(y)+nz*k(z),sxyz.data);
+            fhcom = zeros([sxyz.size(1),1,3]);
+            fhcom(nniz(sxyz),:,:) = ButFilter(sxyz(nniz(sxyz),'hcom',:),3,2/(sxyz.sampleRate/2),'low');
+            sxyz.addMarker('fhcom',[.7,1,.7],{{'hbx','hcom',[0,0,1]}},fhcom);
 
-fhcom = zeros([sxyz.size(1),1,3]);
-fhcom(nniz(sxyz),:,:) = ButFilter(sxyz(nniz(sxyz),'hcom',:),3,2/(sxyz.sampleRate/2),'low');
-sxyz.addMarker('fhcom',[.7,1,.7],{{'hbx','hcom',[0,0,1]}},fhcom);
+            ang = create(MTADang,Trial,sxyz);
+            ang.data(~nniz(ang(:,1,2,1)),:,:,:)=0;
 
-ang = create(MTADang,Trial,sxyz);
-ang.data(~nniz(ang(:,1,2,1)),:,:,:)=0;
-
-vxy(:,x,y) = [var(ang(ind,'hbx','fhcom',3)),...
-           var(ang(ind,'hrx','fhcom',3)),...
-           var(ang(ind,'htx','fhcom',3)),...
-           ...
-           var(ang(ind,'hbt','fhcom',3)),...
-           var(ang(ind,'hbr','fhcom',3)),...
-           var(ang(ind,'hbrt','fhcom',3)),...
-           var(ang(ind,'hrt','fhcom',3))];
+            vxyz(:,x,y,z) = [var(ang(ind,'hbx','fhcom',3)),...
+                             var(ang(ind,'hrx','fhcom',3)),...
+                             var(ang(ind,'htx','fhcom',3)),...
+                             ...
+                             var(ang(ind,'hbt','fhcom',3)),...
+                             var(ang(ind,'hbr','fhcom',3)),...
+                             var(ang(ind,'hbrt','fhcom',3)),...
+                             var(ang(ind,'hrt','fhcom',3))];
+        end
+    end
 end
+
+
+%figure,hold on
+mind = [];
+for m = 1:7,
+    [mind(m,:),mval] =LocalMinimaN(sq(vxyz(m,:,:,:)),100,10);
+    %plot3(i(mind(1)),j(mind(2)),k(mind(3)),'+m')
 end
 
+nrange = [min(mind)-2;max(mind)+2]';
+
+
+ni = i(nrange(1,:));
+nj = j(nrange(2,:));
+nk = k(nrange(3,:));
+
+
+%% Fine grain search
+ni = [ni(1):1:ni(2)];
+nj = [nj(1):1:nj(2)];
+nk = [nk(1):1:nk(2)];
+ind = Trial.stc{'a'};
+nvxyz = [];
+
+
+nhm = {'hcom','hbx','hrx','htx','hbt','hbr','hbrt','hrt'};
+for x = 1:numel(ni)
+    for y = 1:numel(nj)
+        for z = 1:numel(nk)
+            sxyz = xyz.copy;
+            sxyz.data = xyz(:,nhm,:);
+            sxyz.model = xyz.model.rb(nhm);
+            sxyz.data = bsxfun(@plus,nx*ni(x)+ny*nj(y)+nz*nk(z),sxyz.data);
+
+            fhcom = zeros([sxyz.size(1),1,3]);
+            fhcom(nniz(sxyz),:,:) = ButFilter(sxyz(nniz(sxyz),'hcom',:),3,2/(sxyz.sampleRate/2),'low');
+            sxyz.addMarker('fhcom',[.7,1,.7],{{'hbx','hcom',[0,0,1]}},fhcom);
+
+            ang = create(MTADang,Trial,sxyz);
+            ang.data(~nniz(ang(:,1,2,1)),:,:,:)=0;
+
+            nvxyz(:,x,y,z) = [var(ang(ind,'hbx','fhcom',3)),...
+                              var(ang(ind,'hrx','fhcom',3)),...
+                              var(ang(ind,'htx','fhcom',3)),...
+                              ...
+                              var(ang(ind,'hbt','fhcom',3)),...
+                              var(ang(ind,'hbr','fhcom',3)),...
+                              var(ang(ind,'hbrt','fhcom',3)),...
+                              var(ang(ind,'hrt','fhcom',3))];
+        end
+    end
+end
+
+save(fullfile('/storage/gravio/manuscripts/man2015-jgEd-MoCap/p20150716/',[Trial.filebase '.xyz-shift_fine.mat']),'ni','nj','nk','nvxyz');
 
 ms = nhm(2:end);
 hfig = figure(3939);clf
@@ -177,5 +232,7 @@ end
 saveas(hfig,fullfile(['/storage/gravio/manuscripts/man2015-jgEd-MoCap/' ...
                       'p20150708/'],[Trial.filebase '.' nhm{m+1} '.eps']),'epsc');
 
-save(fullfile(['/storage/gravio/manuscripts/man2015-jgEd-MoCap/' ...
-               'p20150708/'],[Trial.filebase '.xyz-shift.mat']),'vz','vxy');
+
+%mkdir('/storage/gravio/manuscripts/man2015-jgEd-MoCap/p20150716/');
+save(fullfile('/storage/gravio/manuscripts/man2015-jgEd-MoCap/p20150716/',[Trial.filebase '.xyz-shift.mat']),'i','j','k','vxyz');
+load(fullfile('/storage/gravio/manuscripts/man2015-jgEd-MoCap/p20150716/',[Trial.filebase '.xyz-shift.mat']));
