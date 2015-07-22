@@ -13,10 +13,10 @@ xyz = Trial.load('xyz');
 rb = Trial.xyz.model.rb({'head_back','head_left','head_front','head_right'});
 
 hcom = MTADxyz('data',xyz.com(rb),'sampleRate',xyz.sampleRate);
-xyz.addMarker('hcom',[.7,0,.7],{{'head_back','head_front',[0,0,255]}},hcom.data);
+xyz.addMarker('hcom',[128,0,128],{{'head_back','head_front',[0,0,255]}},hcom.data);
 
 hcom.filter('ButFilter',3,2,'low');
-xyz.addMarker('fhcom',[.7,1,.7],{{'head_back','head_front',[0,0,255]}},hcom.data);
+xyz.addMarker('fhcom',[128,255,128],{{'head_back','head_front',[0,0,255]}},hcom.data);
 
 
 %% Calculate Rotation Matrix: normal of the head plane as axis of rotation
@@ -57,38 +57,40 @@ xyz.addMarker('head_br45',[.7,0,.7],{{'head_back','head_right',[0,0,255]}},permu
 %% END marker rotation within head reference system
 
 %% New head coordinate refrences with equal norms
-  Trial = MTATrial('jg05-20120317');
+Trial = MTATrial('jg05-20120317');
+Trial = MTATrial('Ed05-20140528');
+Trial = MTATrial('g09-20120328');
+Trial = MTATrial('g10-20130415');
 
-    
 xyz = Trial.load('xyz');
 rb = Trial.xyz.model.rb({'head_back','head_left','head_front','head_right'});
 hcom = xyz.com(rb);
-xyz.addMarker('fhcom',[.7,1,.7],{{'head_back','head_front',[0,0,1]}},...
+xyz.addMarker('fhcom',[128,255,128],{{'head_back','head_front',[0,0,1]}},...
                   ButFilter(hcom,3,[2]./(Trial.xyz.sampleRate/2),'low'));
-xyz.addMarker('hcom',[.7,1,.7],{{'head_back','head_front',[0,0,1]}},hcom);
+xyz.addMarker('hcom',[128,255,128],{{'head_back','head_front',[0,0,1]}},hcom);
 nz = cross(xyz(:,'head_back',:)-hcom,xyz(:,'head_right',:)-hcom);
 nz = bsxfun(@rdivide,nz,sqrt(sum((nz).^2,3)));
 nm = nz.*20+hcom;
-xyz.addMarker('htx',[.7,1,.7],{{'head_back','head_front',[0,0,1]}},nm);
+xyz.addMarker('htx',[128,255,128],{{'head_back','head_front',[0,0,1]}},nm);
 ny = cross(xyz(:,'htx',:)-hcom,xyz(:,'head_back',:)-hcom);
 ny = bsxfun(@rdivide,ny,sqrt(sum((ny).^2,3)));
 nm = ny.*20+hcom;
-xyz.addMarker('hrx',[.7,1,.7],{{'head_back','head_front',[0,0,1]}},nm);
+xyz.addMarker('hrx',[128,255,128],{{'head_back','head_front',[0,0,1]}},nm);
 nx = cross(xyz(:,'hrx',:)-hcom,xyz(:,'htx',:)-hcom);
 nx = bsxfun(@rdivide,nx,sqrt(sum((nx).^2,3)));
 nm = nx.*20+hcom;    
-xyz.addMarker('hbx',[.7,1,.7],{{'head_back','head_front',[0,0,1]}},nm);
-xyz.addMarker('hbt',[.7,1,.7],{{'head_back','head_front',[0,0,1]}},...
+xyz.addMarker('hbx',[128,255,128],{{'head_back','head_front',[0,0,1]}},nm);
+xyz.addMarker('hbt',[128,255,128],{{'head_back','head_front',[0,0,1]}},...
                   genRotatedMarker(xyz,'hbx',45,{'hbx','htx'}));
-xyz.addMarker('hbr',[.7,1,.7],{{'head_back','head_front',[0,0,1]}},...
+xyz.addMarker('hbr',[128,255,128],{{'head_back','head_front',[0,0,1]}},...
                   genRotatedMarker(xyz,'hbx',45,{'hbx','hrx'}));    
-xyz.addMarker('hbrt',[.7,1,.7],{{'head_back','head_front',[0,0,1]}},...
+xyz.addMarker('hbrt',[128,255,128],{{'head_back','head_front',[0,0,1]}},...
                   genRotatedMarker(xyz,'hbr',45,{'hbx','htx'}));
-xyz.addMarker('hrt',[.7,1,.7],{{'head_back','head_front',[0,0,1]}},...
+xyz.addMarker('hrt',[128,255,128],{{'head_back','head_front',[0,0,1]}},...
                   genRotatedMarker(xyz,'hrx',45,{'hrx','htx'}));
     
     
-ind = 1000;
+ind = 10000;
 
 figure, daspect([1,1,1])
 hold on,plot3(xyz(ind,7,1),xyz(ind,7,2),xyz(ind,7,3),'.b')
@@ -113,51 +115,79 @@ i = [-100:10:100];
 j = [-100:10:100];
 k = [-100:10:0];
 ind = Trial.stc{'a'};
-vz = [];
-vxy = [];
 vxyz = [];
 x = 51;
 y = 51;
 z = 32; 
 
 %pool = parpool(10);
-
 nhm = {'hcom','hbx','hrx','htx','hbt','hbr','hbrt','hrt'};
-for x = 1:numel(i)
+txyz = xyz.copy;
+txyz.data = xyz(:,nhm,:);
+txyz.model = xyz.model.rb(nhm);
+for x = 1:numel(i),tic
     for y = 1:numel(j)
         for z = 1:numel(k)
 
-            sxyz = xyz.copy;
-            sxyz.data = xyz(:,nhm,:);
-            sxyz.model = xyz.model.rb(nhm);
+            sxyz = txyz.copy;
             sxyz.data = bsxfun(@plus,nx*i(x)+ny*j(y)+nz*k(z),sxyz.data);
+
 
             fhcom = zeros([sxyz.size(1),1,3]);
             fhcom(nniz(sxyz),:,:) = ButFilter(sxyz(nniz(sxyz),'hcom',:),3,2/(sxyz.sampleRate/2),'low');
-            sxyz.addMarker('fhcom',[.7,1,.7],{{'hbx','hcom',[0,0,1]}},fhcom);
+            sxyz.addMarker('fhcom',[128,255,128],{{'hbx','hcom',[0,0,1]}},fhcom);
 
-            ang = create(MTADang,Trial,sxyz);
-            ang.data(~nniz(ang(:,1,2,1)),:,:,:)=0;
+            sxyz.data = sxyz(ind,:,:);
+            ang = [sxyz(:,'hbx',:)-sxyz(:,'fhcom',:);...
+                   sxyz(:,'hrx',:)-sxyz(:,'fhcom',:);...
+                   sxyz(:,'htx',:)-sxyz(:,'fhcom',:);...
+                   ...
+                   sxyz(:,'hbt',:)-sxyz(:,'fhcom',:);...
+                   sxyz(:,'hbr',:)-sxyz(:,'fhcom',:);...
+                   sxyz(:,'hbrt',:)-sxyz(:,'fhcom',:);...
+                   sxyz(:,'hrt',:)-sxyz(:,'fhcom',:)];
 
-            vxyz(:,x,y,z) = [var(ang(ind,'hbx','fhcom',3)),...
-                             var(ang(ind,'hrx','fhcom',3)),...
-                             var(ang(ind,'htx','fhcom',3)),...
-                             ...
-                             var(ang(ind,'hbt','fhcom',3)),...
-                             var(ang(ind,'hbr','fhcom',3)),...
-                             var(ang(ind,'hbrt','fhcom',3)),...
-                             var(ang(ind,'hrt','fhcom',3))];
+
+            ang = mat2cell(permute(ang,[1,3,2]),size(ang,1),[1,1,1]);
+            [~,~,ang] = cart2sph(ang{:});
+            ang = reshape(ang,[],7);
+
+            for m = 1:7,
+                bnds = prctile(ang(:,m),[.1,99.1]);
+                vxyz(m,x,y,z) = nanvar(ang(bnds(1)<ang(:,m)&ang(:,m)<bnds(2),m));
+                
+            end
+
         end
     end
+    toc
 end
 
+% save(fullfile('/storage/gravio/manuscripts/man2015-jgEd-MoCap/p20150716/',[Trial.filebase '.xyz-shift.mat']),'i','j','k','vxyz');
 
-%figure,hold on
+load(fullfile('/storage/gravio/manuscripts/man2015-jgEd-MoCap/p20150716/',[Trial.filebase '.xyz-shift.mat']));
+
+
+%% Figure of search
 mind = [];
 for m = 1:7,
-    [mind(m,:),mval] =LocalMinimaN(sq(vxyz(m,:,:,:)),100,10);
-    %plot3(i(mind(1)),j(mind(2)),k(mind(3)),'+m')
+[mind(m,:),mv] = LocalMinimaN(sq(vxyz(m,:,:,:)),100,100);
 end
+
+figure,
+clf
+for m = 1:7,
+    subplot(2,4,m);
+    imagesc(i,j,log10(sq(vxyz(m,:,:,mind(m,3))))');
+    axis xy;
+    title([nhm{m+1} ', with z-axis shift: ' num2str(k(mind(m,3)))]);
+    xlabel('x-axis shift from origin mm');
+    ylabel('y-axis shift from origin mm');
+end
+suptitle(Trial.filebase)
+
+%% Continue
+
 
 nrange = [min(mind)-2;max(mind)+2]';
 
@@ -168,42 +198,107 @@ nk = k(nrange(3,:));
 
 
 %% Fine grain search
-ni = [ni(1):1:ni(2)];
-nj = [nj(1):1:nj(2)];
-nk = [nk(1):1:nk(2)];
-ind = Trial.stc{'a'};
-nvxyz = [];
+ni = [ni(1):2:ni(2)];
+nj = [nj(1):2:nj(2)];
+nk = [nk(1):2:nk(2)];
+ind = Trial.stc{'a'}.cast('TimeSeries').resample(xyz);
+ind.data = logical(ind.data);
+nvxyz = zeros([7,numel(ni),numel(nj),numel(nk)]);
 
 
 nhm = {'hcom','hbx','hrx','htx','hbt','hbr','hbrt','hrt'};
+txyz = xyz.copy;
+txyz.data = xyz(:,nhm,:);
+txyz.model = xyz.model.rb(nhm);
 for x = 1:numel(ni)
+    disp(['x: ' num2str(x)]),tic
     for y = 1:numel(nj)
         for z = 1:numel(nk)
-            sxyz = xyz.copy;
-            sxyz.data = xyz(:,nhm,:);
-            sxyz.model = xyz.model.rb(nhm);
+
+            sxyz = txyz.copy;
             sxyz.data = bsxfun(@plus,nx*ni(x)+ny*nj(y)+nz*nk(z),sxyz.data);
 
             fhcom = zeros([sxyz.size(1),1,3]);
             fhcom(nniz(sxyz),:,:) = ButFilter(sxyz(nniz(sxyz),'hcom',:),3,2/(sxyz.sampleRate/2),'low');
-            sxyz.addMarker('fhcom',[.7,1,.7],{{'hbx','hcom',[0,0,1]}},fhcom);
+            sxyz.addMarker('fhcom',[128,255,128],{{'hbx','hcom',[0,0,1]}},fhcom);
 
-            ang = create(MTADang,Trial,sxyz);
-            ang.data(~nniz(ang(:,1,2,1)),:,:,:)=0;
+            sxyz.data = sxyz(ind,:,:);
+            ang = [sxyz(:,'hbx',:)-sxyz(:,'fhcom',:);...
+                   sxyz(:,'hrx',:)-sxyz(:,'fhcom',:);...
+                   sxyz(:,'htx',:)-sxyz(:,'fhcom',:);...
+                   ...
+                   sxyz(:,'hbt',:)-sxyz(:,'fhcom',:);...
+                   sxyz(:,'hbr',:)-sxyz(:,'fhcom',:);...
+                   sxyz(:,'hbrt',:)-sxyz(:,'fhcom',:);...
+                   sxyz(:,'hrt',:)-sxyz(:,'fhcom',:)];
 
-            nvxyz(:,x,y,z) = [var(ang(ind,'hbx','fhcom',3)),...
-                              var(ang(ind,'hrx','fhcom',3)),...
-                              var(ang(ind,'htx','fhcom',3)),...
-                              ...
-                              var(ang(ind,'hbt','fhcom',3)),...
-                              var(ang(ind,'hbr','fhcom',3)),...
-                              var(ang(ind,'hbrt','fhcom',3)),...
-                              var(ang(ind,'hrt','fhcom',3))];
+
+            ang = mat2cell(permute(ang,[1,3,2]),size(ang,1),[1,1,1]);
+            [~,~,ang] = cart2sph(ang{:});
+            ang = reshape(ang,[],7);
+            
+            for m = 1:7,
+                bnds = prctile(ang(:,m),[.1,99.1]);
+                nvxyz(m,x,y,z) = nanvar(ang(bnds(1)<ang(:,m)&ang(:,m)<bnds(2),m));
+                
+            end
         end
     end
+toc
 end
 
-save(fullfile('/storage/gravio/manuscripts/man2015-jgEd-MoCap/p20150716/',[Trial.filebase '.xyz-shift_fine.mat']),'ni','nj','nk','nvxyz');
+save(fullfile('/storage/gravio/manuscripts/man2015-jgEd-MoCap/p20150716/',[Trial.filebase '.xyz-shift_fine_a-m-s.mat']),'ni','nj','nk','nvxyz');
+load(fullfile('/storage/gravio/manuscripts/man2015-jgEd-MoCap/p20150716/',[Trial.filebase '.xyz-shift_fine_a-m-s.mat']),'ni','nj','nk','nvxyz');
+
+
+   
+
+mind = [];
+for m = 1:7,
+[mind(m,:),mv] = LocalMinimaN(sq(nvxyz(m,:,:,:)),100,100);
+end
+
+%figure,
+clf
+for m = 1:7,
+    subplot(2,4,m);
+    imagesc(ni,nj,log10(sq(nvxyz(m,:,:,mind(m,3))))');
+    caxis;axis xy;
+    title([nhm{m+1} ', with z-axis shift: ' num2str(nk(mind(m,3)))]);
+    xlabel('x-axis shift from origin mm');
+    ylabel('y-axis shift from origin mm');
+end
+suptitle(Trial.filebase)
+
+%hbx
+mind = [];
+figure,hold on
+for i = 1:3,
+[mind,mv] = LocalMinimaN(sq(nvxyz(i,:,:,:)),100,100);
+plot3(ni(mind(1)),nj(mind(2)),nk(mind(3)),'+g');
+end
+for i = 4:7
+[mind,mv] = LocalMinimaN(sq(nvxyz(i,:,:,:)),100,100);
+plot3(ni(mind(1)),nj(mind(2)),nk(mind(3)),'+m');
+end
+
+
+i =1;
+[mind,mv] = LocalMinimaN(sq(nvxyz(i,:,:,:)),100,100);
+,nj(mind(2)),nk(mind(3))
+
+xyz.addMarker('ncom',[128,255,128],{{'head_back','head_front',[0,0,1]}},bsxfun(@plus,nx*ni(mind(1))+ny*nj(mind(2))+nz*nk(mind(3)),xyz(:,'hcom',:)));
+
+
+fhcom = zeros([xyz.size(1),1,3]);
+fhcom(nniz(xyz),:,:) = ButFilter(xyz(nniz(xyz),'ncom',:),3,2/(xyz.sampleRate/2),'low');
+xyz.addMarker('nfcom',[128,255,128],{{'head_back','head_front',[0,0,1]}},fhcom);
+
+xyz.addMarker('nhb',[128,255,128],{{'head_back','head_front',[0,0,1]}},bsxfun(@plus,nx*ni(mind(1))+ny*nj(mind(2))+nz*nk(mind(3)),xyz(:,'hbx',:)));
+
+
+[ys,fs,ts] =mtchglong(WhitenSignal([ang(nniz(xyz),'hbt','fhcom',3),ang(nniz(xyz),'hbx','fhcom',3)],[],1),2^8,ang.sampleRate,2^7,2^7*.875,[],[],[],[1,40]);
+sp = [];figure,sp(1)=subplot(2,1,1);imagesc(ts,fs,log10(ys(:,:,1,1))'),axis xy, colormap jet,sp(2)=subplot(2,1,2);imagesc(ts,fs,log10(ys(:,:,2,2))'),axis xy, colormap jet,linkaxes(sp,'xy')
 
 ms = nhm(2:end);
 hfig = figure(3939);clf
