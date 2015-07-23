@@ -88,7 +88,7 @@ xyz.addMarker('hbrt',[128,255,128],{{'head_back','head_front',[0,0,1]}},...
                   genRotatedMarker(xyz,'hbr',45,{'hbx','htx'}));
 xyz.addMarker('hrt',[128,255,128],{{'head_back','head_front',[0,0,1]}},...
                   genRotatedMarker(xyz,'hrx',45,{'hrx','htx'}));
-    
+nhm = {'hcom','hbx','hrx','htx','hbt','hbr','hbrt','hrt'};    
     
 ind = 10000;
 
@@ -121,7 +121,7 @@ y = 51;
 z = 32; 
 
 %pool = parpool(10);
-nhm = {'hcom','hbx','hrx','htx','hbt','hbr','hbrt','hrt'};
+
 txyz = xyz.copy;
 txyz.data = xyz(:,nhm,:);
 txyz.model = xyz.model.rb(nhm);

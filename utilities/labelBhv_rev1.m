@@ -1,5 +1,6 @@
 
 
+Trial = MTATrial('jg05-20120310');
 Trial = MTATrial('jg05-20120317');
 
 % XYZ Positions of Markers
@@ -47,64 +48,170 @@ fvel.data = log10(fvel.data);
 llist = {};
 figure,hold on
 
-% $$$ llist{end+1} = 'fbcom';               % Filtered Center of mass of body 
-% $$$ plot(nunity(fbcom(:,3)))
-% $$$ 
-% $$$ llist{end+1} = 'body pitch';          % Pitch of marker set {'spine_lower','spine_upper'} 
-% $$$ plot(nunity(ang(:,1,4,2)))    
-
-llist{end+1} = 'upper spine pitch';   % Pitch of marker set {'spine_middle','spine_upper'} 
-plot(nunity(fang(:,3,4,2)))
+ts = [1:xyz.size(1)]/xyz.sampleRate;
+llist{end+1} = 'upper spine pitch';    % Pitch of marker set {'spine_middle','spine_upper'} 
+plot(ts,nunity(fang(:,3,4,2)))
 llist{end+1} = 'd(upper spine pitch)/dt';   % Pitch of marker set {'spine_middle','spine_upper'} 
-plot(nunity(diff(fang(:,3,4,2))))
+plot(ts(1:end-1),nunity(diff(fang(:,3,4,2))))
 
-llist{end+1} = 'head height';         % displacement in z-axis relative to floor
-plot(nunity(fxyz(:,5,3)))
-llist{end+1} = 'd(head height)/dt'    % first derivative of low passed filtered head hight
-plot(nunity(diff(fxyz(:,5,3))))
+llist{end+1} = 'head height';          % displacement in z-axis relative to floor
+plot(ts,nunity(fxyz(:,5,3)))
+llist{end+1} = 'd(head height)/dt';    % first derivative of low passed filtered head hight
+plot(ts(1:end-1),nunity(diff(fxyz(:,5,3))))
 
-
-
-% $$$ llist{end+1} = 'd(fbcom)/dt'    % first derivative of low passed filtered head hight
-% $$$ plot(nunity(diff(fbcom(:,3))))
+llist{end+1} = 'xdist(SL-SU)';         % first derivative of low passed filtered head hight
+plot(ts,nunity(cos(fang(:,1,4,2)).*fang(:,1,4,3)));
+llist{end+1} = 'd(xdist(SL-SU))/dt';   % first derivative of low passed filtered head hight
+plot(ts(1:end-1),nunity(diff(cos(fang(:,1,4,2)).*fang(:,1,4,3))));
 
 legend(llist)
+Lines(Trial.stc{'r',1}(:),[],'r');
 
 
-figure,plot(cos(fang(:,3,4,2)).*fang(:,3,4,3))
-Lines(Trial.stc{'r'}(:),[],'r');
+ts = [1:xyz.size(1)]/xyz.sampleRate;
+
+hfig = figure(394883484);
+imagesc(ts,1:6,...
+[nunity(fang(:,3,4,2)),...
+nunity([diff(fang(:,3,4,2));0]),...
+nunity(fxyz(:,5,3)),...
+nunity([diff(fxyz(:,5,3));0]),...
+nunity(cos(fang(:,1,4,2)).*fang(:,1,4,3)),...
+nunity([diff(cos(fang(:,1,4,2)).*fang(:,1,4,3));0])]');
+Lines(Trial.stc{'r',1}(:),[],'r');
+haxe = gca;
+caxis([-5,5]);
+xlim([600,625]);
+xlabel('Time (s)');
+haxe.YTickLabelMode = 'manual';
+haxe.YTickLabel = llist;
+title('Rearing Examples');
+
+
+fet = xyz.copy;
+fet.data = nunity([cos(fang(:,1,4,2)).*fang(:,1,4,3),[diff(cos(fang(:,1,4,2)).*fang(:,1,4,3));0]]);
+fet.data = nunity([fxyz(:,5,3),[diff(fxyz(:,5,3));0]]);
+fet.data = nunity([fang(:,3,4,2),[diff(fang(:,3,4,2));0]]);
+fet.data = nunity([fxyz(:,5,3),[diff(fang(:,3,4,2));0]]);
+fet.data = nunity([fxyz(:,5,3),fang(:,3,4,2)]);
+
+fet.data = nunity([fxyz(:,5,3),[diff(fang(:,3,4,2));0]]);
+figure,
+ind = Trial.stc{'a'};
+hist2(fet(ind,:),-2:.1:4.5,-6:.1:6);
+caxis([0,200])
+
+%% FF
+% Height VS d(USpineAng)/dt
+fet.data = nunity([fxyz(:,5,3),[diff(fang(:,3,4,2));0]]);
+figure,
+ind = Trial.stc{'a'};
+hist2(fet(ind,:),-2:.1:4.5,-6:.1:6);
+caxis([0,100]);
+hold on,plot(fet(Trial.stc{'r'}(11,:),1),fet(Trial.stc{'r'}(11,:),2),'m');
+hold on,plot(fet(Trial.stc{'r'}(21,:),1),fet(Trial.stc{'r'}(21,:),2),'m');
+hold on,plot(fet(Trial.stc{'r'}(41,:),1),fet(Trial.stc{'r'}(41,:),2),'m');
+hold on,plot(fet(Trial.stc{'r'}(:,1),1),fet(Trial.stc{'r'}(:,1),2),'*c');
+hold on,plot(fet(Trial.stc{'r'}(:,2),1),fet(Trial.stc{'r'}(:,2),2),'*y');
+xlabel('Head Height normalized (AU)');
+ylabel('d(BMBUp_i_t_c_h normalized (AU)');
+legend({'rear trajectory'})
+
+
+% Height VS d(height)/dt
+fet = xyz.copy;
+fet.data = [fxyz(:,5,3),[log10(abs(diff(fxyz(:,5,3))));0]];
+figure,
+ind = Trial.stc{'r'};
+hist2(fet(ind,:),...
+      60:2:270,...
+      -4:.1:1);
+caxis([0,200])
+
+% USpineAng VS d(USpineAng)/dt
+fet = xyz.copy;
+fet.data = [fang(:,3,4,2),[log10(abs(diff(fang(:,3,4,2))));0]];
+figure,
+ind = Trial.stc{'r'};
+hist2(fet(ind,:),...
+      -1:.05:1.8,...
+      -6:.05:-1);
+caxis([0,200])
+
+% xydist(LSUS) VS d(xydist(LSUS))/dt
+fet = xyz.copy;
+fet.data = [cos(fang(:,1,4,2)).*fang(:,1,4,3),[0;log10(abs(diff(diff(fang(:,1,4,2)))));0]];
+figure,
+ind = Trial.stc{'a'};
+hist2(fet(ind,:),...
+      40:1:160,...
+      -8:.1:-3);
+caxis([0,200])
+
+% Height VS d(xydist(LSUS))/dt
+fet = xyz.copy;
+fet.data = [fxyz(:,5,3),[log10(abs(diff(cos(fang(:,1,4,2)).*fang(:,1,4,3))));0]];
+figure,
+ind = Trial.stc{'r'};
+hist2(fet(ind,:),...
+      60:2:270,...
+      -5:.1:.5);
+caxis([0,200])
+
+% Height VS d(xydist(LSUS))/dt
+fet = xyz.copy;
+fet.data = [fxyz(:,5,3),[log10(abs(diff(cos(fang(:,1,4,2)).*fang(:,1,4,3))));0]];
+figure,
+ind = Trial.stc{'r'};
+hist2(fet(ind,:),...
+      60:2:270,...
+      -5:.1:.5);
+caxis([0,200])
+
+
+
+
+%% FF
+fet = xyz.copy;
+fet.data = cos(fang(ind,1,m2,2)).*fang(ind,1,m2,3);
+fet.data = fang(:,1,4,2);
 
 figure,hold on,m2 = 4;
 eds = linspace(20,250,100);
 eds = linspace(20,180,100);
+eds = linspace(0,1.4,100);
 ind = Trial.stc{'a-r-m'};
-hn = bar(eds,histc(cos(fang(ind,1,m2,2)).*fang(ind,1,m2,3),eds),'histc');
+hn = bar(eds,histc(fet(ind),eds),'histc');
 hn.FaceColor = 'c';
 hn.FaceAlpha = .6;
 hn.EdgeAlpha =  0;
 ind = Trial.stc{'r'};
-hs = bar(eds,histc(cos(fang(ind,1,m2,2)).*fang(ind,1,m2,3),eds),'histc');
+hs = bar(eds,histc(fet(ind),eds),'histc');
 hs.FaceColor = 'r';
 hs.FaceAlpha = .4;
 hs.EdgeAlpha =  0;
 ind = Trial.stc{'m'};
-hs = bar(eds,histc(cos(fang(ind,1,m2,2)).*fang(ind,1,m2,3),eds),'histc');
+hs = bar(eds,histc(fet(ind),eds),'histc');
 hs.FaceColor = 'g';
 hs.FaceAlpha = .4;
 hs.EdgeAlpha =  0;
+xlabel('BLBU_r_x_y (mm)');
+legend({'EE','Rear','Groom'});
+
+
 
 
 figure,
 eds = linspace(20,170,100);
 ads = linspace(-0.8,1.5,100);
-ind = Trial.stc{'a'};
+ind = Trial.stc{'r'};
 hist2([fang(ind,3,4,2),cos(fang(ind,1,4,2)).*fang(ind,1,4,3)],ads,eds);
 caxis([0,500])
 
 figure,% Body length xy VS lower spine marker speed
 eds = linspace(20,170,100);
 ads = linspace(-0.5,2,100);
-ind = Trial.stc{'n'};
+ind = Trial.stc{'a'};
 hist2([fvel(ind,1),cos(fang(ind,1,4,2)).*fang(ind,1,4,3)],ads,eds);
 caxis([0,200])
 
@@ -116,21 +223,26 @@ hist2([log10(abs(circ_dist(fang(ind,1,4,1),circshift(fang(ind,1,4,1),-20)))),cos
 caxis([0,200])
 
 
-
-vangp = MTADxyz('data',log10(abs(nunity(diff(fang(:,3,4,2))))),'sampleRate',xyz.sampleRate);
-
+%% FF
+vangp = MTADxyz('data',log10(abs(diff(fang(:,3,4,2)))),'sampleRate',xyz.sampleRate);
 figure,
-ads = linspace(-4,1,100);
+ads = linspace(-5,-1.5,100);
 eds = linspace(20,170,100);
 subplot(1,4,1); 
 ind = Trial.stc{'a'};hist2([vangp(ind),cos(fang(ind,1,4,2)).*fang(ind,1,4,3)],ads,eds);caxis([0,200])
+title(ind.label);xlabel('log10(abs(d(BMBU_p_i_t_c_h)/dt))');ylabel('d_x_y(BLBU)/dt');
 subplot(1,4,2); 
 ind = Trial.stc{'m'};hist2([vangp(ind),cos(fang(ind,1,4,2)).*fang(ind,1,4,3)],ads,eds);caxis([0,200])
+title(ind.label);xlabel('log10(abs(d(BMBU_p_i_t_c_h)/dt))');ylabel('d_x_y(BLBU)/dt');
 subplot(1,4,3); 
 ind = Trial.stc{'r'};hist2([vangp(ind),cos(fang(ind,1,4,2)).*fang(ind,1,4,3)],ads,eds);caxis([0,200])
+title(ind.label);xlabel('log10(abs(d(BMBU_p_i_t_c_h)/dt))');ylabel('d_x_y(BLBU)/dt');
 subplot(1,4,4); 
 ind = Trial.stc{'a-r-m'};hist2([vangp(ind),cos(fang(ind,1,4,2)).*fang(ind,1,4,3)],ads,eds);caxis([0,200])
+title(ind.label);xlabel('log10(abs(d(BMBU_p_i_t_c_h)/dt))');ylabel('d_x_y(BLBU)/dt');
+suptitle([Trial.filebase])
 
+ 
 
 figure,
 ads = linspace(-4,1,100);
@@ -275,15 +387,31 @@ figure,hist2([log10(abs(circ_dist(fang(ind,1,4,1),circshift(fang(ind,1,4,1),-10)
 ind = Trial.stc{'a-w-r-n'};
 figure,hist2([log10(abs(circ_dist(fang(ind,1,4,1),circshift(fang(ind,1,4,1),-10)))),pv(ind,1)],peds,veds);caxis([0,200])
 
-veds = linspace(100,160,70);
-peds = linspace(-4,0,70);
+veds = linspace(50,160,70);
+peds = linspace(-6,-1,70);
 ind = Trial.stc{'n'};
-figure,hist2([log10(abs(circ_dist(fang(ind,1,2,1),circshift(fang(ind,1,2,1),-20)))),fang(ind,1,4,3).*cos(fang(ind,1,4,2))],peds,veds);caxis([0,200])
+tfet = xyz.copy;
+tfet.data = log10(abs(circ_dist(fang(:,1,4,1),circshift(fang(:,1,4,1),-1))));
+figure,hist2([tfet(ind),fang(ind,1,4,3).*cos(fang(ind,1,4,2))],peds,veds);caxis([0,200])
 ind = Trial.stc{'w'};
-figure,hist2([log10(abs(circ_dist(fang(ind,1,2,1),circshift(fang(ind,1,2,1),-20)))),fang(ind,1,4,3).*cos(fang(ind,1,4,2))],peds,veds);caxis([0,200])
+figure,hist2([tfet(ind),fang(ind,1,4,3).*cos(fang(ind,1,4,2))],peds,veds);caxis([0,200])
 ind = Trial.stc{'a-w-r-n'};
-figure,hist2([log10(abs(circ_dist(fang(ind,1,2,1),circshift(fang(ind,1,2,1),-20)))),fang(ind,1,4,3).*cos(fang(ind,1,4,2))],peds,veds);caxis([0,200])
+figure,hist2([tfet(ind),fang(ind,1,4,3).*cos(fang(ind,1,4,2))],peds,veds);caxis([0,200])
 
+
+fvel = xyz.vel([],[1,2]);
+fvel.filter('ButFilter',3,2.5,'low');
+fvel.data(fvel.data<0)=.1;
+%fvel.data = log10(fvel.data);
+
+ind = Trial.stc{'a-w-n-r-m'};
+figure,
+hist2([log10(abs(fvel(ind,1))),log10(abs([diff(fvel(ind,1));0]))],-.5:.05:2,-4:.05:.5)
+
+ind = Trial.stc{'a-w'};
+figure,
+hist2([log10(abs(fvel(ind,1))),log10(abs(fvel(ind,7)))],-.5:.05:2,-.5:.05:2)
+caxis([0,500])
 
 
 figure,hold on
