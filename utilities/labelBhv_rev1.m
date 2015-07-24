@@ -2,6 +2,7 @@
 
 Trial = MTATrial('jg05-20120310');
 Trial = MTATrial('jg05-20120317');
+Trial = MTATrial('Ed05-20140528');
 
 % XYZ Positions of Markers
 xyz = Trial.load('xyz');
@@ -44,6 +45,10 @@ fvel.filter('ButFilter',3,2.5,'low');
 fvel.data(fvel.data<0)=.1;
 fvel.data = log10(fvel.data);
 
+%% End Var Setup
+
+
+%% Rearing
 
 llist = {};
 figure,hold on
@@ -68,7 +73,9 @@ legend(llist)
 Lines(Trial.stc{'r',1}(:),[],'r');
 
 
-ts = [1:xyz.size(1)]/xyz.sampleRate;
+
+
+ts = (1:xyz.size(1))/xyz.sampleRate;
 
 hfig = figure(394883484);
 imagesc(ts,1:6,...
@@ -169,6 +176,53 @@ hist2(fet(ind,:),...
 caxis([0,200])
 
 
+
+%% Inter animal JPDF labeled contours
+
+fet = xyz.copy;
+fet.data = [fang(:,1,4,2),[log10(abs(diff(fang(:,3,4,2))));0]];
+sts = 'rwnms';
+stc = 'rcymg';
+edgs    = {linspace(0,1.4,75)};
+edgs(2) = {linspace(-6,-1,75)};
+edc = edgs;
+[edc{:}] = get_histBinCenters(edc);
+[X,Y] = meshgrid(edc{:});
+
+
+hfig = figure(2);
+
+% JPDF - Head/Body speed
+%ind = Trial.stc{'a'};
+ind = nniz(fet);
+b = fet(ind,:);
+hist2(b,edgs{1},edgs{2});
+xlabel('log10 body pitch (radians)');
+ylabel('log10(abs(d(BMBU_p_i_t_c_h)/dt)) log10(rad/sec)');
+title({'JPDF of log10(abs(d(BMBU_p_i_t_c_h)/dt)) VS BMBU_p_i_t_c_h',...
+       [Trial.filebase ': overlayed with jg05-20120317 labeled states']});
+
+% Feature of jg05-20120317 ofet = fet.copy;
+% ostc = MTATrial('jg05-20120317').load('stc');
+hold on,
+for i = 1:numel(sts),
+    b = ofet(ostc{sts(i)},:);
+    o = hist2(b,edgs{1},edgs{2});
+    F = [.05 .1 .05; .1 .4 .1; .05 .1 .05];
+    o = conv2(o,F,'same');
+    contour(X,Y,o',[10,10],'linewidth',1.5,'Color',stc(i))
+end
+caxis([0,200])
+legend({'rear','walk','turn','groom','sit'},'location','SouthEast')
+hfig.Position  = [100   100   782   629];
+
+save(fullfile('/storage/gravio/manuscripts/man2015-jgEd-Mocap/p20150716',...
+    [Trial.filebase '-BMBUpVSdBMBUdt_R-stc-jg05-20120317.eps']),'epsc')
+save(fullfile('/storage/gravio/manuscripts/man2015-jgEd-Mocap/p20150716',...
+    [Trial.filebase '-BMBUpVSdBMBUdt_R-stc-jg05-20120317.png']),'png')
+
+
+%% Inter animal JPDF labeled contours end
 
 
 %% FF
