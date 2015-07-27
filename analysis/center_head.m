@@ -284,10 +284,14 @@ end
 
 
 i =1;
-[mind,mv] = LocalMinimaN(sq(nvxyz(i,:,:,:)),100,100);
-,nj(mind(2)),nk(mind(3))
+%ni(mind(i,1)),nj(mind(i,2)),nk(mind(i,3))
 
-xyz.addMarker('ncom',[128,255,128],{{'head_back','head_front',[0,0,1]}},bsxfun(@plus,nx*ni(mind(1))+ny*nj(mind(2))+nz*nk(mind(3)),xyz(:,'hcom',:)));
+
+xyz.addMarker('nhb',[128,255,128],{{'head_back','head_front',[0,0,1]}},bsxfun(@plus,nx*ni(mind(i,1))+ny*nj(mind(i,2))+nz*nk(mind(i,3)),xyz(:,'head_back',:)));
+xyz.addMarker('nhl',[128,255,128],{{'head_back','head_front',[0,0,1]}},bsxfun(@plus,nx*ni(mind(i,1))+ny*nj(mind(i,2))+nz*nk(mind(i,3)),xyz(:,'head_left',:)));
+xyz.addMarker('nhf',[128,255,128],{{'head_back','head_front',[0,0,1]}},bsxfun(@plus,nx*ni(mind(i,1))+ny*nj(mind(i,2))+nz*nk(mind(i,3)),xyz(:,'head_front',:)));
+xyz.addMarker('nhr',[128,255,128],{{'head_back','head_front',[0,0,1]}},bsxfun(@plus,nx*ni(mind(i,1))+ny*nj(mind(i,2))+nz*nk(mind(i,3)),xyz(:,'head_right',:)));
+
 
 
 fhcom = zeros([xyz.size(1),1,3]);
@@ -296,9 +300,9 @@ xyz.addMarker('nfcom',[128,255,128],{{'head_back','head_front',[0,0,1]}},fhcom);
 
 xyz.addMarker('nhb',[128,255,128],{{'head_back','head_front',[0,0,1]}},bsxfun(@plus,nx*ni(mind(1))+ny*nj(mind(2))+nz*nk(mind(3)),xyz(:,'hbx',:)));
 
-
 [ys,fs,ts] =mtchglong(WhitenSignal([ang(nniz(xyz),'hbt','fhcom',3),ang(nniz(xyz),'hbx','fhcom',3)],[],1),2^8,ang.sampleRate,2^7,2^7*.875,[],[],[],[1,40]);
 sp = [];figure,sp(1)=subplot(2,1,1);imagesc(ts,fs,log10(ys(:,:,1,1))'),axis xy, colormap jet,sp(2)=subplot(2,1,2);imagesc(ts,fs,log10(ys(:,:,2,2))'),axis xy, colormap jet,linkaxes(sp,'xy')
+
 
 ms = nhm(2:end);
 hfig = figure(3939);clf
@@ -331,3 +335,44 @@ saveas(hfig,fullfile(['/storage/gravio/manuscripts/man2015-jgEd-MoCap/' ...
 %mkdir('/storage/gravio/manuscripts/man2015-jgEd-MoCap/p20150716/');
 save(fullfile('/storage/gravio/manuscripts/man2015-jgEd-MoCap/p20150716/',[Trial.filebase '.xyz-shift.mat']),'i','j','k','vxyz');
 load(fullfile('/storage/gravio/manuscripts/man2015-jgEd-MoCap/p20150716/',[Trial.filebase '.xyz-shift.mat']));
+
+
+
+rb_h_labels = {'head_back','head_left','head_front','head_right'};
+rb_h_labels = {'nhb','nhl','nhf','nhr'};
+hxyz = Trial.xyz.copy;
+hxyz.model = xyz.model.rb(rb_h_labels);;
+hxyz.data = xyz(:,rb_h_labels,:);
+hxyz.addMarker('hcom',[128,255,128],{{'nhb','nhf',[0,0,255]}},xyz.com(hxyz.model));
+
+fhcom = zeros([hxyz.size(1),1,hxyz.size(3)]);
+fhcom(nniz(xyz),:,:) = ButFilter(hxyz(nniz(hxyz),'hcom',:),3,2/(hxyz.sampleRate/2),'low');
+hxyz.addMarker('fhcom',[128,255,128],{{'nhb','nhf',[0,0,1]}},fhcom);
+
+
+
+ang = create(MTADang,Trial,hxyz);
+
+[ys,fs,ts] =mtchglong(WhitenSignal([ang(nniz(xyz),'nhb','fhcom',3),ang(nniz(xyz),'nhr','fhcom',3)],[],1),2^8,ang.sampleRate,2^7,2^7*.875,[],[],[],[1,40]);
+
+sp = [];
+figure,
+sp(1)=subplot(2,1,1);
+imagesc(ts,fs,log10(ys(:,:,1,1))'),axis xy, colormap jet,
+sp(2)=subplot(2,1,2);
+imagesc(ts,fs,log10(ys(:,:,2,2))'),axis xy, colormap jet,
+linkaxes(sp,'xy')
+
+hvel = hxyz.vel({'hcom'},[1,2]);
+ovel = xyz.vel({'hcom'},[1,2]);
+
+figure, plot(ovel.data),
+hold on,plot(hvel.data)
+Lines(Trial.stc{'w'}(:),[],'b');
+
+hvel.filter('ButFilter',3,2.5,'low');
+ovel.filter('ButFilter',3,2.5,'low');
+
+figure, plot(ovel.data),
+hold on,plot(hvel.data)
+Lines(Trial.stc{'w'}(:),[],'b');
