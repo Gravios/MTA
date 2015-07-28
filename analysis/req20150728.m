@@ -30,6 +30,7 @@ zlm = [min(min(xyz(ind,{'spine_lower','head_top'},3))),...
 
 hax = [];
 hfig = figure(384883);clf
+hfig.Position = [212 142 1372 743];
 
 hax(1) = subplot2(8,8,[1:8],[1:4]);
 hold on,
