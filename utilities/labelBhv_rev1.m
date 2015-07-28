@@ -45,7 +45,7 @@ fxyz.filter('ButFilter',3,2.5,'low');
 
 % FANG Filtered Intermarker angles 
 fang = create(MTADang,Trial,fxyz);
-
+o
 % FVEL Filtered marker speeds in XY plane
 fvel = xyz.vel([],[1,2]);
 fvel.filter('ButFilter',3,2.5,'low');
@@ -435,7 +435,7 @@ figure,hist2([ang(ind,1,4,3),pv(ind,1)],peds,veds);caxis([0,500])
 %% Turing overlap 
 tfet = Trial.xyz.copy;
 tfet.data = circ_dist(ang(:,1,4,1),circshift(ang(:,1,4,1),-1));
-tfet.filter('ButFilter',3,.2,'low');
+tfet.filter('ButFilter',3,2.5,'low');
 tfet.data = log10(abs(tfet.data));
 
 afet = Trial.xyz.copy;
@@ -532,22 +532,23 @@ plot(fvel(ind(15,2),1),fvel(ind(15,2),7),'*y');
 hold on
 for g = ind.data',
     %plot(fvel(g',1),fvel(g',7),'m');
-plot(fvel(g(1),1),fvel(g(1),7),'*c');
-plot(fvel(g(2),1),fvel(g(2),7),'*y');
+    plot(fvel(g(1),1),fvel(g(1),7),'*c');
+    plot(fvel(g(2),1),fvel(g(2),7),'*y');
 end
 
-saveas(gcf,fullfile('/storage/gravio/manuscripts/man2015-jgEd-MoCap/p20150724',...
-    [Trial.filebase '-turing_hbVel-turn_start_stop_more.png']),'png')
+saveas(gcf,fullfile(Trial.spath,[Trial.filebase '-turing_hbVel-turn_start_stop_more.png']),'png')
 
 
 %figure,plot(tfet.data)
 %Lines(Trial.stc{'n'}(:),[],'g');
 
 fet = xyz.copy;
-fet.data = [fvel(:,1),tfet(:,1)];
-%fet.data = [fang(:,1,4,2),[log10(abs(diff(fang(:,3,4,2))));0]];
-edgs    = {linspace(-.5,2,75)};
+%fet.data = [fvel(:,1),tfet(:,1)];
+fet.data = [fang(:,1,4,2),[log10(abs(diff(fang(:,3,4,2))));0]];
+edgs    = {linspace(0.2,1.7,75)};
 edgs(2) = {linspace(-7,-1,75)};
+% $$$ edgs    = {linspace(-.5,2,75)};
+% $$$ edgs(2) = {linspace(-7,-1,75)};
 edc = edgs;
 [edc{:}] = get_histBinCenters(edc);
 [X,Y] = meshgrid(edc{:});
@@ -563,7 +564,7 @@ b = fet(ind,:);
 hist2(b,edgs{1},edgs{2});
 xlabel('log10 body pitch (radians)');
 ylabel('log10(abs(d(BMBU_p_i_t_c_h)/dt)) log10(rad/sec)');
-title({'JPDF of log10(abs(d(BMBU_p_i_t_c_h)/dt)) VS BMBU_p_i_t_c_h',...
+title({'JPDF of log10(abs(d(BLBU_p_i_t_c_h)/dt)) VS BMBU_p_i_t_c_h',...
        [Trial.filebase ': overlayed with jg05-20120317 labeled states']});
 
 % Feature and states of jg05-20120317 
@@ -656,9 +657,6 @@ vco = bsxfun(@minus,v.data,mean(v.data)
 
 v.data(v.data<0) = .001;
 v.data = log10(v.data);
-
-
-
 
 
 
@@ -776,7 +774,7 @@ afet.data = circshift(xyz(:,:,[1,2]),-1)-circshift(xyz(:,:,[1,2]),1);
 afet.data = reshape(afet.data,[],2);
 aft = mat2cell(afet.data,size(afet,1),[1,1]);
 afet.data = cart2pol(aft{:});
-afet.data = reshape(afet.data,[],10);
+afet.data = reshape(afet.data,[],xyz.size(2));
 
 
 
