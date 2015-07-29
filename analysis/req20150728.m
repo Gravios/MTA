@@ -1,5 +1,5 @@
 
-Trial = MTATrial('jg05-20120317')
+Trial = MTATrial('jg05-20120317');
 
 xyz = Trial.load('xyz');
 ang = create(MTADang,Trial,xyz);
