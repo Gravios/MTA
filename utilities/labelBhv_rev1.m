@@ -2,13 +2,13 @@
 
 Trial = MTATrial('jg05-20120317');
 
-Trial = MTATrial('jg05-20120310');
-Trial = MTATrial('Ed05-20140528');
-Trial = MTATrial('Ed01-20140709');
-Trial = MTATrial('Ed03-20140625');
-Trial = MTATrial('Ed03-20140625');
-Trial = MTATrial('er01-20110719');
-Trial = MTATrial('g10-20130415');
+% $$$ Trial = MTATrial('jg05-20120310');
+% $$$ Trial = MTATrial('Ed05-20140528');
+% $$$ Trial = MTATrial('Ed01-20140709');
+% $$$ Trial = MTATrial('Ed03-20140625');
+% $$$ Trial = MTATrial('Ed03-20140625');
+% $$$ Trial = MTATrial('er01-20110719');
+% $$$ Trial = MTATrial('g10-20130415');
 
 
 % XYZ Positions of Markers
@@ -45,7 +45,7 @@ fxyz.filter('ButFilter',3,2.5,'low');
 
 % FANG Filtered Intermarker angles 
 fang = create(MTADang,Trial,fxyz);
-o
+
 % FVEL Filtered marker speeds in XY plane
 fvel = xyz.vel([],[1,2]);
 fvel.filter('ButFilter',3,2.5,'low');
@@ -769,6 +769,8 @@ h.FaceColor = 'r';
 h.FaceAlpha = .4;
 
 
+%% WALK Features
+
 afet = Trial.xyz.copy;
 afet.data = circshift(xyz(:,:,[1,2]),-1)-circshift(xyz(:,:,[1,2]),1);
 afet.data = reshape(afet.data,[],2);
@@ -782,8 +784,8 @@ mag = zeros([xyz.size(1),1]);
 for i= 1:xyz.size(1),
 mag(i) = PPC(afet(i,[1:5,7]));
 end
-save(fullfile('/storage/gravio/manuscripts/man2015-jgEd-MoCap/p20150724',...
-    [Trial.filebase '-ma.mat']),'ma')
+save(fullfile(Trial.spath,...
+    [Trial.filebase '-walk_fet_ppc.mat']),'mag')
 
 load(fullfile('/storage/gravio/manuscripts/man2015-jgEd-MoCap/p20150724',...
     [Trial.filebase '-ma.mat']))
