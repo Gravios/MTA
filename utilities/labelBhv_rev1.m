@@ -1,6 +1,13 @@
 
 
 Trial = MTATrial('jg05-20120317');
+hostPath = '/gpfs01/sirota/homes/gravio/figures/labelBhv_rev1/';
+hostPath = '/storage/gravio/figures/labelBhv_rev1/';
+
+saveas(hfig,fullfile('/storage/gravio/manuscripts/man2015-jgEd-MoCap/p20150724',...
+    [Trial.filebase '-BMBUpVSdBMBUdt_R-stc-jg05-20120317.png']),'png')
+
+
 
 % $$$ Trial = MTATrial('jg05-20120310');
 % $$$ Trial = MTATrial('Ed05-20140528');
@@ -17,6 +24,9 @@ xyz = Trial.load('xyz');
 % COM Body Center of Mass
 rbb = xyz.model.rb({'spine_lower','pelvis_root','spine_middle'});
 xyz.addMarker('hcom',[.7,0,.7],{{'head_back','head_front',[0,0,255]}},xyz.com(rbb));
+
+rba = xyz.model.rb({'spine_lower','pelvis_root','spine_middle','spine_upper','head_back','head_front'});
+xyz.addMarker('acom',[.7,0,.7],{{'spine_lower','pelvis_root','spine_middle','spine_upper','head_back','head_front',[0,0,255]}},xyz.com(rba));
 
 
 
@@ -50,6 +60,10 @@ fang = create(MTADang,Trial,fxyz);
 fvel = xyz.vel([],[1,2]);
 fvel.filter('ButFilter',3,2.5,'low');
 fvel.data(fvel.data<0)=.1;
+
+fac = fvel.copy;
+fac.data = [diff(fac.data);zeros([1,fvel.size(2)])];
+
 fvel.data = log10(fvel.data);
 
 %% End Var Setup
@@ -787,8 +801,8 @@ end
 save(fullfile(Trial.spath,...
     [Trial.filebase '-walk_fet_ppc.mat']),'mag')
 
-load(fullfile('/storage/gravio/manuscripts/man2015-jgEd-MoCap/p20150724',...
-    [Trial.filebase '-ma.mat']))
+load(fullfile(Trial.spath,...
+    [Trial.filebase '-walk_fet_ppc.mat']))
 
 
 man = Trial.xyz.copy;
@@ -798,7 +812,7 @@ man.filter('ButFilter',3,1,'low');
 % $$$ figure,plot(ma)
 % $$$ hold on,plot(man.data)
 
-figure,hold on
+hfig = figure,hold on
 eds = linspace(-.2,1,170);
 ind = Trial.stc{'a-r-w'};
 hn = bar(eds,histc(man(ind),eds),'histc');
@@ -810,16 +824,248 @@ hs = bar(eds,histc(man(ind),eds),'histc');
 hs.FaceColor = 'r';
 hs.FaceAlpha = .6;
 hs.EdgeAlpha = 0;
+title({'Filtered Pair Wise Phase Consistency (PPC)',['of trajectories ' ...
+                    'markers along the head and spine']})
+ylabel('count');
+xlabel('PPC');
+legend({'a-r-w','w'})
+
+saveas(hfig,fullfile(hostPath,['PPC-',Trial.filebase,'.eps']),'epsc')
+saveas(hfig,fullfile(hostPath,['PPC-',Trial.filebase,'.png']),'png')
 
 
 figure
-ind = Trial.stc{'n'};
+ind = Trial.stc{'w'};
 eds = linspace(-.2,1,100);
 vds = linspace(-.5,2,100);
 hist2([man(ind),fvel(ind,1)],eds,vds);
-caxis([0,40])    
-
-
+%caxis([0,100])    
 caxis([0,200])    
-    
 
+
+hold on,
+for i = 1:80
+ind = Trial.stc{'w'}(i,:);
+plot(man(ind(1)),fvel(ind(1),1),'*g')
+plot(man(ind(end)),fvel(ind(end),1),'*r')
+plot(man(ind),fvel(ind,1),'.w')
+pause(.1)
+end
+
+
+dman = man.copy;
+dman.data = [diff(man.data);0];
+
+figure
+ind = Trial.stc{'w'};
+eds = linspace(-.2,1,100);
+vds = linspace(-.015,.015,100);
+hist2([man(ind),dman(ind,1)],eds,vds);
+caxis([0,200])    
+
+
+hold on,
+for i = 1:80
+ind = Trial.stc{'w'}(i,:);
+plot(man(ind(1)),dman(ind(1),1),'*g')
+plot(man(ind(end)),dman(ind(end),1),'*r')
+%plot(man(ind),dman(ind,1),'.w')
+pause(.1)
+end
+
+
+
+figure
+ind = Trial.stc{'a-r-w'};
+eds = linspace(-.015,.015,100);
+vds = linspace(-1.5,1.5,100);
+hist2([dman(ind),fac(ind,1)],eds,vds);
+caxis([0,100])    
+
+hold on,
+for i = 1:80
+ind = Trial.stc{'w'}(i,:);
+plot(dman(ind(1)),fac(ind(1),1),'*g')
+plot(dman(ind(end)),fac(ind(end),1),'*r')
+%plot(fvel(ind),fac(ind,1),'.w')
+pause(.1)
+end
+
+
+
+figure
+ind = Trial.stc{'w'};
+eds = linspace(-.5,.5,100);
+vds = linspace(-.2,1,100);
+hist2([circ_dist(fang(ind,1,4,1),circshift(fang(ind,1,4,1),-20)),man(ind,1)],eds,vds);
+caxis([0,100])    
+
+
+
+figure
+ind = Trial.stc{'a'};
+eds = linspace(110,170,100);
+vds = linspace(-.2,1,100);
+hist2([fang(ind,1,4,3),man(ind,1)],eds,vds);
+caxis([0,50])    
+figure,ind = Trial.stc{'a-r-w'}; hist2([fang(ind,1,4,3),man(ind,1)],eds,vds); caxis([0,50])    
+figure,ind = Trial.stc{'w'}; hist2([fang(ind,1,4,3),man(ind,1)],eds,vds); caxis([0,50])    
+
+figure
+ind = Trial.stc{'a'};
+eds = linspace(110,280,100);
+vds = linspace(-.2,1,100);
+hist2([fang(ind,1,7,3),man(ind,1)],eds,vds);
+caxis([0,50])    
+figure
+ind = Trial.stc{'w'};
+hist2([fang(ind,1,7,3),man(ind,1)],eds,vds);
+caxis([0,50])    
+
+
+
+
+figure
+ind = Trial.stc{'a'};
+eds = linspace(40,120,100);
+vds = linspace(60,150,100);
+hist2([fxyz(ind,2,3),fang(ind,2,4,3)],eds,vds);
+caxis([0,150])    
+
+figure
+ind = Trial.stc{'a'};
+eds = linspace(-1,2,100);
+vds = linspace(-.6,1.6,100);
+hist2([fvel(ind,11),fang(ind,3,4,2)],eds,vds);
+caxis([0,250]) 
+
+
+
+%% Distribution of behaviors for speed of ACOM
+
+aph = .4;
+hfig = figure,hold on
+
+ind = Trial.stc{'s'};
+hr = bar(eds,histc(fvel(ind,11),eds),'histc');
+hr.FaceColor = 'm';
+hr.FaceAlpha = .2;
+hr.EdgeAlpha = 0;
+
+ind = Trial.stc{'m'};
+ha = bar(eds,histc(fvel(ind,11),eds),'histc');
+ha.FaceColor = 'c';
+ha.FaceAlpha = .5;
+ha.EdgeAlpha = 0;
+
+ind = Trial.stc{'w'};
+hs = bar(eds,histc(fvel(ind,11),eds),'histc');
+hs.FaceColor = 'r';
+hs.FaceAlpha = aph;
+hs.EdgeAlpha = 0;
+
+ind = Trial.stc{'r'};
+hr = bar(eds,histc(fvel(ind,11),eds),'histc');
+hr.FaceColor = 'y';
+hr.FaceAlpha = .7;
+hr.EdgeAlpha = 0;
+
+ind = Trial.stc{'n'};
+hr = bar(eds,histc(fvel(ind,11),eds),'histc');
+hr.FaceColor = 'g';
+hr.FaceAlpha = .8;
+hr.EdgeAlpha = 0;
+
+legend({'s','m','w','r','n',});
+title('Center of mass Spine & Head Speed');
+ylabel('Sample Count');
+xlabel('Speed 1og10(cm/s)');
+
+saveas(hfig,fullfile(hostPath,['ACOM_speed-',Trial.filebase,'.eps']),'epsc')
+saveas(hfig,fullfile(hostPath,['ACOM_speed-',Trial.filebase,'.png']),'png')
+
+
+%% Distribution of behaviors for speed of Lower Spine
+aph = .4;
+hfig = figure,hold on
+
+ind = Trial.stc{'s'};
+hr = bar(eds,histc(fvel(ind,1),eds),'histc');
+hr.FaceColor = 'm';
+hr.FaceAlpha = .2;
+hr.EdgeAlpha = 0;
+
+ind = Trial.stc{'m'};
+ha = bar(eds,histc(fvel(ind,1),eds),'histc');
+ha.FaceColor = 'c';
+ha.FaceAlpha = .5;
+ha.EdgeAlpha = 0;
+
+ind = Trial.stc{'w'};
+hs = bar(eds,histc(fvel(ind,1),eds),'histc');
+hs.FaceColor = 'r';
+hs.FaceAlpha = aph;
+hs.EdgeAlpha = 0;
+
+ind = Trial.stc{'r'};
+hr = bar(eds,histc(fvel(ind,1),eds),'histc');
+hr.FaceColor = 'y';
+hr.FaceAlpha = .7;
+hr.EdgeAlpha = 0;
+
+ind = Trial.stc{'n'};
+hr = bar(eds,histc(fvel(ind,1),eds),'histc');
+hr.FaceColor = 'g';
+hr.FaceAlpha = .8;
+hr.EdgeAlpha = 0;
+
+legend({'s','m','w','r','n',});
+title('Center of mass Spine & Head Speed');
+ylabel('Sample Count');
+xlabel('Speed 1og10(cm/s)');
+
+saveas(hfig,fullfile(hostPath,['LS_speed-',Trial.filebase,'.eps']),'epsc')
+saveas(hfig,fullfile(hostPath,['LS_speed-',Trial.filebase,'.png']),'png')
+
+%% Distribution of behaviors for speed of Lower Spine
+aph = .4;
+hfig = figure,hold on
+eds = linspace(-.2,1,100);
+
+ind = Trial.stc{'s'};
+hr = bar(eds,histc(man(ind,1),eds),'histc');
+hr.FaceColor = 'm';
+hr.FaceAlpha = .2;
+hr.EdgeAlpha = 0;
+
+ind = Trial.stc{'m'};
+ha = bar(eds,histc(man(ind,1),eds),'histc');
+ha.FaceColor = 'c';
+ha.FaceAlpha = .5;
+ha.EdgeAlpha = 0;
+
+ind = Trial.stc{'w'};
+hs = bar(eds,histc(man(ind,1),eds),'histc');
+hs.FaceColor = 'r';
+hs.FaceAlpha = aph;
+hs.EdgeAlpha = 0;
+
+ind = Trial.stc{'r'};
+hr = bar(eds,histc(man(ind,1),eds),'histc');
+hr.FaceColor = 'y';
+hr.FaceAlpha = .7;
+hr.EdgeAlpha = 0;
+
+ind = Trial.stc{'n'};
+hr = bar(eds,histc(man(ind,1),eds),'histc');
+hr.FaceColor = 'g';
+hr.FaceAlpha = .8;
+hr.EdgeAlpha = 0;
+
+legend({'s','m','w','r','n',});
+title('Center of mass Traj PPC & Head Speed');
+ylabel('Sample Count');
+xlabel('PPC');
+
+saveas(hfig,fullfile(hostPath,['TRAJ_PPC-',Trial.filebase,'.eps']),'epsc')
+saveas(hfig,fullfile(hostPath,['TRAJ_PPC-',Trial.filebase,'.png']),'png')
