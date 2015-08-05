@@ -4,10 +4,6 @@ Trial = MTATrial('jg05-20120317');
 hostPath = '/gpfs01/sirota/homes/gravio/figures/labelBhv_rev1/';
 hostPath = '/storage/gravio/figures/labelBhv_rev1/';
 
-saveas(hfig,fullfile('/storage/gravio/manuscripts/man2015-jgEd-MoCap/p20150724',...
-    [Trial.filebase '-BMBUpVSdBMBUdt_R-stc-jg05-20120317.png']),'png')
-
-
 
 % $$$ Trial = MTATrial('jg05-20120310');
 % $$$ Trial = MTATrial('Ed05-20140528');
@@ -65,6 +61,16 @@ fac = fvel.copy;
 fac.data = [diff(fac.data);zeros([1,fvel.size(2)])];
 
 fvel.data = log10(fvel.data);
+
+% UVEL 
+uvel = xyz.vel([],[3]);
+uvel.filter('ButFilter',3,2.5,'low');
+uvel.data(uvel.data<0)=.1;
+
+uac = uvel.copy;
+uac.data = [diff(uac.data);zeros([1,uvel.size(2)])];
+
+uvel.data = log10(uvel.data);
 
 %% End Var Setup
 
