@@ -531,6 +531,8 @@ Lines(Trial.stc{'w'}(:),[],'b');
 
 
 
+wf = MTADxyz('data',wf,'sampleRate',trajSampleRate);
+
 figure,hold on,
 ind = Trial.stc{'a-r-w'};
 ha = bar(linspace(-6,6,500),histc(wf(ind),linspace(-6,6,500)),'histc');
@@ -545,6 +547,13 @@ hs.FaceAlpha = .4;
 hs.EdgeColor = 'r';
 hs.EdgeAlpha = .4;
 
+
+load(fullfile(Trial.spath,...
+    [Trial.filebase '-walk_fet_ppc.mat']))
+
+man = Trial.xyz.copy;
+man.data = mag;
+man.filter('ButFilter',3,1,'low');
 
 man.resample(trajSampleRate);
 
@@ -569,6 +578,10 @@ subplot(121)
 ind = Trial.stc{'a-w-r'};
 hist2([fvel(ind,1),wf(ind)],linspace(-.7,2,80),linspace(-6,6,80));
 subplot(122)
+ind = Trial.stc{'w'};
+hist2([fvel(ind,1),wf(ind)],linspace(-.7,2,80),linspace(-6,6,80));
+
+
 ind = Trial.stc{'w'};
 hist2([fvel(ind,1),wf(ind)],linspace(-.7,2,80),linspace(-6,6,80));
 
