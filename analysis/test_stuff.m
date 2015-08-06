@@ -517,5 +517,62 @@ figure,hist2([wdur,wmax],100,100)
 
 
 
+Trial = MTATrial('jg05-20120317');
+
+xyz = Trial.load('xyz');
+ang = create(MTADang,Trial,xyz);
+
+fxyz = xyz.copy;
+fxyz.filter('ButFilter',3,2.5,'low');
+fang = create(MTADang,Trial,fxyz);
+
+figure,plot(circ_dist(ang(:,1,4,1),fang(:,1,4,1)))
+Lines(Trial.stc{'w'}(:),[],'b');
+
+
+
+figure,hold on,
+ind = Trial.stc{'a-r-w'};
+ha = bar(linspace(-6,6,500),histc(wf(ind),linspace(-6,6,500)),'histc');
+ha.FaceColor = 'c';
+ha.FaceAlpha = .4;
+ha.EdgeColor = 'c';
+ha.EdgeAlpha = .4;
+ind = Trial.stc{'w'};
+hs = bar(linspace(-6,6,500),histc(wf(ind),linspace(-6,6,500)),'histc');
+hs.FaceColor = 'r';
+hs.FaceAlpha = .4;
+hs.EdgeColor = 'r';
+hs.EdgeAlpha = .4;
+
+
+man.resample(trajSampleRate);
+
+fvel = xyz.vel([],[1,2]);
+fvel.filter('ButFilter',3,2.5,'low');
+fvel.resample(trajSampleRate);
+fvel.data(fvel.data<0)=.1;
+fvel.data = log10(fvel.data);
+
+
+
+figure
+subplot(121)
+ind = Trial.stc{'a-w-r-n'};
+hist2([man(ind),wf(ind)],linspace(-.2,1,80),linspace(-6,6,80));
+subplot(122)
+ind = Trial.stc{'w+n'};
+hist2([man(ind),wf(ind)],linspace(-.2,1,80),linspace(-6,6,80));
+
+figure
+subplot(121)
+ind = Trial.stc{'a-w-r'};
+hist2([fvel(ind,1),wf(ind)],linspace(-.7,2,80),linspace(-6,6,80));
+subplot(122)
+ind = Trial.stc{'w'};
+hist2([fvel(ind,1),wf(ind)],linspace(-.7,2,80),linspace(-6,6,80));
+
+
+
 
 

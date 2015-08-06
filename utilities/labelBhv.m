@@ -21,7 +21,7 @@ if txyz.isempty,txyz.load(Trial); end
 if txyz.sampleRate>120,txyz.resample(120);end
 tang = create(MTADang,Trial,txyz);
 
-txyz.filter('gauss');
+txyz.filter('ButFilter',3,50,'low');
 xyzlen = size(txyz,1);
 
 trajSampleRate = (txyz.sampleRate/winlen)*nOverlap;
