@@ -1075,3 +1075,217 @@ xlabel('PPC');
 
 saveas(hfig,fullfile(hostPath,['TRAJ_PPC-',Trial.filebase,'.eps']),'epsc')
 saveas(hfig,fullfile(hostPath,['TRAJ_PPC-',Trial.filebase,'.png']),'png')
+
+
+
+ffet = fxyz.copy;
+ffet.data = nunity(ffet.data);
+
+figure,hold on,
+eds= linspace(-6,6,200);
+ind = Trial.stc{'a-w-r'};
+ha = bar(eds,histc(ffet(ind,1,3),eds),'histc');
+ha.FaceColor = 'c';
+ha.FaceAlpha = .5;
+ha.EdgeAlpha = 0;
+
+ind = Trial.stc{'w'};
+hs = bar(eds,histc(ffet(ind,1,3),eds),'histc');
+hs.FaceColor = 'r';
+hs.FaceAlpha = .4;
+hs.EdgeAlpha = 0;
+
+
+figure
+subplot(121)
+ind = Trial.stc{'a-r-w'};
+eds = linspace(-.8,2,100);
+vds = linspace(-5,5,100);
+hist2([fvel(ind,1),ffet(ind,1,3)],eds,vds);
+caxis([0,250])    
+subplot(122)
+ind = Trial.stc{'w'};
+hist2([fvel(ind,1),ffet(ind,1,3)],eds,vds);
+caxis([0,250])    
+
+
+
+mxyz = xyz.copy;
+mxyz.filter('ButFilter',3,14,'low');
+mang = create(MTADang,Trial,mxyz);
+
+daf = Trial.xyz.copy;
+daf.data = sq(mang(:,1,1:4,3).*sin(mang(:,1,1:4,2)));
+
+daf.data = bsxfun(@minus,xyz(:,2:4,3),xyz(:,1,3))
+daf.filter('ButFilter',3,8,'low');
+daf.data = diff(daf.data);
+
+figure,plot(daf.data),
+Lines(Trial.stc{'k'}(:),[],'m');
+Lines(Trial.stc{'w'}(:),[],'c');
+Lines(Trial.stc{'n'}(:),[],'g');
+
+sig = diff(nunity(xyz(:,4,3)-xyz(:,1,3)));
+
+figure,plot(diff(circ_dist(mang(:,1,2,1),mang(:,1,4,1))))
+
+
+figure,plot(log10(sq(sum(GetSegs(circshift(diff(circ_dist(mang(:,1,3,1),mang(:,2,4,1))),20),1:mang.size(1),40,nan).^2))))
+Lines(Trial.stc{'k'}(:),[],'m');
+Lines(Trial.stc{'w'}(:),[],'c');
+Lines(Trial.stc{'n'}(:),[],'g');
+
+
+sfet = Trial.xyz.copy;
+sfet.data = log10(sq(sum(GetSegs(circshift(diff(circ_dist(mang(:,1,3,1),mang(:,2,4,1))),20),1:mang.size(1),40,nan).^2)))';
+wfet = Trial.xyz.copy;
+wfet.data = log10(sq(sum(GetSegs(circshift(diff(mxyz(:,1,3)),20),1:mang.size(1),40,nan).^2)))';
+
+eds= linspace(-6,0,200);
+
+figure,hold on
+ind = Trial.stc{'a-k-w-r'};
+noise = sfet(ind);
+ha = bar(eds,histc(noise,eds),'histc');
+ha.FaceColor = 'c';
+ha.FaceAlpha = .5;
+ha.EdgeAlpha = 0;
+
+ind = Trial.stc{'w'};
+signal = sfet(ind);
+hs = bar(eds,histc(signal,eds),'histc');
+hs.FaceColor = 'r';
+hs.FaceAlpha = .4;
+hs.EdgeAlpha = 0;
+
+
+dp = abs((nanmean(signal)-nanmean(noise))/(.5*sqrt(nanvar(signal)+nanvar(noise))));
+
+
+ads = linspace(-.2,1,100);
+eds = linspace(-5,3,100);
+
+figure,
+subplot(121)
+ind = Trial.stc{'a-r-w-k-n'};
+hist2([man(ind),wfet(ind)],ads,eds)
+caxis([0,100])
+subplot(122)
+ind = Trial.stc{'n'};
+hist2([man(ind),wfet(ind)],ads,eds)
+caxis([0,100])
+
+
+ads = linspace(-.8,2,100);
+eds = linspace(-5,3,100);
+
+figure,
+subplot(121)
+ind = Trial.stc{'a-r-w-k-n'};
+hist2([fvel(ind,1),wfet(ind)],ads,eds)
+caxis([0,100])
+subplot(122)
+ind = Trial.stc{'n'};
+hist2([fvel(ind,1),wfet(ind)],ads,eds)
+caxis([0,100])
+
+ads = linspace(-.8,2,100);
+eds = linspace(-.2,1,100);
+
+figure,
+subplot(121)
+ind = Trial.stc{'a-r-w-k-n'};
+hist2([fvel(ind,1),man(ind)],ads,eds)
+caxis([0,100])
+subplot(122)
+ind = Trial.stc{'w'};
+hist2([fvel(ind,1),man(ind)],ads,eds)
+caxis([0,100])
+
+
+eds= linspace(-.2,1.2,200);
+figure,hold on
+ind = Trial.stc{'a-r'};
+noise = circ_dist(ang(ind,1,3,2),ang(ind,2,4,2));
+ha = bar(eds,histc(noise,eds),'histc');
+ha.FaceColor = 'c';
+ha.FaceAlpha = .5;
+ha.EdgeAlpha = 0;
+
+ind = Trial.stc{'r'};
+signal = circ_dist(ang(ind,1,3,2),ang(ind,2,4,2));
+hs = bar(eds,histc(signal,eds),'histc');
+hs.FaceColor = 'r';
+hs.FaceAlpha = .4;
+hs.EdgeAlpha = 0;
+
+
+dp = abs((nanmean(signal)-nanmean(noise))/(.5*sqrt(nanvar(signal)+nanvar(noise))));
+
+figure,
+plot([ sqrt(sum(diff(sq(cross(circshift(xyz(:,1,:),-15),circshift(xyz(:,1,:),15),3))).^2,2)),...
+       sqrt(sum(diff(sq(cross(circshift(xyz(:,4,:),-15),circshift(xyz(:,4,:),15),3))).^2,2))]);
+
+
+bb =bsxfun(@minus,[circshift(xyz(:,1,:),-30),circshift(xyz(:,1,:),30)],xyz(:,1,:));
+figure,plot((sqrt(sum(diff(sq(cross(bb(:,1,:),bb(:,2,:),3))).^2,2))))
+Lines(Trial.stc{'w'}(:),[],'m');
+
+hold on,plot(sqrt(sum(sq(diff(bb(:,1,:)).^2),2)).*100)
+
+sg = sqrt(sum(diff(sq(cross(bb(:,1,:),bb(:,2,:),3))).^2,2));
+wsg = zeros([size(sg,1),1]);
+wsg(nniz(sg)) = WhitenSignal(sg(nniz(sg)));
+[ys,fs,ts] = mtchglong(wsg,2^8,xyz.sampleRate,2^7,2^7*.875,[],[],[],[1,20]);
+
+figure,imagesc(ts,fs,log10(ys)'),axis xy,colormap jet
+
+
+mfet = Trial.xyz.copy;
+mfet.data = log10(sqrt(sum(diff(sq(cross(bb(:,1,:),bb(:,2,:),3))).^2,2)));
+mfet.filter('ButFilter',3,3,'low');
+
+eds= linspace(-4,4,200);
+figure,hold on
+ind = Trial.stc{'a-w-r'};
+noise = mfet(ind);
+ha = bar(eds,histc(noise,eds),'histc');
+ha.FaceColor = 'c';
+ha.FaceAlpha = .5;
+ha.EdgeAlpha = 0;
+
+ind = Trial.stc{'w'};
+signal = mfet(ind);
+hs = bar(eds,histc(signal,eds),'histc');
+hs.FaceColor = 'r';
+hs.FaceAlpha = .4;
+hs.EdgeAlpha = 0;
+
+
+ads = linspace(-4,4,100);
+eds = linspace(-.2,1,100);
+
+figure,
+subplot(121)
+ind = Trial.stc{'a-r-w-k-n'};
+hist2([mfet(ind,1),man(ind)],ads,eds)
+caxis([0,100])
+subplot(122)
+ind = Trial.stc{'w'};
+hist2([mfet(ind,1),man(ind)],ads,eds)
+caxis([0,100])
+
+figure,
+ind = Trial.stc{'r'};
+hist2([mfet(ind,1),man(ind)],ads,eds)
+caxis([0,200])
+
+ads = linspace(-4,4,100);
+eds = linspace(-.8,2,100);
+figure,
+ind = Trial.stc{'m'};
+hist2([mfet(ind,1),fvel(ind,1)],ads,eds)
+caxis([0,400])
+
+Lines(Trial.stc{'w'}(:),[],'m');
