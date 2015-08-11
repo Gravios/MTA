@@ -1,5 +1,5 @@
 classdef MTADfet < MTAData
-%MTADxyz(path,filename,data,sampleRate,syncPeriods,syncOrigin,model,type,ext)
+%MTADxyz(path,filename,data,sampleRate,syncPeriods,syncOrigin,model,type,ext,name,label,key)
 %
 % <capspam>  THIS IS ALL WRONG - DO NOT READ FURTHER THAN THIS LINE
 %
@@ -45,7 +45,7 @@ classdef MTADfet < MTAData
                 DefaultArgs(varargin,{[],[],[],[],[],[],[],'TimeSeries','fet',[],[],[]});
             if ~isempty(filename),
                 if ~strcmp(filename(end-3:end),'.mat'),
-                    filename= [filename '.' ext '.mat'];
+                    filename= [filename '.' ext '.' label '.' key '.mat'];
                 end
             end            
             Data = Data@MTAData(path,filename,data,sampleRate,syncPeriods,syncOrigin,type,ext,name,label,key);            
