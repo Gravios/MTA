@@ -1223,12 +1223,9 @@ hs.EdgeAlpha = 0;
 
 dp = abs((nanmean(signal)-nanmean(noise))/(.5*sqrt(nanvar(signal)+nanvar(noise))));
 
-figure,
-plot([ sqrt(sum(diff(sq(cross(circshift(xyz(:,1,:),-15),circshift(xyz(:,1,:),15),3))).^2,2)),...
-       sqrt(sum(diff(sq(cross(circshift(xyz(:,4,:),-15),circshift(xyz(:,4,:),15),3))).^2,2))]);
 
 
-bb =bsxfun(@minus,[circshift(xyz(:,1,:),-30),circshift(xyz(:,1,:),30)],xyz(:,1,:));
+bb =bsxfun(@minus,[circshift(xyz(:,1,:),-15),circshift(xyz(:,1,:),15)],xyz(:,1,:));
 figure,plot((sqrt(sum(diff(sq(cross(bb(:,1,:),bb(:,2,:),3))).^2,2))))
 Lines(Trial.stc{'w'}(:),[],'m');
 
@@ -1243,10 +1240,11 @@ figure,imagesc(ts,fs,log10(ys)'),axis xy,colormap jet
 
 
 mfet = Trial.xyz.copy;
-mfet.data = log10(sqrt(sum(diff(sq(cross(bb(:,1,:),bb(:,2,:),3))).^2,2)));
+mfet.data = sqrt(sum(diff(sq(cross(bb(:,1,:),bb(:,2,:),3))).^2,2));
 mfet.filter('ButFilter',3,3,'low');
+mfet.data = log10(mfet.data);
 
-eds= linspace(-4,4,200);
+eds= linspace(-4,3,200);
 figure,hold on
 ind = Trial.stc{'a-w-r'};
 noise = mfet(ind);
@@ -1263,12 +1261,12 @@ hs.FaceAlpha = .4;
 hs.EdgeAlpha = 0;
 
 
-ads = linspace(-4,4,100);
+ads = linspace(-4,3,100);
 eds = linspace(-.2,1,100);
 
 figure,
 subplot(121)
-ind = Trial.stc{'a-r-w-k-n'};
+ind = Trial.stc{'a-r-w-k'};
 hist2([mfet(ind,1),man(ind)],ads,eds)
 caxis([0,100])
 subplot(122)
@@ -1277,7 +1275,7 @@ hist2([mfet(ind,1),man(ind)],ads,eds)
 caxis([0,100])
 
 figure,
-ind = Trial.stc{'r'};
+ind = Trial.stc{'m'};
 hist2([mfet(ind,1),man(ind)],ads,eds)
 caxis([0,200])
 
