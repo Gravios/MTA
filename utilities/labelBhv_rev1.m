@@ -203,6 +203,90 @@ uvel.data = log10(uvel.data);
 % $$$ caxis([0,200])
 % $$$ 
 
+%% Definition of Rearing
+% Rat rears up on it's hind legs
+% Starting with hind and fore limbs contacting the ground
+%
+% The spine straighten as the rat center of mass moves over the
+% hind limbs
+%
+
+
+% Primary feature - height
+ind = Trial.stc{'a-r'};
+DetSFet = fxyz(ind,5,3)-fxyz(ind,1,3);
+DetSThresh = prctile(DetSFet,99.99); % 150mm
+DetSFet = fxyz(:,5,3)-fxyz(:,1,3);
+Sper = ThreshCross(DetSFet,DetSThresh,1);
+
+MaxFet = [];
+for i = Sper',
+    
+end
+
+
+    
+% Secondary feature - first derivative of height with respect to time
+
+
+
+
+
+figure,plot(fxyz(:,5,3)-fxyz(:,1,3))
+
+figure,plot(fang(:,1,3,2));
+
+figure,hold on
+eds = linspace(0,250,100);
+ind = Trial.stc{'a-r'};
+hn = bar(eds,log10(histc(fxyz(ind,5,3)-fxyz(ind,1,3),eds)),'histc');
+hn.FaceColor = 'c';
+hn.FaceAlpha = .6;
+hn.EdgeAlpha = 0;
+ind = Trial.stc{'r'};
+hs = bar(eds,log10(histc(fxyz(ind,5,3)-fxyz(ind,1,3),eds)),'histc');
+hs.FaceColor = 'r';
+hs.FaceAlpha = .6;
+hs.EdgeAlpha = 0;
+
+figure,hold on
+eds = linspace(.2,1.5,100);
+ind = Trial.stc{'a-r'};
+hn = bar(eds,histc(fang(ind,1,4,2),eds),'histc');
+hn.FaceColor = 'c';
+hn.FaceAlpha = .6;
+hn.EdgeAlpha = 0;
+ind = Trial.stc{'r'};
+hs = bar(eds,histc(fang(ind,1,4,2),eds),'histc');
+hs.FaceColor = 'r';
+hs.FaceAlpha = .6;
+hs.EdgeAlpha = 0;
+
+
+figure,hist(diff(Trial.stc{'r'}.data,1,2)./xyz.sampleRate,40);
+min_dur = min(diff(Trial.stc{'r'}.data,1,2)./xyz.sampleRate); % .7341
+min_dur = .5;
+% Head is elevated by about 10cm
+
+
+
+
+
+%% Definition of Turn
+% Type 1: Fore arm assisted 
+% 
+% Type 2: Rotation with hindlimb 
+%
+
+figure,plot(circ_dist(circshift(fang(:,1,4,1),-1),fang(:,1,4,1))),Lines(Trial.stc{'n'}(:),[],'g');
+
+
+%% Definition of Shake
+% Type 1: Head shake
+%
+% Type 2: Body shake
+%
+
 
 %% Inter animal JPDF labeled contours
 
@@ -1406,4 +1490,107 @@ hs = bar(eds,histc(signal,eds),'histc');
 hs.FaceColor = 'r';
 hs.FaceAlpha = .4;
 hs.EdgeAlpha = 0;
+
+
+tsh = 30;
+tang = MTADang('data',circ_dist(circshift(fang(:,1,4,1),tsh),circshift(fang(:,1,4,1),-tsh)),...
+               'sampleRate',ang.sampleRate);
+
+eds= linspace(-3,.8,200);
+figure,hold on
+ind = Trial.stc{'w'};
+noise = log10(abs(tang(ind)));
+ha = bar(eds,histc(noise,eds),'histc');
+ha.FaceColor = 'c';
+ha.FaceAlpha = .5;
+ha.EdgeAlpha = 0;
+ind = Trial.stc{'n'};         
+signal = log10(abs(tang(ind)));
+hs = bar(eds,histc(signal,eds),'histc');
+hs.FaceColor = 'r';
+hs.FaceAlpha = .4;
+hs.EdgeAlpha = 0;
+
+ads = linspace(-3,.8,70);
+eds = linspace(-.8,2,70);
+figure,
+ind = Trial.stc{'w'};
+hist2([log10(abs(tang(ind,1))),fvel(ind,1)],ads,eds)
+caxis([0,400])
+
+
+tsh = 1;
+afet = Trial.xyz.copy;
+bfet = Trial.xyz.copy;
+afet.data = circshift(fxyz(:,:,[1,2]),-tsh)-circshift(fxyz(:,:,[1,2]),tsh);
+afet.data = reshape(afet.data,[],2);
+aft = mat2cell(afet.data,size(afet,1),[1,1]);
+[afet.data,bfet.data] = cart2pol(aft{:});
+afet.data = reshape(afet.data,[],xyz.size(2));
+bfet.data = reshape(bfet.data,[],xyz.size(2));
+
+gfet = Trial.xyz.copy;
+gfet.data = unwrap(circ_dist(afet(:,10),ang(:,1,4,1)));
+gfet.filter('ButFilter',3,.1,'high');
+
+
+eds= linspace(.5,2.6,200);
+m = 1;
+figure,hold on
+ind = Trial.stc{'a-r'};
+noise = log10(fxyz(ind,7,3));
+ha = bar(eds,histc(noise,eds),'histc');
+ha.FaceColor = 'c';
+ha.FaceAlpha = .5;
+ha.EdgeAlpha = 0;
+ind = Trial.stc{'r'};         
+signal = log10(fxyz(ind,7,3));
+hs = bar(eds,histc(signal,eds),'histc');
+hs.FaceColor = 'r';
+hs.FaceAlpha = .4;
+hs.EdgeAlpha = 0;
+
+zfet = Trial.xyz.copy;
+zfet.data = log10(sqrt(diff(fxyz(:,5,3)).^2));
+eds =  linspace(1.5,2.6,100);
+ads =  linspace(-4,1.5,100);
+ind = Trial.stc{'a'};
+figure
+hist2([zfet(ind),log10(fxyz(ind,5,3))],ads,eds);
+caxis([0,100])
+
+rmax = [];
+for r = Trial.stc{'r'}.data',
+    rmax(end+1) = max(xyz(r',7,3));
+end
+
+
+%eds = linspace(1.4,2.5,200);
+eds = linspace(-.8,1.5,200);
+figure,bar(eds,histc(log10(rmax),eds),'histc');
+
+sts = 'smwrn';
+stc = 'bbbrb';
+
+hfig = figure;hold on
+for s = 1:numel(sts);
+ind = Trial.stc{sts(s)};
+smax = [];
+for r = ind.data',
+    smax(end+1) = max(ang(r',3,4,2));
+    %smax(end+1) = log10(max(xyz(r',7,3)));
+end
+hr = bar(eds,histc(smax,eds),'histc');
+hr.FaceColor = stc(s);
+hr.FaceAlpha = .3;
+hr.EdgeAlpha = 0;
+end
+
+legend({'s','m','w','r','n',});
+title('Center of mass Spine & Head Speed');
+ylabel('Sample Count');
+xlabel('Speed 1og10(cm/s)');
+
+saveas(hfig,fullfile(hostPath,['ACOM_speed-',Trial.filebase,'.eps']),'epsc')
+saveas(hfig,fullfile(hostPath,['ACOM_speed-',Trial.filebase,'.png']),'png')
 

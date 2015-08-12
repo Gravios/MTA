@@ -589,3 +589,31 @@ hist2([fvel(ind,1),wf(ind)],linspace(-.7,2,80),linspace(-6,6,80));
 
 
 
+
+end
+
+Trial = MTATrial('jg05-20120310');
+Trial.stc.load(Trial,'auto_wbhr');
+spkr = Trial.load('spk',Trial.ang.sampleRate,'theta');
+xyz = Trial.load('xyz').filter('ButFilter',3,3,'low');
+ang = create(MTADang,Trial,xyz);
+lfp = Trial.load('lfp',[66:3:96]);
+lfp.resample(ang);
+phs = lfp.phase;
+
+
+figure,
+
+for i = 1:90,
+mres = spkr(i);
+mres(mres<=30) = [];
+if ~isempty(mres),
+    for j = 1:phs.size(2),
+        subplot(3,5,j)
+    plot(abs(ang(mres,1,7,2)),phs(mres,j),'.');
+    %plot(circ_dist(ang(mres,1,4,2),ang(mres-30,1,4,2)),phs(mres),'.');
+    end
+pause(.4);
+end
+end
+

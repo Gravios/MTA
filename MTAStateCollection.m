@@ -73,6 +73,8 @@ classdef MTAStateCollection < hgsetget
         end
 
         function Stc = load(Stc,varargin)
+        %function Stc = load(Stc,varargin)
+        %[Session,nMode] = DefaultArgs(varargin,{[],[]});
             [Session,nMode] = DefaultArgs(varargin,{[],[]});
 
             if isempty(nMode)&&exist(Stc.fpath,'file')
