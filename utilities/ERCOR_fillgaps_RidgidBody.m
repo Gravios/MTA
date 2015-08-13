@@ -169,8 +169,9 @@ while ~strcmp(get(hfig,'CurrentCharacter'),'q'),
         else
             disp('')
             disp(['Error Group: ' num2str(i) ' , bpVal = ' num2str(bpVal)])
-            dsip('No options, ignoring error')
-            % 
+            %disp('No options, ignoring error')
+            disp(['Ridgid body intermarker distance optimization'])
+            
             %warning(['ERCOR_fillgaps_RidgidBody:MarkerSwapFailed, ' ...
             %         'procceding to attemtep marker reconstruction from rigid body']);
             
@@ -184,6 +185,22 @@ while ~strcmp(get(hfig,'CurrentCharacter'),'q'),
             % Try some other correction method
             % probably by reconstructing the bad
             % markers position using the other markers
+
+% $$$             dectry = sum(abs(bsxfun(@minus,reshape(im,size(im,1),[]),reshape(im(68000,:,:),1,[]))),2);
+% $$$             
+% $$$             im =imd(rb_xyz);
+% $$$             imm = bsxfun(@minus,im,im(good_index,:,:));
+% $$$             gm = {};
+% $$$             erind = find(eid==i);
+% $$$             min_dist_thresh = 1;
+% $$$             for c = erind,
+% $$$             for m= 1:5,
+% $$$                 gm{m} = find(abs(imm(erind,m,[1:m-1,m+1:5]))<min_dist_thresh);
+% $$$             end
+% $$$             gm = unique(cell2mat(gm(~cellfun(@isempty,gm))'))
+% $$$             % gm 
+% $$$             end
+            
         end
         
     end

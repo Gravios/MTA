@@ -1,3 +1,5 @@
+Trial = MTATrial('Ed05-20140529','all','ont');
+Trial = MTATrial('Ed05-20140528');
 Trial = MTATrial('jg05-20120317');
 
 xyz = Trial.load('xyz');
@@ -102,6 +104,7 @@ for x = 1:numel(i),tic
 end
 
 % save(fullfile('/storage/gravio/manuscripts/man2015-jgEd-MoCap/p20150716/',[Trial.filebase '.xyz-shift.mat']),'i','j','k','vxyz');
+%save(fullfile(Trial.spath,[Trial.filebase '.xyz-shift.mat']),'i','j','k','vxyz');
 
 load(fullfile(Trial.spath,[Trial.filebase '.xyz-shift.mat']));
 
@@ -185,8 +188,10 @@ for x = 1:numel(ni)
 toc
 end
 
+save(fullfile(Trial.spath,[Trial.filebase '.xyz-shift_fine.mat']),'ni','nj','nk','nvxyz');
+load(fullfile(Trial.spath,[Trial.filebase '.xyz-shift_fine.mat']),'ni','nj','nk','nvxyz');
 %save(fullfile(Trial.spath,[Trial.filebase '.xyz-shift_fine_a-m-s.mat']),'ni','nj','nk','nvxyz');
-load(fullfile(Trial.spath,[Trial.filebase '.xyz-shift_fine_a-m-s.mat']),'ni','nj','nk','nvxyz');
+%load(fullfile(Trial.spath,[Trial.filebase '.xyz-shift_fine_a-m-s.mat']),'ni','nj','nk','nvxyz');
 
 
    
@@ -225,21 +230,59 @@ i =1;
 %ni(mind(i,1)),nj(mind(i,2)),nk(mind(i,3))
 
 
-xyz.addMarker('nhb',[128,255,128],{{'head_back','head_front',[0,0,1]}},bsxfun(@plus,nx*ni(mind(i,1))+ny*nj(mind(i,2))+nz*nk(mind(i,3)),xyz(:,'head_back',:)));
-xyz.addMarker('nhl',[128,255,128],{{'head_back','head_front',[0,0,1]}},bsxfun(@plus,nx*ni(mind(i,1))+ny*nj(mind(i,2))+nz*nk(mind(i,3)),xyz(:,'head_left',:)));
-xyz.addMarker('nhf',[128,255,128],{{'head_back','head_front',[0,0,1]}},bsxfun(@plus,nx*ni(mind(i,1))+ny*nj(mind(i,2))+nz*nk(mind(i,3)),xyz(:,'head_front',:)));
-xyz.addMarker('nhr',[128,255,128],{{'head_back','head_front',[0,0,1]}},bsxfun(@plus,nx*ni(mind(i,1))+ny*nj(mind(i,2))+nz*nk(mind(i,3)),xyz(:,'head_right',:)));
+xyz.addMarker('nhb',[128,255,128],...
+              {{'spine_upper','nhb',[0,1,0]},...
+               {'nhb'        ,'nhr',[1,0,0]},...
+               {'nhb'        ,'nhl',[0,0,1]}},...
+              bsxfun(@plus,nx*ni(mind(i,1))+ny*nj(mind(i,2))+nz*nk(mind(i,3)),xyz(:,'head_back',:)));
+xyz.addMarker('nhl',[128,255,128],...
+              {{'nhl','nhf',[0,0,1]}},...
+              bsxfun(@plus,nx*ni(mind(i,1))+ny*nj(mind(i,2))+nz*nk(mind(i,3)),xyz(:,'head_left',:)));
+xyz.addMarker('nhf',[128,255,128],...
+              {},...
+              bsxfun(@plus,nx*ni(mind(i,1))+ny*nj(mind(i,2))+nz*nk(mind(i,3)),xyz(:,'head_front',:)));
+xyz.addMarker('nhr',[128,255,128],...
+              {{'nhr','nhf',[1,0,0]}},...
+              bsxfun(@plus,nx*ni(mind(i,1))+ny*nj(mind(i,2))+nz*nk(mind(i,3)),xyz(:,'head_right',:)));
+
+rbn = xyz.model.rb({'spine_lower','pelvis_root','spine_middle','spine_upper','nhb','nhl','nhf','nhr'})
+nxyz = Trial.xyz.copy
+nxyz.data = xyz(:,rbn.ml,:);
+nxyz.model = rbn;
+
+rbhn = xyz.model.rb({'nhb','nhl','nhf','nhr'});
+txyz = Trial.xyz.copy
+txyz.addMarker('hcom',[128,255,128],{{'head_back','head_front',[0,0,1]}},nxyz.com(rbhn));
+txyz.filter('ButFilter',3,2,'low');
+nxyz.addMarker('fhcom',[128,128,128],...
+               {{'fhcom','nhb',[0,1,0]},...
+                {'fhcom','nhl',[0,0,1]},...
+                {'fhcom','nhr',[1,0,0]},...
+                {'fhcom','nhf',[0,1,0]}},...
+               txyz(:,1,:));
+
+nang = create(MTADang,Trial,nxyz);
+nang.filter('ButFilter',3,20,'low');
+
+figure,
+for i = 1:1000,    
+    cla
+    xlim([-500,500])
+    ylim([-500,500])
+    zlim([0,350])
+    plotSkeleton(Trial,nxyz,i,'line',nang);
+    pause(.01);
+end
 
 
 
-fhcom = zeros([xyz.size(1),1,3]);
-fhcom(nniz(xyz),:,:) = ButFilter(xyz(nniz(xyz),'ncom',:),3,2/(xyz.sampleRate/2),'low');
-xyz.addMarker('nfcom',[128,255,128],{{'head_back','head_front',[0,0,1]}},fhcom);
+[ys,fs,ts] =mtchglong(WhitenSignal(diff([nang(nniz(xyz),'fhcom','nhb',3),ang(nniz(xyz),'fhcom','head_back',3)]),[],1),2^8,ang.sampleRate,2^7,2^7*.875,[],[],[],[1,20]);
 
-xyz.addMarker('nhb',[128,255,128],{{'head_back','head_front',[0,0,1]}},bsxfun(@plus,nx*ni(mind(1))+ny*nj(mind(2))+nz*nk(mind(3)),xyz(:,'hbx',:)));
-
-[ys,fs,ts] =mtchglong(WhitenSignal([ang(nniz(xyz),'hbt','fhcom',3),ang(nniz(xyz),'hbx','fhcom',3)],[],1),2^8,ang.sampleRate,2^7,2^7*.875,[],[],[],[1,40]);
-sp = [];figure,sp(1)=subplot(2,1,1);imagesc(ts,fs,log10(ys(:,:,1,1))'),axis xy, colormap jet,sp(2)=subplot(2,1,2);imagesc(ts,fs,log10(ys(:,:,2,2))'),axis xy, colormap jet,linkaxes(sp,'xy')
+sp = [];
+figure,
+sp(1)=subplot(2,1,1);imagesc(ts,fs,log10(ys(:,:,1,1))'),axis xy, colormap jet,caxis([-5,-2.3])
+sp(2)=subplot(2,1,2);imagesc(ts,fs,log10(ys(:,:,2,2))'),axis xy, colormap jet,caxis([-5,-2.3])
+linkaxes(sp,'xy')
 
 
 ms = nhm(2:end);
