@@ -1,5 +1,6 @@
 
 
+Trial = MTATrial('jg05-20120310');
 Trial = MTATrial('jg05-20120317');
 hostPath = '/gpfs01/sirota/homes/gravio/figures/labelBhv_rev1/';
 hostPath = '/storage/gravio/figures/labelBhv_rev1/';
@@ -57,8 +58,10 @@ fvel = xyz.vel([],[1,2]);
 fvel.filter('ButFilter',3,2.5,'low');
 fvel.data(fvel.data<0)=.1;
 
+
 fac = fvel.copy;
 fac.data = [diff(fac.data);zeros([1,fvel.size(2)])];
+
 
 fvel.data = log10(fvel.data);
 
@@ -875,6 +878,7 @@ h.FaceAlpha = .4;
 
 %% WALK Features
 
+
 afet = Trial.xyz.copy;
 afet.data = circshift(xyz(:,:,[1,2]),-1)-circshift(xyz(:,:,[1,2]),1);
 afet.data = reshape(afet.data,[],2);
@@ -925,7 +929,7 @@ saveas(hfig,fullfile(hostPath,['PPC-',Trial.filebase,'.png']),'png')
 
 
 figure
-ind = Trial.stc{'w'};
+ind = Trial.stc{'a'};
 eds = linspace(-.2,1,100);
 vds = linspace(-.5,2,100);
 hist2([man(ind),fvel(ind,1)],eds,vds);
@@ -1382,21 +1386,26 @@ fxyz = xyz.copy;
 fxyz.filter('ButFilter',3,1,'low');
 
 nfet = MTADfet(Trial.spath,Trial.filebase,...
-               [diff(sqrt(sum((xyz(:,1,[1,2])-fxyz(:,1,[1,2])).^2,3)));0],...
+               [diff(sqrt(sum((xyz(:,1:4,[1,2])-fxyz(:,1:4,[1,2])).^2,3)));0,0,0,0],...
                xyz.sampleRate,...
                Trial.sync.copy,...
                Trial.sync(1),...
                [],[],[],'ButtWag','bw','b');
 
 
+nfet.filter('ButFilter',3,5,'low');
 
 dsa =  struct('nFFT',2^7,'Fs',nfet.sampleRate,...
               'WinLength',2^6,'nOverlap',2^6*.875,...
                             'FreqRange',[1,40]);
-[rhm,fs,ts,~,fst] = fet_spec(Trial,nfet,'mtchglong',false,'defspec',dsa);
+[rhm,fs,ts,phi,fst] = fet_spec(Trial,nfet,'mtchglong',false,'defspec',dsa);
 
 figure,
-imagesc(ts,fs,log10(rhm.data)'),axis xy,colormap jet,
+imagesc(ts,fs,log10(rhm(:,:,1,1)'),axis xy,colormap jet,
+Lines(Trial.stc{'w',1}(:),[],'m');
+
+figure,
+imagesc(ts,fs,phi(:,:,1,3)'),axis xy,colormap hsv,
 Lines(Trial.stc{'w',1}(:),[],'m');
 
 figure,
@@ -1419,7 +1428,7 @@ hs.EdgeAlpha = 0;
 
 
 nfet = MTADfet(Trial.spath,Trial.filebase,...
-               [diff(sqrt(sum((xyz(:,1,[1,2])-fxyz(:,1,[1,2])).^2,3)));0],...
+               [diff(sqrt(sum((xyz(:,1,:)-fxyz(:,1,:)).^2,3)));0],...
                xyz.sampleRate,...
                Trial.sync.copy,...
                Trial.sync(1),...
@@ -1594,3 +1603,4 @@ xlabel('Speed 1og10(cm/s)');
 saveas(hfig,fullfile(hostPath,['ACOM_speed-',Trial.filebase,'.eps']),'epsc')
 saveas(hfig,fullfile(hostPath,['ACOM_speed-',Trial.filebase,'.png']),'png')
 
+end

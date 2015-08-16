@@ -23,8 +23,31 @@ end
 xyz = cell2mat(xyzData(~cellfun(@isempty,xyzData))');
 
 % Create XYZ data object
-Dxyz = MTADxyz(Session.spath,Session.filebase,...
-               xyz,viconSampleRate);
+
+
+syncPeriods = cellfun(@length,xyzData);
+syncPeriods(syncPeriods==0)=[];
+syncPeriods = [ cumsum([1,syncPeriods(1:end-1)]);cumsum(syncPeriods)]'...
+               ./viconSampleRate;
+syncPeriods(1) = 0;
+
+Session.sync = MTADepoch(Session.spath,[Session.filebase '.sync.mat'],syncPeriods([1,end]),1,0,0,[],[],[],'sync');
+
+
+syncPeriods = MTADepoch([],[],syncPeriods,1,Session.sync.copy,0);
+
+
+
+Dxyz = MTADxyz(Session.spath,Session.filebase,xyz,viconSampleRate,...
+               syncPeriods,0,Session.model);
 Dxyz.save;
 
 Session.xyz = Dxyz;
+
+Session.ang = MTADang(Session.spath,Session.filebase,[],viconSampleRate,...
+                      Session.xyz.sync,Session.xyz.origin,Session.model);
+
+%% MTAStateCollection object holds all behavioral sets of periods
+Session.stc = MTAStateCollection(Session.spath,Session.filebase,'default',[],[],1);
+Session.stc.updateSync(Session.sync);
+Session.stc.updateOrigin(0);

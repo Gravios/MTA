@@ -1,6 +1,6 @@
-Trial = MTATrial('Ed05-20140529','all','ont');
+%Trial = MTATrial('Ed05-20140529','all','ont');
 Trial = MTATrial('Ed05-20140528');
-Trial = MTATrial('jg05-20120317');
+%Trial = MTATrial('jg05-20120317');
 
 xyz = Trial.load('xyz');
 rb = Trial.xyz.model.rb({'head_back','head_left','head_front','head_right'});
@@ -8,7 +8,7 @@ hcom = xyz.com(rb);
 xyz.addMarker('fhcom',[128,255,128],{{'head_back','head_front',[0,0,1]}},...
                   ButFilter(hcom,3,[2]./(Trial.xyz.sampleRate/2),'low'));
 xyz.addMarker('hcom',[128,255,128],{{'head_back','head_front',[0,0,1]}},hcom);
-nz = cross(xyz(:,'head_back',:)-hcom,xyz(:,'head_right',:)-hcom);
+nz = -cross(xyz(:,'head_back',:)-hcom,xyz(:,'head_left',:)-hcom);
 nz = bsxfun(@rdivide,nz,sqrt(sum((nz).^2,3)));
 nm = nz.*20+hcom;
 xyz.addMarker('htx',[128,255,128],{{'head_back','head_front',[0,0,1]}},nm);
@@ -188,8 +188,8 @@ for x = 1:numel(ni)
 toc
 end
 
-save(fullfile(Trial.spath,[Trial.filebase '.xyz-shift_fine.mat']),'ni','nj','nk','nvxyz');
-load(fullfile(Trial.spath,[Trial.filebase '.xyz-shift_fine.mat']),'ni','nj','nk','nvxyz');
+%save(fullfile(Trial.spath,[Trial.filebase '.xyz-shift_fine.mat']),'ni','nj','nk','nvxyz');
+load(fullfile(Trial.spath,[Trial.filebase '.xyz-shift_fine.mat']));
 %save(fullfile(Trial.spath,[Trial.filebase '.xyz-shift_fine_a-m-s.mat']),'ni','nj','nk','nvxyz');
 %load(fullfile(Trial.spath,[Trial.filebase '.xyz-shift_fine_a-m-s.mat']),'ni','nj','nk','nvxyz');
 
@@ -246,7 +246,7 @@ xyz.addMarker('nhr',[128,255,128],...
               bsxfun(@plus,nx*ni(mind(i,1))+ny*nj(mind(i,2))+nz*nk(mind(i,3)),xyz(:,'head_right',:)));
 
 rbn = xyz.model.rb({'spine_lower','pelvis_root','spine_middle','spine_upper','nhb','nhl','nhf','nhr'})
-nxyz = Trial.xyz.copy
+nxyz = Trial.xyz.copy;
 nxyz.data = xyz(:,rbn.ml,:);
 nxyz.model = rbn;
 
@@ -261,6 +261,7 @@ nxyz.addMarker('fhcom',[128,128,128],...
                 {'fhcom','nhf',[0,1,0]}},...
                txyz(:,1,:));
 
+ang =  create(MTADang,Trial,xyz);
 nang = create(MTADang,Trial,nxyz);
 nang.filter('ButFilter',3,20,'low');
 

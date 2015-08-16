@@ -617,3 +617,18 @@ pause(.4);
 end
 end
 
+
+
+figure,hold on,
+ind = Trial.stc{'a-r'};
+ha = bar(linspace(-6,6,500),histc(wf(ind),linspace(-6,6,500)),'histc');
+ha.FaceColor = 'c';
+ha.FaceAlpha = .4;
+ha.EdgeColor = 'c';
+ha.EdgeAlpha = .4;
+ind = Trial.stc{'r'};
+hs = bar(linspace(-6,6,500),histc(wf(ind),linspace(-6,6,500)),'histc');
+hs.FaceColor = 'r';
+hs.FaceAlpha = .4;
+hs.EdgeColor = 'r';
+hs.EdgeAlpha = .4;
