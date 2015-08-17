@@ -531,7 +531,7 @@ Lines(Trial.stc{'w'}(:),[],'b');
 
 
 
-wf = MTADxyz('data',wf,'sampleRate',trajSampleRate);
+wft = MTADxyz('data',wf,'sampleRate',trajSampleRate);
 
 figure,hold on,
 ind = Trial.stc{'a-r-w'};
@@ -547,6 +547,41 @@ hs.FaceAlpha = .4;
 hs.EdgeColor = 'r';
 hs.EdgeAlpha = .4;
 
+bft = MTADxyz('data',log10(log10(hf.^2+1)),'sampleRate',trajSampleRate);
+
+eds = linspace(-16,0,500);
+figure,hold on,
+ind = Trial.stc{'a-r-w-n'};
+ha = bar(eds,histc(bft(ind),eds),'histc');
+ha.FaceColor = 'c';
+ha.FaceAlpha = .4;
+ha.EdgeColor = 'c';
+ha.EdgeAlpha = .4;
+ind = Trial.stc{'n'};
+hs = bar(eds,histc(bft(ind),eds),'histc');
+hs.FaceColor = 'r';
+hs.FaceAlpha = .4;
+hs.EdgeColor = 'r';
+hs.EdgeAlpha = .4;
+
+
+aft = MTADxyz('data',circshift(log10(log10(abs(af)+1)),-32),'sampleRate',trajSampleRate);
+
+eds = linspace(-12,0,300);
+figure,hold on,
+ind = Trial.stc{'a-r-w-n'};
+ha = bar(eds,histc(aft(ind),eds),'histc');
+ha.FaceColor = 'c';
+ha.FaceAlpha = .4;
+ha.EdgeColor = 'c';
+ha.EdgeAlpha = .4;
+ind = Trial.stc{'n'};
+hs = bar(eds,histc(aft(ind),eds),'histc');
+hs.FaceColor = 'r';
+hs.FaceAlpha = .4;
+hs.EdgeColor = 'r';
+hs.EdgeAlpha = .4;
+xlim(eds([1,end]))
 
 load(fullfile(Trial.spath,...
     [Trial.filebase '-walk_fet_ppc.mat']))
@@ -568,10 +603,10 @@ fvel.data = log10(fvel.data);
 figure
 subplot(121)
 ind = Trial.stc{'a-w-r-n'};
-hist2([man(ind),wf(ind)],linspace(-.2,1,80),linspace(-6,6,80));
+hist2([aft(ind),wf(ind)],linspace(-16,0,70),linspace(-6,6,70));
 subplot(122)
-ind = Trial.stc{'w+n'};
-hist2([man(ind),wf(ind)],linspace(-.2,1,80),linspace(-6,6,80));
+ind = Trial.stc{'n'};%+[-.2,0];
+hist2([aft(ind),wf(ind)],linspace(-16,0,70),linspace(-6,6,70));
 
 figure
 subplot(121)
