@@ -26,29 +26,31 @@ rba = xyz.model.rb({'spine_lower','pelvis_root','spine_middle','spine_upper','he
 xyz.addMarker('acom',[.7,0,.7],{{'spine_lower','pelvis_root','spine_middle','spine_upper','head_back','head_front',[0,0,255]}},xyz.com(rba));
 
 
+% COM Body Center of Mass
+% $$$ bcom = MTADfet(Trial.spath,...
+% $$$                [],...
+% $$$                sq(xyz.com(rbb)),...
+% $$$                xyz.sampleRate,...
+% $$$                xyz.sync.copy,...
+% $$$                xyz.origin,...
+% $$$                [],[],[],...
+% $$$                'bodyCOM',...
+% $$$                'bcom',...
+% $$$                'b');
+% $$$ 
+% $$$ fbcom = bcom.copy;
+% $$$ fbcom.filter('ButFilter',3,2.5,'low');
 
+% FXYZ Filtered Marker Positions {Low Pass 2.5 Hz}
+fxyz = xyz.copy;
+fxyz.filter('ButFilter',3,.5,'low');
+
+xyz.addMarker('fhcom',[.7,0,.7],{{'spine_lower','pelvis_root','spine_middle','spine_upper','head_back','head_front',[0,0,255]}},fxyz(:,10,:));
 
 % ANG InterMarker Spherical Coordinates
 ang = create(MTADang,Trial,xyz);
 
-% COM Body Center of Mass
-bcom = MTADfet(Trial.spath,...
-               [],...
-               sq(xyz.com(rbb)),...
-               xyz.sampleRate,...
-               xyz.sync.copy,...
-               xyz.origin,...
-               [],[],[],...
-               'bodyCOM',...
-               'bcom',...
-               'b');
-
-fbcom = bcom.copy;
-fbcom.filter('ButFilter',3,2.5,'low');
-
-% FXYZ Filtered Marker Positions {Low Pass 2.5 Hz}
-fxyz = xyz.copy;
-fxyz.filter('ButFilter',3,2.5,'low');
+figure,plot(circ_dist(circshift(ang(:,10,12,1),-2),circshift(ang(:,10,12,1),2)))
 
 % FANG Filtered Intermarker angles 
 fang = create(MTADang,Trial,fxyz);
@@ -734,7 +736,7 @@ figure,hist2([tfet(ind),fang(ind,1,4,3).*cos(fang(ind,1,4,2))],peds,veds);caxis(
 fvel = xyz.vel([],[1,2]);
 fvel.filter('ButFilter',3,2.5,'low');
 fvel.data(fvel.data<0)=.1;
-%fvel.data = log10(fvel.data);
+fvel.data = log10(fvel.data);
 
 ind = Trial.stc{'a-w-n-r-m'};
 figure,
@@ -878,9 +880,9 @@ h.FaceAlpha = .4;
 
 %% WALK Features
 
-
+xyz = Trial.load('xyz');
 afet = Trial.xyz.copy;
-afet.data = circshift(xyz(:,:,[1,2]),-1)-circshift(xyz(:,:,[1,2]),1);
+afet.data = circshift(xyz(:,:,[1,2]),-5)-circshift(xyz(:,:,[1,2]),5);
 afet.data = reshape(afet.data,[],2);
 aft = mat2cell(afet.data,size(afet,1),[1,1]);
 afet.data = cart2pol(aft{:});
@@ -888,8 +890,8 @@ afet.data = reshape(afet.data,[],xyz.size(2));
 
 
 
-mag = zeros([xyz.size(1),1]);
-for i= 1:xyz.size(1),
+mag = zeros([afet.size(1),1]);
+for i= 1:afet.size(1),
 mag(i) = PPC(afet(i,[1:5,7]));
 end
 save(fullfile(Trial.spath,...
@@ -900,15 +902,15 @@ load(fullfile(Trial.spath,...
 
 
 man = Trial.xyz.copy;
-man.data = mag;
-man.filter('ButFilter',3,1,'low');
+man.data = omag;
+man.filter('ButFilter',3,1.5,'low');
 
 % $$$ figure,plot(ma)
 % $$$ hold on,plot(man.data)
 
 hfig = figure,hold on
 eds = linspace(-.2,1,170);
-ind = Trial.stc{'a-r-w'};
+ind = Trial.stc{'a-w-r'};
 hn = bar(eds,histc(man(ind),eds),'histc');
 hn.FaceColor = 'c';
 hn.FaceAlpha = .6;
@@ -1164,6 +1166,18 @@ xlabel('PPC');
 saveas(hfig,fullfile(hostPath,['TRAJ_PPC-',Trial.filebase,'.eps']),'epsc')
 saveas(hfig,fullfile(hostPath,['TRAJ_PPC-',Trial.filebase,'.png']),'png')
 
+ads = linspace(-.2,1,100);
+eds = linspace(-.8,2,100);
+figure,
+subplot(121)
+ind = Trial.stc{'a-r-w-n'};
+hist2([man(ind),fvel(ind,1)],ads,eds)
+caxis([0,100])
+subplot(122)
+ind = Trial.stc{'n'};
+hist2([man(ind),fvel(ind,1)],ads,eds)
+caxis([0,100])
+
 
 
 ffet = fxyz.copy;
@@ -1208,7 +1222,7 @@ daf.data = sq(mang(:,1,1:4,3).*sin(mang(:,1,1:4,2)));
 daf.data = bsxfun(@minus,xyz(:,2:4,3),xyz(:,1,3))
 daf.filter('ButFilter',3,8,'low');
 daf.data = diff(daf.data);
-
+p
 figure,plot(daf.data),
 Lines(Trial.stc{'k'}(:),[],'m');
 Lines(Trial.stc{'w'}(:),[],'c');
@@ -1270,11 +1284,11 @@ eds = linspace(-5,3,100);
 
 figure,
 subplot(121)
-ind = Trial.stc{'a-r-w-k-n'};
+ind = Trial.stc{'a-r-w'};
 hist2([fvel(ind,1),wfet(ind)],ads,eds)
 caxis([0,100])
 subplot(122)
-ind = Trial.stc{'n'};
+ind = Trial.stc{'w'};
 hist2([fvel(ind,1),wfet(ind)],ads,eds)
 caxis([0,100])
 
@@ -1335,18 +1349,18 @@ mfet.data = log10(mean((mfet.segs(1:mfet.size(1),40,nan).^2))');
 
 eds= linspace(-9,4,200);
 figure,hold on
-ind = Trial.stc{'a-w-r-n'};
+ind = Trial.stc{'a-w-r'};
 noise = mfet(ind);
 ha = bar(eds,histc(noise,eds),'histc');
 ha.FaceColor = 'c';
-ha.FaceAlpha = .5;
+ha.FaceAlpha = .3;
 ha.EdgeAlpha = 0;
 
-ind = Trial.stc{'n'};
+ind = Trial.stc{'w'};
 signal = mfet(ind);
 hs = bar(eds,histc(signal,eds),'histc');
 hs.FaceColor = 'r';
-hs.FaceAlpha = .4;
+hs.FaceAlpha = .3;
 hs.EdgeAlpha = 0;
 
 
@@ -1371,9 +1385,14 @@ caxis([0,200])
 ads = linspace(-.2,1,100);
 eds = linspace(-.8,2,100);
 figure,
-ind = Trial.stc{'n'};
+subplot(121)
+ind = Trial.stc{'a-w-r'};
 hist2([man(ind,1),fvel(ind,1)],ads,eds)
-caxis([0,400])
+caxis([0,200])
+subplot(122)
+ind = Trial.stc{'w'};
+hist2([man(ind,1),fvel(ind,1)],ads,eds)
+caxis([0,200])
 
 Lines(Trial.stc{'w'}(:),[],'m');
 
@@ -1604,3 +1623,24 @@ saveas(hfig,fullfile(hostPath,['ACOM_speed-',Trial.filebase,'.eps']),'epsc')
 saveas(hfig,fullfile(hostPath,['ACOM_speed-',Trial.filebase,'.png']),'png')
 
 end
+
+
+fvel = xyz.vel([],[1,2]);
+fvel.filter('ButFilter',3,2.5,'low');
+fvel.data(fvel.data<0)=.1;
+fvel.data = log10(fvel.data);
+%figure,plot(log10(fvel.data+1));
+
+figure,hold on,
+eds = linspace(-1,2,200);
+ind = Trial.stc{'a-w-r'};
+hr = bar(eds,histc(fvel(ind,1),eds),'histc');
+hr.FaceColor = 'c';
+hr.FaceAlpha = .3;
+hr.EdgeAlpha = 0;
+ind = Trial.stc{'w'};
+hr = bar(eds,histc(fvel(ind,1),eds),'histc');
+hr.FaceColor = 'r';
+hr.FaceAlpha = .3;
+hr.EdgeAlpha = 0;
+

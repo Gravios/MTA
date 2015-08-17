@@ -531,7 +531,7 @@ Lines(Trial.stc{'w'}(:),[],'b');
 
 
 
-wft = MTADxyz('data',wf,'sampleRate',trajSampleRate);
+
 
 figure,hold on,
 ind = Trial.stc{'a-r-w'};
