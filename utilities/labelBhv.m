@@ -99,7 +99,7 @@ tatraj = reshape(circshift(afet,-(i-1).*winlen/nOverlap),[],xyzlen/winlen,size(a
 tatraj = reshape(tatraj,size(tatraj,1),size(tatraj,2),[]);
 atraj(:,i:nOverlap:trlen,:) = tatraj-repmat(tatraj(1,:,:),winlen,1);
 end
-atrajVar  = zeros(size(atraj,2),size(atraj,3));
+atrajVar  = zeros([size(atraj,2),size(atraj,3)]);
 for i=1:size(atraj,2),
     for j=1:size(atraj,3),
         atrajVar(i,j) = circ_var(sq(atraj(:,i,j)));
@@ -156,7 +156,8 @@ btrajMeanD = sqrt(sum(btrajMean.^2,2));
 %% BASE_FEATURES
 vmv = vtrajMeanD.*vtrajVarD;
 wf = mean(log10(vmv(:,1:2)),2);
-af =  Filter0(gausswin(21)./sum(gausswin(21)),circ_mean(atrajMean,[],2).*mean(atrajVarD,2));
+
+af =  log10(abs(MTADxyz('data',circ_mean(atrajMean,[],2).*atrajVarD,'sampleRate',trajSampleRate).filter('ButFilter',3,3,'low').data));
 
 sf =  Filter0(gausswin(21)./sum(gausswin(21)),circ_mean(strajMean,[],2).*mean(strajVarD,2));
 bf =  Filter0(gausswin(21)./sum(gausswin(21)),circ_mean(btrajMean,[],2).*mean(btrajVarD,2));
@@ -181,8 +182,8 @@ wfl = wf>wft;
 wfp = ThreshCross(wfl,0.5,5);
 
 %% @(BHV-BASE-FILTER,ANGULAR_TRAVEL)
-aft = 0.003;
-afl = af>aft|af<-aft;
+aft = -1.6;
+afl = af>aft;
 afp = ThreshCross(afl,0.5,5);
 
 hft = 0.003;

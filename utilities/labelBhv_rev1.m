@@ -902,7 +902,7 @@ load(fullfile(Trial.spath,...
 
 
 man = Trial.xyz.copy;
-man.data = omag;
+man.data = mag;
 man.filter('ButFilter',3,1.5,'low');
 
 % $$$ figure,plot(ma)
@@ -931,12 +931,19 @@ saveas(hfig,fullfile(hostPath,['PPC-',Trial.filebase,'.png']),'png')
 
 
 figure
-ind = Trial.stc{'a'};
+sts = {'a','n','a-r-w','w'};
+for i = 1:numel(sts)
+subplot(2,2,i)
+ind = Trial.stc{sts{i}};
 eds = linspace(-.2,1,100);
 vds = linspace(-.5,2,100);
 hist2([man(ind),fvel(ind,1)],eds,vds);
-%caxis([0,100])    
-caxis([0,200])    
+caxis([0,100])    
+title(sts{i})
+xlabel('ppc')
+ylabel('log10 LS speed')
+end
+
 
 
 hold on,
@@ -988,13 +995,43 @@ pause(.1)
 end
 
 
+tff = MTADxyz('data',...
+              log10(abs(circ_dist(circshift(fang(:,1,4,1),-20),circshift(fang(:,1,4,1),20)))),'sampleRate',xyz.sampleRate);
+
 
 figure
-ind = Trial.stc{'w'};
-eds = linspace(-.5,.5,100);
-vds = linspace(-.2,1,100);
-hist2([circ_dist(fang(ind,1,4,1),circshift(fang(ind,1,4,1),-20)),man(ind,1)],eds,vds);
+sts = {'a','n','a-r-w-n-m-k','w'};
+for i = 1:numel(sts)
+subplot(2,2,i)
+ind = Trial.stc{sts{i}};
+%eds = linspace(-4,1,100);
+eds = linspace(-.2,1,100);
+%vds = linspace(-.2,1,100);
+vds = linspace(-.8,2,100);
+%hist2([tff(ind),man(ind,1)],eds,vds);
+%hist2([tff(ind),fvel(ind,1)],eds,vds);
+hist2([man(ind),fvel(ind,1)],eds,vds);
 caxis([0,100])    
+title(sts{i})
+%xlabel('ang speed log10')
+xlabel('ppc')
+%ylabel('ppc')
+ylabel('BL log10 speed')
+end
+
+hist2([tff(ind),man(ind,1)],eds,vds);
+caxis([0,100])    
+
+figure,
+ind = Trial.stc{'w'};
+dind = diff(ind.data,1,2);
+ind = ind(dind>60,:);
+eds = linspace(-.8,2,100);
+vds = linspace(-.2,1,100);
+hist2([fvel(ind,1),man(ind,1)],eds,vds);
+caxis([0,50])    
+title(sts{i})
+
 
 
 
@@ -1405,14 +1442,15 @@ fxyz = xyz.copy;
 fxyz.filter('ButFilter',3,1,'low');
 
 nfet = MTADfet(Trial.spath,Trial.filebase,...
-               [diff(sqrt(sum((xyz(:,1:4,[1,2])-fxyz(:,1:4,[1,2])).^2,3)));0,0,0,0],...
+               sqrt(sum((xyz(:,1:4,[1,2])-fxyz(:,1:4,[1,2])).^2,3)),...
                xyz.sampleRate,...
                Trial.sync.copy,...
                Trial.sync(1),...
                [],[],[],'ButtWag','bw','b');
 
 
-nfet.filter('ButFilter',3,5,'low');
+nfet.filter('ButFilter',3,8,'low');
+nfet.data = [diff(nfet.data);0,0,0,0];
 
 dsa =  struct('nFFT',2^7,'Fs',nfet.sampleRate,...
               'WinLength',2^6,'nOverlap',2^6*.875,...
@@ -1428,7 +1466,6 @@ imagesc(ts,fs,phi(:,:,1,3)'),axis xy,colormap hsv,
 Lines(Trial.stc{'w',1}(:),[],'m');
 
 figure,
-
 eds= linspace(-8,.5,200);
 figure,hold on
 ind = Trial.stc{'a-w-r-n'};
@@ -1455,46 +1492,81 @@ nfet = MTADfet(Trial.spath,Trial.filebase,...
 nfet.filter('ButFilter',3,8,'low');
 nfet.data = diff(nfet.data);
 
-ns = MTADxyz('data',log10(mean(nfet.segs(1:nfet.size(1),40,nan).^2)'),'sampleRate',xyz.sampleRate);
+ns = MTADxyz('data',log10(sq(mean(nfet.segs(1:nfet.size(1),40,nan).^2))),'sampleRate',xyz.sampleRate);
 
 
-eds= linspace(-9,-.7,200);
+eds= linspace(-9,.7,200);
 figure,hold on
 ind = Trial.stc{'a-w-r-n'};
-noise = ns(ind);
+noise = ns(ind,1);
 ha = bar(eds,histc(noise,eds),'histc');
 ha.FaceColor = 'c';
 ha.FaceAlpha = .5;
 ha.EdgeAlpha = 0;
 
 ind = Trial.stc{'w'};
-signal = ns(ind);
+signal = ns(ind,1);
 hs = bar(eds,histc(signal,eds),'histc');
 hs.FaceColor = 'r';
 hs.FaceAlpha = .4;
 hs.EdgeAlpha = 0;
 
 
-eds = linspace(-8,-.7,100);
-ads = linspace(-.8,2,100);
-ind = Trial.stc{'a'};
-figure,
-hist2([ns(ind),fvel(ind,1)],eds,ads);
-caxis([0,200])
+eds = linspace(-8,.7,100);
+ads = linspace(-.2,1,100);
 
-eds = linspace(-8,-.7,100);
-ads = linspace(-8,-.7,100);
-ind = Trial.stc{'a-w-r'};
 figure,
-hist2([ns(ind),ms(ind)],eds,ads);
-caxis([0,200])
+subplot(221)
+ind = Trial.stc{'a'};
+hist2([ns(ind),man(ind)],eds,ads);
+caxis([0,100])
+subplot(222)
+ind = Trial.stc{'w'};
+hist2([ns(ind),man(ind)],eds,ads);
+caxis([0,100])
+subplot(223)
+ind = Trial.stc{'a-w-r-n'};
+hist2([ns(ind),man(ind)],eds,ads);
+caxis([0,100])
 
 
 wag = MTADxyz('data',circ_dist(ang(:,1,4,1),fang(:,1,4,1))-circ_dist(ang(:,1,3,1),fang(:,1,3,1)),'sampleRate',xyz.sampleRate);
 wag.filter('ButFilter',3,8,'low');
 
 
+%% Shake discrimination
+Nang = MTADxyz(Trial.spath,Trial.filebase,...
+               circ_dist(ang(:,1,3,1),ang(:,2,4,1)),...
+               xyz.sampleRate,...
+               Trial.sync.copy,...
+               Trial.sync(1),...
+               [],[],[],'bshake','bs','s');
 
+Nang.filter('ButFilter',3,[1,20],'bandpass');
+
+
+figure,plot(diff(Nang.data)),Lines(Trial.stc{'w'}(:),[],'m');
+
+dsa =  struct('nFFT',2^7,'Fs',nfet.sampleRate,...
+              'WinLength',2^6,'nOverlap',2^6*.875,...
+                            'FreqRange',[1,20]);
+[rhm,fs,ts,phi,fst] = fet_spec(Trial,Nang,'mtchglong',true,'defspec',dsa);
+
+figure,
+imagesc(ts,fs,log10(rhm(:,:,1,1)'))
+axis xy,colormap jet,
+nLines(Trial.stc{'m',1}(:),[],'m');
+
+msk = ones([rhm.size]);
+msk(:,[1:5,16:20]) = -1;
+
+[scpow,scm,scs] = nunity(mean(rhm.data.*msk,2));
+
+figure,hold on
+Lines(Trial.stc{'k',1}(:),[0,100],'m');
+plot(ts,scpow)
+
+%% END Shake discrimination
 
 figure,plot(diff(wag.data))
 hold on,plot(nfet.data/20)
@@ -1644,3 +1716,40 @@ hr.FaceColor = 'r';
 hr.FaceAlpha = .3;
 hr.EdgeAlpha = 0;
 
+
+figure,plot(circ_dist(circshift(ang(:,1,4,1),-1),circshift(ang(:,1,4,1),1)))
+
+Nang = MTADxyz(Trial.spath,Trial.filebase,...
+               ang(:,1,10,3),...
+               xyz.sampleRate,...
+               Trial.sync.copy,...
+               Trial.sync(1),...
+               [],[],[],'bscratch','br','r');
+
+Nang.filter('ButFilter',3,[1,20],'bandpass');
+figure,plot(diff(Nang.data))
+
+figure,plot(ang(:,10,12,2))
+
+
+dsa =  struct('nFFT',2^8,'Fs',nfet.sampleRate,...
+              'WinLength',2^7,'nOverlap',2^7*.875,...
+                            'FreqRange',[1,20]);
+[rhm,fs,ts,phi,fst] = fet_spec(Trial,Nang,'mtchglong',true,'defspec',dsa);
+
+figure,
+imagesc(ts,fs,log10(rhm(:,:,1,1)'))
+axis xy,colormap jet,
+Lines(Trial.stc{'m',1}(:),[],'m');
+
+msk = ones([rhm.size]);
+msk(:,[1:8,16:20]) = -1;
+
+[scpow,scm,scs] = nunity(mean(rhm.data.*msk,2));
+scpow = median(log10(rhm.data(:,8:15)),2);
+
+figure,hold on
+Lines(Trial.stc{'m',1}(:),[-6,-3],'m');
+Lines([],-3,'m');
+plot(ts,log10(rhm(:,10)))
+plot(ts,scpow)
