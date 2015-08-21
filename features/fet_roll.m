@@ -3,7 +3,7 @@ function [rhm,fs,ts] = fet_roll(Trial,varargin)
 % [sampleRate,mode,windowSize] = DefaultArgs(varargin,{Trial.xyz.sampleRate,'spectral',1});
 % Need to update the spectral window size to adapt to the xyz.sampleRate
 
-[sampleRate,mode,d,windowSize,overwrite] = DefaultArgs(varargin,{Trial.xyz.sampleRate,'wcsd',0,1,false});
+[sampleRate,mode,d,windowSize,overwrite] = DefaultArgs(varargin,{Trial.xyz.sampleRate,'mta',0,1,false});
 
 fs = []; ts = [];
 
@@ -14,9 +14,9 @@ if xyz.sampleRate > 120,
     xyz.resample(120); 
 end
 
-xyz.data = ButFilter(xyz.data,3,[3]./(xyz.sampleRate/2),'low');
+xyz.filter('ButFilter',3,50,'low');
 
-bang = Trial.transformOrigin(xyz,'head_back','head_front',{'head_left','head_right'});
+bang = transformOrigin(Trial,xyz,'head_back','head_front',{'head_left','head_right'});
 bang.roll(isnan(bang.roll))=0;
 if d==0,
     bang = bang.roll;
@@ -54,7 +54,7 @@ switch mode
     rhm = MTADlfp('data',cat(1,zeros([pad(1),szy(2:end)]),ys,zeros([pad(2),szy(2:end)])),'sampleRate',ssr);
     ts = cat(1,zeros([pad(1),1]),ts,zeros([pad(2),1]));
 
-  case 'default'
+  case 'mta'
     rhm = MTADxyz('data',bang,'sampleRate',xyz.sampleRate);
   otherwise
     rhm = bang;

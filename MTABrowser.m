@@ -642,11 +642,13 @@ if hObject ~= getappdata(handles.MTABrowserStates,'previousBState'),
     setappdata(handles.MTABrowser,'doLoadSession',true)
     TrialList_Callback(hObject, eventdata, handles)
     
+%     handles.MLxyzView.ButtonDownFcn = @()MTABrowser('MLbuttonDownState');
+    
     MLData = getappdata(handles.MTABrowser,'MLData');
     MLData.record = {};
     MLData.recording=0;
     MLData.MLRotaKeyPressFcn = [];
-    %set(handles.MTABrowser,'keyPressFcn','MTABrowser(''MLkeyState'',hObject,eventdata,handles)')
+    set(handles.MTABrowser,'keyPressFcn','MTABrowser(''MLkeyState'',hObject,eventdata,handles)')
     
     Session = getappdata(handles.MTABrowser,'Session');
     if Session.xyz.isempty, Session.xyz.load(Session); end
@@ -969,6 +971,7 @@ setappdata(handles.MLapp,'paused',0);
 if current_label~=0
     current_state = MLData.States{current_label}.data(MLData.idx);
     idx_shift = find(MLData.States{current_label}.data(MLData.idx:end)~=current_state,1);
+    flag_state = MLData.flag_tag;
     if ~isempty(idx_shift),
         MLData.idx = MLData.idx + idx_shift;
         MLData.flag_tag = 0;
@@ -978,7 +981,7 @@ if current_label~=0
     end
     updateCircle(hObject,handles,0)
     MLData = getappdata(handles.MTABrowser,'MLData');
-    MLData.flag_tag = 1;
+    MLData.flag_tag = flag_state;
     MLData.erase_tag = erase_tag;
     setappdata(handles.MTABrowser,'MLData',MLData),
 else
@@ -1000,16 +1003,17 @@ setappdata(handles.MLapp,'paused',0);
 if current_label~=0
     current_state = MLData.States{current_label}.data(MLData.idx);
     idx_shift = find(MLData.States{current_label}.data(1:MLData.idx)~=current_state,1,'last');
+    flag_state = MLData.flag_tag;        
     if ~isempty(idx_shift),
         MLData.idx = MLData.idx + idx_shift - MLData.idx;
-        MLData.flag_tag = 0;
+        MLData.flag_tag = flag_state;
         erase_tag = MLData.erase_tag;
         MLData.erase_tag = 0;
         setappdata(handles.MTABrowser,'MLData',MLData),
     end
     updateCircle(hObject,handles,0)
     MLData = getappdata(handles.MTABrowser,'MLData');
-    MLData.flag_tag = 1;
+    MLData.flag_tag = 0;
     MLData.erase_tag = erase_tag;
     setappdata(handles.MTABrowser,'MLData',MLData),
 else
@@ -1960,6 +1964,11 @@ guidata(hObject, handles);
 function MLviewoptions_Callback(hObject, eventdata, handles)
 AppStateChange(hObject,eventdata,handles);
 
+% function MLbuttonDownState(hObject,eventdata,handles)
+% This function may be a fix for the lack of keyboard activated 
+% pause(.2)
+
+
 function MLkeyState(hObject,eventdata,handles)
 %% MLKEYSTATE
 
@@ -1971,39 +1980,49 @@ if length(eventdata.Modifier)==1,
             MLjumpforward_Callback(handles.MLjumpback,[],handles);
           case 'leftarrow'
             MLjumpback_Callback(handles.MLjumpback,[],handles);
-          case 'r'
-            MLData = getappdata(handles.MTABrowser,'MLData');
-            switch get(MLData.MLxyzViewRotate,'Enable'),
-              case 'on',                
-                set(MLData.MLxyzViewRotate,'Enable','off');
-                uicontrol(handles.MLplayforward);
-
-              case 'off',
-                kpf = get(handles.MTABrowser,'KeyPressFcn');
-                set(handles.MTABrowser,'CurrentAxes',handles.MLxyzView);
-                set(MLData.MLxyzViewRotate,'Enable','on');
-
-                h = findobj(handles.MTABrowser);
-                h = h(ismember(h,findobj('-property','keyPressFcn')));
-                hManager = uigetmodemanager(handles.MTABrowser);
-                set(hManager.WindowListenerHandles,'Enable','off')
-                MLData.MLRotaKeyPressFcn = get(handles.MTABrowser,'KeyPressFcn');
-                set(handles.MTABrowser,'KeyPressFcn',kpf);
-                set(h,'KeyPressFcn',kpf);
-                set(hManager.WindowListenerHandles,'Enable','on')
-                set(handles.MTABrowser,'CurrentAxes',handles.MLxyzView);
-
-                delete(MLData.MLRotaKeyPressFcn{2}.UIContextMenu)
-                hgfeval(get(MLData.MLRotaKeyPressFcn{2},'WindowButtonDownFcn'),handles.MTABrowser,[]);
-
-                setappdata(handles.MTABrowser,'MLData',MLData);
-            end
+%            case 'r'
+%               h = rotate3d(handles.MLxyzView);              
+%             MLData = getappdata(handles.MTABrowser,'MLData');
+%             switch get(MLData.MLxyzViewRotate,'Enable'),
+%               case 'on',                
+%                 set(MLData.MLxyzViewRotate,'Enable','off');
+%                 uicontrol(handles.MLplayforward);
+% 
+%               case 'off',
+%                 kpf = get(handles.MTABrowser,'KeyPressFcn');
+%                 set(handles.MTABrowser,'CurrentAxes',handles.MLxyzView);
+%                 set(MLData.MLxyzViewRotate,'Enable','on');
+% 
+%                 %h = findobj(handles.MTABrowser);
+%                 %h = h(ismember(h,findobj('-property','keyPressFcn')));
+%                 hManager = uigetmodemanager(handles.MTABrowser);
+%                 hManager.CurrentMode.KeyPressFcn = kpf;
+%                 %set(hManager.WindowListenerHandles,'Enable','off')
+%                 %MLData.MLRotaKeyPressFcn = get(handles.MTABrowser,'KeyPressFcn');
+%                 %set(handles.MTABrowser,'KeyPressFcn',kpf);
+%                 %set(h,'KeyPressFcn',kpf);
+%                 %set(hManager.WindowListenerHandles,'Enable','on')
+%                 %set(handles.MTABrowser,'CurrentAxes',handles.MLxyzView);
+% 
+%                 %delete(MLData.MLRotaKeyPressFcn{2}.UIContextMenu)
+%                 %hgfeval(get(MLData.MLRotaKeyPressFcn{2},'WindowButtonDownFcn'),handles.MTABrowser,[]);
+% 
+%                 setappdata(handles.MTABrowser,'MLData',MLData);
+%             end
             
         end   
       case 'alt'
         switch eventdata.Key
+          case 'g'
+            MLData = getappdata(handles.MTABrowser,'MLData');  
+            MLData.idx = str2double(inputdlg('Index: ','Go To Index',1));
+            setappdata(handles.MTABrowser,'MLData',MLData);
+            updateCircle(hObject,handles,0);
+            
           case 'leftarrow'
+            MLjumpback_Callback(hObject, eventdata, handles);
           case 'rightarrow'
+            MLjumpforward_Callback(hObject, eventdata, handles);
         end
     end
 else
