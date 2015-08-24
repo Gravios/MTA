@@ -32,7 +32,7 @@ for j = 1:lastTrial,
         load(fullfile(Session.spath, Session.maze.name, trialArray{j,k}));
         % Check if all parts have the same number of
         % markers as the first part
-        if length(markers)~=number_of_markers&&j~=1&&k~=1,
+        if length(markers)~=number_of_markers&&(j~=1&&k~=1),
             error(['Number of markers changes at part: ' trialArray{j,k}])
         else
             number_of_markers = length(markers);

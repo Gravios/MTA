@@ -1458,7 +1458,7 @@ dsa =  struct('nFFT',2^7,'Fs',nfet.sampleRate,...
 [rhm,fs,ts,phi,fst] = fet_spec(Trial,nfet,'mtchglong',false,'defspec',dsa);
 
 figure,
-imagesc(ts,fs,log10(rhm(:,:,1,1)'),axis xy,colormap jet,
+imagesc(ts,fs,log10(rhm(:,:,1,1)')),axis xy,colormap jet,
 Lines(Trial.stc{'w',1}(:),[],'m');
 
 figure,
@@ -1475,7 +1475,7 @@ ha.FaceColor = 'c';
 ha.FaceAlpha = .5;
 ha.EdgeAlpha = 0;
 
-ind = Trial.stc{'n'};
+ind = Trial.stc{'w'};
 signal = log10(rhm(ind,5));
 hs = bar(eds,histc(signal,eds),'histc');
 hs.FaceColor = 'r';
@@ -1492,7 +1492,7 @@ nfet = MTADfet(Trial.spath,Trial.filebase,...
 nfet.filter('ButFilter',3,8,'low');
 nfet.data = diff(nfet.data);
 
-ns = MTADxyz('data',log10(sq(mean(nfet.segs(1:nfet.size(1),40,nan).^2))),'sampleRate',xyz.sampleRate);
+ns = MTADxyz('data',log10(sq(mean(nfet.segs(1:nfet.size(1),50,nan).^2))),'sampleRate',xyz.sampleRate);
 
 
 eds= linspace(-9,.7,200);

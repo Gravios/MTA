@@ -667,3 +667,20 @@ hs.FaceColor = 'r';
 hs.FaceAlpha = .4;
 hs.EdgeColor = 'r';
 hs.EdgeAlpha = .4;
+hfig
+
+
+
+
+SessionName = 'Ed12-20150811'; % what was once known as filebase
+xyz_path = '/storage/eduardo/data/processed/xyz/';
+nlx_path = '/storage/eduardo/data/processed/nlx/Ed12';
+linkSession(SessionName,xyz_path,nlx_path);
+MazeName = 'nor';
+TrialName = 'all'; 
+TTLValue = '0x0100'; % can be found in "SessionName".all.evt
+overwrite = true;
+ignoredViconTrials = [];
+startStopShift = [5,-1]; % shift boundaries of vicon starts and 
+xyzSamplingRate = 200.00185; % stops by some number of seconds
+Session = MTASession(SessionName,MazeName,overwrite,TTLValue,'xyzSampleRate',xyzSamplingRate);
