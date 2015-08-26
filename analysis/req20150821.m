@@ -5,10 +5,13 @@ Trial = MTATrial('jg05-20120317');
 
 %% Initialize Features
 xyz = Trial.load('xyz');
+fxyz = xyz.copy;
+fxyz.filter('ButFilter',3,.5,'low');
 fvel = xyz.vel(1,[1,2]);
 fvel.filter('ButFilter',3,2.5,'low');
 fvel.data(fvel.data<0) = .1;
 fvel.data = log10(fvel.data);
+
 
 load(fullfile(Trial.spath,...
     [Trial.filebase '-walk_fet_ppc.mat']))
@@ -196,7 +199,7 @@ nfet = MTADfet(Trial.spath,Trial.filebase,...
                Trial.sync(1),...
                [],[],[],'ButtWag','bw','b');
 nfet.filter('ButFilter',3,5,'low');
-nfet.data = diff(nfet.data);
+nfet.data = [diff(nfet.data),0]';
 
 ns = MTADxyz('data',log10(sq(mean(nfet.segs(1:nfet.size(1),50,nan).^2))),'sampleRate',xyz.sampleRate);
 
@@ -255,3 +258,74 @@ saveas(hfig,fullfile('/storage/gravio/figures/req/req20150821',[Trial.filebase '
 %saveas(hfig,fullfile(Trial.spath,[Trial.filebase '_req20150821_JPDF_WAG_SPEED.eps']),'eps2')
 
 
+%% REQ #3
+
+%% Contour JPDFs
+Trial = MTATrial('jg05-20120317');
+
+xyz = Trial.load('xyz');
+
+fxyz = xyz.copy;
+fxyz.filter('ButFilter',3,.5,'low');
+
+fvel = xyz.vel(1,[1,2]);
+fvel.filter('ButFilter',3,2.5,'low');
+fvel.data(fvel.data<0) = .1;
+fvel.data = log10(fvel.data);
+fvel.data = fvel(:,1);
+
+nfet = MTADfet(Trial.spath,Trial.filebase,...
+               [diff(sqrt(sum((xyz(:,1,[1,2])-fxyz(:,1,[1,2])).^2,3)));0],...
+               xyz.sampleRate,...
+               Trial.sync.copy,...
+               Trial.sync(1),...
+               [],[],[],'ButtWag','bw','b');
+nfet.filter('ButFilter',3,5,'low');
+nfet.data = [diff(nfet.data);0];
+ns = MTADxyz('data',permute(log10(sq(mean(nfet.segs(1:nfet.size(1),50,nan).^2))),[2,3,4,1]),'sampleRate',xyz.sampleRate);
+
+
+nbinx = 80;
+nbiny = 80;
+edx = linspace(-8,-1,nbinx);
+edy = linspace(-.2,1,nbiny);
+
+fet = Trial.xyz.copy;
+fet.data = [ns(:),man(:)];
+% $$$ tag = 'wag_{lower_spine}-vs-speed_{lower_spine}';
+% $$$ bhv_JPDF(Trial,ns,fvel,70,70,[.25,1.6],[1.4,2.5],...
+% $$$          'WagPow_{spine_lower}',...
+% $$$          'Speed_{spine_lower} log10 (cm/s)',{'a-r','r'},...
+% $$$          tag);
+
+hfig = figure;
+hist2(fet(Trial.stc{'a'},:),edx,edy);
+caxis([0,250])
+
+sts = 'rwsnm';
+stc = 'rwcgm';
+hedgs    = {edx};
+hedgs(2) = {edy};
+edgs    = {edx};
+edgs(2) = {edy};
+[edgs{:}] = get_histBinCenters(edgs);
+[X,Y] = meshgrid(edgs{:});
+lbls = {};
+
+hold on,
+for i = 1:numel(sts),
+    ind = Trial.stc{sts(i)};
+    o = hist2(fet(ind,:),hedgs{1},hedgs{2});
+    F = [.05 .1 .05; .1 .4 .1; .05 .1 .05];
+    o = conv2(o,F,'same');
+    contour(X,Y,o',[20,20],'linewidth',2.5,'Color',stc(i))
+    lbls{i} = ind.label;
+end
+legend(lbls,'Location','NorthWest');
+
+title = 'wag_{lower spine}-vs-PPC_{lower_spine}';
+xlabel('WagPow_{spine lower} (AU)');
+ylabel('PPC_{body} (AU)');
+
+saveas(hfig,fullfile('/storage/gravio/figures/req/req20150821',[Trial.filebase '_req20150821_3_JPDF_WAG_PPC_Scontour.eps']),'epsc')
+saveas(hfig,fullfile('/storage/gravio/figures/req/req20150821',[Trial.filebase '_req20150821_3_JPDF_WAG_PPC_Scontour.png']),'png')
