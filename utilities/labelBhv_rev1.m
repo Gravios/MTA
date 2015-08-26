@@ -242,19 +242,6 @@ figure,plot(fxyz(:,5,3)-fxyz(:,1,3))
 figure,plot(fang(:,1,3,2));
 
 figure,hold on
-eds = linspace(0,250,100);
-ind = Trial.stc{'a-r'};
-hn = bar(eds,log10(histc(fxyz(ind,5,3)-fxyz(ind,1,3),eds)),'histc');
-hn.FaceColor = 'c';
-hn.FaceAlpha = .6;
-hn.EdgeAlpha = 0;
-ind = Trial.stc{'r'};
-hs = bar(eds,log10(histc(fxyz(ind,5,3)-fxyz(ind,1,3),eds)),'histc');
-hs.FaceColor = 'r';
-hs.FaceAlpha = .6;
-hs.EdgeAlpha = 0;
-
-figure,hold on
 eds = linspace(.2,1.5,100);
 ind = Trial.stc{'a-r'};
 hn = bar(eds,histc(fang(ind,1,4,2),eds),'histc');
@@ -1595,6 +1582,10 @@ hs.EdgeAlpha = 0;
 tsh = 30;
 tang = MTADang('data',circ_dist(circshift(fang(:,1,4,1),tsh),circshift(fang(:,1,4,1),-tsh)),...
                'sampleRate',ang.sampleRate);
+tsh = 20;
+tang = MTADang('data',circ_dist(circshift(ang(:,1,4,1),tsh),circshift(ang(:,1,4,1),-tsh)),...
+               'sampleRate',ang.sampleRate);
+
 
 eds= linspace(-3,.8,200);
 figure,hold on
@@ -1614,7 +1605,7 @@ hs.EdgeAlpha = 0;
 ads = linspace(-3,.8,70);
 eds = linspace(-.8,2,70);
 figure,
-ind = Trial.stc{'w'};
+ind = Trial.stc{'n'};
 hist2([log10(abs(tang(ind,1))),fvel(ind,1)],ads,eds)
 caxis([0,400])
 
@@ -1622,7 +1613,7 @@ caxis([0,400])
 tsh = 1;
 afet = Trial.xyz.copy;
 bfet = Trial.xyz.copy;
-afet.data = circshift(fxyz(:,:,[1,2]),-tsh)-circshift(fxyz(:,:,[1,2]),tsh);
+afet.data = circshift(xyz(:,:,[1,2]),-tsh)-circshift(xyz(:,:,[1,2]),tsh);
 afet.data = reshape(afet.data,[],2);
 aft = mat2cell(afet.data,size(afet,1),[1,1]);
 [afet.data,bfet.data] = cart2pol(aft{:});
@@ -1717,7 +1708,13 @@ hr.FaceAlpha = .3;
 hr.EdgeAlpha = 0;
 
 
-figure,plot(circ_dist(circshift(ang(:,1,4,1),-1),circshift(ang(:,1,4,1),1)))
+figure,plot(diff(circ_dist(circshift(fang(:,1,3,1),-1),circshift(fang(:,1,3,1),1))))
+figure,plot(circ_dist(ang(:,1,3,1),ang(:,2,4,1)))
+afetcirc_dist(ang(:,1,3,1),ang(:,2,4,1))
+
+figure,plot(circ_dist(circshift(ang(:,2,4,1),-1),circshift(ang(:,2,4,1),1)))
+Lines(Trial.stc{'w'}(:),[],'m');
+Lines(Trial.stc{'n'}(:),[],'g');
 
 Nang = MTADxyz(Trial.spath,Trial.filebase,...
                ang(:,1,10,3),...
@@ -1753,3 +1750,176 @@ Lines(Trial.stc{'m',1}(:),[-6,-3],'m');
 Lines([],-3,'m');
 plot(ts,log10(rhm(:,10)))
 plot(ts,scpow)
+
+
+
+
+tsh = 1;
+afet = Trial.xyz.copy;
+bfet = Trial.xyz.copy;
+afet.data = circshift(xyz(:,:,[1,2]),-tsh)-circshift(xyz(:,:,[1,2]),tsh);
+afet.data = reshape(afet.data,[],2);
+aft = mat2cell(afet.data,size(afet,1),[1,1]);
+[afet.data,bfet.data] = cart2pol(aft{:});
+afet.data = reshape(afet.data,[],xyz.size(2));
+bfet.data = reshape(bfet.data,[],xyz.size(2));
+
+
+Mang = MTADfet(Trial.spath,Trial.filebase,...
+               circ_dist(circshift(afet(:,[1:5,7]),-5),circshift(afet(:,[1:5,7]),5)),...
+               afet.sampleRate,...
+               Trial.sync.copy,...
+               Trial.sync(1),...
+               [],[],[],'mshake','mr','m');
+
+dsa =  struct('nFFT',2^7,'Fs',Mang.sampleRate,...
+              'WinLength',2^6,'nOverlap',2^6*.875,...
+                            'FreqRange',[1,20]);
+
+[rhm,fs,ts,phi,fst] = fet_spec(Trial,Mang,'mtchglong',true,'defspec',dsa);
+
+figure,
+imagesc(ts,fs,log10(rhm(:,:,1,1)'))
+axis xy,colormap jet,
+
+figure,plot(ts,skewness(rhm(:,:,1,1),[],2))
+Lines(Trial.stc{'w',1}(:),[],'m');
+
+figure,plot(ts,log10(median(rhm(:,1:8,1,1),2)./median(rhm(:,9:end,1,1),2)))
+hold on,plot(ts,log10(median(rhm(:,1:8,2,2),2)./median(rhm(:,9:end,2,2),2)))
+hold on,plot(ts,log10(median(rhm(:,1:8,3,3),2)./median(rhm(:,9:end,3,3),2)))
+Lines(Trial.stc{'w',1}(:),[],'m');
+
+figure,
+imagesc(ts,fs,rhm(:,:,1,3)')
+axis xy,colormap jet,
+Lines(Trial.stc{'w',1}(:),[],'m');
+
+
+Mangs = Mang.copy;
+Mangs.data = Mang.segs(1:Mang.size(1),40,nan);
+% $$$ mag = zeros([Mangs.size(2),1]);
+% $$$ for i = 1:Mangs.size(2),
+% $$$     mag(i) = PPC(Mangs(:,i,[1]));
+% $$$ end
+% $$$ save(fullfile(Trial.spath,...
+% $$$     [Trial.filebase '-walk_fet_another_ppc.mat']),'mag')
+
+load(fullfile(Trial.spath,...
+    [Trial.filebase '-walk_fet_another_ppc.mat']))
+maw = Trial.xyz.copy;
+maw.data = mag;
+maw.filter('ButFilter',3,1.5,'low');
+
+figure,plot(maw.data)
+Lines(Trial.stc{'w'}(:),[],'m');
+
+
+
+m = MTADxyz('data',circ_dist(afet(:,1),ang(:,1,4,1)),'sampleRate',Trial.xyz.sampleRate);
+m.data = circ_dist(circshift(m.data,-5),circshift(m.data,5));
+m.data = [diff(m.data);0];
+wn = 40;
+mv = m.copy;
+mv.data = circshift(log10(1./permute(mean(m.segs(1:m.size(1),wn,nan).^2),[2,3,4,1])),-round(wn/2));
+
+
+figure,hold on
+eds = linspace(-1.5,3,100);
+ind = Trial.stc{'a'};
+hn = bar(eds,histc(mv(ind),eds),'histc');
+hn.FaceColor = 'c';
+hn.FaceAlpha = .6;
+hn.EdgeAlpha = 0;
+ind = Trial.stc{'w'};
+hs = bar(eds,histc(mv(ind),eds),'histc');
+hs.FaceColor = 'r';
+hs.FaceAlpha = .6;
+hs.EdgeAlpha = 0;
+
+
+eds = linspace(-1.5,3,100);
+edy = linspace(-.2,1,100);
+ind = Trial.stc{'a'};
+%ind = Trial.stc{'w'};
+%ind = Trial.stc{'a-w'};
+%ind = Trial.stc{'m'};
+figure,
+hist2([mv(ind),man(ind,1)],eds,edy)
+caxis([0,50])
+
+
+eds = linspace(-1.5,3,100);
+edy = linspace(-.8,2,100);
+ind = Trial.stc{'a'};
+ind = Trial.stc{'w'};
+ind = Trial.stc{'a-w'};
+ind = Trial.stc{'m'};
+figure,
+hist2([mv(ind),fvel(ind,1)],eds,edy)
+caxis([0,50])
+
+
+eds = linspace(-.8,2,100);
+edy = linspace(-.05,1,100);
+ind = Trial.stc{'a-w'};
+ind = Trial.stc{'a'};
+ind = Trial.stc{'n'};
+ind = Trial.stc{'m'};
+ind = Trial.stc{'r'};
+ind = Trial.stc{'w'};
+figure,
+hist2([fvel(ind,1),maw(ind,1)],eds,edy)
+caxis([0,100])
+
+eds = linspace(-.8,2,100);
+edy = linspace(-.05,1,100);
+ind = Trial.stc{'a-w'};
+ind = Trial.stc{'a'};
+ind = Trial.stc{'n'};
+ind = Trial.stc{'m'};
+ind = Trial.stc{'r'};
+ind = Trial.stc{'w'};
+figure,
+hist2([fvel(ind,1),man(ind,1)],eds,edy)
+caxis([0,100])
+
+
+eds = linspace(-.2,1,100);
+edy = linspace(-.2,1,100);
+ind = Trial.stc{'a-w'};
+ind = Trial.stc{'n'};
+ind = Trial.stc{'w'};
+ind = Trial.stc{'a-w-n'};
+figure,
+hist2([man(ind,1),maw(ind,1)],eds,edy)
+caxis([0,100])
+
+
+
+eds = linspace(-8,-1,100);
+edy = linspace(-.05,1,100);
+ind = Trial.stc{'a'};
+ind = Trial.stc{'a-w'};
+ind = Trial.stc{'n'};
+ind = Trial.stc{'w'};
+ind = Trial.stc{'a-w-n'};
+figure,
+hist2([ns(ind,1),maw(ind,1)],eds,edy)
+caxis([0,100])
+
+
+eds = linspace(-5,.5,100);
+edy = linspace(-.2,1,100);
+ind = Trial.stc{'a'};
+ind = Trial.stc{'a-n'};
+ind = Trial.stc{'n'};
+ind = Trial.stc{'w'};
+ind = Trial.stc{'a-w-n'};
+figure,
+hist2([tff(ind,1),man(ind,1)],eds,edy)
+caxis([0,100])
+
+
+
+
