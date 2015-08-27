@@ -1752,7 +1752,7 @@ plot(ts,log10(rhm(:,10)))
 plot(ts,scpow)
 
 
-
+%% Start here
 
 tsh = 1;
 afet = Trial.xyz.copy;
@@ -1771,39 +1771,39 @@ Mang = MTADfet(Trial.spath,Trial.filebase,...
                Trial.sync.copy,...
                Trial.sync(1),...
                [],[],[],'mshake','mr','m');
-
-dsa =  struct('nFFT',2^7,'Fs',Mang.sampleRate,...
-              'WinLength',2^6,'nOverlap',2^6*.875,...
-                            'FreqRange',[1,20]);
-
-[rhm,fs,ts,phi,fst] = fet_spec(Trial,Mang,'mtchglong',true,'defspec',dsa);
-
-figure,
-imagesc(ts,fs,log10(rhm(:,:,1,1)'))
-axis xy,colormap jet,
-
-figure,plot(ts,skewness(rhm(:,:,1,1),[],2))
-Lines(Trial.stc{'w',1}(:),[],'m');
-
-figure,plot(ts,log10(median(rhm(:,1:8,1,1),2)./median(rhm(:,9:end,1,1),2)))
-hold on,plot(ts,log10(median(rhm(:,1:8,2,2),2)./median(rhm(:,9:end,2,2),2)))
-hold on,plot(ts,log10(median(rhm(:,1:8,3,3),2)./median(rhm(:,9:end,3,3),2)))
-Lines(Trial.stc{'w',1}(:),[],'m');
-
-figure,
-imagesc(ts,fs,rhm(:,:,1,3)')
-axis xy,colormap jet,
-Lines(Trial.stc{'w',1}(:),[],'m');
+% $$$ 
+% $$$ dsa =  struct('nFFT',2^7,'Fs',Mang.sampleRate,...
+% $$$               'WinLength',2^6,'nOverlap',2^6*.875,...
+% $$$                             'FreqRange',[1,20]);
+% $$$ 
+% $$$ [rhm,fs,ts,phi,fst] = fet_spec(Trial,Mang,'mtchglong',true,'defspec',dsa);
+% $$$ 
+% $$$ figure,
+% $$$ imagesc(ts,fs,log10(rhm(:,:,1,1)'))
+% $$$ axis xy,colormap jet,
+% $$$ 
+% $$$ figure,plot(ts,skewness(rhm(:,:,1,1),[],2))
+% $$$ Lines(Trial.stc{'w',1}(:),[],'m');
+% $$$ 
+% $$$ figure,plot(ts,log10(median(rhm(:,1:8,1,1),2)./median(rhm(:,9:end,1,1),2)))
+% $$$ hold on,plot(ts,log10(median(rhm(:,1:8,2,2),2)./median(rhm(:,9:end,2,2),2)))
+% $$$ hold on,plot(ts,log10(median(rhm(:,1:8,3,3),2)./median(rhm(:,9:end,3,3),2)))
+% $$$ Lines(Trial.stc{'w',1}(:),[],'m');
+% $$$ 
+% $$$ figure,
+% $$$ imagesc(ts,fs,rhm(:,:,1,3)')
+% $$$ axis xy,colormap jet,
+% $$$ Lines(Trial.stc{'w',1}(:),[],'m');
 
 
 Mangs = Mang.copy;
 Mangs.data = Mang.segs(1:Mang.size(1),40,nan);
-% $$$ mag = zeros([Mangs.size(2),1]);
-% $$$ for i = 1:Mangs.size(2),
-% $$$     mag(i) = PPC(Mangs(:,i,[1]));
-% $$$ end
-% $$$ save(fullfile(Trial.spath,...
-% $$$     [Trial.filebase '-walk_fet_another_ppc.mat']),'mag')
+mag = zeros([Mangs.size(2),1]);
+for i = 1:Mangs.size(2),
+    mag(i) = PPC(Mangs(:,i,[1]));
+end
+save(fullfile(Trial.spath,...
+    [Trial.filebase '-walk_fet_another_ppc.mat']),'mag')
 
 load(fullfile(Trial.spath,...
     [Trial.filebase '-walk_fet_another_ppc.mat']))
@@ -1907,7 +1907,7 @@ ind = Trial.stc{'a-w-n'};
 figure,
 hist2([ns(ind,1),maw(ind,1)],eds,edy)
 caxis([0,100])
-
+p
 
 eds = linspace(-5,.5,100);
 edy = linspace(-.2,1,100);
@@ -1923,3 +1923,4 @@ caxis([0,100])
 
 
 
+vicon-nlx_analysis

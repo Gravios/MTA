@@ -683,4 +683,22 @@ overwrite = true;
 ignoredViconTrials = [];
 startStopShift = [5,-1]; % shift boundaries of vicon starts and 
 xyzSamplingRate = 200.00185; % stops by some number of seconds
+Session = MTASession(SessionName,MazeName,overwrite,TTLValue, ...
+                     'xyzSampleRate',xyzSamplingRate);
+
+
+
+
+
+SessionName = 'Ed12-20150807';
+xyz_path = '/storage/eduardo/data/processed/xyz/';
+nlx_path = '/storage/eduardo/data/processed/nlx/Ed12';
+linkSession(SessionName,xyz_path,nlx_path);
+MazeName = 'nor';
+TrialName = 'all'; 
+TTLValue = '0x0100';
+overwrite = true;
+ignoredViconTrials = [];
+startStopShift = [5,-1];
+xyzSamplingRate = 200.00185;
 Session = MTASession(SessionName,MazeName,overwrite,TTLValue,'xyzSampleRate',xyzSamplingRate);
