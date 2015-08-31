@@ -111,8 +111,8 @@ save(fullfile(MTAPath, 'MTAMazes.mat'  ),'MTAMazes');
 save(fullfile(MTAPath, 'MTAMarkerConnections.mat'),'MTAMarkerConnections');
 
 addpath(MTAPath)
-try
-    savepath
-end
+% $$$ try
+% $$$     savepath
+% $$$ end
 
 

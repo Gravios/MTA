@@ -136,64 +136,10 @@ Rex.close;
 
 %% REQ #2
 
-f = ':';
-%eds  = linspace(-.8,2,100);
-eds  = linspace(-.2,1,100);
-figure, hold on,
-fvel = xyz.vel(1,[1,2]);
-fvel.filter('ButFilter',3,2.5,'low');
-fvel.data(fvel.data<0) = .1;
-fvel.data = log10(fvel.data);
 
-fet = Trial.xyz.copy;
-fet.data = [fvel.data,man.data];
-
-
-os = [];
-ind = Trial.stc{'w'}.data;
-for i = ind',os(end+1,:) = median(fet(i',f));end
-hs = bar(eds,histc(os,eds),'histc');
-overlay_bar(hs,'b');
-
-os = [];
-ind = Trial.stc{'r'}.data;
-for i = ind',os(end+1,:) = median(fet(i',f));end
-%hs = bar(eds,histc(os,eds),'histc');
-%overlay_bar(hs,'r');
-
-%os = [];
-ind = Trial.stc{'n'}.data;
-for i = ind',os(end+1,:) = median(fet(i',f));end
-%hs = bar(eds,histc(os,eds),'histc');
-%overlay_bar(hs,'g');
-
-%os = [];
-ind = Trial.stc{'s'}.data;
-for i = ind',os(end+1,:) = median(fet(i',f));end
-%hs = bar(eds,histc(os,eds),'histc');
-%overlay_bar(hs,'c');
-
-%os = [];
-ind = Trial.stc{'m'}.data;
-for i = ind',os(end+1,:) = median(fet(i',f));end
-%hs = bar(eds,histc(os,eds),'histc');
-%overlay_bar(hs,'m');
-
-
-hs = bar(eds,histc(os,eds),'histc');
-overlay_bar(hs,'r');
-
-
-
-
-os = [];
-ind = Trial.stc{'w'}.data;
-for i = ind',os(end+1,:) = median(fet(i',f));end
-hs = bar(eds,histc(os,eds),'histc');
-overlay_bar(hs,'b');
-
-
-
+xyz = Trial.load('xyz');
+fxyz = xyz.copy;
+fxyz.filter('ButFilter',3,.5,'low');
 nfet = MTADfet(Trial.spath,Trial.filebase,...
                [diff(sqrt(sum((xyz(:,1,[1,2])-fxyz(:,1,[1,2])).^2,3)));0],...
                xyz.sampleRate,...
@@ -201,9 +147,9 @@ nfet = MTADfet(Trial.spath,Trial.filebase,...
                Trial.sync(1),...
                [],[],[],'ButtWag','bw','b');
 nfet.filter('ButFilter',3,5,'low');
-nfet.data = [diff(nfet.data),0]';
+nfet.data = [diff(nfet.data);0];
 
-ns = MTADxyz('data',log10(sq(mean(nfet.segs(1:nfet.size(1),50,nan).^2))),'sampleRate',xyz.sampleRate);
+ns = MTADxyz('data',log10(sq(mean(nfet.segs(1:nfet.size(1),50,nan).^2)))','sampleRate',xyz.sampleRate);
 
 
 eds= linspace(-9,.7,200);
@@ -351,6 +297,7 @@ saveas(hfig,fullfile('/storage/gravio/figures/req/req20150821',[Trial.filebase '
 
 
 
+% Pitch upperv
 hfig = figure;
 hist2(fet(Trial.stc{'a'},:),edx,edy);
 caxis([0,250])
@@ -375,13 +322,13 @@ for i = 1:numel(sts),
     lbls{i} = ind.label;
 end
 legend(lbls,'Location','NorthWest');
-
-title = 'wag_{lower spine}-vs-PPC_{lower_spine}';
+title('wag_{lower spine}-vs-PPC_{lower_spine}');
 xlabel('WagPow_{spine lower} (AU)');
 ylabel('PPC_{body} (AU)');
 
 saveas(hfig,fullfile('/storage/gravio/figures/req/req20150821',[Trial.filebase '_req20150821_3_JPDF_WAG_PPC_Scontour.eps']),'epsc')
 saveas(hfig,fullfile('/storage/gravio/figures/req/req20150821',[Trial.filebase '_req20150821_3_JPDF_WAG_PPC_Scontour.png']),'png')
+
 
 
 

@@ -1,9 +1,11 @@
 function diffMat = markerDiffMatrix(xyz)
-%diffMat = markerDiffMatrix(Session)
+%diffMat = markerDiffMatrix(xyz)
 %Create a time series where the position of every marker
 %has been substracted from one another
 %
-%  Input
+%  Input:
+%  
+%      xyz: MTADxyz, (index,marker,dim)
 %
 %  Output: 
 %

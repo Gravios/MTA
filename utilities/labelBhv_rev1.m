@@ -1757,12 +1757,14 @@ plot(ts,scpow)
 tsh = 1;
 afet = Trial.xyz.copy;
 bfet = Trial.xyz.copy;
-afet.data = circshift(xyz(:,:,[1,2]),-tsh)-circshift(xyz(:,:,[1,2]),tsh);
+afet.data = circshift(xyz(:,:,[1,2]),-tsh)-circshift(fxyz(:,:,[1,2]),tsh);
 afet.data = reshape(afet.data,[],2);
 aft = mat2cell(afet.data,size(afet,1),[1,1]);
 [afet.data,bfet.data] = cart2pol(aft{:});
 afet.data = reshape(afet.data,[],xyz.size(2));
 bfet.data = reshape(bfet.data,[],xyz.size(2));
+
+bfet.filter('ButFilter',3,2.3,'low');
 
 
 Mang = MTADfet(Trial.spath,Trial.filebase,...
@@ -1796,14 +1798,14 @@ Mang = MTADfet(Trial.spath,Trial.filebase,...
 % $$$ Lines(Trial.stc{'w',1}(:),[],'m');
 
 
-Mangs = Mang.copy;
-Mangs.data = Mang.segs(1:Mang.size(1),40,nan);
-mag = zeros([Mangs.size(2),1]);
-for i = 1:Mangs.size(2),
-    mag(i) = PPC(Mangs(:,i,[1]));
-end
-save(fullfile(Trial.spath,...
-    [Trial.filebase '-walk_fet_another_ppc.mat']),'mag')
+% $$$ Mangs = Mang.copy;
+% $$$ Mangs.data = Mang.segs(1:Mang.size(1),40,nan);
+% $$$ mag = zeros([Mangs.size(2),1]);
+% $$$ for i = 1:Mangs.size(2),
+% $$$     mag(i) = PPC(Mangs(:,i,[1]));
+% $$$ end
+% $$$ save(fullfile(Trial.spath,...
+% $$$     [Trial.filebase '-walk_fet_another_ppc.mat']),'mag')
 
 load(fullfile(Trial.spath,...
     [Trial.filebase '-walk_fet_another_ppc.mat']))
@@ -1923,4 +1925,108 @@ caxis([0,100])
 
 
 
-vicon-nlx_analysis
+fxyz = xyz.copy;
+fxyz.filter('ButFilter',3,5,'low');
+
+
+dmat = markerDiffMatrix(fxyz);
+
+%mx = mean(fxyz(:,[1,3],:),2);
+
+
+tmat = [];
+for i = 1:3,
+    cmat = sq(cross(dmat(:,12,i,:),dmat(:,12,4,:),4));
+    nmat = MTADxyz('data',sqrt(sum(cmat.^2,2)),'sampleRate',xyz.sampleRate);
+    tmat = cat(2,tmat,nmat.data);
+end
+
+
+%figure,
+figure,plot(sum(diff(tmat),2))
+%hold on,plot(diff(nmat.data))
+Lines(Trial.stc{'w'}(:),[],'m');
+%Lines(Trial.stc{'r'}(:),[],'r');
+
+figure,hold on
+eds = linspace(10,10000,100);
+ind = Trial.stc{'a-r'};
+hn = bar(eds,histc(nmat(ind),eds),'histc');
+hn.FaceColor = 'c';
+hn.FaceAlpha = .6;
+hn.EdgeAlpha = 0;
+ind = Trial.stc{'r'};
+hs = bar(eds,histc(nmat(ind),eds),'histc');
+hs.FaceColor = 'r';
+hs.FaceAlpha = .6;
+hs.EdgeAlpha = 0;
+
+
+
+
+
+
+figure,hold on
+eds = linspace(-2,1,100);
+ind = Trial.stc{'a-w'};
+hn = bar(eds,histc(bfet(ind,10),eds),'histc');
+hn.FaceColor = 'c';
+hn.FaceAlpha = .6;
+hn.EdgeAlpha = 0;
+ind = Trial.stc{'w'};
+hs = bar(eds,histc(bfet(ind,10),eds),'histc');
+hs.FaceColor = 'r';
+hs.FaceAlpha = .6;
+hs.EdgeAlpha = 0;
+
+
+
+
+edx = linspace(-.8,2,100);
+edy = linspace(-2,1,100);
+
+ind = Trial.stc{'w'};
+figure,hist2([fvel(ind,1),bfet(ind,1)],edx,edy);
+caxis([0,900])
+
+
+
+edx = linspace(-2,1,100);
+edy = linspace(-2,1,100);
+ind = Trial.stc{'a'};
+figure,hist2([bfet(ind,1),bfet(ind,7)],edx,edy);
+caxis([0,200])
+
+xs = circshift(xyz.data,-10)-circshift(xyz.data,10);
+
+nn = MTADxyz('data',dot(sq(xs(:,1,:)),sq(bsxfun(@rdivide,dmat(:,2,11,:),sqrt(sum(dmat(:,2,11,:).^2,4)))),2),'sampleRate',xyz.sampleRate);;
+nns = sign(nn.data);
+nn.data = log10(abs(nn.data)+1).*nns;
+
+
+nh = MTADxyz('data',dot(sq(xs(:,7,:)),sq(bsxfun(@rdivide,dmat(:,2,11,:),sqrt(sum(dmat(:,2,11,:).^2,4)))),2),'sampleRate',xyz.sampleRate);;
+nhs = sign(nh.data);
+nh.data = log10(abs(nh.data)+1).*nhs;
+
+figure,hold on
+eds = linspace(-2,2.8,200);
+ind = Trial.stc{'a-r-w'};
+hn = bar(eds,histc(nn(ind),eds),'histc');
+hn.FaceColor = 'c';
+hn.FaceAlpha = .4;
+hn.EdgeAlpha = 0;
+ind = Trial.stc{'w'};
+hs = bar(eds,histc(nn(ind),eds),'histc');
+hs.FaceColor = 'r';
+hs.FaceAlpha = .4;
+hs.EdgeAlpha = 0;
+
+
+edx = linspace(-2,2.5,70);
+edy = linspace(-8,-1,70);
+ind = Trial.stc{'w'};
+figure,
+hist2([nn(ind),ns(ind,1)],edx,edy);
+caxis([0,200])
+
+
