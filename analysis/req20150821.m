@@ -1,4 +1,5 @@
 
+
 %% REQ #1
 
 Trial = MTATrial('jg05-20120317');
@@ -297,7 +298,78 @@ saveas(hfig,fullfile('/storage/gravio/figures/req/req20150821',[Trial.filebase '
 
 
 
+
 % Pitch upperv
+%% Rearing feature subspace contours
+
+hostPath = '/gpfs01/sirota/homes/gravio/figures/req/req20150821';
+hostPath = '/storage/gravio/figures/req/req20150821';
+
+xyz = Trial.load('xyz');
+ang = create(MTADang,Trial,xyz);
+% FXYZ Filtered Marker Positions {Low Pass 2.5 Hz}
+fxyz = xyz.copy;
+fxyz.filter('ButFilter',3,2.5,'low');
+% FANG Filtered Intermarker angles 
+fang = create(MTADang,Trial,fxyz);
+
+
+%% Rear Body pitch vs diff(USpitch)
+fet = Trial.xyz.copy;
+fet.data = ([fang(:,1,4,2),[diff(fang(:,3,4,2));0]*fang.sampleRate]);
+
+nbinx = 80;
+nbiny = 80;
+edx = linspace(0,pi/2,nbinx);
+edy = linspace(-5,5,nbiny);
+
+
+hfig = figure;
+hist2(fet(Trial.stc{'a'},:),edx,edy);
+caxis([0,250])
+
+sts = 'rwsnm';
+stc = 'rwcgm';
+hedgs    = {edx};
+hedgs(2) = {edy};
+edgs    = {edx};
+edgs(2) = {edy};
+[edgs{:}] = get_histBinCenters(edgs);
+[X,Y] = meshgrid(edgs{:});
+lbls = {};
+
+hold on,
+for i = 1:numel(sts),
+    ind = Trial.stc{sts(i)};
+    o = hist2(fet(ind,:),hedgs{1},hedgs{2});
+    F = [.05 .1 .05; .1 .4 .1; .05 .1 .05];
+    o = conv2(o,F,'same');
+    contour(X,Y,o',[10,10],'linewidth',2.5,'Color',stc(i))
+    lbls{i} = ind.label;
+end
+legend(lbls,'Location','NorthWest');
+title('wag_{lower spine}-vs-PPC_{lower_spine}');
+xlabel('WagPow_{spine lower} (AU)');
+ylabel('PPC_{body} (AU)');
+
+
+title('State Contours');
+xlabel('pitch_{body} (rad)');
+ylabel('d(pitch_{upper spine})/dt (rad/s)');
+
+saveas(hfig,fullfile(hostPath,[Trial.filebase '_req20150821_3_JPDF_Bpitch_dUSpitch_Scontour.eps']),'epsc')
+saveas(hfig,fullfile(hostPath,[Trial.filebase '_req20150821_3_JPDF_Bpitch_dUSpitch_Scontour.png']),'png')
+
+
+%% Rear US pitch vs US diff(ang)
+fet = Trial.xyz.copy;
+fet.data = ([fang(:,3,4,2),log10(abs([diff(fang(:,3,4,2));0]*fang.sampleRate))]);
+
+nbinx = 80;
+nbiny = 80;
+edx = linspace(-.8,pi/2,nbinx);
+edy = linspace(-4,.8,nbiny);
+
 hfig = figure;
 hist2(fet(Trial.stc{'a'},:),edx,edy);
 caxis([0,250])
@@ -321,13 +393,61 @@ for i = 1:numel(sts),
     contour(X,Y,o',[20,20],'linewidth',2.5,'Color',stc(i))
     lbls{i} = ind.label;
 end
-legend(lbls,'Location','NorthWest');
-title('wag_{lower spine}-vs-PPC_{lower_spine}');
-xlabel('WagPow_{spine lower} (AU)');
-ylabel('PPC_{body} (AU)');
+legend(lbls,'Location','southeast');
 
-saveas(hfig,fullfile('/storage/gravio/figures/req/req20150821',[Trial.filebase '_req20150821_3_JPDF_WAG_PPC_Scontour.eps']),'epsc')
-saveas(hfig,fullfile('/storage/gravio/figures/req/req20150821',[Trial.filebase '_req20150821_3_JPDF_WAG_PPC_Scontour.png']),'png')
+title('State Contours');
+xlabel('pitch_{upper spine} (rad)');
+ylabel('log10(abs(d(pitch_{upper spine})/dt)) (rad/s)');
+
+saveas(hfig,fullfile(hostPath,[Trial.filebase '_req20150821_3_JPDF_USpitch_dUSpitch_Scontour.eps']),'epsc')
+saveas(hfig,fullfile(hostPath,[Trial.filebase '_req20150821_3_JPDF_USpitch_dUSpitch_Scontour.png']),'png')
+
+
+
+fet = Trial.xyz.copy;
+fet.data = [fang(:,1,2,2),fang(:,3,4,2)];
+
+nbinx = 80;
+nbiny = 80;
+edx = linspace(.4,pi/2,nbinx);
+edy = linspace(-.8,pi/2,nbiny);
+
+hfig = figure;
+hist2(fet(Trial.stc{'a'},:),edx,edy);
+caxis([0,250])
+
+sts = 'rwsnm';
+stc = 'rwcgm';
+hedgs    = {edx};
+hedgs(2) = {edy};
+edgs    = {edx};
+edgs(2) = {edy};
+[edgs{:}] = get_histBinCenters(edgs);
+[X,Y] = meshgrid(edgs{:});
+lbls = {};
+
+hold on,
+for i = 1:numel(sts),
+    ind = Trial.stc{sts(i)};
+    o = hist2(fet(ind,:),hedgs{1},hedgs{2});
+    F = [.05 .1 .05; .1 .4 .1; .05 .1 .05];
+    o = conv2(o,F,'same');
+    contour(X,Y,o',[20,20],'linewidth',2.5,'Color',stc(i))
+    lbls{i} = ind.label;
+end
+legend(lbls,'Location','northwest');
+
+title('State Contours');
+xlabel('pitch_{lower spine} (rad)');
+ylabel('pitch_{upper spine} (rad)');
+
+
+saveas(hfig,fullfile(hostPath,[Trial.filebase '_req20150821_3_JPDF_LSpitch_USpitch_Scontour.eps']),'epsc')
+saveas(hfig,fullfile(hostPath,[Trial.filebase '_req20150821_3_JPDF_LSpitch_USpitch_Scontour.png']),'png')
+
+
+
+
 
 
 
