@@ -881,6 +881,21 @@ mag = zeros([afet.size(1),1]);
 for i= 1:afet.size(1),
 mag(i) = PPC(afet(i,[1:5,7]));
 end
+
+msync = Trial.sync.copy;
+msync.sync = Trial.sync.copy;
+
+man = MTADfet(Trial.spath,Trial.filebase,...
+               mag,...
+               Trial.xyz.sampleRate,...
+               msync,...
+               Trial.sync(1),...
+               [],[],[],'lower_spine_trajectory_yaw_PPC','lsppc','y');
+man.save;
+
+
+
+
 save(fullfile(Trial.spath,...
     [Trial.filebase '-walk_fet_ppc.mat']),'mag')
 
@@ -2030,3 +2045,4 @@ hist2([nn(ind),ns(ind,1)],edx,edy);
 caxis([0,200])
 
 
+feature

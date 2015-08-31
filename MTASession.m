@@ -430,9 +430,14 @@ classdef MTASession < hgsetget
             syncZeroIndex = syncFeature==0;
             
             if ~isempty(syncDataPeriods),
-                syncshift = Data.sync(1)-newOrigin-1;
+                %syncshift = 0;
+                %syncshift = round(Data.sync(1).*Data.sampleRate)-newOrigin-1;
+                %syncshift = Data.sync(1)-newOrigin-1;
                 if syncshift ==-2,syncshift=0;end
-                Data.load(syncDataPeriods,syncshift);
+                Data.load(syncDataPeriods,[],syncshift);
+% $$$                 Data.load@MTAData(syncDataPeriods,[],syncshift);
+% $$$                 fh = @(Data,syncDataPeriods,syncshift)load(Data,syncDataPeriods,[],syncshift);
+% $$$                 feval(fh,Data,syncDataPeriods,syncshift)
                 if ~isempty(find(syncZeroIndex,1)),
                     Data.data(syncZeroIndex,:,:,:,:) = 0;
                 end

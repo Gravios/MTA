@@ -1,6 +1,10 @@
 
 
 %% REQ #1
+% Video example
+% Subplot(121),rearing as a skeleton 
+% subplot(122),trajectory of rears through the phase space of
+% ethologically relavant features
 
 Trial = MTATrial('jg05-20120317');
 
@@ -209,21 +213,22 @@ saveas(hfig,fullfile('/storage/gravio/figures/req/req20150821',[Trial.filebase '
 
 %% REQ #3
 
-%% Contour JPDFs
 Trial = MTATrial('jg05-20120317');
+
+
+%% Walking features subspace contours
+figTitle = 'req20150821_3_JPDF_WAG_PPC_Scontour'
+
+% DEF Mode: 'ss' -> each state has contour 
+%           'as' -> primary state has contour, all others states
+%                   are merged.
+mode = 'as';
+
 
 %% Initialize Features
 xyz = Trial.load('xyz');
-
 fxyz = xyz.copy;
 fxyz.filter('ButFilter',3,.5,'low');
-
-fvel = xyz.vel(1,[1,2]);
-fvel.filter('ButFilter',3,2.5,'low');
-fvel.data(fvel.data<0) = .1;
-fvel.data = log10(fvel.data);
-fvel.data = fvel(:,1);
-
 nfet = MTADfet(Trial.spath,Trial.filebase,...
                [diff(sqrt(sum((xyz(:,1,[1,2])-fxyz(:,1,[1,2])).^2,3)));0],...
                xyz.sampleRate,...
@@ -236,19 +241,13 @@ ns = MTADxyz('data',permute(log10(sq(mean(nfet.segs(1:nfet.size(1), ...
                                                   50,nan).^2))),[2,3,4,1]),'sampleRate',xyz.sampleRate);
 
 
-tff = MTADxyz('data',...
-              log10(abs(circ_dist(circshift(fang(:,1,4,1),-20),circshift(fang(:,1,4,1),20)))),...
-              'sampleRate',xyz.sampleRate);
-
-
-
 
 load(fullfile(Trial.spath,...
     [Trial.filebase '-walk_fet_ppc.mat']))
-man = Trial.xyz.copy;
-man.data = mag;
-man.filter('ButFilter',3,1.5,'low');
 
+
+
+man.filter('ButFilter',3,1.5,'low');
 
 
 nbinx = 80;
@@ -268,8 +267,15 @@ hfig = figure;
 hist2(fet(Trial.stc{'a'},:),edx,edy);
 caxis([0,250])
 
-sts = 'rwsnm';
-stc = 'rwcgm';
+switch mode
+  case 'ss'
+    sts = {'r','w','s','n','m'};
+    stc = 'rwcgm';
+  case 'as'
+    sts = {'r','a-r'};
+    stc = 'rc';
+end
+
 hedgs    = {edx};
 hedgs(2) = {edy};
 edgs    = {edx};
@@ -293,17 +299,21 @@ title = 'wag_{lower spine}-vs-PPC_{lower_spine}';
 xlabel('WagPow_{spine lower} (AU)');
 ylabel('PPC_{body} (AU)');
 
-saveas(hfig,fullfile('/storage/gravio/figures/req/req20150821',[Trial.filebase '_req20150821_3_JPDF_WAG_PPC_Scontour.eps']),'epsc')
-saveas(hfig,fullfile('/storage/gravio/figures/req/req20150821',[Trial.filebase '_req20150821_3_JPDF_WAG_PPC_Scontour.png']),'png')
+saveas(hfig,fullfile(hostPath,[Trial.filebase '_' figTitle '_' mode '.eps']),'epsc')
+saveas(hfig,fullfile(hostPath,[Trial.filebase '_' figTitle '_' mode '.png']),'png')
+
+
 
 
 
 
 % Pitch upperv
 %% Rearing feature subspace contours
-
 hostPath = '/gpfs01/sirota/homes/gravio/figures/req/req20150821';
 hostPath = '/storage/gravio/figures/req/req20150821';
+
+% TRIAL subset of recording session
+Trial = MTATrial('jg05-20120317');
 
 xyz = Trial.load('xyz');
 ang = create(MTADang,Trial,xyz);
@@ -315,6 +325,15 @@ fang = create(MTADang,Trial,fxyz);
 
 
 %% Rear Body pitch vs diff(USpitch)
+
+figTitle = 'req20150821_3_JPDF_Bpitch_dUSpitch_Scontour';
+
+% DEF Mode: 'ss' -> each state has contour 
+%           'as' -> primary state has contour, all others states
+%                   are merged.
+mode = 'as';
+
+% FET assignment 
 fet = Trial.xyz.copy;
 fet.data = ([fang(:,1,4,2),[diff(fang(:,3,4,2));0]*fang.sampleRate]);
 
@@ -328,8 +347,16 @@ hfig = figure;
 hist2(fet(Trial.stc{'a'},:),edx,edy);
 caxis([0,250])
 
-sts = 'rwsnm';
-stc = 'rwcgm';
+switch mode
+  case 'ss'
+    sts = {'r','w','s','n','m'};
+    stc = 'rwcgm';
+  case 'as'
+    sts = {'r','a-r'};
+    stc = 'rc';
+end
+
+
 hedgs    = {edx};
 hedgs(2) = {edy};
 edgs    = {edx};
@@ -340,7 +367,7 @@ lbls = {};
 
 hold on,
 for i = 1:numel(sts),
-    ind = Trial.stc{sts(i)};
+    ind = Trial.stc{sts{i}};
     o = hist2(fet(ind,:),hedgs{1},hedgs{2});
     F = [.05 .1 .05; .1 .4 .1; .05 .1 .05];
     o = conv2(o,F,'same');
@@ -348,22 +375,30 @@ for i = 1:numel(sts),
     lbls{i} = ind.label;
 end
 legend(lbls,'Location','NorthWest');
-title('wag_{lower spine}-vs-PPC_{lower_spine}');
-xlabel('WagPow_{spine lower} (AU)');
-ylabel('PPC_{body} (AU)');
-
-
 title('State Contours');
 xlabel('pitch_{body} (rad)');
 ylabel('d(pitch_{upper spine})/dt (rad/s)');
 
-saveas(hfig,fullfile(hostPath,[Trial.filebase '_req20150821_3_JPDF_Bpitch_dUSpitch_Scontour.eps']),'epsc')
-saveas(hfig,fullfile(hostPath,[Trial.filebase '_req20150821_3_JPDF_Bpitch_dUSpitch_Scontour.png']),'png')
+saveas(hfig,fullfile(hostPath,[Trial.filebase '_' figTitle '_' mode '.eps']),'epsc')
+saveas(hfig,fullfile(hostPath,[Trial.filebase '_' figTitle '_' mode '.png']),'png')
 
 
-%% Rear US pitch vs US diff(ang)
+
+%% Rear US pitch vs US log10(abs(diff(ang)))
+% REQ 3.2
+%
+% DEF Mode: 'ss' -> each state has contour 
+%           'as' -> primary state has contour, all others states
+%                   are merged.
+
+mode = 'ss'; %mode = 'as';
+figTitle = 'req20150821_3_JPDF_Bpitch_ladUSpitch_Scontour';
+clims = [0,150];
+contLim = [20,20];
+
 fet = Trial.xyz.copy;
 fet.data = ([fang(:,3,4,2),log10(abs([diff(fang(:,3,4,2));0]*fang.sampleRate))]);
+
 
 nbinx = 80;
 nbiny = 80;
@@ -372,10 +407,18 @@ edy = linspace(-4,.8,nbiny);
 
 hfig = figure;
 hist2(fet(Trial.stc{'a'},:),edx,edy);
-caxis([0,250])
+caxis(clims)
 
-sts = 'rwsnm';
-stc = 'rwcgm';
+switch mode
+  case 'ss';
+    sts = {'r','w','s','n','m'};
+    stc = 'rwcgm';
+  case 'as';  
+    sts = {'r','a-r'};
+    stc = 'rc';
+end
+
+
 hedgs    = {edx};
 hedgs(2) = {edy};
 edgs    = {edx};
@@ -386,23 +429,25 @@ lbls = {};
 
 hold on,
 for i = 1:numel(sts),
-    ind = Trial.stc{sts(i)};
+    ind = Trial.stc{sts{i}};
     o = hist2(fet(ind,:),hedgs{1},hedgs{2});
     F = [.05 .1 .05; .1 .4 .1; .05 .1 .05];
     o = conv2(o,F,'same');
-    contour(X,Y,o',[20,20],'linewidth',2.5,'Color',stc(i))
+    contour(X,Y,o',contLim,'linewidth',2.5,'Color',stc(i))
     lbls{i} = ind.label;
 end
-legend(lbls,'Location','southeast');
 
-title('State Contours');
+legend(lbls,'Location','southeast');
+title({'State Contours', ['(Contour Sample Limit: ' num2str(contLim) ')']});
 xlabel('pitch_{upper spine} (rad)');
 ylabel('log10(abs(d(pitch_{upper spine})/dt)) (rad/s)');
+h = colorbar;
+h.Label.String = ['Sample Count (sr: ' num2str(round(Trial.xyz.sampleRate)) ')'];
 
-saveas(hfig,fullfile(hostPath,[Trial.filebase '_req20150821_3_JPDF_USpitch_dUSpitch_Scontour.eps']),'epsc')
-saveas(hfig,fullfile(hostPath,[Trial.filebase '_req20150821_3_JPDF_USpitch_dUSpitch_Scontour.png']),'png')
+saveas(hfig,fullfile(hostPath,[Trial.filebase '_' figTitle '_' mode '.eps']),'epsc')
+saveas(hfig,fullfile(hostPath,[Trial.filebase '_' figTitle '_' mode '.png']),'png')
 
-
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 
 fet = Trial.xyz.copy;
 fet.data = [fang(:,1,2,2),fang(:,3,4,2)];

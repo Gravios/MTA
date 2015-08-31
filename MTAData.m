@@ -124,28 +124,44 @@ classdef MTAData < hgsetget
         function out = save(Data,varargin)        
             out = false;
             data = Data.data;
+            sampleRate = Data.sampleRate;
             if isempty(varargin),
                 data = Data.data;
-                save(Data.fpath,'data','-v7.3');
+                save(Data.fpath,'data','sampleRate','-v7.3');
                 out = true;
             else
                 data = Data.data;
-                save(varargin{1},'data','-v7.3');
+                save(varargin{1},'data','sampleRate','-v7.3');
                 out = true;
             end
         end
         function Data = load(Data,varargin)
         % Data = load(Data,varargin)
-        % Loads data from the file 
-            [Session,syncshift] = DefaultArgs(varargin,{[],0});
+        % Loads data from disk into MTAData object
+        % 
+        % inputs: 
+        %    Session: 
+        %    filename
+        %    syncshift
+        %
+            [Session,filename,syncshift] = DefaultArgs(varargin,{[],[],0});
+            if ~isempty(filename),
+                Data.filename = filename;
+            end
             ds = load(Data.fpath);
             switch class(Session)
                 case 'MTASession'
                     Data.data = ds.data;
+                    if isfield(ds,'sampleRate'),
+                        Data.sampleRate = ds.sampleRate;
+                    end
                     Data.sync.sync = Session.sync.copy;
                     Session.resync(Data);                    
                 case 'MTATrial'
                     Data.data = ds.data;
+                    if isfield(ds,'sampleRate'),
+                        Data.sampleRate = ds.sampleRate;
+                    end
                     Data.sync.sync = Session.sync.copy;
                     Data.origin = Data.sync.data(1);
                     Session.resync(Data);                    
@@ -162,6 +178,9 @@ classdef MTAData < hgsetget
                         for i = 1:size(Session,1),
                             Data.data(Session(i,1):Session(i:2),:,:,:,:) = ds.data((Session(i,1):Session(i:2))-syncshift,1:d(2),1:d(3),1:d(4),1:d(5));
                         end
+                        if isfield(ds,'sampleRate'),
+                            Data.sampleRate = ds.sampleRate;
+                        end
                     else
                         Data.data = ds.data;
                     end
@@ -171,7 +190,7 @@ classdef MTAData < hgsetget
         function fpath = fpath(Data)
         %fpath = fpath(Data)
         % Concatenate the path and filename fields to create the full path
-                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                    % to the file containing the object's data
+        % to the file containing the object's data
         %
             fpath = fullfile(Data.path,Data.filename);
         end
@@ -440,7 +459,7 @@ classdef MTAData < hgsetget
                 end
                 if Data.size(1)==1; Data.data = Data.data'; end
 
-                  
+                
               case 'TimePeriods'
                 % Needs some more corrections for resampling
 
@@ -499,37 +518,37 @@ classdef MTAData < hgsetget
         % Data.data = reshape(Filter0(win,Data.data),Data.size);
         %
         % TODO Adding ButFilter
-        switch Data.type
-            case 'TimeSeries'
+            switch Data.type
+              case 'TimeSeries'
                 switch mode
-                    case 'gauss'
-                        [Window] = DefaultArgs(varargin,{.05});
-                        if numel(Window)==1,
-                            Window = round(Window.*Data.sampleRate);
-                            Window = Window+double(mod(Window,2)==0);
-                            Window = gausswin(Window)./sum(gausswin(Window));
-                        end
-                        zind = nniz(Data);
-                        Data.data = reshape(Filter0(Window,Data.data),Data.size);
-                        Data.data(zind) = 0;
-                    case 'ButFilter'
-                        [order,freq,flag] = DefaultArgs(varargin,{3,4,'low'});
-                        freq = freq/(Data.sampleRate/2);
-                        nind = ~nniz(Data);
-                        nd = [];
-                        if sum(nind)>0,
-                            nd = Data.data(nind,:,:,:,:);
-                            Data.data(nind,:,:,:,:) = 0;
-                        end
-                        Data.data = ButFilter(Data.data,order,freq,flag);
-                        if ~isempty(nd),
-                            Data.data(nind,:,:,:,:) = nd;
-                        end
-                    otherwise
+                  case 'gauss'
+                    [Window] = DefaultArgs(varargin,{.05});
+                    if numel(Window)==1,
+                        Window = round(Window.*Data.sampleRate);
+                        Window = Window+double(mod(Window,2)==0);
+                        Window = gausswin(Window)./sum(gausswin(Window));
+                    end
+                    zind = nniz(Data);
+                    Data.data = reshape(Filter0(Window,Data.data),Data.size);
+                    Data.data(zind) = 0;
+                  case 'ButFilter'
+                    [order,freq,flag] = DefaultArgs(varargin,{3,4,'low'});
+                    freq = freq/(Data.sampleRate/2);
+                    nind = ~nniz(Data);
+                    nd = [];
+                    if sum(nind)>0,
+                        nd = Data.data(nind,:,:,:,:);
+                        Data.data(nind,:,:,:,:) = 0;
+                    end
+                    Data.data = ButFilter(Data.data,order,freq,flag);
+                    if ~isempty(nd),
+                        Data.data(nind,:,:,:,:) = nd;
+                    end
+                  otherwise
                 end
-            otherwise
+              otherwise
                 return
-        end
+            end
         end
 
         function out = ne(a,b)
@@ -577,84 +596,83 @@ classdef MTAData < hgsetget
         end
         
         function ind = end(obj,k,n)
-            szd = size(obj.data);
-            if k < n
-                ind = szd(k);
-            else
-                ind = prod(szd(k:end));
+                szd = size(obj.data);
+                if k < n
+                    ind = szd(k);
+                else
+                    ind = prod(szd(k:end));
+                end
             end
-        end
-        
-        function varargout = segs(Data,varargin)
-        %function data = segs(Data,start_points,segment_length,if_not_complete)
-        % Wraper for - > [Segs Complete] = GetSegs(x, StartPoints, SegLen, IfNotComplete);
-        %
-        % extracts multiple segments from a time series x.  x may be a vector
-        % or a matrix, in which case time is on the first dimension, and channel
-        % is the second.
-        %
-        % StartPoints give the starting times of the segments.
-        % SegLen gives the length of the segments.  All segments must be
-        % the same length, and a rectangular array is returned
-        % (dim 1:time within segment, dim 2: segment number, dim 3:channel);
-        %
-        % IfNotComplete specifies what to do if the start or endpoints are outside
-        % of the range of x.  If a value is specified, any out-of-range points
-        % are given that number.  If [] is specified, incomplete segments are not
-        % returned.  A list of complete segments extracted is returned in Complete.
-        % Default value for IfNotComplete: NaN.
-        %
-            [start_points,segment_length,if_not_complete] = ...
-                DefaultArgs(varargin,{1:Data.size(1),round(.5*Data.sampleRate),nan});
-            oriDataSize = Data.size(2:5);
-            if numel(nargout)>1,
-                varargout = cell(1,2);
-            else
-                varargout = cell(1,1);
+            
+            function varargout = segs(Data,varargin)
+            %function data = segs(Data,start_points,segment_length,if_not_complete)
+            % Wraper for - > [Segs Complete] = GetSegs(x, StartPoints, SegLen, IfNotComplete);
+            %
+            % extracts multiple segments from a time series x.  x may be a vector
+            % or a matrix, in which case time is on the first dimension, and channel
+            % is the second.
+            %
+            % StartPoints give the starting times of the segments.
+            % SegLen gives the length of the segments.  All segments must be
+            % the same length, and a rectangular array is returned
+            % (dim 1:time within segment, dim 2: segment number, dim 3:channel);
+            %
+            % IfNotComplete specifies what to do if the start or endpoints are outside
+            % of the range of x.  If a value is specified, any out-of-range points
+            % are given that number.  If [] is specified, incomplete segments are not
+            % returned.  A list of complete segments extracted is returned in Complete.
+            % Default value for IfNotComplete: NaN.
+            %
+                [start_points,segment_length,if_not_complete] = ...
+                    DefaultArgs(varargin,{1:Data.size(1),round(.5*Data.sampleRate),nan});
+                oriDataSize = Data.size(2:5);
+                if numel(nargout)>1,
+                    varargout = cell(1,2);
+                else
+                    varargout = cell(1,1);
+                end
+                [varargout{:}] = reshape(GetSegs(Data.data,start_points,segment_length,if_not_complete),[segment_length,numel(start_points),oriDataSize]);
+
             end
-            [varargout{:}] = reshape(GetSegs(Data.data,start_points,segment_length,if_not_complete),[segment_length,numel(start_points),oriDataSize]);
 
-        end
-
-%         function out = cat(dim,A,B)
-%             if ~isnumeric(A)&&~isnumeric(B)
-%             out = A.copy;
-%             out.data = cat(dim,A.data,B.data);
-%             if dim==1,
-%                     out.sync = cat(1,A.sync,B.sync);
-%             end
-%             else
-%                 out = builtin('cat',dim,A,B);
-%             end
-%         end
-%         
-%         function out = vertcat(varargin)
-%         end
-%         function out = horzcat(varargin)
-%         end
-%         
+            %         function out = cat(dim,A,B)
+            %             if ~isnumeric(A)&&~isnumeric(B)
+            %             out = A.copy;
+            %             out.data = cat(dim,A.data,B.data);
+            %             if dim==1,
+            %                     out.sync = cat(1,A.sync,B.sync);
+            %             end
+            %             else
+            %                 out = builtin('cat',dim,A,B);
+            %             end
+            %         end
+            %         
+            %         function out = vertcat(varargin)
+            %         end
+            %         function out = horzcat(varargin)
+            %         end
+            %         
             
 
-function phs = phase(Data,varargin)
-%function phs = phase(Data,varargin)
-%[freq_range,n] = DefaultArgs(varargin,{[6,12],3});
-    [freq_range,n] = DefaultArgs(varargin,{[6,12],3});
-    tbp = Data.copy;
-    tbp.filter('ButFilter',n,freq_range,'bandpass');
-    tbp_hilbert = Shilbert(Data.data);
-    tbp_phase = phase(tbp_hilbert);
-    DataClass = class(Data);
-    phs = feval(DataClass,'data',tbp_phase,...
-                          'sampleRate',Data.sampleRate,...
-                          'sync',Data.sync.copy,...
-                           'origin',Data.origin);
-end
+            function phs = phase(Data,varargin)
+            %function phs = phase(Data,varargin)
+            %[freq_range,n] = DefaultArgs(varargin,{[6,12],3});
+                [freq_range,n] = DefaultArgs(varargin,{[6,12],3});
+                tbp = Data.copy;
+                tbp.filter('ButFilter',n,freq_range,'bandpass');
+                tbp_hilbert = Shilbert(Data.data);
+                tbp_phase = phase(tbp_hilbert);
+                DataClass = class(Data);
+                phs = feval(DataClass,'data',tbp_phase,...
+                            'sampleRate',Data.sampleRate,...
+                            'sync',Data.sync.copy,...
+                            'origin',Data.origin);
+            end
 
 
     end
     
 
-    
     methods (Abstract)        
         Data = create(Data,varargin);      
     end
