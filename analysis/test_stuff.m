@@ -702,3 +702,44 @@ ignoredViconTrials = [];
 startStopShift = [5,-1];
 xyzSamplingRate = 200.00185;
 Session = MTASession(SessionName,MazeName,overwrite,TTLValue,'xyzSampleRate',xyzSamplingRate);
+
+
+%% Testing MTASession.resync
+xs = MTASession('jg05-20120317').load('xyz');
+xt = MTATrial('jg05-20120317').load('xyz');
+
+figure,
+ts = round(xs.sync.sync(1).*xs.sampleRate)+1:round(xs.sync.sync(1).*xs.sampleRate)+xs.size(1);
+plot(ts',xs(:,7,3)),
+hold on,
+tt = round(xt.sync.sync(1).*xt.sampleRate)+1:round(xt.sync.sync(1).*xt.sampleRate)+xt.size(1);
+plot(tt',xt(:,7,3))
+
+
+
+load(fullfile(Trial.spath,...
+    [Trial.filebase '-walk_fet_ppc.mat']))
+msync = Trial.xyz.sync.copy;
+msync.data = msync.sync.data;
+msync.origin = 0;
+man = MTADfet(Trial.spath,Trial.filebase,...
+               mag,...
+               Trial.xyz.sampleRate,...
+               msync,...
+               msync(1),...
+               [],[],[],'lower_spine_trajectory_yaw_PPC','lsppc','y');
+man.save;
+
+
+man = Trial.load('fet','lsppc');
+
+figure, plot(mag)
+hold on,plot(man.data+0);
+Lines((man.sync.data(:)-man.sync.data(1)).*man.sampleRate,[],'m')
+
+ds = load(Data.fpath);
+
+
+figure,plot(dataEpoch.data)
+hold on,plot(syncEpoch.data)
+err

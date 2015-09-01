@@ -39,11 +39,6 @@ classdef MTADang < MTAData
         function Data = MTADang(varargin)
             [path,filename,data,sampleRate,syncPeriods,syncOrigin,model,type,ext,name,label,key] = ...
                 DefaultArgs(varargin,{[],[],[],[],[],[],[],'TimeSeries','ang',[],'angles','a'});
-            if ~isempty(filename),
-                if ~strcmp(filename(end-3:end),'.mat'),
-                    filename = [filename '.' ext '.mat'];
-                end
-            end
             Data = Data@MTAData(path,filename,data,sampleRate,syncPeriods,syncOrigin,type,ext,name,label,key);
             Data.model = model;
         end

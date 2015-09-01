@@ -294,7 +294,9 @@ classdef MTASession < hgsetget
         % $$$        Data.data = IntersectRanges(Data.data+Data.origin,Data.sync.sync.data+Data.sync.sync.origin-1)-Data.sync.sync(1);
         % $$$             Data.origin = Data.sync.sync(1)+1;
             if Data.origin ~= Data.sync.sync.data(1),
-                indShift = round((Data.origin - Data.sync.sync.data(1))*Data.sampleRate);                  else
+                indShift = round((Data.origin - ...
+                                  Data.sync.sync.data(1))*Data.sampleRate);            
+            else
                 indShift = 0;
             end
             syncp = Data.sync.sync.copy;
@@ -317,7 +319,7 @@ classdef MTASession < hgsetget
             % The periods when the data was recorded
             dataEpoch = Data.sync.copy;
             dataEpoch.cast('TimeSeries',Data.sampleRate,'absolute');
-            dataOrigin = round(Data.origin*Data.sampleRate);
+            dataOrigin = round(Data.sync(1)*Data.sampleRate);
             
             % The periods of data which are already loaded
             loadedData = ones(Data.size(1),1);
@@ -326,7 +328,7 @@ classdef MTASession < hgsetget
             end
             loadedData = cat(1,zeros(dataOrigin,1),loadedData);
             tailbuff = dataEpoch.size(1)-size(loadedData,1);
-            if tailbuff>0,
+            if tailbuff<0,
                 loadedData = cat(1,loadedData,zeros(dataEpoch.size(1)-size(loadedData,1),1));
             else
                 loadedData = loadedData(1:end+tailbuff);
@@ -430,6 +432,7 @@ classdef MTASession < hgsetget
             syncZeroIndex = syncFeature==0;
             
             if ~isempty(syncDataPeriods),
+                keyboard
                 %syncshift = 0;
                 %syncshift = round(Data.sync(1).*Data.sampleRate)-newOrigin-1;
                 %syncshift = Data.sync(1)-newOrigin-1;

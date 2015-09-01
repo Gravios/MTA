@@ -109,6 +109,13 @@ classdef MTAData < hgsetget
     
     methods
         function Data = MTAData(path,filename,data,sampleRate,syncPeriods,syncOrigin,type,ext,name,label,key)
+
+            if ~isempty(filename),
+                if ~strcmp(filename(end-3:end),'.mat'),
+                    filename = [filename '.' ext '.' label '.' key '.mat'];                
+                end
+            end            
+
             Data.filename = filename;
             Data.path = path;
             Data.data = data;
@@ -123,17 +130,17 @@ classdef MTAData < hgsetget
         end
         function out = save(Data,varargin)        
             out = false;
-            data = Data.data;
-            sampleRate = Data.sampleRate;
+            warning('off','MATLAB:structOnObject');
+            Dstruct = struct(Data);
+            warning('on','MATLAB:structOnObject');
             if isempty(varargin),
-                data = Data.data;
-                save(Data.fpath,'data','sampleRate','-v7.3');
-                out = true;
+                sargs = {Data.fpath,'-struct','Dstruct','-v7.3'};
             else
-                data = Data.data;
-                save(varargin{1},'data','sampleRate','-v7.3');
-                out = true;
+                sargs = {varargin{1},'-struct','Dstruct','-v7.3'};
             end
+            save(sargs{:});
+            out = true;
+            
         end
         function Data = load(Data,varargin)
         % Data = load(Data,varargin)
@@ -146,30 +153,45 @@ classdef MTAData < hgsetget
         %
             [Session,filename,syncshift] = DefaultArgs(varargin,{[],[],0});
             if ~isempty(filename),
-                Data.filename = filename;
+                if exist(fullfile(Data.path,filename),'file')
+                    Data.filename = filename;
+                    ds = load(Data.fpath);                    
+                else
+                    files = dir(Data.path);
+                    re = ['\.' Data.ext '\.'];
+                    stsFileList = {files(~cellfun(@isempty,regexp({files.name},re))).name};
+                    
+                    if ~isempty(filename)
+                        re = ['\.' filename '\.'];                   
+                    else
+                        re = ['\.' Data.label '\.'];                   
+                    end
+                    Data.filename = stsFileList{~cellfun(@isempty,regexp(stsFileList,re))};
+                    ds = load(Data.fpath);
+                end
+            else
+                ds = load(Data.fpath);
             end
-            ds = load(Data.fpath);
+            
+            
+            for field = fieldnames(ds)',
+                field = char(field);
+                Data.(field) = ds.(field);
+            end
+            
+
             switch class(Session)
-                case 'MTASession'
-                    Data.data = ds.data;
-                    if isfield(ds,'sampleRate'),
-                        Data.sampleRate = ds.sampleRate;
-                    end
-                    Data.sync.sync = Session.sync.copy;
-                    Session.resync(Data);                    
-                case 'MTATrial'
-                    Data.data = ds.data;
-                    if isfield(ds,'sampleRate'),
-                        Data.sampleRate = ds.sampleRate;
-                    end
-                    Data.sync.sync = Session.sync.copy;
-                    Data.origin = Data.sync.data(1);
-                    Session.resync(Data);                    
-                case 'double'
-                    if ~isempty(Session),
-                        mf = matfile(Data.fpath);
-                        d = ones(1,5);
-                        if Data.isempty,
+              case 'MTASession'
+                Data.sync.sync = Session.sync.copy;
+                Session.resync(Data);                    
+              case 'MTATrial'
+                Data.sync.sync = Session.sync.copy;
+                Session.resync(Data);                    
+              case 'double'
+                if ~isempty(Session),
+                    mf = matfile(Data.fpath);
+                    d = ones(1,5);
+                    if Data.isempty,
                             dsize(1:numel(size(mf,'data'))) = size(mf,'data');
                         else
                             dsize(1:numel(Data.size)) = Data.size;

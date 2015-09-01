@@ -222,7 +222,7 @@ figTitle = 'req20150821_3_JPDF_WAG_PPC_Scontour'
 % DEF Mode: 'ss' -> each state has contour 
 %           'as' -> primary state has contour, all others states
 %                   are merged.
-mode = 'as';
+mode = 'ss';
 
 
 %% Initialize Features
@@ -240,13 +240,7 @@ nfet.data = [diff(nfet.data);0];
 ns = MTADxyz('data',permute(log10(sq(mean(nfet.segs(1:nfet.size(1), ...
                                                   50,nan).^2))),[2,3,4,1]),'sampleRate',xyz.sampleRate);
 
-
-
-load(fullfile(Trial.spath,...
-    [Trial.filebase '-walk_fet_ppc.mat']))
-
-
-
+man = Trial.load('fet','lsppc');
 man.filter('ButFilter',3,1.5,'low');
 
 
@@ -331,7 +325,10 @@ figTitle = 'req20150821_3_JPDF_Bpitch_dUSpitch_Scontour';
 % DEF Mode: 'ss' -> each state has contour 
 %           'as' -> primary state has contour, all others states
 %                   are merged.
-mode = 'as';
+mode = 'ss';
+clims = [0,150];
+contLim = [20,20];
+
 
 % FET assignment 
 fet = Trial.xyz.copy;
@@ -345,7 +342,7 @@ edy = linspace(-5,5,nbiny);
 
 hfig = figure;
 hist2(fet(Trial.stc{'a'},:),edx,edy);
-caxis([0,250])
+caxis(clims)
 
 switch mode
   case 'ss'
@@ -371,11 +368,11 @@ for i = 1:numel(sts),
     o = hist2(fet(ind,:),hedgs{1},hedgs{2});
     F = [.05 .1 .05; .1 .4 .1; .05 .1 .05];
     o = conv2(o,F,'same');
-    contour(X,Y,o',[10,10],'linewidth',2.5,'Color',stc(i))
+    contour(X,Y,o',contLim,'linewidth',2.5,'Color',stc(i))
     lbls{i} = ind.label;
 end
 legend(lbls,'Location','NorthWest');
-title('State Contours');
+title({'State Contours', ['(Contour Sample Limit: ' num2str(contLim) ')']});
 xlabel('pitch_{body} (rad)');
 ylabel('d(pitch_{upper spine})/dt (rad/s)');
 
@@ -391,7 +388,7 @@ saveas(hfig,fullfile(hostPath,[Trial.filebase '_' figTitle '_' mode '.png']),'pn
 %           'as' -> primary state has contour, all others states
 %                   are merged.
 
-mode = 'ss'; %mode = 'as';
+mode = 'as'; %mode = 'as';
 figTitle = 'req20150821_3_JPDF_Bpitch_ladUSpitch_Scontour';
 clims = [0,150];
 contLim = [20,20];
@@ -499,3 +496,4 @@ saveas(hfig,fullfile(hostPath,[Trial.filebase '_req20150821_3_JPDF_LSpitch_USpit
 
 
 
+end
