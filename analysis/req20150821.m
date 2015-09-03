@@ -313,30 +313,30 @@ xyz = Trial.load('xyz');
 ang = create(MTADang,Trial,xyz);
 % FXYZ Filtered Marker Positions {Low Pass 2.5 Hz}
 fxyz = xyz.copy;
-fxyz.filter('ButFilter',3,2.5,'low');
+fxyz.filter('ButFilter',3,1,'low');
 % FANG Filtered Intermarker angles 
 fang = create(MTADang,Trial,fxyz);
 
 
 %% Rear Body pitch vs diff(USpitch)
 
-figTitle = 'req20150821_3_JPDF_Bpitch_dUSpitch_Scontour';
+figTitle = 'req20150821_3_JPDF_USpitch_dUSpitch_Scontour';
 
 % DEF Mode: 'ss' -> each state has contour 
 %           'as' -> primary state has contour, all others states
 %                   are merged.
 mode = 'ss';
 clims = [0,150];
-contLim = [20,20];
+contLim = [10,10];
 
 
 % FET assignment 
 fet = Trial.xyz.copy;
-fet.data = ([fang(:,1,4,2),[diff(fang(:,3,4,2));0]*fang.sampleRate]);
+fet.data = ([fang(:,3,4,2),[diff(fang(:,3,4,2));0]*fang.sampleRate]);
 
 nbinx = 80;
 nbiny = 80;
-edx = linspace(0,pi/2,nbinx);
+edx = linspace(-.8,pi/2,nbinx);
 edy = linspace(-5,5,nbiny);
 
 
@@ -373,7 +373,7 @@ for i = 1:numel(sts),
 end
 legend(lbls,'Location','NorthWest');
 title({'State Contours', ['(Contour Sample Limit: ' num2str(contLim) ')']});
-xlabel('pitch_{body} (rad)');
+xlabel('pitch_{upper spine} (rad)');
 ylabel('d(pitch_{upper spine})/dt (rad/s)');
 
 saveas(hfig,fullfile(hostPath,[Trial.filebase '_' figTitle '_' mode '.eps']),'epsc')
@@ -388,10 +388,10 @@ saveas(hfig,fullfile(hostPath,[Trial.filebase '_' figTitle '_' mode '.png']),'pn
 %           'as' -> primary state has contour, all others states
 %                   are merged.
 
-mode = 'as'; %mode = 'as';
+mode = 'ss'; %mode = 'as';
 figTitle = 'req20150821_3_JPDF_Bpitch_ladUSpitch_Scontour';
 clims = [0,150];
-contLim = [20,20];
+contLim = [10,10];
 
 fet = Trial.xyz.copy;
 fet.data = ([fang(:,3,4,2),log10(abs([diff(fang(:,3,4,2));0]*fang.sampleRate))]);
@@ -495,5 +495,7 @@ saveas(hfig,fullfile(hostPath,[Trial.filebase '_req20150821_3_JPDF_LSpitch_USpit
 
 
 
-
-end
+hfig = figure; hold on;
+plot(fet(Trial.stc{'a'},1),fet(Trial.stc{'a'},2));
+hist2(fet(Trial.stc{'a'},:),edx,edy);
+cpnts = ClusterPP(hfig);
