@@ -1,3 +1,7 @@
+%%REQ requsts for 20150821 
+% status: active
+
+
 
 
 %% REQ #1
@@ -211,97 +215,14 @@ saveas(hfig,fullfile('/storage/gravio/figures/req/req20150821',[Trial.filebase '
 %saveas(hfig,fullfile(Trial.spath,[Trial.filebase '_req20150821_JPDF_WAG_SPEED.eps']),'eps2')
 
 
-%% REQ #3
+%% REQ #3 JPDF with state contours
 
-Trial = MTATrial('jg05-20120317');
-
-
-%% Walking features subspace contours
-figTitle = 'req20150821_3_JPDF_WAG_PPC_Scontour'
-
-% DEF Mode: 'ss' -> each state has contour 
-%           'as' -> primary state has contour, all others states
-%                   are merged.
-mode = 'ss';
-
-
-%% Initialize Features
-xyz = Trial.load('xyz');
-fxyz = xyz.copy;
-fxyz.filter('ButFilter',3,.5,'low');
-nfet = MTADfet(Trial.spath,Trial.filebase,...
-               [diff(sqrt(sum((xyz(:,1,[1,2])-fxyz(:,1,[1,2])).^2,3)));0],...
-               xyz.sampleRate,...
-               Trial.sync.copy,...
-               Trial.sync(1),...
-               [],[],[],'ButtWag','bw','b');
-nfet.filter('ButFilter',3,5,'low');
-nfet.data = [diff(nfet.data);0];
-ns = MTADxyz('data',permute(log10(sq(mean(nfet.segs(1:nfet.size(1), ...
-                                                  50,nan).^2))),[2,3,4,1]),'sampleRate',xyz.sampleRate);
-
-man = Trial.load('fet','lsppc');
-man.filter('ButFilter',3,1.5,'low');
-
-
-nbinx = 80;
-nbiny = 80;
-edx = linspace(-8,-1,nbinx);
-edy = linspace(-.2,1,nbiny);
-
-fet = Trial.xyz.copy;
-fet.data = [ns(:),man(:)];
-% $$$ tag = 'wag_{lower_spine}-vs-speed_{lower_spine}';
-% $$$ bhv_JPDF(Trial,ns,fvel,70,70,[.25,1.6],[1.4,2.5],...
-% $$$          'WagPow_{spine_lower}',...
-% $$$          'Speed_{spine_lower} log10 (cm/s)',{'a-r','r'},...
-% $$$          tag);
-
-hfig = figure;
-hist2(fet(Trial.stc{'a'},:),edx,edy);
-caxis([0,250])
-
-switch mode
-  case 'ss'
-    sts = {'r','w','s','n','m'};
-    stc = 'rwcgm';
-  case 'as'
-    sts = {'r','a-r'};
-    stc = 'rc';
-end
-
-hedgs    = {edx};
-hedgs(2) = {edy};
-edgs    = {edx};
-edgs(2) = {edy};
-[edgs{:}] = get_histBinCenters(edgs);
-[X,Y] = meshgrid(edgs{:});
-lbls = {};
-
-hold on,
-for i = 1:numel(sts),
-    ind = Trial.stc{sts(i)};
-    o = hist2(fet(ind,:),hedgs{1},hedgs{2});
-    F = [.05 .1 .05; .1 .4 .1; .05 .1 .05];
-    o = conv2(o,F,'same');
-    contour(X,Y,o',[20,20],'linewidth',2.5,'Color',stc(i))
-    lbls{i} = ind.label;
-end
-legend(lbls,'Location','NorthWest');
-
-title = 'wag_{lower spine}-vs-PPC_{lower_spine}';
-xlabel('WagPow_{spine lower} (AU)');
-ylabel('PPC_{body} (AU)');
-
-saveas(hfig,fullfile(hostPath,[Trial.filebase '_' figTitle '_' mode '.eps']),'epsc')
-saveas(hfig,fullfile(hostPath,[Trial.filebase '_' figTitle '_' mode '.png']),'png')
+%3.1
 
 
 
 
 
-
-% Pitch upperv
 %% Rearing feature subspace contours
 hostPath = '/gpfs01/sirota/homes/gravio/figures/req/req20150821';
 hostPath = '/storage/gravio/figures/req/req20150821';
@@ -499,3 +420,92 @@ hfig = figure; hold on;
 plot(fet(Trial.stc{'a'},1),fet(Trial.stc{'a'},2));
 hist2(fet(Trial.stc{'a'},:),edx,edy);
 cpnts = ClusterPP(hfig);
+
+
+
+%% REQ #4 Walking Segmentation
+
+
+%% Walking features subspace contours
+figTitle = 'req20150821_3_JPDF_WAG_PPC_Scontour'
+
+% DEF Mode: 'ss' -> each state has contour 
+%           'as' -> primary state has contour, all others states
+%                   are merged.
+mode = 'ss';
+
+
+%% Initialize Features
+xyz = Trial.load('xyz');
+fxyz = xyz.copy;
+fxyz.filter('ButFilter',3,.5,'low');
+nfet = MTADfet(Trial.spath,Trial.filebase,...
+               [diff(sqrt(sum((xyz(:,1,[1,2])-fxyz(:,1,[1,2])).^2,3)));0],...
+               xyz.sampleRate,...
+               Trial.sync.copy,...
+               Trial.sync(1),...
+               [],[],[],'ButtWag','bw','b');
+nfet.filter('ButFilter',3,5,'low');
+nfet.data = [diff(nfet.data);0];
+ns = MTADxyz('data',permute(log10(sq(mean(nfet.segs(1:nfet.size(1), ...
+                                                  50,nan).^2))),[2,3,4,1]),'sampleRate',xyz.sampleRate);
+
+man = Trial.load('fet','lsppc');
+man.filter('ButFilter',3,1.5,'low');
+
+
+nbinx = 80;
+nbiny = 80;
+edx = linspace(-8,-1,nbinx);
+edy = linspace(-.2,1,nbiny);
+
+fet = Trial.xyz.copy;
+fet.data = [ns(:),man(:)];
+% $$$ tag = 'wag_{lower_spine}-vs-speed_{lower_spine}';
+% $$$ bhv_JPDF(Trial,ns,fvel,70,70,[.25,1.6],[1.4,2.5],...
+% $$$          'WagPow_{spine_lower}',...
+% $$$          'Speed_{spine_lower} log10 (cm/s)',{'a-r','r'},...
+% $$$          tag);
+
+hfig = figure;
+hist2(fet(Trial.stc{'a'},:),edx,edy);
+caxis([0,250])
+
+switch mode
+  case 'ss'
+    sts = {'r','w','s','n','m'};
+    stc = 'rwcgm';
+  case 'as'
+    sts = {'r','a-r'};
+    stc = 'rc';
+end
+
+hedgs    = {edx};
+hedgs(2) = {edy};
+edgs    = {edx};
+edgs(2) = {edy};
+[edgs{:}] = get_histBinCenters(edgs);
+[X,Y] = meshgrid(edgs{:});
+lbls = {};
+
+hold on,
+for i = 1:numel(sts),
+    ind = Trial.stc{sts(i)};
+    o = hist2(fet(ind,:),hedgs{1},hedgs{2});
+    F = [.05 .1 .05; .1 .4 .1; .05 .1 .05];
+    o = conv2(o,F,'same');
+    contour(X,Y,o',[20,20],'linewidth',2.5,'Color',stc(i))
+    lbls{i} = ind.label;
+end
+legend(lbls,'Location','NorthWest');
+
+title = 'wag_{lower spine}-vs-PPC_{lower_spine}';
+xlabel('WagPow_{spine lower} (AU)');
+ylabel('PPC_{body} (AU)');
+
+saveas(hfig,fullfile(hostPath,[Trial.filebase '_' figTitle '_' mode '.eps']),'epsc')
+saveas(hfig,fullfile(hostPath,[Trial.filebase '_' figTitle '_' mode '.png']),'png')
+
+
+
+
