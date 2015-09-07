@@ -240,7 +240,7 @@ Trial = MTATrial('jg05-20120317');
 
 xyz = Trial.load('xyz');
 ang = create(MTADang,Trial,xyz);
-% FXYZ Filtered Marker Positions {Low Pass 2.5 Hz}
+% FXYZ Filtered Marker Positions {Low Pass 1 Hz}
 fxyz = xyz.copy;
 fxyz.filter('ButFilter',3,1,'low');
 % FANG Filtered Intermarker angles 
@@ -386,6 +386,7 @@ saveas(hfig,fullfile(hostPath,[Trial.filebase '_' figTitle '_' mode '.png']),'pn
 
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 
+
 fet = Trial.xyz.copy;
 fet.data = [fang(:,1,2,2),fang(:,3,4,2)];
 
@@ -428,8 +429,13 @@ saveas(hfig,fullfile(hostPath,[Trial.filebase '_req20150821_3_JPDF_LSpitch_USpit
 saveas(hfig,fullfile(hostPath,[Trial.filebase '_req20150821_3_JPDF_LSpitch_USpitch_Scontour.png']),'png')
 
 
-
 %% END of REQ #3 %%
+
+
+
+
+
+
 
 
 

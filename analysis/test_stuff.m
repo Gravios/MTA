@@ -742,4 +742,33 @@ ds = load(Data.fpath);
 
 figure,plot(dataEpoch.data)
 hold on,plot(syncEpoch.data)
-err
+
+
+%%%
+xyz = Trial.load('xyz').filter('ButFilter',3,1,'low');
+fang = create(MTADang,Trial,xyz);
+
+
+n = 100;
+eds = linspace(-pi/2,pi/2,n);
+
+ind = Trial.stc{'a'};
+ca = histc(fang(ind,4,5,2),eds);
+
+ind = Trial.stc{'r'};
+cr = histc(fang(ind,4,5,2),eds);
+
+ca = ca/sum(ca(:));
+cr = cr/sum(cr(:));
+
+Ha = -nansum(ca.*log2(ca));
+Hr = -nansum(cr.*log2(cr));
+
+cas = convn(ca,circ_vmpdf(eds),'same');
+crs = convn(cr,circ_vmpdf(eds),'same');
+
+KLa = cas.*log2(cas./crs);
+KLr = crs.*log2(crs./cas);
+
+KLa = nansum(KLa(~isinf(KLa)));
+KLr = nansum(KLr(~isinf(KLr)));
