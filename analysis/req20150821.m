@@ -1,6 +1,11 @@
-%%REQ requsts for 20150821 
+%%REQ requests for 20150821 
 % status: active
 
+% REQ 1.0 Video Example of skeleton and feature phase space
+% REQ 2.0 Err,... some more fanangling with walking features
+% REQ 3.1 Rear Body pitch vs diff(USpitch)
+% REQ 3.2 Rear US pitch vs US log10(abs(diff(ang)))
+% REQ 4.1 Walking Segmentation
 
 
 
@@ -217,7 +222,10 @@ saveas(hfig,fullfile('/storage/gravio/figures/req/req20150821',[Trial.filebase '
 
 %% REQ #3 JPDF with state contours
 
-%3.1
+% REQ 3.1 Rear Body pitch vs diff(USpitch)
+% REQ 3.2 Rear US pitch vs US log10(abs(diff(ang)))
+
+
 
 
 
@@ -240,6 +248,11 @@ fang = create(MTADang,Trial,fxyz);
 
 
 %% Rear Body pitch vs diff(USpitch)
+% REQ 3.1
+%
+% DEF Mode: 'ss' -> each state has contour 
+%           'as' -> primary state has contour, all others states
+%                   are merged.
 
 figTitle = 'req20150821_3_JPDF_USpitch_dUSpitch_Scontour';
 
@@ -261,6 +274,7 @@ edx = linspace(-.8,pi/2,nbinx);
 edy = linspace(-5,5,nbiny);
 
 
+% PLOT JPDF
 hfig = figure;
 hist2(fet(Trial.stc{'a'},:),edx,edy);
 caxis(clims)
@@ -275,6 +289,7 @@ switch mode
 end
 
 
+% PREP Contour vars
 hedgs    = {edx};
 hedgs(2) = {edy};
 edgs    = {edx};
@@ -283,6 +298,7 @@ edgs(2) = {edy};
 [X,Y] = meshgrid(edgs{:});
 lbls = {};
 
+% PLOT Contours
 hold on,
 for i = 1:numel(sts),
     ind = Trial.stc{sts{i}};
@@ -292,11 +308,14 @@ for i = 1:numel(sts),
     contour(X,Y,o',contLim,'linewidth',2.5,'Color',stc(i))
     lbls{i} = ind.label;
 end
+
+% ADD Legend and Labels
 legend(lbls,'Location','NorthWest');
 title({'State Contours', ['(Contour Sample Limit: ' num2str(contLim) ')']});
 xlabel('pitch_{upper spine} (rad)');
 ylabel('d(pitch_{upper spine})/dt (rad/s)');
 
+% SAVE the figure
 saveas(hfig,fullfile(hostPath,[Trial.filebase '_' figTitle '_' mode '.eps']),'epsc')
 saveas(hfig,fullfile(hostPath,[Trial.filebase '_' figTitle '_' mode '.png']),'png')
 
@@ -410,16 +429,9 @@ saveas(hfig,fullfile(hostPath,[Trial.filebase '_req20150821_3_JPDF_LSpitch_USpit
 
 
 
+%% END of REQ #3 %%
 
 
-
-
-
-
-hfig = figure; hold on;
-plot(fet(Trial.stc{'a'},1),fet(Trial.stc{'a'},2));
-hist2(fet(Trial.stc{'a'},:),edx,edy);
-cpnts = ClusterPP(hfig);
 
 
 
@@ -446,7 +458,7 @@ nfet = MTADfet(Trial.spath,Trial.filebase,...
                Trial.sync(1),...
                [],[],[],'ButtWag','bw','b');
 nfet.filter('ButFilter',3,5,'low');
-nfet.data = [diff(nfet.data);0];
+nfet.data = diff(nfet.data);
 ns = MTADxyz('data',permute(log10(sq(mean(nfet.segs(1:nfet.size(1), ...
                                                   50,nan).^2))),[2,3,4,1]),'sampleRate',xyz.sampleRate);
 
@@ -456,16 +468,11 @@ man.filter('ButFilter',3,1.5,'low');
 
 nbinx = 80;
 nbiny = 80;
-edx = linspace(-8,-1,nbinx);
-edy = linspace(-.2,1,nbiny);
+edx = linspace(-9,-1,nbinx);
+edy = linspace(-.2,1.05,nbiny);
 
 fet = Trial.xyz.copy;
 fet.data = [ns(:),man(:)];
-% $$$ tag = 'wag_{lower_spine}-vs-speed_{lower_spine}';
-% $$$ bhv_JPDF(Trial,ns,fvel,70,70,[.25,1.6],[1.4,2.5],...
-% $$$          'WagPow_{spine_lower}',...
-% $$$          'Speed_{spine_lower} log10 (cm/s)',{'a-r','r'},...
-% $$$          tag);
 
 hfig = figure;
 hist2(fet(Trial.stc{'a'},:),edx,edy);
@@ -490,7 +497,7 @@ lbls = {};
 
 hold on,
 for i = 1:numel(sts),
-    ind = Trial.stc{sts(i)};
+    ind = Trial.stc{sts{i}};
     o = hist2(fet(ind,:),hedgs{1},hedgs{2});
     F = [.05 .1 .05; .1 .4 .1; .05 .1 .05];
     o = conv2(o,F,'same');
@@ -508,4 +515,30 @@ saveas(hfig,fullfile(hostPath,[Trial.filebase '_' figTitle '_' mode '.png']),'pn
 
 
 
+
+
+
+
+%% RESTING - check this space when the new jg05-20120317 labeling is finished
+
+vel = xyz.copy;
+vel = xyz.vel([1],[1,2]);
+vel.filter('ButFilter',3,2.5,'low');
+vel.data(vel.data<0) = .01;
+vel.data = log10(vel.data);
+
+fet = Trial.xyz.copy;
+fet.data = [vel(:,1),sum([circ_dist(fang(:,1,2,2),fang(:,2,3,2)),circ_dist(fang(:,2,3,2),fang(:,3,4,2))],2)];
+
+nbinx = 80;
+nbiny = 80;
+edx = linspace(-.8,2,nbiny);
+edy = linspace(-.4,pi,nbinx);
+
+
+
+hfig = figure;
+hist2(fet(Trial.stc{'w'},:),edx,edy);
+%colormap jet
+caxis([0,300])
 
