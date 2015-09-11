@@ -548,3 +548,21 @@ hist2(fet(Trial.stc{'w'},:),edx,edy);
 %colormap jet
 caxis([0,300])
 
+
+figure,plot(mean(xyz(:,1:4,3),2))
+
+
+ind = Trial.stc{'z'};
+figure,
+hist2([man(ind),log10(sum(xyz(ind,[1:5,7],3),2))],...
+       linspace(-.2,1,100),linspace(2.2,3,100)),
+caxis([0,400])
+
+ind = Trial.stc{'s'};
+figure,
+hist2([ang(ind,4,5,2),log10(sum(xyz(ind,[1:5,7],3),2))],...
+       linspace(-.2,pi/2,100),linspace(2.2,3,100)),
+caxis([0,400])
+
+
+
