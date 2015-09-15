@@ -50,7 +50,7 @@ xyz.addMarker('fhcom',[.7,0,.7],{{'spine_lower','pelvis_root','spine_middle','sp
 % ANG InterMarker Spherical Coordinates
 ang = create(MTADang,Trial,xyz);
 
-figure,plot(circ_dist(circshift(ang(:,10,12,1),-2),circshift(ang(:,10,12,1),2)))
+%figure,plot(circ_dist(circshift(ang(:,10,12,1),-2),circshift(ang(:,10,12,1),2)))
 
 % FANG Filtered Intermarker angles 
 fang = create(MTADang,Trial,fxyz);
@@ -1844,7 +1844,7 @@ mv.data = circshift(log10(1./permute(mean(m.segs(1:m.size(1),wn,nan).^2),[2,3,4,
 
 figure,hold on
 eds = linspace(-1.5,3,100);
-ind = Trial.stc{'a'};
+ind = Trial.stc{'a-w-n-r'};
 hn = bar(eds,histc(mv(ind),eds),'histc');
 hn.FaceColor = 'c';
 hn.FaceAlpha = .6;
@@ -1871,8 +1871,8 @@ eds = linspace(-1.5,3,100);
 edy = linspace(-.8,2,100);
 ind = Trial.stc{'a'};
 ind = Trial.stc{'w'};
-ind = Trial.stc{'a-w'};
-ind = Trial.stc{'m'};
+% $$$ ind = Trial.stc{'a-w'};
+% $$$ ind = Trial.stc{'m'};
 figure,
 hist2([mv(ind),fvel(ind,1)],eds,edy)
 caxis([0,50])
@@ -1930,7 +1930,7 @@ p
 eds = linspace(-5,.5,100);
 edy = linspace(-.2,1,100);
 ind = Trial.stc{'a'};
-ind = Trial.stc{'a-n'};
+nnnind = Trial.stc{'a-n'};
 ind = Trial.stc{'n'};
 ind = Trial.stc{'w'};
 ind = Trial.stc{'a-w-n'};
@@ -1983,14 +1983,14 @@ hs.EdgeAlpha = 0;
 
 
 figure,hold on
-eds = linspace(-2,1,100);
-ind = Trial.stc{'a-w'};
-hn = bar(eds,histc(bfet(ind,10),eds),'histc');
+eds = linspace(0,2,100);
+ind = Trial.stc{'a-w-n-r'};
+hn = bar(eds,histc(log10(bfet(ind,1)+1),eds),'histc');
 hn.FaceColor = 'c';
 hn.FaceAlpha = .6;
 hn.EdgeAlpha = 0;
 ind = Trial.stc{'w'};
-hs = bar(eds,histc(bfet(ind,10),eds),'histc');
+hs = bar(eds,histc(log10(bfet(ind,1)+1),eds),'histc');
 hs.FaceColor = 'r';
 hs.FaceAlpha = .6;
 hs.EdgeAlpha = 0;
@@ -1999,11 +1999,11 @@ hs.EdgeAlpha = 0;
 
 
 edx = linspace(-.8,2,100);
-edy = linspace(-2,1,100);
+edy = linspace(0,1.5,100);
 
-ind = Trial.stc{'w'};
-figure,hist2([fvel(ind,1),bfet(ind,1)],edx,edy);
-caxis([0,900])
+ind = Trial.stc{'a'};
+figure,hist2([fvel(ind,1),log10(bfet(ind,1)+1)],edx,edy);
+caxis([0,200])
 
 
 
@@ -2046,4 +2046,3 @@ hist2([nn(ind),ns(ind,1)],edx,edy);
 caxis([0,200])
 
 
-feature_calc_script
