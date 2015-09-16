@@ -42,10 +42,11 @@ xyz.addMarker('acom',[.7,0,.7],{{'spine_lower','pelvis_root','spine_middle','spi
 % $$$ fbcom.filter('ButFilter',3,2.5,'low');
 
 % FXYZ Filtered Marker Positions {Low Pass 2.5 Hz}
-fxyz = xyz.copy;
-fxyz.filter('ButFilter',3,.5,'low');
 
 xyz.addMarker('fhcom',[.7,0,.7],{{'spine_lower','pelvis_root','spine_middle','spine_upper','head_back','head_front',[0,0,255]}},fxyz(:,10,:));
+
+fxyz = xyz.copy;
+fxyz.filter('ButFilter',3,.5,'low');
 
 % ANG InterMarker Spherical Coordinates
 ang = create(MTADang,Trial,xyz);
@@ -1368,58 +1369,106 @@ dp = abs((nanmean(signal)-nanmean(noise))/(.5*sqrt(nanvar(signal)+nanvar(noise))
 
 
 bb =bsxfun(@minus,[circshift(xyz(:,1,:),-30),circshift(xyz(:,1,:),30)],xyz(:,1,:));
-figure,plot((sqrt(sum(diff(sq(cross(bb(:,1,:),bb(:,2,:),3))).^2,2))))
-Lines(Trial.stc{'w'}(:),[],'m');
 
-hold on,plot(sqrt(sum(sq(diff(bb(:,1,:)).^2),2)).*100)
-
-sg = sqrt(sum(diff(sq(cross(bb(:,1,:),bb(:,2,:),3))).^2,2));
-wsg = zeros([size(sg,1),1]);
-wsg(nniz(sg)) = WhitenSignal(sg(nniz(sg)));
-[ys,fs,ts] = mtchglong(wsg,2^8,xyz.sampleRate,2^7,2^7*.875,[],[],[],[1,20]);
-
-figure,imagesc(ts,fs,log10(ys)'),axis xy,colormap jet
-
-
-mfet = Trial.xyz.copy;
-mfet.data = sqrt(sum(diff(sq(cross(bb(:,1,:),bb(:,2,:),3))).^2,2));
-mfet.filter('ButFilter',3,8,'low');
-mfet.data = diff(mfet.data);
-mfet.data = log10(mean((mfet.segs(1:mfet.size(1),40,nan).^2))');
+% $$$ %figure,plot((sqrt(sum(diff(sq(cross(bb(:,1,:),bb(:,2,:),3))).^2,2))))
+% $$$ %Lines(Trial.stc{'w'}(:),[],'m');
+% $$$ %hold on,plot(sqrt(sum(sq(diff(bb(:,1,:)).^2),2)).*100)
+% $$$ 
+% $$$ [mode,wsig,sampleRate,,overwrite] = ...
+% $$$      DefaultArgs(varargin,{'raw',true,120,...
+% $$$ 
+% $$$ defspec = struct('nFFT',2^7,'Fs',fet.sampleRate,...
+% $$$                  'WinLength',2^6,'nOverlap',2^6*.875,...
+% $$$                  'FreqRange',[1,20]);                    
+% $$$ sg = MTADxyz('data',sqrt(sum(diff(sq(cross(bb(:,1,:),bb(:,2,:),3))).^2,2)),'sampleRate',xyz.sampleRate);
+% $$$ [ys,fs,ts] = fet_spec(Trial,sg,'mtchglong',false);
+% $$$ 
+% $$$ %figure,imagesc(ts,fs,log10(ys)'),axis xy,colormap jet
+                    
+ya = ys.copy;
+ya.data = log10(nanmean(ys.data,2));
 
 eds= linspace(-9,4,200);
 figure,hold on
 ind = Trial.stc{'a-w-r'};
-noise = mfet(ind);
+noise = ya(ind);
 ha = bar(eds,histc(noise,eds),'histc');
 ha.FaceColor = 'c';
 ha.FaceAlpha = .3;
 ha.EdgeAlpha = 0;
 
 ind = Trial.stc{'w'};
+signal = ya(ind);
+hs = bar(eds,histc(signal,eds),'histc');
+hs.FaceColor = 'r';
+hs.FaceAlpha = .3;
+hs.EdgeAlpha = 0;
+ 
+                    
+
+
+% $$$ dps = [];
+% $$$ for sh = 5:5:70;
+% $$$     dp = [];
+% $$$     for fv  = .5:.25:4,
+
+sh = 40;
+fv = 2.5;
+
+
+        bb =bsxfun(@minus,[circshift(xyz(:,1,:),-sh),circshift(xyz(:,1,:),sh)],xyz(:,1,:));
+        mfet = Trial.xyz.copy;
+        mfet.data = sqrt(sum(diff(sq(cross(bb(:,1,:),bb(:,2,:),3))).^2,2));
+        mfet.filter('ButFilter',3,fv,'low');
+        mfet.data(mfet.data<0) = 1e-9;
+        mfet.data = log10(mfet.data);
+% $$$ mfet.data = diff(mfet.data);
+% $$$ mfet.data = log10(mean((mfet.segs(1:mfet.size(1),35,nan).^2))');
+
+eds= linspace(0,3,200);
+eds= linspace(-4,3,200);
+figure,hold on
+ind = Trial.stc{'a-w-r-n'};
+noise = mfet(ind);
+ha = bar(eds,histc(noise,eds),'histc');
+ha.FaceColor = 'c';
+ha.FaceAlpha = .3;
+ha.EdgeAlpha = 0;
+
+ind = Trial.stc{'a&w'};
 signal = mfet(ind);
 hs = bar(eds,histc(signal,eds),'histc');
 hs.FaceColor = 'r';
 hs.FaceAlpha = .3;
 hs.EdgeAlpha = 0;
 
+dp = abs((nanmean(signal)-nanmean(noise))/(.5*sqrt(nanvar(signal)+nanvar(noise))));
+% $$$         dp(end+1) = abs((nanmean(signal)-nanmean(noise))/(.5*sqrt(nanvar(signal)+nanvar(noise))));
+% $$$     end
+% $$$     dps = cat(1,dps,dp);
+% $$$ end
 
-ads = linspace(-9,4,100);
+man = Trial.load('fet','lsppc');
+man.filter('ButFilter',3,2,'low');
+
+ads = linspace(-4,3,100);
 eds = linspace(-.2,1,100);
 
 figure,
 subplot(121)
-ind = Trial.stc{'a-r-w-k-n'};
+ind = Trial.stc{'a-r-w-n'};
 hist2([mfet(ind,1),man(ind)],ads,eds)
 caxis([0,100])
 subplot(122)
-ind = Trial.stc{'w'};
+ind = Trial.stc{'a&n'};
 hist2([mfet(ind,1),man(ind)],ads,eds)
 caxis([0,100])
 
+
+eds = linspace(-.8,2,100);
 figure,
-ind = Trial.stc{'m'};
-hist2([mfet(ind,1),man(ind)],ads,eds)
+ind = Trial.stc{'r'};
+hist2([mfet(ind,1),fvel(ind,1)],ads,eds)
 caxis([0,200])
 
 ads = linspace(-.2,1,100);
@@ -1436,6 +1485,57 @@ caxis([0,200])
 
 Lines(Trial.stc{'w'}(:),[],'m');
 
+
+
+
+
+
+sh = 1;
+figure,plot(sqrt(sum(cross(circshift(xyz(:,1,:),-sh)-circshift(xyz(:,1,:),sh),fxyz(:,4,:)-fxyz(:,1,:)).^2,3)))
+hold on,plot(sqrt(sum(cross(circshift(xyz(:,1,:),-sh)-circshift(xyz(:,1,:),sh),fxyz(:,7,:)-fxyz(:,1,:)).^2,3)))
+Lines(Trial.stc{'w'}(:),[],'m');
+
+figure,plot(dot(circshift(xyz(:,1,[1,2]),-sh)-circshift(xyz(:,1,[1,2]),sh),fxyz(:,4,[1,2])-fxyz(:,1,[1,2]),3))
+
+nfet = MTADxyz('data',dot(repmat(circshift(xyz(:,1,[1,2]),-sh)-circshift(xyz(:,1,[1,2]),sh),[1,5,1]),fxyz(:,[2:5,7],[1,2])-repmat(fxyz(:,1,[1,2]),[1,5,1]),3),'sampleRate',Trial.xyz.sampleRate);
+nfet.filter('ButFilter',3,2.4,'low');
+% $$$ hold on,plot(nfet.data);
+% $$$ Lines(Trial.stc{'w'}(:),[],'m');
+
+nfet.data = log10(abs(nanmean(nfet.data,2))+1).*sign(nanmean(nfet.data,2));
+
+%nfet.data = log10(var(nfet.data,[],2)).*sign(nanmean(nfet.data,2));
+
+figure,
+ind = Trial.stc{'n'};
+hist2([nfet(ind,1),man(ind)],linspace(-4,4,100),linspace(-.2,1,100));
+caxis([0,100])
+
+figure,
+ind = Trial.stc{'a-r-n-w'};
+hist2([nfet(ind,1),log10(mfet(ind))],linspace(-4,5,100),linspace(-4,5,100));
+caxis([0,300])
+
+
+eds= linspace(-5,6,200);
+figure,hold on
+ind = Trial.stc{'a-w-r-n'};
+noise = nfet(ind,1);
+ha = bar(eds,histc(noise,eds),'histc');
+ha.FaceColor = 'c';
+ha.FaceAlpha = .5;
+ha.EdgeAlpha = 0;
+
+ind = Trial.stc{'w'};
+signal = nfet(ind,1);
+hs = bar(eds,histc(signal,eds),'histc');
+hs.FaceColor = 'r';
+hs.FaceAlpha = .4;
+hs.EdgeAlpha = 0;
+
+
+
+dp = abs((nanmean(signal)-nanmean(noise))/(.5*sqrt(nanvar(signal)+nanvar(noise))));
 
 %% BUTT WAG
 
@@ -1601,6 +1701,8 @@ tang = MTADang('data',circ_dist(circshift(fang(:,1,4,1),tsh),circshift(fang(:,1,
 tsh = 20;
 tang = MTADang('data',circ_dist(circshift(ang(:,1,4,1),tsh),circshift(ang(:,1,4,1),-tsh)),...
                'sampleRate',ang.sampleRate);
+
+
 
 
 eds= linspace(-3,.8,200);
@@ -1772,15 +1874,16 @@ plot(ts,scpow)
 
 tsh = 1;
 afet = Trial.xyz.copy;
+afet.data = xyz(:,:,[1,2])-fxyz(:,:,[1,2]);
 bfet = Trial.xyz.copy;
-afet.data = circshift(xyz(:,:,[1,2]),-tsh)-circshift(fxyz(:,:,[1,2]),tsh);
+%afet.data = circshift(xyz(:,:,[1,2]),-tsh)-circshift(fxyz(:,:,[1,2]),tsh);
 afet.data = reshape(afet.data,[],2);
 aft = mat2cell(afet.data,size(afet,1),[1,1]);
 [afet.data,bfet.data] = cart2pol(aft{:});
 afet.data = reshape(afet.data,[],xyz.size(2));
 bfet.data = reshape(bfet.data,[],xyz.size(2));
 
-bfet.filter('ButFilter',3,2.3,'low');
+%bfet.filter('ButFilter',3,2.3,'low');
 
 
 Mang = MTADfet(Trial.spath,Trial.filebase,...
