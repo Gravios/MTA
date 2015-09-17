@@ -2,8 +2,8 @@
 
 Trial = MTATrial('jg05-20120310');
 Trial = MTATrial('jg05-20120317');
-hostPath = '/gpfs01/sirota/homes/gravio/figures/labelBhv_rev1/';
-hostPath = '/storage/gravio/figures/labelBhv_rev1/';
+%hostPath = '/gpfs01/sirota/homes/gravio/figures/labelBhv_rev1/';
+%hostPath = '/storage/gravio/figures/labelBhv_rev1/';
 
 
 % $$$ Trial = MTATrial('jg05-20120310');
@@ -42,11 +42,15 @@ xyz.addMarker('acom',[.7,0,.7],{{'spine_lower','pelvis_root','spine_middle','spi
 % $$$ fbcom.filter('ButFilter',3,2.5,'low');
 
 % FXYZ Filtered Marker Positions {Low Pass 2.5 Hz}
+fxyz = xyz.copy;
+fxyz.filter('ButFilter',3,2.5,'low');
+
 
 xyz.addMarker('fhcom',[.7,0,.7],{{'spine_lower','pelvis_root','spine_middle','spine_upper','head_back','head_front',[0,0,255]}},fxyz(:,10,:));
 
 fxyz = xyz.copy;
-fxyz.filter('ButFilter',3,.5,'low');
+fxyz.filter('ButFilter',3,2.5,'low');
+
 
 % ANG InterMarker Spherical Coordinates
 ang = create(MTADang,Trial,xyz);
