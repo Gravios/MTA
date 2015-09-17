@@ -6,15 +6,6 @@ Trial = MTATrial('jg05-20120317');
 %hostPath = '/storage/gravio/figures/labelBhv_rev1/';
 
 
-% $$$ Trial = MTATrial('jg05-20120310');
-% $$$ Trial = MTATrial('Ed05-20140528');
-% $$$ Trial = MTATrial('Ed01-20140709');
-% $$$ Trial = MTATrial('Ed03-20140625');
-% $$$ Trial = MTATrial('Ed03-20140625');
-% $$$ Trial = MTATrial('er01-20110719');
-% $$$ Trial = MTATrial('g10-20130415');
-
-
 % XYZ Positions of Markers
 xyz = Trial.load('xyz');
 
@@ -25,21 +16,6 @@ xyz.addMarker('hcom',[.7,0,.7],{{'head_back','head_front',[0,0,255]}},xyz.com(rb
 rba = xyz.model.rb({'spine_lower','pelvis_root','spine_middle','spine_upper','head_back','head_front'});
 xyz.addMarker('acom',[.7,0,.7],{{'spine_lower','pelvis_root','spine_middle','spine_upper','head_back','head_front',[0,0,255]}},xyz.com(rba));
 
-
-% COM Body Center of Mass
-% $$$ bcom = MTADfet(Trial.spath,...
-% $$$                [],...
-% $$$                sq(xyz.com(rbb)),...
-% $$$                xyz.sampleRate,...
-% $$$                xyz.sync.copy,...
-% $$$                xyz.origin,...
-% $$$                [],[],[],...
-% $$$                'bodyCOM',...
-% $$$                'bcom',...
-% $$$                'b');
-% $$$ 
-% $$$ fbcom = bcom.copy;
-% $$$ fbcom.filter('ButFilter',3,2.5,'low');
 
 % FXYZ Filtered Marker Positions {Low Pass 2.5 Hz}
 fxyz = xyz.copy;
@@ -84,167 +60,204 @@ uvel.data = log10(uvel.data);
 
 %% End Var Setup
 
-% $$$ 
-% $$$ %% Rearing
-% $$$ 
-% $$$ llist = {};
-% $$$ figure,hold on
-% $$$ 
-% $$$ ts = [1:xyz.size(1)]/xyz.sampleRate;
-% $$$ llist{end+1} = 'upper spine pitch';    % Pitch of marker set {'spine_middle','spine_upper'} 
-% $$$ plot(ts,nunity(fang(:,3,4,2)))
-% $$$ llist{end+1} = 'd(upper spine pitch)/dt';   % Pitch of marker set {'spine_middle','spine_upper'} 
-% $$$ plot(ts(1:end-1),nunity(diff(fang(:,3,4,2))))
-% $$$ 
-% $$$ llist{end+1} = 'head height';          % displacement in z-axis relative to floor
-% $$$ plot(ts,nunity(fxyz(:,5,3)))
-% $$$ llist{end+1} = 'd(head height)/dt';    % first derivative of low passed filtered head hight
-% $$$ plot(ts(1:end-1),nunity(diff(fxyz(:,5,3))))
-% $$$ 
-% $$$ llist{end+1} = 'xdist(SL-SU)';         % first derivative of low passed filtered head hight
-% $$$ plot(ts,nunity(cos(fang(:,1,4,2)).*fang(:,1,4,3)));
-% $$$ llist{end+1} = 'd(xdist(SL-SU))/dt';   % first derivative of low passed filtered head hight
-% $$$ plot(ts(1:end-1),nunity(diff(cos(fang(:,1,4,2)).*fang(:,1,4,3))));
-% $$$ 
-% $$$ legend(llist)
-% $$$ Lines(Trial.stc{'r',1}(:),[],'r');
-% $$$ 
-% $$$ 
-% $$$ 
-% $$$ 
-% $$$ ts = (1:xyz.size(1))/xyz.sampleRate;
-% $$$ 
-% $$$ hfig = figure(394883484);
-% $$$ imagesc(ts,1:6,...
-% $$$ [nunity(fang(:,3,4,2)),...
-% $$$ nunity([diff(fang(:,3,4,2));0]),...
-% $$$ nunity(fxyz(:,5,3)),...
-% $$$ nunity([diff(fxyz(:,5,3));0]),...
-% $$$ nunity(cos(fang(:,1,4,2)).*fang(:,1,4,3)),...
-% $$$ nunity([diff(cos(fang(:,1,4,2)).*fang(:,1,4,3));0])]');
-% $$$ Lines(Trial.stc{'r',1}(:),[],'r');
-% $$$ haxe = gca;
-% $$$ caxis([-5,5]);
-% $$$ xlim([600,625]);
-% $$$ xlabel('Time (s)');
-% $$$ haxe.YTickLabelMode = 'manual';
-% $$$ haxe.YTickLabel = llist;
-% $$$ title('Rearing Examples');
-% $$$ 
-% $$$ 
-% $$$ fet = xyz.copy;
-% $$$ fet.data = nunity([cos(fang(:,1,4,2)).*fang(:,1,4,3),[diff(cos(fang(:,1,4,2)).*fang(:,1,4,3));0]]);
-% $$$ fet.data = nunity([fxyz(:,5,3),[diff(fxyz(:,5,3));0]]);
-% $$$ fet.data = nunity([fang(:,3,4,2),[diff(fang(:,3,4,2));0]]);
-% $$$ fet.data = nunity([fxyz(:,5,3),[diff(fang(:,3,4,2));0]]);
-% $$$ fet.data = nunity([fxyz(:,5,3),fang(:,3,4,2)]);
-% $$$ 
-% $$$ fet.data = nunity([fxyz(:,5,3),[diff(fang(:,3,4,2));0]]);
-% $$$ figure,
-% $$$ ind = Trial.stc{'a'};
-% $$$ hist2(fet(ind,:),-2:.1:4.5,-6:.1:6);
-% $$$ caxis([0,200])
-% $$$ 
-% $$$ %% FF
-% $$$ % Height VS d(USpineAng)/dt
-% $$$ fet.data = nunity([fxyz(:,5,3),[diff(fang(:,3,4,2));0]]);
-% $$$ figure,
-% $$$ ind = Trial.stc{'a'};
-% $$$ hist2(fet(ind,:),-2:.1:4.5,-6:.1:6);
-% $$$ caxis([0,100]);
-% $$$ hold on,plot(fet(Trial.stc{'r'}(11,:),1),fet(Trial.stc{'r'}(11,:),2),'m');
-% $$$ hold on,plot(fet(Trial.stc{'r'}(21,:),1),fet(Trial.stc{'r'}(21,:),2),'m');
-% $$$ hold on,plot(fet(Trial.stc{'r'}(41,:),1),fet(Trial.stc{'r'}(41,:),2),'m');
-% $$$ hold on,plot(fet(Trial.stc{'r'}(:,1),1),fet(Trial.stc{'r'}(:,1),2),'*c');
-% $$$ hold on,plot(fet(Trial.stc{'r'}(:,2),1),fet(Trial.stc{'r'}(:,2),2),'*y');
-% $$$ xlabel('Head Height normalized (AU)');
-% $$$ ylabel('d(BMBUp_i_t_c_h normalized (AU)');
-% $$$ legend({'rear trajectory'})
-% $$$ 
-% $$$ 
-% $$$ % Height VS d(height)/dt
-% $$$ fet = xyz.copy;
-% $$$ fet.data = [fxyz(:,5,3),[log10(abs(diff(fxyz(:,5,3))));0]];
-% $$$ figure,
-% $$$ ind = Trial.stc{'r'};
-% $$$ hist2(fet(ind,:),...
-% $$$       60:2:270,...
-% $$$       -4:.1:1);
-% $$$ caxis([0,200])
-% $$$ 
-% $$$ % USpineAng VS d(USpineAng)/dt
-% $$$ fet = xyz.copy;
-% $$$ fet.data = [fang(:,3,4,2),[log10(abs(diff(fang(:,3,4,2))));0]];
-% $$$ figure,
-% $$$ ind = Trial.stc{'r'};
-% $$$ hist2(fet(ind,:),...
-% $$$       -1:.05:1.8,...
-% $$$       -6:.05:-1);
-% $$$ caxis([0,200])
-% $$$ 
-% $$$ % xydist(LSUS) VS d(xydist(LSUS))/dt
-% $$$ fet = xyz.copy;
-% $$$ fet.data = [cos(fang(:,1,4,2)).*fang(:,1,4,3),[0;log10(abs(diff(diff(fang(:,1,4,2)))));0]];
-% $$$ figure,
-% $$$ ind = Trial.stc{'a'};
-% $$$ hist2(fet(ind,:),...
-% $$$       40:1:160,...
-% $$$       -8:.1:-3);
-% $$$ caxis([0,200])
-% $$$ 
-% $$$ % Height VS d(xydist(LSUS))/dt
-% $$$ fet = xyz.copy;
-% $$$ fet.data = [fxyz(:,5,3),[log10(abs(diff(cos(fang(:,1,4,2)).*fang(:,1,4,3))));0]];
-% $$$ figure,
-% $$$ ind = Trial.stc{'r'};
-% $$$ hist2(fet(ind,:),...
-% $$$       60:2:270,...
-% $$$       -5:.1:.5);
-% $$$ caxis([0,200])
-% $$$ 
-% $$$ % Height VS d(xydist(LSUS))/dt
-% $$$ fet = xyz.copy;
-% $$$ fet.data = [fxyz(:,5,3),[log10(abs(diff(cos(fang(:,1,4,2)).*fang(:,1,4,3))));0]];
-% $$$ figure,
-% $$$ ind = Trial.stc{'r'};
-% $$$ hist2(fet(ind,:),...
-% $$$       60:2:270,...
-% $$$       -5:.1:.5);
-% $$$ caxis([0,200])
-% $$$ 
+
+
 
 %% Definition of Rearing
-% Rat rears up on it's hind legs
-% Starting with hind and fore limbs contacting the ground
+% Rat stands on its hind legs and elevates the head about 10 cm.
+% 
+% Features
 %
-% The spine straighten as the rat center of mass moves over the
-% hind limbs
+%     1.  Pitch of the line created by the end junctions of the thoracie
+%         vertebrae (upper spine)
+%
+%     2.  Change of upper spine pitch with respect to time
+%
+%     3.  Height of the head relative to marker above the junction
+%         between the Sacral and caudal vertebrae (lower spine)
+%
+%     4.  Horizontal distance between the upper and lower spine
 %
 
 
-% Primary feature - height
+% Rear: Feature 1
+
+% Time Series
+eind = 1; % Event index
+rind = [Trial.stc{'r'}(eind,1)-120:Trial.stc{'r'}(eind,2)+120];
+ts = rind./fang.sampleRate;
+figure,plot(ts,fang(rind,'spine_middle','spine_upper',2))
+xlabel('Time (s)')
+ylabel('Pitch Body Middle to Upper (radians)')
+title ('Rear: Feature 1');
+ylim([-.8,pi/2])
+Lines(ts([121,end-120]),[],'r');
+
+% pdfs for rear vs not rear
+figure,hold on
+eds = linspace(-.8,pi/2,100);
 ind = Trial.stc{'a-r'};
-DetSFet = fxyz(ind,5,3)-fxyz(ind,1,3);
-DetSThresh = prctile(DetSFet,99.99); % 150mm
-DetSFet = fxyz(:,5,3)-fxyz(:,1,3);
-Sper = ThreshCross(DetSFet,DetSThresh,1);
-
-MaxFet = [];
-for i = Sper',
-    
-end
-
-
-    
-% Secondary feature - first derivative of height with respect to time
-
-
+hn = bar(eds,histc(fang(ind,3,4,2),eds)./sum(diff(ind.data,1,2)),'histc');
+hn.FaceColor = 'c';
+hn.FaceAlpha = .6;
+hn.EdgeAlpha = 0;
+ind = Trial.stc{'r'};
+hs = bar(eds,histc(fang(ind,3,4,2),eds)./sum(diff(ind.data,1,2)),'histc');
+hs.FaceColor = 'r';
+hs.FaceAlpha = .6;
+hs.EdgeAlpha = 0;
+xlabel('Pitch Body Middle to Upper (radians)');
+ylabel('p_{pitch}');
+title ('PDF of Rear vs not Rear');
+legend({'Not Rear','Rear'});
 
 
 
-figure,plot(fxyz(:,5,3)-fxyz(:,1,3))
+% Rear: Feature 2
 
-figure,plot(fang(:,1,3,2));
+% Time Series
+eind = 1; % Event index
+rind = [Trial.stc{'r'}(eind,1)-120:Trial.stc{'r'}(eind,2)+120];
+ts = rind(2:end)./fang.sampleRate;
+vfang = MTADang('data',diff(fang(:,'spine_middle','spine_upper',2)).*fang.sampleRate,'sampleRate',fang.sampleRate);
+figure,plot(ts,vfang.data)
+xlabel('Time (s)')
+ylabel('d(Pitch)/dt Body Middle to Upper (rad/sec)')
+title ('Rear: Feature 2');
+ylim([-6,6])
+Lines(ts([121,end-120]),[],'r');
+
+% pdfs for rear vs not rear
+figure,hold on
+eds = linspace(-6,6,100);
+ind = Trial.stc{'a-r'};
+hn = bar(eds,histc(vfang(ind),eds)./sum(diff(ind.data,1,2)),'histc');
+hn.FaceColor = 'c';
+hn.FaceAlpha = .6;
+hn.EdgeAlpha = 0;
+ind = Trial.stc{'r'};
+hs = bar(eds,histc(vfang(ind),eds)./sum(diff(ind.data,1,2)),'histc');
+hs.FaceColor = 'r';
+hs.FaceAlpha = .6;
+hs.EdgeAlpha = 0;
+xlabel('d(Pitch)/dt Body Middle to Upper (rad/sec)')
+ylabel('p_{d(pitch)/dt}');
+title ('PDF of Rear vs not Rear');
+legend({'Not Rear','Rear'});
+
+
+
+% Rear: Feature 2 alt
+
+% Time Series
+eind = 1; % Event index
+rind = [Trial.stc{'r'}(eind,1)-120:Trial.stc{'r'}(eind,2)+120];
+ts = rind(1:end)./fang.sampleRate;
+vfang = MTADang('data',log10(abs(diff(fang(:,'spine_middle','spine_upper',2)).*fang.sampleRate)),'sampleRate',fang.sampleRate);
+figure,plot(ts,vfang(rind))
+xlabel('Time (s)')
+ylabel('log10(abs(d(Pitch)/dt)) Body Middle to Upper (rad/sec)')
+title ('Rear: Feature 2 alt');
+ylim([-3,1])
+Lines(ts([121,end-120]),[],'r');
+
+% pdfs for rear vs not rear
+figure,hold on
+eds = linspace(-5,1,100);
+ind = Trial.stc{'a-r'};
+hn = bar(eds,histc(vfang(ind),eds)./sum(diff(ind.data,1,2)),'histc');
+hn.FaceColor = 'c';
+hn.FaceAlpha = .6;
+hn.EdgeAlpha = 0;
+ind = Trial.stc{'r'};
+hs = bar(eds,histc(vfang(ind),eds)./sum(diff(ind.data,1,2)),'histc');
+hs.FaceColor = 'r';
+hs.FaceAlpha = .6;
+hs.EdgeAlpha = 0;
+xlabel('d(Pitch)/dt Body Middle to Upper (rad/sec)')
+ylabel('p_{d(pitch)/dt}');
+title ('PDF of Rear vs not Rear');
+legend({'Not Rear','Rear'},'location','northwest');
+
+
+
+
+
+% Rear: Feature 3
+
+% Time Series
+eind = 1; % Event index
+rind = [Trial.stc{'r'}(eind,1)-120:Trial.stc{'r'}(eind,2)+120];
+ts = rind./fang.sampleRate;
+figure,plot(ts,(fxyz(rind,5,3)-fxyz(rind,1,3))./10)
+xlabel('Time (s)')
+ylabel('Head Height - Lower Body Height (cm)')
+title ('Rear: Feature 3');
+ylim([0,25])
+Lines(ts([121,end-120]),[],'r');
+
+% pdfs for rear vs not rear
+figure,hold on
+eds = linspace(0,25,100);
+ind = Trial.stc{'a-r'};
+hn = bar(eds,histc((fxyz(ind,5,3)-fxyz(ind,1,3))/10,eds)./sum(diff(ind.data,1,2)),'histc');
+hn.FaceColor = 'c';
+hn.FaceAlpha = .6;
+hn.EdgeAlpha = 0;
+ind = Trial.stc{'r'};
+hs = bar(eds,histc((fxyz(ind,5,3)-fxyz(ind,1,3))/10,eds)./sum(diff(ind.data,1,2)),'histc');
+hs.FaceColor = 'r';
+hs.FaceAlpha = .6;
+hs.EdgeAlpha = 0;
+xlabel('Head Height - Lower Body Height (cm)')
+ylabel('p_{d(Height)}');
+title ('PDF of Rear vs not Rear');
+legend({'Not Rear','Rear'});
+
+
+
+
+
+
+% Rear: Feature 4
+
+% Time Series
+eind = 1; % Event index
+rind = [Trial.stc{'r'}(eind,1)-120:Trial.stc{'r'}(eind,2)+120];
+ts = rind./fang.sampleRate;
+figure,plot(ts,fang(rind,3,4,3).*cos(fang(rind,3,4,2))./10)
+xlabel('Time (s)')
+ylabel('Horizontal Distance between Head and Lower Body (cm)')
+title ('Rear: Feature 3');
+ylim([0,6])
+Lines(ts([121,end-120]),[],'r');
+
+% pdfs for rear vs not rear
+figure,hold on
+eds = linspace(0,6,100);
+ind = Trial.stc{'a-r'};
+hn = bar(eds,histc(fang(ind,3,4,3).*cos(fang(ind,3,4,2))./10,eds)./sum(diff(ind.data,1,2)),'histc');
+hn.FaceColor = 'c';
+hn.FaceAlpha = .6;
+hn.EdgeAlpha = 0;
+ind = Trial.stc{'r'};
+hs = bar(eds,histc(fang(ind,3,4,3).*cos(fang(ind,3,4,2))./10,eds)./sum(diff(ind.data,1,2)),'histc');
+hs.FaceColor = 'r';
+hs.FaceAlpha = .6;
+hs.EdgeAlpha = 0;
+xlabel('Horizontal Distance between Head and Lower Body (cm)')
+ylabel('p_{dist}');
+title ('PDF of Rear vs not Rear');
+legend({'Not Rear','Rear'});
+
+
+
+
+
+
+
+
+
 
 figure,hold on
 eds = linspace(.2,1.5,100);
