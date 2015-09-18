@@ -118,9 +118,9 @@ legend({'Not Rear','Rear'});
 % Time Series
 eind = 1; % Event index
 rind = [Trial.stc{'r'}(eind,1)-120:Trial.stc{'r'}(eind,2)+120];
-ts = rind(2:end)./fang.sampleRate;
+ts = rind./fang.sampleRate;
 vfang = MTADang('data',diff(fang(:,'spine_middle','spine_upper',2)).*fang.sampleRate,'sampleRate',fang.sampleRate);
-figure,plot(ts,vfang.data)
+figure,plot(ts,vfang(rind))
 xlabel('Time (s)')
 ylabel('d(Pitch)/dt Body Middle to Upper (rad/sec)')
 title ('Rear: Feature 2');
@@ -174,7 +174,7 @@ hs = bar(eds,histc(vfang(ind),eds)./sum(diff(ind.data,1,2)),'histc');
 hs.FaceColor = 'r';
 hs.FaceAlpha = .6;
 hs.EdgeAlpha = 0;
-xlabel('d(Pitch)/dt Body Middle to Upper (rad/sec)')
+xlabel('log10(abs(d(Pitch)/dt)) Body Middle to Upper (rad/sec)')
 ylabel('p_{d(pitch)/dt}');
 title ('PDF of Rear vs not Rear');
 legend({'Not Rear','Rear'},'location','northwest');
@@ -225,23 +225,23 @@ legend({'Not Rear','Rear'});
 eind = 1; % Event index
 rind = [Trial.stc{'r'}(eind,1)-120:Trial.stc{'r'}(eind,2)+120];
 ts = rind./fang.sampleRate;
-figure,plot(ts,fang(rind,3,4,3).*cos(fang(rind,3,4,2))./10)
+figure,plot(ts,fang(rind,1,4,3).*cos(fang(rind,1,4,2))./10)
 xlabel('Time (s)')
 ylabel('Horizontal Distance between Head and Lower Body (cm)')
 title ('Rear: Feature 3');
-ylim([0,6])
+ylim([0,18])
 Lines(ts([121,end-120]),[],'r');
 
 % pdfs for rear vs not rear
 figure,hold on
-eds = linspace(0,6,100);
+eds = linspace(0,18,100);
 ind = Trial.stc{'a-r'};
-hn = bar(eds,histc(fang(ind,3,4,3).*cos(fang(ind,3,4,2))./10,eds)./sum(diff(ind.data,1,2)),'histc');
+hn = bar(eds,histc(fang(ind,1,4,3).*cos(fang(ind,1,4,2))./10,eds)./sum(diff(ind.data,1,2)),'histc');
 hn.FaceColor = 'c';
 hn.FaceAlpha = .6;
 hn.EdgeAlpha = 0;
 ind = Trial.stc{'r'};
-hs = bar(eds,histc(fang(ind,3,4,3).*cos(fang(ind,3,4,2))./10,eds)./sum(diff(ind.data,1,2)),'histc');
+hs = bar(eds,histc(fang(ind,1,4,3).*cos(fang(ind,1,4,2))./10,eds)./sum(diff(ind.data,1,2)),'histc');
 hs.FaceColor = 'r';
 hs.FaceAlpha = .6;
 hs.EdgeAlpha = 0;
@@ -254,6 +254,53 @@ legend({'Not Rear','Rear'});
 
 
 
+
+
+%% Definition of Grooming
+% Rat stands on its hind legs and elevates the head about 10 cm.
+% 
+% Features
+%
+%     1.  Horizontal distance between the upper and lower spine
+%
+%     2.  Change of upper spine pitch with respect to time
+%
+%     3.  Height of the head relative to marker above the junction
+%         between the Sacral and caudal vertebrae (lower spine)
+%
+%
+
+
+% Groom: Figure 1
+
+% Time Series
+eind = 5; % Event index
+rind = [Trial.stc{'m'}(eind,1)-240:Trial.stc{'m'}(eind,2)+240];
+ts = rind./fang.sampleRate;
+figure,plot(ts,fang(rind,1,4,3).*cos(fang(rind,1,4,2))./10)
+xlabel('Time (s)')
+ylabel('Horizontal Distance between Head and Lower Body (cm)')
+title ('Groom: Feature 1');
+ylim([5,17])
+Lines(ts([241,end-240]),[],'r');
+
+% PDF
+figure,hold on
+eds = linspace(5,17,100);
+ind = Trial.stc{'a-r-m'};
+hn = bar(eds,histc(fang(ind,1,4,3).*cos(fang(ind,1,4,2))./10,eds)./sum(diff(ind.data,1,2)),'histc');
+hn.FaceColor = 'c';
+hn.FaceAlpha = .6;
+hn.EdgeAlpha = 0;
+ind = Trial.stc{'m'};
+hs = bar(eds,histc(fang(ind,1,4,3).*cos(fang(ind,1,4,2))./10,eds)./sum(diff(ind.data,1,2)),'histc');
+hs.FaceColor = 'r';
+hs.FaceAlpha = .6;
+hs.EdgeAlpha = 0;
+xlabel('Horizontal Distance between Head and Lower Body (cm)')
+ylabel('p_{dist}');
+title ('PDF of Groom vs not Groom and Rear');
+legend({'Not Rear','Rear'},'location','northwest');
 
 
 
