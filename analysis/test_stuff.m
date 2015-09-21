@@ -774,3 +774,27 @@ KLa = nansum(KLa(~isinf(KLa)));
 KLr = nansum(KLr(~isinf(KLr)));
 
 
+
+
+w = 32;
+hw = 16;
+ffxyz = xyz.copy;
+ffxyz.resample(32);
+xls = GetSegs(circshift(ffxyz(:,7,3),hw),1:size(ffxyz,1),w,0)./10;
+
+eds = linspace(0,31,50);
+pa = zeros([size(xls,2),numel(eds)]);
+pm = zeros([size(xls,2),numel(eds)]);
+for i = 1:size(xls,2),
+    pa(i,:) = normpdf(eds,nanmean(xls(1:hw,i)),nanstd(xls(1:hw,i)))';
+    pm(i,:) = normpdf(eds,nanmean(xls(hw+1:end,i)),nanstd(xls(hw+1:end,i)))';
+end
+pa = clip(bsxfun(@rdivide,pa,sum(pa,2)),eps,1);
+pm = clip(bsxfun(@rdivide,pm,sum(pm,2)),eps,1);
+
+dkl = nansum(pa.*log2(pa./pm),2);
+dkl = nansum(pm.*log2(pm./pa),2);
+
+figure,plot(abs(log10(dkl)))
+Lines(Trial.stc{'r',ffxyz.sampleRate}(:),[],'m');
+

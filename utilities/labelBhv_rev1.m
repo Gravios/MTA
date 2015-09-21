@@ -263,10 +263,10 @@ legend({'Not Rear','Rear'});
 %
 %     1.  Horizontal distance between the upper and lower spine
 %
-%     2.  Change of upper spine pitch with respect to time
+%     2.  Height of the lower spine
 %
-%     3.  Height of the head relative to marker above the junction
-%         between the Sacral and caudal vertebrae (lower spine)
+%     3.  
+%         
 %
 %
 
@@ -284,16 +284,17 @@ title ('Groom: Feature 1');
 ylim([5,17])
 Lines(ts([241,end-240]),[],'r');
 
+
 % PDF
 figure,hold on
 eds = linspace(5,17,100);
 ind = Trial.stc{'a-r-m'};
-hn = bar(eds,histc(fang(ind,1,4,3).*cos(fang(ind,1,4,2))./10,eds)./sum(diff(ind.data,1,2)),'histc');
+hn = bar(eds,histc(fang(ind,1,4,3)./10,eds)./sum(diff(ind.data,1,2)),'histc');
 hn.FaceColor = 'c';
 hn.FaceAlpha = .6;
 hn.EdgeAlpha = 0;
 ind = Trial.stc{'m'};
-hs = bar(eds,histc(fang(ind,1,4,3).*cos(fang(ind,1,4,2))./10,eds)./sum(diff(ind.data,1,2)),'histc');
+hs = bar(eds,histc(fang(ind,1,4,3)./10,eds)./sum(diff(ind.data,1,2)),'histc');
 hs.FaceColor = 'r';
 hs.FaceAlpha = .6;
 hs.EdgeAlpha = 0;
@@ -304,7 +305,90 @@ legend({'Not Rear','Rear'},'location','northwest');
 
 
 
+% Groom: Figure 2
 
+% Time Series
+eind = 5; % Event index
+rind = [Trial.stc{'m'}(eind,1)-240:Trial.stc{'m'}(eind,2)+240];
+ts = rind./fang.sampleRate;
+figure,plot(ts,fxyz(rind,1,3)./10)
+xlabel('Time (s)')
+ylabel('Horizontal Distance between Head and Lower Body (cm)')
+title ('Groom: Feature 1');
+ylim([0,7])
+Lines(ts([241,end-240]),[],'r');
+
+% pdf
+figure,hold on
+eds = linspace(0,7,100);%ind = Trial.stc{'a-r-m'}; linspace(5,17,100);
+ind = Trial.stc{'a-r-m'};
+hn = bar(eds,histc(fxyz(ind,1,3)./10,eds)./sum(diff(ind.data,1,2)),'histc');
+hn.FaceColor = 'c';
+hn.FaceAlpha = .6;
+hn.EdgeAlpha = 0;
+ind = Trial.stc{'m'};
+hs = bar(eds,histc(fxyz(ind,1,3)./10,eds)./sum(diff(ind.data,1,2)),'histc');
+hs.FaceColor = 'r';
+hs.FaceAlpha = .6;
+hs.EdgeAlpha = 0;
+xlabel('Horizontal Distance between Head and Lower Body (cm)')
+ylabel('p_{dist}');
+title ('PDF of Groom vs not Groom and Rear');
+legend({'Not Rear','Rear'},'location','northeast');
+
+
+ind = Trial.stc{'a-m-r'};
+pa = histc(fxyz(ind,1,3)./10,eds)./sum(diff(ind.data,1,2));
+ind = Trial.stc{'m'};
+pm = histc(fxyz(ind,1,3)./10,eds)./sum(diff(ind.data,1,2));
+ 
+-nansum(pa.*log2(pa))
+-nansum(pm.*log2(pm))
+
+sqrt(sum((pa-pm).^2))*100
+
+pa'*pm
+
+sum(sum(pa*pm'))
+figure,imagesc(pa*pm')
+
+ind = Trial.stc{'a-m-r'};
+pa = normpdf(eds,nanmean(fxyz(ind,2,3)./10),nanvar(fxyz(ind,2,3)./10));
+ind = Trial.stc{'m'};
+pm = normpdf(eds,nanmean(fxyz(ind,2,3)./10),nanvar(fxyz(ind,2,3)./10));
+
+sum(pa.*log2(pa./pm))
+
+ffxyz = fxyz.copy;
+ffxyz.resample(16);
+xls = GetSegs(circshift(ffxyz(:,1,3),-8),1:size(ffxyz,1),16,0)./10;
+
+eds = linspace(0,7,50);
+pa = zeros([size(xls,2),numel(eds)]);
+pm = zeros([size(xls,2),numel(eds)]);
+for i = 1:size(xls,2),
+    pa(i,:) = normpdf(eds,nanmean(xls(1:8,i)),nanstd(xls(1:8,i)))';
+    pm(i,:) = normpdf(eds,nanmean(xls(9:16,i)),nanstd(xls(9:16,i)))';
+end
+pa = bsxfun(@rdivide,pa,sum(pa,2))+eps;
+pm = bsxfun(@rdivide,pm,sum(pm,2))+eps;
+
+dkl = log10(nansum(pa.*log2(pa./pm),2));
+dkl = log10(nansum(pm.*log2(pm./pa),2));
+figure,plot(abs(log10(clip(dkl,0.001,10000))))
+Lines(Trial.stc{'w',ffxyz.sampleRate}(:),[],'m');
+
+
+figure,
+ind = Trial.stc{'s'};
+hist2(fxyz(ind,[1,3],3)./10,linspace(0,7,100),linspace(5,13,100));
+caxis([0,200])
+
+
+figure,
+ind = Trial.stc{'s'};
+hist2([fang(ind,1,4,3).*cos(fang(ind,1,4,2))./10,fxyz(ind,1,3)./10],linspace(5,17,100),linspace(0,7,100));
+caxis([0,200])
 
 figure,hold on
 eds = linspace(.2,1.5,100);
