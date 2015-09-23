@@ -121,14 +121,110 @@ hist2(mappedX,...
 
 
 
+
+mtfet =  MTADxyz('data',mfet(ind,:),'sampleRate',fet.sampleRate);
+mtpos =  MTADxyz('data',mappedX,'sampleRate',fet.sampleRate);
+
+[RateMap,Bins,distdw,distIndw]= PlotKNNPF(Trial,mtfet,mtpos,[5,5],20,5,'xy',[],[],[-110,110;-110,110]);
+rmap = reshape(RateMap,numel(Bins{1}),numel(Bins{2}),[]);
+
+
+fett = {};
+fetd = {};
+
+%% Feature tags and definitions
+%lower spine speed
+fett(end+1) = {'Height_{BL} (z-score)'};
+fetd(end+1) = {'1 Hz low pass filtered height of the lower spine maker'};
+
+fett(end+1) = {'Height_{BU} (z-score)'};
+fetd(end+1) = {'1 Hz low pass filtered height of the upper spine maker'};
+
+fett(end+1) = {'Height_{HF} (z-score)'};            
+fetd(end+1) = {'1 Hz low pass filtered height of the head front maker'};
+
+fett(end+1) = {'XY Speed_{BL} (z-score)'};
+fetd(end+1) = {['2.4 Hz low pass filtered speed in the xy plane of ' ...
+                'the spine lower maker']};
+
+fett(end+1) = {'XY Speed_{BU} (z-score)'};
+fetd(end+1) = {['2.4 Hz low pass filtered speed in the xy plane of ' ...
+                'the spine upper maker']};
+
+fett(end+1) = {'XY Speed_{HF} (z-score)'};
+fetd(end+1) = {['2.4 Hz low pass filtered speed in the xy plane of ' ...
+                'the head front maker']};
+
+fett(end+1) = {'Vertical Speed(flp1Hz) of Middle Spine (z-score)'};
+fetd(end+1) = {['1 Hz low pass filtered speed in the z axis of the ' ...
+                'head back marker']};
+
+fett(end+1) = {'PPC_{traj yaw} (z-score)'};
+fetd(end+1) = {['1 Hz lowpass filtered Pair-wise Phase Consisistency(PPC) of the yaw of ' ...
+                'trajectories of all makers along the rostro-caudal axis']};
+
+fett(end+1) = {'bfet (z-score)'};
+fetd(end+1) = {['Magnitude of the projection of lower spine trajectory  ' ...
+                'onto the vecor of lower spine to upper spine']};
+
+fett(end+1) = {'Pitch_{BMBU} (z-score)'};
+fetd(end+1) = {['Pitch of spine_middle to spine_upper relative to xy ' ...
+                'plane']};
+
+fett(end+1) = {'Pitch_{BUHB} (z-score)'};
+fetd(end+1) = {['Pitch of spine_upper to head_back relative to xy ' ...
+                'plane']};
+
+fett(end+1) = {'Pitch_{HBHF} (z-score)'};
+fetd(end+1) = {['Pitch of head_back to head_front relative to xy ' ...
+                'plane']};
+
+fett(end+1) = {'XY Dist_{BLBU} (z-score)'};
+fetd(end+1) = {['Magnitude of the projection of the vector formed ' ...
+                'by the spine_lower and spine_upper markers']};
+
+fetd(end+1) = {'d(pitch_{BMBU})/dt (z-score'};
+fetd(end+1) = {'Pitch speed of the vector from spine_middle to spine_upper'};
+
+fetd(end+1) = {'d(yaw_{BLBU})/dt (z-score'};
+fetd(end+1) = {'Pitch speed of the vector from spine_middle to spine_upper'};
+
+fetd(end+1) = {'d(yaw_{BMHF})/dt (z-score'};
+fetd(end+1) = {'Pitch speed of the vector from spine_middle to head_front'};
+
+
+
+hfig = figure(38380);
+for i = 1:fet.size(2);
+subplot(132); hold on
+
+sts = Trial.stc.list_state_attrib('label');
 mc = msmat(ind,:);
+for nc = 1:12,
+    nind = all(bsxfun(@eq,c(nc,:),mc),2);
+    h = scatter(mappedX(nind,1),mappedX(nind,2),16,mc(nind,:));
+    h.MarkerFaceColor = h.CData(1,:);
+end
+legend(sts(1:12))
+xlim([min(mappedX(:,1))-5,max(mappedX(:,1))+30]);
+ylim([min(mappedX(:,2))-5,max(mappedX(:,2))+5]);
+daspect([1,1,1])
 
-nc = 6;
-nind = all(bsxfun(@eq,c(nc,:),mc),2);
-figure,
-scatter(mappedX(nind,1),mappedX(nind,2),8,mc(nind,:))
-xlim([min(mappedX(:,1)),max(mappedX(:,1))]);
-ylim([min(mappedX(:,2)),max(mappedX(:,2))]);
+subplot(133),cla
+[~,hc] = imagescnan({Bins{1},Bins{2},rmap(:,:,4)},[],false,true,[0,0,0]);
+axis xy
+daspect([1,1,1])
 
 
+subplot{133)
+
+figTitle = ['tSNE-msr_' num2str(msr) '-ind_' num2str(start) '_' ...
+            num2str(skip) '_' num2str(stop) '-perplexity_' ...
+            num2str(perplexity) '-no_dims_' num2str(no_dims)];
+
+
+saveas(hfig,fullfile(hostPath,[Trial.filebase '_' figTitle '.eps']),'epsc')
+saveas(hfig,fullfile(hostPath,[Trial.filebase '_' figTitle '.png']),'png')
+
+end
 
