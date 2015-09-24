@@ -3,13 +3,28 @@
 
 hostPath = '/storage/gravio/figures/req/req20150915';
 no_dims = 2;
-msr = 10;
+msr = 20;
 
 
 Trial = MTATrial('jg05-20120317');
 Trial.stc.load(Trial,'hand_labeled_rev2');
 
+% XYZ Positions of Markers
 xyz = Trial.load('xyz');
+
+% COM Body Center of Mass
+rbb = xyz.model.rb({'spine_lower','pelvis_root','spine_middle'});
+xyz.addMarker('hcom',[.7,0,.7],{{'head_back','head_front',[0,0,255]}},xyz.com(rbb));
+
+rba = xyz.model.rb({'spine_lower','pelvis_root','spine_middle','spine_upper','head_back','head_front'});
+xyz.addMarker('acom',[.7,0,.7],{{'spine_lower','pelvis_root','spine_middle','spine_upper','head_back','head_front',[0,0,255]}},xyz.com(rba));
+
+
+% FXYZ Filtered Marker Positions {Low Pass 2.5 Hz}
+fxyz = xyz.copy;
+fxyz.filter('ButFilter',3,.5,'low');
+
+xyz.addMarker('fhcom',[.7,0,.7],{{'spine_lower','pelvis_root','spine_middle','spine_upper','head_back','head_front',[0,0,255]}},fxyz(:,10,:));
 
 
 man = Trial.load('fet','lsppc');
@@ -42,6 +57,7 @@ bfet.resample(msr);
 
 
 
+
 fvelxy = xyz.vel([],[1,2]);
 fvelxy.resample(msr);
 fvelxy.filter('ButFilter',3,2.4,'low');
@@ -58,13 +74,30 @@ roll = fet_roll(Trial);
 roll.resample(msr);
 
 
+
+
+
+
+
 fet = fxyz.copy;
-fet.data = [fxyz(:,[1:2:7],3),...
-            fvelxy(:,[1:2:7]),....
-            fvelz(:,5),...
+fet.data = [fxyz(:,:,3),...
+            fvelxy(:,:),....
+            fvelz(:,:),...
+            abs(circ_dist(dsa(:,'spine_lower','pelvis_root',1),dsa(:,'spine_lower','spine_middle',1))),... 
+            abs(circ_dist(dsa(:,'spine_lower','pelvis_root',1),dsa(:,'spine_lower','spine_upper',1))),...  
+            abs(circ_dist(dsa(:,'pelvis_root','spine_middle',1),dsa(:,'pelvis_root','spine_upper',1))),... 
+            abs(circ_dist(dsa(:,'spine_middle','spine_upper',1),dsa(:,'spine_middle','head_back',1))),...  
+            abs(circ_dist(dsa(:,'spine_upper','head_back',1),dsa(:,'spine_upper','head_front',1))),...     
+            ... differential PITCH of Joints
+            abs(circ_dist(dsa(:,'spine_lower','pelvis_root',2),dsa(:,'spine_lower','spine_middle',2))),... 
+            abs(circ_dist(dsa(:,'spine_lower','pelvis_root',2),dsa(:,'spine_lower','spine_upper',2))),...  
+            abs(circ_dist(dsa(:,'pelvis_root','spine_middle',2),dsa(:,'pelvis_root','spine_upper',2))),... 
+            abs(circ_dist(dsa(:,'spine_middle','spine_upper',2),dsa(:,'spine_middle','head_back',2))),...  
+            abs(circ_dist(dsa(:,'spine_upper','head_back',2),dsa(:,'spine_upper','head_front',2))),...    
             log10(bfet(:,1)+1),...
             man.data,...
-            roll.data,...
+            dsa(:,'spine_lower','pelvis_root',2),...
+            dsa(:,'pelvis_root','spine_middle',2),...
             dsa(:,'spine_middle','spine_upper',2),...
             dsa(:,'spine_upper','head_back',2),...
             dsa(:,'head_back','head_front',2),...
@@ -88,8 +121,8 @@ mfet = nunity(fet(ind,:));
 msmat = csmat(ind,:);
 
 start = 1;
-skip = 1;
-stop = 30000;
+skip = 2;
+stop = 60000;
 no_dims = 2;
 
 initial_dims = 5;
@@ -132,3 +165,10 @@ nc = 7;
 nind = all(bsxfun(@eq,c(nc,:),mc),2);
 figure,
 scatter(mappedX(nind,1),mappedX
+
+
+
+% function [RateMap,Bins,distdw,distIndw]= PlotKNNPF(Session,ufr,pos,varargin)
+% [binDims,nnn,dthresh,downSampleRate,type,distdw,distIndw] = DefaultArgs(varargin,{50,70,.5*Session.xyz.sampleRate,20,'xy',[],[]})
+
+

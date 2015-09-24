@@ -134,97 +134,137 @@ fetd = {};
 
 %% Feature tags and definitions
 %lower spine speed
-fett(end+1) = {'Height_{BL} (z-score)'};
+fett(end+1) = {'Height_{BL}'};
 fetd(end+1) = {'1 Hz low pass filtered height of the lower spine maker'};
 
-fett(end+1) = {'Height_{BU} (z-score)'};
+fett(end+1) = {'Height_{BU}'};
 fetd(end+1) = {'1 Hz low pass filtered height of the upper spine maker'};
 
-fett(end+1) = {'Height_{HF} (z-score)'};            
+fett(end+1) = {'Height_{HF}'};            
 fetd(end+1) = {'1 Hz low pass filtered height of the head front maker'};
 
-fett(end+1) = {'XY Speed_{BL} (z-score)'};
+fett(end+1) = {'XY Speed_{BL}'};
 fetd(end+1) = {['2.4 Hz low pass filtered speed in the xy plane of ' ...
                 'the spine lower maker']};
 
-fett(end+1) = {'XY Speed_{BU} (z-score)'};
+fett(end+1) = {'XY Speed_{BU}'};
 fetd(end+1) = {['2.4 Hz low pass filtered speed in the xy plane of ' ...
                 'the spine upper maker']};
 
-fett(end+1) = {'XY Speed_{HF} (z-score)'};
+fett(end+1) = {'XY Speed_{HF}'};
 fetd(end+1) = {['2.4 Hz low pass filtered speed in the xy plane of ' ...
                 'the head front maker']};
 
-fett(end+1) = {'Vertical Speed(flp1Hz) of Middle Spine (z-score)'};
+fett(end+1) = {'Vertical Speed(flp1Hz) of Middle Spine'};
 fetd(end+1) = {['1 Hz low pass filtered speed in the z axis of the ' ...
                 'head back marker']};
 
-fett(end+1) = {'PPC_{traj yaw} (z-score)'};
+fett(end+1) = {'PPC_{traj yaw}'};
 fetd(end+1) = {['1 Hz lowpass filtered Pair-wise Phase Consisistency(PPC) of the yaw of ' ...
                 'trajectories of all makers along the rostro-caudal axis']};
 
-fett(end+1) = {'bfet (z-score)'};
+fett(end+1) = {'bfet'};
 fetd(end+1) = {['Magnitude of the projection of lower spine trajectory  ' ...
                 'onto the vecor of lower spine to upper spine']};
 
-fett(end+1) = {'Pitch_{BMBU} (z-score)'};
+fett(end+1) = {'Pitch_{BMBU}'};
 fetd(end+1) = {['Pitch of spine_middle to spine_upper relative to xy ' ...
                 'plane']};
 
-fett(end+1) = {'Pitch_{BUHB} (z-score)'};
+fett(end+1) = {'Pitch_{BUHB}'};
 fetd(end+1) = {['Pitch of spine_upper to head_back relative to xy ' ...
                 'plane']};
 
-fett(end+1) = {'Pitch_{HBHF} (z-score)'};
+fett(end+1) = {'Pitch_{HBHF}'};
 fetd(end+1) = {['Pitch of head_back to head_front relative to xy ' ...
                 'plane']};
 
-fett(end+1) = {'XY Dist_{BLBU} (z-score)'};
+fett(end+1) = {'XY Dist_{BLBU}'};
 fetd(end+1) = {['Magnitude of the projection of the vector formed ' ...
                 'by the spine_lower and spine_upper markers']};
 
-fetd(end+1) = {'d(pitch_{BMBU})/dt (z-score'};
+fett(end+1) = {'d(pitch_{BMBU})/dt'};
 fetd(end+1) = {'Pitch speed of the vector from spine_middle to spine_upper'};
 
-fetd(end+1) = {'d(yaw_{BLBU})/dt (z-score'};
+fett(end+1) = {'d(yaw_{BLBU})/dt'};
 fetd(end+1) = {'Pitch speed of the vector from spine_middle to spine_upper'};
 
-fetd(end+1) = {'d(yaw_{BMHF})/dt (z-score'};
+fett(end+1) = {'d(yaw_{BMHF})/dt'};
 fetd(end+1) = {'Pitch speed of the vector from spine_middle to head_front'};
 
 
 
 hfig = figure(38380);
-for i = 1:fet.size(2);
-subplot(132); hold on
+hfig.Position = [23 490 1893 486];
+hfig.PaperPosition = [0,0,40,10];
+for i = 12:fet.size(2);
+    clf
+    hax = subplot(131);
+    cla;
+    emptyAxis(hax);
+    delete(hax.Children )
+    ht = text(.05,.9,...
+              {['Trial:           ' Trial.filebase],...
+               ['StateCollection: ' Trial.stc.mode]},...
+              'Interpreter','none','FontName','Courier');
+    ht.FontSize = 12;
 
-sts = Trial.stc.list_state_attrib('label');
-mc = msmat(ind,:);
-for nc = 1:12,
-    nind = all(bsxfun(@eq,c(nc,:),mc),2);
-    h = scatter(mappedX(nind,1),mappedX(nind,2),16,mc(nind,:));
-    h.MarkerFaceColor = h.CData(1,:);
-end
-legend(sts(1:12))
-xlim([min(mappedX(:,1))-5,max(mappedX(:,1))+30]);
-ylim([min(mappedX(:,2))-5,max(mappedX(:,2))+5]);
-daspect([1,1,1])
+    fdesc = [{['Feature Description:']},strchp(fetd{i},40)];    
+    ht = text(.05,.75,...
+              fdesc,...
+              'Interpreter','none','FontName','Courier');
+    ht.FontSize = 12;
+    
+    ht = text(.05,.65,...
+              ['    States:          Tot Occ (sec): '],...
+              'Interpreter','none','FontName','Courier');
+    ht.FontSize = 12;
 
-subplot(133),cla
-[~,hc] = imagescnan({Bins{1},Bins{2},rmap(:,:,4)},[],false,true,[0,0,0]);
-axis xy
-daspect([1,1,1])
+    yps = fliplr(linspace(.1,.55,12));
+    for j = 1:12,
+        sts = Trial.stc.states{j};
+        ht = text(.05,yps(j),...
+                  ['    ' sts.label],...
+                  'Interpreter','none','FontName','Courier');
+        ht.FontSize = 12;
+        ht = text(.45,yps(j),...
+                  [num2str(sum(diff(sts.data,1,2))./sts.sampleRate)],...
+                  'Interpreter','none','FontName','Courier');
+        ht.FontSize = 12;
+    end
+
+    
+    subplot(132);cla
+    [ha,hc] = imagescnan({Bins{1},Bins{2},rmap(:,:,i)},[],false, ...
+                        true,[0,0,0]);
+    ylabel(hc,'mean z-score','FontName','Courier');
+    axis xy
+    title(fett{i},'FontName','Courier')
+    daspect([1,1,1])
+
+   
+    subplot(133),cla
+   % MEAN FET MAP
+    hold on
+    sts = Trial.stc.list_state_attrib('label');
+    mc = msmat(ind,:);
+    for nc = 1:12,
+        nind = all(bsxfun(@eq,c(nc,:),mc),2);
+        h = scatter(mappedX(nind,1),mappedX(nind,2),10,mc(nind,:));
+        h.MarkerFaceColor = h.CData(1,:);
+    end
+    legend(sts(1:12))
+    xlim([min(mappedX(:,1))-5,max(mappedX(:,1))+30]);
+    ylim([min(mappedX(:,2))-5,max(mappedX(:,2))+5]);
+    daspect([1,1,1])
 
 
-subplot{133)
+    figTitle = ['tSNE-msr_' num2str(msr) '-ind_' num2str(start) '_' ...
+                num2str(skip) '_' num2str(stop) '-perplexity_' ...
+                num2str(perplexity) '-no_dims_' num2str(no_dims)];
 
-figTitle = ['tSNE-msr_' num2str(msr) '-ind_' num2str(start) '_' ...
-            num2str(skip) '_' num2str(stop) '-perplexity_' ...
-            num2str(perplexity) '-no_dims_' num2str(no_dims)];
-
-
-saveas(hfig,fullfile(hostPath,[Trial.filebase '_' figTitle '.eps']),'epsc')
-saveas(hfig,fullfile(hostPath,[Trial.filebase '_' figTitle '.png']),'png')
+    saveas(hfig,fullfile(hostPath,[Trial.filebase '_featureOverLay_' num2str(i) '_' figTitle '.eps']),'epsc')
+    %saveas(hfig,fullfile(hostPath,[Trial.filebase '_featureOverLay_' num2str(i) '_' figTitle '.png']),'png')
 
 end
 
