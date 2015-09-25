@@ -1,20 +1,40 @@
-%% tSNE stuff
-%mkdir('/storage/gravio/figures/req/req20150914');
+% Testing various parameters for tSNE 
+%
 
 initial_dims = 10;
-perplexity = 100;
+perplexity = 50;
 
 
-hostPath = '/storage/gravio/figures/req/req20150914';
+
+%% tSNE stuff
+%mkdir('/storage/gravio/figures/req/req20150925');
+
+% $$$ Trial = MTATrial('jg05-20120317');
+% $$$ Trial.stc.load(Trial,'hand_labeled_rev2');
+% $$$ osts = numel(Trial.stc.states)
+
+Trial = MTATrial('Ed05-20140528');
+Trial.stc.load(Trial,'auto_wbhr');
+osts = numel(Trial.stc.states)+1;
+
+
+hostPath = '/storage/gravio/figures/req/req20150925';
 msr = 15; % New sample rate
 
 
-Trial = MTATrial('jg05-20120317');
-Trial.stc.load(Trial,'hand_labeled_rev2');
 
 xyz = Trial.load('xyz');
 
 
+if isempty(Trial.fet),
+    Trial.fet = MTADfet(Trial.spath,...
+                        [],...
+                        [],...
+                        [],...
+                        Trial.sync.copy,...
+                        Trial.sync.data(1),...
+                        []);                  
+end
 man = Trial.load('fet','lsppc');
 man.filter('ButFilter',3,2,'low');
 man.resample(msr);
@@ -75,8 +95,9 @@ fet.data(isinf(fet(:))) = 0;
 
 
 [asmat,labels,keys] =  stc2mat(Trial.stc,fet);
+asmat = cat(2,asmat,~any(asmat,2));
 asmat = MTADxyz('data',asmat,'sampleRate',fet.sampleRate);
-[~,asmat.data] = max(asmat.data(:,1:12),[],2);
+[~,asmat.data] = max(asmat.data(:,[1:osts-1,end]),[],2);
 c = jet(numel(unique(asmat)));
 csmat = asmat.copy; 
 csmat.data = c(csmat.data,:);
@@ -88,7 +109,7 @@ msmat = csmat(ind,:);
 
 start = 1;
 skip = 2;
-stop = 45000;
+stop = size(mfet,1);
 no_dims = 2;
 
 ind = start:skip:stop;
@@ -96,8 +117,7 @@ mappedX = tsne(mfet(ind,:), msmat(ind,:), no_dims, initial_dims, perplexity);
 
 figTitle = ['tSNE-msr_' num2str(msr) '-ind_' num2str(start) '_' ...
             num2str(skip) '_' num2str(stop) '-perplexity_' ...
-            num2str(perplexity) '-initial_dims_' num2str(initial_dims) ...
-            '-no_dims_' num2str(no_dims)];
+            num2str(perplexity) '-no_dims_' num2str(no_dims)];
 hfig = figure(1);
 
 %saveas(hfig,fullfile(hostPath,[Trial.filebase '_' figTitle '.fig']),'fig')
@@ -105,12 +125,30 @@ saveas(hfig,fullfile(hostPath,[Trial.filebase '_' figTitle '.eps']),'epsc')
 saveas(hfig,fullfile(hostPath,[Trial.filebase '_' figTitle '.png']),'png')
 
 
+hfig = figure;
+plot(mappedX(:,1),mappedX(:,2),'.');
+cls = ClusterPP(hfig);
+
+mcid = asmat(Trial.stc{'a'});
+mcid = mcid(ind);
+
+figure,bar(1:osts,histc(mcid,1:osts),'histc');
+figure,bar(1:osts,histc(mcid(cls==1),1:osts),'histc');
+
+figure
+hist2(mappedX,...
+      linspace(min(mappedX(:,1)),max(mappedX(:,1)),100),...
+      linspace(min(mappedX(:,2)),max(mappedX(:,2)),100));
+
+
+
+
 
 
 mtfet =  MTADxyz('data',mfet(ind,:),'sampleRate',fet.sampleRate);
 mtpos =  MTADxyz('data',mappedX,'sampleRate',fet.sampleRate);
 
-[RateMap,Bins,distdw,distIndw]= PlotKNNPF(Trial,mtfet,mtpos,[5,5],20,5,'xy',[],[],[-110,125;-125,110]);
+[RateMap,Bins,distdw,distIndw]= PlotKNNPF(Trial,mtfet,mtpos,[5,5],20,5,'xy',[],[],[-110,110;-110,110]);
 rmap = reshape(RateMap,numel(Bins{1}),numel(Bins{2}),[]);
 
 
@@ -180,9 +218,9 @@ fetd(end+1) = {'Pitch speed of the vector from spine_middle to head_front'};
 
 
 hfig = figure(38380);
-hfig.Position = [23 490 1600 400];
-hfig.PaperPosition = [0,0,24,6];
-for i = 1:size(rmap,3);
+hfig.Position = [23 490 1893 486];
+hfig.PaperPosition = [0,0,40,10];
+for i = 1:fet.size(2);
     clf
     hax = subplot(131);
     cla;
@@ -205,8 +243,8 @@ for i = 1:size(rmap,3);
               'Interpreter','none','FontName','Courier');
     ht.FontSize = 12;
 
-    yps = fliplr(linspace(.1,.55,12));
-    for j = 1:12,
+    yps = fliplr(linspace(.1,.55,osts));
+    for j = 1:osts,
         sts = Trial.stc.states{j};
         ht = text(.05,yps(j),...
                   ['    ' sts.label],...
@@ -222,9 +260,9 @@ for i = 1:size(rmap,3);
     subplot(132);cla
     [ha,hc] = imagescnan({Bins{1},Bins{2},rmap(:,:,i)},[],false, ...
                         true,[0,0,0]);
-    ylabel(hc,'mean z-score','FontName','Courier','FontSize',12);
+    ylabel(hc,'mean z-score','FontName','Courier');
     axis xy
-    title(fett{i},'FontName','Courier','FontSize',12)
+    title(fett{i},'FontName','Courier')
     daspect([1,1,1])
 
    
@@ -233,18 +271,24 @@ for i = 1:size(rmap,3);
     hold on
     sts = Trial.stc.list_state_attrib('label');
     mc = msmat(ind,:);
-    for nc = 1:12,
+    for nc = 1:osts,
         nind = all(bsxfun(@eq,c(nc,:),mc),2);
-        h = scatter(mappedX(nind,1),mappedX(nind,2),2,mc(nind,:));
+        h = scatter(mappedX(nind,1),mappedX(nind,2),10,mc(nind,:));
         h.MarkerFaceColor = h.CData(1,:);
     end
-    legend(sts(1:12),'location','southeast')
+    legend([sts(1:osts-1),{'unlabeled'}])
     xlim([min(mappedX(:,1))-5,max(mappedX(:,1))+30]);
     ylim([min(mappedX(:,2))-5,max(mappedX(:,2))+5]);
     daspect([1,1,1])
+
+
+    figTitle = ['tSNE-msr_' num2str(msr) '-ind_' num2str(start) '_' ...
+                num2str(skip) '_' num2str(stop) '-perplexity_' ...
+                num2str(perplexity) '-no_dims_' num2str(no_dims)];
 
     saveas(hfig,fullfile(hostPath,[Trial.filebase '_featureOverLay_' num2str(i) '_' figTitle '.eps']),'epsc')
     %saveas(hfig,fullfile(hostPath,[Trial.filebase '_featureOverLay_' num2str(i) '_' figTitle '.png']),'png')
 
 end
 
+gravio/
