@@ -117,28 +117,14 @@ mappedX = tsne(mfet(ind,:), msmat(ind,:), no_dims, initial_dims, perplexity);
 
 figTitle = ['tSNE-msr_' num2str(msr) '-ind_' num2str(start) '_' ...
             num2str(skip) '_' num2str(stop) '-perplexity_' ...
-            num2str(perplexity) '-no_dims_' num2str(no_dims)];
+            num2str(perplexity) '-initial_dims_' num2str(initial_dims) ...
+            '-no_dims_' num2str(no_dims)];
 hfig = figure(1);
 
 %saveas(hfig,fullfile(hostPath,[Trial.filebase '_' figTitle '.fig']),'fig')
 saveas(hfig,fullfile(hostPath,[Trial.filebase '_' figTitle '.eps']),'epsc')
 saveas(hfig,fullfile(hostPath,[Trial.filebase '_' figTitle '.png']),'png')
 
-
-hfig = figure;
-plot(mappedX(:,1),mappedX(:,2),'.');
-cls = ClusterPP(hfig);
-
-mcid = asmat(Trial.stc{'a'});
-mcid = mcid(ind);
-
-figure,bar(1:osts,histc(mcid,1:osts),'histc');
-figure,bar(1:osts,histc(mcid(cls==1),1:osts),'histc');
-
-figure
-hist2(mappedX,...
-      linspace(min(mappedX(:,1)),max(mappedX(:,1)),100),...
-      linspace(min(mappedX(:,2)),max(mappedX(:,2)),100));
 
 
 
@@ -282,13 +268,9 @@ for i = 1:fet.size(2);
     daspect([1,1,1])
 
 
-    figTitle = ['tSNE-msr_' num2str(msr) '-ind_' num2str(start) '_' ...
-                num2str(skip) '_' num2str(stop) '-perplexity_' ...
-                num2str(perplexity) '-no_dims_' num2str(no_dims)];
 
     saveas(hfig,fullfile(hostPath,[Trial.filebase '_featureOverLay_' num2str(i) '_' figTitle '.eps']),'epsc')
     %saveas(hfig,fullfile(hostPath,[Trial.filebase '_featureOverLay_' num2str(i) '_' figTitle '.png']),'png')
 
 end
 
-gravio/
