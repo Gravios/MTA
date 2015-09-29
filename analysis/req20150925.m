@@ -1,8 +1,8 @@
 % Testing various parameters for tSNE 
 %
 
-initial_dims = 10;
-perplexity = 50;
+initial_dims = 5;
+perplexity = 100;
 
 
 
@@ -13,7 +13,8 @@ perplexity = 50;
 % $$$ Trial.stc.load(Trial,'hand_labeled_rev2');
 % $$$ osts = numel(Trial.stc.states)
 
-Trial = MTATrial('Ed05-20140528');
+%Trial = MTATrial('Ed05-20140528');
+Trial = MTATrial('jg05-20120310');
 Trial.stc.load(Trial,'auto_wbhr');
 osts = numel(Trial.stc.states)+1;
 
@@ -113,8 +114,7 @@ stop = size(mfet,1);
 no_dims = 2;
 
 ind = start:skip:stop;
-mappedX = tsne(mfet(ind,:), msmat(ind,:), no_dims, initial_dims, perplexity);
-
+ 
 figTitle = ['tSNE-msr_' num2str(msr) '-ind_' num2str(start) '_' ...
             num2str(skip) '_' num2str(stop) '-perplexity_' ...
             num2str(perplexity) '-initial_dims_' num2str(initial_dims) ...
