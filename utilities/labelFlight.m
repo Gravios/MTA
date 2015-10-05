@@ -15,7 +15,7 @@ switch mode
             Stc.states(Stc.gsi('f')) = [];
         end
 
-        load(fullfile(Trial.path.MTAPath,'flight_selection_criteria.mat'));
+        load(fullfile(Trial.path.cfg,'flight_selection_criteria.mat'));
         fly_fet =  xyz(:,1,3)*usp.pram(:,1)' + repmat(usp.pram(:,2)',xyz.size(1),1)-repmat(xyz(:,end,3),1,size(usp.pram,1));
         
 % $$$          figure,hold on,
@@ -45,7 +45,7 @@ switch mode
     pram = draw_lines(figH,'line_fit');
     usp.pram   = pram;
     usp.fields = {xyz.model.Markers{1}.name,xyz.model.Markers{end}.name};
-    save(fullfile(Trial.path.MTAPath,'flight_selection_criteria.mat'),'usp','-v7.3');
+    save(fullfile(Trial.path.cfg,'flight_selection_criteria.mat'),'usp','-v7.3');
 
 end
 

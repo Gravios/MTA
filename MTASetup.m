@@ -9,9 +9,9 @@ for i = 1:length(paths_check)
         mkdir(paths_check{i});
     end
 end
-addpath(paths.MTAPath)
+addpath(paths.cfg)
 savepath
-system(['mv /tmp/MTA{Paths,Markers,Mazes,MarkerConnections}.mat ' paths.MTAPath ]) 
+system(['mv /tmp/MTA{Paths,Markers,Mazes,MarkerConnections}.mat ' paths.cfg ]) 
 
 % Flag for linking data from other users
 switch flag

@@ -1,5 +1,6 @@
 function [smat,labels,keys] = stc2mat(Stc,Data,varargin)
 %function [smat,labels,keys] = stc2mat(Stc,Data)
+% [states] = DefaultArgs(varargin,{Stc.list_state_attrib('key')},true);
 % assumes no heirarchical relationships between states
 % each is mutually exclusive from all others
 [states] = DefaultArgs(varargin,{Stc.list_state_attrib('key')},true);

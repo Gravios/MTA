@@ -43,7 +43,7 @@ Session = MTASession('jg05-201203XX',... name
 % $$$ Session.path = 
 % $$$ 
 % $$$          root: '/lustre/home/zdv/kn/knajg01/data/'
-% $$$       MTAPath: '/lustre/home/zdv/kn/knajg01/data/config/MTA/'
+% $$$       cfg: '/lustre/home/zdv/kn/knajg01/data/config/MTA/'
 % $$$      analysis: '/lustre/home/zdv/kn/knajg01/data/analysis/'
 % $$$           nlx: '/lustre/home/zdv/kn/knajg01/data/nlx/'
 % $$$           xyz: '/lustre/home/zdv/kn/knajg01/data/xyz/'

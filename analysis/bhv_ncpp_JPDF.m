@@ -30,11 +30,11 @@ vel = xyz.vel(1);
 vel.resample(ncp);
 vnn = nniz(vel);
 
-% $$$ try load(fullfile(Trial.path.MTAPath,'super_fet_ncp.normparm.mat'));end
+% $$$ try load(fullfile(Trial.path.cfg,'super_fet_ncp.normparm.mat'));end
 % $$$ if ~exist('ncp_mean','var'),
 ncp_std  = nanstd(ncp(vnn,:));
 ncp_mean = nanmean(ncp(vnn,:));
-% $$$ save(fullfile(Trial.path.MTAPath,'super_fet_ncp.normparm.mat'),'ncp_mean','ncp_std');
+% $$$ save(fullfile(Trial.path.cfg,'super_fet_ncp.normparm.mat'),'ncp_mean','ncp_std');
 % $$$ end
 
 ncp.data = (ncp.data-repmat(ncp_mean,[ncp.size(1),1]))./repmat(ncp_std,[ncp.size(1),1]);

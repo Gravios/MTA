@@ -31,10 +31,10 @@ end
 
 switch mode
   case 'get'
-    if exist(fullfile(Trial.path.MTAPath,'unit_selection_criteria.mat'),'file');
-        load(fullfile(Trial.path.MTAPath,'unit_selection_criteria.mat'));
+    if exist(fullfile(Trial.path.cfg,'unit_selection_criteria.mat'),'file');
+        load(fullfile(Trial.path.cfg,'unit_selection_criteria.mat'));
     else
-        %load(fullfile(Trial.path.MTAPath,'unit_selection_criteria.mat'));
+        %load(fullfile(Trial.path.cfg,'unit_selection_criteria.mat'));
     end
 
     nq_res = anq.(usp.fields{2})-polyval(usp.pram,anq.(usp.fields{1}));
@@ -59,7 +59,7 @@ switch mode
     usp.pram   = pram;
     usp.fields = nqFields;
 
-    save(fullfile(Trial.path.MTAPath,'unit_selection_criteria.mat'),'usp','-v7.3');
+    save(fullfile(Trial.path.cfg,'unit_selection_criteria.mat'),'usp','-v7.3');
     units = [];
 
 end

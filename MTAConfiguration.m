@@ -31,13 +31,16 @@ function MTAConfiguration(root_dir,varargin)
 %       Defined connections between markers (Not required if vsk file is
 %       present)
 % 
-[flag,host_server,data_server] = DefaultArgs(varargin,{'','',''});
+[flag,host_server,data_server,overwrite] = DefaultArgs(varargin,{'','','',true});
 
 if ispc, 
     userdir= getenv('USERPROFILE'); 
 else
     userdir= getenv('HOME');
 end
+
+%% Get MTA directory path
+mtap = fileparts(mfilename('fullpath'));
 
 
 %% paths to the data directories
@@ -53,10 +56,26 @@ if ~exist(fullfile(data,'config'),'dir')
     mkdir(fullfile(data,'config'));
 end
 
-MTAPath = fullfile(data,'config','MTA');
-if ~exist(MTAPath,'dir'),
-    mkdir(MTAPath);
+cfg = fullfile(data,'config','MTA');
+if ~exist(cfg,'dir'),
+    mkdir(cfg);
 end
+
+css = fullfile(cfg,'css');
+if ~exist(css,'dir')||overwrite
+    copyfile(fullfile(mtap,'css'),css);
+end
+
+arm = fullfile(cfg,'arm');
+if ~exist(arm,'dir')||overwrite
+    copyfile(fullfile(mtap,'arm'),arm);
+end
+
+
+
+
+
+
 
 %% List of the accepted marker names
 MTAMarkers ={'hip_right','pelvis_root','hip_left','spine_lower','knee_left',...
@@ -104,15 +123,28 @@ MTAMarkerConnections = ...
     {'tail_proximal','spine_lower'}};
 
 %% Save configuations
-save(fullfile(MTAPath, 'MTAConf.mat'  ),'host_server','data_server');
-save(fullfile(MTAPath, 'MTAPaths.mat'  ),'MTAPath','data');
-save(fullfile(MTAPath, 'MTAMarkers.mat'),'MTAMarkers');
-save(fullfile(MTAPath, 'MTAMazes.mat'  ),'MTAMazes');
-save(fullfile(MTAPath, 'MTAMarkerConnections.mat'),'MTAMarkerConnections');
 
-addpath(MTAPath)
+if ~exist(fullfile(cfg, 'MTAConf.mat'),'file')||overwrite,
+    save(fullfile(cfg, 'MTAConf.mat'  ),'host_server','data_server');end
+
+if ~exist(fullfile(cfg, 'MTAPaths.mat'),'file')||overwrite,
+    save(fullfile(cfg, 'MTAPaths.mat'),'cfg','data','arm','css');end
+
+if ~exist(fullfile(cfg, 'MTAMarkers.mat'),'file')||overwrite,
+    save(fullfile(cfg, 'MTAMarkers.mat'),'MTAMarkers');end
+
+if ~exist(fullfile(cfg, 'MTAMazes.mat'),'file')||overwrite,
+    save(fullfile(cfg, 'MTAMazes.mat'),'MTAMazes');end
+
+if ~exist(fullfile(cfg, 'MTAMarkerConnections.mat'),'file')||overwrite,
+    save(fullfile(cfg, 'MTAMarkerConnections.mat'),'MTAMarkerConnections');end
+
+
+
+addpath(genpath(cfg));
 % $$$ try
 % $$$     savepath
 % $$$ end
 
 
+end

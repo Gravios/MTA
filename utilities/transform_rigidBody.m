@@ -1,6 +1,6 @@
 %Trial = MTATrial('Ed05-20140529','all','ont');
 Trial = MTATrial('Ed05-20140528');
-%Trial = MTATrial('jg05-20120317');
+Trial = MTATrial('jg05-20120317');
 
 xyz = Trial.load('xyz');
 rb = Trial.xyz.model.rb({'head_back','head_left','head_front','head_right'});
@@ -197,7 +197,7 @@ nvxyz = zeros([7,numel(ni),numel(nj),numel(nk)]);
 %save(fullfile(Trial.spath,[Trial.filebase '.xyz-shift_fine.mat']),'ni','nj','nk','nvxyz');
 load(fullfile(Trial.spath,[Trial.filebase '.xyz-shift_fine.mat']));
 %save(fullfile(Trial.spath,[Trial.filebase '.xyz-shift_fine_a-m-s.mat']),'ni','nj','nk','nvxyz');
-%load(fullfile(Trial.spath,[Trial.filebase '.xyz-shift_fine_a-m-s.mat']),'ni','nj','nk','nvxyz');
+load(fullfile(Trial.spath,[Trial.filebase '.xyz-shift_fine_a-m-s.mat']),'ni','nj','nk','nvxyz');
 
 
    
@@ -220,13 +220,13 @@ end
 % $$$ suptitle(Trial.filebase)
 
 ijk = cell(1,3);
-[ijk{:}] = meshgrid(i,j,k);
+[ijk{:}] = meshgrid(ni,nj,nk);
 
 clist = 'rbgymck';
 
 figure
 for m =1:7,
-svxyz = log10(sq(vxyz(m,:,:,:)));
+svxyz = log10(sq(nvxyz(m,:,:,:)));
     iopts = [ijk,{svxyz},{prctile(svxyz(:),2)}];
 p = patch(isosurface(iopts{:}));
 iopts(end) = {p};
@@ -284,11 +284,44 @@ nxyz.addMarker('fhcom',[128,128,128],...
                 {'fhcom','nhl',[0,0,1]},...
                 {'fhcom','nhr',[1,0,0]},...
                 {'fhcom','nhf',[0,1,0]}},...
-               txyz(:,1,:));
+               txyz(:,end,:));
 
 ang =  create(MTADang,Trial,xyz);
+ang.filter('ButFilter',1,20,'low');
 nang = create(MTADang,Trial,nxyz);
-nang.filter('ButFilter',3,20,'low');
+nang.filter('ButFilter',1,20,'low');
+
+txyz = xyz.copy;
+tnxyz = nxyz.copy;
+
+xyz = txyz.copy;
+nxyz = tnxyz.copy;
+%xyz.filter('ButFilter',3,5,'low');
+%nxyz.filter('ButFilter',3,5,'low');
+
+xyv = xyz.vel([1,7],[1,2]);
+xyv.filter('ButFilter',3,2.4,'low');
+xyv.data(xyv.data<.001) = 0.001;
+xyn = nxyz.vel([1,7],[1,2]);
+xyn.filter('ButFilter',3,2.4,'low');
+xyn.data(xyn.data<.001) = 0.001;
+
+ind = Trial.stc{'w'};
+eds = linspace(-3,2,100);
+figure,
+subplot(211)
+hist2(log10([xyn(ind,1),xyn(ind,2)]),eds,eds);
+subplot(212)
+hist2(log10([xyv(ind,1),xyv(ind,2)]),eds,eds);
+
+ind = Trial.stc{'w'};
+figure,hold on
+ha = bar(eds,histc(log10(xyn(ind,2)),eds),'histc');
+ha.FaceColor = 'r';
+ha.FaceAlpha = .5;
+hs = bar(eds,histc(log10(xyv(ind,2)),eds),'histc');
+hs.FaceColor = 'c';
+hs.FaceAlpha = .5;
 
 figure,
 for i = 1:1000,    
@@ -299,7 +332,6 @@ for i = 1:1000,
     plotSkeleton(Trial,nxyz,i,'line',nang);
     pause(.01);
 end
-
 
 
 [ys,fs,ts] =mtchglong(WhitenSignal(diff([nang(nniz(xyz),'fhcom','nhb',3),ang(nniz(xyz),'fhcom','head_back',3)]),[],1),2^8,ang.sampleRate,2^7,2^7*.875,[],[],[],[1,20]);

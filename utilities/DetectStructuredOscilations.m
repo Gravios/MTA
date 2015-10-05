@@ -32,16 +32,16 @@ amp.resample(xyz);
 
 switch ModelTemplate
   case 'default'
-    ModelTemplate = load(fullfile(Trial.path.MTAPath,'DetectStructedOscilations.default.mdl'));
+    ModelTemplate = load(fullfile(Trial.path.cfg,'DetectStructedOscilations.default.mdl'));
 
   case 'ripples'
      
     % Make interative gui for making models
     %ripper = [81196,81208];
-    %msave(fullfile(Trial.path.MTAPath,'DetectStructedOscilations.default.mdl'),urpexp-bsh)
+    %msave(fullfile(Trial.path.cfg,'DetectStructedOscilations.default.mdl'),urpexp-bsh)
     
     %rpexp = amp(ripper(1):ripper(2),:);
-    rpexp = load(fullfile(Trial.path.MTAPath,'DetectStructedOscilations.default.mdl'));
+    rpexp = load(fullfile(Trial.path.cfg,'DetectStructedOscilations.default.mdl'));
 
     for i= 1:lfp.size(2),rpmean(i) = mean(amp(amp(:,i)>2,i));end
     for i= 1:lfp.size(2),rpstd(i) = std(amp(amp(:,i)>2,i));end

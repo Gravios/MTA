@@ -27,11 +27,11 @@ vel = xyz.vel(1);
 vel.resample(rhm);
 vnn = nniz(vel);
 
-try load(fullfile(Trial.path.MTAPath,'super_fet_rhm.normparm.mat'));end
+try load(fullfile(Trial.path.cfg,'super_fet_rhm.normparm.mat'));end
 if ~exist('rhm_mean','var'),
 rhm_std  = nanstd(rhm(vnn,:));
 rhm_mean = nanmean(rhm(vnn,:));
-save(fullfile(Trial.path.MTAPath,'super_fet_rhm.normparm.mat'),'rhm_mean','rhm_std');
+save(fullfile(Trial.path.cfg,'super_fet_rhm.normparm.mat'),'rhm_mean','rhm_std');
 end
 rhm.data = (rhm.data-repmat(rhm_mean,[rhm.size(1),1]))./repmat(rhm_std,[rhm.size(1),1]);
 

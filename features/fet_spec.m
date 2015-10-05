@@ -42,9 +42,9 @@ switch mode
     
     if wsig,
         if ischar(wsig),
-            try,load(fullfile(Trial.path.MTAPath,wsig));end
+            try,load(fullfile(Trial.path.arm,wsig));end
         else
-            try,load(fullfile(Trial.path.MTAPath,[mfilename,fet.label,'_' fet.key '.arm.mat']));end
+            try,load(fullfile(Trial.path.arm,[mfilename,fet.label,'_' fet.key '.arm.mat']));end
         end
         
         if ~exist('ARmodel','var'), overwrite = true; end
@@ -53,7 +53,7 @@ switch mode
             [data(nniz(fet.data),:),ARmodel] = WhitenSignal(fet.data(nniz(fet.data),:),...
                                                                 [],...
                                                                 true);
-            save(fullfile(Trial.path.MTAPath,[mfilename,fet.label,'_' fet.key '.arm.mat']),'ARmodel');
+            save(fullfile(Trial.path.arm,[mfilename,fet.label,'_' fet.key '.arm.mat']),'ARmodel');
         else
             data(nniz(fet.data),:) = WhitenSignal(fet.data(nniz(fet.data),:),...
                                                       [],...

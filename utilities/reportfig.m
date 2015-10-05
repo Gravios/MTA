@@ -13,18 +13,18 @@ function reportfig(varargin)
 
 TodayDate = date;
 DefFileName = ['mrep.' TodayDate];	
-    if ispc,
-        DefRepPath = fullfile(getenv('HOMEPATH'),'figures');        
-    else
-        DefRepPath = fullfile(getenv('HOME'),'figures');
-    end
-    if ~exist(DefRepPath,'dir'),mkdir(DefRepPath),end
+if ispc,
+    DefRepPath = fullfile(getenv('HOMEPATH'),'figures');        
+else
+    DefRepPath = fullfile(getenv('HOME'),'figures');
+end
+if ~exist(DefRepPath,'dir'),mkdir(DefRepPath),end
 
-[Trial,FigHandle, FileName, Preview,Comment,Resolution,SaveFig,FigCount] = ...
-    DefaultArgs(varargin,{DefRepPath,gcf,DefFileName,0,'',300,0,false});
+[Trial,FigHandle, FileName, FigDir, Preview,Comment,Resolution,SaveFig,FigCount,format] = ...
+    DefaultArgs(varargin,{DefRepPath,gcf,DefFileName,'',0,'',200,0,false,'png'});
 
 
-
+%% Build Paths
 myStack = dbstack;
 if numel(myStack)>1,
     myFunFile = myStack(2).name;
@@ -32,47 +32,52 @@ else
     myFunFile = 'wksp';
 end
 
+
 if isa(Trial,'MTASession'),
-    TrialFigPath= fullfile(Trial.path.data,'figures');
+    TrialFigPath= fullfile(Trial.path.data,'figures',FigDir);
+    CssDir = fullfile(Trial.path.css);
 elseif ischar(Trial),
-    TrialFigPath = Trial;
+    TrialFigPath = fullfile(Trial,FigDir);    
+    CssDir = fullfile(fileparts(mfilename('fullpath')),'..','css');
 else
     error('reportfig:BadPathError:Wait... where do you want to put it !?')
 end
 
 
-FunFileDir =   fullfile(TrialFigPath, myFunFile);
-LongFileName = fullfile(FunFileDir,[FileName '.html']);
-DirName =      fullfile(FunFileDir, FileName);
+
+FunFileDir = fullfile(TrialFigPath, myFunFile);
+HtmlName =   fullfile(FunFileDir,[FileName '.html']);
+DirName =    fullfile(FunFileDir, FileName);
 
 
 
+%% Create Dirs if necessary 
 if ~exist(TrialFigPath,'dir'), mkdir(TrialFigPath); end
 if ~exist(FunFileDir,'dir'), mkdir(FunFileDir); end
 
 
-if exist(LongFileName,'file'),
-	fprintf('adding to existing report\n');
-	DirCont = dir(DirName);
-	DirCont([1,2]) = [];
-	maxindex=1;
-	for i=1:length(DirCont)
-		[d1,name,ext] = fileparts(DirCont(i).name);
+if exist(HtmlName,'file'),
+    fprintf('REPORTFIG: Adding to existing report\n');
+    DirCont = dir(DirName);
+
+    DirCont([1,2]) = [];
+    maxindex=1;
+    for i=1:length(DirCont)
+        [d1,name,ext] = fileparts(DirCont(i).name);
         digind = strfind(name,'-')+1;
         digind = digind(end);
-		maxindex = max(maxindex, str2num(name(digind:end)));
-	end
-	FigIndex = maxindex+1;
-%	keyboard
+        maxindex = max(maxindex, str2num(name(digind:end)));
+    end
+    FigIndex = maxindex+1;
 else
-	mkdir(FunFileDir,FileName);
-        FigIndex = 1;
+    mkdir(FunFileDir,FileName);
+    FigIndex = 1;
 end
 
 
 if isa(Trial,'MTASession'),
     if FigCount,
-            FigName = [FileName '-' Trial.filebase '-' num2str(FigIndex)];
+        FigName = [FileName '-' Trial.filebase '-' num2str(FigIndex)];
     else
         FigName = [FileName '-' Trial.filebase];
     end
@@ -80,56 +85,75 @@ else
     FigName = [FileName '-' num2str(FigIndex)];
 end
 
-
 LongFigName = fullfile(DirName, FigName);
 
-fPointer=fopen(LongFileName,'at+');
-if fPointer<3
-	error('Can''t open html file');
+
+%% Write HTML file 
+fpHTML=fopen(HtmlName,'at+');
+if fpHTML<3
+    error('Can''t open html file');
 end		
 if FigIndex == 1
-	fprintf(fPointer,'<html>\n<head>\n<title>Matlab report %s </title>\n</head>\n<body>\n<h2>Matlab Report Page : %s</h2>\n',FileName,FileName);
-	
+    copyfile(CssDir,fullfile(DirName,'css'));
+    fprintf(fpHTML,['<html>\n<head>\n'...
+                      '<link rel="stylesheet" Type="text/css" href="' FileName '/css/reportfig.css">\n',...
+                      '<link rel="stylesheet" Type="text/css" href="' FileName '/css/menubar.css">',...
+                      '\n<title>' ...
+                      'Matlab report %s' ...
+                      '</title>\n</head>\n' ...
+                      '<body>\n<h2>' ...
+                      'Matlab Report Page : %s</h2>\n'],...
+            FileName,FileName);    
 else
-	fprintf(fPointer,'<html>\n<body>\n',FileName);
+    fprintf(fpHTML,'<html>\n<body>\n',FileName);
 end
-%now let's print figure
-funits = get(FigHandle,'units');
-set(FigHandle,'units','inches');
-fsize = get(FigHandle,'Position');
-set(FigHandle,'PaperPosition',[0,0,fsize([3,4])]);
 
-resol = ['-r' num2str(Resolution)];
-print(FigHandle, '-djpeg70', [LongFigName '.jpg'],resol);
-set(FigHandle,'units',funits);
+%% Print figure 
+
+set(FigHandle,'PaperUnits','centimeters');
+set(FigHandle,'PaperPosition',[0,0,8,6]);
+
+
+switch format
+  case 'png'
+    renderer = '-opengl';
+  case 'bmp'
+    renderer = '-opengl';
+  case 'jpeg'
+    renderer = '-opengl';
+  case 'eps'
+    renderer = '-painters';
+  case 'pdf'
+    renderer = '-painters';
+end
+
+export_fig(LongFigName,['-' format],renderer,['-r' num2str(Resolution)],FigHandle);
+
 
 if SaveFig
     % and save figure
     saveas(FigHandle, [LongFigName '.fig'], 'fig');
 end
 
+
 % now generate link to image 
-fprintf(fPointer, '<img src="%s" alt="Figure %d">\n<br><br>\n',[FileName '/' FigName '.jpg'],FigIndex);
+fprintf(fpHTML, '<img class="resize" src="%s" alt="Figure %d">\n<br><br>\n',[FileName '/' FigName '.' format],FigIndex);
 
-if isempty(Comment)
-% obtain comment
-prompt = ['Enter comments for figure' num2str(FigIndex)];
-
-Text = inputdlg(prompt, 'Commnents dialog', 1, {['Figure ' num2str(FigIndex)]});
-Comment = Text{1};
+if isempty(Comment) % Prompt for comment
+    prompt = ['Enter comments for figure' num2str(FigIndex)];
+    Text = inputdlg(prompt, 'Commnents dialog', 1, {['Figure ' num2str(FigIndex)]});
+    Comment = Text{1};
 end
-   
-%puty comment in the html file
-fprintf(fPointer,'<p>%s</p>\n<br>\n<hr>\n<br>\n',Comment);
+
+% Print comment to html file
+fprintf(fpHTML,'<p>%s</p>\n<br>\n<hr>\n<br>\n',Comment);
 
 
-fprintf(fPointer,'</body>\n</html>\n\n');
-fclose(fPointer);
+fprintf(fpHTML,'</body>\n</html>\n\n');
+fclose(fpHTML);
 
-% fPointer=fopen([UserPath '/mrep/index.html'],'at+');
-% fprintf(
-%system('mrepindex');
+
 
 if Preview
-	web(LongFileName,'-browser');
+    web(HtmlName,'-browser');
 end

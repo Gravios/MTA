@@ -56,12 +56,12 @@ end
 switch mode
   case 'wcsd'
     % Load ARmodel and Whiten Signal
-    try load(fullfile(Trial.path.MTAPath,'fet_rhm.arm.mat')); end
+    try load(fullfile(Trial.path.arm,'fet_rhm.arm.mat')); end
     if exist('ARmodel','var')||overwrite,
         flfp = WhitenSignal(flfp.data,[],[],ARmodel);
     else
         [flfp,ARmodel] = WhitenSignal(flfp.data,[],true);
-        save(fullfile(Trial.path.MTAPath,[mfilename '.arm.mat']),'ARmodel');
+        save(fullfile(Trial.path.arm,[mfilename '.arm.mat']),'ARmodel');
     end
     
     % Calculate the Cross Spectral Density and Power Spectral Density

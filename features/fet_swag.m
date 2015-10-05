@@ -30,12 +30,12 @@ switch mode
     ts = cat(1,zeros([pad(1),1]),ts,zeros([pad(2),1]));
 
   case 'wcsd'
-    try,load(fullfile(Trial.path.MTAPath,[mfilename '.arm.mat']));end
+    try,load(fullfile(Trial.path.arm,[mfilename '.arm.mat']));end
     if exist('ARmodel','var')||overwrite,
         bang = WhitenSignal(bang,[],[],ARmodel);
     else
         [bang,ARmodel] = WhitenSignal(bang);
-        save(fullfile(Trial.path.MTAPath,[mfilename '.arm.mat']),'ARmodel');
+        save(fullfile(Trial.path.arm,[mfilename '.arm.mat']),'ARmodel');
     end
     [ys,fs,ts] = mtcsdglong(bang,2^9,ang.sampleRate,2^7,2^7*.875,[],'linear',[],[1,20]);
     ts = ts+(2^6)/xyz.sampleRate;

@@ -55,7 +55,7 @@ switch mode
     data = zeros(fet.size);
     
     if wsig,
-        try,load(fullfile(Trial.path.MTAPath,[mfilename,'.arm.mat']));end
+        try,load(fullfile(Trial.path.arm,[mfilename,'.arm.mat']));end
 
         if exist('ARmodel','var')||overwrite,
             data(nniz(fet.data),:) = WhitenSignal(fet.data(nniz(fet.data),:),...
@@ -66,7 +66,7 @@ switch mode
             [data(nniz(fet.data),:),ARmodel] = WhitenSignal(fet.data(nniz(fet.data),:),...
                                                                 [],...
                                                                 true);
-            save(fullfile(Trial.path.MTAPath,[mfilename,'.arm.mat']),'ARmodel');
+            save(fullfile(Trial.path.arm,[mfilename,'.arm.mat']),'ARmodel');
         end
     else
         data(nniz(fet.data),:) = fet.data(nniz(fet.data),:);
