@@ -41,3 +41,13 @@ hs.FaceColor = 'c';
 hs.FaceAlpha = .5;
 hs.EdgeColor = 'c';
 
+
+
+% $$$ Trial = MTATrial('jg05-20120317');
+% $$$ bhv_lgr(Trial,true,{'walk','rear','turn','pause','groom','sit'},'fet_tsne','JG05HLR2');
+
+Trial = MTATrial('Ed01-20140709');
+[Stc,d_state] = bhv_lgr(Trial,false,{'walk','rear','turn','pause','groom','sit'},'fet_tsne','JG05HLR2');
+Stc.save(1);
+
+

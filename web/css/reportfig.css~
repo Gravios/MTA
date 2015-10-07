@@ -1,0 +1,41 @@
+img.resize{
+	max-width:  200px;
+	max-height: 180px;
+	width: auto;
+	hight: auto;
+}
+
+
+.tab_container a {
+	display: inline-block;
+}
+
+.tab_container a img {
+	display: block;
+	margin-bottom: 4px;
+	max-width: 200px;
+	max-height: 100px;
+}
+
+
+
+.tab_container {
+	clear: both;
+	overflow: hidden;
+	margin-bottom: 24px;
+}
+
+.tab_container p {
+	padding-left: 15px
+}
+
+.tab_container ul {
+	list-style-type: none;
+	padding-left: 35px
+}
+
+.tab_container td p {
+	padding-left: 0px
+}
+
+
