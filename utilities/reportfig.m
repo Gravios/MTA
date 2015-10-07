@@ -1,15 +1,9 @@
-%function reportfig(Trial, FigHandle, FileName, Preview, Comment, Resolution,SaveFig)
-% This is a quick and simple function to generate an HTML
-% page containing the figure and comments on it. Figures entered
-% under the same filename (or on the same day) will be added to the same
-% page. The html file and directory with figures are stored in 
-% homedir/mrep. Both jpeg and matlab .fig are stored. 
-% FigHandle  (default = gcf) 
-% FileName  - (default = current date) just name, no path 
-% Preview (default = 0) if 1 - launches browser to preview the page
-% Comment - to put below, default - Figure # 
-% SaveFig - saves the .fig file as well. default =0
 function reportfig(varargin)
+%function reportfig(varargin)
+%[Trial,FigHandle, FileName, FigDir, Preview,Tag,Comment,Resolution,SaveFig,format,width,height,FigCount] = ...
+%    DefaultArgs(varargin,{DefRepPath,gcf,DefFileName,'',0,'',200,0,'png',8,6,true});
+%
+% width and height in centimeters
 
 TodayDate = date;
 DefFileName = ['mrep.' TodayDate];	
@@ -20,8 +14,13 @@ else
 end
 if ~exist(DefRepPath,'dir'),mkdir(DefRepPath),end
 
-[Trial,FigHandle, FileName, FigDir, Preview,Comment,Resolution,SaveFig,FigCount,format] = ...
-    DefaultArgs(varargin,{DefRepPath,gcf,DefFileName,'',0,'',200,0,false,'png'});
+[Trial,FigHandle, FileName, FigDir, Preview,Tag,Comment,Resolution,SaveFig,format,width,height,FigCount,InsertBreak] = ...
+    DefaultArgs(varargin,{DefRepPath,gcf,DefFileName,'',0,'','',200,0,'png',8,6,true,false});
+
+
+if ~iscell(format)
+    format = {format};
+end
 
 
 %% Build Paths
@@ -35,14 +34,13 @@ end
 
 if isa(Trial,'MTASession'),
     TrialFigPath= fullfile(Trial.path.data,'figures',FigDir);
-    CssDir = fullfile(Trial.path.css);
+    WebDir = fullfile(Trial.path.web);
 elseif ischar(Trial),
     TrialFigPath = fullfile(Trial,FigDir);    
-    CssDir = fullfile(fileparts(mfilename('fullpath')),'..','css');
+    WebDir = fullfile(fileparts(mfilename('fullpath')),'..','web');
 else
     error('reportfig:BadPathError:Wait... where do you want to put it !?')
 end
-
 
 
 FunFileDir = fullfile(TrialFigPath, myFunFile);
@@ -58,17 +56,10 @@ if ~exist(FunFileDir,'dir'), mkdir(FunFileDir); end
 
 if exist(HtmlName,'file'),
     fprintf('REPORTFIG: Adding to existing report\n');
-    DirCont = dir(DirName);
-
-    DirCont([1,2]) = [];
-    maxindex=1;
-    for i=1:length(DirCont)
-        [d1,name,ext] = fileparts(DirCont(i).name);
-        digind = strfind(name,'-')+1;
-        digind = digind(end);
-        maxindex = max(maxindex, str2num(name(digind:end)));
-    end
-    FigIndex = maxindex+1;
+    files = dir(DirName);    
+    re = ['^(' FileName ')[-](\d)+[.]' format{1} '$'];% regular expression to match Session naming convention
+    f = regexp({files(~cellfun(@isempty,regexp({files.name},re))).name},'[\d]+','match');
+    FigIndex = max(cellfun(@str2num,cat(2,f{:})))+1;
 else
     mkdir(FunFileDir,FileName);
     FigIndex = 1;
@@ -88,47 +79,29 @@ end
 LongFigName = fullfile(DirName, FigName);
 
 
-%% Write HTML file 
-fpHTML=fopen(HtmlName,'at+');
-if fpHTML<3
-    error('Can''t open html file');
-end		
-if FigIndex == 1
-    copyfile(CssDir,fullfile(DirName,'css'));
-    fprintf(fpHTML,['<html>\n<head>\n'...
-                      '<link rel="stylesheet" Type="text/css" href="' FileName '/css/reportfig.css">\n',...
-                      '<link rel="stylesheet" Type="text/css" href="' FileName '/css/menubar.css">',...
-                      '\n<title>' ...
-                      'Matlab report %s' ...
-                      '</title>\n</head>\n' ...
-                      '<body>\n<h2>' ...
-                      'Matlab Report Page : %s</h2>\n'],...
-            FileName,FileName);    
-else
-    fprintf(fpHTML,'<html>\n<body>\n',FileName);
-end
-
 %% Print figure 
 
 set(FigHandle,'PaperUnits','centimeters');
-set(FigHandle,'PaperPosition',[0,0,8,6]);
+set(FigHandle,'PaperPosition',[0,0,width,height]);
 
 
-switch format
-  case 'png'
-    renderer = '-opengl';
-  case 'bmp'
-    renderer = '-opengl';
-  case 'jpeg'
-    renderer = '-opengl';
-  case 'eps'
-    renderer = '-painters';
-  case 'pdf'
-    renderer = '-painters';
+for i = 1:numel(format),
+    switch format{i},
+      case 'png'
+        renderer = '-opengl';
+      case 'bmp'
+        renderer = '-opengl';
+      case 'jpeg'
+        renderer = '-opengl';
+      case 'eps'
+        renderer = '-painters';
+      case 'pdf'
+        renderer = '-painters';
+    end
+
+    export_fig(LongFigName,['-' format{i}],renderer,['-r' num2str(Resolution)],FigHandle);
+
 end
-
-export_fig(LongFigName,['-' format],renderer,['-r' num2str(Resolution)],FigHandle);
-
 
 if SaveFig
     % and save figure
@@ -136,20 +109,85 @@ if SaveFig
 end
 
 
-% now generate link to image 
-fprintf(fpHTML, '<img class="resize" src="%s" alt="Figure %d">\n<br><br>\n',[FileName '/' FigName '.' format],FigIndex);
 
-if isempty(Comment) % Prompt for comment
+
+%% Generate/write to HTML file 
+
+endTag = '</p></div></body></html>';
+
+if exist(HtmlName,'file')
+    htmlText = fileread(HtmlName);
+    htmlText(end-numel(endTag):end) = [];
+    fpHTML = fopen(HtmlName,'wt+');
+    fprintf(fpHTML,htmlText);
+    if InsertBreak, fprintf(fpHTML,'\n\n<br>\n\n'); end
+else
+    fpHTML=fopen(HtmlName,'wt+');    
+end
+
+
+if fpHTML<3
+    error('Can''t open html file');
+end		
+if FigIndex == 1
+    % Copy in CSS and JS files
+    copyfile(WebDir,fullfile(DirName,'web'));
+    fprintf(fpHTML,['<html>\n<head>\n'...
+ ... JavaScript stuff
+           '<script type="text/javascript" src="http://ajax.googleapis.com/ajax/libs/jquery/1.7/jquery.min.js"></script>\n',...
+           '<script type="text/javascript" src="%s/web/javascript/fancybox/source/jquery.fancybox.pack.js"></script>\n\n',...
+ ... CSS stuff
+           '<link rel="stylesheet" href="%s/web/javascript/fancybox/source/jquery.fancybox.css"',...
+                  'type="text/css" media="screen" />\n',...
+           '<link rel="stylesheet" Type="text/css" href="%s/web/css/reportfig.css">\n',...
+           ...'<link rel="stylesheet" Type="text/css" href="%s/web/css/menubar.css">\n\n',...
+ ... Title of page
+           '\n<title>' ...
+           'Matlab report %s' ...
+           '</title>\n\n\n</head>\n' ...
+           '<body>\n<h2>' ...
+           'Matlab Report Page : %s</h2>\n\n',...
+ ... Initialize javascript stuff
+           '<script>\n',...
+                '\t$(document).ready(function() {\n',...
+                    '\t\t$(''.fancybox'').fancybox();\n',...
+                '\t});\n',...
+           '</script>\n\n',...
+ ... Container of images
+           '<div class="tab_container">\n',...
+           '\t<p>\n',...
+                   ],...
+            FileName,FileName,FileName,FileName,FileName);    
+elseif mod(FigIndex,6) == 0
+    fprintf(fpHTML,'\t</p>\n</div>\n\n<div class="tab_container">');
+end
+
+
+% Prompt for comment if none given
+if isempty(Comment) 
     prompt = ['Enter comments for figure' num2str(FigIndex)];
     Text = inputdlg(prompt, 'Commnents dialog', 1, {['Figure ' num2str(FigIndex)]});
     Comment = Text{1};
 end
 
-% Print comment to html file
-fprintf(fpHTML,'<p>%s</p>\n<br>\n<hr>\n<br>\n',Comment);
 
+% now generate link to image 
+fprintf(fpHTML, '\n');
+fprintf(fpHTML, '\t<div>\n');
+fprintf(fpHTML, '\t\t<ul>\n');
+fprintf(fpHTML, '\t\t\t<li>\n');
+fprintf(fpHTML, '\t\t\t\t<a href="%s" class="fancybox" rel="gallery" title="%s">\n',[FileName '/' FigName '.' format{1}],Comment);
+fprintf(fpHTML, '\t\t\t\t<img class="resize" src="%s" alt="Figure %d"/>\n\n',[FileName '/' FigName '.' format{1}],FigIndex);
+fprintf(fpHTML, '\t\t\t\t</a>\n\n');
+fprintf(fpHTML, '\t\t\t</li>\n\n');
+% Print tag to html file
+fprintf(fpHTML, '\t\t\t<li>\n');
+fprintf(fpHTML, '\t\t\t\t%s\n',Tag);
+fprintf(fpHTML, '\t\t\t</li>\n');
+fprintf(fpHTML, '\t\t</ul>\n');
+fprintf(fpHTML, '\t</div>\n');
 
-fprintf(fpHTML,'</body>\n</html>\n\n');
+fprintf(fpHTML,'%s',endTag);
 fclose(fpHTML);
 
 

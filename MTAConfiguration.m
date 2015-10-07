@@ -61,14 +61,14 @@ if ~exist(cfg,'dir'),
     mkdir(cfg);
 end
 
-css = fullfile(cfg,'css');
-if ~exist(css,'dir')||overwrite
-    copyfile(fullfile(mtap,'css'),css);
-end
-
 arm = fullfile(cfg,'arm');
 if ~exist(arm,'dir')||overwrite
     copyfile(fullfile(mtap,'arm'),arm);
+end
+
+web = fullfile(cfg,'web');
+if ~exist(web,'dir')||overwrite
+    copyfile(fullfile(mtap,'web'),web);
 end
 
 
@@ -128,7 +128,7 @@ if ~exist(fullfile(cfg, 'MTAConf.mat'),'file')||overwrite,
     save(fullfile(cfg, 'MTAConf.mat'  ),'host_server','data_server');end
 
 if ~exist(fullfile(cfg, 'MTAPaths.mat'),'file')||overwrite,
-    save(fullfile(cfg, 'MTAPaths.mat'),'cfg','data','arm','css');end
+    save(fullfile(cfg, 'MTAPaths.mat'),'cfg','data','arm','web');end
 
 if ~exist(fullfile(cfg, 'MTAMarkers.mat'),'file')||overwrite,
     save(fullfile(cfg, 'MTAMarkers.mat'),'MTAMarkers');end

@@ -1,79 +1,19 @@
 %% tSNE stuff
 %mkdir('/storage/gravio/figures/req/req20150914');
 
-initial_dims = 10;
+initial_dims = 5;
 perplexity = 100;
+SAVEFIG = true;
 
 
-
-hostPath = '/storage/gravio/figures/req/req20150914';
+hostPath = '/storage/gravio/figures/';
 msr = 15; % New sample rate
 
 
 Trial = MTATrial('jg05-20120317');
 Trial.stc.load(Trial,'hand_labeled_rev2');
 
-xyz = Trial.load('xyz');
-
-
-man = Trial.load('fet','lsppc');
-man.filter('ButFilter',3,2,'low');
-man.resample(msr);
-
-
-fxyz = xyz.copy;
-fxyz.filter('ButFilter',3,1,'low');
-
-ang = create(MTADang,Trial,xyz);
-tsh = 1;
-afet = Trial.xyz.copy;
-bfet = Trial.xyz.copy;
-afet.data = circshift(xyz(:,:,[1,2]),-tsh)-circshift(fxyz(:,:,[1,2]),tsh);
-afet.data = reshape(afet.data,[],2);
-aft = mat2cell(afet.data,size(afet,1),[1,1]);
-[afet.data,bfet.data] = cart2pol(aft{:});
-afet.data = reshape(afet.data,[],xyz.size(2));
-bfet.data = reshape(bfet.data,[],xyz.size(2));
-m = MTADxyz('data',circ_dist(afet(:,1),ang(:,1,4,1)),'sampleRate',Trial.xyz.sampleRate);
-m.data = circ_dist(circshift(m.data,-5),circshift(m.data,5));
-m.data = [diff(m.data);0];
-wn = 40;
-% $$$ mv = m.copy;
-% $$$ mv.data = circshift(1./permute(mean(m.segs(1:m.size(1),wn,nan).^2),[2,3,4,1]),-round(wn/2));
-% $$$ mv.data(isnan(mv.data))=0;
-% $$$ mv.resample(msr);
-bfet.resample(msr);
-
-
-
-fvelxy = xyz.vel([],[1,2]);
-fvelxy.resample(msr);
-fvelxy.filter('ButFilter',3,2.4,'low');
-
-fvelz = fxyz.vel([],[3]);
-fvelz.resample(msr);
-fvelz.filter('ButFilter',3,2.4,'low');
-
-
-fxyz.resample(msr);
-dsa = create(MTADang,Trial,fxyz);
-
-
-fet = fxyz.copy;
-fet.data = [fxyz(:,[1,4,7],3),...
-            fvelxy(:,[1,4,7]),....
-            fvelz(:,5),...
-            man.data,...
-            log10(bfet(:,1)+1),...
-            dsa(:,'spine_middle','spine_upper',2),...
-            dsa(:,'spine_upper','head_back',2),...
-            dsa(:,'head_back','head_front',2),...            
-            dsa(:,1,4,3).*cos(dsa(:,1,4,2)),...
-            abs(circ_dist(circshift(dsa(:,3,4,2),-1),circshift(dsa(:,3,4,2),1))),...
-            abs(circ_dist(circshift(dsa(:,1,4,1),-1),circshift(dsa(:,1,4,1),1))),...
-            abs(circ_dist(circshift(dsa(:,3,7,1),-1),circshift(dsa(:,3,7,1),1)))];
-fet.data(isinf(fet(:))) = 0;
-
+fet = fet_tsne(Trial,msr,true);
 
 [asmat,labels,keys] =  stc2mat(Trial.stc,fet);
 asmat = MTADxyz('data',asmat,'sampleRate',fet.sampleRate);
@@ -89,23 +29,36 @@ msmat = csmat(ind,:);
 
 start = 1;
 skip = 2;
-stop = 45000;
+stop = size(mfet,1);
 no_dims = 2;
 
 ind = start:skip:stop;
 mappedX = tsne(mfet(ind,:), msmat(ind,:), no_dims, initial_dims, perplexity);
 
-figTitle = ['tSNE-msr_' num2str(msr) '-ind_' num2str(start) '_' ...
+figparm = ['tSNE-msr_' num2str(msr) '-ind_' num2str(start) '_' ...
             num2str(skip) '_' num2str(stop) '-perplexity_' ...
             num2str(perplexity) '-initial_dims_' num2str(initial_dims) ...
             '-no_dims_' num2str(no_dims)];
-hfig = figure(1);
-
-%saveas(hfig,fullfile(hostPath,[Trial.filebase '_' figTitle '.fig']),'fig')
-saveas(hfig,fullfile(hostPath,[Trial.filebase '_' figTitle '.eps']),'epsc')
-saveas(hfig,fullfile(hostPath,[Trial.filebase '_' figTitle '.png']),'png')
 
 
+
+
+
+osts = 12;
+hfig = figure(3923923),clf
+hold on;
+sts = Trial.stc.list_state_attrib('label');
+mc = msmat(ind,:);
+for nc = 1:osts,
+    nind = all(bsxfun(@eq,c(nc,:),mc),2);
+    h = scatter(mappedX(nind,1),mappedX(nind,2),2,mc(nind,:));
+    h.MarkerFaceColor = h.CData(1,:);
+end
+legend(sts(1:osts-1));
+xlim([min(mappedX(:,1))-5,max(mappedX(:,1))+30]);
+ylim([min(mappedX(:,2))-5,max(mappedX(:,2))+5]);
+
+reportfig([], hfig, 'tsne', 'req', false,Trial.filebase,figparm,[],SAVEFIG,'png');
 
 
 mtfet =  MTADxyz('data',mfet(ind,:),'sampleRate',fet.sampleRate);
@@ -173,79 +126,24 @@ fett(end+1) = {'d(pitch_{BMBU})/dt'};
 fetd(end+1) = {'Pitch speed of the vector from spine_middle to spine_upper'};
 
 fett(end+1) = {'d(yaw_{BLBU})/dt'};
-fetd(end+1) = {'Pitch speed of the vector from spine_middle to spine_upper'};
+fetd(end+1) = {'Pitch speed of the vector from spine_lower to spine_upper'};
 
 fett(end+1) = {'d(yaw_{BMHF})/dt'};
-fetd(end+1) = {'Pitch speed of the vector from spine_middle to head_front'};
+fetd(end+1) = {'Yaw speed of the vector from spine_middle to head_front'};
 
 
 
-hfig = figure(38380);
-hfig.Position = [23 490 1600 400];
-hfig.PaperPosition = [0,0,24,6];
+
+hfig = figure(38381);
 for i = 1:size(rmap,3);
     clf
-    hax = subplot(131);
-    cla;
-    emptyAxis(hax);
-    delete(hax.Children )
-    ht = text(.05,.9,...
-              {['Trial:           ' Trial.filebase],...
-               ['StateCollection: ' Trial.stc.mode]},...
-              'Interpreter','none','FontName','Courier');
-    ht.FontSize = 12;
-
-    fdesc = [{['Feature Description:']},strchp(fetd{i},40)];    
-    ht = text(.05,.75,...
-              fdesc,...
-              'Interpreter','none','FontName','Courier');
-    ht.FontSize = 12;
-    
-    ht = text(.05,.65,...
-              ['    States:          Tot Occ (sec): '],...
-              'Interpreter','none','FontName','Courier');
-    ht.FontSize = 12;
-
-    yps = fliplr(linspace(.1,.55,12));
-    for j = 1:12,
-        sts = Trial.stc.states{j};
-        ht = text(.05,yps(j),...
-                  ['    ' sts.label],...
-                  'Interpreter','none','FontName','Courier');
-        ht.FontSize = 12;
-        ht = text(.45,yps(j),...
-                  [num2str(sum(diff(sts.data,1,2))./sts.sampleRate)],...
-                  'Interpreter','none','FontName','Courier');
-        ht.FontSize = 12;
-    end
-
-    
-    subplot(132);cla
     [ha,hc] = imagescnan({Bins{1},Bins{2},rmap(:,:,i)},[],false, ...
                         true,[0,0,0]);
     ylabel(hc,'mean z-score','FontName','Courier','FontSize',12);
     axis xy
     title(fett{i},'FontName','Courier','FontSize',12)
     daspect([1,1,1])
-
    
-    subplot(133),cla
-   % MEAN FET MAP
-    hold on
-    sts = Trial.stc.list_state_attrib('label');
-    mc = msmat(ind,:);
-    for nc = 1:12,
-        nind = all(bsxfun(@eq,c(nc,:),mc),2);
-        h = scatter(mappedX(nind,1),mappedX(nind,2),2,mc(nind,:));
-        h.MarkerFaceColor = h.CData(1,:);
-    end
-    legend(sts(1:12),'location','southeast')
-    xlim([min(mappedX(:,1))-5,max(mappedX(:,1))+30]);
-    ylim([min(mappedX(:,2))-5,max(mappedX(:,2))+5]);
-    daspect([1,1,1])
-
-    saveas(hfig,fullfile(hostPath,[Trial.filebase '_featureOverLay_' num2str(i) '_' figTitle '.eps']),'epsc')
-    %saveas(hfig,fullfile(hostPath,[Trial.filebase '_featureOverLay_' num2str(i) '_' figTitle '.png']),'png')
-
+    reportfig([], hfig, 'tsne', 'req',false,fett{i},fetd{i},[],SAVEFIG,'png',8,8);
 end
 

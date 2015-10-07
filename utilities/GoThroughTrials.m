@@ -4,7 +4,7 @@ Trials = SessionList(TrialListName);
 
 
 for s = 1:numel(Trials)
-    MTAstartup('cin',Trials{s}{4});
+    %MTAstartup('lmu',Trials{s}{4});
     Trial = MTATrial(Trials{s}{1},Trials{s}{3},Trials{s}{2});
 
     try,

@@ -24,21 +24,22 @@ MODEL_TYPE = 'LGR';
     ['MTAC_' Trial.stc.mode '_' MODEL_TYPE],true,false});
 
 
+
 keys = subsref(Trial.stc.list_state_attrib('key'),...
                substruct('()',{Trial.stc.gsi(states)}));
 
 % LOAD fet if fet is a feature name
+% RESAMPLE to conserve memory during model fitting
+% lrfet.resample(30); for now leave it to the input SR
 if ischar(fet),
-    lrfet = feval(fet,Trial);
+    lrfet = feval(fet,Trial,30);
 else
     lrfet = fet;    
 end
 
-% RESAMPLE to conserve memory during model fitting
-% lrfet.resample(30); for now leave it to the input SR
 nind = nniz(lrfet);
 
-model_name = [model_name '-' fet.label '-model.mat'];
+model_name = [model_name '-' lrfet.label '-model.mat'];
 model_path = fileparts(mfilename('fullpath'));
 model_loc = fullfile(model_path,model_name);
 
@@ -86,29 +87,32 @@ Stc = Trial.stc.copy;
 Stc.updateMode([MODEL_TYPE '-' Model_Information.StcMode '-' cell2mat(Model_Information.state_keys)]);
 Stc.states = {};
 
+% Used to put labels into xyz sampleRate
+xyz = Trial.load('xyz');
 
 % Compute scores for the logistic regression
 % You know this is irresposible code... don't give me that look
 d_state = mnrval(B,lrfet.data);
 d_state = MTADxyz('data',d_state,'sampleRate',lrfet.sampleRate);
-%d_state.resample(Trial.load('xyz'));
+d_state.resample(xyz);
 d_state = d_state.data;
 
 % Separate the winners from the losers
 [~,maxState] = max(d_state,[],2);
 maxState(~nind,:) = 0;
 
+
 % Smooth decision boundaries - 200 ms state minimum
-% $$$ bwin = round(.2*lrfet.sampleRate)+double(mod(round(.2*lrfet.sampleRate),2)==0);
-% $$$ mss = GetSegs(maxState,1:size(maxState,1),bwin,nan);
-% $$$ maxState=circshift(sq(mode(mss))',floor(bwin/2));
+bwin = round(.2*xyz.sampleRate)+double(mod(round(.2*xyz.sampleRate),2)==0);
+mss = GetSegs(maxState,1:size(maxState,1),bwin,nan);
+maxState=circshift(sq(mode(mss))',floor(bwin/2));
 
 % Populate Stc object with the new states
 for i = 1:numel(Model_Information.state_labels),
 Stc.addState(Trial.spath,...
              Trial.filebase,...
              ThreshCross(maxState==i,0.5,1),...
-             lrfet.sampleRate,...
+             xyz.sampleRate,...
              lrfet.sync.copy,...
              lrfet.origin,...
              Model_Information.state_labels{i},...
@@ -117,23 +121,3 @@ Stc.addState(Trial.spath,...
 %Stc.states{end} = Stc.states{end}+[1/lrfet.sampleRate,0];
 end
 
-
-% $$$ 
-% $$$ d_state = mnrval(B,fet.data);
-% $$$ [~,maxState] = max(d_state,[],2);
-% $$$ maxState(~nniz(fet),:) = 0;
-% $$$ Stc.states = {};
-% $$$ for i = 1:numel(states)
-% $$$ Stc.addState(Trial.spath,...
-% $$$              Trial.filebase,...
-% $$$              ThreshCross(maxState==i,0.5,1),...
-% $$$              fet.sampleRate,...
-% $$$              fet.sync.copy,...
-% $$$              fet.origin,...
-% $$$              states{i},...
-% $$$              keys{i},...
-% $$$              'TimePeriods');
-% $$$ %Stc.states{end} = Stc.states{end}+[1/lrfet.sampleRate,0];
-% $$$ end
-% $$$ 
-% $$$ 
