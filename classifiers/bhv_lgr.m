@@ -102,10 +102,10 @@ d_state = d_state.data;
 maxState(~nind,:) = 0;
 
 
-% Smooth decision boundaries - 400 ms state minimum
-% $$$ bwin = round(.4*xyz.sampleRate)+double(mod(round(.2*xyz.sampleRate),2)==0);
-% $$$ mss = GetSegs(maxState,1:size(maxState,1),bwin,nan);
-% $$$ maxState=circshift(sq(mode(mss))',floor(bwin/2));
+% Smooth decision boundaries - 200 ms state minimum
+bwin = round(.2*xyz.sampleRate)+double(mod(round(.2*xyz.sampleRate),2)==0);
+mss = GetSegs(maxState,1:size(maxState,1),bwin,nan);
+maxState=circshift(sq(mode(mss))',floor(bwin/2));
 
 % Populate Stc object with the new states
 for i = 1:numel(Model_Information.state_labels),
@@ -121,3 +121,4 @@ Stc.addState(Trial.spath,...
 %Stc.states{end} = Stc.states{end}+[1/lrfet.sampleRate,0];
 end
 
+Stc.save(1);

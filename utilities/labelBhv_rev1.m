@@ -1637,7 +1637,7 @@ Lines(Trial.stc{'w'}(:),[],'m');
 
 
 
-
+figure,plot(cross(circshift(xyz(:,1,:),-sh)-circshift(xyz(:,1,:),sh),fxyz(:,4,:)-fxyz(:,1,:)));
 sh = 1;
 figure,plot(sqrt(sum(cross(circshift(xyz(:,1,:),-sh)-circshift(xyz(:,1,:),sh),fxyz(:,4,:)-fxyz(:,1,:)).^2,3)))
 hold on,plot(sqrt(sum(cross(circshift(xyz(:,1,:),-sh)-circshift(xyz(:,1,:),sh),fxyz(:,7,:)-fxyz(:,1,:)).^2,3)))
@@ -1645,6 +1645,7 @@ Lines(Trial.stc{'w'}(:),[],'m');
 
 figure,plot(dot(circshift(xyz(:,1,[1,2]),-sh)-circshift(xyz(:,1,[1,2]),sh),fxyz(:,4,[1,2])-fxyz(:,1,[1,2]),3))
 
+%% GOOD FET walk and turn
 nfet = MTADxyz('data',dot(repmat(circshift(xyz(:,1,[1,2]),-sh)-circshift(xyz(:,1,[1,2]),sh),[1,5,1]),fxyz(:,[2:5,7],[1,2])-repmat(fxyz(:,1,[1,2]),[1,5,1]),3),'sampleRate',Trial.xyz.sampleRate);
 nfet.filter('ButFilter',3,2.4,'low');
 % $$$ hold on,plot(nfet.data);
@@ -1655,8 +1656,8 @@ nfet.data = log10(abs(nanmean(nfet.data,2))+1).*sign(nanmean(nfet.data,2));
 %nfet.data = log10(var(nfet.data,[],2)).*sign(nanmean(nfet.data,2));
 
 figure,
-ind = Trial.stc{'n'};
-hist2([nfet(ind,1),man(ind)],linspace(-4,4,100),linspace(-.2,1,100));
+ind = Trial.stc{'w'};
+hist2([nfet(ind,1),log10(fet(ind,15))],linspace(-4,4,100),linspace(-6,0,100));
 caxis([0,100])
 
 figure,
@@ -2297,3 +2298,4 @@ hist2([nn(ind),ns(ind,1)],edx,edy);
 caxis([0,200])
 
 
+fet
