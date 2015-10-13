@@ -511,4 +511,3 @@ switch varargin{1}
     warning('SessionList:ListName the provided list name was not recognized')
     Sessions = Seslist;
 end
-SessionList.m
