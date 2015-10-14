@@ -46,6 +46,9 @@ end
 %% Return the names of the markers
 if isempty(viconSampleRate),
     [xyzData, markers, viconSampleRate] = concatViconFiles(Session);            
+    if isempty(viconSampleRate),
+        error('MTA:utilities:syncViconNlx:emptySampleRate');
+    end
 else
     [xyzData, markers] = concatViconFiles(Session);            
 end
