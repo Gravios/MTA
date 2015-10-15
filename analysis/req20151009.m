@@ -1,4 +1,4 @@
-function req20151009(Trial)
+%function req20151009(Trial)
 
 
 
@@ -9,7 +9,7 @@ function req20151009(Trial)
 % other sessions whos labels are derived from the 
 %
 sltag = 'req20151009';                                         
-figTitle = 'BLBU_{pitch} vs d(BMBU_{pitch})/dt';
+figTitle = 'JPDF';
 figPath  = '/storage/gravio/figures/';
 figPath  = '/gpfs01/sirota/home/gravio/figures/';
 baseFigNum = 2838293;
@@ -18,76 +18,89 @@ Trials = SessionList(sltag);
 numOfTrials = numel(Trials);
 
 Scolors = jet(numOfTrials);
-nbin = 75;
+nbin = 50;
 tlist = {};
-state = 'rear';
+state = {'walk','rear','sit','turn','shake','groom'};
+fet = {};
+stc = {};
 
 for s = 1:numOfTrials
     tlist{s} = Trials{s}{1};                                   % Load trial list
     Trial = MTATrial(Trials{s}{1},Trials{s}{3},Trials{s}{2});  % Load MTATrial
     if s ==1,
-        [fet,ftit,fdesc,fmean,fstd] = fet_tsne(Trial,...       % Load features and save means and stds
+        [fet{s},ftit,fdesc,fmean,fstd] = fet_tsne(Trial,...       % Load features and save means and stds
                                                Trial.xyz.sampleRate,true);
-        stc = Trial.load('stc','hand_labeled_rev2');           % Load States, labeled by hand 
+        stc{s} = Trial.load('stc','hand_labeled_rev2');           % Load States, labeled by hand 
 
     else
-        [fet] = fet_tsne(Trial,...                             % Load features with saved means and stds
+        [fet{s}] = fet_tsne(Trial,...                             % Load features with saved means and stds
                          Trial.xyz.sampleRate,true,fmean,fstd);         
-        stc = Trial.load('stc','LGR-hand_labeled_rev2-wrnpms');% Load States, labeled with logistic regression 
+        stc{s} = Trial.load('stc','LGR-hand_labeled_rev2-wrnpms');% Load States, labeled with logistic regression 
     end
-    %req20151009_A1(Trial,hfig,state,Scolors(s,:));             % Plot contours for each feature
+end
 
-
+for i = 1:numel(state),
     k = 1;
-    for f = 1:fet.size(2),
-        for j = f+1:fet.size(2),
+    for f = 1:fet{1}.size(2),
+        for j = f+1:fet{1}.size(2),
+            if f==1&&j==2,
+                addBreak = true;
+            else
+                addBreak = false;
+            end
+            
             hfig = figure(baseFigNum+k);
-            k=k+1;
+            for s = 1:numOfTrials,
 
-            if s == 1,
-                % Clear the figure
-                clf
-                % Index for not zero, inf or nan           
-                ind = nniz(fet);                                   
-                % Create nbins over percentile 2 and 98 of fet f
-                edgs    = {linspace([prctile(fet(ind,f),[2,98]),nbin])};
-                % Create nbins over percentile 2 and 98 of fet j
-                edgs(2) = {linspace([prctile(fet(ind,j),[2,98]),nbin])};
-                edc = edgs;
-                [edc{:}] = get_histBinCenters(edc);
-                [X,Y] = meshgrid(edc{:});
+                if s == 1,
+                    % Clear the figure
+                    clf
+                    % Index for not zero, inf or nan           
+                    ind = nniz(fet{s});                                   
+                    % Create nbins over percentile 2 and 98 of fet f
+                    edgs    = {linspace([prctile(fet{s}(ind,f),[2,98])+[-2,2],nbin])};
+                    % Create nbins over percentile 2 and 98 of fet j
+                    edgs(2) = {linspace([prctile(fet{s}(ind,j),[2,98])+[-2,2],nbin])};
+                    edc = edgs;
+                    [edc{:}] = get_histBinCenters(edc);
+                    [X,Y] = meshgrid(edc{:});
 
-                b = fet(ind,[f,j]);
-                out = hist2(b,edgs{1},edgs{2});
-                imagesc(edgs{1},edgs{2},out');                     % Plot JPDF of hand labeled data
-                axis xy
+                    b = fet{s}(ind,[f,j]);
+                    out = hist2(b,edgs{1},edgs{2});
+                    imagesc(edgs{1},edgs{2},out');                     % Plot JPDF of hand labeled data
+                    axis xy
+                end
+                
+                hold on,
+                o = hist2(fet{s}(stc{s}{state{i}},[f,j]),edgs{1},edgs{2});
+                F = [.05 .1 .05; .1 .4 .1; .05 .1 .05];
+                o = conv2(o./sum(o(:)),F,'same');
+                contour(X,Y,o',[.0004,.0004],'linewidth',2,'Color',Scolors(s,:))
+
+                if s == numOfTrials,               
+                    xlabel(ftit{f});
+                    ylabel(ftit{j});
+                    title(state{i});
+                    caxis([0,1000]);
+                    legend(tlist,'location','SouthEastOutSide')
+                    hfig.Position  = [100   100   900   650];
+                    reportfig(figPath,...             Base path where figures are saved
+                    hfig,...                TFigure handel 
+                    'CJPDF',...             contours overlayed on joint probability distribution
+                    'req',...               Save in the req folder
+                    false,...
+                        ['fet: ' num2str(f) ' fet: ' num2str(j)],... Tag posted below the img thumbnail
+                    [figTitle '-f' num2str(f) 'f' num2str(j)],[],false,'png',[],[],[],addBreak);
+                end
             end
 
-            hold on,
-            o = hist2(fet(stc{state},[f,j]),edgs{1},edgs{2});
-            F = [.05 .1 .05; .1 .4 .1; .05 .1 .05];
-            o = conv2(o./sum(o(:)),F,'same');
-            contour(X,Y,o',[.0004,.0004],'linewidth',2,'Color',Scolors(s,:))
-            
+            close;
+            k=k+1;        
         end
     end
 
 end
 
-
-for k = 1:fet.size(2),
-    hfig = figure(baseFigNum+k);k=k+1;
-    caxis([0,200])
-    legend(tlist,'location','SouthEast')
-    hfig.Position  = [100   100   782   629];
-    reportfig(figPath,...             Base path where figures are saved
-    hfig,...                Figure handel 
-    'CJPDF',...             contours overlayed on joint probability distribution
-    'req',...               Save in the req folder
-    false,...
-        [sltag '_A1'],...
-        figTitle,[],false,'png',[],[],[],false);
-end
 
 % $$$ 
 % $$$ 
