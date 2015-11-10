@@ -2298,4 +2298,10 @@ hist2([nn(ind),ns(ind,1)],edx,edy);
 caxis([0,200])
 
 
-fet
+tf = circ_dist(circshift(fang(:,'spine_lower','hcom',1),-1),circshift(fang(:,'spine_lower','hcom',1),1));
+
+mn = 
+
+
+
+
