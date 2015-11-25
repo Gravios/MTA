@@ -106,6 +106,8 @@ if nargout>1,
     %% Feature tags and definitions
     %lower spine speed
     % 1.
+    %  '$\displaystyle\frac{dz{BL}}{dt}$'
+    %
     featureTitles(end+1) = {'Height_{BL}'};
     featureDesc(end+1) = {'1 Hz low pass filtered height of the lower spine maker'};
     % 2.    

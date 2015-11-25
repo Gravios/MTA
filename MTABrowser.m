@@ -2071,8 +2071,8 @@ switch eventdata.Key
             setappdata(handles.MLapp,'play_speed',newPlaySpeed);
             set(handles.MLplayspeed_slider,'Value', newPlaySpeed);
           case 'on',
-            hgfeval(MLData.MLRotaKeyPressFcn,handles.MTABrowser,eventdata);
-            setappdata(handles.MTABrowser,'MLData',MLData);
+%             hgfeval(MLData.MLRotaKeyPressFcn,handles.MTABrowser,eventdata);
+%             setappdata(handles.MTABrowser,'MLData',MLData);
         end
 
       case 'downarrow'
@@ -2088,8 +2088,8 @@ switch eventdata.Key
             setappdata(handles.MLapp,'play_speed',newPlaySpeed);
             set(handles.MLplayspeed_slider,'Value', newPlaySpeed);
           case 'on',
-            hgfeval(MLData.MLRotaKeyPressFcn,handles.MTABrowser,eventdata);
-            setappdata(handles.MTABrowser,'MLData',MLData);
+%             hgfeval(MLData.MLRotaKeyPressFcn,handles.MTABrowser,eventdata);
+%             setappdata(handles.MTABrowser,'MLData',MLData);
         end
 
       case 'numpad0'
@@ -2121,8 +2121,13 @@ switch eventdata.Key
             if isempty(MLData.current_label),
                 MLData.current_label = 0;
             else
-                MLData.current_label = strfind(MLData.keys(MLData.selected_states),eventdata.Key);
-                MLData.flag_tag=1;
+                nkey = strfind(MLData.keys(MLData.selected_states),eventdata.Key);
+                if ~isempty(nkey)
+                    MLData.current_label = nkey;
+                    MLData.flag_tag=1;
+                else
+                    MLData.flag_tag=0;
+                end
             end
         end
         if MLData.flag_tag

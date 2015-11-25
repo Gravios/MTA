@@ -10,7 +10,7 @@ perplexity = 100; % arbitrary scale use to control the malability
 
 SAVEFIG = true;   % boolean flag, Save figures along with png's 
 
-msr = 15;         % Reduce the sample rate of the feature matrix
+msr = 20;         % Reduce the sample rate of the feature matrix
 
 hostPath = '/storage/gravio/figures/'; % Where reportfig should
                                        % save stuff
@@ -20,7 +20,7 @@ hostPath = '/storage/gravio/figures/'; % Where reportfig should
 %Trial.stc.load(Trial,'hand_labeled_rev2');
 %Trial = MTATrial('Ed01-20140707');
 %Stc = Trial.stc.load(Trial,'hand_labeled_rev1');
-Stc = Trial.stc.load(Trial,'hand_labeled_rev1');
+Stc = Trial.stc.load(Trial,'hand_labeled_rev2');
 
 [fet,fett,fetd] = fet_tsne(Trial,msr,true); % Load Feature matrix of the session
 
@@ -51,7 +51,7 @@ figparm = ['tSNE-msr_' num2str(msr) '-ind_' num2str(start) '_' ...
 
 
 osts = numel(Stc.states);
-hfig = figure(3923923),clf
+hfig = figure(3923923);clf
 hold on;
 sts = Stc.list_state_attrib('label');
 mc = msmat(ind,:);
