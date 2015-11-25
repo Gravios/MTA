@@ -1,30 +1,39 @@
+function req20150914(Trial,varargin)
 %% tSNE stuff
 %mkdir('/storage/gravio/figures/req/req20150914');
 
-initial_dims = 5;
-perplexity = 100;
-SAVEFIG = true;
+initial_dims = 5; % number of dimensions of the feature matrix used
+                  % in preliminary rounds of t-SNE
+
+perplexity = 100; % arbitrary scale use to control the malability
+                  % of the distributions during dimension reduction
+
+SAVEFIG = true;   % boolean flag, Save figures along with png's 
+
+msr = 15;         % Reduce the sample rate of the feature matrix
+
+hostPath = '/storage/gravio/figures/'; % Where reportfig should
+                                       % save stuff
 
 
-hostPath = '/storage/gravio/figures/';
-msr = 15; % New sample rate
+%Trial = MTATrial('jg05-20120317');
+%Trial.stc.load(Trial,'hand_labeled_rev2');
+%Trial = MTATrial('Ed01-20140707');
+%Stc = Trial.stc.load(Trial,'hand_labeled_rev1');
+Stc = Trial.stc.load(Trial,'hand_labeled_rev1');
 
+[fet,fett,fetd] = fet_tsne(Trial,msr,true); % Load Feature matrix of the session
 
-Trial = MTATrial('jg05-20120317');
-Trial.stc.load(Trial,'hand_labeled_rev2');
-
-fet = fet_tsne(Trial,msr,true);
-
-[asmat,labels,keys] =  stc2mat(Trial.stc,fet);
+[asmat,labels,keys] =  stc2mat(Stc,fet);
 asmat = MTADxyz('data',asmat,'sampleRate',fet.sampleRate);
-[~,asmat.data] = max(asmat.data(:,1:12),[],2);
-c = jet(numel(unique(asmat)));
+[~,asmat.data] = max(asmat.data,[],2);
+c = jet(numel(Stc.states));
 csmat = asmat.copy; 
 csmat.data = c(csmat.data,:);
 
 ind = Trial.stc{'a'};
 
-mfet = nunity(fet(ind,:));
+mfet = fet(ind,:);
 msmat = csmat(ind,:);
 
 start = 1;
@@ -33,7 +42,7 @@ stop = size(mfet,1);
 no_dims = 2;
 
 ind = start:skip:stop;
-mappedX = tsne(mfet(ind,:), msmat(ind,:), no_dims, initial_dims, perplexity);
+mappedX = tsne(mfet(ind,:), msmat(ind,:), no_dims, initial_dims, perplexity); 
 
 figparm = ['tSNE-msr_' num2str(msr) '-ind_' num2str(start) '_' ...
             num2str(skip) '_' num2str(stop) '-perplexity_' ...
@@ -41,18 +50,15 @@ figparm = ['tSNE-msr_' num2str(msr) '-ind_' num2str(start) '_' ...
             '-no_dims_' num2str(no_dims)];
 
 
-
-
-
-osts = 12;
+osts = numel(Stc.states);
 hfig = figure(3923923),clf
 hold on;
-sts = Trial.stc.list_state_attrib('label');
+sts = Stc.list_state_attrib('label');
 mc = msmat(ind,:);
 for nc = 1:osts,
     nind = all(bsxfun(@eq,c(nc,:),mc),2);
     h = scatter(mappedX(nind,1),mappedX(nind,2),2,mc(nind,:));
-    h.MarkerFaceColor = h.CData(1,:);
+    try,h.MarkerFaceColor = h.CData(1,:);end
 end
 legend(sts(1:osts-1));
 xlim([min(mappedX(:,1))-5,max(mappedX(:,1))+30]);
@@ -64,80 +70,16 @@ reportfig([], hfig, 'tsne', 'req', false,Trial.filebase,figparm,[],SAVEFIG,'png'
 mtfet =  MTADxyz('data',mfet(ind,:),'sampleRate',fet.sampleRate);
 mtpos =  MTADxyz('data',mappedX,'sampleRate',fet.sampleRate);
 
-[RateMap,Bins,distdw,distIndw]= PlotKNNPF(Trial,mtfet,mtpos,[5,5],20,5,'xy',[],[],[-110,125;-125,110]);
-rmap = reshape(RateMap,numel(Bins{1}),numel(Bins{2}),[]);
-
-
-fett = {};
-fetd = {};
-
-%% Feature tags and definitions
-%lower spine speed
-fett(end+1) = {'Height_{BL}'};
-fetd(end+1) = {'1 Hz low pass filtered height of the lower spine maker'};
-
-fett(end+1) = {'Height_{BU}'};
-fetd(end+1) = {'1 Hz low pass filtered height of the upper spine maker'};
-
-fett(end+1) = {'Height_{HF}'};            
-fetd(end+1) = {'1 Hz low pass filtered height of the head front maker'};
-
-fett(end+1) = {'XY Speed_{BL}'};
-fetd(end+1) = {['2.4 Hz low pass filtered speed in the xy plane of ' ...
-                'the spine lower maker']};
-
-fett(end+1) = {'XY Speed_{BU}'};
-fetd(end+1) = {['2.4 Hz low pass filtered speed in the xy plane of ' ...
-                'the spine upper maker']};
-
-fett(end+1) = {'XY Speed_{HF}'};
-fetd(end+1) = {['2.4 Hz low pass filtered speed in the xy plane of ' ...
-                'the head front maker']};
-
-fett(end+1) = {'Vertical Speed(flp1Hz) of Middle Spine'};
-fetd(end+1) = {['1 Hz low pass filtered speed in the z axis of the ' ...
-                'head back marker']};
-
-fett(end+1) = {'PPC_{traj yaw}'};
-fetd(end+1) = {['1 Hz lowpass filtered Pair-wise Phase Consisistency(PPC) of the yaw of ' ...
-                'trajectories of all makers along the rostro-caudal axis']};
-
-fett(end+1) = {'bfet'};
-fetd(end+1) = {['Magnitude of the projection of lower spine trajectory  ' ...
-                'onto the vecor of lower spine to upper spine']};
-
-fett(end+1) = {'Pitch_{BMBU}'};
-fetd(end+1) = {['Pitch of spine_middle to spine_upper relative to xy ' ...
-                'plane']};
-
-fett(end+1) = {'Pitch_{BUHB}'};
-fetd(end+1) = {['Pitch of spine_upper to head_back relative to xy ' ...
-                'plane']};
-
-fett(end+1) = {'Pitch_{HBHF}'};
-fetd(end+1) = {['Pitch of head_back to head_front relative to xy ' ...
-                'plane']};
-
-fett(end+1) = {'XY Dist_{BLBU}'};
-fetd(end+1) = {['Magnitude of the projection of the vector formed ' ...
-                'by the spine_lower and spine_upper markers']};
-
-fett(end+1) = {'d(pitch_{BMBU})/dt'};
-fetd(end+1) = {'Pitch speed of the vector from spine_middle to spine_upper'};
-
-fett(end+1) = {'d(yaw_{BLBU})/dt'};
-fetd(end+1) = {'Pitch speed of the vector from spine_lower to spine_upper'};
-
-fett(end+1) = {'d(yaw_{BMHF})/dt'};
-fetd(end+1) = {'Yaw speed of the vector from spine_middle to head_front'};
-
-
+[meanMap,Bins,distdw,distIndw]= PlotKNNPF(Trial,mtfet,mtpos,[5,5],20,5,'xy',[],[],[-110,125;-125,110],@nanmean);
+mmap = reshape(meanMap,numel(Bins{1}),numel(Bins{2}),[]);
+[stdMap,Bins,distdw,distIndw]= PlotKNNPF(Trial,mtfet,mtpos,[5,5],20,5,'xy',[],[],[-110,125;-125,110],@nanstd);
+smap = reshape(stdMap,numel(Bins{1}),numel(Bins{2}),[]);
 
 
 hfig = figure(38381);
-for i = 1:size(rmap,3);
+for i = 1:size(mmap,3);
     clf
-    [ha,hc] = imagescnan({Bins{1},Bins{2},rmap(:,:,i)},[],false, ...
+    [ha,hc] = imagescnan({Bins{1},Bins{2},mmap(:,:,i)},[],false, ...
                         true,[0,0,0]);
     ylabel(hc,'mean z-score','FontName','Courier','FontSize',12);
     axis xy
@@ -146,4 +88,20 @@ for i = 1:size(rmap,3);
    
     reportfig([], hfig, 'tsne', 'req',false,fett{i},fetd{i},[],SAVEFIG,'png',8,8);
 end
+
+% SNR maps
+% $$$ hfig = figure(38381);
+% $$$ for i = 1:size(mmap,3);
+% $$$     clf
+% $$$     [ha,hc] = imagescnan({Bins{1},Bins{2},mmap(:,:,i)./smap(:,:,i)},[-10,10],false, ...
+% $$$                         true,[0,0,0]);
+% $$$     ylabel(hc,'mean z-score','FontName','Courier','FontSize',12);
+% $$$     axis xy
+% $$$     title(fett{i},'FontName','Courier','FontSize',12)
+% $$$     daspect([1,1,1])
+% $$$    
+% $$$     %reportfig([], hfig, 'tsne', 'req',false,fett{i},fetd{i},[],SAVEFIG,'png',8,8);
+% $$$ end
+
+
 

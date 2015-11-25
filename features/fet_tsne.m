@@ -97,7 +97,7 @@ if normalized,
     if isempty(Nmean)||isempty(Nstd),
         [~,Nmean,Nstd] = nunity(fet(Trial.stc{'a'},:),@nan);
     end
-n    [fet.data] = nunity(fet.data,@nan,Nmean,Nstd);
+    [fet.data] = nunity(fet.data,@nan,Nmean,Nstd);
 end
 
 featureTitles = {};
