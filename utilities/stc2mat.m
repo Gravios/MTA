@@ -3,7 +3,11 @@ function [smat,labels,keys] = stc2mat(Stc,Data,varargin)
 % [states] = DefaultArgs(varargin,{Stc.list_state_attrib('key')},true);
 % assumes no heirarchical relationships between states
 % each is mutually exclusive from all others
+if iscell(Stc), Stc = Stc{1}; end
+if iscell(Data), Data = Data{1}; end
+
 [states] = DefaultArgs(varargin,{Stc.list_state_attrib('key')},true);
+
 
 Stc = Stc.copy; % Don't mess up the Stc in other workspaces
 

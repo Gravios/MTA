@@ -63,9 +63,9 @@ man.resample(fxyz);
 
 
 %% RHM feature
-[rhm,fs] = fet_rhm(Trial,[],'mtchglong',true);
-rhm.data = median(rhm(:,fs>6&fs<14),2);
-rhm.resample(fxyz);
+% $$$ [rhm,fs] = fet_rhm(Trial,[],'mtchglong',true);
+% $$$ rhm.data = median(rhm(:,fs>6&fs<14),2);
+% $$$ rhm.resample(fxyz);
 
 
 fet = MTADfet(Trial.spath,...
@@ -88,8 +88,8 @@ fet.data = [fxyz(:,{'spine_lower','spine_upper','head_front'},3),...
             fang(:,1,4,3).*cos(fang(:,1,4,2)),...
             abs(circ_dist(circshift(fang(:,3,4,2),-1),circshift(fang(:,3,4,2),1))),...
             abs(circ_dist(circshift(fang(:,1,4,1),-1),circshift(fang(:,1,4,1),1))),...
-            abs(circ_dist(circshift(fang(:,3,7,1),-1),circshift(fang(:,3,7,1),1))),...
-            rhm.data];
+            abs(circ_dist(circshift(fang(:,3,7,1),-1),circshift(fang(:,3,7,1),1)))...%,
+            ];%rhm.data
 fet.data(isinf(fet(:))) = 0;
 
 
@@ -167,7 +167,7 @@ if nargout>1,
     featureTitles(end+1) = {'d(yaw_{BMHF})/dt'};
     featureDesc(end+1) = {'Yaw speed of the vector from spine_middle to head_front'};
     % 17.
-    featureTitles(end+1) = {'rhm'};
-    featureDesc(end+1) = {'Rhythmic head motion'};
+% $$$     featureTitles(end+1) = {'rhm'};
+% $$$     featureDesc(end+1) = {'Rhythmic head motion'};
 
 end
