@@ -239,6 +239,13 @@ switch varargin{1}
                                                                                              ... 
                 {'Ed05-20140528',     'cof',     'all',   'cin',  '0x0010',      119.881035},... 
                 {'Ed05-20140529',     'ont',     'all',   'cin',  '0x0010',      119.881035}}; % 
+                                                                                               
+  case 'req20151203'
+    Sessions = {{'jg05-20120309',     'cof',     'all',   'cin',  '0x0040',      119.881035},...
+                {'jg05-20120310',     'cof',     'all',   'cin',  '0x0040',      119.881035},...
+                {'jg05-20120311',     'cof',     'all',   'cin',  '0x0040',      119.881035},...
+                {'jg05-20120324',     'cof',     'all',   'cin',  '0x0040',      119.881035},...
+                {'jg05-20120325',     'cof',     'all',   'cin',  '0x0040',      119.881035}}; % 
 
   case 'Ed10'
     Sessions = {{'Ed10-20140812',     'cof',     'all',   'cin',  '0x0002',      119.881035},...  CA1
@@ -514,6 +521,6 @@ switch varargin{1}
           'ncpCy'    ,'  ']);
 
   otherwise
-    warning('SessionList:ListName the provided list name was not recognized')
+    warning('SessionList:ListName, the provided list name was not recognized')
     Sessions = Seslist;
 end

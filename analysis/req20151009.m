@@ -1,5 +1,5 @@
-%function req20151009(Trial)
-
+% function req20151009(Trial)
+% All JPDFs for fet_tsne over all sessions
 
 
 

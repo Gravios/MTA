@@ -1,3 +1,4 @@
+% req20151007
 % logistic regression models 
 %
 % label other sessions with hand labeled states, using the lgr model

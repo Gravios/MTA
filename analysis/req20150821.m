@@ -1,5 +1,5 @@
 %%REQ requests for 20150821 
-% status: active
+% status: inactive
 
 % REQ 1.0 Video Example of skeleton and feature phase space
 % REQ 2.0 Err,... some more fanangling with walking features

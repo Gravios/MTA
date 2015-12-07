@@ -1,4 +1,5 @@
-
+% req20150817
+% Feature exploration and visualization 
 stc = Trial.stc.copy;
 
 

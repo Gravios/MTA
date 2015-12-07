@@ -127,7 +127,7 @@ classdef MTASession < hgsetget
                 if exist(fullfile(Session.spath, [Session.filebase, '.ses.mat']),'file')&&~overwrite
                     Session = Session.load();
                     Session = Session.updatePaths();
-                    Session.xyz.load(Session.sync);
+                    %Session.xyz.load(Session.sync);
                 elseif overwrite
                     warning(['Overwriting Session: ' fullfile(Session.spath, [Session.filebase, '.ses.mat'])])
                     Session.create(TTLValue,xyzSystem,ephySystem,xyzSampleRate);

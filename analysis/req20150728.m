@@ -1,3 +1,5 @@
+% req20150728
+% create video of rear 
 
 Trial = MTATrial('jg05-20120317');
 

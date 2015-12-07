@@ -1,5 +1,11 @@
 function req20150925(Trial,varargin)
 [figPath,sampleRate,sts,initial_dims,perplexity] = DefaultArgs(varargin,{'/storage/gravio/figures/',15,{'walk','rear'},5,100});
+% function req20150925(Trial,varargin)
+% [figPath,sampleRate,sts,initial_dims,perplexity] =
+% DefaultArgs(varargin,{'/storage/gravio/figures/%',15,{'walk','rear'},5,100});
+% 
+% Run tsne on a session and overlay the hand labels, and then plot
+% mean z-scores for each feature over the tsne space. 
 
 SAVEFIG = true;
 osts = numel(sts)+1;
@@ -11,7 +17,7 @@ Trial = labelBhv(Trial);
 %end
 
 
-fet = fet_tsne(Trial,sampleRate,true);
+[fet,fett,fetd] = fet_tsne(Trial,sampleRate,true);
 
 
 [asmat,labels,keys] =  stc2mat(Trial.stc,fet,sts);
@@ -44,9 +50,6 @@ figTitle = ['tSNE-sampleRate_' num2str(sampleRate) '-ind_' num2str(start) '_' ..
 save(fullfile(Trial.spath,[Trial.filebase '-req20150925-' figTitle '.mat']),...
      'mappedX','mfet','msmat','sts','initial_dims','perplexity');
 
-
-
-
 hfig = figure(3923923),clf,hold on
 sts = Trial.stc.list_state_attrib('label');
 mc = msmat(ind,:);
@@ -69,73 +72,6 @@ mtpos =  MTADxyz('data',mappedX,'sampleRate',fet.sampleRate);
 
 [RateMap,Bins,distdw,distIndw]= PlotKNNPF(Trial,mtfet,mtpos,[5,5],20,5,'xy',[],[],[-110,110;-110,110]);
 rmap = reshape(RateMap,numel(Bins{1}),numel(Bins{2}),[]);
-
-
-
-
-fett = {};
-fetd = {};
-
-%% Feature tags and definitions
-%lower spine speed
-fett(end+1) = {'Height_{BL}'};
-fetd(end+1) = {'1 Hz low pass filtered height of the lower spine maker'};
-
-fett(end+1) = {'Height_{BU}'};
-fetd(end+1) = {'1 Hz low pass filtered height of the upper spine maker'};
-
-fett(end+1) = {'Height_{HF}'};            
-fetd(end+1) = {'1 Hz low pass filtered height of the head front maker'};
-
-fett(end+1) = {'XY Speed_{BL}'};
-fetd(end+1) = {['2.4 Hz low pass filtered speed in the xy plane of ' ...
-                'the spine lower maker']};
-
-fett(end+1) = {'XY Speed_{BU}'};
-fetd(end+1) = {['2.4 Hz low pass filtered speed in the xy plane of ' ...
-                'the spine upper maker']};
-
-fett(end+1) = {'XY Speed_{HF}'};
-fetd(end+1) = {['2.4 Hz low pass filtered speed in the xy plane of ' ...
-                'the head front maker']};
-
-fett(end+1) = {'Vertical Speed(flp1Hz) of Middle Spine'};
-fetd(end+1) = {['1 Hz low pass filtered speed in the z axis of the ' ...
-                'head back marker']};
-
-fett(end+1) = {'PPC_{traj yaw}'};
-fetd(end+1) = {['1 Hz lowpass filtered Pair-wise Phase Consisistency(PPC) of the yaw of ' ...
-                'trajectories of all makers along the rostro-caudal axis']};
-
-fett(end+1) = {'bfet'};
-fetd(end+1) = {['Magnitude of the projection of lower spine trajectory  ' ...
-                'onto the vecor of lower spine to upper spine']};
-
-fett(end+1) = {'Pitch_{BMBU}'};
-fetd(end+1) = {['Pitch of spine_middle to spine_upper relative to xy ' ...
-                'plane']};
-
-fett(end+1) = {'Pitch_{BUHB}'};
-fetd(end+1) = {['Pitch of spine_upper to head_back relative to xy ' ...
-                'plane']};
-
-fett(end+1) = {'Pitch_{HBHF}'};
-fetd(end+1) = {['Pitch of head_back to head_front relative to xy ' ...
-                'plane']};
-
-fett(end+1) = {'XY Dist_{BLBU}'};
-fetd(end+1) = {['Magnitude of the projection of the vector formed ' ...
-                'by the spine_lower and spine_upper markers']};
-
-fett(end+1) = {'d(pitch_{BMBU})/dt'};
-fetd(end+1) = {'Pitch speed of the vector from spine_middle to spine_upper'};
-
-fett(end+1) = {'d(yaw_{BLBU})/dt'};
-fetd(end+1) = {'Pitch speed of the vector from spine_lower to spine_upper'};
-
-fett(end+1) = {'d(yaw_{BMHF})/dt'};
-fetd(end+1) = {'Yaw speed of the vector from spine_middle to head_front'};
-
 
 hfig = figure(38381);
 for i = 1:size(rmap,3);
