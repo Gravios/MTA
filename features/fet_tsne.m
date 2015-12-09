@@ -77,15 +77,15 @@ fet = MTADfet(Trial.spath,...
               [],'TimeSeries',[],'tSNE_Features','fet_tsne','t');                  
 
 
-fet.data = [fxyz(:,{'spine_lower','spine_upper','head_front'},3),...
+fet.data = [fxyz(:,{'spine_lower','spine_middle','spine_upper','head_front'},3),...
             fvelxy(:,{'spine_lower','spine_upper','head_front'}),....
             fvelz(:,'head_back'),...
             man.data,...
             log10(abs(bfet(:,1)+1)),...
-            fang(:,'spine_middle','spine_upper',2),...
-            fang(:,'spine_upper','head_back',2),...
-            fang(:,'head_back','head_front',2),...            
-            fang(:,1,4,3).*cos(fang(:,1,4,2)),...
+            fang(:,'spine_middle','spine_upper',2),...                  %Pitch
+            fang(:,'spine_upper','head_back',2),...                     %Pitch
+            fang(:,'head_back','head_front',2),...                      %Pitch
+            fang(:,1,4,3).*cos(fang(:,1,4,2)),...                       %Intermarker Distance
             abs(circ_dist(circshift(fang(:,3,4,2),-1),circshift(fang(:,3,4,2),1))),...
             abs(circ_dist(circshift(fang(:,1,4,1),-1),circshift(fang(:,1,4,1),1))),...
             abs(circ_dist(circshift(fang(:,3,7,1),-1),circshift(fang(:,3,7,1),1)))...%,
@@ -114,59 +114,62 @@ if nargout>1,
     featureTitles(end+1) = {'Height_{BU}'};
     featureDesc(end+1) = {'1 Hz low pass filtered height of the upper spine maker'};
     % 3.
+    featureTitles(end+1) = {'Height_{BU}'};
+    featureDesc(end+1) = {'1 Hz low pass filtered height of the upper spine maker'};
+    % 4.
     featureTitles(end+1) = {'Height_{HF}'};            
     featureDesc(end+1) = {'1 Hz low pass filtered height of the head front maker'};
-    % 4.
+    % 5.
     featureTitles(end+1) = {'XY Speed_{BL}'};
     featureDesc(end+1) = {['2.4 Hz low pass filtered speed in the xy plane of ' ...
                     'the spine lower maker']};
-    % 5.
+    % 6.
     featureTitles(end+1) = {'XY Speed_{BU}'};
     featureDesc(end+1) = {['2.4 Hz low pass filtered speed in the xy plane of ' ...
                     'the spine upper maker']};
-    % 6.
+    % 7.
     featureTitles(end+1) = {'XY Speed_{HF}'};
     featureDesc(end+1) = {['2.4 Hz low pass filtered speed in the xy plane of ' ...
                     'the head front maker']};
-    % 7.
+    % 8.
     featureTitles(end+1) = {'Vertical Speed(flp1Hz) of Middle Spine'};
     featureDesc(end+1) = {['1 Hz low pass filtered speed in the z axis of the ' ...
                     'head back marker']};
-    % 8.
+    % 9.
     featureTitles(end+1) = {'PPC_{traj yaw}'};
     featureDesc(end+1) = {['1 Hz lowpass filtered Pair-wise Phase Consisistency(PPC) of the yaw of ' ...
                     'trajectories of all makers along the rostro-caudal axis']};
-    % 9.
+    % 10.
     featureTitles(end+1) = {'bfet'};
     featureDesc(end+1) = {['Magnitude of the projection of lower spine trajectory  ' ...
                     'onto the vecor of lower spine to upper spine']};
-    % 10.
+    % 11.
     featureTitles(end+1) = {'Pitch_{BMBU}'};
     featureDesc(end+1) = {['Pitch of spine_middle to spine_upper relative to xy ' ...
                     'plane']};
-    % 11.
+    % 12.
     featureTitles(end+1) = {'Pitch_{BUHB}'};
     featureDesc(end+1) = {['Pitch of spine_upper to head_back relative to xy ' ...
                     'plane']};
-    % 12.
+    % 13.
     featureTitles(end+1) = {'Pitch_{HBHF}'};
     featureDesc(end+1) = {['Pitch of head_back to head_front relative to xy ' ...
                     'plane']};
-    % 13.
+    % 14.
     featureTitles(end+1) = {'XY Dist_{BLBU}'};
     featureDesc(end+1) = {['Magnitude of the projection of the vector formed ' ...
                     'by the spine_lower and spine_upper markers']};
-    % 14.
+    % 15.
     featureTitles(end+1) = {'d(pitch_{BMBU})/dt'};
     featureDesc(end+1) = {'Pitch speed of the vector from spine_middle to spine_upper'};
 
-    % 15.
+    % 16.
     featureTitles(end+1) = {'d(yaw_{BLBU})/dt'};
     featureDesc(end+1) = {'Pitch speed of the vector from spine_lower to spine_upper'};
-    % 16.
+    % 17.
     featureTitles(end+1) = {'d(yaw_{BMHF})/dt'};
     featureDesc(end+1) = {'Yaw speed of the vector from spine_middle to head_front'};
-    % 17.
+    % 18.
 % $$$     featureTitles(end+1) = {'rhm'};
 % $$$     featureDesc(end+1) = {'Rhythmic head motion'};
 

@@ -20,7 +20,7 @@ seslist = {...
 nses = numel(seslist);
 
 cs = jet(numel(seslist));
-Trial = {}; Stc = {}; xyz = {}; fvel = {};
+Trial = {}; Stc = {}; xyz = {}; fvel = {}; ang = {};
 for i = 1:nses
     % Load Trials into cell arrray
     Trial{i} = MTATrial(seslist{i}{1});   
@@ -34,7 +34,66 @@ for i = 1:nses
     % Transform lower spine marker speed to a log scale
     fvel {i}.data(fvel{i}.data<0.01) = .01;
     fvel {i}.data = log10(fvel{i}.data);
+    ang  {i} = create(MTADang,Trial{i},xyz{i});
 end
+
+
+% Correction of Height
+mz = {};
+veds = linspace(-1,2,100);
+for i = 1:nses
+    lind = ang{i}(:,3,4,2)<0;
+    [~,ind_v_b] = histc(fvel{i}(:,'spine_lower'),veds);
+    [~,ind_v_h] = histc(fvel{i}(:,'head_back'),veds);
+    mind = nniz([ind_v_b,ind_v_h]);
+    mz{i} = accumarray([ind_v_b(mind&lind),ind_v_h(mind&lind)],...
+                       xyz{i}(mind&lind,1,3),...
+                       [numel(veds),numel(veds)],...
+                       @median);
+    sz{i} = accumarray([ind_v_b(mind&lind),ind_v_h(mind&lind)],...
+                       xyz{i}(mind&lind,1,3),...
+                       [numel(veds),numel(veds)],...
+                       @std);
+end
+% $$$ figure,imagesc([mz{1}]'),axis xy,colormap jet
+% $$$ figure,imagesc(sz{1}'),axis xy,colormap jet
+% $$$ figure,imagesc([mz{1}-mz{2}]'),axis xy,colormap jet
+nnz = mz{2}~=0&mz{i}~=0;
+mzd = mz{2}-mz{m};
+szd = sz{2}(:)<10&sz{i}(:)<10;
+% $$$ deds= linspace(-100,100,100);
+% $$$ figure,bar(deds,histc(mzd(nnz(:)&szd),deds),'histc');
+z_shift = median(mzd(nnz(:)&szd));
+
+
+% Correction of pitch
+mz = {};
+veds = linspace(-1,2,100);
+for i = 1:nses
+    lind = ang{i}(:,3,4,2)<0;
+    [~,ind_v_b] = histc(fvel{i}(:,'spine_lower'),veds);
+    [~,ind_v_h] = histc(fvel{i}(:,'head_back'),veds);
+    mind = nniz([ind_v_b,ind_v_h]);
+    mz{i} = accumarray([ind_v_b(mind&lind),ind_v_h(mind&lind)],...
+                       ang{i}(mind&lind,1,2,2),...
+                       [numel(veds),numel(veds)],...
+                       @circ_median);
+    sz{i} = accumarray([ind_v_b(mind&lind),ind_v_h(mind&lind)],...
+                       ang{i}(mind&lind,1,2,2),...
+                       [numel(veds),numel(veds)],...
+                       @circ_std);
+end
+% $$$ figure,imagesc([mz{2}]'),axis xy,colormap jet
+% $$$ figure,imagesc(sz{2}'),axis xy,colormap jet
+% $$$ figure,imagesc([mz{2}-mz{i}]'),axis xy,colormap jet
+i = 1
+nnz = mz{2}~=0&mz{i}~=0;
+mzd = mz{2}-mz{i};
+szd = sz{2}(:)<10&sz{i}(:)<10;
+deds= linspace(-pi/2,pi/2,100);
+figure,bar(deds,histc(mzd(nnz(:)&szd),deds),'histc');
+
+z_shift = median(mzd(nnz(:)&szd));
 
 
 %%Start here

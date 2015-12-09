@@ -35,15 +35,16 @@ for s = 1:numel(slist),
     
 end
 
-fet.data = nunity(fet.data)
-    
+fet.data = nunity(fet.data);
+fet.data(~nniz(fet),:) = [];
+
 %Stc = Trial.stc.load(Trial,'hand_labeled_rev2');
 
 
 
 
 
- $$$ [asmat,labels,keys] =  stc2mat(Stc,fet);
+% $$$ [asmat,labels,keys] =  stc2mat(Stc,fet);
 % $$$ asmat = MTADxyz('data',asmat,'sampleRate',fet.sampleRate);
 % $$$ [~,asmat.data] = max(asmat.data,[],2);
 % $$$ c = jet(numel(Stc.states));
@@ -56,17 +57,32 @@ fet.data = nunity(fet.data)
 % $$$ msmat = csmat(ind,:);
 
 start = 1;
-skip = 2;
-stop = size(mfet,1);
+skip = 5;
+stop = size(fet,1);
 no_dims = 2;
 
 ind = start:skip:stop;
-mappedX = tsne(mfet(ind,:), msmat(ind,:), no_dims, initial_dims, perplexity); 
+mappedX = tsne(fet(ind,:), [], no_dims, initial_dims, perplexity); 
+
+
+%%Start Here
+pos = map_feature_to_tsne_space(Fet,tsneFet,tsneMap)
+comptSneMap = zeros([numel(aClu),2]);
+tic
+for s = 1:numel(aClu),
+    [~,mind] = sort(sqrt(sum(bsxfun(@minus,Fet,aFet(s,mod(1:25,3)&1:25~=25)).^2,2)));
+    comptSneMap(s,:) = mean(mx(mind(1:4),:));
+    if ~mod(s,10000),toc,disp([num2str(s) ' of ' num2str(numel(aClu))]),tic,end
+end
+toc
+
 
 figparm = ['tSNE-nsr_' num2str(NEW_SAMPLE_RATE) '-ind_' num2str(start) '_' ...
             num2str(skip) '_' num2str(stop) '-perplexity_' ...
             num2str(perplexity) '-initial_dims_' num2str(initial_dims) ...
             '-no_dims_' num2str(no_dims)];
+
+
 
 
 osts = numel(Stc.states);

@@ -11,16 +11,16 @@ states = {'walk','rear','sit','turn','shake','groom'};
 init_ns = numel(states);
 
 Trial = MTATrial('jg05-20120317','all','cof');    
-fet = fet_lgr(Trial);
-fet.resample(30);
+fet = 'fet_tsne';
 model_names = {};
 State_cat_order = {};%repmat({''},[init_ns,1]);
 lgrm = {};
 pB = repmat({[]},[init_ns,1]);
 
- 
+
 for s = 1:init_ns,
     disp(['inter: ' num2str(s) ', finding best state'])
+    % 
     temp_states =  states(cellfun(@isempty,regexp(states,['(',strjoin(State_cat_order,'|'),')'])));
     
     if ~isempty(State_cat_order),
@@ -31,7 +31,9 @@ for s = 1:init_ns,
     
     for i = 1:numel(temp_states),
         model_names(s,i) = {[Trial.filebase,'-','pop_lgr-' temp_states{i} sws]};%mfilename]};
-        bhv_lgr(Trial,train,[temp_states(i),Trial.stc{['a-' temp_states{i} sws]}.label],...
+        bhv_lgr(Trial,...
+                train,...
+                [temp_states(i),Trial.stc{['a-' temp_states{i} sws]}.label],...
                 fet,model_names{s,i},false,false);
     end
 

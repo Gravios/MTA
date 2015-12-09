@@ -75,4 +75,4 @@
 %    jg05-20120317 features are then mapped onto tsne space
 
 % req20151204
-%    tsne mapping of spike on to 2D plane
+%    tsne mapping of spike on to 2D 
