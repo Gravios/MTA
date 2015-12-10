@@ -39,17 +39,20 @@ end
 
 nind = nniz(lrfet);
 
+% Create model filename based on the model name and the feature name
+% default model_name = ['MTAC_' Trial.stc.mode '_' MODEL_TYPE];
 model_name = [model_name '-' lrfet.label '-model.mat'];
 model_path = fileparts(mfilename('fullpath'));
 model_loc = fullfile(model_path,model_name);
 
 
-
 %% Get or Train LGR Model
 if train||~exist(model_loc,'file'),
-
+    
+    % create Nx1 array to store states as integers (nomial data)
     [smat] = max(stc2mat(Trial.stc,lrfet,states),[],2);
     
+    % Create struct to store model meta-data
     Model_Information = struct(...
         'filename',              model_name,         ...
         'path',                  model_path,             ...
@@ -60,6 +63,10 @@ if train||~exist(model_loc,'file'),
         'state_labels',          {states},               ...
         'state_keys',            {keys});
 
+    % Flag to include unlabeled regions of data within the good
+    % periods of the session. 
+    % IF TRUE  -> Create classifier model with the specified states and
+    %             all other states as a composite state
     if other_state, 
         ind = resample(Trial.stc{'a'}.cast('TimeSeries'),lrfet);
         ind = logical(ind.data);
@@ -68,30 +75,33 @@ if train||~exist(model_loc,'file'),
             Model_Information.state_labels =  [Model_Information.state_labels{:}, {'other'}];
             Model_Information.state_keys   =  [Model_Information.state_keys{:},       {'o'}];
         end
-    else
+    else % IF FALSE -> Create classifier model with only the specified states
         ind = any(smat,2);
     end
     
-    
-    
+    % Train classifier
     [B,dev,stats] = mnrfit(lrfet(ind,:),smat(ind),'model','nominal');
     save(model_loc,'B','dev','stats','Model_Information');
     return
 else
+    % Load the classifier model
     load(model_loc);
 end    
 
 
-% Create new Stc
+% Create new StateCollection ... well copy
 Stc = Trial.stc.copy;
-Stc.updateMode([MODEL_TYPE '-' Model_Information.StcMode '-' cell2mat(Model_Information.state_keys)]);
+Stc.updateMode([MODEL_TYPE '-' Model_Information.StcMode...
+                '-' cell2mat(Model_Information.state_keys)]);
 Stc.states = {};
 
 % Used to put labels into xyz sampleRate
 xyz = Trial.load('xyz');
 
 % Compute scores for the logistic regression
-% You know this is irresposible code... don't give me that look
+% I know this is irresposible code... don't give me that
+% look... that was meant for me not you. It's really not as bad as
+% it sounds.
 d_state = mnrval(B,lrfet.data);
 d_state = MTADxyz('data',d_state,'sampleRate',lrfet.sampleRate);
 d_state.resample(xyz);
