@@ -66,12 +66,13 @@ mappedX = tsne(fet(ind,:), [], no_dims, initial_dims, perplexity);
 
 
 %%Start Here
-pos = map_feature_to_tsne_space(Fet,tsneFet,tsneMap)
+%pos = map_feature_to_tsne_space(Fet,tsneFet,tsneMap)
 comptSneMap = zeros([numel(aClu),2]);
+nnn = 4;
 tic
-for s = 1:numel(aClu),
-    [~,mind] = sort(sqrt(sum(bsxfun(@minus,Fet,aFet(s,mod(1:25,3)&1:25~=25)).^2,2)));
-    comptSneMap(s,:) = mean(mx(mind(1:4),:));
+for s = 1:fet.size(1),
+    [mdist,mind] = sort(sqrt(sum(bsxfun(@minus,Fet,aFet(s,mod(1:25,3)&1:25~=25)).^2,2)));
+    comptSneMap(s,:) = mean(mx(mind(1:nnn),:).*mdist(1:nnn)./sum(mdist(1:nnn));
     if ~mod(s,10000),toc,disp([num2str(s) ' of ' num2str(numel(aClu))]),tic,end
 end
 toc

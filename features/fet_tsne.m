@@ -1,5 +1,11 @@
 function [fet,featureTitles,featureDesc,Nmean,Nstd] = fet_tsne(Trial,varargin)
-[newSampleRate,normalized,Nmean,Nstd] = DefaultArgs(varargin,{15,false,[],[]},1);
+[newSampleRate,normalized,Nmean,Nstd,referenceTrial] = DefaultArgs(varargin,{15,false,[],[],[]},1);
+
+if ischar(Trial),
+    Trial = MTATrial(Trial);
+elseif iscell(Trial),
+    Trial = MTATrial(Trial{:});
+end
 
 
 xyz = Trial.load('xyz');
@@ -13,6 +19,8 @@ if isempty(Trial.fet),
                         Trial.sync.data(1),...
                         []);                  
 end
+
+
 
 
 
@@ -78,6 +86,7 @@ fet = MTADfet(Trial.spath,...
 
 
 fet.data = [fxyz(:,{'spine_lower','spine_middle','spine_upper','head_front'},3),...
+            fang(:,1,4,3).*cos(fang(:,1,4,2)),...                       %Intermarker Distance
             fvelxy(:,{'spine_lower','spine_upper','head_front'}),....
             fvelz(:,'head_back'),...
             man.data,...
@@ -85,12 +94,88 @@ fet.data = [fxyz(:,{'spine_lower','spine_middle','spine_upper','head_front'},3),
             fang(:,'spine_middle','spine_upper',2),...                  %Pitch
             fang(:,'spine_upper','head_back',2),...                     %Pitch
             fang(:,'head_back','head_front',2),...                      %Pitch
-            fang(:,1,4,3).*cos(fang(:,1,4,2)),...                       %Intermarker Distance
             abs(circ_dist(circshift(fang(:,3,4,2),-1),circshift(fang(:,3,4,2),1))),...
             abs(circ_dist(circshift(fang(:,1,4,1),-1),circshift(fang(:,1,4,1),1))),...
             abs(circ_dist(circshift(fang(:,3,7,1),-1),circshift(fang(:,3,7,1),1)))...%,
             ];%rhm.data
 fet.data(isinf(fet(:))) = 0;
+
+
+%% Correction of feature vector by linear translation of distributions
+if ischar(referenceTrial),
+    referenceTrial = MTATrial(referenceTrial);
+elseif iscell(referenceTrial),
+    referenceTrial = MTATrial(referenceTrial{:});
+end
+if ~isempty(referenceTrial),
+    [rfet,~,~,Nmean,Nstd] = fet_tsne(referenceTrial,... Basis Trial for linear transformation
+                                     newSampleRate,...  Match current fet sampleRate
+                                     false);           % raw values    
+    % Z corrections
+    VEL_HISTOGRAM_BOUNDARIES = linspace(-1,2,100);
+    NBINS = numel(VEL_HISTOGRAM_BOUNDARIES);
+    for f = [1:4,11:14];
+        % oh god change this... change it now!!
+        if f<=5,
+            minus_fun = @minus;
+            median_fun = @median;
+            std_fun = @std;
+            stdThreshold = 10;
+        else
+            minus_fun = @circ_dist;
+            median_fun = @circ_median;
+            std_fun = @circ_std; 
+            stdThreshold = .2;
+        end
+
+        
+        % Once for the target Trial
+        lind = fet(:,12)<0;    
+        [~,ind_v_b] = histc(fet(:,6),VEL_HISTOGRAM_BOUNDARIES);
+        [~,ind_v_h] = histc(fet(:,8),VEL_HISTOGRAM_BOUNDARIES);
+        mind = nniz([ind_v_b,ind_v_h]);
+        % Mean value       _____________________________________
+        %                  |body speed index   |head speed index
+        mz{1} = accumarray([ind_v_b(mind&lind),ind_v_h(mind&lind)],...
+                           fet(mind&lind,f),...
+                           [NBINS,NBINS],...
+                           median_fun);
+        % Standard dev     _____________________________________
+        %                  |body speed index   |head speed index
+        sz{1} = accumarray([ind_v_b(mind&lind),ind_v_h(mind&lind)],... 
+                           fet(mind&lind,f),...
+                           [NBINS,NBINS],...                           
+                           std_fun);
+
+        % And once for the reference Trial
+        lind = rfet(:,12)<0;    
+        [~,ind_v_b] = histc(rfet(:,6),VEL_HISTOGRAM_BOUNDARIES);
+        [~,ind_v_h] = histc(rfet(:,8),VEL_HISTOGRAM_BOUNDARIES);
+        mind = nniz([ind_v_b,ind_v_h]);
+        % Mean value       _____________________________________
+        %                  |body speed index   |head speed index
+        mz{2} = accumarray([ind_v_b(mind&lind),ind_v_h(mind&lind)],...
+                           rfet(mind&lind,f),...
+                           [NBINS,NBINS],...
+                           median_fun);
+        % Standard dev     _____________________________________
+        %                  |body speed index   |head speed index
+        sz{2} = accumarray([ind_v_b(mind&lind),ind_v_h(mind&lind)],... 
+                           rfet(mind&lind,f),...
+                           [NBINS,NBINS],...                           
+                           std_fun);
+
+
+        nnz = mz{2}~=0&mz{1}~=0;
+        mzd = minus_fun(mz{1},mz{2});
+        szd = sz{2}(:)<10&sz{1}(:)<stdThreshold;
+        fet.data(:,f) = minus_fun(fet(:,f),median(mzd(nnz(:)&szd)));
+
+        [~,Nmean,Nstd] = nunity(rfet(MTATrial(referenceTrial).stc{'a'},:),@nan);
+    end
+end
+
+%% Normal stuff resumes 
 
 
 if normalized,
@@ -99,6 +184,8 @@ if normalized,
     end
     [fet.data] = nunity(fet.data,@nan,Nmean,Nstd);
 end
+
+
 
 featureTitles = {};
 featureDesc = {};
@@ -120,45 +207,45 @@ if nargout>1,
     featureTitles(end+1) = {'Height_{HF}'};            
     featureDesc(end+1) = {'1 Hz low pass filtered height of the head front maker'};
     % 5.
-    featureTitles(end+1) = {'XY Speed_{BL}'};
-    featureDesc(end+1) = {['2.4 Hz low pass filtered speed in the xy plane of ' ...
-                    'the spine lower maker']};
-    % 6.
-    featureTitles(end+1) = {'XY Speed_{BU}'};
-    featureDesc(end+1) = {['2.4 Hz low pass filtered speed in the xy plane of ' ...
-                    'the spine upper maker']};
-    % 7.
-    featureTitles(end+1) = {'XY Speed_{HF}'};
-    featureDesc(end+1) = {['2.4 Hz low pass filtered speed in the xy plane of ' ...
-                    'the head front maker']};
-    % 8.
-    featureTitles(end+1) = {'Vertical Speed(flp1Hz) of Middle Spine'};
-    featureDesc(end+1) = {['1 Hz low pass filtered speed in the z axis of the ' ...
-                    'head back marker']};
-    % 9.
-    featureTitles(end+1) = {'PPC_{traj yaw}'};
-    featureDesc(end+1) = {['1 Hz lowpass filtered Pair-wise Phase Consisistency(PPC) of the yaw of ' ...
-                    'trajectories of all makers along the rostro-caudal axis']};
-    % 10.
-    featureTitles(end+1) = {'bfet'};
-    featureDesc(end+1) = {['Magnitude of the projection of lower spine trajectory  ' ...
-                    'onto the vecor of lower spine to upper spine']};
-    % 11.
-    featureTitles(end+1) = {'Pitch_{BMBU}'};
-    featureDesc(end+1) = {['Pitch of spine_middle to spine_upper relative to xy ' ...
-                    'plane']};
-    % 12.
-    featureTitles(end+1) = {'Pitch_{BUHB}'};
-    featureDesc(end+1) = {['Pitch of spine_upper to head_back relative to xy ' ...
-                    'plane']};
-    % 13.
-    featureTitles(end+1) = {'Pitch_{HBHF}'};
-    featureDesc(end+1) = {['Pitch of head_back to head_front relative to xy ' ...
-                    'plane']};
-    % 14.
     featureTitles(end+1) = {'XY Dist_{BLBU}'};
     featureDesc(end+1) = {['Magnitude of the projection of the vector formed ' ...
                     'by the spine_lower and spine_upper markers']};
+    % 6.
+    featureTitles(end+1) = {'XY Speed_{BL}'};
+    featureDesc(end+1) = {['2.4 Hz low pass filtered speed in the xy plane of ' ...
+                    'the spine lower maker']};
+    % 7.
+    featureTitles(end+1) = {'XY Speed_{BU}'};
+    featureDesc(end+1) = {['2.4 Hz low pass filtered speed in the xy plane of ' ...
+                    'the spine upper maker']};
+    % 8.
+    featureTitles(end+1) = {'XY Speed_{HF}'};
+    featureDesc(end+1) = {['2.4 Hz low pass filtered speed in the xy plane of ' ...
+                    'the head front maker']};
+    % 9.
+    featureTitles(end+1) = {'Vertical Speed(flp1Hz) of Middle Spine'};
+    featureDesc(end+1) = {['1 Hz low pass filtered speed in the z axis of the ' ...
+                    'head back marker']};
+    % 10.
+    featureTitles(end+1) = {'PPC_{traj yaw}'};
+    featureDesc(end+1) = {['1 Hz lowpass filtered Pair-wise Phase Consisistency(PPC) of the yaw of ' ...
+                    'trajectories of all makers along the rostro-caudal axis']};
+    % 11.
+    featureTitles(end+1) = {'bfet'};
+    featureDesc(end+1) = {['Magnitude of the projection of lower spine trajectory  ' ...
+                    'onto the vecor of lower spine to upper spine']};
+    % 12.
+    featureTitles(end+1) = {'Pitch_{BMBU}'};
+    featureDesc(end+1) = {['Pitch of spine_middle to spine_upper relative to xy ' ...
+                    'plane']};
+    % 13.
+    featureTitles(end+1) = {'Pitch_{BUHB}'};
+    featureDesc(end+1) = {['Pitch of spine_upper to head_back relative to xy ' ...
+                    'plane']};
+    % 14.
+    featureTitles(end+1) = {'Pitch_{HBHF}'};
+    featureDesc(end+1) = {['Pitch of head_back to head_front relative to xy ' ...
+                    'plane']};
     % 15.
     featureTitles(end+1) = {'d(pitch_{BMBU})/dt'};
     featureDesc(end+1) = {'Pitch speed of the vector from spine_middle to spine_upper'};

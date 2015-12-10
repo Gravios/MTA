@@ -46,7 +46,6 @@ subplot(122)
 plot(bsxfun(@plus,sq(mean(Spk(Clu==mclu,:,:)))',2000:2000:16000))
 
 
-
 pos = map_feature_to_tsne_space(Fet,tsneFet,tsneMap)
 comptSneMap = zeros([numel(aClu),2]);
 tic
@@ -62,26 +61,64 @@ plot(bsxfun(@plus,sq(Spk(mind(3),:,:))',2000:2000:16000))
 
 
 
-function cluster_viewer(Clu,Spk,Fet)
 
-    
+for mclu = 2:36,
+    hfig = figure(2); clf; 
+    % Plot Clusters (red=noise,blue=clusters,cyan=selected cluster)
+    subplot(121);hold on;
+    plot(comptSneMap(aClu==1,1),comptSneMap(aClu==1,2),'.r');
+    plot(comptSneMap(aClu~=1,1),comptSneMap(aClu~=1,2),'.b');
+    plot(comptSneMap(aClu==mclu,1),comptSneMap(aClu==mclu,2),'.c');
+    xlim(xlm);
+    ylim(ylm);
+    % Plot average spike Waveform of the seleceted cluster
+    subplot(122)
+    plot(bsxfun(@plus,sq(mean(aSpk(aClu==mclu,:,:)))',2000:2000:16000))
+    drawnow;
+    saveas(hfig,'/storage/gravio/figures/req20151204','png')
+    pause(.1);
 end
 
 
 
 
-function update_cluster_display(hfig,clu)
-mclu = 9;
-hfig = figure(2); clf; 
-% Plot Clusters (red=noise,blue=clusters,cyan=selected cluster)
-subplot(121);hold on;
-plot(mx(Clu~=1,1),mx(Clu~=1,2),'.b');
-plot(mx(Clu==1,1),mx(Clu==1,2),'.r');
-plot(mx(Clu==mclu,1),mx(Clu==mclu,2),'.c');
-xlim(xlm);
-ylim(ylm);
-% Plot average spike Waveform of the seleceted cluster
-subplot(122)
-plot(bsxfun(@plus,sq(mean(Spk(Clu==mclu,:,:)))',2000:2000:16000))
-    
-end
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+% $$$ 
+% $$$ function cluster_viewer(Clu,Spk,Fet)
+% $$$ 
+% $$$     
+% $$$ end
+% $$$ 
+% $$$ 
+% $$$ 
+% $$$ 
+% $$$ function update_cluster_display(hfig,clu)
+% $$$ mclu = 9;
+% $$$ hfig = figure(2); clf; 
+% $$$ % Plot Clusters (red=noise,blue=clusters,cyan=selected cluster)
+% $$$ subplot(121);hold on;
+% $$$ plot(mx(Clu~=1,1),mx(Clu~=1,2),'.b');
+% $$$ plot(mx(Clu==1,1),mx(Clu==1,2),'.r');
+% $$$ plot(mx(Clu==mclu,1),mx(Clu==mclu,2),'.c');
+% $$$ xlim(xlm);
+% $$$ ylim(ylm);
+% $$$ % Plot average spike Waveform of the seleceted cluster
+% $$$ subplot(122)
+% $$$ plot(bsxfun(@plus,sq(mean(Spk(Clu==mclu,:,:)))',2000:2000:16000))
+% $$$     
+% $$$ end
+
