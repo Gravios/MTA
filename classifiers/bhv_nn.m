@@ -17,11 +17,39 @@ function [Stc,d_state] = bhv_nn(Trial,varargin)
 %
 %
 
+% Load Trial and or check if Trial is of the MTASession class
+if ischar(Trial),
+    Trial = MTATrial(Trial);
+elseif iscell(Trial),
+    Trial = MTATrial(Trial{:});
+end
+assert(isa(Trial,'MTASession'),['MTA:classifiers:' mfilename ':Trial not found'])
+
+
 MODEL_TYPE = 'NN';
 
-[train,states,fet,model_name,fetSampleRate,display,other_state] = DefaultArgs(varargin,...
-    {false,Trial.stc.list_state_attrib('label'),'fet_tsne',...
-    ['MTAC_' Trial.stc.mode '_' MODEL_TYPE],10,true,false});
+defArgs = {... 
+ ...
+ ...           train,
+               false,                                  ...
+ ...          
+ ...           states
+               Trial.stc.list_state_attrib('label'),   ...
+ ...
+ ...           fet
+               {'fet_tsne',Trial,'newSampleRate',10},  ...
+ ...           
+ ...           model_name
+               ['MTAC_' Trial.stc.mode '_' MODEL_TYPE],...
+ ...
+ ...           display
+               true,                                   ...
+ ...
+ ...           other_state
+               false                                   ...
+};
+
+[train,states,fet,model_name,display,other_state] = DefaultArgs(varargin,defArgs);
 
 
 
@@ -30,18 +58,21 @@ keys = subsref(Trial.stc.list_state_attrib('key'),...
 
 % LOAD fet if fet is a feature name
 % RESAMPLE to conserve memory during model fitting
-% lrfet.resample(30); for now leave it to the input SR
+% fet.resample(30); for now leave it to the input SR
 if ischar(fet),
-    lrfet = feval(fet,Trial,fetSampleRate);
-else
-    lrfet = fet;    
+    fet = feval(fet{:})
+elseif isa(fet,'MTAData'),
+    fet = fet;
 end
+assert(isa(Trial,'MTASession'),['MTA:classifiers:' mfilename ':Trial not found'])
 
-nind = nniz(lrfet);
+
+
+nind = nniz(fet);
 
 % Create model filename based on the model name and the feature name
 % default model_name = ['MTAC_' Trial.stc.mode '_' MODEL_TYPE];
-model_name = [model_name '-' lrfet.label '-model.mat'];
+model_name = [model_name '-' fet.label '-model.mat'];
 model_path = fileparts(mfilename('fullpath'));
 model_loc = fullfile(model_path,model_name);
 
@@ -50,7 +81,7 @@ model_loc = fullfile(model_path,model_name);
 if train||~exist(model_loc,'file'),
     
     % create Nx1 array to store states as integers (nomial data)
-    [smat] = max(stc2mat(Trial.stc,lrfet,states),[],2);
+    [smat] = max(stc2mat(Trial.stc,fet,states),[],2);
     
     % Create struct to store model meta-data
     Model_Information = struct(...
@@ -68,7 +99,7 @@ if train||~exist(model_loc,'file'),
     % IF TRUE  -> Create classifier model with the specified states and
     %             all other states as a composite state
     if other_state, 
-        ind = resample(Trial.stc{'a'}.cast('TimeSeries'),lrfet);
+        ind = resample(Trial.stc{'a'}.cast('TimeSeries'),fet);
         ind = logical(ind.data);
         smat(smat==0) = numel(states)+1;
         if sum(smat(ind)==1)>0,
@@ -80,7 +111,7 @@ if train||~exist(model_loc,'file'),
     end
     
     % Train classifier
-    [B,dev,stats] = mnrfit(lrfet(ind,:),smat(ind),'model','nominal');
+    [B,dev,stats] = mnrfit(fet(ind,:),smat(ind),'model','nominal');
     save(model_loc,'B','dev','stats','Model_Information');
     return
 else
@@ -102,8 +133,8 @@ xyz = Trial.load('xyz');
 % I know this is irresposible code... don't give me that
 % look... that was meant for me not you. It's really not as bad as
 % it sounds.
-d_state = mnrval(B,lrfet.data);
-d_state = MTADxyz('data',d_state,'sampleRate',lrfet.sampleRate);
+d_state = mnrval(B,fet.data);
+d_state = MTADxyz('data',d_state,'sampleRate',fet.sampleRate);
 d_state.resample(xyz);
 d_state = d_state.data;
 
@@ -123,12 +154,12 @@ Stc.addState(Trial.spath,...
              Trial.filebase,...
              bsxfun(@plus,ThreshCross(maxState==i,0.5,1),[1,0]),...
              xyz.sampleRate,...
-             lrfet.sync.copy,...
-             lrfet.origin,...
+             fet.sync.copy,...
+             fet.origin,...
              Model_Information.state_labels{i},...
              Model_Information.state_keys{i},...
              'TimePeriods');
-%Stc.states{end} = Stc.states{end}+[1/lrfet.sampleRate,0];
+%Stc.states{end} = Stc.states{end}+[1/fet.sampleRate,0];
 end
 
 Stc.save(1);
