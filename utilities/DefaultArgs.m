@@ -1,11 +1,12 @@
 function varargout = DefaultArgs(Args, DefArgs, varargin)
 %% DefaultArgs(Args, DefArgs, FuncPath, NLineExcerpt ,NLineBackSeek)
-% auxillary function to replace argument check in the beginning and def. args assigment
-% sets the absent or empty values of the Args (cell array, usually varargin)
-% to their default values from the cell array DefArgs. 
-% Output should contain the actuall names of arguments that you use in the function
+% auxillary function to replace argument check in the beginning and def. 
+% args assigmentsets the absent or empty values of the Args (cell array, 
+% usually varargin)to their default values from the cell array DefArgs. 
+% Output should contain the actuall names of arguments that you use in 
+% the function
 %
-% e.g. : in function MyFunction(somearguments , varargin)
+% e.g. : in function MyFunction(Arg1,Arg2,... , varargin)
 % calling [SampleRate, BinSize] = DefaultArgs(varargin, {20000, 20});
 % will assign the defualt values to SampleRate and BinSize arguments if they
 % are empty or absent in the varargin cell list 
@@ -15,6 +16,10 @@ function varargout = DefaultArgs(Args, DefArgs, varargin)
 % function which calls DefaultArgs, via dbstack. All variable names are 
 % then compaired to all string variables in Args. Matching string inputs
 % will have the subsequent variable set as its value.
+%
+% Modes:
+%    Static
+%  
 %
 % NOTE: Variable names are matched case insensitive
 % 
@@ -47,14 +52,20 @@ function varargout = DefaultArgs(Args, DefArgs, varargin)
 
 %% Set DefaultArgs' default args
 
-
+% If varargin is empty, setup path to the m-file calling, hereafter
+% known as CMF, DefaultsArgs.
 if numel(varargin)>0,
     FuncPath = varargin{1};
 else
     FuncPath = dbstack; 
 end
 
+% assume generic array or logical
+% 1. single element array is a flag to not attempt parameter value paring 
+% 2. Character array with a total number of elements greater than 1
+%    will be treated as the path for the CMF.
 if numel(FuncPath)>1,
+    % The total number of lines read from the CMF.
     NLineExcerpt = 15;
     if numel(varargin)>1,
         if ~isempty(varargin{2}),
@@ -62,6 +73,8 @@ if numel(FuncPath)>1,
         end
     end
 
+    % Defined line position for reading the CMF relative to the
+    % location of the DefaultArgs call in the CMF.
     NLineBackSeek = 4;
     if numel(varargin)>2,
         if ~isempty(varargin{3}),
