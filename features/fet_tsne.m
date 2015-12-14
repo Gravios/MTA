@@ -1,5 +1,5 @@
 function [fet,featureTitles,featureDesc,Nmean,Nstd] = fet_tsne(Trial,varargin)
-[newSampleRate,normalized,Nmean,Nstd,referenceTrial] = DefaultArgs(varargin,{15,false,[],[],[]},1);
+[newSampleRate] = DefaultArgs(varargin,{15},1);
 
 if ischar(Trial),
     Trial = MTATrial(Trial);
@@ -100,19 +100,6 @@ fet.data = [fxyz(:,{'spine_lower','spine_middle','spine_upper','head_front'},3),
             ];%rhm.data
 fet.data(isinf(fet(:))) = 0;
 
-
-%% Correction of feature vector by linear transformation of distributions
-if ~isempty(referenceTrial),
-    [fet,Nmean,Nstd] = normalize_features_to_reference_trial(Trial,fet,referenceTrial);
-end
-
-% Normalize data
-if normalized,
-    if isempty(Nmean)||isempty(Nstd),
-        [~,Nmean,Nstd] = nunity(fet(Trial.stc{'a'},:),@nan);
-    end
-    [fet.data] = nunity(fet.data,@nan,Nmean,Nstd);
-end
 
 
 % This should be converted to a model elements

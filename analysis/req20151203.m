@@ -22,20 +22,29 @@ HOST_PATH = '/storage/gravio/figures/'; % Where reportfig should
 %Stc = Trial.stc.load(Trial,'hand_labeled_rev1');
 slist = SessionList('req20151203');
 
+
+%Reference Trial Stuff
+RefTrial = MTATrial('jg05-20120317');
+RefState = RefTrial.stc{'a'};
+rfet = fet_tsne(RefTrial,NEW_SAMPLE_RATE);
+
 for s = 1:numel(slist),
     Trial = MTATrial(slist{s}{1},slist{s}{3},slist{s}{2});
+
+  % Load Feature matrix of the session    
+  %%% Fix unity 
+    [tfet,fett,fetd] = fet_tsne(Trial,NEW_SAMPLE_RATE);
+    [~,Rmean,Rstd] = unity(rfet,[],[],[],[]);
+    tfet.normalize_to_reference(rfet);
+    tfet.unity(rfet,[],Rmean,Rstd);
+
     if s == 1,
-    [fet,fett,fetd] = fet_tsne(Trial,NEW_SAMPLE_RATE,false); % Load Feature
-                                                % matrix of the
-                                                % session    
+        fet = tfet.copy;
     else
-        tfet = fet_tsne(Trial,NEW_SAMPLE_RATE,false);
         fet.data = cat(1,fet.data,tfet(Trial.stc{'a'},:));
     end
     
 end
-
-fet.data = nunity(fet.data);
 fet.data(~nniz(fet),:) = [];
 
 %Stc = Trial.stc.load(Trial,'hand_labeled_rev2');
@@ -65,8 +74,10 @@ ind = start:skip:stop;
 mappedX = tsne(fet(ind,:), [], no_dims, initial_dims, perplexity); 
 
 
-%%Start Here
+
 %pos = map_feature_to_tsne_space(Fet,tsneFet,tsneMap)
+
+%%%% Save this next time
 comptSneMap = zeros([fet.size(1),2]);
 tic
 for s = 1:fet.size(1),
@@ -76,6 +87,13 @@ for s = 1:fet.size(1),
     if ~mod(s,10000),toc,disp([num2str(s) ' of ' num2str(fet.size(1))]),tic,end
 end
 toc
+
+
+
+%%Start Here
+
+
+
 
 
 figparm = ['tSNE-nsr_' num2str(NEW_SAMPLE_RATE) '-ind_' num2str(start) '_' ...

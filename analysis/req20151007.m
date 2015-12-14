@@ -45,3 +45,10 @@ bhv_lgr(Trial,                                               ... Trial
         {'walk','rear','turn','pause','groom','sit'},        ... States
         'fet_all',                                           ... feature set
         'JG05HLR2FALL');                                           % model name
+
+        
+        
+
+
+        
+        

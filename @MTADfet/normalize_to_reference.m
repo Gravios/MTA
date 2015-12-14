@@ -1,4 +1,4 @@
-function feature = normalize_features_to_reference_trial(Trial,feature,referenceFeature)
+function feature = normalize_to_reference(feature,referenceFeature)
 % function feature = normalize_features_to_reference_trial(Trial,feature,referenceTrial)
 % This Function is only meant for use with fet_tsne at the moment.
 
