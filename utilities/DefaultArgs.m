@@ -57,7 +57,7 @@ function varargout = DefaultArgs(Args, DefArgs, varargin)
 if numel(varargin)>0,
     FuncPath = varargin{1};
 else
-    FuncPath = dbstack; 
+    FuncPath = dbstack('-completenames'); 
 end
 
 % assume generic array or logical
@@ -89,10 +89,11 @@ if numel(FuncPath)>1,
 
     skiphead = 0;
     if isstruct(FuncPath),
-        FuncPath = FuncPath(2);
-        skiphead = FuncPath.line-NLineBackSeek;
+        
+        skiphead = FuncPath(2).line-NLineBackSeek;
         if skiphead<0, skiphead=0; end
-        FuncPath = which(FuncPath.file);
+
+        FuncPath = FuncPath(2).file;
     end
 
     % Open the function's mfile , pull excerpt where DefaultArgs is found (default is 15 lines)
