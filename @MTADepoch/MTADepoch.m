@@ -97,7 +97,15 @@ classdef MTADepoch < MTAData
             Data = MTADepoch([],[],newData,msr,sync,origin,[],[],[],newLabel,newKey);
         end
 
-        function join(DataCell)
+        function Data = join(DataCell)
+            if numel(DataCell)==1||isa(DataCell,MTADepoch),
+                if iscell(DataCell)
+                    Data = DataCell{1};
+                else
+                    Data = DataCell;
+                end
+                return;
+            end
             samplingRates = cellfun(@getfield,DataCell,repmat({'sampleRate'},1,numel(DataCell)));
             msr = max(samplingRates);
             if numel(unique(samplingRates))~=1,

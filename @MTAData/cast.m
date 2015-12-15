@@ -14,7 +14,15 @@ function Data = cast(Data,type,varargin)
 %                begining of the recordings.
 %
     
-    [sampleRate,syncflag] = DefaultArgs(varargin,{Data.sampleRate,'relative'});
+[sampleRate,syncflag] = DefaultArgs(varargin,{Data.sampleRate,'relative'});
+nsData = {};
+if isa(sampleRate,'MTAData'),    
+    nsData = sampleRate;
+    sampleRate = nsData.sampleRate;
+    % Cast to size and sampleRate which matches nsData
+    % - work in progress - never mind I guess I have to finish it now
+end
+
 oldType = Data.type;            
 if ~strcmp(oldType,type)&&~isempty(oldType)
     switch type
@@ -32,7 +40,6 @@ if ~strcmp(oldType,type)&&~isempty(oldType)
 % $$$                         data = false(round(Data.subsref(substruct('.','sync','()',...
 % $$$                                     {prod(size(Data.subsref(substruct('.','sync','()',{':'}))))}))...
 % $$$                                     .*sampleRate),1);
-
         
         if isa(Data.subsref(substruct('.','sync')),'MTAData'),
             data = false(round(Data.subsref(substruct('.','sync','.','data','()',...
@@ -44,17 +51,25 @@ if ~strcmp(oldType,type)&&~isempty(oldType)
                                .*sampleRate),1);
         end                                
 
+        % Flag each indice as included or excluded
         for j = 1:size(tmpdata,1),
             data(tmpdata(j,1):tmpdata(j,2)) = true;
         end         
+
         switch syncflag
           case 'relative'
-            try
-                data = [data(round(Data.sync.sync.data(1)*sampleRate)+1:round(Data.sync.sync.data(end)*sampleRate));0];
-            catch err
-                data = cat(1,data,zeros(round(Data.sync.sync.data(end)*sampleRate)-round(Data.sync.data(end)*sampleRate),1));
-                data = data(round(Data.sync.sync.data(1)*sampleRate)+1:round(Data.sync.sync.data(end)*sampleRate));
+            if isempty(nsData),
+                try
+                    data = [data(round(Data.sync.sync.data(1)*sampleRate)+1:round(Data.sync.sync.data(end)*sampleRate));0];
+                catch err
+                    data = cat(1,data,zeros(round(Data.sync.sync.data(end)*sampleRate)-round(Data.sync.data(end)*sampleRate),1));
+                    data = data(round(Data.sync.sync.data(1)*sampleRate)+1:round(Data.sync.sync.data(end)*sampleRate));
+                end
+            else
+                data = [data(round(Data.sync.sync.data(1)*sampleRate)+1:...
+                             round(Data.sync.sync.data(1)*sampleRate)+nsData.size(1))];
             end
+            
           case 'absolute' % Reserved for future versions
                           %data = [0;data];
         end

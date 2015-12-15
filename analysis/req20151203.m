@@ -32,7 +32,6 @@ for s = 1:numel(slist),
     Trial = MTATrial(slist{s}{1},slist{s}{3},slist{s}{2});
 
   % Load Feature matrix of the session    
-  %%% Fix unity 
     [tfet,fett,fetd] = fet_tsne(Trial,NEW_SAMPLE_RATE);
     [~,Rmean,Rstd] = unity(rfet,[],[],[],[]);
     tfet.normalize_to_reference(rfet);

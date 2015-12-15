@@ -1,5 +1,5 @@
 function [fet,featureTitles,featureDesc,Nmean,Nstd] = fet_tsne(Trial,varargin)
-[newSampleRate] = DefaultArgs(varargin,{15},1);
+[newSampleRate,normalize] = DefaultArgs(varargin,{15,false},1);
 
 if ischar(Trial),
     Trial = MTATrial(Trial);
@@ -99,7 +99,9 @@ fet.data = [fxyz(:,{'spine_lower','spine_middle','spine_upper','head_front'},3),
             abs(circ_dist(circshift(fang(:,3,7,1),-1),circshift(fang(:,3,7,1),1)))...%,
             ];%rhm.data
 fet.data(isinf(fet(:))) = 0;
-
+if normalize,
+    fet.unity;
+end
 
 
 % This should be converted to a model elements

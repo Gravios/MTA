@@ -1,6 +1,6 @@
-gfunction [U,meanA,stdA] = unity(Data,varargin)
+function [Data,meanA,stdA] = unity(Data,varargin)
 %function [U,meanA,stdA] = unity(A,varargin)
-%[ifnniz,meanA,stdA,drpOutPrctile] = DefaultArgs(varargin,{@nan,[],[],[]},true);
+%[ifnniz,meanA,stdA,drpOutPrctile,states] = DefaultArgs(varargin,{@nan,[],[],[],{}},true);
 % A is n x m  matrix, and each column is a signal.
 % the function gives a unity signal for each column
 % i.e. [signal-mean(signal)] / std(signal)
@@ -27,30 +27,31 @@ defArgs = {...
 
 nind = nniz(Data);
 
-if ~isemtpy(states),
-    states = join(states).cast('TimeSeries',Data);
+if ~isempty(states),
+    states = MTADepoch.join(states);
+    states.cast('TimeSeries',Data);
     states = logical(states.data);
 else
-    states = ones(size(nind));
+    states = true(size(nind));
 end
 
 nind = nind&states;
 
 if ~isempty(drpOutPrctile),
-    Ao = prctile(Data(nind,:),drpOutPrctile);
+    A = prctile(Data.data(nind,:),drpOutPrctile);
 else
-    Ao = Data(nind,:);
+    A = Data.data(nind,:);
 end
 
 if isempty(meanA)
-    meanA = mean(Ao);
+    meanA = mean(A);
 end
 if isempty(stdA)
-    stdA = std(Ao);
+    stdA = std(A);
 end
 
-U = feval(ifnniz,size(A));
+Data.data = feval(ifnniz,size(A));
 
-U(nind,:) = bsxfun(@rdivide,bsxfun(@minus,A(nind,:),meanA),stdA);
+Data.data(nind,:) = bsxfun(@rdivide,bsxfun(@minus,A,meanA),stdA);
 
 

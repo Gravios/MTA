@@ -5,6 +5,8 @@ function feature = fet20151007(Trial,varargin)
 %     
 %    sampleRate: numeric, the final sampleRate of the feature set
 %
+%    normalize:  logical, flag for optional z-transform
+%
 % TEST ARGS
 %
 %Trial = MTATrial('jg05-20120317');
@@ -13,7 +15,7 @@ function feature = fet20151007(Trial,varargin)
 
 
 %%
-[sampleRate] = DefaultArgs(varargin,{10});
+[sampleRate,normalize] = DefaultArgs(varargin,{10,false});
 
 % Constant for now
 REF_TRIAL = MTATrial('jg05-20120317');
@@ -23,11 +25,14 @@ RFET = fet_tsne(REF_TRIAL,sampleRate);
 
 [feature,fett,fetd] = fet_tsne(Trial,sampleRate);
 
-% Get reference means and standard deviations for the reference features
-[~,Rmean,Rstd] = RFET.unity([],[],[],[],REF_STATE);
-
 %NOTE this function only works with the feature set from fet_tsne
 feature.normalize_to_reference(RFET);            
 
-% Normalize the feautres using the z-transform relative to 
-feature.unity(RFET,[],Rmean,Rstd);
+
+if normalize,
+    % Get reference means and standard deviations for the reference features
+    [~,Rmean,Rstd] = unity(RFET,[],[],[],[],REF_STATE);
+    % Normalize the feautres using the z-transform relative to 
+    feature.unity([],Rmean,Rstd);
+end
+

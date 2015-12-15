@@ -5,9 +5,10 @@ function feature = normalize_to_reference(feature,referenceFeature)
 NBINS = 100;
 VEL_HISTOGRAM_BOUNDARIES = linspace(-1,2,NBINS);
 
-feature.sampleRate,...  Match current feature sampleRate
-false);           % raw values    
-                  % Z corrections
+% Match current feature sampleRate
+referenceFeature.resample(feature.sampleRate);
+
+
 for f = [1:4,11:14];
     % oh god change this... change it now!!
     % Future MTAData objects should have model which has a isCirc
@@ -26,38 +27,38 @@ for f = [1:4,11:14];
 
     
     % Once for the target Trial
-    lind = feature(:,12)<0;    
-    [~,ind_v_b] = histc(feature(:,6),VEL_HISTOGRAM_BOUNDARIES);
-    [~,ind_v_h] = histc(feature(:,8),VEL_HISTOGRAM_BOUNDARIES);
+    lind = feature.data(:,12)<0;    
+    [~,ind_v_b] = histc(log10(feature.data(:,6)),VEL_HISTOGRAM_BOUNDARIES);
+    [~,ind_v_h] = histc(log10(feature.data(:,8)),VEL_HISTOGRAM_BOUNDARIES);
     mind = nniz([ind_v_b,ind_v_h]);
     % Mean value       _____________________________________
     %                  |body speed index   |head speed index
     mz{1} = accumarray([ind_v_b(mind&lind),ind_v_h(mind&lind)],...
-                       feature(mind&lind,f),...
+                       feature.data(mind&lind,f),...
                        [NBINS,NBINS],...
                        median_fun);
     % Standard dev     _____________________________________
     %                  |body speed index   |head speed index
     sz{1} = accumarray([ind_v_b(mind&lind),ind_v_h(mind&lind)],... 
-                       feature(mind&lind,f),...
+                       feature.data(mind&lind,f),...
                        [NBINS,NBINS],...                           
                        std_fun);
 
     % And once for the reference Trial
-    lind = referenceFeature(:,12)<0;    
-    [~,ind_v_b] = histc(referenceFeature(:,6),VEL_HISTOGRAM_BOUNDARIES);
-    [~,ind_v_h] = histc(referenceFeature(:,8),VEL_HISTOGRAM_BOUNDARIES);
+    lind = referenceFeature.data(:,12)<0;    
+    [~,ind_v_b] = histc(log10(referenceFeature.data(:,6)),VEL_HISTOGRAM_BOUNDARIES);
+    [~,ind_v_h] = histc(log10(referenceFeature.data(:,8)),VEL_HISTOGRAM_BOUNDARIES);
     mind = nniz([ind_v_b,ind_v_h]);
     % Mean value       _____________________________________
     %                  |body speed index   |head speed index
     mz{2} = accumarray([ind_v_b(mind&lind),ind_v_h(mind&lind)],...
-                       referenceFeature(mind&lind,f),...
+                       referenceFeature.data(mind&lind,f),...
                        [NBINS,NBINS],...
                        median_fun);
     % Standard dev     _____________________________________
     %                  |body speed index   |head speed index
     sz{2} = accumarray([ind_v_b(mind&lind),ind_v_h(mind&lind)],... 
-                       referenceFeature(mind&lind,f),...
+                       referenceFeature.data(mind&lind,f),...
                        [NBINS,NBINS],...                           
                        std_fun);
 
@@ -65,7 +66,7 @@ for f = [1:4,11:14];
     nnz = mz{2}~=0&mz{1}~=0;
     mzd = minus_fun(mz{1},mz{2});
     szd = sz{2}(:)<10&sz{1}(:)<stdThreshold;
-    feature.data(:,f) = minus_fun(feature(:,f),median(mzd(nnz(:)&szd)));
+    feature.data(:,f) = minus_fun(feature.data(:,f),median(mzd(nnz(:)&szd)));
 
 end
 
