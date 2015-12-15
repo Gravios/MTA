@@ -51,4 +51,13 @@ bhv_lgr(Trial,                                               ... Trial
 
 
         
-        
+% Net feature set fet_all
+% Train a logistic regresion 
+Trial = MTATrial('jg05-20120317');
+Trial.load('stc','hand_labeled_rev2');
+bhv_lgr(Trial,                                               ... Trial
+        true,                                                ... ifTrain
+        {'walk','rear','turn','pause','groom','sit'},        ... States
+        {'fet_tsne',Trial,10,true},                          ... feature set
+        'REFJG0520120317');                                    % model name
+
