@@ -141,3 +141,62 @@ suptitle({['neural network vs hand labels for ',Trial.name],'nn trained jg05-201
 
 
 
+% Net feature set fet_all
+% Train a logistic regresion model using features of jg05-20120317
+Trial = MTATrial('jg05-20120317');
+Trial.load('stc','hand_labeled_rev2');
+states = {'walk','rear','turn','pause','groom','sit'};
+
+
+features = fet_tsne(Trial,20,false);
+% Train Model
+bhv_nn (Trial,                                               ... Trial
+        true,                                                ... ifTrain
+        states,                                              ... States
+        features,                                            ... feature set
+        'fet_tsne_REFjg0520120317_NN');                                % model name
+% Label States
+Stc = bhv_nn (Trial,                                               ... Trial
+        false,                                                ... ifTrain
+        states,                                              ... States
+        {'fet_tsne',Trial,20,false},                          ... feature set
+        'fet_tsne_REFjg0520120317_NN');                                % model name
+%Compute randomized samples of 
+        %StcHL = Trial.load('stc','hand_labeled_rev1');
+StcHL = Trial.load('stc','hand_labeled_rev2');
+xyz = Trial.load('xyz');
+shl = MTADxyz('data',double(0<stc2mat(StcHL,xyz,states)),'sampleRate',xyz.sampleRate);
+ysm = MTADxyz('data',double(0<stc2mat(Stc,  xyz,states)),'sampleRate',xyz.sampleRate); 
+
+rndInd = randperm(shl.size(1));
+rndInd = rndInd(1:round(shl.size(1)/2));
+
+cm = confmat(shl(rndInd,:),ysm(rndInd,:)); % DEP: netlab                
+precision = round(diag(cm)'./sum(cm),4).*100;
+sensitivity = round(diag(cm)./sum(cm,2),4).*100;
+cm = round(cm./xyz.sampleRate,2);
+
+
+        
+bhv_nn (Trial,                                               ... Trial
+        true,                                                ... ifTrain
+        states,                                              ... States
+        {'fet20151007',Trial,20,false},                          ... feature set
+        'fet20151007_REFjg0520120317_NN');                                % model name
+        
+bhv_nn (Trial,                                               ... Trial
+        true,                                                ... ifTrain
+        states,                                              ... States
+        {'fet_tsne',Trial,20,true},                          ... feature set
+        'Ufet_tsne_REFjg0520120317_NN');                                % model name
+
+        
+bhv_nn (Trial,                                               ... Trial
+        true,                                                ... ifTrain
+        states,                                              ... States
+        {'fet20151007',Trial,20,true},                          ... feature set
+        'Ufet20151007_REFjg0520120317_NN');                                % model name
+        
+        
+        
+

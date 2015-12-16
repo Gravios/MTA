@@ -1,4 +1,4 @@
-function [Stc,d_state] = bhv_nn(Trial,varargin)
+function [Stc,d_state,Model_Information] = bhv_nn(Trial,varargin)
 %function [Stc,d_state] = bhv_nn(Trial,varargin)
 %
 % varargin:
@@ -9,7 +9,7 @@ function [Stc,d_state] = bhv_nn(Trial,varargin)
 %
 %   fet:          string, def - 'fet_tsne'
 %
-%   model_name:   string, def - ['MTAC_' Trial.stc.mode '_LGR']
+%   modelName:   string, def - ['MTAC_' Trial.stc.mode '_LGR']
 %
 %   display:     logical, def - true
 %
@@ -17,29 +17,31 @@ function [Stc,d_state] = bhv_nn(Trial,varargin)
 %
 %
 
+% Constants
+MODEL_TYPE = 'NN';
+SAMPLE_RATE = 20;
+
 % Load Trial and or check if Trial is of the MTASession class
 if ischar(Trial),
     Trial = MTATrial(Trial);
 elseif iscell(Trial),
     Trial = MTATrial(Trial{:});
 end
-assert(isa(Trial,'MTASession'),['MTA:classifiers:' mfilename ':Trial not found'])
+assert(isa(Trial,'MTASession'),['MTA:classifiers:' mfilename ':Trial not found']);
 
-
-MODEL_TYPE = 'NN';
 
 defArgs = {... 
  ...
- ...           train,
+ ...           trainModel,
                false,                                  ...
  ...          
  ...           states
                Trial.stc.list_state_attrib('label'),   ...
  ...
- ...           fet
+ ...           feature
                {'fet_tsne',Trial,10},  ...
  ...           
- ...           model_name
+ ...           modelName
                ['MTAC_' Trial.stc.mode '_' MODEL_TYPE],...
  ...
  ...           display
@@ -49,51 +51,57 @@ defArgs = {...
                false,                                  ...
  ... 
  ...           nNeurons
-               100                                     ....
+               100,                                    ...
+ ...
+ ...           subset
+               []                                      ...
 };
 
-[train,states,fet,model_name,display,other_state,nNeurons] = DefaultArgs(varargin,defArgs);
+[trainModel,states,feature,modelName,...
+ display,other_state,nNeurons,subset] = DefaultArgs(varargin,defArgs);
 
 
 
 keys = subsref(Trial.stc.list_state_attrib('key'),...
                substruct('()',{Trial.stc.gsi(states)}));
 
-% LOAD fet if fet is a feature name
+% LOAD feature if feature is a feature name
 % RESAMPLE to conserve memory during model fitting
-% fet.resample(30); for now leave it to the input SR
-% LOAD fet if fet is a feature name
-if iscell(fet)
-    fet = feval(fet{:});
+% feature.resample(30); for now leave it to the input SR
+% LOAD feature if feature is a feature name
+if iscell(feature),
+    feature = feval(feature{:});
+elseif isa(feature,'MTADfet'),
+    feature.resample(SAMPLE_RATE);
 else
     try
-        fet = feval(fet,Trial,20);
+        feature = feval(feature,Trial,SAMPLE_RATE);
     catch err
         error(err.msg)
     end
 end
-assert(isa(fet,'MTAData'),['MTA:classifiers:' mfilename ':Feature not found']);
+assert(isa(feature,'MTAData'),['MTA:classifiers:' mfilename ':Feature not found']);
 
 
 
-nind = nniz(fet);
+nind = nniz(feature);
 
 % Create model filename based on the model name and the feature name
-% default model_name = ['MTAC_' Trial.stc.mode '_' MODEL_TYPE];
-model_name = [model_name '-' fet.label '-model.mat'];
+% default modelName = ['MTAC_' Trial.stc.mode '_' MODEL_TYPE];
+modelName = [modelName '-' feature.label '-model.mat'];
 model_path = fileparts(mfilename('fullpath'));
-model_loc = fullfile(model_path,model_name);
+model_loc = fullfile(model_path,modelName);
 
 
 %% Get or Train LGR Model
-if train||~exist(model_loc,'file'),
+if trainModel||~exist(model_loc,'file'),
     
     % create NxS array to store states as integers (nomial data) {S=numel(states)}
-    [smat] = max(stc2mat(Trial.stc,fet,states),[],2);
+    [smat] = stc2mat(Trial.stc,feature,states);
     
     % Create struct to store model meta-data
     Model_Information = struct(...
-        'filename',              model_name,         ...
+        'filename',              modelName,         ...
         'path',                  model_path,             ...
         'description',           '',                     ...
         'StcMode',               Trial.stc.mode,         ...
@@ -107,9 +115,10 @@ if train||~exist(model_loc,'file'),
     % IF TRUE  -> Create classifier model with the specified states and
     %             all other states as a composite state
     if other_state, 
-        ind = resample(Trial.stc{'a'}.cast('TimeSeries'),fet);
+        ind = resample(Trial.stc{'a'}.cast('TimeSeries'),feature);
         ind = logical(ind.data);
-        smat(smat==0) = numel(states)+1;
+        smat = cat(2,smat,zeros([size(smat,1),1]));
+        smat(~any(smat),end) = 1;
         if sum(smat(ind)==1)>0,
             Model_Information.state_labels =  [Model_Information.state_labels{:}, {'other'}];
             Model_Information.state_keys   =  [Model_Information.state_keys{:},       {'o'}];
@@ -119,13 +128,20 @@ if train||~exist(model_loc,'file'),
     end
     
     
-    % Train classifier
+    if ~isempty(subset),
+        if isa(subset,'MTADepoch'),
+            subset.resample(feature);
+            subset.cast('TimeSeries',feature);
+        end
+        ind = ind&logical(subset.data);
+    end
+        
+    % Train classifie
+    net = patternnet(nNeurons);
+    %view(net);    
+    [net,tr] = train(net,feature(ind,:)',~~smat(ind,:)');
 
-    %view(net);
-    [net,tr] = train(patternnet(nNeurons),x(ind,:)',~~t(ind,:)');
-
-    [B,dev,stats] = mnrfit(fet(ind,:),smat(ind),'model','nominal');
-    save(model_loc,'B','dev','stats','Model_Information');
+    save(model_loc,'net','tr','Model_Information');
     return
 else
     % Load the classifier model
@@ -142,12 +158,10 @@ Stc.states = {};
 % Used to put labels into xyz sampleRate
 xyz = Trial.load('xyz');
 
-% Compute scores for the logistic regression
-% I know this is irresposible code... don't give me that
-% look... that was meant for me not you. It's really not as bad as
-% it sounds.
-d_state = mnrval(B,fet.data);
-d_state = MTADxyz('data',d_state,'sampleRate',fet.sampleRate);
+% Compute scores for the neural network
+d_state = net(feature.data')';
+
+d_state = MTADxyz('data',d_state,'sampleRate',feature.sampleRate);
 d_state.resample(xyz);
 d_state = d_state.data;
 
@@ -167,12 +181,11 @@ Stc.addState(Trial.spath,...
              Trial.filebase,...
              bsxfun(@plus,ThreshCross(maxState==i,0.5,1),[1,0]),...
              xyz.sampleRate,...
-             fet.sync.copy,...
-             fet.origin,...
+             feature.sync.copy,...
+             feature.origin,...
              Model_Information.state_labels{i},...
              Model_Information.state_keys{i},...
              'TimePeriods');
-%Stc.states{end} = Stc.states{end}+[1/fet.sampleRate,0];
 end
 
-Stc.save(1);
+%Stc.save(1);

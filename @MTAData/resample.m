@@ -18,7 +18,10 @@ switch Data.type
     [interpMethod] = DefaultArgs(varargin,{'spline'},true);
     isMTA = isa(DataObj,'MTAData');
     if isMTA,
-        newSampleRate = DataObj.sampleRate;
+        if all(Data.size(1)==DataObj.size(1)) && Data.sampleRate==DataObj.sampleRate,
+            return;
+        end
+        newSampleRate = DataObj.sampleRate;       
     else
         newSampleRate = DataObj;
     end
@@ -29,6 +32,12 @@ switch Data.type
     
     if newSampleRate<Data.sampleRate&&~isa(Data,'MTADepoch'),
         Data.filter('ButFilter',3,newSampleRate/2.0000001,'low');
+    end
+    
+    statusIsnumeric = isnumeric(Data.data);
+    if ~statusIsnumeric, 
+        dataClass = class(Data.data);
+        Data.data = double(Data.data);
     end
     
     if isMTA
@@ -44,6 +53,10 @@ switch Data.type
     end
     if Data.size(1)==1; Data.data = Data.data'; end
 
+    if ~statusIsnumeric, 
+        Data.data(~nniz(Data.data)) = 0;
+        Data.data = feval(dataClass,Data.data);
+    end
     
   case 'TimePeriods'
     % Needs some more corrections for resampling

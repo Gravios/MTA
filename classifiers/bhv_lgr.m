@@ -17,7 +17,9 @@ function [Stc,d_state] = bhv_lgr(Trial,varargin)
 %
 %
 
+% Constants
 MODEL_TYPE = 'LGR';
+SAMPLE_RATE = 20;
 
 % Load Trial and or check if Trial is of the MTASession class
 if ischar(Trial),
@@ -58,9 +60,11 @@ keys = subsref(Trial.stc.list_state_attrib('key'),...
 % LOAD fet if fet is a feature name
 if iscell(fet)
     fet = feval(fet{:});
+elseif isa(feature,'MTADfet'),
+    feature.resample(SAMPLE_RATE);
 else
     try
-        fet = feval(fet,Trial,20);
+        fet = feval(fet,Trial,SAMPLE_RATE);
     catch err
         error(err.msg)
     end
