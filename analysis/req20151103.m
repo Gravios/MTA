@@ -11,7 +11,7 @@ Trial.load('stc','hand_labeled_rev2');
 
 
 
-[x,~,~,mx,sx] = fet_tsne(Trial,15,true);
+x = fet_tsne(Trial,15,true);
 %x = fet_all(Trial,15,true);
 t = MTADxyz('data',stc2mat(Trial.stc,x,states),'sampleRate',x.sampleRate);
 ind = Trial.stc{'a'};

@@ -37,7 +37,7 @@ defArgs = {...
                Trial.stc.list_state_attrib('label'),   ...
  ...
  ...           fet
-               {'fet_tsne',Trial,'newSampleRate',10},  ...
+               {'fet_tsne',Trial,10},  ...
  ...           
  ...           model_name
                ['MTAC_' Trial.stc.mode '_' MODEL_TYPE],...
@@ -46,10 +46,13 @@ defArgs = {...
                true,                                   ...
  ...
  ...           other_state
-               false                                   ...
+               false,                                  ...
+ ... 
+ ...           nNeurons
+               100                                     ....
 };
 
-[train,states,fet,model_name,display,other_state] = DefaultArgs(varargin,defArgs);
+[train,states,fet,model_name,display,other_state,nNeurons] = DefaultArgs(varargin,defArgs);
 
 
 
@@ -59,12 +62,17 @@ keys = subsref(Trial.stc.list_state_attrib('key'),...
 % LOAD fet if fet is a feature name
 % RESAMPLE to conserve memory during model fitting
 % fet.resample(30); for now leave it to the input SR
-if ischar(fet),
-    fet = feval(fet{:})
-elseif isa(fet,'MTAData'),
-    fet = fet;
+% LOAD fet if fet is a feature name
+if iscell(fet)
+    fet = feval(fet{:});
+else
+    try
+        fet = feval(fet,Trial,20);
+    catch err
+        error(err.msg)
+    end
 end
-assert(isa(Trial,'MTASession'),['MTA:classifiers:' mfilename ':Trial not found'])
+assert(isa(fet,'MTAData'),['MTA:classifiers:' mfilename ':Feature not found']);
 
 
 
@@ -80,7 +88,7 @@ model_loc = fullfile(model_path,model_name);
 %% Get or Train LGR Model
 if train||~exist(model_loc,'file'),
     
-    % create Nx1 array to store states as integers (nomial data)
+    % create NxS array to store states as integers (nomial data) {S=numel(states)}
     [smat] = max(stc2mat(Trial.stc,fet,states),[],2);
     
     % Create struct to store model meta-data
@@ -110,7 +118,12 @@ if train||~exist(model_loc,'file'),
         ind = any(smat,2);
     end
     
+    
     % Train classifier
+
+    %view(net);
+    [net,tr] = train(patternnet(nNeurons),x(ind,:)',~~t(ind,:)');
+
     [B,dev,stats] = mnrfit(fet(ind,:),smat(ind),'model','nominal');
     save(model_loc,'B','dev','stats','Model_Information');
     return
