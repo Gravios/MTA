@@ -14,7 +14,7 @@ SAVEFIG = true;         % boolean flag, Save figures along with png's
 NEW_SAMPLE_RATE = 10;   % Reduce the sample rate of the feature matrix
 HOST_PATH = '/storage/gravio/figures/'; % Where reportfig should
                                        % save stuff
-
+states = {'walk','rear','turn','pause','groom','sit'};
 
 %Trial = MTATrial('jg05-20120317');
 %Trial.stc.load(Trial,'hand_labeled_rev2');
@@ -33,7 +33,7 @@ for s = 1:numel(slist),
 
   % Load Feature matrix of the session    
     [tfet,fett,fetd] = fet_tsne(Trial,NEW_SAMPLE_RATE);
-    [~,Rmean,Rstd] = unity(rfet,[],[],[],[]);
+    [rfet,Rmean,Rstd] = unity(rfet,[],[],[],[]);
     tfet.normalize_to_reference(rfet);
     tfet.unity(rfet,[],Rmean,Rstd);
 
@@ -90,6 +90,16 @@ toc
 
 
 %%Start Here
+labledtSneMap = zeros([rfet.size(1),2]);
+rfet.unity(rfet);
+tic
+for s = 1:fet.size(1),
+    [mdist,mind] = sort(sqrt(sum(bsxfun(@minus,fet(ind,:),rfet(s,:)).^2,2)));
+    dwght = 1./(mdist(1:10)+eps)./sum(1./(mdist(1:10)+eps));
+    labeledtSneMap(s,:) = sum(mappedX(mind(1:10),:).*repmat(dwght,[1,size(mappedX,2)]));
+    if ~mod(s,10000),toc,disp([num2str(s) ' of ' num2str(fet.size(1))]),tic,end
+end
+toc
 
 
 
