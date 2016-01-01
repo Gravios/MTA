@@ -1,4 +1,4 @@
-function [fet,featureTitles,featureDesc,Nmean,Nstd] = fet_tsne(Trial,varargin)
+function [fet,featureTitles,featureDesc,Nmean,Nstd] = fet_tsne_rev1(Trial,varargin)
 [newSampleRate,normalize] = DefaultArgs(varargin,{15,false},1);
 
 if ischar(Trial),
@@ -96,8 +96,8 @@ fet.data = [fxyz(:,{'spine_lower','spine_middle','spine_upper','head_front'},3),
             fang(:,'head_back','head_front',2),...                      %Pitch
             abs(circ_dist(circshift(fang(:,3,4,2),-1),circshift(fang(:,3,4,2),1))),...
             abs(circ_dist(circshift(fang(:,1,4,1),-1),circshift(fang(:,1,4,1),1))),...
-            abs(circ_dist(circshift(fang(:,3,7,1),-1),circshift(fang(:,3,7,1),1)))...%,
-            ];%rhm.data
+            abs(circ_dist(circshift(fang(:,3,7,1),-1),circshift(fang(:,3,7,1),1))),...%,
+            abs(circ_dist(fang(:,1,3,1),fang(:,1,5,1)))];%rhm.data
 fet.data(isinf(fet(:))) = 0;
 if normalize,
     fet.unity;
@@ -175,9 +175,52 @@ if nargout>1,
     featureTitles(end+1) = {'d(yaw_{BMHF})/dt'};
     featureDesc(end+1) = {'Yaw speed of the vector from spine_middle to head_front'};
     % 18.
-% $$$     featureTitles(end+1) = {'rhm'};
-% $$$     featureDesc(end+1) = {'Rhythmic head motion'};
+    featureTitles(end+1) = {'|yaw|_{BL,BMH,B}'};
+    featureDesc(end+1) = {'angle between head spine and tail'};
 
 end
 
 
+%% TEsting area %%
+% $$$ 
+% $$$ figure,
+% $$$ plot(abs(sum([circ_dist(fang(:,1,2,1),fang(:,2,3,1)),...
+% $$$           circ_dist(fang(:,2,3,1),fang(:,3,4,1)),...
+% $$$           circ_dist(fang(:,3,4,1),fang(:,4,7,1))],2)));
+% $$$ 
+% $$$ 
+% $$$ mag = nan([fang.size(1),1]);
+% $$$ for a = 1:fang.size(1),
+% $$$     mag(a) = PPC([fang(a,1,2,1),fang(a,2,3,1),fang(a,3,4,1),fang(a,4,7,1)]);
+% $$$ end
+% $$$ 
+% $$$ man = fxyz.copy;
+% $$$ %man.data = mag;
+% $$$ man.data = abs(circ_dist(fang(:,1,3,1),fang(:,1,5,1)));
+% $$$ 
+% $$$ 
+% $$$ 
+% $$$ Trial.load('stc','hand_labeled_rev2');
+% $$$ 
+% $$$ figure,plot(man.data)
+% $$$ Lines(Trial.stc{'w',fang.sampleRate}(:),[],'b');
+% $$$ Lines(Trial.stc{'n',fang.sampleRate}(:),[],'g');
+% $$$ Lines(Trial.stc{'m',fang.sampleRate}(:),[],'m');
+% $$$ 
+% $$$ eds = linspace(-.2,1,100);
+% $$$ eds = linspace(0,3,100);
+% $$$ 
+% $$$ s = 'm';
+% $$$ figure,hold on
+% $$$ ind = Trial.stc{['a-' s]};
+% $$$ ha = bar(eds,histc(man(ind),eds),'histc');
+% $$$ ha.FaceColor = 'c';
+% $$$ ha.FaceAlpha = .5;
+% $$$ ind = Trial.stc{s};
+% $$$ hs = bar(eds,histc(man(ind),eds),'histc');
+% $$$ hs.FaceColor = 'r';
+% $$$ hs.FaceAlpha = .5;
+% $$$ 
+% $$$ 
+% $$$ 
+% $$$ 

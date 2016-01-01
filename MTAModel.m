@@ -225,7 +225,12 @@ classdef MTAModel
             end
         end
 
-    
+
+        function markerList = find(Model,regexPat)
+            markerList = Model.ml;
+            markerList = markerList(~cellfun(@isempty,regexp(markerList,regexPat)));
+        end
+        
 
     end
 

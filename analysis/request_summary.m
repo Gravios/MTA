@@ -76,3 +76,14 @@
 
 % req20151204
 %    tsne mapping of spike on to 2D 
+
+% req20151216
+%    neural network training validation randomly selected data
+%    points.
+%
+%    TODO: random behavior epoch sampling.
+%
+
+
+% req20151217
+%

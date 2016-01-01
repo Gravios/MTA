@@ -16,8 +16,9 @@ smat = zeros([Data.size(1),nsts]);
 keys = {};
 labels = {};
 g = 1;
-for i = Stc.gsi(states), % change this for loop to something better
-    tper = [Stc.states{i}];
+
+for i = states,
+    tper = [Stc{i{:}}];
     tper = resample(tper.cast('TimeSeries'),Data);
     smat(tper==1,g) = g;
     if nargout>1,
@@ -25,6 +26,6 @@ for i = Stc.gsi(states), % change this for loop to something better
         labels(g) = {tper.label};
     end
     g = g+1;
-end
 
+end
 end

@@ -241,7 +241,7 @@ classdef MTAStateCollection < hgsetget
                                 stsFuncs(1) = [];
                             end
                             
-                            if ~isempty(sts{1}),
+                            if isa(sts{1},'MTADepoch'),
                                 sts = sts{1}.copy;
                                 if ~isempty(stsSampleRate)
                                     sts.resample(stsSampleRate);

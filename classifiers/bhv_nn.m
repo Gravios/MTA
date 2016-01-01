@@ -13,7 +13,11 @@ function [Stc,d_state,Model_Information] = bhv_nn(Trial,varargin)
 %
 %   display:     logical, def - true
 %
+%   other_state: logical, def - false
 %
+%   nNeurons:    numeric, def - 100
+%
+%   subset:    MTADepoch, def - []
 %
 %
 
@@ -117,9 +121,9 @@ if trainModel||~exist(model_loc,'file'),
     if other_state, 
         ind = resample(Trial.stc{'a'}.cast('TimeSeries'),feature);
         ind = logical(ind.data);
-        smat = cat(2,smat,zeros([size(smat,1),1]));
-        smat(~any(smat),end) = 1;
-        if sum(smat(ind)==1)>0,
+        smat = cat(2,smat,ind);
+        smat(all(smat,2),end) = 0;
+        if sum(smat(:,end))>0,
             Model_Information.state_labels =  [Model_Information.state_labels{:}, {'other'}];
             Model_Information.state_keys   =  [Model_Information.state_keys{:},       {'o'}];
         end
@@ -177,9 +181,15 @@ maxState=circshift(sq(mode(mss))',floor(bwin/2));
 
 % Populate Stc object with the new states
 for i = 1:numel(Model_Information.state_labels),
-Stc.addState(Trial.spath,...
+
+    sts = ThreshCross(maxState==i,0.5,1);
+    if ~isempty(sts),
+        sts = bsxfun(@plus,sts,[1,0]);
+    end
+    
+    Stc.addState(Trial.spath,...
              Trial.filebase,...
-             bsxfun(@plus,ThreshCross(maxState==i,0.5,1),[1,0]),...
+             sts,...
              xyz.sampleRate,...
              feature.sync.copy,...
              feature.origin,...
