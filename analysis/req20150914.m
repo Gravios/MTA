@@ -10,19 +10,27 @@ perplexity = 100; % arbitrary scale use to control the malability
 
 SAVEFIG = true;   % boolean flag, Save figures along with png's 
 
-msr = 20;         % Reduce the sample rate of the feature matrix
+fetSampleRate = 12;         % Reduce the sample rate of the feature matrix
+
+featureSet = 'fet_tsne_rev3'; % name of the function which constructs
+                         % the feature set
+
+ifNormalize = true;     % Flag to normalize using the
+                         % z-tranformation
 
 hostPath = '/storage/gravio/figures/'; % Where reportfig should
                                        % save stuff
 
 
-%Trial = MTATrial('jg05-20120317');
+Trial = MTATrial('jg05-20120317');
 %Trial.stc.load(Trial,'hand_labeled_rev2');
 %Trial = MTATrial('Ed01-20140707');
 %Stc = Trial.stc.load(Trial,'hand_labeled_rev1');
 Stc = Trial.stc.load(Trial,'hand_labeled_rev2');
 
-[fet,fett,fetd] = fet_tsne(Trial,msr,true); % Load Feature matrix of the session
+
+
+[fet,fett,fetd] = feval(featureSet,Trial,fetSampleRate,ifNormalize); % Load Feature matrix of the session
 
 [asmat,labels,keys] =  stc2mat(Stc,fet);
 asmat = MTADxyz('data',asmat,'sampleRate',fet.sampleRate);
@@ -37,14 +45,14 @@ mfet = fet(ind,:);
 msmat = csmat(ind,:);
 
 start = 1;
-skip = 2;
+skip = 1;
 stop = size(mfet,1);
 no_dims = 2;
 
 ind = start:skip:stop;
 mappedX = tsne(mfet(ind,:), msmat(ind,:), no_dims, initial_dims, perplexity); 
 
-figparm = ['tSNE-msr_' num2str(msr) '-ind_' num2str(start) '_' ...
+figparm = ['tSNE-fsr_' num2str(fetSampleRate) '-ind_' num2str(start) '_' ...
             num2str(skip) '_' num2str(stop) '-perplexity_' ...
             num2str(perplexity) '-initial_dims_' num2str(initial_dims) ...
             '-no_dims_' num2str(no_dims)];

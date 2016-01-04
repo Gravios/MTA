@@ -75,9 +75,7 @@ keys = subsref(Trial.stc.list_state_attrib('key'),...
 % LOAD feature if feature is a feature name
 if iscell(feature),
     feature = feval(feature{:});
-elseif isa(feature,'MTADfet'),
-    feature.resample(SAMPLE_RATE);
-else
+elseif ischar(feature);
     try
         feature = feval(feature,Trial,SAMPLE_RATE);
     catch err

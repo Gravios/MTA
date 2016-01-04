@@ -9,16 +9,22 @@ Trial = MTATrial('jg05-20120317');
 Trial.load('stc','hand_labeled_rev2');
 
 states = {'walk','rear','turn','pause','groom','sit'};
-featureSet = 'fet_tsne_rev1';
-fetSampleRate = 20;%Hz
-nNeurons = 150;
+featureSet = 'fet_tsne_rev2';
+
 nIter = 200;
+nNeurons = 150;
+
+ 
+sampleRate = 10;%Hz
+features = feval(featureSet,Trial,sampleRate,false);
+
+model = ['MTAC_BATCH-' featureSet ...
+         '_SR_'  num2str(sampleRate) ...
+         '_REF_' Trial.name ...
+         '_NN_'  num2str(nNeurons) ];
 
 
-features = feval(featureSet,Trial,fetSampleRate,false);
-model = ['MTCA_BATCH-' featureSet '-REF-' Trial.name '-NN'];
-
-%features = fet20151007(Trial,fetSampleRate,false);
+%features = fet20151007(Trial,sampleRate,false);
 %model = 'fet20151007_REFjg0520120317_NN';
 
 
@@ -114,11 +120,11 @@ plot_precision(precision,states,'fet_tsne')
 
 Trial = MTATrial('Ed01-20140707');
 featureName = 'fet_tsne';
-%features = fet_tsne(Trial,fetSampleRate,false);
+%features = fet_tsne(Trial,sampleRate,false);
 
 featureName = 'fet20151007';
 
-features = feval(featureName,Trial,fetSampleRate,false);
+features = feval(featureName,Trial,sampleRate,false);
 
 
 cm = zeros([nIter,numel(states),numel(states)]);
@@ -159,21 +165,21 @@ plot_precision(precision,states,featureName)
 bhv_nn (Trial,                                               ... Trial
         true,                                                ... ifTrain
         states,                                              ... States
-        {'fet20151007',Trial,fetSampleRate,false},                          ... feature set
+        {'fet20151007',Trial,sampleRate,false},                          ... feature set
         'fet20151007_REFjg0520120317_NN');                                % model name
 
         
 bhv_nn (Trial,                                               ... Trial
         true,                                                ... ifTrain
         states,                                              ... States
-        {'fet_tsne',Trial,fetSampleRate,true},                          ... feature set
+        {'fet_tsne',Trial,sampleRate,true},                          ... feature set
         'Ufet_tsne_REFjg0520120317_NN');                                % model name
 
         
 bhv_nn (Trial,                                               ... Trial
         true,                                                ... ifTrain
         states,                                              ... States
-        {'fet20151007',Trial,fetSampleRate,true},                          ... feature set
+        {'fet20151007',Trial,sampleRate,true},                          ... feature set
         'Ufet20151007_REFjg0520120317_NN');                                % model name
         
         
@@ -182,7 +188,7 @@ bhv_nn (Trial,                                               ... Trial
 Trial = MTATrial('jg05-20120317');
 Trial.load('stc','hand_labeled_rev2');
 states = {'walk','rear','turn','pause','groom','sit'};
-features = fet_tsne(Trial,fetSampleRate,false);
+features = fet_tsne(Trial,sampleRate,false);
 
 
 StcHL = Trial.load('stc','hand_labeled_rev2');
