@@ -182,84 +182,87 @@ classdef MTAStateCollection < hgsetget
             ni = numel(S);
             for n = 1:ni,
                 if isa(Stc,'MTAStateCollection'),
-                    if strcmp(S(n).type,'{}'),
-                        if ischar(S(n).subs{1}),
-
-                            stsSampleRate = [];
-                            if numel(S(n).subs)>=2
-                                stsSampleRate = S(n).subs{2};
-                                S(n).subs(2) = [];
-                            end
-                            
-                            stsFuncs = regexp(S(n).subs{1},'\&*\^*\|*\+*\-*','match');
-                            stsNames = regexp(S(n).subs{1},'\&*\^*\|*\+*\-*','split');
-                            assert(numel(stsFuncs)+1==numel(stsNames),...
-                                'MTAStateCollection:subsref:UnequalStatesAndFunctionCount',...
-                                ['Each state name must be separated by a \n' ...
-                                'join(''^'',''&'') or intersect(''|'',''+'') operator']);
-                            sts = {};
-                            for i = 1:numel(stsNames),
-                                stci = Stc.gsi(stsNames{i});
-                                if isempty(stci)
-                                    if numel(stsNames{i})==1,
-                                        sts{i} = MTADepoch(Stc.path,[],[],[],[],[],[],[],[],[],stsNames{i});
+                    if strcmp(S(n).type,'{}')||strcmp(S(n).type,'()'),
+                        queries = S(n).subs;
+                        out = cell([1,numel(queries)]);
+                        for s = 1:numel(queries),
+                            if ischar(queries{1}),
+                                
+                                stsSampleRate = [];
+                                
+                                % if the last entry in the query array is
+                                % numerical, use it as the final sample rate
+                                if isnumeric(queries{end})
+                                    stsSampleRate = queries{end};
+                                    queries(end) = [];
+                                end
+                                
+                                % Parse indexing query for operators and store their order
+                                stsFuncs = regexp(queries{s},'\&*\^*\|*\+*\-*','match');
+                                
+                                % Parse indexing query for states
+                                stsNames = regexp(queries{s},'\&*\^*\|*\+*\-*','split');
+                                
+                                % indexing query should not start or end with an operator 
+                                assert(numel(stsFuncs)+1==numel(stsNames),...
+                                    'MTAStateCollection:subsref:UnequalStatesAndFunctionCount',...
+                                    ['Each state name must be separated by a \n' ...
+                                    'join(''^'',''&'') or intersect(''|'',''+'') operator']);
+                                
+                                % initallize cell array to accumulate the queried states
+                                sts = cell([1,numel(stsNames)]);
+                                for i = 1:numel(stsNames),
+                                    stci = Stc.gsi(stsNames{i});
+                                    
+                                    % If the state does not exist in the collection try to find it
+                                    % by the label or key.
+                                    if isempty(stci)                             
+                                        if numel(stsNames{i})==1,
+                                            sts{i} = MTADepoch(Stc.path,[],[],[],[],[],[],[],[],[],stsNames{i});
+                                        else
+                                            sts{i} = MTADepoch(Stc.path,[],[],[],[],[],[],[],[],stsNames{i},[]);
+                                        end
+                                        try
+                                            sts{i} = sts{i}.load([],Stc.sync);
+                                            Stc.addState(sts{i});
+                                        catch
+                                            warning(['MTAStateCollection:subrefs:StateNotFound, state: ''' stsNames{i} ''' does not exist']);
+                                            sts{i} = {};
+                                        end
+                                        
                                     else
-                                        sts{i} = MTADepoch(Stc.path,[],[],[],[],[],[],[],[],stsNames{i},[]);
+                                        sts{i} =  Stc.states{stci}.copy;
                                     end
-                                    try,
-                                        sts{i} = sts{i}.load([],Stc.sync);
-                                        Stc.addState(sts{i});
-                                    catch
-                                        warning(['MTAStateCollection:subrefs:StateNotFound, state: ''' stsNames{i} ''' does not exist']);
-                                        sts{i} = {};
-                                    end
-
-                                else
-                                    sts{i} =  Stc.states{stci}.copy;
                                 end
-                            end
-                            
-                            while ~isempty(stsFuncs),
-                                switch stsFuncs{1}
-                                  case '&'
-                                    sts{2} = MTADepoch.intersect(sts(1:2));
-                                    sts(1) = [];
-                                  case '^'
-                                    sts{2} = MTADepoch.intersect(sts(1:2));
-                                    sts(1) = [];
-                                  case '+'
-                                    sts{2} = sts{1}+sts{2};
-                                    %sts{2} = MTADepoch.join(sts(1:2));
-                                    sts(1) = [];
-                                  case '|'
-                                    sts{2} = MTADepoch.join(sts(1:2));
-                                    sts(1) = [];
-                                  case '-'
-                                    sts{2} = sts{1}-sts{2};
-                                    sts(1) = [];
+                                
+                                % Perform all operations parsed from the input
+                                sts = eval_operation_list(sts,stsFuncs);                                
+                                
+                                % Check that the result is MTADepoch
+                                if isa(sts{1},'MTADepoch'),
+                                    sts = sts{1}.copy;
+                                    
+                                    % Resample state if necessary
+                                    if ~isempty(stsSampleRate), sts.resample(stsSampleRate); end
+                                    
+                                    % Add state to collection if absent 
+                                    if isempty(Stc.gsi(sts.label)), Stc.addState(sts); end
+                                    out{s} = sts;
+                                    
+                                else % Return empty set
+                                    out = {};
+                                    return
                                 end
-                                stsFuncs(1) = [];
-                            end
-                            
-                            if isa(sts{1},'MTADepoch'),
-                                sts = sts{1}.copy;
-                                if ~isempty(stsSampleRate)
-                                    sts.resample(stsSampleRate);
-                                end
-                                if isempty(Stc.gsi(sts.label)),
-                                    Stc.addState(sts);
-                                end
-                                Stc = sts;
+                                
                             else
-                                Stc = {};
+                                out{s} = Stc.states{S(n).subs{1}}.copy;
+                                out{s}.resample(S(n).subs{2});
                             end
-
-                        else
-                            Stc = Stc.states{S(n).subs{1}}.copy;
-                            Stc.resample(S(n).subs{2});
                         end
+                        Stc = out;
+
                     else
-                        Stc = builtin('subsref',Stc,S(n:end));                       
+                        Stc = builtin('subsref',Stc,S(n:end));
                         return
                     end
                 else
@@ -268,11 +271,11 @@ classdef MTAStateCollection < hgsetget
                 end
             end
         end
-
+        
         function Stc = updatePath(Stc,path)
             Stc.path = path;
         end
-
+        
         function Stc = updateMode(Stc,mode)
             Stc.mode = mode;
             [~,fname,fext] = fileparts(Stc.filename);

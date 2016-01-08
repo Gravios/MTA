@@ -98,7 +98,7 @@ classdef MTADepoch < MTAData
         end
 
         function Data = join(DataCell)
-            if numel(DataCell)==1||isa(DataCell,MTADepoch),
+            if numel(DataCell)==1||isa(DataCell,'MTADepoch'),
                 if iscell(DataCell)
                     Data = DataCell{1};
                 else

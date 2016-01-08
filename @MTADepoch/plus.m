@@ -17,7 +17,11 @@ function Data = plus(a,b)
 
 if isa(a,'MTADepoch')&&~isa(b,'MTADepoch')
     if strcmp(a.type,'TimePeriods'),
-        Data = a.copy;
+        if nargout==0,
+            Data = a;
+        else
+            Data = a.copy;
+        end
         b = b*a.sampleRate;
         if prod(size(b) == Data.size),
             Data.data = Data.data+b;
@@ -30,7 +34,11 @@ if isa(a,'MTADepoch')&&~isa(b,'MTADepoch')
     
 elseif isa(b,'MTADepoch')&&~isa(a,'MTADepoch')
     if strcmp(a.type,'TimePeriods'),
-        Data = b.copy;
+        if nargout==0,
+            Data = b;
+        else
+            Data = b.copy;
+        end
         a = a*b.sampleRate;
         if prod(size(a) == Data.size),
             Data.data = Data.data+a;
@@ -44,7 +52,11 @@ elseif isa(b,'MTADepoch')&&~isa(a,'MTADepoch')
     
 elseif isa(a,'MTADepoch')&&isa(b,'MTADepoch')
     if strcmp(a.type,'TimePeriods')&&strcmp(b.type,'TimePeriods'),
-        Data = a.copy;
+        if nargout==0,
+            Data = a;
+        else
+            Data = a.copy;
+        end
         Data.path = [];
         Data.filename = [];
         Data.label = [a.label '+' b.label];
