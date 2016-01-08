@@ -3,7 +3,8 @@ Trial = MTATrial('jg05-20120317');
 Trial.load('stc','hand_labeled_rev2');
 states = {'walk','rear','turn','pause','groom','sit'};
 
-featureSet = 'fet_tsne_rev3';
+featureSet = 'fet_trial20160107';%'fet_tsne_rev3';
+%featureSet = 'fet_tsne_rev3';
 sampleRate = 12;
 ifNormalize = false;
 features = feval(featureSet,Trial,sampleRate,ifNormalize);
@@ -28,10 +29,11 @@ StcHL = Trial.load('stc','hand_labeled_rev1');
 
 Trial = MTATrial('Ed03-20140624');
 StcHL = Trial.load('stc','hand_labeled_rev1');
+StcHL = Trial.load('stc','hand_labeled_rev2_alt');
 
 
-features = fet20151007(Trial,sampleRate,ifNormalize,featureSet,false);
-%features = feval(featureSet,Trial,sampleRate,ifNormalize);
+%features = fet20151007(Trial,sampleRate,ifNormalize,featureSet,false);
+features = feval(featureSet,Trial,sampleRate,ifNormalize);
 
 Stc = bhv_nn (Trial,false,states,features,model);
 

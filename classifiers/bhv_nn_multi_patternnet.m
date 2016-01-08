@@ -1,4 +1,4 @@
-function [stc,varargout] = bhv_nn_multi_patternnet(Trial,varargin)
+function [varargout] = bhv_nn_multi_patternnet(Trial,varargin)
 %function [stc,varargout] = bhv_nn_multi_patternnet(Trial,varargin)
 % 
 %
@@ -12,6 +12,14 @@ function [stc,varargout] = bhv_nn_multi_patternnet(Trial,varargin)
 %    nIter,
 %    randomizationMode,
 %
+% varargout:
+%    Stc,
+%    d_state,
+%    labelingStats,
+%    labelingStatsMulti,
+
+
+MODEL_TYPE = 'NN_multiPN';
 
 
 % If Trial is not a MTASession try loading it.
@@ -21,6 +29,7 @@ elseif iscell(Trial),
     Trial = MTATrial(Trial{:});
 end
 
+varargout = cell([1,nargout-1]);
 
 % Default Arguments for uninitiated variables
 defArgs = {...
@@ -74,11 +83,11 @@ end
 xyz = Trial.load('xyz');
 
 % Initialize outputs
-tysm = zeros([xyz.size(1),numel(states)]);
-labelingStats.confussionMatrix = zeros([nIter,numel(states),numel(states)]);
-labelingStats.precision =   zeros([nIter,numel(states)]);
-labelingStats.sensitivity = zeros([nIter,numel(states)]);
-labelingStats.accuracy =    zeros([nIter,1]);
+d_state = zeros([xyz.size(1),numel(states)]);
+labelingStatsMulti.confussionMatrix = zeros([nIter,numel(states),numel(states)]);
+labelingStatsMulti.precision =   zeros([nIter,numel(states)]);
+labelingStatsMulti.sensitivity = zeros([nIter,numel(states)]);
+labelingStatsMulti.accuracy =    zeros([nIter,1]);
 
 % Initialize labeling timeperiods
 labelingEpochs = Trial.stc{'a'}.cast('TimeSeries');
@@ -88,6 +97,9 @@ if ~isempty(stcMode),
     Trial.load('stc',stcMode);
     StcHL = Trial.stc.copy;
 end
+keys = subsref(Trial.stc.list_state_attrib('key'),...
+               substruct('()',{Trial.stc.gsi(states)}));
+
 
 for iter = 1:nIter,
     try,
@@ -136,19 +148,19 @@ for iter = 1:nIter,
 
         end
         % Label States
-        Stc = bhv_nn (Trial,                                         ... Trial
-        false,                                         ... ifTrain
-        states,                                        ... States
-        features,                                      ... feature set
-        [model '_' num2str(iter)]);                                          % model name
+        [Stc,~,Model_Information] = bhv_nn (Trial,    ... Trial
+                                             false,    ... ifTrain
+                                             states,   ... States
+                                             features, ... feature set
+                                             [model '_' num2str(iter)]); % model name
 
         
 
 
         ysm = MTADxyz('data',double(0<stc2mat(Stc,  xyz,states)),'sampleRate',xyz.sampleRate); 
-        tysm = ysm.data+tysm;
+        d_state = ysm.data+d_state;
         
-        if ~isempty(stcMode),
+        if nargout>=4,
             shl = MTADxyz('data',double(0<stc2mat(StcHL,xyz,states)),'sampleRate',xyz.sampleRate);
 
             labelingEpochs.resample(xyz);
@@ -156,11 +168,10 @@ for iter = 1:nIter,
             ind = any(shl.data,2)&any(ysm.data,2)&labelingEpochs.data;
 
             tcm = confmat(shl(ind&labelingEpochs,:),ysm(ind&labelingEpochs,:)); % DEP: netlab
-            
-            labelingStats.precision(iter,:) = round(diag(tcm)'./sum(tcm),4).*100;
-            labelingStats.sensitivity(iter,:) = round(diag(tcm)./sum(tcm,2),4).*100;
-            labelingStats.accuracy(iter) = sum(diag(tcm))/sum(tcm(:));
-            labelingStats.confusionMatrix(iter,:,:) = round(tcm./xyz.sampleRate,2);        
+            labelingStatsMulti.confusionMatrix(iter,:,:) = round(tcm./xyz.sampleRate,2);
+            labelingStatsMulti.precision(iter,:) = round(diag(tcm)./sum(tcm,2),4).*100;
+            labelingStatsMulti.sensitivity(iter,:) = round(diag(tcm)'./sum(tcm),4).*100;
+            labelingStatsMulti.accuracy(iter) = sum(diag(tcm))/sum(tcm(:));
         end
     catch
         continue
@@ -170,47 +181,66 @@ end
 
 
 
-% $$$ 
-% $$$ figure,imagesc(tysm')
-% $$$ Lines(StcHL{'w'}(:),[],'m');
-% $$$ Lines(StcHL{'n'}(:),[],'g');
-% $$$ Lines(StcHL{'r'}(:),[],'r');
-% $$$ 
-% $$$ 
-% $$$ 
-% $$$ 
-% $$$ if train,
-% $$$     cm_jg05          = cm;
-% $$$     precision_jg05   = precision;
-% $$$     sensitivity_jg05 = sensitivity;
-% $$$     accuracy_jg05    = accuracy;
-% $$$ end
-% $$$ 
-% $$$ save(['/storage/gravio/data/project/general/analysis/req20151216-' ...
-% $$$      model '-' Trial.filebase '.mat']);
-% $$$ 
-% $$$ load(['/storage/gravio/data/project/general/analysis/req20151216-' ...
-% $$$      model '-' Trial.filebase '.mat']);
-% $$$ 
-% $$$ 
-% $$$ tysm = ysm.data+tysm;
-% $$$ 
-% $$$ [~,sind] = max(tysm,[],2);
-% $$$ 
-% $$$ ysm = MTADxyz('data',zeros([shl.size]),'sampleRate',xyz.sampleRate); 
-% $$$ ysm.data = ysm.data';
-% $$$ ysm.data([1:6:size(ysm,2).*6]+sind'-1) = 1;
-% $$$ ysm.data = ysm.data';
-% $$$ 
-% $$$ ind = any(shl.data,2)&any(ysm.data,2)&labelingEpochs.data;
-% $$$ tcm = confmat(shl(ind&labelingEpochs,:),ysm(ind&labelingEpochs,:)); % DEP: netlab
-% $$$ nprecision = round(diag(tcm)'./sum(tcm),4).*100;
-% $$$ nsensitivity = round(diag(tcm)./sum(tcm,2),4).*100;
-% $$$ ncm = round(tcm./xyz.sampleRate,2);
-% $$$ naccuracy = sum(diag(tcm))/sum(tcm(:));
-% $$$ 
-% $$$ 
-% $$$ % Plot the distribution of model precision
-% $$$ plot_precision(precision,states,'fet_tsne')
-% $$$ 
-% $$$ 
+% Determine winning states based on the the labels of nurmerous
+% neural networks.
+[~,maxState] = max(d_state,[],2);
+maxState(~nniz(xyz),:) = 0;
+
+% Smooth decision boundaries - 200 ms state minimum
+% $$$ bwin = round(.2*xyz.sampleRate)+double(mod(round(.2*xyz.sampleRate),2)==0);
+% $$$ mss = GetSegs(maxState,1:size(maxState,1),bwin,nan);
+% $$$ maxState=circshift(sq(mode(mss))',floor(bwin/2));
+
+
+% Stats in comparision to the collection of labels specified in the stcMode
+ysm = MTADxyz('data',zeros([shl.size]),'sampleRate',xyz.sampleRate); 
+ysm.data = ysm.data';
+ysm.data([1:6:size(ysm,2).*6]+maxState'-1) = 1;
+ysm.data = ysm.data';
+ind = any(shl.data,2)&any(ysm.data,2)&labelingEpochs.data;
+tcm = confmat(shl(ind&labelingEpochs,:),ysm(ind&labelingEpochs,:)); % #DEP: netlab
+labelingStats.confusionMatrix = round(tcm./xyz.sampleRate,2);
+labelingStats.precision = round(diag(tcm)./sum(tcm,2),4).*100;
+labelingStats.sensitivity = round(diag(tcm)'./sum(tcm),4).*100;
+labelingStats.accuracy = sum(diag(tcm))/sum(tcm(:));
+
+% Copy State Collection object to store new labeled periods
+Stc = Trial.stc.copy;
+Stc.updateMode([MODEL_TYPE '-' Model_Information.StcMode...
+                '-' cell2mat(Model_Information.state_keys)]);
+Stc.states = {};
+
+
+
+% Create new StateCollection ... well copy
+Stc = Trial.stc.copy;
+Stc.updateMode([MODEL_TYPE '-' Model_Information.Trial '-'...
+                Model_Information.StcMode...
+                '-' cell2mat(Model_Information.state_keys)]);
+Stc.states = {};
+
+
+% Populate Stc object with the new states
+for i = 1:numel(Model_Information.state_labels),
+
+    sts = ThreshCross(maxState==i,0.5,1);
+    if ~isempty(sts),
+        sts = bsxfun(@plus,sts,[1,0]);
+    end
+    
+    Stc.addState(Trial.spath,...
+             Trial.filebase,...
+             sts,...
+             xyz.sampleRate,...
+             features.sync.copy,...
+             features.origin,...
+             Model_Information.state_labels{i},...
+             Model_Information.state_keys{i},...
+             'TimePeriods');
+end
+
+if nargout>=1, varargout{1} = Stc;                end
+if nargout>=2, varargout{2} = d_state;            end
+if nargout>=3, varargout{3} = labelingStats;      end
+if nargout>=4, varargout{4} = labelingStatsMulti; end
+    

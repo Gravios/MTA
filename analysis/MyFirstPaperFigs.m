@@ -2070,9 +2070,70 @@ switch mode,
      nind = nniz(fet);figure,N = hist2([fet(nind,:)*isig(11,:)',fet(nind,:)*isig(2,:)'],linspace(-10,10,100),linspace(-15,15,100));
      
 
+     
+  case 'dz-lfp comodulation'
+    
+    %% comodulation of low frequency oscillations in the lowerspine
+    %% marker and the lfp
+    Trial = MTATrial('jg05-20120317');
+    Trial.load('stc','hand_labeled_rev2');
+    xyz = Trial.load('xyz');
+    fxyz = xyz.copy;
+    fxyz.filter('ButFilter',3,40,'low');
+    ang = create(MTADang,Trial,fxyz);
+
+    lfp = Trial.load('lfp',84);
+    name = 'lower spine Z speed'; label = 'lszs'; key = 'z';
+    zv = MTADfet.encapsulate(Trial,...
+                         diff(ang(:,1,4,3)),...
+                         xyz.sampleRate,...
+                         name,label,key);
+
+    zv = MTADfet.encapsulate(Trial,...
+                         diff(circ_dist(ang(:,2,4,1),ang(:,4,7,1))),...
+                         xyz.sampleRate,...
+                         name,label,key);
+%lfp.resample(zv);
+    zv.resample(lfp);
+    zv.filter('ButFilter',3,40,'low');
+
+
+    dspec = struct('nFFT',      2^10,...
+                   'SampleRate',zv.sampleRate,...
+                   'WinLength', 2^9,...
+                   'FreqRange', [1,150]);
+    dspec = struct2varargin(dspec);
+    nind = nniz(lfp)&nniz(zv);
+    nind = Trial.stc{'w+n+p'};
+    [Co,f] = Comodugram([lfp(nind),zv(nind)],dspec{:});
+
+    figure;
+    for xi = 1:2,
+        for yi = 1:2,
+            subplot2(2,2,xi,yi);
+            imagesc(f,f,Co(:,:,xi,yi)');
+            axis xy;
+            colormap jet
+            caxis([0,1])
+        end
+    end
+    
+    zvp = zv.copy;
+    zvp = zvp.phase([2,4]);
+    spk = Trial.spk.create(Trial,Trial.xyz.sampleRate,'walk');
+
+    thp = lfp.phase([6,14]);
+    figure,rose(zvp(spk(10)),30)
+
+    figure
+    for sid = 1:90,
+        clf;
+        plot(thp(spk(sid)),zvp(spk(sid)),'.');
+        title(num2str(sid));
+        pause(.4)
+    end
+    
 end
-
-
 
 
 

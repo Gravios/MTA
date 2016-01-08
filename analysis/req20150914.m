@@ -45,7 +45,7 @@ mfet = fet(ind,:);
 msmat = csmat(ind,:);
 
 start = 1;
-skip = 1;
+skip = 2;
 stop = size(mfet,1);
 no_dims = 2;
 
