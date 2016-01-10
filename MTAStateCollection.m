@@ -260,6 +260,10 @@ classdef MTAStateCollection < hgsetget
                             end
                         end
                         Stc = out;
+                        if numel(out)==1&&iscell(out),
+                            Stc = out{1};
+                        end
+                        
 
                     else
                         Stc = builtin('subsref',Stc,S(n:end));
