@@ -1,9 +1,55 @@
 function reportfig(varargin)
 %function reportfig(varargin)
-%[Trial,FigHandle, FileName, FigDir, Preview,Tag,Comment,Resolution,SaveFig,format,width,height,FigCount] = ...
-%    DefaultArgs(varargin,{DefRepPath,gcf,DefFileName,'',0,'',200,0,'png',8,6,true});
 %
-% width and height in centimeters
+%  varargin:
+%
+%    Trial:      MTASession/string, used to specify the location where
+%                figures will be saved. 
+%
+%                Alternate Inputs:
+%                  Empty: create and use a "figures" directory in
+%                         home directory
+%
+%                  Path:  Save figures in specified path
+%
+%                  MTA:   Save figures in the Session's data directory
+%                                    
+%    FigHandle:  graphics handle, the handle of the figure which is
+%                to be reported
+%
+%    FileName:   string, name used to store the figure
+%
+%    FigDir:     string, if specified and does not exist, will create a
+%                subdirectory in which the report will be loctated.
+%
+%    Preview:    logical, true  - open figure in browser. 
+%                         false - nothing
+%
+%    Tag:        string, 
+%
+%    Comment:    string, add a comment for the caption in the web display
+%
+%    Resolution: integer, dpi probably 
+%
+%    SaveFig:    logical, true  - save a *.fig file. 
+%                         false - nothing
+%
+%    format:     string, {'png','jpg',...} see matlab's saveas.m function
+%
+%    width:      numeric, final width of figure in centimeters
+%
+%    height:     numeric, final height of figure in centimeters
+%
+%    FigCount:   integer, specify the figure id (useful if you want
+%                to overwrite an existing figure
+%
+%    InsertBreak:logical, true  - start a new line in the web display 
+%                         false - nothing
+
+
+
+
+%% Setup Default Arguments
 
 TodayDate = date;
 DefFileName = ['mrep.' TodayDate];	
@@ -14,9 +60,55 @@ else
 end
 if ~exist(DefRepPath,'dir'),mkdir(DefRepPath),end
 
-[Trial,FigHandle, FileName, FigDir, Preview,Tag,Comment,Resolution,SaveFig,format,width,height,FigCount,InsertBreak] = ...
-    DefaultArgs(varargin,{DefRepPath,gcf,DefFileName,'',0,'','',200,0,'png',8,6,true,false});
 
+defArgs = {...
+    ...Trial
+        DefRepPath,                        ...
+    ...                                    
+    ...FigHandle
+        gcf,                               ...
+    ...
+    ...FileName
+        DefFileName,                       ...
+    ...
+    ...FigDir
+        '',                                ...
+    ...
+    ...Preview
+        false,                             ...
+    ...
+    ...Tag
+        '',                                ...
+    ...
+    ...Comment
+        '',                                ...
+    ...
+    ...Resolution
+        200,                               ...
+    ...
+    ...SaveFig
+        false,                             ...
+    ...
+    ...format
+        'png',                             ...
+    ...
+    ...width
+        8,                                 ...
+    ...
+    ...height
+        6,                                 ...
+    ...
+    ...FigCount
+        true,                              ...
+    ...
+    ...InsertBreak
+    false
+};
+
+%% Load Default Arguments
+[Trial,FigHandle, FileName, FigDir, Preview,Tag,Comment,...
+ Resolution,SaveFig,format,width,height,FigCount,InsertBreak] = ...
+    DefaultArgs(varargin,defArgs);
 
 if ~iscell(format)
     format = {format};
@@ -158,17 +250,17 @@ if FigIndex == 1
            '\t<p>\n',...
                    ],...
             FileName,FileName,FileName,FileName,FileName);    
-elseif mod(FigIndex,6) == 0
+elseif InsertBreak
     fprintf(fpHTML,'\t</p>\n</div>\n\n<div class="tab_container">');
 end
 
 
-% Prompt for comment if none given
-if isempty(Comment) 
-    prompt = ['Enter comments for figure' num2str(FigIndex)];
-    Text = inputdlg(prompt, 'Commnents dialog', 1, {['Figure ' num2str(FigIndex)]});
-    Comment = Text{1};
-end
+% Prompt for comment if none given ... no don't do that it's annoying
+% $$$ if isempty(Comment) 
+% $$$     prompt = ['Enter comments for figure' num2str(FigIndex)];
+% $$$     Text = inputdlg(prompt, 'Commnents dialog', 1, {['Figure ' num2str(FigIndex)]});
+% $$$     Comment = Text{1};
+% $$$ end
 
 
 % now generate link to image 
@@ -186,6 +278,9 @@ fprintf(fpHTML, '\t\t\t\t%s\n',Tag);
 fprintf(fpHTML, '\t\t\t</li>\n');
 fprintf(fpHTML, '\t\t</ul>\n');
 fprintf(fpHTML, '\t</div>\n');
+% $$$ if InsertBreak, 
+% $$$     fprintf(fpHTML,'\n\n<br>\n\n'); 
+% $$$ end
 
 fprintf(fpHTML,'%s',endTag);
 fclose(fpHTML);

@@ -97,6 +97,7 @@ classdef MTAStateCollection < hgsetget
             end
             if ~isempty(Session)
                 Stc.path = Session.spath;
+                Stc.sync = Session.sync;
                for s = 1:numel(Stc.states(:)),
                    Session.resync(Stc.states{s});
                end
@@ -184,18 +185,19 @@ classdef MTAStateCollection < hgsetget
                 if isa(Stc,'MTAStateCollection'),
                     if strcmp(S(n).type,'{}')||strcmp(S(n).type,'()'),
                         queries = S(n).subs;
+                        stsSampleRate = [];
+
+                        % if the last entry in the query array is
+                        % numerical, use it as the final sample rate
+                        if isnumeric(queries{end})
+                            stsSampleRate = queries{end};
+                            queries(end) = [];
+                            
+                        end
+
                         out = cell([1,numel(queries)]);
                         for s = 1:numel(queries),
                             if ischar(queries{1}),
-                                
-                                stsSampleRate = [];
-                                
-                                % if the last entry in the query array is
-                                % numerical, use it as the final sample rate
-                                if isnumeric(queries{end})
-                                    stsSampleRate = queries{end};
-                                    queries(end) = [];
-                                end
                                 
                                 % Parse indexing query for operators and store their order
                                 stsFuncs = regexp(queries{s},'\&*\^*\|*\+*\-*','match');

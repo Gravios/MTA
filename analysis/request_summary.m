@@ -86,4 +86,5 @@
 
 
 % req20151217
-%
+% General testing of the bhv_nn wraper for the neural network
+% packages of matlab

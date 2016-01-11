@@ -41,18 +41,20 @@ zfet.resample(bfet);
 
 
 %exp in normalizing distances
+mar = 1;
+NBINS = 100;
+VEL_HISTOGRAM_BOUNDARIES = linspace(-3,2,NBINS);
+ANG_HISTOGRAM_BOUNDARIES = linspace(-pi/2,pi/2,NBINS);
+
+
 Trial = MTATrial('jg05-20120317');
 Trial.load('stc','hand_labeled_rev2');
-
 xyz = Trial.load('xyz');
 xyz.addMarker('bcom',[.7,0,.7],{},...
               xyz.com(xyz.model.rb({'spine_lower','pelvis_root','spine_middle'})));
 xyz.addMarker('hcom',[.7,0,.7],{},...
               xyz.com(xyz.model.rb({'head_back','head_left','head_front','head_right'})));
 ang = create(MTADang,Trial,xyz);
-NBINS = 100;
-VEL_HISTOGRAM_BOUNDARIES = linspace(-3,2,NBINS);
-ANG_HISTOGRAM_BOUNDARIES = linspace(-pi/2,pi/2,NBINS);
 vxy = xyz.copy;
 vxy.filter('ButFilter',3,2.4,'low');
 vxy = vxy.vel({'bcom','hcom'},[1,2]);
@@ -64,8 +66,8 @@ ind = Trial.stc('a-m-r').cast('TimeSeries');
 [~,ind_p_s] = histc(ang(:,3,4,2),ANG_HISTOGRAM_BOUNDARIES);
 mind = nniz([ind_v_b,ind_v_h,ind_p_s])&ind.data;
 manifoldIndex = [ind_v_b(mind),ind_v_h(mind),ind_p_s(mind)];
-%acvar = ang(mind,4,7,2);
-acvar = xyz(mind,4,3);
+%acvar = ang(mind,mar(1),mar(2),2);
+acvar = xyz(mind,mar,3);
 mz = accumarray(manifoldIndex,acvar,[NBINS,NBINS,NBINS],@nanmean);
 vz = accumarray(manifoldIndex,acvar,[NBINS,NBINS,NBINS],@nanstd);
 
@@ -74,30 +76,28 @@ vz = accumarray(manifoldIndex,acvar,[NBINS,NBINS,NBINS],@nanstd);
 % $$$ figure,hist(mz(nniz(mz(:))&vz(:)<10),100)
 
 
-Trial = MTATrial('Ed03-20140624');
-Trial.load('stc','hand_labeled_rev2_alt');
-
+%Trial = MTATrial('Ed03-20140624');
+%Trial.load('stc','hand_labeled_rev2_alt');
+Trial = MTATrial('Ed01-20140707');
+Trial.load('stc','hand_labeled_rev1');
 xyz = Trial.load('xyz');
 xyz.addMarker('bcom',[.7,0,.7],{},...
               xyz.com(xyz.model.rb({'spine_lower','pelvis_root','spine_middle'})));
 xyz.addMarker('hcom',[.7,0,.7],{},...
               xyz.com(xyz.model.rb({'head_back','head_left','head_front','head_right'})));
 ang = create(MTADang,Trial,xyz);
-NBINS = 100;
-VEL_HISTOGRAM_BOUNDARIES = linspace(-3,2,NBINS);
-ANG_HISTOGRAM_BOUNDARIES = linspace(-pi/2,pi/2,NBINS);
 vxy = xyz.copy;
 vxy.filter('ButFilter',3,2.4,'low');
 vxy = vxy.vel({'bcom','hcom'},[1,2]);
 vxy.data(vxy.data<1e-3) = 1e-3;
 vxy.data = log10(vxy.data);
-ind = Trial.stc{'a-m-r'}.cast('TimeSeries');
+ind = Trial.stc{'a-m-r'}.cast('TimeSeries',xyz.sampleRate);
 [~,ind_v_b] = histc(vxy(:,'bcom'),VEL_HISTOGRAM_BOUNDARIES);
 [~,ind_v_h] = histc(vxy(:,'hcom'),VEL_HISTOGRAM_BOUNDARIES);
 mind = nniz([ind_v_b,ind_v_h])&ind.data;
 manifoldIndex = [ind_v_b(mind),ind_v_h(mind),ind_p_s(mind)];
 %acvar = ang(mind,4,7,2);
-acvar = xyz(mind,4,3);
+acvar = xyz(mind,mar,3);
 mzo = accumarray(manifoldIndex,acvar,[NBINS,NBINS,NBINS],@nanmean);
 vzo = accumarray(manifoldIndex,acvar,[NBINS,NBINS,NBINS],@nanstd);
 
@@ -109,6 +109,26 @@ vzo = accumarray(manifoldIndex,acvar,[NBINS,NBINS,NBINS],@nanstd);
 ind = vz(:)<10&vzo(:)<.2&nniz(mzo(:))&nniz(mz(:));
 figure,hist(mz(ind)-mzo(ind),100)
 Lines(nanmedian(mz(ind)-mzo(ind)),[],'r');
+
+
+
+
+
+Trial = MTATrial('jg05-20120317');
+Trial = MTATrial('Ed03-20140624');
+xyz = Trial.load('xyz');
+vxy = xyz.copy;
+vxy.filter('ButFilter',3,2.4,'low');
+vxy = vxy.vel({'spine_lower'},[1,2]);
+vxy.data(vxy.data<1e-3) = 1e-3;
+vxy.data = log10(vxy.data);
+figure,hist(xyz(vxy(:,1)<-.5&nniz(xyz),1,3),100)
+
+
+
+
+
+
 
 
 
@@ -274,3 +294,8 @@ hs = bar(eds,histc(lbfet(ind),eds),'histc');hs.FaceAlpha=.5;hs.FaceColor='r';
 mwp = [];
 for per = Trial.stc{'w'}.data'
     mwp(end+ =maxlbfet(per(1):per(
+    
+
+
+
+
