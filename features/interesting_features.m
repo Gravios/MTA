@@ -7,13 +7,6 @@ ang = create(MTADang,Trial,xyz);
 
 
 
-figure,hold on
-plot(circ_dist(ang(:,1,3,1),ang(:,2,4,1)))
-plot(circ_dist(ang(:,2,4,1),ang(:,3,7,1)))
-Lines(Trial.stc{'w'}(:),[],'b');
-Lines(Trial.stc{'n'}(:)-1,[],'g');
-
-
 name = 'spine and head wag'; label = 'shwag'; key = 'w';
 zv = MTADfet.encapsulate(Trial,...
                          [circ_dist(ang(:,1,3,1),ang(:,2,4,1)),...
@@ -27,11 +20,8 @@ dspec = struct('nFFT',2^8,'Fs',zv.sampleRate,...
                'FreqRange',[1,30]);
 [ys,fs,ts] = fet_spec(Trial,zv,'mtchglong',true,[],dspec,true);
 
-
 figure,imagesc(ts,fs,ys(:,:,1,2)'),axis xy,colormap jet
-
 figure,imagesc(ts,fs,log10(ys(:,:,2,2))'),axis xy,colormap jet
-
 
 eds = linspace(-9,1,100);
 figure,hold on
@@ -68,14 +58,14 @@ vxy.filter('ButFilter',3,2.4,'low');
 vxy = vxy.vel({'bcom','hcom'},[1,2]);
 vxy.data(vxy.data<1e-3) = 1e-3;
 vxy.data = log10(vxy.data);
-ind = Trial.stc('gper').cast('TimeSeries');
+ind = Trial.stc('a-m-r').cast('TimeSeries');
 [~,ind_v_b] = histc(vxy(:,'bcom'),VEL_HISTOGRAM_BOUNDARIES);
 [~,ind_v_h] = histc(vxy(:,'hcom'),VEL_HISTOGRAM_BOUNDARIES);
 [~,ind_p_s] = histc(ang(:,3,4,2),ANG_HISTOGRAM_BOUNDARIES);
 mind = nniz([ind_v_b,ind_v_h,ind_p_s])&ind.data;
 manifoldIndex = [ind_v_b(mind),ind_v_h(mind),ind_p_s(mind)];
 %acvar = ang(mind,4,7,2);
-acvar = xyz(mind,1,3);
+acvar = xyz(mind,4,3);
 mz = accumarray(manifoldIndex,acvar,[NBINS,NBINS,NBINS],@nanmean);
 vz = accumarray(manifoldIndex,acvar,[NBINS,NBINS,NBINS],@nanstd);
 
@@ -101,23 +91,24 @@ vxy.filter('ButFilter',3,2.4,'low');
 vxy = vxy.vel({'bcom','hcom'},[1,2]);
 vxy.data(vxy.data<1e-3) = 1e-3;
 vxy.data = log10(vxy.data);
-ind = Trial.stc{'a-m'}.cast('TimeSeries');
+ind = Trial.stc{'a-m-r'}.cast('TimeSeries');
 [~,ind_v_b] = histc(vxy(:,'bcom'),VEL_HISTOGRAM_BOUNDARIES);
 [~,ind_v_h] = histc(vxy(:,'hcom'),VEL_HISTOGRAM_BOUNDARIES);
 mind = nniz([ind_v_b,ind_v_h])&ind.data;
 manifoldIndex = [ind_v_b(mind),ind_v_h(mind),ind_p_s(mind)];
 %acvar = ang(mind,4,7,2);
-acvar = xyz(mind,1,3);
+acvar = xyz(mind,4,3);
 mzo = accumarray(manifoldIndex,acvar,[NBINS,NBINS,NBINS],@nanmean);
 vzo = accumarray(manifoldIndex,acvar,[NBINS,NBINS,NBINS],@nanstd);
 
 
 
-figure,subplot(1,2,1),imagesc(mz'),axis xy,subplot(1,2,2), ...
-    imagesc(mzo'),axis xy
+%figure,subplot(1,2,1),imagesc(mz'),axis xy,subplot(1,2,2), ...
+%    imagesc(mzo'),axis xy
+
 ind = vz(:)<10&vzo(:)<.2&nniz(mzo(:))&nniz(mz(:));
 figure,hist(mz(ind)-mzo(ind),100)
-Lines(nanmean(mz(ind)-mzo(ind)),[],'r');
+Lines(nanmedian(mz(ind)-mzo(ind)),[],'r');
 
 
 
