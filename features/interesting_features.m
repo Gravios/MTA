@@ -78,8 +78,10 @@ vz = accumarray(manifoldIndex,acvar,[NBINS,NBINS,NBINS],@nanstd);
 
 %Trial = MTATrial('Ed03-20140624');
 %Trial.load('stc','hand_labeled_rev2_alt');
-Trial = MTATrial('Ed01-20140707');
-Trial.load('stc','hand_labeled_rev1');
+%Trial = MTATrial('Ed01-20140707');
+%Trial.load('stc','hand_labeled_rev1');
+
+
 xyz = Trial.load('xyz');
 xyz.addMarker('bcom',[.7,0,.7],{},...
               xyz.com(xyz.model.rb({'spine_lower','pelvis_root','spine_middle'})));
@@ -116,6 +118,7 @@ Lines(nanmedian(mz(ind)-mzo(ind)),[],'r');
 
 Trial = MTATrial('jg05-20120317');
 Trial = MTATrial('Ed03-20140624');
+Trial = MTATrial('Ed01-20140707');
 xyz = Trial.load('xyz');
 vxy = xyz.copy;
 vxy.filter('ButFilter',3,2.4,'low');
