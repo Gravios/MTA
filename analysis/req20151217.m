@@ -3,12 +3,14 @@ Trial = MTATrial('jg05-20120317');
 Trial.load('stc','hand_labeled_rev2');
 states = {'walk','rear','turn','pause','groom','sit'};
 
-featureSet = 'fet_trial20160107';%'fet_tsne_rev3';
-%featureSet = 'fet_tsne_rev3';
+%featureSet = 'fet_trial20160107';%'fet_tsne_rev3';
+featureSet = 'fet_tsne_rev5';
+%featureSet = 'fet_tsne_rev4';
+
 sampleRate = 12;
 ifNormalize = false;
 features = feval(featureSet,Trial,sampleRate,ifNormalize);
-
+%[~,rm,rs] = unity(features);
 nNeurons = 100;
 
 model = ['MTAC_' featureSet ...
@@ -28,12 +30,16 @@ Trial = MTATrial('Ed01-20140707');
 StcHL = Trial.load('stc','hand_labeled_rev1');
 
 Trial = MTATrial('Ed03-20140624');
-StcHL = Trial.load('stc','hand_labeled_rev1');
+%StcHL = Trial.load('stc','hand_labeled_rev1');
 StcHL = Trial.load('stc','hand_labeled_rev2_alt');
 
 
 %features = fet20151007(Trial,sampleRate,ifNormalize,featureSet,false);
-features = feval(featureSet,Trial,sampleRate,ifNormalize);
+%features = feval(featureSet,Trial,sampleRate,ifNormalize);
+features = feval(featureSet,Trial,Trial.xyz.sampleRate,false);
+features.normalize(Trial,{'jg05-20120317','all','cof'});
+features.resample(sampleRate);
+features.unity([],rm,rs);
 
 Stc = bhv_nn (Trial,false,states,features,model);
 
@@ -55,8 +61,11 @@ cm = round(tcm./xyz.sampleRate,2);
 %(truePositives + trueNegatives) / totalPopulation
 acc = sum(diag(tcm))/sum(tcm(:));
 
-
-
+f = 4
+figure,hold on
+eds = linspace(0,170,100);
+hs = bar(eds,histc(tfet(:,f),eds),'histc');hs.FaceAlpha=.5;hs.FaceColor='r';
+hs = bar(eds,histc(trfet(:,f),eds),'histc');hs.FaceAlpha=.5;hs.FaceColor='c';
 
 Trial = MTATrial('jg05-20120317');
 tfet = fet_tsne(Trial,20,false);

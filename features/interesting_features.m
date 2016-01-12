@@ -41,7 +41,7 @@ zfet.resample(bfet);
 
 
 %exp in normalizing distances
-mar = 1;
+mar = [1,4];
 NBINS = 100;
 VEL_HISTOGRAM_BOUNDARIES = linspace(-3,2,NBINS);
 ANG_HISTOGRAM_BOUNDARIES = linspace(-pi/2,pi/2,NBINS);
@@ -66,8 +66,8 @@ ind = Trial.stc('a-m-r').cast('TimeSeries');
 [~,ind_p_s] = histc(ang(:,3,4,2),ANG_HISTOGRAM_BOUNDARIES);
 mind = nniz([ind_v_b,ind_v_h,ind_p_s])&ind.data;
 manifoldIndex = [ind_v_b(mind),ind_v_h(mind),ind_p_s(mind)];
-%acvar = ang(mind,mar(1),mar(2),2);
-acvar = xyz(mind,mar,3);
+acvar = ang(mind,mar(1),mar(2),3);
+%acvar = xyz(mind,mar,3);
 mz = accumarray(manifoldIndex,acvar,[NBINS,NBINS,NBINS],@nanmean);
 vz = accumarray(manifoldIndex,acvar,[NBINS,NBINS,NBINS],@nanstd);
 
@@ -76,8 +76,8 @@ vz = accumarray(manifoldIndex,acvar,[NBINS,NBINS,NBINS],@nanstd);
 % $$$ figure,hist(mz(nniz(mz(:))&vz(:)<10),100)
 
 
-%Trial = MTATrial('Ed03-20140624');
-%Trial.load('stc','hand_labeled_rev2_alt');
+Trial = MTATrial('Ed03-20140624');
+Trial.load('stc','hand_labeled_rev2_alt');
 %Trial = MTATrial('Ed01-20140707');
 %Trial.load('stc','hand_labeled_rev1');
 
@@ -98,8 +98,8 @@ ind = Trial.stc{'a-m-r'}.cast('TimeSeries',xyz.sampleRate);
 [~,ind_v_h] = histc(vxy(:,'hcom'),VEL_HISTOGRAM_BOUNDARIES);
 mind = nniz([ind_v_b,ind_v_h])&ind.data;
 manifoldIndex = [ind_v_b(mind),ind_v_h(mind),ind_p_s(mind)];
-%acvar = ang(mind,4,7,2);
-acvar = xyz(mind,mar,3);
+acvar = ang(mind,mar(1),mar(2),3);
+%acvar = xyz(mind,mar,3);
 mzo = accumarray(manifoldIndex,acvar,[NBINS,NBINS,NBINS],@nanmean);
 vzo = accumarray(manifoldIndex,acvar,[NBINS,NBINS,NBINS],@nanstd);
 
@@ -113,6 +113,7 @@ figure,hist(mz(ind)-mzo(ind),100)
 Lines(nanmedian(mz(ind)-mzo(ind)),[],'r');
 
 
+figure,hist(ang(mind,mar(1),mar(2),3),100);
 
 
 
