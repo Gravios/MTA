@@ -15,6 +15,7 @@ NEW_SAMPLE_RATE = 10;   % Reduce the sample rate of the feature matrix
 HOST_PATH = '/storage/gravio/figures/'; % Where reportfig should
                                        % save stuff
 states = {'walk','rear','turn','pause','groom','sit'};
+featureSet = 'fet_tsne_rev3';
 
 %Trial = MTATrial('jg05-20120317');
 %Trial.stc.load(Trial,'hand_labeled_rev2');
@@ -29,49 +30,26 @@ RefState = RefTrial.stc{'a'};
 rfet = fet_tsne(RefTrial,NEW_SAMPLE_RATE);
 [rfet,Rmean,Rstd] = unity(rfet,[],[],[],[]);
 
+sfet = [];
+Stc = {};
 for s = 1:numel(slist),
     Trial = MTATrial(slist{s}{1},slist{s}{3},slist{s}{2});
-
+    Stc{end+1} = Trial.load('stc',slist{s}{4});
   % Load Feature matrix of the session    
     [tfet,fett,fetd] = fet_tsne(Trial,NEW_SAMPLE_RATE);
     
-    
-    %[rfet,Rmean,Rstd] = unity(rfet,[],[],[],[]);
-    %tfet.normalize_to_reference(rfet);
-    %tfet.unity(rfet,[],Rmean,Rstd);
-
     if s == 1,
         fet = tfet.copy;
+        fet.data = fet(Stc{end}{'a'},:);
     else
         fet.data = cat(1,fet.data,tfet(Trial.stc{'a'},:));
     end
-    
+    fet.data(~nniz(fet),:) = [];
+    sfet(end+1) = length(fet.data);
 end
 
 
-fet.data(~nniz(fet),:) = [];
 fet = unity(fet,[],Rmean,Rstd);
-
-Trial = MTATrial('jg05-20120317');
-Stc = Trial.stc.load(Trial,'hand_labeled_rev2');
-
-
-
-
-
-[asmat,labels,keys] =  stc2mat(Stc,fet);
-asmat = MTADxyz('data',asmat,'sampleRate',fet.sampleRate);
-[~,asmat.data] = max(asmat.data,[],2);
-c = jet(numel(Stc.states));
-csmat = asmat.copy; 
-csmat.data = c(csmat.data,:);
-
-tind = Trial.stc{'a'};
-
-mfet = fet(tind,:);
-msmat = csmat(tind,:);
-
-
 
 start = 1;
 skip = 5;
@@ -81,9 +59,6 @@ no_dims = 2;
 ind = start:skip:stop;
 mappedX = tsne(fet(ind,:), [], no_dims, initial_dims, perplexity); 
 
-
-
-%pos = map_feature_to_tsne_space(Fet,tsneFet,tsneMap)
 
 %%%% Save this next time
 comptSneMap = zeros([fet.size(1),2]);
@@ -95,6 +70,60 @@ for s = 1:fet.size(1),
     if ~mod(s,10000),toc,disp([num2str(s) ' of ' num2str(fet.size(1))]),tic,end
 end
 toc
+
+snames = cell([1,numel(slist)]);
+for s = 1:numel(slist),
+    snames{s} = slist{s}{1};
+end
+
+fpers = [0,sfet];
+fpers = [1+fpers(1:end-1)',fpers(2:end)'];
+c = jet(size(fpers,1));
+cind= 1;
+figure,hold on
+for nind =fpers';
+    nind = [ceil(nind(1)/skip):ceil(nind(2)/skip)]';
+    p = plot(mappedX(nind,1),mappedX(nind,2),'.');
+    p.Color = c(cind,:);    
+    cind = cind+1;
+end
+legend(snames{:});
+
+
+
+
+cfet = {};
+for s = 1:numel(slist),
+    Trial = MTATrial(slist{s}{1},slist{s}{3},slist{s}{2});
+    [tfet,fett,fetd] = fet_tsne(Trial,NEW_SAMPLE_RATE);
+    cfet{s} = tfet.copy;
+    cfet{s}.data = tfet(Trial.stc{'a'},:);
+    cfet{s}.data(~nniz(cfet{s}),:) = [];
+    cfet{s} = unity(cfet{s},[],Rmean,Rstd);
+end
+
+c = jet(numel(cfet));
+cind= 1;
+for f = 1:cfet{1}.size(2),
+    cind = 1;
+    hfig = figure;
+    hold('on');
+    eds = linspace(-4,4,100);
+    for s = 1:numel(cfet),
+        hs = bar(eds,histc(cfet{s}(:,f),eds),'histc');
+        hs.FaceColor = c(cind,:);    
+        hs.FaceAlpha = .5;
+        cind = cind+1;
+    end
+    legend(snames{:});
+    pause(.3)
+    reportfig([], hfig, 'tsne_ases', 'req', false,'jg05', ...
+              ['feature: ',num2str(f)],[],false,'png');
+    close(hfig)           
+end
+
+
+
 
 
 
@@ -108,12 +137,10 @@ for s = 1:rfet.size(1),
     [mdist,mind] = sort(sqrt(sum(bsxfun(@minus,fet(ind,:),rfet(s,:)).^2,2)));
     dwght = 1./(mdist(1:10)+eps)./sum(1./(mdist(1:10)+eps));
     labeledtSneMap(s,:) = sum(mappedX(mind(1:10),:).*repmat(dwght,[1,size(mappedX,2)]));
+    %labeledtSneMap(s,:) = mean(mappedX(mind(1:3),:));
     if ~mod(s,10000),toc,disp([num2str(s) ' of ' num2str(rfet.size(1))]),tic,end
 end
 toc
-
-
-
 
 
 
@@ -126,18 +153,32 @@ figparm = ['tSNE-nsr_' num2str(NEW_SAMPLE_RATE) '-ind_' num2str(start) '_' ...
 
 
 
-osts = numel(Stc.states);
+
+
+Trial = MTATrial('jg05-20120317');
+Stc = Trial.stc.load(Trial,'hand_labeled_rev2');
+
+states = {'walk','groom','rear','sit','turn','pause'};
+[asmat,labels,keys] =  stc2mat(Stc,rfet,states);
+asmat = MTADxyz('data',asmat,'sampleRate',rfet.sampleRate);
+[~,asmat.data] = max(asmat.data,[],2);
+c = jet(numel(states));
+csmat = asmat.copy; 
+csmat.data = c(csmat.data,:);
+msmat = csmat;
+
+osts = numel(states);
 hfig = figure(3923923);clf
 hold on;
 sts = Stc.list_state_attrib('label');
-mc = msmat;%(tind,:);
-scatter(comptSneMap(:,1),comptSneMap(:,2),2,'.');
+mc = msmat.data;
+scatter(comptSneMap(:,1),comptSneMap(:,2),2,'.k');
 for nc = 1:osts,
     nind = all(bsxfun(@eq,c(nc,:),mc),2);
     h = scatter(labeledtSneMap(nind,1),labeledtSneMap(nind,2),2,mc(nind,:));
     try,h.MarkerFaceColor = h.CData(1,:);end
 end
-legend(sts(1:osts-1));
+legend(cat(2,{'jg05'},states));
 xlim([min(mappedX(:,1))-5,max(mappedX(:,1))+30]);
 ylim([min(mappedX(:,2))-5,max(mappedX(:,2))+5]);
 
