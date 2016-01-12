@@ -1,11 +1,28 @@
-function feature = normalize(feature,referenceFeature,varargin)
+function feature = normalize(feature,Trial,RefTrial,varargin)
 % function feature = normalize_features_to_reference_trial(Trial,feature,referenceTrial)
 % This Function is only meant for use with fet_tsne at the moment.
 
 [normEachSyncEpoch] = DefaultArgs(varargin,{false},1);
 
-NBINS = 100;
-VEL_HISTOGRAM_BOUNDARIES = linspace(-1,2,NBINS);
+% If Trial is not a MTASession try loading it.
+if ischar(Trial),
+    Trial = MTATrial(Trial);
+elseif iscell(Trial),
+    Trial = MTATrial(Trial{:});
+end
+
+% If Trial is not a MTASession try loading it.
+if ischar(RefTrial),
+    RefTrial = MTATrial(RefTrial);
+elseif iscell(RefTrial),
+    RefTrial = MTATrial(RefTrial{:});
+end
+
+rfet = feval(feature.name,RefTrial,feature.sampleRate);
+
+
+[tarMean,tanStd] = mean_embeded_difference_vbvhsp(Data,Trial);
+[refMean,refStd] = mean_embeded_difference_vbvhsp(Data,Trial);
 
 % Match current feature sampleRate
 referenceFeature.resample(feature.sampleRate);
