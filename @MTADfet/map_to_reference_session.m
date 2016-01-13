@@ -1,4 +1,4 @@
-function features = normalize(features,Trial,RefTrial,varargin)
+function features = map_to_reference_session(features,Trial,RefTrial,varargin)
 % function features = normalize_features_to_reference_trial(Trial,features,referenceTrial)
 % This Function is only meant for use with fet_tsne at the moment.
 
@@ -11,6 +11,9 @@ elseif iscell(Trial),
     Trial = MTATrial(Trial{:});
 end
 
+tempFet = features.copy;
+features.resample(Trial.xyz.sampleRate);
+
 % If Trial is not a MTASession try loading it.
 if ischar(RefTrial),
     RefTrial = MTATrial(RefTrial);
@@ -20,10 +23,15 @@ end
 rfet = feval(features.label,RefTrial,features.sampleRate);
 
 switch features.label
+  case 'fet_tsne_rev6',
+    fetInds =      [  1                   ,7,8                   ];
+    stdThresh = cat(2,repmat({10},1,2)    ,repmat({.1},1,2)        );
+    diffFun =   cat(2,repmat({@minus},1,2),repmat({@circ_dist},1,2));
+
   case 'fet_tsne_rev5',
     fetInds =      [  1                   ,7:8                    ];
     stdThresh = cat(2,repmat({10},1,1)    ,repmat({.1},1,2)        );
-    diffFun =   cat(2,repmat({@minus},1,1),repmat({@circ_dist},1,3));
+    diffFun =   cat(2,repmat({@minus},1,1),repmat({@circ_dist},1,2));
 
   case 'fet_tsne_rev4',
     fetInds =      [  1:5                 ,13:15                   ,20];
@@ -65,3 +73,4 @@ for ind = inSync,
                                                mshift);
     end
 end
+features.resample(tempFet);

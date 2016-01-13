@@ -1,26 +1,24 @@
+
+
+
 Trial = MTATrial('jg05-20120317');
-
 Trial.load('stc','hand_labeled_rev2');
+train = true;
 states = {'walk','rear','turn','pause','groom','sit'};
-
-%featureSet = 'fet_trial20160107';%'fet_tsne_rev3';
 featureSet = 'fet_tsne_rev5';
-%featureSet = 'fet_tsne_rev4';
-
 sampleRate = 12;
 ifNormalize = false;
-features = feval(featureSet,Trial,sampleRate,ifNormalize);
-%[~,rm,rs] = unity(features);
 nNeurons = 100;
-
 model = ['MTAC_' featureSet ...
          '_SR_'  num2str(sampleRate) ...
          '_REF_' Trial.name ...
          '_NN_'  num2str(nNeurons) ];
- 
 
+features = feval(featureSet,Trial,sampleRate,ifNormalize);
+if ifNormalize, [~,rm,rs] = unity(features); end
+ 
  % Train Model
-bhv_nn (Trial,true,states,features,model,'nNeurons',nNeurons);
+bhv_nn (Trial,train,states,features,model,'nNeurons',nNeurons);
 
 
 Trial = MTATrial('er01-20110719');
@@ -31,35 +29,49 @@ StcHL = Trial.load('stc','hand_labeled_rev1');
 
 Trial = MTATrial('Ed03-20140624');
 %StcHL = Trial.load('stc','hand_labeled_rev1');
-StcHL = Trial.load('stc','hand_labeled_rev2_alt');
+Trial.load('stc','hand_labeled_rev2_alt');
+StcHL = Trial.stc.copy;
 
+Trial = MTATrial('Ed03-20140625');
+Trial.load('stc','hand_labeled_rev1');
+StcHL = Trial.stc.copy;
 
-%features = fet20151007(Trial,sampleRate,ifNormalize,featureSet,false);
-%features = feval(featureSet,Trial,sampleRate,ifNormalize);
-features = feval(featureSet,Trial,Trial.xyz.sampleRate,false);
-features.normalize(Trial,{'jg05-20120317','all','cof'});
-features.resample(sampleRate);
-features.unity([],rm,rs);
+Trial = MTATrial('Ed05-20140625');
+Trial.load('stc','hand_labeled_rev1');
+StcHL = Trial.stc.copy;
 
-Stc = bhv_nn (Trial,false,states,features,model);
-
-
+% It's needed ... I'm not telling why.
 xyz = Trial.load('xyz');
+
+% Load and Correct for inter Trial difference
+features = feval(featureSet,Trial,sampleRate,ifNormalize);
+features.normalize(Trial,{'jg05-20120317','all','cof'});
+if ifNormalize, features.unity([],rm,rs); end
+
+% Create state matrix (N x k) N=samples, k=states, Domain:Boolean
+Stc = bhv_nn (Trial,false,states,features,model);
 shl = MTADxyz('data',double(0<stc2mat(StcHL,xyz,states)),'sampleRate',xyz.sampleRate);
 ysm = MTADxyz('data',double(0<stc2mat(Stc,  xyz,states)),'sampleRate',xyz.sampleRate); 
 
+% Select clean periods
 aper = Trial.stc{'a'}.cast('TimeSeries');
-
 ind = any(shl.data,2)&any(ysm.data,2)&logical(aper.data);
 
+% Compute confusion matrix, precision and sensitivity
 tcm = confmat(shl(ind,:),ysm(ind,:)); % DEP: netlabe
 sensitivity = round(diag(tcm)'./sum(tcm),4).*100;
 precision = round(diag(tcm)./sum(tcm,2),4).*100;
 cm = round(tcm./xyz.sampleRate,2);
+acc = round(sum(diag(tcm))/sum(tcm(:)),4);
+
+acm = cat(2,cm,precision);
+acm = cat(1,acm,[sensitivity,acc]);
 
 
-%(truePositives + trueNegatives) / totalPopulation
-acc = sum(diag(tcm))/sum(tcm(:));
+sprintf(strjoin(cat(2,states,{'precision'},{'\n'},...                                              header
+                    repmat(cat(2,{'%s'},repmat({'%2.2f'},1,numel(states)+1),{'\n'}),1,numel(states)+1)... cm
+                    ),'\t'),acm',states{:},states{:})
+
 
 f = 4
 figure,hold on
@@ -137,3 +149,17 @@ ind = Trial.stc{'w'};
 hs = bar(eds,histc(log10(hvar(ind,hind)),eds),'histc');
 hs.FaceColor = 'r';
 hs.FaceAlpha = .5;
+
+
+
+
+f = 2; s ='n' ;
+figure,
+eds = 50:.5:120;
+eds = -3:.05:2;
+subplot(311),
+bar(eds,hist(rfet(rStc{s},f),eds),'histc'),Lines(mean(rfet(rStc{s},f)),[],'r')
+subplot(312),
+bar(eds,hist(features(StcHL{s},f),eds),'histc'),Lines(mean(features(StcHL{s},f)),[],'r')
+subplot(313),
+bar(eds,hist(nfet(StcHL{s},f),eds),'histc'),Lines(mean(nfet(StcHL{s},f)),[],'r')

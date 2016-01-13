@@ -16,5 +16,5 @@ Trial.stc.states{Trial.stc.gsi('shake')}.key = 'k';
 Trial.stc.states{  Trial.stc.gsi('sit')}.key = 's';
 Trial.stc.states{Trial.stc.gsi('groom')}.key = 'm';
 
-Trial.stc.updateMode('hand_labeled_rev1');
+Trial.stc.updateMode('hand_labeled_rev1_ed');
 Trial.stc.save(1);
