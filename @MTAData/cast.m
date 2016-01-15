@@ -27,7 +27,7 @@ oldType = Data.type;
 if ~strcmp(oldType,type)&&~isempty(oldType)
     switch type
       case 'TimePeriods'
-        Data.data = ThreshCross(Data.data,0.5,1);
+        Data.data = ThreshCross(Data.data,0.5,0);
       case 'TimeSeries'
 
         if strcmp(Data.label,'sync')||isempty(Data.label),
