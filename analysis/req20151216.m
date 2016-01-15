@@ -1,6 +1,63 @@
 % req20151216
 % Primary goal - randomized train/label validation (50/50) bhv_nn
 
+Trial = MTATrial('jg05-20120317');
+mod.states     = {'walk','rear','turn','pause','groom','sit'};
+mod.stcMode    = 'hand_labeled_rev2';
+mod.featureSet = 'fet_tsne_rev5';
+mod.sampleRate = 12;
+mod.nNeurons   = 100;
+mod.randomizationMethod = 'equal_restructured_sampling';
+
+argin = struct2varargin(mod);
+[stc,d_state,ls,lsm,model] = bhv_nn_multi_patternnet(Trial,argin{:});
+
+
+
+Trial = MTATrial('jg05-20120317');
+clear('mod');
+mod.states     = {'walk','rear','turn','pause','groom','sit'};
+mod.stcMode    = 'hand_labeled_rev2';
+mod.featureSet = 'fet_tsne_rev5';
+mod.sampleRate = 12;
+mod.nNeurons   = 100;
+mod.randomizationMethod = 'whole_state_bootstrap';
+
+argin = struct2varargin(mod);
+[stc,d_state,ls,lsm,model] = bhv_nn_multi_patternnet(Trial,argin{:});
+
+
+
+
+Trial = MTATrial('Ed03-20140624');
+mod.states     = {'walk','rear','turn','pause','groom','sit'};
+mod.stcMode    = 'hand_labeled_rev2_alt';
+mod.featureSet = 'fet_tsne_rev5';
+mod.model      = model;
+mod.sampleRate = 12;
+mod.nNeurons   = 100;
+mod.randomizationMethod = 'equal_restructured_sampling';
+
+argin = struct2varargin(mod);
+[stc,d_state,ls,lsm] = bhv_nn_multi_patternnet(Trial,argin{:});
+
+
+
+Trial = MTATrial('Ed03-20140624');
+mod.states     = {'walk','rear','turn','pause','groom','sit'};
+mod.stcMode    = 'hand_labeled_rev1';
+mod.featureSet = 'fet_tsne_rev5';
+mod.model      = model;
+mod.sampleRate = 12;
+mod.nNeurons   = 100;
+mod.randomizationMethod = 'whole_state_bootstrap';
+
+argin = struct2varargin(mod);
+[stc,d_state,ls,lsm] = bhv_nn_multi_patternnet(Trial,argin{:});
+
+
+
+
 Trial = MTATrial('Ed03-20140624');
 mod.states     = {'walk','rear','turn','pause','groom','sit'};
 mod.stcMode    = 'hand_labeled_rev1';
@@ -334,5 +391,103 @@ pre = round(diag(tcm)./sum(tcm,2),4).*100;
 sen = round(diag(tcm)'./sum(tcm),4).*100;
 acc = sum(diag(tcm))/sum(tcm(:));
 
+Trial = MTATrial('jg05-20120317');
+Trial = MTATrial('Ed03-20140624');
+xyz = Trial.load('xyz');
+fxyz = xyz.copy;
+fxyz = fxyz.filter('ButFilter',3,2.4,'low');
+vxy = fxyz.vel([],[1,2]);
+vxy.data(vxy.data<1e-3) = 1e-3;
+vxy.data = log10(vxy.data);
+ang = create(MTADang,Trial,xyz);
+ 
+
+
+name = 'pbj'; label = 'pb'; key = 'b';
+zv = MTADfet.encapsulate(Trial,...
+                         ang(:,10,12,3),...
+                         xyz.sampleRate,...
+                         name,label,key);
+
+dspec = struct('nFFT',2^8,'Fs',zv.sampleRate,...
+               'WinLength',2^7,'nOverlap',2^7*.875,...
+               'FreqRange',[1,30]);
+[ys,fs,ts] = fet_spec(Trial,zv,'mtchglong',false,[],dspec,false);
+
+name = 'zv and wag pw'; label = 'zvwp'; key = 'w';
+zfet = MTADfet.encapsulate(Trial,...
+                         log10(nanmedian(ys(:,round(fs)==10,1,1),2)),...
+                         ys.sampleRate,...
+                         name,label,key);
+zfet.data(~nniz(zfet),:)=-20;
+
+
+
+
+
+% $$$ figure,plot(mang.data)
+% $$$ Lines(Trial.stc{'w'}(:),[],'b');
+%eds = linspace(.2,1.5,100);
+
+arv = zfet.copy;eds = linspace(-12,-3,100);
+
+arv = ys.copy;eds = linspace(-10,-2,100);
+arv.data = log10(arv.data);
+arv = MTADang('data',ang(:,10,12,3),'sampleRate',ang.sampleRate);eds = linspace(30,70,100);
+
+f = 1;
+figure,hold on
+ind = Trial.stc{'p'};
+hs = bar(eds,histc(arv(ind,f),eds),'histc');hs.FaceAlpha=0.5;hs.FaceColor='c';
+ind = Trial.stc{'w'};
+hs = bar(eds,histc(arv(ind,f),eds),'histc');hs.FaceAlpha=0.5;hs.FaceColor='b';
+ind = Trial.stc{'m'};
+hs = bar(eds,histc(arv(ind,f),eds),'histc');hs.FaceAlpha=0.5;hs.FaceColor='m';
+ind = Trial.stc{'n'};
+hs = bar(eds,histc(arv(ind,f),eds),'histc');hs.FaceAlpha=0.5;hs.FaceColor='g';
+ind = Trial.stc{'s'};
+hs = bar(eds,histc(arv(ind,f),eds),'histc');hs.FaceAlpha=0.5;hs.FaceColor='y';
+ind = Trial.stc{'r'};
+hs = bar(eds,histc(arv(ind,f),eds),'histc');hs.FaceAlpha=0.5;hs.FaceColor='r';
+
+
+
+
+arv2 = vxy.copy;a2i = 1;  eds2 = linspace(-3,2,100);
+arv = ys.copy;  a1i = 19;  eds = linspace(-6,2,100);
+arv.resample(arv2);
+arv.data = log10(arv.data);
+
+arv2 = zv.copy;a2i = 1;  eds2 = linspace(.2,1.4,100);
+arv = MTADang('data',ang(:,10,12,3),'sampleRate',ang.sampleRate);
+a1i=1;eds = linspace(30,60,100);
+
+
+figure,
+subplot(2,3,1);
+ind = Trial.stc{'a'};
+hist2([arv(ind,a1i),arv2(ind,a2i)],eds,eds2);
+subplot(2,3,2);
+ind = Trial.stc{'a-w'};
+hist2([arv(ind,a1i),arv2(ind,a2i)],eds,eds2);
+subplot(2,3,3);
+ind = Trial.stc{'w'};
+hist2([arv(ind,a1i),arv2(ind,a2i)],eds,eds2);
+subplot(2,3,4);
+ind = Trial.stc{'a-m'};
+hist2([arv(ind,a1i),arv2(ind,a2i)],eds,eds2);
+subplot(2,3,5);
+ind = Trial.stc{'m'};
+hist2([arv(ind,a1i),arv2(ind,a2i)],eds,eds2);
+subplot(2,3,6);
+ind = Trial.stc{'p'};
+hist2([arv(ind,a1i),arv2(ind,a2i)],eds,eds2);
+ForAllSubplots('caxis([0,30]),grid(''on'')');
+    
+ind = Trial.stc{'a&w'};
+s = arv(ind,:);
+ind = Trial.stc{'a&p'};
+n = arv(ind,:);
+dprime = (mean(s)-mean(n))./(.5*sqrt(var(s)+var(n)));
 
 

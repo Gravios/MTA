@@ -1,11 +1,9 @@
 
-
-
 Trial = MTATrial('jg05-20120317');
 Trial.load('stc','hand_labeled_rev2');
 train = true;
 states = {'walk','rear','turn','pause','groom','sit'};
-featureSet = 'fet_tsne_rev5';
+featureSet = 'fet_tsne_rev7';
 sampleRate = 12;
 ifNormalize = false;
 nNeurons = 100;
@@ -21,31 +19,32 @@ if ifNormalize, [~,rm,rs] = unity(features); end
 bhv_nn (Trial,train,states,features,model,'nNeurons',nNeurons);
 
 
-Trial = MTATrial('er01-20110719');
-StcHL = Trial.load('stc','hand_labeled_rev1');
-
-Trial = MTATrial('Ed01-20140707');
-StcHL = Trial.load('stc','hand_labeled_rev1');
+% $$$ Trial = MTATrial('er01-20110719');
+% $$$ StcHL = Trial.load('stc','hand_labeled_rev1');
+% $$$ 
+% $$$ Trial = MTATrial('Ed01-20140707');
+% $$$ StcHL = Trial.load('stc','hand_labeled_rev1');
 
 Trial = MTATrial('Ed03-20140624');
 %StcHL = Trial.load('stc','hand_labeled_rev1');
+%Trial.load('stc','hand_labeled_rev1_ed');
 Trial.load('stc','hand_labeled_rev2_alt');
 StcHL = Trial.stc.copy;
 
-Trial = MTATrial('Ed03-20140625');
-Trial.load('stc','hand_labeled_rev1');
-StcHL = Trial.stc.copy;
-
-Trial = MTATrial('Ed05-20140625');
-Trial.load('stc','hand_labeled_rev1');
-StcHL = Trial.stc.copy;
+% $$$ Trial = MTATrial('Ed03-20140625');
+% $$$ Trial.load('stc','hand_labeled_rev1');
+% $$$ StcHL = Trial.stc.copy;
+% $$$ 
+% $$$ Trial = MTATrial('Ed05-20140625');
+% $$$ Trial.load('stc','hand_labeled_rev1');
+% $$$ StcHL = Trial.stc.copy;
 
 % It's needed ... I'm not telling why.
 xyz = Trial.load('xyz');
 
 % Load and Correct for inter Trial difference
 features = feval(featureSet,Trial,sampleRate,ifNormalize);
-features.normalize(Trial,{'jg05-20120317','all','cof'});
+%features.map_to_reference_session(Trial,{'jg05-20120317','all','cof'});
 if ifNormalize, features.unity([],rm,rs); end
 
 % Create state matrix (N x k) N=samples, k=states, Domain:Boolean

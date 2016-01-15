@@ -284,10 +284,8 @@ classdef MTAStateCollection < hgsetget
         
         function Stc = updateMode(Stc,mode)
             Stc.mode = mode;
-            [~,fname,fext] = fileparts(Stc.filename);
-            pind = strfind(fliplr(fname),'.');
-            fname = [fname(1:end-pind+1) mode fext];
-            Stc.updateFilename(fname);
+            pat = '\.stc\..*\.mat';
+            Stc.updateFilename(regexprep(Stc.filename,pat,['.stc.' mode '.mat']));
         end
         
         function Stc = updateFilename(Stc,filename)

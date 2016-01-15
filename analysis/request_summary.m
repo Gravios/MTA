@@ -88,3 +88,11 @@
 % req20151217
 % General testing of the bhv_nn wraper for the neural network
 % packages of matlab
+
+
+%% 2016 01 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+
+
+% req20150114
+%    tau masked boundaries for confusion matrix computation
+%

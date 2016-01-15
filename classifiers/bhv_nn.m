@@ -61,13 +61,20 @@ defArgs = {...
                []                                      ...
 };
 
-[trainModel,states,feature,modelName,...
- display,other_state,nNeurons,subset] = DefaultArgs(varargin,defArgs);
 
 
+[trainModel,states,feature,modelName,display,other_state,nNeurons,subset] = DefaultArgs(varargin,defArgs);
 
-keys = subsref(Trial.stc.list_state_attrib('key'),...
-               substruct('()',{Trial.stc.gsi(states)}));
+if isa(states,'MTAStateCollection'),
+    Stc = states.copy;
+    states = Stc.list_state_attrib('label');
+else
+    Stc = Trial.stc.copy;
+    Stc.states = Stc(states{:});
+end
+
+keys = Stc.list_state_attrib('key');    
+
 
 % LOAD feature if feature is a feature name
 % RESAMPLE to conserve memory during model fitting
@@ -85,7 +92,6 @@ end
 assert(isa(feature,'MTAData'),['MTA:classifiers:' mfilename ':Feature not found']);
 
 
-
 nind = nniz(feature);
 
 % Create model filename based on the model name and the feature name
@@ -99,15 +105,15 @@ model_loc = fullfile(model_path,modelName);
 if trainModel||~exist(model_loc,'file'),
     
     % create NxS array to store states as integers (nomial data) {S=numel(states)}
-    [smat] = stc2mat(Trial.stc,feature,states);
+    [smat] = stc2mat(Stc,feature,states);
     
     % Create struct to store model meta-data
     Model_Information = struct(...
         'filename',              modelName,         ...
         'path',                  model_path,             ...
         'description',           '',                     ...
-        'StcMode',               Trial.stc.mode,         ...
-        'StcFilename',           Trial.stc.filename,     ...
+        'StcMode',               Stc.mode,         ...
+        'StcFilename',           Stc.filename,     ...
         'Trial',                 Trial.filebase,         ...
         'state_labels',          {states},               ...
         'state_keys',            {keys});
@@ -117,7 +123,7 @@ if trainModel||~exist(model_loc,'file'),
     % IF TRUE  -> Create classifier model with the specified states and
     %             all other states as a composite state
     if other_state, 
-        ind = resample(Trial.stc{'a'}.cast('TimeSeries'),feature);
+        ind = resample(Stc{'a'}.cast('TimeSeries'),feature);
         ind = logical(ind.data);
         smat = cat(2,smat,ind);
         smat(all(smat,2),end) = 0;
@@ -152,7 +158,7 @@ end
 
 
 % Create new StateCollection ... well copy
-Stc = Trial.stc.copy;
+
 Stc.updateMode([MODEL_TYPE '-' Model_Information.StcMode...
                 '-' cell2mat(Model_Information.state_keys)]);
 Stc.states = {};

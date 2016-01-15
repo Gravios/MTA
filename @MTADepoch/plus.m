@@ -22,7 +22,13 @@ if isa(a,'MTADepoch')&&~isa(b,'MTADepoch')
         else
             Data = a.copy;
         end
-        b = b*a.sampleRate;
+
+        if a.sampleRate>1,
+            b = round(b*a.sampleRate);
+        else
+            b = b*a.sampleRate;
+        end
+        
         if prod(size(b) == Data.size),
             Data.data = Data.data+b;
         else
@@ -39,7 +45,13 @@ elseif isa(b,'MTADepoch')&&~isa(a,'MTADepoch')
         else
             Data = b.copy;
         end
-        a = a*b.sampleRate;
+
+        if b.sampleRate>1,
+            a = round(a*b.sampleRate);        
+        else 
+            a = a*b.sampleRate;
+        end
+        
         if prod(size(a) == Data.size),
             Data.data = Data.data+a;
         else

@@ -9,7 +9,7 @@ function Data = clean(Data)
 %
 % Drop periods with zero or negative duration. eg([5,3] or [[10,10])
 perDur = diff(Data.data,1,2);
-Data.data(perDur<=0) = [];
+Data.data(perDur<=0,:) = [];
 % Drop periods which exist before or conains the origin
 Data.data(Data.data(:,1)<=0|Data.data(:,2)<=0,:) = [];
 % Drop periods which exceed the end of the sync
