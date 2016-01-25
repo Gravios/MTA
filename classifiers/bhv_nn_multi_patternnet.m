@@ -112,7 +112,7 @@ for iter = 1:nIter,
                 nRndPeriods = 100; 
                 prctTrain = 70;
                 trainingEpochs = [];
-                if iter==1,model = [model '_RAND_ERS_'];end
+                if iter==1,model = [model '_RAND_ERS'];end
                 % Create MTAStateColletion based on the blocks of
                 % data assymbled during the resampling.
                 StcRnd = StcHL.copy;
@@ -211,11 +211,11 @@ for iter = 1:nIter,
 
                 prctTrain = 70;
                 trainingEpochs = [];
-                if iter==1,model = [model '_RAND_WSB_'];end
+                if iter==1,model = [model '_RAND_WSB'];end
                 % Create MTAStateColletion based on the blocks of
                 % data assymbled during the resampling.
                 StcRnd = StcHL.copy;
-                StcRnd.updateMode(['RAND_wsb_' StcHL.mode]);
+                StcRnd.updateMode(['RAND_wsb' StcHL.mode]);
                 StcRnd.states = {};
                 StcLab = StcHL.copy;
                 StcLab.states = {};
@@ -347,11 +347,19 @@ for iter = 1:nIter,
     
 end
 
-
-
+% $$$ 
+d_state = MTADxyz('data',d_state,'sampleRate',xyz.sampleRate);
+% $$$ 
+% $$$ 
+% $$$ figure,
+% $$$ sp    = subplot(311);imagesc(d_state.data');caxis([20,100]);
+% $$$ fds = d_state.copy;fds.filter('ButFilter',5,1,'low');
+% $$$ sp(2) = subplot(312);imagesc(fds.data');caxis([20,100]);
+% $$$ sp(3) = subplot(313);imagesc(shl.data');caxis([0,1]);
+% $$$ linkaxes(sp,'xy')
 % Determine winning states based on the the labels of nurmerous
 % neural networks.
-[~,maxState] = max(d_state,[],2);
+[~,maxState] = max(d_state.data,[],2);
 maxState(~nniz(xyz),:) = 0;
 
 % Smooth decision boundaries - 200 ms state minimum
@@ -408,7 +416,7 @@ for i = 1:numel(Model_Information.state_labels),
 end
 
 if nargout>=1, varargout{1} = Stc;                end
-if nargout>=2, varargout{2} = d_state;            end
+if nargout>=2, varargout{2} = d_state.data;            end
 if nargout>=3, varargout{3} = labelingStats;      end
 if nargout>=4, varargout{4} = labelingStatsMulti; end
 if nargout>=5, varargout{5} = model; end

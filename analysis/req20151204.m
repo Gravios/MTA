@@ -1,26 +1,27 @@
 %tsne mapping of spike on to 2D plane
-cd /storage/gravio/data/project/general/Ed10-20140820/
+cd /storage/gravio/data/project/vr_exp/Ed10-20140820/
 
 % Load spike ClusterIds
-[aClu,nclu] = LoadClu('Ed10-20140820.clu.1');
-cind = ismember(aClu,1:36);
-aClu = aClu(ismember(aClu,1:36));
+[aClu,nclu] = LoadClu('Ed10-20140820.clu.3');
+cind = ismember(aClu,1:40);
+aClu = aClu(ismember(aClu,1:40));
 
 % Load spike Waveforms and then exclude those not in the target clusters
-aSpk = permute(LoadSpk('Ed10-20140820.spk.1',8,52),[3,1,2]);
+aSpk = permute(LoadSpk('Ed10-20140820.spk.3',8,52),[3,1,2]);
 aSpk = aSpk(cind,:,:);
 
 % Load spike Features and then exclude those not in the target clusters
-[aFet,nfet] = LoadFet('Ed10-20140820.fet.1');
+[aFet,nfet] = LoadFet('Ed10-20140820.fet.3');
 aFet = aFet(cind,:);
 
 % Select subset of spike for t-SNE
-Fet = aFet(1:30:end,mod(1:25,3)~=0&1:25~=25); 
-Clu = aClu(1:30:end);
-Spk = aSpk(1:30:end,:,:);
+skp = 60;
+Fet = aFet(1:skp:end,mod(1:25,3)~=0&1:25~=25); 
+Clu = aClu(1:skp:end);
+Spk = aSpk(1:skp:end,:,:);
 
 % Create Color map for spike groups 
-c = jet(36);
+c = jet(40);
 msc = c(Clu,:);
 
 % Map Feature space to 2d space using t-SNE

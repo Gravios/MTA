@@ -301,21 +301,22 @@ classdef MTAApfs < hgsetget %< MTAAnalysis
             if isempty(unit),unit=Pfs.data.clu(1);end
             switch numel(Pfs.parameters.type)
                 case 2
-                    bin1 = Pfs.adata.bins{1};
-                    bin2 = Pfs.adata.bins{2};
+                   bin1 = Pfs.adata.bins{1};
+                   bin2 = Pfs.adata.bins{2};
 
-                                      if isCircular,
-                  width = Pfs.adata.binSizes(1);
-                  height = Pfs.adata.binSizes(2);
-                  radius = round(Pfs.adata.binSizes(1)/2)-find(Pfs.adata.bins{1}<-420,1,'last');
-                  centerW = width/2;
-                  centerH = height/2;
-                  [W,H] = meshgrid(1:width,1:height);           
-                  mask = double(sqrt((W-centerW-.5).^2 + (H-centerH-.5).^2) < radius);
-                  mask(mask==0)=nan;
-                  else
-                      mask = 1;
-                  end
+                   if isCircular,
+                       width = Pfs.adata.binSizes(1);
+                       height = Pfs.adata.binSizes(2);
+                       radius = round(Pfs.adata.binSizes(1)/2)-...
+                                     find(Pfs.adata.bins{1}<-420,1,'last');
+                       centerW = width/2;
+                       centerH = height/2;
+                       [W,H] = meshgrid(1:width,1:height);           
+                       mask = double(sqrt((W-centerW-.5).^2 + (H-centerH-.5).^2) < radius);
+                       mask(mask==0)=nan;
+                   else
+                       mask = 1;
+                   end
                   
 
                     switch nMode

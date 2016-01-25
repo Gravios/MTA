@@ -295,11 +295,138 @@ hs = bar(eds,histc(lbfet(ind),eds),'histc');hs.FaceAlpha=.5;hs.FaceColor='g';
 ind = Trial.stc{'r'};
 hs = bar(eds,histc(lbfet(ind),eds),'histc');hs.FaceAlpha=.5;hs.FaceColor='r';
 
-mwp = [];
-for per = Trial.stc{'w'}.data'
-    mwp(end+ =maxlbfet(per(1):per(
+% $$$ mwp = [];
+% $$$ for per = Trial.stc{'w'}.data'
+% $$$     mwp(end+ =maxlbfet(per(1):per(
     
 
 
 
+name = 'hRL_shake'; label = 'hlrs'; key = 'h';
+zv = MTADfet.encapsulate(Trial,...
+                         circ_dist(circshift(fang(:,8,6,1),-1),fang(:,8,6,1)),...
+                         xyz.sampleRate,...
+                         name,label,key);
 
+
+dspec = struct('nFFT',2^8,'Fs',zv.sampleRate,...
+               'WinLength',2^7,'nOverlap',2^7*.875,...
+               'FreqRange',[1,30]);
+[ys,fs,ts] = fet_spec(Trial,zv,'mtchglong',true,[],dspec,true);
+
+figure,imagesc(ts,fs,log10(ys(:,:,1,1))'),axis xy,colormap jet
+
+figure,imagesc(ts,fs,ys(:,:,1,2)'),axis xy,colormap jet
+
+,Lines(StcHL{'m',xyz.sampleRate}(:),[],'m');
+
+
+
+
+
+f = 9;
+figure;hold on;
+eds =linspace(20,160,100),
+ind = stcjg{'w'};
+hs = bar(eds,histc(ofet(ind,f),eds),'histc');,hs.FaceAlpha=.5;hs.FaceColor='c';
+ind = stced{'w'};
+hs = bar(eds,histc(mfet(ind,f),eds),'histc');,hs.FaceAlpha=.5;hs.FaceColor='r';
+
+
+f = 7;
+figure;hold on;
+eds =linspace(-pi/2,pi/2,100),
+ind = stcjg{'a'};
+hs = bar(eds,histc(ofet(ind,f),eds),'histc');,hs.FaceAlpha=.5;hs.FaceColor='c';
+ind = stced{'a'};
+hs = bar(eds,histc(mfet(ind,f),eds),'histc');,hs.FaceAlpha=.5;hs.FaceColor='r';
+
+
+
+
+
+%% head stuff
+
+Trial = MTATrial('Ed01-20140707');
+Trial.load('stc','hand_labeled_rev1_Ed');
+xyz = Trial.load('xyz');
+
+xyz.addMarker('bcom',[.7,0,.7],{},...
+    xyz.com(xyz.model.rb({'spine_lower','pelvis_root','spine_middle'})));
+xyz.addMarker('scom',[.7,0,.7],{},...
+    xyz.com(xyz.model.rb({'pelvis_root','spine_middle','spine_upper'})));
+xyz.addMarker('hcom',[.7,0,.7],{},...
+    xyz.com(xyz.model.rb({'head_back','head_left','head_front','head_right'})));
+
+fxyz = xyz.copy;
+fxyz.filter('ButFilter',3,1);
+
+xyz.addMarker('fsl',[.7,0,.7],{},fxyz(:,'spine_lower',:));
+xyz.addMarker('fbcom',[.7,0,.7],{},fxyz(:,'bcom',:));
+xyz.addMarker('fscom',[.7,0,.7],{},fxyz(:,'scom',:));
+xyz.addMarker('fhcom',[.7,0,.7],{},fxyz(:,'hcom',:));
+
+
+ang = create(MTADang,Trial,xyz);
+figure,plot(circ_dist(ang(:,'fbcom','fscom',1),ang(:,'head_back','head_front',1)))
+
+figure,plot(circ_dist(ang(:,'fbcom','fscom',1),ang(:,'fscom','hcom',1)))
+
+Lines(Trial.stc{'w'}(:),[],'c');
+Lines(Trial.stc{'r'}(:),[],'r');
+
+
+
+proxy_ss = ss.copy;
+ss = proxy_ss.copy;
+
+ss.filter('ButFilter',3,10);
+
+dss = sqrt(sum(diff(ss.data).^2,3));
+
+figure,imagesc(log10(dss')),
+caxis([-1,2]),colormap copper
+Lines(Trial.stc{'w'}(:),[],'c');
+Lines(Trial.stc{'r'}(:),[],'r');
+Lines(Trial.stc{'m'}(:),[],'m');
+Lines(Trial.stc{'n'}(:),[],'g');
+
+figure,imagesc(diff(dss)'),axis xy
+caxis([-.2,.2]),colormap copper
+Lines(Trial.stc{'w'}(:)+.3,[],'c');
+Lines(Trial.stc{'r'}(:)-.2,[],'r');
+Lines(Trial.stc{'m'}(:)+.7,[],'m');
+Lines(Trial.stc{'n'}(:)+.1,[],'g');
+
+
+figure,plot(sum(dss,2)),
+Lines(Trial.stc{'w'}(:),[],'c');
+Lines(Trial.stc{'r'}(:),[],'r');
+Lines(Trial.stc{'m'}(:),[],'m');
+Lines(Trial.stc{'n'}(:),[],'g');
+
+
+ss = proxy_ss.copy;
+ss.filter('ButFilter',3,20);
+
+dss = sqrt(sum(diff(ss.data).^2,3));
+
+name = 'speed 3dss'; label = 'dss'; key = 'd';
+zv = MTADfet.encapsulate(Trial,...
+                         sum(dss,2),...
+                         xyz.sampleRate,...
+                         name,label,key);
+
+dspec = struct('nFFT',2^8,'Fs',zv.sampleRate,...
+               'WinLength',2^7,'nOverlap',2^7*.875,...
+               'FreqRange',[1,10]);
+[ys,fs,ts] = fet_spec(Trial,zv,'mtchglong',false,[],dspec,false);
+
+figure,imagesc(ts,fs,log10(ys.data)'),axis xy, colormap jet
+
+eds = linspace(-5,4,100);
+figure,hold on;
+ind = Trial.stc{'s'};
+hs = bar(eds,histc(mean(log10(ys(ind,round(fs)==4)),2),eds),'histc');hs.FaceAlpha=.5;hs.FaceColor='c';
+ind = Trial.stc{'p'};
+hs = bar(eds,histc(mean(log10(ys(ind,round(fs)==4)),2),eds),'histc');hs.FaceAlpha=.5;hs.FaceColor='r';

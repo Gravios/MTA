@@ -1,3 +1,23 @@
+MTAstartup('vr_exp')
+
+% $$$ Session = MTASession('Ed10-20140820',...
+% $$$                      'rov',...
+% $$$                       true,...
+% $$$                      '0x0002',...
+% $$$                      'vicon',...
+% $$$                      'nlx',...
+% $$$                      149.9974321...
+% $$$ );
+% $$$ Session = MTASession('Ed10-20140820','rov');
+% $$$ xyz = Session.load('xyz');
+% $$$ xyz.data(:,:,1) = xyz.data(:,:,1)-70;
+% $$$ xyz.data(:,:,2) = xyz.data(:,:,2)-325;
+% $$$ xyz.save;
+
+QuickTrialSetup('Ed10VR_teleport');
+
+
+
 %MTAstartup('cin','cin');
 %Trial = MTATrial('Ed10-20140812');
 %MTAstartup;
@@ -6,60 +26,68 @@
 %Trial = MTATrial('jg05-20120317');
 
 Trial = MTATrial('Ed10-20140820','all','rov');
+Trial.stc.updateMode('default');
+Trial.stc.load;
 % $$$ Trial = MTATrial('Ed10-20140820','telcrtl1','rov');
 % $$$ Trial = MTATrial('Ed10-20140820','telshift1','rov');
 % $$$ Trial = MTATrial('Ed10-20140820','telcrtl2','rov');
 % $$$ Trial = MTATrial('Ed10-20140820','telshift2','rov');
 % $$$ Trial = MTATrial('Ed10-20140820','teleport','rov');
 
-tnames = {'telcrtl1','telshift1','telcrtl2','telshift2','teleport'};
-
-xyz = Trial.load('xyz');
-xyz.filter(gtwin(.5,xyz.sampleRate));
-vel = [0;sqrt(sum(diff(xyz.com(xyz.model.rb({'head_back','head_left','head_front','head_right'}))).^2,3).*xyz.sampleRate./10)];
-vel(~nniz(xyz))=0;
-vper = ThreshCross(vel,2,round(.5*xyz.sampleRate));
+tnames = {'tel_C1','tel_S1','tel_C2','tel_S2','tel_A1'};
 
 
-si = Trial.stc.gsi('v');
-if isempty(si),
-    Trial.stc.states{end+1} = MTADepoch(Trial.spath,Trial.filebase,vper,xyz.sampleRate,Trial.sync.copy,Trial.sync.data(1),'vel','v');
-else
-    Trial.stc.states{si}.data = vper;
+if isempty(Trial.stc.gsi('v')),
+    xyz = Trial.load('xyz');
+    xyz.filter('ButFilter',3,2.4);
+    fvxy = xyz.vel(1,[1,2]);
+    fvxy.data(fvxy.data<1e-3)=1e-3;
+    fvxy.data = log10(fvxy.data);
+    vper = ThreshCross(fvxy.data,0.5,round(.25*xyz.sampleRate));
+    Trial.stc.addState(Trial.spath,...
+                       Trial.filebase,...
+                       vper,...
+                       xyz.sampleRate,...
+                       Trial.sync.copy,...
+                       Trial.sync.data(1),...
+                       'velthresh','v');
+end
+
+if isempty(Trial.stc.gsi('r')),
+    rper = rear(Trial,'com',45);
+    Trial.stc.addState(Trial.spath,...
+                   Trial.filebase,...
+                   rper,...
+                   xyz.sampleRate,...
+                   Trial.sync.copy,...
+                   Trial.sync.data(1),...
+                   'rear','r');
 end
 
 
-rper = rear(Trial,'com',45);
-
-si = Trial.stc.gsi('r');
-if isempty(si),
-    Trial.stc.states{end+1} = MTADepoch(Trial.spath,Trial.filebase,rper,120,Trial.sync.copy,Trial.sync.data(1),'rear','r');
-else
-    Trial.stc.states{si}.data = rper;
-end
-
-si = Trial.stc.gsi('n');
-if isempty(si),
-    Trial.stc.states{end+1} = Trial.stc{'v',120}-(Trial.stc{'r',120}+[-.5,.5]);
+if isempty(Trial.stc.gsi('n')),
+    Trial.stc.states{end+1} = Trial.stc{'v'}-(Trial.stc{'r',120}+[-.5,.5]);
     Trial.stc.states{end}.key = 'n';
     Trial.stc.states{end}.label = 'NRvel';    
-    Trial.stc.states{end}.updateFilename([Trial.filebase,'.sst.',Trial.stc.states{end}.label,'.',Trial.stc.states{end}.key,'.mat']);
-else
-    Trial.stc.states{si} = Trial.stc{'v',120}-(Trial.stc{'r',120}+[-.5,.5]);
-    Trial.stc.states{si}.key = 'n';
-    Trial.stc.states{si}.label = 'NRvel';    
-    Trial.stc.states{si}.updateFilename([Trial.filebase,'.sst.',Trial.stc.states{end}.label,'.',Trial.stc.states{end}.key,'.mat']);
-    Trial.stc.states{si}.data([1,end],:) = [];
+    Trial.stc.states{end}.updateFilename([Trial.filebase,'.sst.',...
+                                          Trial.stc.states{end}.label,'.',...
+                                          Trial.stc.states{end}.key,'.mat']);
 end
 
 
+if isempty(Trial.stc.gsi('t')),
+    Trial = labelTheta(Trial,[],7);
+end
+
+
+Stc = Trial.stc.copy;
 nt = numel(tnames);
-states = {'theta','vel','rear','NRvel'};
+states = {'theta','velthresh','rear','NRvel'};
 nsts = size(states,2);
 
 display = true;
 overwrite = false;
-units = 1:275;
+units = 1:120;
 
 [accg,tbin] = autoccg(Trial,units,'theta');
 
@@ -69,13 +97,14 @@ stc = Trial.stc.copy;
 
 for t = 1:nt
     Trial = MTATrial('Ed10-20140820',tnames{t},'rov');    
-    Trial.stc = stc.copy;
+    Trial.stc = Stc.copy;
     Trial.stc.load(Trial);
     for i = 1:nsts,
         pfs{t,i} = MTAApfs(Trial,units,states{i},overwrite,'binDims',[20,20],'SmoothingWeights',[1.8,1.8]);
         %pfs{t,i} = MTAAknnpfs(Trial,units,states{i},overwrite,'numIter',1,'ufrShufBlockSize',0,'binDims',[20,20],'distThreshold',125,'nNearestNeighbors',150);
     end
 end
+
 
 autoincr = true;
 if display,
@@ -85,14 +114,15 @@ if display,
     while unit~=-1,
         for t = 1:nt,
             for i = 1:nsts,
-                subplot2(nt,nsts+1,t,i);cla
+                %subplot2(nt,nsts+1,t,i);cla
+                subplot2(nt,nsts,t,i);cla
 
                 %imagesc(pfs{1}.adata.bins{1},pfs{1}.adata.bins{2},reshape(pfs{t}.data.rateMap(:,unit),35,60)),colorbar
-                pfs{t,i}.plot(unit,[],true);
+                pfs{t,i}.plot(unit,[],true,[],false);
                 title([pfs{t,i}.session.trialName ':' pfs{t,i}.parameters.states,': ',num2str(unit)]);
             end
         end
-        subplot2(nt,nsts+1,1,nsts+1); cla,bar(tbin,accg(:,unit));axis tight;
+        %subplot2(nt,nsts+1,1,nsts+1); cla,bar(tbin,accg(:,unit));axis tight;
 % $$$         subplot2(5,2,1,1); cla; pfs{1}.plot(unit,[],true);
 % $$$         title([pfs{1}.session.trialName ':' pfs{1}.parameters.states,': ',num2str(unit)]);
 % $$$         subplot2(5,2,2,1); cla; pfs{2}.plot(unit,[],true);
@@ -106,8 +136,20 @@ if display,
 % $$$         subplot2(5,2,1,2); cla,bar(tbin,accg(:,unit));axis tight;
 % $$$         subplotfit(6,6);cla,bar(tbin,accg(:,unit));axis tight;
 
-        reportfig('/gpfs01/sirota/home/gravio/figures/',hfig,...
-                  ['exp_teleport-' Trial.name] ,false,Trial.name);
+        reportfig('/storage/gravio/figures/',...
+                  hfig,...
+                  ['exp_teleport-' Trial.name],...
+                  'vr_exp',...
+                  false,...
+                  ['Unit: ' num2str(unit)],...  Tag
+                  '',...                Comment
+                  100,...                Resolution
+                  false,...             SaveFig
+                  'png',...             Format
+                  8,...                 Width
+                  8,...                 Height
+                  unit...               Id
+        );
         unit = figure_controls(hfig,unit,units,autoincr);
     
     end

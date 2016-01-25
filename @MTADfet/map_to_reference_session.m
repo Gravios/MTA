@@ -23,6 +23,20 @@ end
 rfet = feval(features.label,RefTrial,features.sampleRate);
 
 switch features.label
+  case 'fet_tsne_rev10',
+    fetInds =      [   1                    , 7:9                     , 10:14 ];
+    stdThresh = cat(2, repmat({10},    1,1) , repmat({.1},        1,3), repmat({10},    1,5));
+    diffFun =   cat(2, repmat({@minus},1,1) , repmat({@circ_dist},1,3), repmat({@minus},1,5));
+  case 'fet_tsne_rev9',
+    fetInds =      [   1                    , 7:8                     , 9:13 ];
+    stdThresh = cat(2, repmat({10},    1,1) , repmat({.1},        1,2), repmat({10},    1,5));
+    diffFun =   cat(2, repmat({@minus},1,1) , repmat({@circ_dist},1,2), repmat({@minus},1,5));
+
+  case 'fet_tsne_rev8',
+    fetInds =      [  1                   ,7:8                  ,9:11 ];
+    stdThresh = cat(2,repmat({10},1,1)    ,repmat({.1},1,2)     ,repmat({10},1,3));
+    diffFun =   cat(2,repmat({@minus},1,1),repmat({@circ_dist},1,2),repmat({@minus},1,3));
+
   case 'fet_tsne_rev7',
     fetInds =      [  1                   ,7:8                    ];
     stdThresh = cat(2,repmat({10},1,1)    ,repmat({.1},1,2)        );

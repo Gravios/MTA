@@ -12,7 +12,7 @@ SAVEFIG = true;   % boolean flag, Save figures along with png's
 
 fetSampleRate = 12;         % Reduce the sample rate of the feature matrix
 
-featureSet = 'fet_tsne_rev3'; % name of the function which constructs
+featureSet = 'fet_tsne_rev5'; % name of the function which constructs
                          % the feature set
 
 ifNormalize = true;     % Flag to normalize using the

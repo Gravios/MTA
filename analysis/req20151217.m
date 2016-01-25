@@ -1,9 +1,12 @@
 
 Trial = MTATrial('jg05-20120317');
 Trial.load('stc','hand_labeled_rev2');
+
+Trial = MTATrial('Ed03-20140625');
+Trial.load('stc','hand_labeled_rev1_Ed');
 train = true;
 states = {'walk','rear','turn','pause','groom','sit'};
-featureSet = 'fet_tsne_rev7';
+featureSet = 'fet_tsne_rev10';
 sampleRate = 12;
 ifNormalize = false;
 nNeurons = 100;
@@ -15,7 +18,7 @@ model = ['MTAC_' featureSet ...
 features = feval(featureSet,Trial,sampleRate,ifNormalize);
 if ifNormalize, [~,rm,rs] = unity(features); end
  
- % Train Model
+ % Train Modela
 bhv_nn (Trial,train,states,features,model,'nNeurons',nNeurons);
 
 
@@ -27,24 +30,33 @@ bhv_nn (Trial,train,states,features,model,'nNeurons',nNeurons);
 
 Trial = MTATrial('Ed03-20140624');
 %StcHL = Trial.load('stc','hand_labeled_rev1');
-%Trial.load('stc','hand_labeled_rev1_ed');
-Trial.load('stc','hand_labeled_rev2_alt');
+Trial.load('stc','hand_labeled_rev1_Ed');
+%Trial.load('stc','hand_labeled_rev1_jg');
 StcHL = Trial.stc.copy;
 
-% $$$ Trial = MTATrial('Ed03-20140625');
-% $$$ Trial.load('stc','hand_labeled_rev1');
-% $$$ StcHL = Trial.stc.copy;
-% $$$ 
-% $$$ Trial = MTATrial('Ed05-20140625');
-% $$$ Trial.load('stc','hand_labeled_rev1');
-% $$$ StcHL = Trial.stc.copy;
+Trial = MTATrial('Ed05-20140529');
+Trial.load('stc','hand_labeled_rev1_Ed');
+StcHL = Trial.stc.copy;
+
+Trial = MTATrial('Ed03-20140625');
+Trial.load('stc','hand_labeled_rev1_Ed');
+StcHL = Trial.stc.copy;
+
+Trial = MTATrial('Ed05-20140529','all','ont');
+Trial.load('stc','hand_labeled_rev1_Ed');
+StcHL = Trial.stc.copy;
+
+Trial = MTATrial('Ed01-20140707');
+Trial.load('stc','hand_labeled_rev1_jg');
+StcHL = Trial.stc.copy;
 
 % It's needed ... I'm not telling why.
 xyz = Trial.load('xyz');
 
 % Load and Correct for inter Trial difference
 features = feval(featureSet,Trial,sampleRate,ifNormalize);
-%features.map_to_reference_session(Trial,{'jg05-20120317','all','cof'});
+features.map_to_reference_session(Trial,{'jg05-20120317','all','cof'});
+%features.map_to_reference_session(Trial,{'jg05-20120317','all','cof'},true);
 if ifNormalize, features.unity([],rm,rs); end
 
 % Create state matrix (N x k) N=samples, k=states, Domain:Boolean

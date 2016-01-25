@@ -1,4 +1,4 @@
-function [fet,featureTitles,featureDesc,Nmean,Nstd] = fet_tsne_rev5(Trial,varargin)
+function [fet,featureTitles,featureDesc,Nmean,Nstd] = fet_tsne_rev9(Trial,varargin)
 [newSampleRate,normalize] = DefaultArgs(varargin,{15,false},1);
 
 if ischar(Trial),
@@ -7,14 +7,7 @@ elseif iscell(Trial),
     Trial = MTATrial(Trial{:});
 end
 
-
-xyz = Trial.load('xyz');
-xyz.addMarker('bcom',[.7,0,.7],{},...
-    xyz.com(xyz.model.rb({'spine_lower','pelvis_root','spine_middle'})));
-xyz.addMarker('hcom',[.7,0,.7],{},...
-    xyz.com(xyz.model.rb({'head_back','head_left','head_front','head_right'})));
-
-
+% In case if an old version of MTA constructed the Trial
 if isempty(Trial.fet),
     Trial.fet = MTADfet(Trial.spath,...
                         [],...
@@ -24,6 +17,37 @@ if isempty(Trial.fet),
                         Trial.sync.data(1),...
                         []);                  
 end
+
+
+xyz = Trial.load('xyz');
+
+try 
+    ss = Trial.load('fet','3dss');
+    ss.resample(xyz); % just a precaution
+catch
+    pnts = zeros([xyz.size(1),105,3]);
+    for ind = 1:xyz.size(1),
+        try
+            pnts(ind,:,:) = fnplt(cscvn(sq(xyz(ind,1:4,:))'))';
+        end
+    end
+    name = '3d spline interpolated spine'; label = '3dss'; key = 's';
+    ss = MTADfet.encapsulate(Trial,...
+                             pnts,...
+                             xyz.sampleRate,...
+                             name,label,key);
+    ss.updateFilename(Trial);
+    ss.save;
+end
+
+xyz.data(:,1:4,:) = ss(:,[5,35,65,95],:);
+
+xyz.addMarker('bcom',[.7,0,.7],{},...
+    xyz.com(xyz.model.rb({'spine_lower','pelvis_root','spine_middle'})));
+xyz.addMarker('hcom',[.7,0,.7],{},...
+    xyz.com(xyz.model.rb({'head_back','head_left','head_front','head_right'})));
+
+
 
 
 
@@ -118,6 +142,7 @@ zfet.data(~nniz(zfet),:)=-20;
 zfet.resample(bfet);
 
 
+
 %% Main feature construction
 fet = MTADfet(Trial.spath,...
               [],...
@@ -132,8 +157,13 @@ fet.data = [fxyz(:,{'spine_middle'},3),...
             fvelxy(:,{'spine_lower','bcom','hcom'}),...
             man.data+.2,...
             bfet.data,...
-            fang(:,'spine_middle','spine_upper',2),...                  %Pitch
-            fang(:,'spine_lower','spine_middle',2),...                     %Pitch
+            fang(:,'spine_middle','spine_upper' ,2),...                  %Pitch
+            fang(:,'spine_lower' ,'spine_middle',2),...                     %Pitch
+            fang(:,'spine_lower' ,'spine_middle',3),...
+            fang(:,'pelvis_root' ,'spine_upper' ,3),...
+            fang(:,'spine_lower' ,'pelvis_root' ,3),...
+            fang(:,'pelvis_root' ,'spine_middle',3),...
+            fang(:,'spine_middle','spine_upper' ,3),...            
             ang_b_vel,...
             abs(circ_dist(fang(:,1,3,1),fang(:,'bcom','hcom',1))),...
             fang(:,1,4,3).*cos(fang(:,1,4,2))./prctile(fang(:,1,4,3).*cos(fang(:,1,4,2)),95),...

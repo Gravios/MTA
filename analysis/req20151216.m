@@ -28,7 +28,7 @@ argin = struct2varargin(mod);
 
 
 
-
+model = 'MTAC_BATCH-fet_tsne_rev5_SR_12_REF_jg05-20120317.cof.all_NN_100_NN_multiPN_RAND_WSB_';
 Trial = MTATrial('Ed03-20140624');
 mod.states     = {'walk','rear','turn','pause','groom','sit'};
 mod.stcMode    = 'hand_labeled_rev2_alt';

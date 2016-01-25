@@ -68,12 +68,12 @@ Sessions = SessionList(Session);
 if isstruct(Sessions),
     for s = Sessions,
         if local,
-            MTAstartup(host,HostConf.data_server);
+            MTAstartup(s.project,host,HostConf.data_server);
         else
-            MTAstartup(host,s.host);
+            MTAstartup(s.project,host,s.host);
         end
         
-        Session = MTASession(s.name,...
+        Session = MTASession(s.sessionName,...
             s.mazeName);
         
         xsync = Session.xyz.sync.copy;

@@ -8,5 +8,12 @@ function Data = updateFilename(Data,filename)
 %   Data - MTAData: Original object passed to this function with an
 %                   updated filename
 %
-Data.filename = filename;
+    if ~isempty(filename),
+        if isa(filename,'MTASession'),
+            filename = [filename.filebase '.' Data.ext '.' Data.label '.' Data.key '.mat'];        
+        end
+        Data.filename = filename;            
+
+    end            
+
 end
