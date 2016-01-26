@@ -3,7 +3,7 @@
 %  A: Trajectories of behaving rat                               |
 %  B: Feature matrix demonstrating the features we used          |
 %  C: Labels corresponding to the hand labeled data              |
-%  D:Labels corresponding to the neural network labeled data     |
+%  D: Labels corresponding to the neural network labeled data     |
 %  E: t-sne dimensionality reduction method                      |
 %  F: Tabel of labeling stats between and animals and between    |
 %     labelers                                                   |
@@ -12,8 +12,8 @@
 
 
 Trial = MTATrial('jg05-20120317');
-Stc = Trial.load('stc','hand_labeled_rev1'); 
-figPath = '/storage/gravio/manuscripts/man2015-jgEd-MoCap/Figures/Figure_3';
+Stc = Trial.load('stc','hand_labeled_rev2_jg'); 
+figPath = '/storage/gravio/manuscripts/man2015-jgEd-MoCap/Figures/Figure_2';
 pPad = [0,0];
 
 %exPer = [26664,27100];
@@ -26,7 +26,7 @@ exPer = [51549, 55145];
 
 
 
-xyz = Trial.load('xyz').filter(gtwin(.05,Trial.xyz.sampleRate));
+xyz = Trial.load('xyz').filter('ButFilter',3,50);
 ang = create(MTADang,Trial,xyz);
 %stateColors = 'brcgym';
 
@@ -64,14 +64,12 @@ set(gca,'CameraPositionMode', 'manual'                    ,...
 	'CameraViewAngle',[6.31812],...
 	'CameraViewAngleMode','manual')
 daspect([1,1,1]);
-        
-        
+hold on        
 pMode = 'line';  %'surface';
-xyz = Trial.load('xyz').filter(gtwin(.05,Trial.xyz.sampleRate));
 
-plotSkeleton(xyz,exPer(1)+1500,pMode,[],[0,500]);% rear
-plotSkeleton(xyz,exPer(1)+2000,pMode,[],[0,300]);% rear
-plotSkeleton(xyz,exPer(1)+2300,pMode,[],[0,0]);% rear
+plotSkeleton(Trial,xyz,exPer(1)+1500,pMode,ang,[0,500]);% rear
+plotSkeleton(Trial,xyz,exPer(1)+2000,pMode,ang,[0,300]);% rear
+plotSkeleton(Trial,xyz,exPer(1)+2300,pMode,ang,[0,0]);% rear
 
 
 zlim([0,300]);
@@ -79,29 +77,29 @@ zlim([0,300]);
 
 
 % Fig:2:B - feature matrix
-fet = fet_lgr(Trial);
+[fet,flabels,fdisc] = fet_tsne_rev10(Trial);
 axes('Position',[ 0.1300,0.3397,0.7750,0.2000])
 ts = (1:fet.size(1))./fet.sampleRate;
 per = round(exPer./xyz.sampleRate)+pPad;
 ind = ts>per(1)&ts<per(2);
-ufet = nunity(fet);
+ufet = unity(fet);
 imc = imagesc(ts(ind),1:fet.size(2),ufet(ind,:)');
 caxis([-2,2]);
 xlim(round(exPer./xyz.sampleRate)+pPad)
 Lines(round([exPer(1)+1500,exPer(1)+2000,exPer(1)+2300]./xyz.sampleRate),[],'k');
 %xlabel('Time (s)')
-flabels = {'speed SL'   ,...
-           'speed SM'   ,...
-           'speed HF'   ,...
-           'height SL'  ,...
-           'Z-diff SL_HF',...
-           'pitch SL_PR',...
-           'pitch SM_SU',...
-           'dist SL_PR' ,...
-           'dist PR_SM' ,...
-           'dist SU_HB' ,...
-           'dist SL_HB' ,...
-           'av_SLSM_SMHF'};
+% $$$ flabels = {'speed SL'   ,...
+% $$$            'speed SM'   ,...
+% $$$            'speed HF'   ,...
+% $$$            'height SL'  ,...
+% $$$            'Z-diff SL_HF',...
+% $$$            'pitch SL_PR',...
+% $$$            'pitch SM_SU',...
+% $$$            'dist SL_PR' ,...
+% $$$            'dist PR_SM' ,...
+% $$$            'dist SU_HB' ,...
+% $$$            'dist SL_HB' ,...
+% $$$            'av_SLSM_SMHF'};
 set(gca,'YTickLabelMode','manual',...
         'YTickMode','manual',...
         'YTick',1:numel(flabels),...

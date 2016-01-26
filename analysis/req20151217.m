@@ -4,13 +4,15 @@ Trial.load('stc','hand_labeled_rev2');
 
 Trial = MTATrial('Ed03-20140625');
 Trial.load('stc','hand_labeled_rev1_Ed');
+
 train = true;
 states = {'walk','rear','turn','pause','groom','sit'};
-featureSet = 'fet_tsne_rev10';
+featureSet = 'fet_tsne_rev5';
 sampleRate = 12;
-ifNormalize = false;
+ifNormalize = true;
 nNeurons = 100;
 model = ['MTAC_' featureSet ...
+         '_NORM_'  num2str(ifNormalize)...
          '_SR_'  num2str(sampleRate) ...
          '_REF_' Trial.name ...
          '_NN_'  num2str(nNeurons) ];
@@ -18,7 +20,7 @@ model = ['MTAC_' featureSet ...
 features = feval(featureSet,Trial,sampleRate,ifNormalize);
 if ifNormalize, [~,rm,rs] = unity(features); end
  
- % Train Modela
+ % Train Model
 bhv_nn (Trial,train,states,features,model,'nNeurons',nNeurons);
 
 
@@ -54,7 +56,8 @@ StcHL = Trial.stc.copy;
 xyz = Trial.load('xyz');
 
 % Load and Correct for inter Trial difference
-features = feval(featureSet,Trial,sampleRate,ifNormalize);
+%features = feval(featureSet,Trial,sampleRate,ifNormalize);
+features = feval(featureSet,Trial,sampleRate);
 features.map_to_reference_session(Trial,{'jg05-20120317','all','cof'});
 %features.map_to_reference_session(Trial,{'jg05-20120317','all','cof'},true);
 if ifNormalize, features.unity([],rm,rs); end

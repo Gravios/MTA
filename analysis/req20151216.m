@@ -1,14 +1,16 @@
 % req20151216
 % Primary goal - randomized train/label validation (50/50) bhv_nn
 
+
+% Train neural net work
 Trial = MTATrial('jg05-20120317');
+clear('mod');
 mod.states     = {'walk','rear','turn','pause','groom','sit'};
-mod.stcMode    = 'hand_labeled_rev2';
-mod.featureSet = 'fet_tsne_rev5';
+mod.stcMode    = 'hand_labeled_rev2_jg';
+mod.featureSet = 'fet_tsne_rev8';
 mod.sampleRate = 12;
 mod.nNeurons   = 100;
-mod.randomizationMethod = 'equal_restructured_sampling';
-
+mod.randomizationMethod = 'whole_state_bootstrap';
 argin = struct2varargin(mod);
 [stc,d_state,ls,lsm,model] = bhv_nn_multi_patternnet(Trial,argin{:});
 
@@ -27,6 +29,32 @@ argin = struct2varargin(mod);
 [stc,d_state,ls,lsm,model] = bhv_nn_multi_patternnet(Trial,argin{:});
 
 
+Trial = MTATrial('Ed03-20140625');
+clear('mod');
+mod.states     = {'walk','rear','turn','pause','groom','sit'};
+mod.stcMode    = 'hand_labeled_rev1';
+mod.featureSet = 'fet_tsne_rev8';
+mod.sampleRate = 12;
+mod.nNeurons   = 100;
+mod.randomizationMethod = 'whole_state_bootstrap';
+argin = struct2varargin(mod);
+[stc,d_state,ls,lsm,model] = bhv_nn_multi_patternnet(Trial,argin{:});
+
+
+model = 'MTAC_BATCH-fet_tsne_rev5_SR_12_REF_Ed03-20140625.cof.all_NN_100_NN_multiPN_RAND_WSB'
+model = 'MTAC_BATCH-fet_tsne_rev5_SR_12_REF_jg05-20120317.cof.all_NN_100_NN_multiPN_RAND_WSB';
+model = 'MTAC_BATCH-fet_tsne_rev8_SR_12_REF_jg05-20120317.cof.all_NN_100_NN_multiPN_RAND_WSB';
+Trial = MTATrial('Ed03-20140624');
+clear('mod');
+mod.states     = {'walk','rear','turn','pause','groom','sit'};
+mod.stcMode    = 'hand_labeled_rev1_jg';
+mod.featureSet = 'fet_tsne_rev8';
+mod.model      = model;
+mod.sampleRate = 12;
+mod.nNeurons   = 100;
+argin = struct2varargin(mod);
+[stc,d_state,ls,lsm] = bhv_nn_multi_patternnet(Trial,argin{:});
+
 
 model = 'MTAC_BATCH-fet_tsne_rev5_SR_12_REF_jg05-20120317.cof.all_NN_100_NN_multiPN_RAND_WSB_';
 Trial = MTATrial('Ed03-20140624');
@@ -36,22 +64,7 @@ mod.featureSet = 'fet_tsne_rev5';
 mod.model      = model;
 mod.sampleRate = 12;
 mod.nNeurons   = 100;
-mod.randomizationMethod = 'equal_restructured_sampling';
-
-argin = struct2varargin(mod);
-[stc,d_state,ls,lsm] = bhv_nn_multi_patternnet(Trial,argin{:});
-
-
-
-Trial = MTATrial('Ed03-20140624');
-mod.states     = {'walk','rear','turn','pause','groom','sit'};
-mod.stcMode    = 'hand_labeled_rev1';
-mod.featureSet = 'fet_tsne_rev5';
-mod.model      = model;
-mod.sampleRate = 12;
-mod.nNeurons   = 100;
 mod.randomizationMethod = 'whole_state_bootstrap';
-
 argin = struct2varargin(mod);
 [stc,d_state,ls,lsm] = bhv_nn_multi_patternnet(Trial,argin{:});
 

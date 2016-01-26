@@ -27,9 +27,9 @@ argin = struct2varargin(mod);
 
 
 % Ed 
-slist =     {'hand_labeled_Ed'; 'hand_labeled_jg'; 'hand_labeled_Ed'; 'hand_labeled_jg'};
-refTrial =  {  'Ed03-20140625';   'jg05-20120317';   'jg05-20120317';   'Ed03-20140625'};
-fetSet  = 'fet_tsne_rev5';
+slist =     {'hand_labeled_Ed'; 'hand_labeled_jg'};
+refTrial =  {  'Ed03-20140625';   'jg05-20120317'};
+fetSet  = 'fet_tsne_rev10';
 
 
 for sli = 1:numel(slist),
@@ -61,30 +61,92 @@ end
 
 %Plot Over all accuracies 
 
+sli = 1;
+rti = 1;
+fetSet  = 'fet_tsne_rev5';
+SesList = SessionList(slist{sli});
+SesList = {SesList(:).sessionName};
+model = ['MTAC_BATCH-' fetSet '_SR_12_REF_' refTrial{rti} '.cof.all_NN_100_NN_multiPN_RAND_WSB'];
+load(fullfile(MTASession().path.data,'analysis',[slist{sli},'-',model,'.mat']));
 
 prop = 'accuracy';
 figure,plot(cell2mat(cellfun(@subsref,ls, ...
-                             repmat({substruct('.',prop)},[1,numel(ls)]),'uniformoutput',false))'.*100,'.')
+                             repmat({substruct('.',prop)},[1,numel(ls)]),'uniformoutput',false))'.*100,'d')
 xlim([0,5])
 ylim([50,100])
+ylabel(prop);
+title({['Training Set: ' refTrial{rti}],...
+       ['Labeling Set: ' slist{sli}],...
+       ['Feature  Set: ' fetSet]});
+set(gca,'XTickLabelMode','manual');
+set(gca,'XTick',1:numel(SesList));
+set(gca,'XTickLabel',SesList);
+set(gca,'XTickLabelRotation',90);
+pause(.1)
 
-prop = 'sensitivity';
 prop = 'precision';
 figure,plot(reshape(cell2mat(cellfun(@subsref,ls, ...
-                                     repmat({substruct('.',prop)},[1,numel(ls)]),'uniformoutput',false))',6,4),'.')
+                             repmat({substruct('.',prop)},[1,numel(ls)]),'uniformoutput',false))',6,4),'d-')
 xlim([0,7])
 hax = gca;
 hax.XTickLabelMode = 'manual';
 hax.XTickLabel = cat(2,{''},states,{''});
 ylabel(prop)
+title({['Training Set: ' refTrial{rti}],...
+       ['Labeling Set: ' slist{sli}],...
+       ['Feature  Set: ' fetSet]});
+legend(SesList)
+pause(.1)
+
+
+
+
+prop = 'sensitivity';
+figure,plot(reshape(cell2mat(cellfun(@subsref,ls, ...
+                                     repmat({substruct('.',prop)},[1,numel(ls)]),'uniformoutput',false))',6,4),'d-')
+xlim([0,7])
+hax = gca;
+hax.XTickLabelMode = 'manual';
+hax.XTickLabel = cat(2,{''},states,{''});
+ylabel(prop)
+title({['Training Set: ' refTrial{rti}],...
+       ['Labeling Set: ' slist{sli}],...
+       ['Feature  Set: ' fetSet]});
+legend(SesList)
+pause(.1)
 
 
 figure,hold on,
+slist =     {'hand_labeled_Ed'; 'hand_labeled_jg'};
+refTrial =  {  'Ed03-20140625';   'jg05-20120317'};
+fetSet  = 'fet_tsne_rev5';
+k = 1;
+htl = {};
+set(gcf,'interpreter','none')
 for sli = 1:numel(slist),
     for rti = 1:numel(refTrial),    
         prop = 'accuracy';
-        load(fullfile(MTASession().path.data,'analysis',[slist{sli},'-',model,'.mat']));
-        ,plot(cell2mat(cellfun(@subsref,ls, ...
-                             repmat({substruct('.',prop)},[1,numel(ls)]),'uniformoutput',false))'.*100,'.')
+        model = ['MTAC_BATCH-' fetSet '_SR_12_REF_' refTrial{rti} '.cof.all_NN_100_NN_multiPN_RAND_WSB'];
+        ds = load(fullfile(MTASession().path.data,'analysis',[slist{sli},'-',model,'.mat']));
+        scat = scatter(k*ones([numel(ds.ls),1]),cell2mat(cellfun(@subsref,ds.ls, ...
+                             repmat({substruct('.',prop)},[1,numel(ds.ls)]),'uniformoutput',false))'.*100,10);
+
+        scat.MarkerFaceColor = scat.CData;
+        k=k+1;
+        htl = cat(2,htl,{['{' slist{sli} ' - ' refTrial{rti} '}']});
     end
 end
+
+xlim([0.5,k-0.5]);
+ylim([50,100])
+
+set(gca,'XTickLabelMode','manual');
+set(gca,'XTick',1:k-1);
+set(gca,'XTickLabel',{});
+
+
+set(gca,'XTickLabel',htl);
+set(gca,'XTickLabelRotation',90);
+
+%Plot Over all accuracies 
+
