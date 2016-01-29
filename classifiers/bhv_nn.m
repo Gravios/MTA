@@ -19,7 +19,8 @@ function [Stc,d_state,Model_Information] = bhv_nn(Trial,varargin)
 %
 %   subset:    MTADepoch, def - []
 %
-%
+%   subset:      numeric, def - []
+
 
 % Constants
 MODEL_TYPE = 'NN';
@@ -58,12 +59,17 @@ defArgs = {...
                100,                                    ...
  ...
  ...           subset
+               [],                                     ...
+ ...
+ ...           index
                []                                      ...
 };
 
 
 
-[trainModel,states,feature,modelName,display,other_state,nNeurons,subset] = DefaultArgs(varargin,defArgs);
+[trainModel,states,feature,modelName,...
+ display,other_state,nNeurons,subset,index] = DefaultArgs(varargin,defArgs);
+
 
 if isa(states,'MTAStateCollection'),
     Stc = states.copy;

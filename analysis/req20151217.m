@@ -1,20 +1,22 @@
 
 Trial = MTATrial('jg05-20120317');
-Trial.load('stc','hand_labeled_rev2');
+stcMode = 'hand_labeled_rev2';
 
 Trial = MTATrial('Ed03-20140625');
-Trial.load('stc','hand_labeled_rev1_Ed');
+stcMode = 'hand_labeled_rev1_Ed';
 
 train = true;
+Trial.load('stc','hand_labeled_rev2');
 states = {'walk','rear','turn','pause','groom','sit'};
-featureSet = 'fet_tsne_rev5';
+featureSet = 'fet_tsne_rev12';
 sampleRate = 12;
-ifNormalize = true;
+ifNormalize = false;
 nNeurons = 100;
 model = ['MTAC_' featureSet ...
          '_NORM_'  num2str(ifNormalize)...
          '_SR_'  num2str(sampleRate) ...
          '_REF_' Trial.name ...
+         '_STC_' stcMode ...
          '_NN_'  num2str(nNeurons) ];
 
 features = feval(featureSet,Trial,sampleRate,ifNormalize);
@@ -33,10 +35,10 @@ bhv_nn (Trial,train,states,features,model,'nNeurons',nNeurons);
 Trial = MTATrial('Ed03-20140624');
 %StcHL = Trial.load('stc','hand_labeled_rev1');
 Trial.load('stc','hand_labeled_rev1_Ed');
-%Trial.load('stc','hand_labeled_rev1_jg');
+Trial.load('stc','hand_labeled_rev1_jg');
 StcHL = Trial.stc.copy;
 
-Trial = MTATrial('Ed05-20140529');
+Trial = MTATrial('Ed05-20140529','all','ont');
 Trial.load('stc','hand_labeled_rev1_Ed');
 StcHL = Trial.stc.copy;
 

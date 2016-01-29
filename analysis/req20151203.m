@@ -21,23 +21,26 @@ mapToRefTrial = true;
 sessionSet = 'hand_labeled';
 mfilename = 'req20151203';
 
+
+%Reference Trial Stuff
+RefTrial = MTATrial('jg05-20120317');
+if normalize,
+    RefState = RefTrial.stc{'a'};
+    rfet = feval(featureSet,RefTrial,NEW_SAMPLE_RATE);
+    rfet.data = rfet(RefState,:);
+    [~,Rmean,Rstd] = unity(rfet,[],[],[],[]);
+end
+
+
+if mapToRefTrial, mapping =    ['-map2_' RefTrial.filebase];else mapping    = '';end
+if normalize,     normStatus = '-norm';                     else normStatus = '';end
+
 fileLoc = fullfile(Trial.path.data,'analysis',...
                    [mfilename,'-',sessionSet,'-',featureSet,mapping,normStatus,'.mat']);
 
 if ~exist(fileLoc,'file'),
 
     slist = SessionList(sessionSet);
-
-
-    %Reference Trial Stuff
-    RefTrial = MTATrial('jg05-20120317');
-    if normalize,
-        RefState = RefTrial.stc{'a'};
-        rfet = feval(featureSet,RefTrial,NEW_SAMPLE_RATE);
-        rfet.data = rfet(RefState,:);
-        [~,Rmean,Rstd] = unity(rfet,[],[],[],[]);
-    end
-
 
     sfet = [];
     Stc = {};
@@ -109,8 +112,6 @@ if ~exist(fileLoc,'file'),
 
     mappedX = tsne(fet(ind,:), csmat(ind,:), no_dims, initial_dims, perplexity); 
 
-    if mapToRefTrial, mapping =    ['-map2_' RefTrial.filebase];else mapping    = '';end
-    if normalize,     normStatus = '-norm';                     else normStatus = '';end
     
     save(fileLoc);
 else

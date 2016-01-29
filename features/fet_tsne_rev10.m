@@ -175,26 +175,31 @@ if nargout>1,
     %lower spine speed
     % 1.
     %  '$\displaystyle\frac{dz{BL}}{dt}$'
-    featureTitles(end+1) = {'Z_{BM}'};
+    featureTitles(end+1) = {'Z BM'};
+    %featureTitles(end+1) = {'Z_{BM}'};
     featureDesc(end+1) = {'1 Hz low pass filtered height of the upper spine maker'};
 
     % 2. 
+    featureTitles(end+1) = {'d(XY BL)/dt'};
     %featureTitles(end+1) = {'d(XY_{BL})/dt'};
-    featureTitles(end+1) = {'$log10(\displaystyle\frac{dZ_{BL}}{dt}) \quad log10(mm/s)$'};
+    %featureTitles(end+1) = {'$log10(\displaystyle\frac{dZ_{BL}}{dt}) \quad log10(mm/s)$'};
     featureDesc(end+1) = {['2.4 Hz low pass filtered speed in the xy plane of ' ...
                     'the spine lower maker']};
     % 3.
+    featureTitles(end+1) = {'XY Speed BC'};
     %featureTitles(end+1) = {'XY Speed_{BC}'};
-    featureTitles(end+1) = {'$log10(\displaystyle\frac{dZ_{BC}}{dt}) \quad log10(mm/s)$'};    
+    %featureTitles(end+1) = {'$log10(\displaystyle\frac{dZ_{BC}}{dt}) \quad log10(mm/s)$'};    
     featureDesc(end+1) = {['2.4 Hz low pass filtered speed in the xy plane of ' ...
                     'the body''s center of mass']};
     % 4.
+    featureTitles(end+1) = {'XY Speed HC'};
     %featureTitles(end+1) = {'XY Speed_{HC}'};
-    featureTitles(end+1) = {'$log10(\displaystyle\frac{dZ_{HC}}{dt}) \quad log10(mm/s)$'};
+    %featureTitles(end+1) = {'$log10(\displaystyle\frac{dZ_{HC}}{dt}) \quad log10(mm/s)$'};
     featureDesc(end+1) = {['2.4 Hz low pass filtered speed in the xy plane of ' ...
                     'the head''s center of mass']};
     % 5.
-    featureTitles(end+1) = {'PPC_{traj yaw}'};
+    featureTitles(end+1) = {'PPC traj yaw'};    
+    %featureTitles(end+1) = {'PPC_{traj yaw}'};
     featureDesc(end+1) = {['1 Hz lowpass filtered Pair-wise Phase Consisistency(PPC) ',...
                            'of the yaw of trajectories of all makers along the ',...
                            'rostro-caudal axis']};
@@ -203,68 +208,81 @@ if nargout>1,
     featureDesc(end+1) = {['Magnitude of the projection of lower spine trajectory  ' ...
                            'onto the vecor of lower spine to upper spine']};
     % 7.
+    featureTitles(end+1) = {'Pitch BMBU'};    
     %featureTitles(end+1) = {'Pitch_{BMBU}'};
-    featureTitles(end+1) = {'$\psi_{BMBU} \quad rad$'};
+    %featureTitles(end+1) = {'$\psi_{BMBU} \quad rad$'};
     featureDesc(end+1) = {['Pitch of body middle to body upper relative to xy ' ...
                            'plane']};
     % 8.
+    featureTitles(end+1) = {'Pitch BLBM'};    
     %featureTitles(end+1) = {'Pitch_{BLBM}'};
-    featureTitles(end+1) = {'$\psi_{BLBM} \quad rad$'};
+    %featureTitles(end+1) = {'$\psi_{BLBM} \quad rad$'};
     featureDesc(end+1) = {['Pitch of body lower to body middle relative to xy ' ...
                            'plane']};
     % 9.
+    featureTitles(end+1) = {'Pitch HBHF'};    
     %featureTitles(end+1) = {'Pitch_{HBHF}'};
-    featureTitles(end+1) = {'$\psi_{HBHF} \quad rad$'};
+    %featureTitles(end+1) = {'$\psi_{HBHF} \quad rad$'};
     featureDesc(end+1) = {['Pitch of head_back to head_front relative to xy ' ...
                            'plane']};
     % 10.
+    featureTitles(end+1) = {'XYZ Dist BLBM'};
     %featureTitles(end+1) = {'XYZ Dist_{BLBM}'};
-    featureTitles(end+1) = {'$r_{BLBM} \quad mm$'};
+    %featureTitles(end+1) = {'$r_{BLBM} \quad mm$'};
     featureDesc(end+1) = {['Distance between body lower and body middle.']};
 
     % 11.
+    featureTitles(end+1) = {'XYZ Dist BPBM'};
     %featureTitles(end+1) = {'XYZ Dist_{BPBM}'};
-    featureTitles(end+1) = {'$r_{BPBM} \quad mm$'};
+    %featureTitles(end+1) = {'$r_{BPBM} \quad mm$'};
     featureDesc(end+1) = {['Distance between body pelvis and body middle.']};
 
     % 12.
+    featureTitles(end+1) = {'XYZ Dist BLBP'};
     %featureTitles(end+1) = {'XYZ Dist_{BLBP}'};
-    featureTitles(end+1) = {'$r_{BLBP} \quad mm$'};
+    %featureTitles(end+1) = {'$r_{BLBP} \quad mm$'};
     featureDesc(end+1) = {['Distance between body lower and body pelvis.']};
 
     % 13.
+    featureTitles(end+1) = {'XYZ Dist BPBM'};
     %featureTitles(end+1) = {'XYZ Dist_{BPBM}'};
-    featureTitles(end+1) = {'$r_{BPBM} \quad mm$'};
+    %featureTitles(end+1) = {'$r_{BPBM} \quad mm$'};
     featureDesc(end+1) = {['Distance between body pelvis and body middle.']};
 
     % 14.
+    featureTitles(end+1) = {'XYZ Dist BPBM'};
     %featureTitles(end+1) = {'XYZ Dist_{BPBM}'};
-    featureTitles(end+1) = {'$r_{BMBU} \quad mm$'};
+    %featureTitles(end+1) = {'$r_{BMBU} \quad mm$'};
     featureDesc(end+1) = {['Distance between body midle and body upper.']};
 
-    % 15f. 
+    % 15.
+    featureTitles(end+1) = {'d(pitch BMBU)/dt'};    
     %featureTitles(end+1) = {'d(pitch_{BMBU})/dt'};
-    featureTitles(end+1) = {'$log10(\displaystyle\frac{d\psi_{BMBU}}{dt}) \quad log10(rad/s)$'};
+    %featureTitles(end+1) = {'$log10(\displaystyle\frac{d\psi_{BMBU}}{dt}) \quad log10(rad/s)$'};
     featureDesc(end+1) = {'Pitch speed of the vector from spine_middle to spine_upper'};
 
     % 17.  
+    featureTitles(end+1) = {'d(yaw BLBU)/dt'};
     %featureTitles(end+1) = {'d(yaw_{BLBU})/dt'};
-    featureTitles(end+1) = {'$log10(\displaystyle\frac{d\theta_{BLBU}}{dt}) \quad log10(rad/s)$'};
+    %featureTitles(end+1) = {'$log10(\displaystyle\frac{d\theta_{BLBU}}{dt}) \quad log10(rad/s)$'};
     featureDesc(end+1) = {'Pitch speed of the vector from spine_lower to spine_upper'};
 
     % 18.
+    featureTitles(end+1) = {'d(yaw BCHC)/dt'};    
     %featureTitles(end+1) = {'d(yaw_{BCHC})/dt'};
-    featureTitles(end+1) = {'$log10(\displaystyle\frac{d\theta_{BCBH}}{dt}) \quad log10(rad/s)$'};
+    %featureTitles(end+1) = {'$log10(\displaystyle\frac{d\theta_{BCBH}}{dt}) \quad log10(rad/s)$'};
     featureDesc(end+1) = {'Yaw speed of the vector from body COM to head COM'};
 
     % 19.
+    featureTitles(end+1) = {'XY Dist BLBU'};
     %featureTitles(end+1) = {'XY Dist_{BLBU}'};
-    featureTitles(end+1) = {'$normalized(r_{BPBM}) \quad A.U.$'};        
+    %featureTitles(end+1) = {'$normalized(r_{BPBM}) \quad A.U.$'};        
     featureDesc(end+1) = {['Normalized distance in the xy plane between the upper and ',...
                            'lower spine.']};
     % 20.
+    featureTitles(end+1) = {'XYZ Dist BLHC'};
     %featureTitles(end+1) = {'XYZ Dist_{BLHC}'};
-    featureTitles(end+1) = {'$normalized(r_{BPBM}) \quad A.U.$'};    
+    %featureTitles(end+1) = {'$normalized(r_{BPBM}) \quad A.U.$'};    
     featureDesc(end+1) = {['Normalized distance between head and tail.']};
 
 end

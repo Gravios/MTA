@@ -133,6 +133,28 @@ classdef MTATrial < MTASession
         end
         
 
+        
 
     end
+    
+    methods (Static)
+        function Trial = validate(Trial)
+            
+            if isa(Trial,'MTATrial'),
+                return;
+            elseif ischar(Trial),
+                Trial = MTATrial(Trial);
+            elseif iscell(Trial),
+                Trial = MTATrial(Trial{:});
+            elseif isstruct(Trial),
+                Trial = MTATrial(Trial.sessionName,...
+                                 Trial.trialName,...
+                                 Trial.mazeName);
+            else
+                error('MTA:validate_trial: unrecognized format');
+            end
+
+        end
+    end
+
 end

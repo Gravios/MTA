@@ -115,9 +115,9 @@ for l=1:xyz.model.N,
         xx = xx+xyz.data(ind(end),l,1);
         yy = yy+xyz.data(ind(end),l,2);
         zz = zz+xyz.data(ind(end),l,3);
-        %# calculate distance from center of the cube
+        % # calculate distance from center of the cube
 
-        %# create the isosurface by thresholding at a iso-value of 10
+        % # create the isosurface by thresholding at a iso-value of 10
         markers{l} = patch(isosurface(xx,yy,zz,rr,10));
         isonormals(xx,yy,zz,rr,markers{l});
         %set(markers{l}, 'VertexNormals', isonormals(xx,yy,zz,rr,markers{l}));
