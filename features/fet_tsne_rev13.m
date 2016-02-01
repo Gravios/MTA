@@ -167,7 +167,7 @@ fet.data = [fxyz(:,{'pelvis_root','spine_middle','spine_upper','hcom'},3),...
             ];%rhm.data
 fet.data(isinf(fet(:))) = 0;
 
-fet.data = cat(2,circshift(fet.data,round(fet.sampleRate.*0.25)),fet.data,circshift(fet.data,-round(fet.sampleRate.*0.25)));
+%fet.data = cat(2,circshift(fet.data,round(fet.sampleRate.*0.25)),fet.data,circshift(fet.data,-round(fet.sampleRate.*0.25)));
 
 if normalize,
     fet.unity;

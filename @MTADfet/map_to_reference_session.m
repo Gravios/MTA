@@ -14,12 +14,8 @@ end
 tempFet = features.copy;
 features.resample(Trial.xyz.sampleRate);
 
-% If Trial is not a MTASession try loading it.
-if ischar(RefTrial),
-    RefTrial = MTATrial(RefTrial);
-elseif iscell(RefTrial),
-    RefTrial = MTATrial(RefTrial{:});
-end
+
+RefTrial = MTATrial.validate(RefTrial);
 rfet = feval(features.label,RefTrial,features.sampleRate);
 
 switch features.label
@@ -28,14 +24,14 @@ switch features.label
     stdThresh =  repmat({.1},      1,3);
     diffFun =    repmat({@circ_dist},1,3);
   
-% $$$   case 'fet_tsne_rev13',
-% $$$     fetInds =      [   1:4                    , 8:10                  ];
-% $$$     stdThresh = cat(2, repmat({10},    1,4)   , repmat({.1},      1,3));
-% $$$     diffFun =   cat(2, repmat({@minus},1,4) , repmat({@circ_dist},1,3));
   case 'fet_tsne_rev13',
-    fetInds =      [   1:4                    , 8:10                  ,[1:4]+18                , [8:10]+18               ,[1:4]+18*2                , [8:10]+18*2                  ];
-    stdThresh = cat(2, repmat({10},    1,4)   , repmat({.1},      1,3),repmat({10},    1,4)   , repmat({.1},      1,3),repmat({10},    1,4)   , repmat({.1},      1,3));
-    diffFun =   cat(2, repmat({@minus},1,4) , repmat({@circ_dist},1,3),repmat({@minus},1,4) , repmat({@circ_dist},1,3),repmat({@minus},1,4) , repmat({@circ_dist},1,3));
+    fetInds =      [   1:4                    , 8:10                  ];
+    stdThresh = cat(2, repmat({10},    1,4)   , repmat({.1},      1,3));
+    diffFun =   cat(2, repmat({@minus},1,4) , repmat({@circ_dist},1,3));
+% $$$   case 'fet_tsne_rev13',
+% $$$     fetInds =      [   1:4                    , 8:10                  ,[1:4]+18                , [8:10]+18               ,[1:4]+18*2                , [8:10]+18*2                  ];
+% $$$     stdThresh = cat(2, repmat({10},    1,4)   , repmat({.1},      1,3),repmat({10},    1,4)   , repmat({.1},      1,3),repmat({10},    1,4)   , repmat({.1},      1,3));
+% $$$     diffFun =   cat(2, repmat({@minus},1,4) , repmat({@circ_dist},1,3),repmat({@minus},1,4) , repmat({@circ_dist},1,3),repmat({@minus},1,4) , repmat({@circ_dist},1,3));
 
   case 'fet_tsne_rev12',
     fetInds =      [   1:3                    , 9:11                     , 12:16 ];
