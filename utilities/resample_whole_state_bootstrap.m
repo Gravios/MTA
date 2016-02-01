@@ -1,4 +1,4 @@
-function [StcRnd,labelingEpochs,trainingFeatures] = resample_whole_state_bootstrap(StcHL,features,varargin)
+function [StcRnd,labelingEpochs,trainingFeatures] = resample_whole_state_bootstrap(StcHL,features,states,varargin)
 
 if ~isempty(varargin),
     prctTrain = varargin{1};
