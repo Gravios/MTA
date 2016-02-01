@@ -1,4 +1,4 @@
-function [fet,featureTitles,featureDesc,Nmean,Nstd] = fet_tsne_rev11(Trial,varargin)
+function [fet,featureTitles,featureDesc,Nmean,Nstd] = fet_tsne_rev12(Trial,varargin)
 [newSampleRate,normalize] = DefaultArgs(varargin,{15,false},1);
 
 if ischar(Trial),
@@ -146,7 +146,7 @@ fet = MTADfet(Trial.spath,...
               [],'TimeSeries',[],'tSNE_Features',mfilename,'t');                  
 
 
-fet.data = [fxyz(:,{'spine_middle'},3),...                 1
+fet.data = [fxyz(:,{'spine_lower','bcom','spine_middle'},3),...                 1
             fvelxy(:,{'spine_lower','bcom','hcom'}),...    2,3,4
             man.data+.2,...                                5
             bfet.data,...                                  6

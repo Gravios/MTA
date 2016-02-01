@@ -1,13 +1,14 @@
 
 Trial = MTATrial('jg05-20120317');
-Trial.load('stc','hand_labeled_rev2');
+stcMode = 'hand_labeled_rev2_jg';
 
-Trial = MTATrial('Ed03-20140625');
-Trial.load('stc','hand_labeled_rev1_Ed');
+% $$$ Trial = MTATrial('Ed03-20140625');
+% $$$ stcMode = 'hand_labeled_rev1_Ed';
 
 train = true;
+Trial.load('stc',stcMode);
 states = {'walk','rear','turn','pause','groom','sit'};
-featureSet = 'fet_tsne_rev5';
+featureSet = 'fet_tsne_rev13';
 sampleRate = 12;
 ifNormalize = true;
 nNeurons = 100;
@@ -15,15 +16,21 @@ model = ['MTAC_' featureSet ...
          '_NORM_'  num2str(ifNormalize)...
          '_SR_'  num2str(sampleRate) ...
          '_REF_' Trial.name ...
+         '_STC_' stcMode ...
          '_NN_'  num2str(nNeurons) ];
 
-features = feval(featureSet,Trial,sampleRate,ifNormalize);
+features = feval(featureSet,Trial,sampleRate);
 if ifNormalize, [~,rm,rs] = unity(features); end
- 
+%features.data =  features.data./5;
+
+
  % Train Model
 bhv_nn (Trial,train,states,features,model,'nNeurons',nNeurons);
 
+bhv_lgr (Trial,train,states,features);
+[StcLGR,dst] = bhv_lgr (Trial,false,states,features);
 
+ 
 % $$$ Trial = MTATrial('er01-20110719');
 % $$$ StcHL = Trial.load('stc','hand_labeled_rev1');
 % $$$ 
@@ -33,23 +40,28 @@ bhv_nn (Trial,train,states,features,model,'nNeurons',nNeurons);
 Trial = MTATrial('Ed03-20140624');
 %StcHL = Trial.load('stc','hand_labeled_rev1');
 Trial.load('stc','hand_labeled_rev1_Ed');
-%Trial.load('stc','hand_labeled_rev1_jg');
-StcHL = Trial.stc.copy;
-
-Trial = MTATrial('Ed05-20140529');
-Trial.load('stc','hand_labeled_rev1_Ed');
+Trial.load('stc','hand_labeled_rev1_jg');
 StcHL = Trial.stc.copy;
 
 Trial = MTATrial('Ed03-20140625');
 Trial.load('stc','hand_labeled_rev1_Ed');
 StcHL = Trial.stc.copy;
 
+% $$$ Trial = MTATrial('er01-20110719');
+% $$$ Trial.load('stc','hand_labeled_rev1_jg');
+% $$$ StcHL = Trial.stc.copy;
+% $$$ 
+Trial = MTATrial('jg05-20120317');
+Trial.load('stc','hand_labeled_rev2_jg');
+StcHL = Trial.stc.copy;
+% $$$ 
 Trial = MTATrial('Ed05-20140529','all','ont');
 Trial.load('stc','hand_labeled_rev1_Ed');
 StcHL = Trial.stc.copy;
 
 Trial = MTATrial('Ed01-20140707');
 Trial.load('stc','hand_labeled_rev1_jg');
+Trial.load('stc','hand_labeled_rev1_Ed');
 StcHL = Trial.stc.copy;
 
 % It's needed ... I'm not telling why.
@@ -61,11 +73,15 @@ features = feval(featureSet,Trial,sampleRate);
 features.map_to_reference_session(Trial,{'jg05-20120317','all','cof'});
 %features.map_to_reference_session(Trial,{'jg05-20120317','all','cof'},true);
 if ifNormalize, features.unity([],rm,rs); end
+%features.data =  features.data./5;
+
 
 % Create state matrix (N x k) N=samples, k=states, Domain:Boolean
 Stc = bhv_nn (Trial,false,states,features,model);
+%Stc = bhv_lgr (Trial,false,states,features);
 shl = MTADxyz('data',double(0<stc2mat(StcHL,xyz,states)),'sampleRate',xyz.sampleRate);
 ysm = MTADxyz('data',double(0<stc2mat(Stc,  xyz,states)),'sampleRate',xyz.sampleRate); 
+%ysm = MTADxyz('data',double(0<stc2mat(StcLGR,  xyz,states)),'sampleRate',xyz.sampleRate); 
 
 % Select clean periods
 aper = Trial.stc{'a'}.cast('TimeSeries');
@@ -85,6 +101,59 @@ acm = cat(1,acm,[sensitivity,acc]);
 sprintf(strjoin(cat(2,states,{'precision'},{'\n'},...                                              header
                     repmat(cat(2,{'%s'},repmat({'%2.2f'},1,numel(states)+1),{'\n'}),1,numel(states)+1)... cm
                     ),'\t'),acm',states{:},states{:})
+
+
+                    
+                    
+%% New heuristics
+td = [];
+for s = Stc{'w'}.data',
+    td(end+1) = sqrt(sum((xyz(s(2),1,:)-xyz(s(1),1,:)).^2,3));
+end                    
+
+
+
+td = [];
+for s = Stc{'r'}.data',
+    td(end+1) = median(xyz(s(1):s(2),5,3));
+end                    
+th = [];
+for s = StcHL{'r'}.data',
+    th(end+1) = median(xyz(s(1):s(2),5,3));
+end                    
+figure,hold on,
+plot(diff(StcHL{'r'}.data,1,2)/120,th','.b')
+plot(diff(Stc{'r'}.data,1,2)/120,td','.r')
+
+
+z = Trial.xyz.copy;
+z.data = xyz(:,5,3);
+rl =  z.segs(Stc{'r'}(:,1)-60,120,nan);
+
+z = Trial.xyz.copy;
+z.data = xyz(:,5,3);
+rh =  z.segs(StcHL{'r'}(:,1)-60,120,nan);
+
+z = Trial.xyz.copy;
+z.data = xyz(:,5,3);
+rh =  z.segs(StcHL{'r'}(:,1)-120,240,nan);
+
+
+c = convn(mean(rh(90:150,:),2)',rh(:,2)','full');
+figure,plot(c)
+figure,plot(diff(c))
+
+figure,sp = [];
+sp(end+1) = subplot(211);
+imagesc(shl.data')
+sp(end+1) = subplot(212);
+imagesc(ysm.data')
+linkaxes(sp,'xy');
+
+s = 6;
+xlim(Stc{'r'}(s,:)+[-60,60])
+StcHL{'r'}(s,:)
+     
 
 
 f = 4

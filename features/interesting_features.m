@@ -430,3 +430,60 @@ ind = Trial.stc{'s'};
 hs = bar(eds,histc(mean(log10(ys(ind,round(fs)==4)),2),eds),'histc');hs.FaceAlpha=.5;hs.FaceColor='c';
 ind = Trial.stc{'p'};
 hs = bar(eds,histc(mean(log10(ys(ind,round(fs)==4)),2),eds),'histc');hs.FaceAlpha=.5;hs.FaceColor='r';
+
+s = 20;
+figure,plot(abs(circ_dist(circshift(ang(:,1,4,1),-s), ...
+                                 circshift(ang(:,1,4,1),s)))),Lines(Trial.stc{'n'}(:),[],'g');
+
+
+fxyz = Trial.load('xyz');
+fxyz.filter('ButFilter',3,0.5);
+ang = create(MTADang,Trial,fxyz)
+s = 15;
+name = 'angspeed'; label = 'as'; key = 'a';
+zv = MTADfet.encapsulate(Trial,...
+                         abs(circ_dist(circshift(ang(:,1,5,1),-s),circshift(ang(:,1,5,1),s))),...
+                         xyz.sampleRate,...
+                         name,label,key);
+zv.filter('ButFilter',3,1);
+zv.data(zv.data<1e-5) = 1e-5;
+zv.data = log10(zv.data);
+
+eds = linspace(-5,4,100);
+figure,hold on;
+ind = Trial.stc{'p'};
+hs = bar(eds,histc(zv(ind),eds),'histc');hs.FaceAlpha=.5;hs.FaceColor='c';
+ind = Trial.stc{'n'};
+hs = bar(eds,histc(zv(ind),eds),'histc');hs.FaceAlpha=.5;hs.FaceColor='g';
+ind = Trial.stc{'p'};
+hs = bar(eds,histc(zv(ind),eds),'histc');hs.FaceAlpha=.5;hs.FaceColor='m';
+
+
+try
+    man = Trial.load('fet','lsppc');
+catch err
+    gen_fet_lsppc(Trial);    
+    man = Trial.load('fet','lsppc');
+end
+man.filter('ButFilter',3,2,'low');
+
+edx = linspace(-0.2,1,100);
+edy = linspace(-5,.5,100);
+figure,
+subplot(2,2,1)
+ind = Trial.stc{'a'};
+hist2([man(ind),zv(ind)],edx,edy)
+subplot(2,2,2)
+ind = Trial.stc{'n'};
+hist2([man(ind),zv(ind)],edx,edy)
+subplot(2,2,3)
+ind = Trial.stc{'p'};
+hist2([man(ind),zv(ind)],edx,edy)
+subplot(2,2,4)
+ind = Trial.stc{'w'};
+hist2([man(ind),zv(ind)],edx,edy)
+ForAllSubplots('grid on;caxis([0,200])')
+
+
+
+

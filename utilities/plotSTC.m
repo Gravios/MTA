@@ -15,7 +15,7 @@ nsts = numel(states);
 if isempty(stateColors) || nsts~=numel(stateColors),
     c = jet(nsts);
 else
-    c = stateColors;
+    c = stateColors(:);
 end
 
 hax = cell([1,nsts]);

@@ -181,12 +181,49 @@ rhm.resample(xyz);
 
 
 
+
+
+mxyz = Trial.load('xyz');
+mxyz.filter('ButFilter',3,20);
+tsh = round(.15*mxyz.sampleRate);
+afet = mxyz.copy;
+afet.data = circshift(mxyz.data,-tsh)-circshift(mxyz.data,tsh);
+afet.data = reshape(afet.data,[],3);
+afet.data = permute(bsxfun(@dot,permute(reshape(repmat(mxyz(:,4,:)-mxyz(:,1,:),[1,mxyz.size(2),1]),[],3),[2,1]),permute(afet.data,[2,1])),[2,1]);
+afet.data = reshape(afet.data,[],mxyz.size(2));
+afet.resample(xyz);
+zv = afet.copy;
+zv.data = log10(abs(afet(:,1))).*sign(afet(:,1));
+
+
+ss = Trial.load('fet','3dss');
+sd = sqrt(sum((ss.data-circshift(ss.data,-1,2)).^2,3));
+sn = sum(sd(:,2:end-1),2)./sd(:,end);
+sv = Trial.xyz.copy;
+sv.data = sn;
+sv.resample(xyz);
+
+
+
+
+%% AV
+sang = [circ_dist(fang(:,1,2,1),fang(:,2,3,1)),...
+        circ_dist(fang(:,2,3,1),fang(:,3,4,1)),...
+        circ_dist(fang(:,3,4,1),fang(:,4,'hcom',1))];
+av = fang.copy;
+av.data = abs(sum(sang,2)-circ_mean(sum(sang,2)));
+
+
 fet.data =  [fet.data,...
              man.data,...
              rhm.data,...
              fxyz(:,[1:5],3),...
              fvelxy(:,{'spine_lower','spine_upper','head_front','bcom','hcom','acom'}),...
-             fvelz(:,{'spine_lower','spine_upper','head_front','bcom','hcom','acom'})];
+             fvelz(:,{'spine_lower','spine_upper','head_front','bcom','hcom','acom'}),...
+             zv.data,...
+             sv.data,...
+             av.data...
+            ];
 
 
 

@@ -27,6 +27,10 @@ if ischar(Trial),
     Trial = MTATrial(Trial);
 elseif iscell(Trial),
     Trial = MTATrial(Trial{:});
+elseif isstruct(Trial),
+    Trial = MTATrial(Trial.sessionName,...
+                     Trial.trialName,...
+                     Trial.mazeName);
 end
 
 varargout = cell([1,nargout-1]);
@@ -37,7 +41,7 @@ defArgs = {...
                {'walk','rear','turn','pause','groom','sit'}             ...
            ...
            ... stcMode
-               'hand_labeled_rev2',                                     ...
+               '',                                                      ...
            ...
            ... featureSet 
                'fet_tsne_rev3',                                         ...
@@ -55,14 +59,22 @@ defArgs = {...
                100,                                                     ...
            ...
            ... randomizationMethod
-               ''                                                       ...
+               '',                                                      ...
+           ...
+           ... map2reference
+               false                                                    ... 
 };
 
-[states,stcMode,featureSet,sampleRate,model,nNeurons,nIter,randomizationMethod] = DefaultArgs(varargin,defArgs);
+[states,stcMode,featureSet,sampleRate,model,nNeurons,nIter,randomizationMethod,map2reference] = DefaultArgs(varargin,defArgs);
 
 
 % Load the feature set
-features = feval(featureSet,Trial,sampleRate,false);
+if isa(featureSet,'MTADfet'),
+    features = featureSet.copy;
+    featureSet = features.label;
+else,
+    features = feval(featureSet,Trial,sampleRate,false);
+end
 
 % Default mode is labeling
 train = false;
@@ -70,14 +82,43 @@ train = false;
 % If the model name is empty then create a composite name and 
 % toggle train to create new neural network models
 if isempty(model),
+    % only necessary because older models exist without stcMode specification
+    if ~isempty(stcMode),tagSTC = ['_STC_' stcMode];else,tagSTC = '';end
     model = ['MTAC_BATCH-' featureSet ...
              '_SR_'  num2str(sampleRate) ...
              '_REF_' Trial.filebase ...
+             tagSTC ...
              '_NN_'  num2str(nNeurons)...
              '_' MODEL_TYPE];
     %model = 'fet_tsne_REFjg0520120317_NN';
     train = true;
+
+elseif map2reference,
+    % if model exists and the feautures should be mapped to a reference
+    % session, parse said reference session from the model
+    % NOTE: Replace this with a hash reference
+    filebasePattern = '[a-zA-Z]{1,2}[0-9]{2}[-][0-9]{8,8}(\.[a-zA-Z0-9]+){2,2}';
+    refSession = regexp(model,filebasePattern,'match');
+    refSession = strsplit(refSession{1},'.');
+    refSession = refSession([1,3,2]);
+    refSession = MTATrial(refSession{:});
+    
+    % parse and load the stcMode used in nn training
+    stcModePattern = ['STC_(.+)_NN_' num2str(nNeurons)];
+    refStcMode = regexp(model,stcModePattern,'tokens');
+    if ~isempty(refStcMode),
+        refSession.load('stc',refStcMode{1}{1});
+    end
+    
+    % Map features via linear or circular shift to the training Session
+    % of the Neural Network.
+    features.map_to_reference_session(Trial,refSession);
 end
+
+
+
+
+
 
 
 % Use xyz as base for labeling output ... quit staring at this part.
@@ -108,7 +149,7 @@ for iter = 1:nIter,
     try,
         if train,
             switch randomizationMethod
-              case 'equal_restructured_sampling'
+              case 'ERS' % equal_restructured_sampling
                 nRndPeriods = 100; 
                 prctTrain = 70;
                 trainingEpochs = [];
@@ -116,7 +157,7 @@ for iter = 1:nIter,
                 % Create MTAStateColletion based on the blocks of
                 % data assymbled during the resampling.
                 StcRnd = StcHL.copy;
-                StcRnd.updateMode(['RAND_ers' num2str(nRndPeriods) '_' StcHL.mode]);
+                StcRnd.updateMode(['RAND_ERS' num2str(nRndPeriods) '_' StcHL.mode]);
                 StcRnd.states = {};
                 StcLab = StcHL.copy;
                 StcLab.states = {};
@@ -207,69 +248,10 @@ for iter = 1:nIter,
 
                         
                    
-              case 'whole_state_bootstrap'
-
-                prctTrain = 70;
-                trainingEpochs = [];
+              case 'WSB' %'whole_state_bootstrap'
                 if iter==1,model = [model '_RAND_WSB'];end
-                % Create MTAStateColletion based on the blocks of
-                % data assymbled during the resampling.
-                StcRnd = StcHL.copy;
-                StcRnd.updateMode(['RAND_wsb' StcHL.mode]);
-                StcRnd.states = {};
-                StcLab = StcHL.copy;
-                StcLab.states = {};
-
-                trainingFeatures = features.copy;
-                trainingFeatures.clear;
-                tmpFeatures = features.copy;
-                tmpFeatures.clear;
+                [StcRnd,labelingEpochs,trainingFeatures] = resample_whole_state_bootstrap(StcHL,features,states);
                 
-                stateBlockSize = 5000;
-
-                trainingPerInds = {};
-                labelingPerInds = {};
-
-                for s = StcHL(states{:}),
-                    s = s{1};
-                    rprs = randperm(s.size(1));
-                    % select random sets of the periods
-                    trainingPerInds(end+1) = {rprs(1:round(s.size(1).*prctTrain/100))};
-                    labelingPerInds(end+1) = {rprs((round(s.size(1).*prctTrain/100)+1):s.size(1))};
-                    l = s.copy;
-                    l.data = s.data(labelingPerInds{end},:);
-                    s.data = s.data(trainingPerInds{end},:);
-                    s.resample(features);
-
-                    tmpFeatures.clear;
-                    tmpFeatures.data = features(s,:);
-
-                    s.data = [trainingFeatures.size(1)+1,trainingFeatures.size(1)+stateBlockSize];
-                    StcRnd.states{end+1} = s.copy;
-                    StcLab.states{end+1} = l.copy;
-                    
-                    trainingFeatures.data = [trainingFeatures.data;
-                                            tmpFeatures(randi(tmpFeatures.size(1),...
-                                                              stateBlockSize,...
-                                                              1),...
-                                                        :)];
-
-
-                end
-
-                labelingEpochs = MTADepoch([],[],...
-                                           any(stc2mat(StcLab,features,states),2),...
-                                           features.sampleRate,... 
-                                           features.sync.copy, ... 
-                                           features.origin,    ... 
-                                           'TimeSeries',       ...
-                                           [],[],              ...
-                                           'labeling',         ... label
-                'l'                ... key
-                );
-
-                % Create two partitions for validation
-                %blocs  = reshape(1mod(features.size(1), 4.*20 )
               case 'rndsamp'
                 rndInd = randperm(features.size(1))';
                 rndInd = rndInd(1:floor(features.size(1)/2));
