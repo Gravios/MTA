@@ -23,15 +23,7 @@ MODEL_TYPE = 'NN_multiPN';
 
 
 % If Trial is not a MTASession try loading it.
-if ischar(Trial),
-    Trial = MTATrial(Trial);
-elseif iscell(Trial),
-    Trial = MTATrial(Trial{:});
-elseif isstruct(Trial),
-    Trial = MTATrial(Trial.sessionName,...
-                     Trial.trialName,...
-                     Trial.mazeName);
-end
+Trial = MTATrial.validate(Trial);
 
 varargout = cell([1,nargout-1]);
 
@@ -62,10 +54,14 @@ defArgs = {...
                '',                                                      ...
            ...
            ... map2reference
-               false                                                    ... 
+               false,                                                   ... 
+           ...
+           ... normalize
+               false,                                                    ... 
 };
 
-[states,stcMode,featureSet,sampleRate,model,nNeurons,nIter,randomizationMethod,map2reference] = DefaultArgs(varargin,defArgs);
+[states,stcMode,featureSet,sampleRate,model,nNeurons,...
+ nIter,randomizationMethod,map2reference,normalize] = DefaultArgs(varargin,defArgs);
 
 
 % Load the feature set
@@ -76,19 +72,20 @@ else,
     features = feval(featureSet,Trial,sampleRate,false);
 end
 
+
 % Default mode is labeling
 train = false;
 
 % If the model name is empty then create a composite name and 
 % toggle train to create new neural network models
 if isempty(model),
-    % only necessary because older models exist without stcMode specification
-    if ~isempty(stcMode),tagSTC = ['_STC_' stcMode];else,tagSTC = '';end
     model = ['MTAC_BATCH-' featureSet ...
              '_SR_'  num2str(sampleRate) ...
+             '_NORM_' num2str(normalize) ...             
              '_REF_' Trial.filebase ...
-             tagSTC ...
+             '_STC_' stcMode ...
              '_NN_'  num2str(nNeurons)...
+             '_NI_'  num2str(nIter)...
              '_' MODEL_TYPE];
     %model = 'fet_tsne_REFjg0520120317_NN';
     train = true;
@@ -113,11 +110,15 @@ elseif map2reference,
     % Map features via linear or circular shift to the training Session
     % of the Neural Network.
     features.map_to_reference_session(Trial,refSession);
+    if normalize,
+        rfet = feval(featureSet,refSession,sampleRate,false);
+        [~,refMean,refStd] = nunity(rfet(refSession.stc{'a'},:));
+        features.unity([],refMean,refStd);
+    end
+elseif normalize,
+   [~,fetMean,fetStd] = nunity(features(Trial.stc{'a'},:));
+    features.unity([],fetMean,fetStd);
 end
-
-
-
-
 
 
 
@@ -142,6 +143,8 @@ if ~isempty(stcMode),
     keys = StcHL.list_state_attrib('key');
 end
 
+% load hand labeled states
+shl = MTADxyz('data',double(0<stc2mat(StcHL,xyz,states)),'sampleRate',xyz.sampleRate);
 
 
 
@@ -251,7 +254,7 @@ for iter = 1:nIter,
               case 'WSB' %'whole_state_bootstrap'
                 if iter==1,model = [model '_RAND_WSB'];end
                 [StcRnd,labelingEpochs,trainingFeatures] = resample_whole_state_bootstrap(StcHL,features,states);
-                
+                trainingEpochs = [];
               case 'rndsamp'
                 rndInd = randperm(features.size(1))';
                 rndInd = rndInd(1:floor(features.size(1)/2));
@@ -311,7 +314,7 @@ for iter = 1:nIter,
         d_state = ysm.data+d_state;
         
         if nargout>=4,
-            shl = MTADxyz('data',double(0<stc2mat(StcHL,xyz,states)),'sampleRate',xyz.sampleRate);
+            
 
             labelingEpochs.resample(xyz);
 
@@ -323,11 +326,17 @@ for iter = 1:nIter,
             labelingStatsMulti.sensitivity(iter,:) = round(diag(tcm)'./sum(tcm),4).*100;
             labelingStatsMulti.accuracy(iter) = sum(diag(tcm))/sum(tcm(:));
         end
-    catch
+    catch err,
+        warning(err);
         continue
     end
     
 end
+
+if nargout==0,
+    return,
+end
+
 
 % $$$ 
 d_state = MTADxyz('data',d_state,'sampleRate',xyz.sampleRate);

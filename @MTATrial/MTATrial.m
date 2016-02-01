@@ -147,9 +147,19 @@ classdef MTATrial < MTASession
             elseif iscell(Trial),
                 Trial = MTATrial(Trial{:});
             elseif isstruct(Trial),
+                stcMode = '';
+                if isfield(Trial,'stcMode'),
+                    stcMode = Trial.stcMode;
+                end
+
                 Trial = MTATrial(Trial.sessionName,...
                                  Trial.trialName,...
                                  Trial.mazeName);
+
+                if ~isempty(stcMode),
+                    Trial.load('stc',stcMode);
+                end
+
             else
                 error('MTA:validate_trial: unrecognized format');
             end
