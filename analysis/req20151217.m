@@ -2,8 +2,8 @@
 Trial = MTATrial('jg05-20120317');
 stcMode = 'hand_labeled_rev2_jg';
 
-% $$$ Trial = MTATrial('Ed03-20140625');
-% $$$ stcMode = 'hand_labeled_rev1_Ed';
+Trial = MTATrial('Ed03-20140625');
+stcMode = 'hand_labeled_rev1_Ed';
 
 train = true;
 Trial.load('stc',stcMode);
