@@ -5,7 +5,7 @@ rlist = SessionList('training_hand_labeled');
 fetSet  = 'fet_tsne_rev13';
 sampleRate = 12;
 nNeurons = 100;
-nIter = 10;
+nIter = 5;
 states = {'walk','rear','turn','pause','groom','sit'};
 rndMethod = 'WSB';
 norm = true;
@@ -30,7 +30,7 @@ end
 % Ed 
 slist =     {     'hand_labeled_Ed';      'hand_labeled_jg'};
 for sli = 1:numel(slist),
-    for rti = 1:numel(refTrial),
+    for rti = 1:numel(rlist),
         SesList = SessionList(slist{sli});
         model = ['MTAC_BATCH-' fetSet ...
                  '_SR_' num2str(sampleRate) ...
@@ -77,22 +77,21 @@ end
 
 % Visuallize the Accuracy, Precision, and Sensitivity of model with
 % respect to a second set of labels (Usually hand labeled)
-slist =     {     'hand_labeled_Ed';      'hand_labeled_jg'};
-refTrial =  {       'Ed03-20140625';        'jg05-20120317'};
+slist =     {     'hand_labeled_jg'; 'hand_labeled_Ed' };
 trnStcMode ={'hand_labeled_rev1_Ed', 'hand_labeled_rev2_jg'};
 
 sli = 2;
-rti = 1;
-fetSet  = 'fet_tsne_rev10';
+rti = 2;
+fetSet  = 'fet_tsne_rev13';
 SesList = SessionList(slist{sli});
 SesList = {SesList(:).sessionName};
 
 model = ['MTAC_BATCH-' fetSet ...
          '_SR_' num2str(sampleRate) ...
          '_NORM_' num2str(norm) ...         
-         '_REF_' rlist(rti).name, '.' rlist(rti).mazeName '.' rlist(rti).trialName ...
+         '_REF_' rlist(rti).sessionName, '.' rlist(rti).mazeName '.' rlist(rti).trialName ...
          '_STC_' rlist(rti).stcMode ...
-         '_NN_' num2str(nNN) ...
+         '_NN_' num2str(nNeurons) ...
          '_NI_' num2str(nIter) ...         
          '_NN_multiPN_RAND_' rndMethod];
 
@@ -102,15 +101,19 @@ model = ['MTAC_BATCH-' fetSet ...
 % $$$          '_NN_' num2str(nNN) ...
 % $$$          '_NN_multiPN_RAND_WSB'];
 
-load(fullfile(MTASession().path.data,'analysis',[slist{sli},'-',model,'.mat']));
+load(fullfile(MTASession().path.data,'analysis',[slist{sli},'-',model,mapped,'.mat']))
 
+
+
+figure
 prop = 'accuracy';
-figure,plot(cell2mat(cellfun(@subsref,ls, ...
+subplot(131);
+plot(cell2mat(cellfun(@subsref,ls, ...
                              repmat({substruct('.',prop)},[1,numel(ls)]),'uniformoutput',false))'.*100,'d')
-xlim([0,5])
+lsxlim([0,5])
 ylim([20,100])
 ylabel(prop);
-title({['Training Set: ' refTrial{rti}],...
+title({['Training Set: ' rlist(rti).sessionName],...
        ['Labeling Set: ' slist{sli}],...
        ['Feature  Set: ' fetSet]});
 set(gca,'XTickLabelMode','manual');
@@ -120,7 +123,7 @@ set(gca,'XTickLabelRotation',90);
 pause(.1)
 
 prop = 'precision';
-figure,plot(reshape(cell2mat(cellfun(@subsref,ls, ...
+subplot(132);plot(reshape(cell2mat(cellfun(@subsref,ls, ...
                              repmat({substruct('.',prop)},[1,numel(ls)]),'uniformoutput',false))',6,4),'d-')
 xlim([0,7])
 hax = gca;
@@ -128,14 +131,14 @@ hax.XTickLabelMode = 'manual';
 hax.XTickLabel = cat(2,{''},states,{''});
 ylim([20,100])
 ylabel(prop)
-title({['Training Set: ' refTrial{rti}],...
+title({['Training Set: ' rlist(rti).sessionName],...
        ['Labeling Set: ' slist{sli}],...
        ['Feature  Set: ' fetSet]});
 legend(SesList)
 pause(.1)
 
 prop = 'sensitivity';
-figure,plot(reshape(cell2mat(cellfun(@subsref,ls, ...
+subplot(133);plot(reshape(cell2mat(cellfun(@subsref,ls, ...
                                      repmat({substruct('.',prop)},[1,numel(ls)]),'uniformoutput',false))',6,4),'d-')
 xlim([0,7])
 hax = gca;
@@ -143,7 +146,7 @@ hax.XTickLabelMode = 'manual';
 hax.XTickLabel = cat(2,{''},states,{''});
 ylim([20,100])
 ylabel(prop)
-title({['Training Set: ' refTrial{rti}],...
+title({['Training Set: ' rlist(rti).sessionName],...
        ['Labeling Set: ' slist{sli}],...
        ['Feature  Set: ' fetSet]});
 legend(SesList)

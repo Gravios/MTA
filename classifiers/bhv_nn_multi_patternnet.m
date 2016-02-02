@@ -87,10 +87,11 @@ if isempty(model),
              '_NN_'  num2str(nNeurons)...
              '_NI_'  num2str(nIter)...
              '_' MODEL_TYPE];
-    %model = 'fet_tsne_REFjg0520120317_NN';
     train = true;
+end
 
-elseif map2reference,
+
+if map2reference,
     % if model exists and the feautures should be mapped to a reference
     % session, parse said reference session from the model
     % NOTE: Replace this with a hash reference
@@ -253,7 +254,13 @@ for iter = 1:nIter,
                    
               case 'WSB' %'whole_state_bootstrap'
                 if iter==1,model = [model '_RAND_WSB'];end
-                [StcRnd,labelingEpochs,trainingFeatures] = resample_whole_state_bootstrap(StcHL,features,states);
+                [StcRnd,labelingEpochs,trainingFeatures] = ...
+                    resample_whole_state_bootstrap(StcHL,features,states);
+                trainingEpochs = [];
+              case 'WSBN' %'whole_state_bootstrap'
+                if iter==1,model = [model '_RAND_WSBN'];end
+                [StcRnd,labelingEpochs,trainingFeatures] = ...
+                    resample_whole_state_bootstrap_noisy(StcHL,features,states);
                 trainingEpochs = [];
               case 'rndsamp'
                 rndInd = randperm(features.size(1))';
