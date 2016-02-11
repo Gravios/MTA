@@ -247,13 +247,17 @@ sang = [circ_dist(circshift(fang(:,1,2,1),-sh),circshift(fang(:,1,2,1),sh)),...
         circ_dist(circshift(fang(:,1,7,1),-sh),circshift(fang(:,1,7,1),sh))...                
        ];
 av = fang.copy;
-av.data = abs(sum(sang,2)-circ_mean(sum(sang,2)));
+av.data = sang;
+
+
+
 
 figure,plot(sang)
 Lines(Trial.stc{'n'}(:),[],'g');
 man.data = log10(mean(abs(sang),2)./(var(sang,[],2)+1));
-figure,plot(zv.data)
+figure,plot(man.data)
 Lines(Trial.stc{'n'}(:),[],'g');
+zv = man.copy;
 
 
 
@@ -273,6 +277,34 @@ ind = Trial.stc{'s'};
 hs = bar(eds,histc(zv(ind),eds),'histc');hs.FaceAlpha=.5;hs.FaceColor='k';
 
 
+tmp = [];
+for s = ThreshCross(man.data,-2,1)';
+    tmp(end+1) = median(man(s'));
+end
+
+tmp = [];
+for s = Trial.stc{'n'}.data';
+    tmp(end+1) = median(man(s'));
+end
+
+wmp = [];
+for s = Trial.stc{'w'}.data';
+    wmp(end+1) = median(man(s'));
+end
+
+pmp = [];
+for s = Trial.stc{'p'}.data';
+    pmp(end+1) = median(man(s'));
+end
+
+
+eds = linspace(-4,-1,100);
+figure,
+subplot(3,1,1),hist(tmp,eds)
+subplot(3,1,2),hist(wmp,eds)
+subplot(3,1,3),hist(pmp,eds)
+
+
 
 edx = linspace(-5,-1,100);
 edy = linspace(-6,6,100);
@@ -290,3 +322,9 @@ subplot(2,2,4)
 ind = Trial.stc{'p'};
 hist2([man(ind),zv(ind)],edx,edy)
 ForAllSubplots('grid on;caxis([0,200])')
+
+fxyz = xyz.copy;
+fxyz.filter('ButFilter',3,.5);
+fvxy = fxyz.vel([1,7],[1,2]);
+fang = create(MTADang,Trial,fxyz);
+figure,plot(abs(diff(fang(:,3,4,2)))),Lines(Trial.stc{'r'}(:),[],'r');

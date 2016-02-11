@@ -1,14 +1,15 @@
 
 %Trian bhv_nn_multi_patternnet and plot 
-
 rlist = SessionList('training_hand_labeled');
-fetSet  = 'fet_tsne_rev13';
+slist = {'hand_labeled_jg';'hand_labeled_Ed'};
+fetSet  = 'fet_tsne_rev15';
 sampleRate = 12;
 nNeurons = 100;
-nIter = 5;
+nIter = 100;
 states = {'walk','rear','turn','pause','groom','sit'};
-rndMethod = 'WSB';
+rndMethod = 'WSBNT';
 norm = true;
+mref = true;
 
 
 for s = rlist
@@ -28,7 +29,6 @@ end
 
 
 % Ed 
-slist =     {     'hand_labeled_Ed';      'hand_labeled_jg'};
 for sli = 1:numel(slist),
     for rti = 1:numel(rlist),
         SesList = SessionList(slist{sli});
@@ -41,7 +41,7 @@ for sli = 1:numel(slist),
                  '_NI_' num2str(nIter) ...
                  '_NN_multiPN_RAND_' rndMethod];
 
-        stc = {}; d_state = {}; ls = {}; lsm = {};
+        stc = {}; d_state = {};p_state = {}; ls = {}; lsm = {};mdl = {};
         for s = SesList
             Trial = MTATrial(s.sessionName,s.trialName,s.mazeName);
             Trial.load('stc',s.stcMode);
@@ -53,10 +53,10 @@ for sli = 1:numel(slist),
             mod.sampleRate = sampleRate;
             mod.nNeurons   = nNeurons;
             mod.nIter      = nIter;
-            mod.map2reference = true;
+            mod.map2reference = mref;
             mod.normalize = norm;
             argin = struct2varargin(mod);
-            [stc{end+1},d_state{end+1},ls{end+1},lsm{end+1}] = bhv_nn_multi_patternnet(Trial,argin{:});
+            [stc{end+1},d_state{end+1},ls{end+1},lsm{end+1},mdl{end+1},p_state{end+1}] = bhv_nn_multi_patternnet(Trial,argin{:});
             stc{end}.save(1);
         end
 
@@ -68,7 +68,7 @@ for sli = 1:numel(slist),
         
         save(fullfile(MTASession().path.data,'analysis',[slist{sli},'-',model,mapped,'.mat']),...
              '-v7.3','slist','rlist','nNeurons','nIter','sampleRate','model','fetSet','rndMethod',...
-                     'states','stc','d_state','ls');
+                     'states','stc','d_state','p_state','ls','mdl');
 
     end
 end
@@ -77,12 +77,10 @@ end
 
 % Visuallize the Accuracy, Precision, and Sensitivity of model with
 % respect to a second set of labels (Usually hand labeled)
-slist =     {     'hand_labeled_jg'; 'hand_labeled_Ed' };
-trnStcMode ={'hand_labeled_rev1_Ed', 'hand_labeled_rev2_jg'};
 
-sli = 2;
-rti = 2;
-fetSet  = 'fet_tsne_rev13';
+
+sli = 1;
+rti = 1;
 SesList = SessionList(slist{sli});
 SesList = {SesList(:).sessionName};
 
@@ -95,25 +93,23 @@ model = ['MTAC_BATCH-' fetSet ...
          '_NI_' num2str(nIter) ...         
          '_NN_multiPN_RAND_' rndMethod];
 
-% $$$ model = ['MTAC_BATCH-' fetSet ...
-% $$$          '_SR_' num2str(sampleRate)...
-% $$$          '_REF_' refTrial{rti} '.cof.all' ...
-% $$$          '_NN_' num2str(nNN) ...
-% $$$          '_NN_multiPN_RAND_WSB'];
-
 load(fullfile(MTASession().path.data,'analysis',[slist{sli},'-',model,mapped,'.mat']))
+slist = {'hand_labeled_jg';'hand_labeled_Ed'};
 
 
+%figure
+hfig = figure(3923992),clf
+set(hfig,'Position',       [40         40        1500         500])
 
-figure
 prop = 'accuracy';
 subplot(131);
 plot(cell2mat(cellfun(@subsref,ls, ...
                              repmat({substruct('.',prop)},[1,numel(ls)]),'uniformoutput',false))'.*100,'d')
-lsxlim([0,5])
-ylim([20,100])
+xlim([0,5])
+ylim([0,100])
 ylabel(prop);
 title({['Training Set: ' rlist(rti).sessionName],...
+       ['Randomization: ' rndMethod ],...
        ['Labeling Set: ' slist{sli}],...
        ['Feature  Set: ' fetSet]});
 set(gca,'XTickLabelMode','manual');
@@ -124,17 +120,18 @@ pause(.1)
 
 prop = 'precision';
 subplot(132);plot(reshape(cell2mat(cellfun(@subsref,ls, ...
-                             repmat({substruct('.',prop)},[1,numel(ls)]),'uniformoutput',false))',6,4),'d-')
+                             repmat({substruct('.',prop)},[1,numel(ls)]),'uniformoutput',false))',4,6)','d-')
 xlim([0,7])
 hax = gca;
 hax.XTickLabelMode = 'manual';
 hax.XTickLabel = cat(2,{''},states,{''});
-ylim([20,100])
+ylim([0,100])
 ylabel(prop)
 title({['Training Set: ' rlist(rti).sessionName],...
+       ['Randomization: ' rndMethod ],...
        ['Labeling Set: ' slist{sli}],...
        ['Feature  Set: ' fetSet]});
-legend(SesList)
+legend(SesList,'location','southwest');
 pause(.1)
 
 prop = 'sensitivity';
@@ -144,12 +141,13 @@ xlim([0,7])
 hax = gca;
 hax.XTickLabelMode = 'manual';
 hax.XTickLabel = cat(2,{''},states,{''});
-ylim([20,100])
+ylim([0,100])
 ylabel(prop)
 title({['Training Set: ' rlist(rti).sessionName],...
+       ['Randomization: ' rndMethod ],...
        ['Labeling Set: ' slist{sli}],...
        ['Feature  Set: ' fetSet]});
-legend(SesList)
+legend(SesList,'location','southwest');
 pause(.1)
 
 
@@ -158,26 +156,37 @@ pause(.1)
 
 
 figure,hold on,
-slist =     {'hand_labeled_Ed'; 'hand_labeled_jg'};
-refTrial =  {  'Ed03-20140625';   'jg05-20120317'};
-fetSet  = 'fet_tsne_rev5';
+fetSet  = 'fet_tsne_rev13';
 k = 1;
 htl = {};
 set(gcf,'interpreter','none')
 for sli = 1:numel(slist),
     for rti = 1:numel(refTrial),    
         prop = 'accuracy';
-        model = ['MTAC_BATCH-' fetSet '_SR_12_REF_' refTrial{rti} '.cof.all_NN_100_NN_multiPN_RAND_WSB'];
-        ds = load(fullfile(MTASession().path.data,'analysis',[slist{sli},'-',model,'.mat']));
+
+        model = ['MTAC_BATCH-' fetSet ...
+                 '_SR_' num2str(sampleRate) ...
+                 '_NORM_' num2str(norm) ...
+                 '_REF_' rlist(rti).sessionName, '.' ...
+                         rlist(rti).mazeName '.' ...
+                         rlist(rti).trialName ...
+                 '_STC_' rlist(rti).stcMode ...
+                 '_NN_' num2str(nNeurons) ...
+                 '_NI_' num2str(nIter) ...
+                 '_NN_multiPN_RAND_' rndMethod];
+
+        ds = load(fullfile(MTASession().path.data,'analysis',...
+                           [slist{sli},'-',model,mapped,'.mat']));
+
         scat = scatter(k*ones([numel(ds.ls),1]),cell2mat(cellfun(@subsref,ds.ls, ...
                              repmat({substruct('.',prop)},[1,numel(ds.ls)]),'uniformoutput',false))'.*100,10);
 
         scat.MarkerFaceColor = scat.CData;
         k=k+1;
-        htl = cat(2,htl,{['{' slist{sli} ' - ' refTrial{rti} '}']});
+        htl = cat(2,htl,{['{' slist{sli} ' - ' rlist(rti).sessionName '}']});
     end
 end
-
+pp
 xlim([0.5,k-0.5]);
 ylim([50,100])
 
@@ -189,73 +198,8 @@ set(gca,'XTickLabel',{});
 set(gca,'XTickLabel',htl);
 set(gca,'XTickLabelRotation',90);
 
-%Plot Over all accuracies 
 
 
 
-slist =     {     'hand_labeled_Ed';      'hand_labeled_jg'};
-refTrial =  {       'Ed03-20140625';        'jg05-20120317'};
-trnStcMode ={'hand_labeled_rev1_Ed', 'hand_labeled_rev2_jg'};
-
-fetSet = 'fet_tsne_rev12';
-sli = 1;SesList = SessionList(slist{sli});
-states  = {'walk','rear','turn','pause','groom','sit'};
-stc = {}; d_state = {}; ls = {}; lsm = {};
-
-s = SesList(2);
-for rti = 1:2,
-
-    model = ['MTAC_BATCH-' fetSet '_SR_12_REF_' refTrial{rti} ...
-             '.cof.all_STC_' trnStcMode{rti} '_NN_100_NN_multiPN_RAND_WSB'];
-
-    Trial = MTATrial(s.sessionName,s.trialName,s.mazeName);
-    Trial.load('stc',s.stcMode);
-    clear('mod');
-    mod.states     = states;
-    mod.stcMode    = trnStcMode{rti};
-    mod.featureSet = fetSet;
-    mod.model      = model;
-    mod.sampleRate = 12;
-    mod.nNeurons   = 100;
-    mod.map2reference = false;
-    argin = struct2varargin(mod);
-    [~,d_state{end+1},ls{end+1}] = bhv_nn_multi_patternnet(Trial,argin{:});
-end
- 
 
 
-
-sli = 1;
-rti = 1;
-states  = {'walk','rear','turn','pause','groom','sit'};
-fetSet  = 'fet_tsne_rev10';
-SesList = SessionList(slist{sli});
-SesList = {SesList(:).sessionName};
-model = ['MTAC_BATCH-' fetSet '_SR_12_REF_' refTrial{rti} '.cof.all_NN_100_NN_multiPN_RAND_WSB'];
-ds = load(fullfile(MTASession().path.data,'analysis',[slist{sli},'-',model,'.mat']));
-
-sli = 1;
-rti = 2;
-fetSet  = 'fet_tsne_rev10';
-SesList = SessionList(slist{sli});
-
-model = ['MTAC_BATCH-' fetSet '_SR_12_REF_' refTrial{rti} '.cof.all_NN_100_NN_multiPN_RAND_WSB'];
-os = load(fullfile(MTASession().path.data,'analysis',[slist{sli},'-',model,'.mat']));
-
-Trial = MTATrial(SesList(1).sessionName,...
-                 SesList(1).trialName,...
-                 SesList(1).mazeName);
-sts = stc2mat(Trial.load('stc',SesList(1).stcMode),Trial.load('xyz'),states);
-
-
-figure,sp = [];
-sp(end+1) = subplot(411),imagesc(ds.d_state{1}')
-sp(end+1) = subplot(412),imagesc(os.d_state{1}')
-sp(end+1) = subplot(413),imagesc(os.d_state{1}'+ds.d_state{1}')
-sp(end+1) = subplot(414),imagesc(~~sts')
-linkaxes(sp,'xy');
-
-msl = (os.d_state{1}+ds.d_state{1})>190;
-sum(all(~~sts==msl,2)&&~(all(msl==0|~sts,2)))
-
-sum(any(~~sts,2))

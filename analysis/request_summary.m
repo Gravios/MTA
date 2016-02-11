@@ -70,9 +70,14 @@
 
 %% 2015 12 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 
-% req20151203
+% req20151203:
 %    tSNE over all jg05 sessions excluding jg05-20120317
 %    jg05-20120317 features are then mapped onto tsne space
+%
+%        alt1:
+%        Equal bootstrap noisy trim
+%        
+
 
 % req20151204
 %    tsne mapping of spike on to 2D 
@@ -95,4 +100,3 @@
 
 % req20150114
 %    tau masked boundaries for confusion matrix computation
-%

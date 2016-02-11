@@ -236,10 +236,26 @@ ylabel('Mutual Information (bits)')
 xlabel('Time Lag (ms)')
 
 
-% FIG2 Sup
+% FIG3 Sup
 pbins = linspace(-7,-3,100);
 pfd = histc(log10(rhm(:,:)),pbins,1);
 figure,imagesc(pbins,fs,pfd'),axis xy
 title('RHM Power Distribution')
 xlabel('RHM Power (a.u.)')
 ylabel('Frequency (Hz)')
+
+
+% FIG3 Sup
+
+Trial = MTATrial('jg03-20110501');
+Trial = MTATrial('Ed05-20140529','all','ont');
+xyz = Trial.load('xyz');
+xyz.filter('ButFilter',3,20);
+ang = create(MTADang,Trial,xyz);
+wang = Trial.xyz.copy;
+wang.data = diff(circ_dist(ang(:,1,3,1),ang(:,2,4,1)).*5);
+wang.filter('ButFilter',3,20);
+figure,plot(diff(xyz(:,1,3))-diff(ang(:,1,3,2)).*50);
+
+Lines(Trial.stc{'w'}(:),[],'r');
+

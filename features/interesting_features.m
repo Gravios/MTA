@@ -2,8 +2,8 @@ Trial = MTATrial('jg05-20120317');
 Trial.load('stc','hand_labeled_rev2');
 xyz = Trial.load('xyz');
 fxyz = xyz.copy;
-fxyz.filter('ButFilter',3,10,'low');
-ang = create(MTADang,Trial,xyz);
+fxyz.filter('ButFilter',3,.5,'low');
+ang = create(MTADang,Trial,fxyz);
 
 
 
@@ -486,4 +486,78 @@ ForAllSubplots('grid on;caxis([0,200])')
 
 
 
+eds = linspace(-.3,pi/2,100);
+figure,hold on
+ind = Trial.stc{'a-r'};
+hs = bar(eds,histc(circ_dist(ang(ind,1,2,2),ang(ind,2,3,2)),eds),'histc');
+hs.FaceAlpha = .5;hs.FaceColor = 'c';
+ind = Trial.stc{'r'};
+hs = bar(eds,histc(circ_dist(ang(ind,1,2,2),ang(ind,2,3,2)),eds),'histc');
+hs.FaceAlpha = .5;hs.FaceColor = 'r';
 
+
+
+Trial = MTATrial('jg05-20120317');
+Trial = MTATrial('jg05-20120317');
+figure,plot(diff(fang(:,3,4,2))),Lines(Trial.stc{'r'}(:),[],'r');
+
+
+zrf =Trial.xyz.copy;
+zrf.data = diff(fang(:,3,4,2));
+
+
+zrs = zrf.segs(Trial.stc{'r'}(:,1)-120,240);
+ss = [];
+for s = 1:size(zrs,2),
+    [~,ss(end+1)] = max(convn(zrs(:,s),zrs(90:150,2),'valid'));
+end
+ss = ss-90;
+zre = zrf.segs(Trial.stc{'r'}(:,2)-120,240);
+se = [];
+for s = 1:size(zrs,2),
+    [~,se(end+1)] = max(convn(zre(:,s),zre(90:150,2),'valid'));    
+end
+se = se-90;
+
+
+zrsc = zrf.segs(Trial.stc{'r'}(:,1)-ss'-120,240);
+zrse = zrf.segs(Trial.stc{'r'}(:,2)-se'-120,240);
+
+zct = nanmedian(zrsc(:,:),2);
+zet = nanmedian(zrse(:,:),2);
+
+rsc = convn(zrf.data,zct,'same');
+rse = convn(zrf.data,zet,'same');
+
+rtc = LocalMinimaN(-rsc,-0.0025,20);
+rte = LocalMinimaN(-rse,-0.0025,20);
+
+rtp = sort([rtc(:,1)-60;rte(:,1)+60]);
+
+rtper = [rtp(1:end-1),rtp(2:end)];
+
+figure,hold on
+mh = [];
+for p = rtper',
+    mh(end+1) = median(xyz(p',7,3));
+    plot(p(1):p(2),repmat(mh(end),1,1+p(2)-p(1)))
+end
+Lines(Trial.stc{'r'}(:),[],'r');
+
+
+
+
+rper = Trial.stc{'r'};
+
+cc = bsxfun(@minus,rtp(:,1)',rper(:,1));
+
+
+
+%% SS 
+sd = sqrt(sum((ss.data-circshift(ss.data,-1,2)).^2,3));
+sv = Trial.xyz.copy;
+sv.data = sum(sd(:,2:end-1),2)./sd(:,end);
+
+
+figure,plot(sv.data)
+Lines(StcHL{'m'}(:),[],'m');

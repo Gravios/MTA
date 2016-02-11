@@ -19,6 +19,11 @@ RefTrial = MTATrial.validate(RefTrial);
 rfet = feval(features.label,RefTrial,features.sampleRate);
 
 switch features.label
+  case 'fet_tsne_rev15',
+    fetInds =      [   1:4                    , 7:9                  ];
+    stdThresh = cat(2, repmat({10},    1,4)   , repmat({.1},      1,3));
+    diffFun =   cat(2, repmat({@minus},1,4) , repmat({@circ_dist},1,3));
+
   case 'fet_tsne_rev14',
     fetInds =    4:6;
     stdThresh =  repmat({.1},      1,3);

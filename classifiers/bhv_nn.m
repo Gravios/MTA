@@ -27,11 +27,7 @@ MODEL_TYPE = 'NN';
 SAMPLE_RATE = 20;
 
 % Load Trial and or check if Trial is of the MTASession class
-if ischar(Trial),
-    Trial = MTATrial(Trial);
-elseif iscell(Trial),
-    Trial = MTATrial(Trial{:});
-end
+Trial = MTATrial.validate(Trial);
 assert(isa(Trial,'MTASession'),['MTA:classifiers:' mfilename ':Trial not found']);
 
 
@@ -152,6 +148,7 @@ if trainModel||~exist(model_loc,'file'),
         
     % Train classifie
     net = patternnet(nNeurons);
+    net.trainParam.showWindow = false;
     %view(net);    
     [net,tr] = train(net,feature(ind,:)',~~smat(ind,:)');
 

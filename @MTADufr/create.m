@@ -36,8 +36,7 @@ else
     Data.data = zeros(dsize,numel(units));
     if isempty(units), units = 1:spk.map(end,1);end
     swin = round(twin*DataObj.sampleRate);
-    %gwin = gausswin(swin)/sum(gausswin(swin));
-    gwin = ones(swin,1);
+    gwin = ones([swin,1]);
     for unit = units(:)'
         res = spk.res(spk.clu==unit);
         res(res==0) = 1;

@@ -42,6 +42,7 @@ csmat.data = c(csmat.data,:);
 ind = Trial.stc{'a'};
 
 mfet = fet(ind,:);
+%mfet = fet(ind,fetInds{end});
 msmat = csmat(ind,:);
 
 start = 1;
