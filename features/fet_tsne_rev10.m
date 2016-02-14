@@ -177,10 +177,10 @@ if nargout>1,
     %  '$\displaystyle\frac{dz{BL}}{dt}$'
     featureTitles(end+1) = {'Z BM'};
     %featureTitles(end+1) = {'Z_{BM}'};
-    featureDesc(end+1) = {'1 Hz low pass filtered height of the upper spine maker'};
+    featureDesc(end+1) = {'1 Hz low pass filtered height of the middle spine maker'};
 
     % 2. 
-    featureTitles(end+1) = {'d(XY BL)/dt'};
+    featureTitles(end+1) = {'XY Speed BL'};
     %featureTitles(end+1) = {'d(XY_{BL})/dt'};
     %featureTitles(end+1) = {'$log10(\displaystyle\frac{dZ_{BL}}{dt}) \quad log10(mm/s)$'};
     featureDesc(end+1) = {['2.4 Hz low pass filtered speed in the xy plane of ' ...
@@ -232,10 +232,10 @@ if nargout>1,
     featureDesc(end+1) = {['Distance between body lower and body middle.']};
 
     % 11.
-    featureTitles(end+1) = {'XYZ Dist BPBM'};
-    %featureTitles(end+1) = {'XYZ Dist_{BPBM}'};
-    %featureTitles(end+1) = {'$r_{BPBM} \quad mm$'};
-    featureDesc(end+1) = {['Distance between body pelvis and body middle.']};
+    featureTitles(end+1) = {'XYZ Dist BPBU'};
+    %featureTitles(end+1) = {'XYZ Dist_{BPBU}'};
+    %featureTitles(end+1) = {'$r_{BPBU} \quad mm$'};
+    featureDesc(end+1) = {['Distance between body pelvis and body upper.']};
 
     % 12.
     featureTitles(end+1) = {'XYZ Dist BLBP'};
@@ -250,8 +250,8 @@ if nargout>1,
     featureDesc(end+1) = {['Distance between body pelvis and body middle.']};
 
     % 14.
-    featureTitles(end+1) = {'XYZ Dist BPBM'};
-    %featureTitles(end+1) = {'XYZ Dist_{BPBM}'};
+    featureTitles(end+1) = {'XYZ Dist BMBU'};
+    %featureTitles(end+1) = {'XYZ Dist_{BMBU}'};
     %featureTitles(end+1) = {'$r_{BMBU} \quad mm$'};
     featureDesc(end+1) = {['Distance between body midle and body upper.']};
 
@@ -261,17 +261,22 @@ if nargout>1,
     %featureTitles(end+1) = {'$log10(\displaystyle\frac{d\psi_{BMBU}}{dt}) \quad log10(rad/s)$'};
     featureDesc(end+1) = {'Pitch speed of the vector from spine_middle to spine_upper'};
 
-    % 17.  
+    % 16.  
     featureTitles(end+1) = {'d(yaw BLBU)/dt'};
     %featureTitles(end+1) = {'d(yaw_{BLBU})/dt'};
     %featureTitles(end+1) = {'$log10(\displaystyle\frac{d\theta_{BLBU}}{dt}) \quad log10(rad/s)$'};
     featureDesc(end+1) = {'Pitch speed of the vector from spine_lower to spine_upper'};
 
-    % 18.
+    % 17.
     featureTitles(end+1) = {'d(yaw BCHC)/dt'};    
     %featureTitles(end+1) = {'d(yaw_{BCHC})/dt'};
     %featureTitles(end+1) = {'$log10(\displaystyle\frac{d\theta_{BCBH}}{dt}) \quad log10(rad/s)$'};
     featureDesc(end+1) = {'Yaw speed of the vector from body COM to head COM'};
+
+    % 18 
+    featureTitles(end+1) = {'Ang BLBM_BCBH'};    
+    featureDesc(end+1) = {['Angle between the vectors [body lower, body middle]' ...
+                                   'and [body COM, ' 'head COM]']};
 
     % 19.
     featureTitles(end+1) = {'XY Dist BLBU'};

@@ -24,16 +24,16 @@ exPer = [51549, 55145];
 %exPer = [129470,139470];
 
 
-
-
 xyz = Trial.load('xyz').filter('ButFilter',3,50);
 ang = create(MTADang,Trial,xyz);
 %stateColors = 'brcgym';
 
 
 hfig = figure(38239385);clf
-set(hfig,'position',[1016,111,775,840];
+set(hfig,'position',[1016,111,775,840]);
 set(hfig,'paperposition',[0,0,775/100,840/100])
+
+
 %% Fig:3:A Skeleton examples
 
 
@@ -74,10 +74,11 @@ plotSkeleton(Trial,xyz,exPer(1)+2300,pMode,ang,[0,0]);% rear
 
 zlim([0,300]);
 
+saveas(hfig,fullfile(figPath,'Fig2B_NEW_Skeleton.epas'),'epsc');
 
 
 % Fig:2:B - feature matrix
-[fet,flabels,fdisc] = fet_tsne_rev10(Trial);
+[fet,flabels,fdisc] = fet_tsne_rev13(Trial);
 axes('Position',[ 0.1300,0.4,0.7750,0.2000])
 ts = (1:fet.size(1))./fet.sampleRate;
 per = round(exPer./xyz.sampleRate)+pPad;
@@ -96,6 +97,7 @@ set(gca,'XTickLabelMode','manual',...
         'XTick',[],...
         'XTickLabel',{});
 set(gca,'TickDir','out');
+saveas(hfig,fullfile(figPath,'Fig2B_NEW_fetmat.epas'),'epsc');
 
 
 % Fig:2:C - Expert Labels
@@ -120,7 +122,12 @@ set(gca,'TickDir','out');
 % Fig:2:D - NN Model Labels
 stateLabels = {'walk','rear','turn','pause','groom','sit'};
 stateColors = 'brgymc';
-Stc = Trial.load('stc','NN_multiPN-Ed03-20140625.cof.all-RAND_wsbhand_labeled_rev1-wrnpms');
+Stc = Trial.load('stc',['MTAC_BATCH-fet_tsne_rev15_SR_12_'...
+                       'NORM_1_REF_Ed03-20140625.cof.all_'...
+                       'STC_hand_labeled_rev1_Ed_NN_100_NI_100_'...
+                       'NN_multiPN_RAND_WSBNT-wrnpms_PP']);
+%Stc = Trial.load('stc','NN-hand_labeled_rev1_Ed-wrnpms-ref-Ed03-20140625');
+%Stc = Trial.load('stc','NN_multiPN-Ed03-20140625.cof.all-RAND_wsbhand_labeled_rev1-wrnpms');
 axes('Position',[ 0.1300,0.31,0.7750,0.0400])
 plotSTC(Stc,1,'patch',stateLabels,stateColors);
 xlim(round(exPer./xyz.sampleRate)+pPad)
@@ -135,7 +142,7 @@ set(gca,'TickDir','out');
 axes('Position',[ 0.1300,0.025,0.38,0.250])
 
 
-featureSet = 'fet_tsne_rev5';
+featureSet = 'fet_tsne_rev15';
 normalize = true;
 mapToRefTrial = true;
 mfilename = 'req20151203';
@@ -143,12 +150,12 @@ RefTrial = MTATrial('jg05-20120317');
 if mapToRefTrial, mapping =    ['-map2_' RefTrial.filebase];else mapping    = '';end
 if normalize,     normStatus = '-norm';                     else normStatus = '';end
 fileLoc = fullfile(Trial.path.data,'analysis',...
-                   ['req20151203-hand_labeled-fet_tsne_rev5',mapping,normStatus,'.mat']);
+                   ['req20151203-hand_labeled-fet_tsne_rev15',mapping,normStatus,'.mat']);
 ds = load(fileLoc);
 
-
+%states = {'walk','rear','turn','pause','groom','sit'};
 osts = numel(ds.states);
-hfig = figure(3923924);clf
+%hfig = figure(3923924);clf
 hold on;
 mc = ds.csmat(ds.ind,:);
 for nc = 1:osts,
@@ -156,7 +163,7 @@ for nc = 1:osts,
     h = scatter(ds.mappedX(nind,1),ds.mappedX(nind,2),2,mc(nind,:));
     try,h.MarkerFaceColor = h.CData(1,:);end
 end
-legend(states);
+legend(ds.states);
 set(gca,'XTickLabel',{})
 set(gca,'YTickLabel',{})
 

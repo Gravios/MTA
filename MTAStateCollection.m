@@ -252,7 +252,7 @@ classdef MTAStateCollection < hgsetget
                                     out{s} = sts;
                                     
                                 else % Return empty set
-                                    out = {};
+                                    Stc = {};
                                     return
                                 end
                                 

@@ -127,6 +127,7 @@ end
 xyz = Trial.load('xyz');
 
 % Initialize outputs
+p_state = zeros([xyz.size(1),numel(states)]);
 d_state = zeros([xyz.size(1),numel(states)]);
 labelingStatsMulti.confussionMatrix = zeros([nIter,numel(states),numel(states)]);
 labelingStatsMulti.precision =   zeros([nIter,numel(states)]);
@@ -262,6 +263,11 @@ for iter = 1:nIter,
                 [StcRnd,labelingEpochs,trainingFeatures] = ...
                     resample_whole_state_bootstrap_noisy(StcHL,features,states);
                 trainingEpochs = [];
+              case 'WSBNT' %'whole_state_bootstrap'
+                if iter==1,model = [model '_RAND_WSBNT'];end
+                [StcRnd,labelingEpochs,trainingFeatures] = ...
+                    resample_whole_state_bootstrap_noisy_trim(StcHL,features,states);
+                trainingEpochs = [];
               case 'rndsamp'
                 rndInd = randperm(features.size(1))';
                 rndInd = rndInd(1:floor(features.size(1)/2));
@@ -308,7 +314,7 @@ for iter = 1:nIter,
 
         end
         % Label States
-        [Stc,~,Model_Information] = bhv_nn (Trial,     ... Trial
+        [Stc,ps,Model_Information] = bhv_nn (Trial,     ... Trial
                                              false,    ... ifTrain
                                              StcHL,    ... States
                                              features, ... feature set
@@ -319,7 +325,7 @@ for iter = 1:nIter,
 
         ysm = MTADxyz('data',double(0<stc2mat(Stc,  xyz,states)),'sampleRate',xyz.sampleRate); 
         d_state = ysm.data+d_state;
-        
+        p_state = p_state +ps;
         if nargout>=4,
             
 
@@ -379,18 +385,23 @@ labelingStats.sensitivity = round(diag(tcm)'./sum(tcm),4).*100;
 labelingStats.accuracy = sum(diag(tcm))/sum(tcm(:));
 
 % Copy State Collection object to store new labeled periods
-Stc = Trial.stc.copy;
-Stc.updateMode([MODEL_TYPE '-' Model_Information.StcMode...
-                '-' cell2mat(Model_Information.state_keys)]);
-Stc.states = {};
+% $$$ Stc = Trial.stc.copy;
+% $$$ Stc.updateMode([MODEL_TYPE '-' Model_Information.StcMode...
+% $$$                 '-' cell2mat(Model_Information.state_keys)]);
+% $$$ Stc.states = {};
 
 
 
 % Create new StateCollection ... well copy
+% $$$ Stc = Trial.stc.copy;
+% $$$ Stc.updateMode([MODEL_TYPE '-' Model_Information.Trial '-'...
+% $$$                 Model_Information.StcMode...
+% $$$                 '-' cell2mat(Model_Information.state_keys)]);
+% $$$ Stc.states = {};
+
+% Create new StateCollection ... well copy
 Stc = Trial.stc.copy;
-Stc.updateMode([MODEL_TYPE '-' Model_Information.Trial '-'...
-                Model_Information.StcMode...
-                '-' cell2mat(Model_Information.state_keys)]);
+Stc.updateMode([model '-' cell2mat(Model_Information.state_keys)]);
 Stc.states = {};
 
 
@@ -418,3 +429,4 @@ if nargout>=2, varargout{2} = d_state.data;            end
 if nargout>=3, varargout{3} = labelingStats;      end
 if nargout>=4, varargout{4} = labelingStatsMulti; end
 if nargout>=5, varargout{5} = model; end
+if nargout>=6, varargout{6} = p_state; end

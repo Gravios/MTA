@@ -1,4 +1,4 @@
-function req20150914(Trial,varargin)
+function req20160211(Trial,varargin)
 %% tSNE stuff
 %mkdir('/storage/gravio/figures/req/req20150914');
 
@@ -12,7 +12,7 @@ SAVEFIG = true;   % boolean flag, Save figures along with png's
 
 fetSampleRate = 12;         % Reduce the sample rate of the feature matrix
 
-featureSet = 'fet_tsne_rev5'; % name of the function which constructs
+featureSet = 'fet_tsne_rev15'; % name of the function which constructs
                          % the feature set
 
 ifNormalize = true;     % Flag to normalize using the
@@ -22,27 +22,26 @@ hostPath = '/storage/gravio/figures/'; % Where reportfig should
                                        % save stuff
 
 
-Trial = MTATrial('jg05-20120317');
-%Trial.stc.load(Trial,'hand_labeled_rev2');
-%Trial = MTATrial('Ed01-20140707');
-%Stc = Trial.stc.load(Trial,'hand_labeled_rev1');
-Stc = Trial.stc.load(Trial,'hand_labeled_rev2');
+% $$$ Trial = MTATrial('jg05-20120317');
+% $$$ Stc = Trial.stc.load(Trial,'hand_labeled_rev2');
 
 
-
-[fet,fett,fetd] = feval(featureSet,Trial,fetSampleRate,ifNormalize); % Load Feature matrix of the session
-
-[asmat,labels,keys] =  stc2mat(Stc,fet);
-asmat = MTADxyz('data',asmat,'sampleRate',fet.sampleRate);
+[asmat,labels,keys] =  stc2mat(tstc,tfet,gStates);
+asmat = MTADxyz('data',asmat,'sampleRate',tfet.sampleRate);
 [~,asmat.data] = max(asmat.data,[],2);
-c = jet(numel(Stc.states));
+c = [0,0,1;...
+     1,0,0;...
+     0,1,0;...
+     0,1,1;...
+     1,0,1;...
+     1,1,0;];
+
 csmat = asmat.copy; 
 csmat.data = c(csmat.data,:);
 
-ind = Trial.stc{'a'};
+ind = tstc{strjoin(gStates,'+')};
 
-mfet = fet(ind,:);
-%mfet = fet(ind,fetInds{end});
+mfet = tfet(ind,fetInds{end});
 msmat = csmat(ind,:);
 
 start = 1;
@@ -51,12 +50,15 @@ stop = size(mfet,1);
 no_dims = 2;
 
 ind = start:skip:stop;
+figure(1);clf;
 mappedX = tsne(mfet(ind,:), msmat(ind,:), no_dims, initial_dims, perplexity); 
 
-figparm = ['tSNE-fsr_' num2str(fetSampleRate) '-ind_' num2str(start) '_' ...
+figparm = ['tSNE-MI_fsr-' strjoin(stsOrd,'-') '_'  num2str(fetSampleRate) '-ind_' num2str(start) '_' ...
             num2str(skip) '_' num2str(stop) '-perplexity_' ...
             num2str(perplexity) '-initial_dims_' num2str(initial_dims) ...
             '-no_dims_' num2str(no_dims)];
+
+
 
 
 osts = numel(Stc.states);
@@ -69,11 +71,14 @@ for nc = 1:osts,
     h = scatter(mappedX(nind,1),mappedX(nind,2),2,mc(nind,:));
     try,h.MarkerFaceColor = h.CData(1,:);end
 end
-legend(sts(1:osts-1));
+legend(gStates);
 xlim([min(mappedX(:,1))-5,max(mappedX(:,1))+30]);
 ylim([min(mappedX(:,2))-5,max(mappedX(:,2))+5]);
 
-reportfig([], hfig, 'tsne', 'req', false,Trial.filebase,figparm,[],SAVEFIG,'png');
+reportfig([], hfig, 'tsne_MI', 'req', false,Trial.filebase,figparm,[],SAVEFIG,'png');
+
+
+
 
 
 mtfet =  MTADxyz('data',mfet(ind,:),'sampleRate',fet.sampleRate);
@@ -114,3 +119,25 @@ end
 
 
 
+stsi = Stc.gsi(states);
+
+cc    = [0,0,1;...
+         1,0,0;...
+         0,1,0;...
+         0,1,1;...
+         1,0,1;...
+         1,1,0;];
+
+osts = numel(states);
+hfig = figure(3923923);clf
+hold on;
+sts = Stc.list_state_attrib('label');
+mc = msmat(ind,:);
+for nc = 1:osts,
+    nind = all(bsxfun(@eq,c(stsi(nc),:),mc),2);
+    h = scatter(mappedX(nind,1),mappedX(nind,2),2,repmat(cc(nc,:),sum(nind),1))
+    try,h.MarkerFaceColor = h.CData(1,:);end
+end
+legend(states);
+xlim([min(mappedX(:,1))-5,max(mappedX(:,1))+30]);
+ylim([min(mappedX(:,2))-5,max(mappedX(:,2))+5]);

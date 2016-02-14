@@ -15,6 +15,18 @@ fet = MTADfet(Trial.spath,...
               [],'TimeSeries',[],'all_Features','fet_all','a');                  
 
 
+if isempty(Trial.fet),
+    Trial.fet = MTADfet(Trial.spath,...
+                        [],...
+                        [],...
+                        [],...
+                        Trial.sync.copy,...
+                        Trial.sync.data(1),...
+                        []);                  
+end
+
+
+
 %Testing ARGS
 %Trial = MTATrial('jg05-20120317');
 
@@ -170,7 +182,14 @@ fet.data =  [fet.data,cang.data];
 
 
 % PPC feature
-man = Trial.load('fet','lsppc').resample(xyz);
+try
+    man = Trial.load('fet','lsppc');
+catch err
+    gen_fet_lsppc(Trial);    
+    man = Trial.load('fet','lsppc');
+end
+man.filter('ButFilter',3,2,'low');
+man.resample(fxyz);
 
 
 % RHM feature

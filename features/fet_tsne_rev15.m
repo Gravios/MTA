@@ -1,4 +1,4 @@
-function [fet,featureTitles,featureDesc,Nmean,Nstd] = fet_tsne_rev13(Trial,varargin)
+function [fet,featureTitles,featureDesc,Nmean,Nstd] = fet_tsne_rev15(Trial,varargin)
 [newSampleRate,normalize] = DefaultArgs(varargin,{15,false},1);
 
 if ischar(Trial),
@@ -65,9 +65,6 @@ zv = afet.copy;
 zv.data = log10(abs(afet(:,1))).*sign(afet(:,1));
 
 
-
-
-
 %% XY speed
 fvelxy = xyz.copy;
 fvelxy.filter('ButFilter',3,2.4,'low');
@@ -93,24 +90,6 @@ fxyz = xyz.copy;
 fxyz.filter('ButFilter',3,1.5,'low');
 fxyz.resample(newSampleRate);
 fang = create(MTADang,Trial,fxyz);
-
-
-%% PPC feature
-try
-    man = Trial.load('fet','lsppc');
-catch err
-    gen_fet_lsppc(Trial);    
-    man = Trial.load('fet','lsppc');
-end
-man.filter('ButFilter',3,2,'low');
-man.resample(fxyz);
-
-
-%% ANG Vel
-sh = round(.2*fang.sampleRate);
-ang_b_vel = [abs(circ_dist(circshift(fang(:,1,4,1),-sh),circshift(fang(:,1,4,1),sh)))];
-ang_b_vel(ang_b_vel<.1e-6) = 1e-6;
-ang_b_vel = log10(ang_b_vel);
 
 
 %% SS 
@@ -150,30 +129,28 @@ fet = MTADfet(Trial.spath,...
 
 
 fet.data = [fxyz(:,{'pelvis_root','spine_middle','spine_upper','hcom'},3),...  1,2,3,4
-            fvelxy(:,{'spine_lower','spine_middle'}),...                    5,6
-            man.data+.2,...                                                 7
-            fang(:,'spine_middle','spine_upper',2),...                      8            
-            fang(:,'spine_lower','spine_upper',2),...                       9            
-            fang(:,'head_back','head_front',2),...                         10
-            zv.data,...                                                    11
-            sv.data,...                                                    12
-            av.data,...                                                    13
-            zav.data,...                                                   14
-            fvelz(:,{'spine_upper'}),...                                   15
-            ang_b_vel,...                                                  16
-            abs(circ_dist(circ_mean([fang(:,1,4,1),fang(:,1,3,1),fang(:,1,2,1)],[],2),...17
+            fvelxy(:,{'spine_lower','spine_middle'}),...                   5,6
+            fang(:,'spine_lower','pelvis_root',2),...                      7            
+            fang(:,'pelvis_root','spine_middle',2),...                     8            
+            fang(:,'spine_middle','spine_upper',2),...                     9            
+            zv.data,...                                                    10
+            sv.data,...                                                    11
+            av.data,...                                                    12
+            zav.data,...                                                   13
+            fvelz(:,{'spine_upper'}),...                                   14
+            abs(circ_dist(circ_mean([fang(:,1,4,1),fang(:,1,3,1),fang(:,1,2,1)],[],2),...15
                           fang(:,4,'hcom',1))),...
-            fang(:,1,4,3).*cos(fang(:,1,4,2))./prctile(fang(:,1,4,3).*cos(fang(:,1,4,2)),98)...18
-            ];%rhm.data
+            fang(:,1,4,3).*cos(fang(:,1,4,2))./prctile(fang(:,1,4,3).*cos(fang(:,1,4,2)),98)...16
+            ];
 fet.data(isinf(fet(:))) = 0;
 
-%fet.data = cat(2,circshift(fet.data,round(fet.sampleRate.*0.25)),fet.data,circshift(fet.data,-round(fet.sampleRate.*0.25)));
 
 if normalize,
     fet.unity;
 end
 
 
+%%% REDO LABELS AND TITLES
 % This should be converted to a model elements
 featureTitles = {};
 featureDesc = {};
