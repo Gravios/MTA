@@ -32,7 +32,7 @@ fetInds = {};
 stsOrd  = {};
 gStates = states;
 
-while numel(gStates) > 1,
+while numel(gStates) > 2,
 
 mixy = zeros([1+numel(gStates),tfet.size(2)]);
 for s = 0:numel(gStates),
@@ -74,6 +74,8 @@ for s = 0:numel(gStates),
 
 end
 
+
+
 figure,
 for s = 1:numel(gStates)
     subplot(2,3,s);
@@ -90,24 +92,34 @@ end
 
 [~,sind] = max(dms);
 dm = (mixy(1,:)-mixy(sind+1,:))';
-fetInds{end+1} =  find(dm>0.20);
+%fetInds{end+1} =  find(dm>0.20);
+fetInds{end+1} =  find(dm>0.50);
 
 
-fetS = fet.copy;
-fetS.data = fet(:,fetInds{end});
-aind = Trial.stc{['gper-' strjoin(stsOrd,'-')]}.cast('TimeSeries');
-aind.resample(fet);
 
-[U,S,V] = svd(fetS(~~aind.data&nniz(fetS),:)'*fetS(~~aind.data&nniz(fetS),:));
-
-svar = cumsum(diag(S)./sum(diag(S)));
-
-fetE.data = [fetE.data,fetS.data*V(:,1:find(svar>.9,1,'first'))];
+% $$$ fetS = fet.copy;
+% $$$ fetS.data = fet(:,fetInds{end});
+% $$$ aind = Trial.stc{['gper-' strjoin(stsOrd,'-')]}.cast('TimeSeries');
+% $$$ aind.resample(fet);
+% $$$ 
+% $$$ [U,S,V] = svd(fetS(~~aind.data&nniz(fetS),:)'*fetS(~~aind.data&nniz(fetS),:));
+% $$$ 
+% $$$ svar = cumsum(diag(S)./sum(diag(S)));
+% $$$ 
+% $$$ fetE.data = [fetE.data,fetS.data*V(:,1:find(svar>.9,1,'first'))];
 stsOrd{end+1} = gStates{sind};
 gStates(sind) = [];
 
                  
 end
+
+% Used D to select final features
+Dscore = abs(mean(tfet(tstc{gStates{1}},:))-mean(tfet(tstc{gStates{2}},:)))./sqrt(std(tfet(tstc{gStates{1}},:)).*std(tfet(tstc{gStates{2}},:)));
+
+figure,plot(Dscore)
+
+[~,dind] = sort(Dscore,'descend');
+fetInds{end+1} = dind(1:20);
 
 
 [smat] = stc2mat(Trial.stc,fetE,states);

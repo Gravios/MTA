@@ -98,5 +98,9 @@
 %% 2016 01 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 
 
-% req20150114
+% req20160114
 %    tau masked boundaries for confusion matrix computation
+
+% req20160211
+%    t-SNE MI feature selection / classification
+
