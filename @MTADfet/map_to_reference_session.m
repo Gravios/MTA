@@ -3,22 +3,78 @@ function features = map_to_reference_session(features,Trial,RefTrial,varargin)
 % This Function is only meant for use with fet_tsne at the moment.
 
 [normEachSyncEpoch] = DefaultArgs(varargin,{false},1);
-
 % If Trial is not a MTASession try loading it.
-if ischar(Trial),
-    Trial = MTATrial(Trial);
-elseif iscell(Trial),
-    Trial = MTATrial(Trial{:});
-end
+Trial = MTATrial.validate(Trial);
 
 tempFet = features.copy;
 features.resample(Trial.xyz.sampleRate);
 
-
 RefTrial = MTATrial.validate(RefTrial);
-rfet = feval(features.label,RefTrial,features.sampleRate);
+if ~strcmp(features.label,'fet_all'), % Sorry this exists ...
+    rfet = feval(features.label,RefTrial,features.sampleRate);
+end
 
 switch features.label
+  case 'fet_all'
+    xyz = RefTrial.load('xyz');
+    try 
+        ss = Trial.load('fet','3dss');
+        ss.resample(xyz);
+    catch
+        txyz = xyz.data;
+        pnts = zeros([xyz.size(1),105,3]);
+        for ind = 1:xyz.size(1),
+            try
+                pnts(ind,:,:) = fnplt(cscvn(sq(txyz(ind,1:4,:))'))';
+            end
+        end
+        name = '3d spline interpolated spine'; label = '3dss'; key = 's';
+        ss = MTADfet.encapsulate(Trial,...
+                                 pnts,...
+                                 xyz.sampleRate,...
+                                 name,label,key);
+        ss.updateFilename(Trial);
+        ss.save;
+    end
+
+    xyz.data(:,1:4,:) = ss(:,[5,35,65,95],:);
+
+    % COM lower Body Center of Mass
+    xyz.addMarker('bcom',...     Name
+    [.7,0,.7],...  Color
+    {{'spine_lower', 'acom',[0,0,255]},... Sticks to visually connect
+     {'pelvis_root', 'acom',[0,0,255]},... new marker to skeleton
+     {'spine_middle','acom',[0,0,255]}},...
+        xyz.com(xyz.model.rb({'spine_lower','pelvis_root','spine_middle'})));
+
+    % COM head Center of Mass
+    xyz.addMarker('hcom',...     Name
+    [.7,0,.7],...  Color
+    {{'head_back', 'hcom',[0,0,255]},... Sticks to visually connect
+     {'head_left', 'hcom',[0,0,255]},... new marker to skeleton
+     {'head_front','hcom',[0,0,255]},...
+     {'head_right','hcom',[0,0,255]}},... 
+        xyz.com(xyz.model.rb({'head_back','head_left','head_front','head_right'})));
+
+    % COM subject Center of Mass              
+    xyz.addMarker('acom',...    Name
+    [.7,0,.7],... Color
+    {{'spine_lower', 'acom',[0,0,255]},... Sticks to visually connect
+     {'pelvis_root', 'acom',[0,0,255]},... new marker to skeleton
+     {'spine_middle','acom',[0,0,255]},...
+     {'spine_upper', 'acom',[0,0,255]},...
+     {'head_back',   'acom',[0,0,255]},...
+     {'head_front',  'acom',[0,0,255]}},...
+        xyz.com(xyz.model.rb({'spine_lower','pelvis_root','spine_middle','spine_upper','head_back','head_front'})));
+
+
+    rfet = xyz.copy;
+    rfet.data = rfet(:,:,3);
+
+    fetInds = 1:rfet.size(2);
+    stdThresh = repmat({10},1,rfet.size(2));
+    diffFun =   repmat({@minus},1,rfet.size(2));
+    
   case 'fet_tsne_rev15',
     fetInds =      [   1:4                    , 7:9                  ];
     stdThresh = cat(2, repmat({10},    1,4)   , repmat({.1},      1,3));

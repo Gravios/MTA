@@ -3,11 +3,14 @@ function  fsmi = feature_selection_fet_sts_MI(Trial,varargin);
 
 Trial = MTATrial.validate('jg05-20120317');
 %Trial = MTATrial.validate(Trial);
-
 stc = Trial.load('stc',stcMode);
 
-%fet = fet_all(Trial,sampleRate);
-fet = fet_tsne_rev15(Trial,sampleRate);
+
+RefTrial = MTATrial.validate('jg05-20120317');
+
+
+fet = fet_all(Trial,sampleRate,RefTrial);
+%fet = fet_tsne_rev15(Trial,sampleRate);
 fet.data = [fet.data,fet.data.^2];
 afet = fet.copy;
 for sh = 1:fet.size(2);
@@ -46,9 +49,7 @@ for s = 0:numel(gStates),
     sm = stc2mat(tstc,tfet,tStates);
     [~,smat] = max(sm,[],2);
     smat(all(sm==0,2)) = 0;
-    %vind = Trial.stc{'a'}.cast('TimeSeries');
-    %vind.resample(fet);
-    %vind = logical(vind.data)&
+    
     vind = smat&nniz(tfet);
     nind = sum(vind);
 
