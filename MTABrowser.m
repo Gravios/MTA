@@ -30,7 +30,7 @@ function varargout = MTABrowser(varargin)
 
 % Edit the above text to modify the response to help MTABrowser
 
-% Last Modified by GUIDE v2.5 06-May-2013 12:54:23
+% Last Modified by GUIDE v2.5 25-Feb-2016 14:34:19
 
 % Begin initialization code - DO NOT EDIT
 gui_Singleton = 1;
@@ -879,6 +879,8 @@ if hObject ~= getappdata(handles.MTABrowserStates,'previousBState'),
     MLData.num_of_sticks = num_of_sticks;
     MLData.num_of_markers = Session.xyz.model.N;
 
+    % xyz source selector
+    MLxyzSourceMenu_UpdateFcn(handles.MLxyzSourceMenu,eventdata,handles);
     
     % MLstateView Stuff
     
@@ -1019,6 +1021,29 @@ if current_label~=0
 else
     updateCircle(hObject,handles,-50)
 end
+
+% --- Executes on selection change in MLxyzSourceMenu.
+function MLxyzSourceMenu_Callback(hObject, eventdata, handles)
+% hObject    handle to MLxyzSourceMenu (see GCBO)
+% eventdata  reserved - to be defined in a future version of MATLAB
+% handles    structure with handles and user data (see GUIDATA)
+    Session = getappdata(handles.MTABrowser,'Session');
+    MLData = getappdata(handles.MTABrowser,'MLData');  
+    xyz = Session.load('xyz',hObject.String{hObject.Value});
+    MLData.xyzpos = xyz.data;
+
+
+function MLxyzSourceMenu_UpdateFcn(hObject, eventdata,handles)
+    Session = getappdata(handles.MTABrowser,'Session');   
+    hObject.String = listFiles(Session.name,'pos');
+    hObject.Value = find(~cellfun(@isempty,regexp(hObject.String,[Session.filebase '\.pos\.mat'])));
+ 
+
+
+function MLxyzSourceMenu_CreateFcn(hObject, eventdata, handles)
+    if ispc && isequal(get(hObject,'BackgroundColor'), get(0,'defaultUicontrolBackgroundColor'))
+        set(hObject,'BackgroundColor','white');
+    end
 
 function MLindexinput_Callback(hObject, eventdata, handles)
 MLData = getappdata(handles.MTABrowser,'MLData');
@@ -2462,3 +2487,5 @@ props = {
     };
 values = get(original,props);
 set(dest,props,values);
+
+
