@@ -496,6 +496,7 @@ hfig = figure(39293928);hold on,
 fetSet  = 'fet_tsne_rev15';
 k = 1;
 htl = {};
+accuracy = [];
 set(gcf,'interpreter','none')
 for sli = 1:numel(slist),
     for rli = 1:numel(rlist),    
@@ -503,16 +504,23 @@ for sli = 1:numel(slist),
         model = ['MTAC_BATCH-' fetSet ...
                  '_SR_' num2str(sampleRate) ...
                  '_NORM_' num2str(norm) ...         
-                 '_REF_' rlist(rli).sessionName, '.' rlist(rli).mazeName '.' rlist(rli).trialName ...
+                 '_REF_' rlist(rli).sessionName, '.' ...
+                         rlist(rli).mazeName '.' ...
+                         rlist(rli).trialName ...
                  '_STC_' rlist(rli).stcMode ...
                  '_NN_' num2str(nNeurons) ...
                  '_NI_' num2str(nIter) ...         
                  '_NN_multiPN_RAND_' rndMethod];
 
-        ds = load(fullfile(MTASession().path.data,'analysis',[slist{sli},'-',model,'_PP',mapped,'.mat']));
-
-        scat = scatter(k*ones([numel(ds.ls),1]),cell2mat(cellfun(@subsref,ds.ls, ...
-                             repmat({substruct('.',prop)},[1,numel(ds.ls)]),'uniformoutput',false))'.*100,30,'d');
+        ds = load(fullfile(MTASession().path.data,'analysis', ...
+                           [slist{sli},'-',model,'_PP',mapped,'.mat']));
+        for s = 1:numel(ds.stc),
+            ds.stc{s}.save(1);
+        end
+        accuracy(end+1,:) =  cell2mat(cellfun(@subsref,ds.ls, ...
+                                      repmat({substruct('.',prop)},[1,numel(ds.ls)]),...
+                                      'uniformoutput',false))'.*100
+        scat = scatter(k*ones([numel(ds.ls),1]),accuracy(end,:),30,'d');
 
         scat.MarkerFaceColor = scat.CData;
         k=k+1;
@@ -580,6 +588,19 @@ shlj = MTADxyz('data',double(~~stc2mat(Trial.stc,xyz,states)),'sampleRate',xyz.s
 Trial.load('stc','hand_labeled_rev1_Ed');
 shle = MTADxyz('data',double(~~stc2mat(Trial.stc,xyz,states)),'sampleRate',xyz.sampleRate);
 
+Trial = MTATrial('Ed03-20140624');
+Trial.load('stc','MTAC_BATCH-fet_tsne_rev15_SR_12_NORM_1_REF_Ed03-20140625.cof.all_STC_hand_labeled_rev1_Ed_NN_100_NI_100_NN_multiPN_RAND_WSBNT-wrnpms_PP');
+shlj = MTADxyz('data',double(~~stc2mat(Trial.stc,xyz,states)),'sampleRate',xyz.sampleRate);
+Trial.load('stc','MTAC_BATCH-fet_tsne_rev15_SR_12_NORM_1_REF_jg05-20120317.cof.all_STC_hand_labeled_rev3_jg_NN_100_NI_100_NN_multiPN_RAND_WSBNT-wrnpms_PP');
+shle = MTADxyz('data',double(~~stc2mat(Trial.stc,xyz,states)),'sampleRate',xyz.sampleRate);
+
+Trial = MTATrial('Ed01-20140707');
+Trial.load('stc','MTAC_BATCH-fet_tsne_rev15_SR_12_NORM_1_REF_Ed03-20140625.cof.all_STC_hand_labeled_rev1_Ed_NN_100_NI_100_NN_multiPN_RAND_WSBNT-wrnpms_PP');
+shlj = MTADxyz('data',double(~~stc2mat(Trial.stc,xyz,states)),'sampleRate',xyz.sampleRate);
+Trial.load('stc','MTAC_BATCH-fet_tsne_rev15_SR_12_NORM_1_REF_jg05-20120317.cof.all_STC_hand_labeled_rev3_jg_NN_100_NI_100_NN_multiPN_RAND_WSBNT-wrnpms_PP');
+shle = MTADxyz('data',double(~~stc2mat(Trial.stc,xyz,states)),'sampleRate',xyz.sampleRate);
+
+
 %'Ed01-20140707','Ed03-20140624'
 
 labelingEpochs = Trial.stc{'a'}.cast('TimeSeries');
@@ -602,3 +623,5 @@ confusionMatrix = round(tcm./xyz.sampleRate,2);
 precision = round(diag(tcm)./sum(tcm,2),4)'.*100;
 sensitivity = round(diag(tcm)'./sum(tcm),4).*100;
 accuracy = sum(diag(tcm))/sum(tcm(:));
+
+

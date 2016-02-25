@@ -15,13 +15,14 @@ fet = MTADfet(Trial.spath,...
               [],'TimeSeries',[],'all_Features','fet_all','a');                  
 
 % Loads preprocessed version of xyz
-xyz = preproc_xyz(Trial,'spline_spine');
+nm = Trial.xyz.model.N;
+[xyz,ss] = preproc_xyz(Trial,'spline_spine');
 
 
 if ~isempty(RefTrial),
     mfet = fet.copy;
     mfet.data = xyz(:,:,3);
-    mfet.map_to_reference_session(Trial,RefTrial)              
+    mfet.map_to_reference_session(Trial,RefTrial);
     xyz.data(:,:,3) = mfet.data;
 end              
               

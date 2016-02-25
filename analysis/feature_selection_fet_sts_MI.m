@@ -1,19 +1,20 @@
 function  fsmi = feature_selection_fet_sts_MI(Trial,varargin);
 [fet,stcMode,states,sampleRate] = DefaultArgs(varargin,{'fet_all','hand_labeled_rev2_jg',{'walk','rear','turn','pause','groom','sit'},12});
 
-Trial = MTATrial.validate('jg05-20120317');
+Trial = MTATrial.validate('Ed03-20140625');
 %Trial = MTATrial.validate(Trial);
 stc = Trial.load('stc',stcMode);
 
 
 RefTrial = MTATrial.validate('jg05-20120317');
+RefTrial.load('stc','hand_labeled_rev3_jg');
 
 
 fet = fet_all(Trial,sampleRate,RefTrial);
 %fet = fet_tsne_rev15(Trial,sampleRate);
 fet.data = [fet.data,fet.data.^2];
 afet = fet.copy;
-for sh = 1:fet.size(2);
+for sh = 1:fet.size(2)-1;
     fet.data = [fet.data,circshift(afet.data',-sh)'.*afet.data];
 end
 fet = fet.unity;
@@ -77,6 +78,8 @@ end
 
 
 
+
+
 figure,
 for s = 1:numel(gStates)
     subplot(2,3,s);
@@ -94,9 +97,13 @@ end
 [~,sind] = max(dms);
 dm = (mixy(1,:)-mixy(sind+1,:))';
 %fetInds{end+1} =  find(dm>0.20);
-fetInds{end+1} =  find(dm>0.50);
+fetInds{end+1} =  find(dm>0.20);
 
+sfet = tfet.copy;
+sfet.data = tfet(:,fetInds{end});
 
+nfet = fet.copy;
+nfet.data = fet(:,fetInds{end});
 
 % $$$ fetS = fet.copy;
 % $$$ fetS.data = fet(:,fetInds{end});

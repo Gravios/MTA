@@ -1,4 +1,4 @@
-function xyz = preproc_xyz(Trial,varargin)
+function [xyz,ss] = preproc_xyz(Trial,varargin)
 
 Trial = MTATrial.validate(Trial);
 
@@ -17,7 +17,7 @@ end
 
 % XYZ Positions of Markers
 xyz = Trial.load('xyz');
-nm = xyz.size(2);
+
 
 while ~isempty(varargin)
     switch varargin{1}
@@ -45,6 +45,7 @@ while ~isempty(varargin)
         xyz.data(:,1:4,:) = ss(:,[5,35,65,95],:);
     
     end
+    varargin(1) = [];
 end
 
 % COM lower Body Center of Mass

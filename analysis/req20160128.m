@@ -122,7 +122,7 @@ prop = 'precision';
 subplot(132);plot(reshape(cell2mat(cellfun(@subsref,ls, ...
                              repmat({substruct('.',prop)},[1,numel(ls)]),'uniformoutput',false))',4,6)','d-')
 xlim([0,7])
-hax = gca;
+phax = gca;
 hax.XTickLabelMode = 'manual';
 hax.XTickLabel = cat(2,{''},states,{''});
 ylim([0,100])
@@ -186,7 +186,7 @@ for sli = 1:numel(slist),
         htl = cat(2,htl,{['{' slist{sli} ' - ' rlist(rli).sessionName '}']});
     end
 end
-pp
+
 xlim([0.5,k-0.5]);
 ylim([50,100])
 

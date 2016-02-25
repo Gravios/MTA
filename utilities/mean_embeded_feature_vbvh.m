@@ -33,7 +33,7 @@ else
     % Need some hard thresholds for cleaning 
 end
 
-mind = nniz([ind_v_b,ind_v_h])&ind.data;
+mind = nniz([ind_v_b,ind_v_h])&ind.data==1;
 
 manifoldIndex = [ind_v_b(mind),ind_v_h(mind)];
 
