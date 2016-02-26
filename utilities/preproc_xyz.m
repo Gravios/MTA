@@ -1,6 +1,8 @@
 function [xyz,ss] = preproc_xyz(Trial,varargin)
 
-Trial = MTATrial.validate(Trial);
+if ~isa(Trial,'MTASession'),
+    Trial = MTATrial.validate(Trial);
+end
 
 % DELBLOCK if version>=3,
 if isempty(Trial.fet),

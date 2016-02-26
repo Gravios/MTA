@@ -30,7 +30,7 @@ function varargout = MTABrowser(varargin)
 
 % Edit the above text to modify the response to help MTABrowser
 
-% Last Modified by GUIDE v2.5 25-Feb-2016 14:34:19
+% Last Modified by GUIDE v2.5 26-Feb-2016 16:06:48
 
 % Begin initialization code - DO NOT EDIT
 gui_Singleton = 1;
@@ -641,41 +641,23 @@ function BSmotionLabeling_Callback(hObject, eventdata, handles)
 if hObject ~= getappdata(handles.MTABrowserStates,'previousBState'),
     setappdata(handles.MTABrowser,'doLoadSession',true)
     TrialList_Callback(hObject, eventdata, handles)
-    
+
+    % LOAD Session
+    Session = getappdata(handles.MTABrowser,'Session');
 %     handles.MLxyzView.ButtonDownFcn = @()MTABrowser('MLbuttonDownState');
     
+    % DEFAULT args for the viewer
     MLData = getappdata(handles.MTABrowser,'MLData');
     MLData.record = {};
     MLData.recording=0;
     MLData.MLRotaKeyPressFcn = [];
-    set(handles.MTABrowser,'keyPressFcn','MTABrowser(''MLkeyState'',hObject,eventdata,handles)')
-    
-    Session = getappdata(handles.MTABrowser,'Session');
-    if Session.xyz.isempty, Session.xyz.load(Session); end
-    %if Session.ang.isempty, Session.ang.load(Session); end
-    xyzpos = Session.xyz.data;
-    
-
-    %% Rescale Play Speed slider for xyz Sample Rate
+    % Rescale Play Speed slider for xyz Sample Rate
     psSliderMax = round(Session.xyz.sampleRate/2);
     set(handles.MLplayspeed_slider,'max',psSliderMax);
-    %set(handles.MLplayspeed_slider,'SliderStep',[0.01,0.1].*psSliderMax);
 
+    set(handles.MTABrowser,'keyPressFcn','MTABrowser(''MLkeyState'',hObject,eventdata,handles)')
     
-    %% Translate connection map to pairs
-    markerConnections=[];
-    for i = 1:length(Session.xyz.model.Connections)
-        markerConnections= cat(1,markerConnections,....
-                               [Session.xyz.model.gmi(Session.xyz.model.Connections{i}.marker1),Session.xyz.model.gmi(Session.xyz.model.Connections{i}.marker2)]...
-                              );
-    end
-    num_of_sticks= length(Session.xyz.model.Connections);    
-
-    %% Initialization of graphical elements
-    stick_options = {};
-    stick_options.width = 1;
-    stick_options.erase = 'normal'; %{none|xor|background}
-    stick_options.line_style = '-';
+    
 
     %% Plot MLxyzView
     cla(handles.MLxyzView);
@@ -693,50 +675,72 @@ if hObject ~= getappdata(handles.MTABrowserStates,'previousBState'),
     MLData.MLxyzViewRotate = rotate3d(handles.MLxyzView);
 
 
-    %% Lines connecting the markers
-    try
-        delete(MLData.sticks);
-    end
-    MLData.sticks = repmat({0},1,length(Session.xyz.model.Connections));
-    for l=1:length(Session.xyz.model.Connections),
-        MLData.sticks{l} = animatedline;
-        MLData.sticks{l}.Parent = handles.MLxyzView;
-        MLData.sticks{l}.Tag = [Session.xyz.model.Connections{l}.marker1 ':' Session.xyz.model.Connections{l}.marker2];
-        MLData.sticks{l}.addpoints([xyzpos(1,markerConnections(l,1),1),xyzpos(1,markerConnections(l,2),1)],...
-                                   [xyzpos(1,markerConnections(l,1),2),xyzpos(1,markerConnections(l,2),2)],...
-                                   [xyzpos(1,markerConnections(l,1),3),xyzpos(1,markerConnections(l,2),3)]);
-        MLData.sticks{l}.LineWidth =  stick_options.width;
-        %MLData.sticks{l}.Color    , Session.model.Connections{l}.color./255, ...
-        MLData.sticks{l}.Visible = 'on';
-        guidata(MLData.sticks{l},handles);
-    end
-    
-
-
-    %% Markers
-    marker_options = {};
-    marker_options.style ='o' ;
-    marker_options.size =6 ;
-    marker_options.erase = 'normal'; %{none|xor|background}
-    try
-        delete(MLData.markers);
-    end
-    MLData.markers = repmat({0},1,Session.model.N);
-    for l=1:Session.xyz.model.N,
-        MLData.markers{l} = animatedline;
-        MLData.markers{l}.Parent = handles.MLxyzView;
-        MLData.markers{l}.Tag = Session.xyz.model.Markers{l}.name;
-        MLData.markers{l}.addpoints([xyzpos(1,l,1),xyzpos(1,l,1)],...
-                                    [xyzpos(1,l,2),xyzpos(1,l,2)],...
-                                    [xyzpos(1,l,3),xyzpos(1,l,3)]);
-        MLData.markers{l}.Marker           = marker_options.style;
-        MLData.markers{l}.MarkerEdgeColor  = Session.xyz.model.Markers{l}.color./255;
-        MLData.markers{l}.MarkerSize       = marker_options.size;
-        MLData.markers{l}.MarkerFaceColor  = Session.xyz.model.Markers{l}.color./255;
-        MLData.markers{l}.Visible          = 'on';
-        guidata(MLData.markers{l},handles);
-    end
-
+    MLData.objects = {};
+    MLData.objects{end+1} = MTAB_create_3d_object(Session.load('xyz'),handles.MLxyzView,handles,1);
+% 
+%     if Session.xyz.isempty, Session.xyz.load(Session); end
+%     %if Session.ang.isempty, Session.ang.load(Session); end
+%     xyzpos = Session.xyz.data;
+%     
+%     %% Translate connection map to pairs
+%     markerConnections=[];
+%     for i = 1:length(Session.xyz.model.Connections)
+%         markerConnections= cat(1,markerConnections,....
+%                                [Session.xyz.model.gmi(Session.xyz.model.Connections{i}.marker1),...
+%                                 Session.xyz.model.gmi(Session.xyz.model.Connections{i}.marker2)]...
+%                               );
+%     end
+%     nSticks= length(Session.xyz.model.Connections);    
+% 
+%     %% Initialization of graphical elements
+%     stick_options = {};
+%     stick_options.width = 1;
+%     stick_options.erase = 'normal'; %{none|xor|background}
+%     stick_options.line_style = '-';
+%     %% Lines connecting the markers
+%     try
+%         delete(MLData.sticks);
+%     end
+%     MLData.sticks = repmat({0},1,length(Session.xyz.model.Connections));
+%     for l=1:length(Session.xyz.model.Connections),
+%         MLData.sticks{l} = animatedline;
+%         MLData.sticks{l}.Parent = handles.MLxyzView;
+%         MLData.sticks{l}.Tag = [Session.xyz.model.Connections{l}.marker1 ':' Session.xyz.model.Connections{l}.marker2];
+%         MLData.sticks{l}.addpoints([xyzpos(1,markerConnections(l,1),1),xyzpos(1,markerConnections(l,2),1)],...
+%                                    [xyzpos(1,markerConnections(l,1),2),xyzpos(1,markerConnections(l,2),2)],...
+%                                    [xyzpos(1,markerConnections(l,1),3),xyzpos(1,markerConnections(l,2),3)]);
+%         MLData.sticks{l}.LineWidth =  stick_options.width;
+%         %MLData.sticks{l}.Color    , Session.model.Connections{l}.color./255, ...
+%         MLData.sticks{l}.Visible = 'on';
+%         guidata(MLData.sticks{l},handles);
+%     end
+%     
+% 
+% 
+%     %% Markers
+%     marker_options = {};
+%     marker_options.style ='o' ;
+%     marker_options.size =6 ;
+%     marker_options.erase = 'normal'; %{none|xor|background}
+%     try
+%         delete(MLData.markers);
+%     end
+%     MLData.markers = repmat({0},1,Session.model.N);
+%     for l=1:Session.xyz.model.N,
+%         MLData.markers{l} = animatedline;
+%         MLData.markers{l}.Parent = handles.MLxyzView;
+%         MLData.markers{l}.Tag = Session.xyz.model.Markers{l}.name;
+%         MLData.markers{l}.addpoints([xyzpos(1,l,1),xyzpos(1,l,1)],...
+%                                     [xyzpos(1,l,2),xyzpos(1,l,2)],...
+%                                     [xyzpos(1,l,3),xyzpos(1,l,3)]);
+%         MLData.markers{l}.Marker           = marker_options.style;
+%         MLData.markers{l}.MarkerEdgeColor  = Session.xyz.model.Markers{l}.color./255;
+%         MLData.markers{l}.MarkerSize       = marker_options.size;
+%         MLData.markers{l}.MarkerFaceColor  = Session.xyz.model.Markers{l}.color./255;
+%         MLData.markers{l}.Visible          = 'on';
+%         guidata(MLData.markers{l},handles);
+%     end
+% 
     
     %% Plot MLstateView
     %% Set labels & keys
@@ -764,19 +768,22 @@ if hObject ~= getappdata(handles.MTABrowserStates,'previousBState'),
     % States,num_of_states,sxyz
 
     %% Set Up States MLstateView Window
-    sxyz = size(xyzpos);
+    % length of smallest ojbect (should be all the same)
+    MLData.sessionLength = min(cell2mat(cellfun(@size,cellfun(@subsref,MLData.objects,repmat({substruct('.','xyzpos')},size(MLData.objects)),'UniformOutput',false),...
+                                repmat({1},size(MLData.objects)),'UniformOutput',false)));
+
     for l=1:num_of_states
         States{l}.data(States{l}.data(:)>0) =States{l}.data(States{l}.data(:)>0)-1+l/2;        
     end
     statesRange = [-0.5,num_of_states/2+0.5];
     windowSize = 100; 
-    index_range = zeros(sxyz(1),2);
+    index_range = zeros(MLData.sessionLength,2);
     index_range(1:windowSize,1) = 1;
     index_range(1:windowSize,2) = (1+windowSize):2*windowSize;
-    index_range(windowSize+1:sxyz(1)-windowSize,1)=1:(sxyz(1)-2*windowSize);
-    index_range(windowSize+1:sxyz(1)-windowSize,2)=(1+2*windowSize):(sxyz(1));
-    index_range(sxyz(1)-windowSize+1:sxyz(1),1)=(sxyz(1)-2*windowSize+1):sxyz(1)-windowSize;
-    index_range(sxyz(1)-windowSize+1:sxyz(1),2)=sxyz(1);
+    index_range(windowSize+1:MLData.sessionLength-windowSize,1)=1:(MLData.sessionLength-2*windowSize);
+    index_range(windowSize+1:MLData.sessionLength-windowSize,2)=(1+2*windowSize):(MLData.sessionLength);
+    index_range(MLData.sessionLength-windowSize+1:MLData.sessionLength,1)=(MLData.sessionLength-2*windowSize+1):MLData.sessionLength-windowSize;
+    index_range(MLData.sessionLength-windowSize+1:MLData.sessionLength,2)=MLData.sessionLength;
 
     %% Draws the Behavioral States
     state_line_options= {};
@@ -870,17 +877,12 @@ if hObject ~= getappdata(handles.MTABrowserStates,'previousBState'),
     MLData.erase_tag = false;
     MLData.animation = false;
     MLData.play_speed = 1;
-
-    MLData.line_options = stick_options;
     
-    MLData.xyzpos = xyzpos;
-    MLData.sessionLength = Session.xyz.size(1);
-    MLData.markerConnections = markerConnections;
-    MLData.num_of_sticks = num_of_sticks;
-    MLData.num_of_markers = Session.xyz.model.N;
-
+    
     % xyz source selector
-    MLxyzSourceMenu_UpdateFcn(handles.MLxyzSourceMenu,eventdata,handles);
+    e.Source.String = {[Session.filebase '.pos.mat']};
+    e.Source.Value = 1;
+    MLxyzSourceMenu_UpdateFcn(handles.MLxyzSourceMenu,e,handles);
     
     % MLstateView Stuff
     
@@ -896,9 +898,8 @@ if hObject ~= getappdata(handles.MTABrowserStates,'previousBState'),
     MLData.num_of_states = num_of_states;
     MLData.selected_states = selected_states;
     MLData.index_range = index_range;
-
     
-    MLData.t = d2t(Session.xyz.size(1),Session.xyz.sampleRate,0);
+    MLData.t = d2t(MLData.sessionLength,Session.xyz.sampleRate,0);
     
     set(handles.MLposition_slider,'Value',1,'Min',1,'Max',MLData.sessionLength-MLData.windowSize, 'SliderStep', [10 100]./MLData.sessionLength);
 
@@ -1024,27 +1025,27 @@ end
 
 % --- Executes on selection change in MLxyzSourceMenu.
 function MLxyzSourceMenu_Callback(hObject, eventdata, handles)
-% hObject    handle to MLxyzSourceMenu (see GCBO)
-% eventdata  reserved - to be defined in a future version of MATLAB
-% handles    structure with handles and user data (see GUIDATA)
     Session = getappdata(handles.MTABrowser,'Session');
     MLData = getappdata(handles.MTABrowser,'MLData');  
-    xyz = Session.load('xyz',hObject.String{hObject.Value});
-    MLData.xyzpos = xyz.data;
-
-
-function MLxyzSourceMenu_UpdateFcn(hObject, eventdata,handles)
+    MTAB_delete_3d_object(MLData.objects{1}); % Needs revision when multiple objects are introduced
+    MLData.objects{1} = MTAB_create_3d_object(Session.load('xyz',hObject.String{hObject.Value}),handles.MLxyzView,handles,MLData.idx);
+    MLxyzSourceMenu_UpdateFcn(hObject, eventdata, handles);
+    setappdata(handles.MTABrowser,'MLData',MLData);
+    guidata(hObject,handles);
+    
+function MLxyzSourceMenu_UpdateFcn(hObject, eventdata, handles)
     Session = getappdata(handles.MTABrowser,'Session');   
+    filename = eventdata.Source.String{eventdata.Source.Value};
     hObject.String = listFiles(Session.name,'pos');
-    hObject.Value = find(~cellfun(@isempty,regexp(hObject.String,[Session.filebase '\.pos\.mat'])));
- 
-
+    hObject.Value = find(~cellfun(@isempty,regexp(hObject.String,filename)));
+    guidata(hObject,handles);  
 
 function MLxyzSourceMenu_CreateFcn(hObject, eventdata, handles)
     if ispc && isequal(get(hObject,'BackgroundColor'), get(0,'defaultUicontrolBackgroundColor'))
         set(hObject,'BackgroundColor','white');
     end
 
+    
 function MLindexinput_Callback(hObject, eventdata, handles)
 MLData = getappdata(handles.MTABrowser,'MLData');
 MLData.idx = str2double(get(hObject,'String'));
@@ -2206,26 +2207,35 @@ if ~getappdata(handles.MLapp,'paused'),
     elseif ( MLData.idx > MLData.sessionLength-MLData.windowSize ),
         MLData.idx = 1;
     end
-
+    
     set(handles.MLposition_slider,'Value', MLData.idx)
-    for kk=1:MLData.num_of_sticks,
-        MLData.sticks{kk}.clearpoints;
-        MLData.sticks{kk}.addpoints([MLData.xyzpos(MLData.idx,MLData.markerConnections(kk,1),1),MLData.xyzpos(MLData.idx,MLData.markerConnections(kk,2),1)],...
-                                    [MLData.xyzpos(MLData.idx,MLData.markerConnections(kk,1),2),MLData.xyzpos(MLData.idx,MLData.markerConnections(kk,2),2)],...
-                                    [MLData.xyzpos(MLData.idx,MLData.markerConnections(kk,1),3),MLData.xyzpos(MLData.idx,MLData.markerConnections(kk,2),3)]);
+    
+    % MOVE sticks
+    for obj = MLData.objects,
+        obj = obj{1};
+        for kk=1:obj.nSticks,
+            obj.sticks{kk}.clearpoints;
+            obj.sticks{kk}.addpoints([obj.xyzpos(MLData.idx,obj.markerConnections(kk,1),1),obj.xyzpos(MLData.idx,obj.markerConnections(kk,2),1)],...
+                [obj.xyzpos(MLData.idx,obj.markerConnections(kk,1),2),obj.xyzpos(MLData.idx,obj.markerConnections(kk,2),2)],...
+                [obj.xyzpos(MLData.idx,obj.markerConnections(kk,1),3),obj.xyzpos(MLData.idx,obj.markerConnections(kk,2),3)]);
+        end
+        % MOVE markers
+        for kk=1:obj.nMarkers,
+            obj.markers{kk}.clearpoints;
+            obj.markers{kk}.addpoints([obj.xyzpos(MLData.idx,kk,1),obj.xyzpos(MLData.idx,kk,1)],...
+                [obj.xyzpos(MLData.idx,kk,2),obj.xyzpos(MLData.idx,kk,2)],...
+                [obj.xyzpos(MLData.idx,kk,3),obj.xyzpos(MLData.idx,kk,3)]);
+        end
     end
-    for kk=1:MLData.num_of_markers,
-        MLData.markers{kk}.clearpoints;
-        MLData.markers{kk}.addpoints([MLData.xyzpos(MLData.idx,kk,1),MLData.xyzpos(MLData.idx,kk,1)],...
-                                     [MLData.xyzpos(MLData.idx,kk,2),MLData.xyzpos(MLData.idx,kk,2)],...
-                                     [MLData.xyzpos(MLData.idx,kk,3),MLData.xyzpos(MLData.idx,kk,3)]);
-    end
+    
+    % STC view
     for kk=find(MLData.selected_states),
         MLData.state_lines{kk}.clearpoints;
         MLData.state_lines{kk}.addpoints(MLData.index_range(MLData.idx,1):MLData.index_range(MLData.idx,2),...
                                          MLData.States{kk}.data(MLData.index_range(MLData.idx,1):MLData.index_range(MLData.idx,2)));
         MLData.state_lines{kk}.LineStyle = '-';
     end
+    % FET view
     for kk=find(MLData.selected_features),
         switch MLData.Features{kk}.plot_type,
             case 'line'
