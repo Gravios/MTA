@@ -8,6 +8,10 @@ function obj = MTAB_create_3d_object(Data,parent,handles,idx)
                             'size', 6 ,...
                             'erase', 'normal'); %{none|xor|background}
     
+    % create button in MLobjectPane                   
+    %guidata(hObject, handles);
+    
+    
     nSticks  = length(Data.model.Connections);
     nMarkers = Data.model.N;
     markerConnections=[];
@@ -53,3 +57,4 @@ function obj = MTAB_create_3d_object(Data,parent,handles,idx)
         obj.markers{l}.Visible          = 'on';
         guidata(obj.markers{l},handles);
     end
+    
