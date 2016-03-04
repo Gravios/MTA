@@ -1,0 +1,9 @@
+function MLData = MTAB_reorder_3d_object_buttons(MLData)
+nColumns = 4;
+nRows = 2;
+for b = 1:numel(MLData.objects),
+    MLData.objects{b}.Button.Position = [mod(b-1,nColumns+1)*.3+0.01,...
+                                  1-(1+floor((b-1)/nColumns))/nRows,...
+                                  1/nColumns,...
+                                  1/nRows];
+end

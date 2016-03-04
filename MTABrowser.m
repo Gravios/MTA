@@ -396,6 +396,7 @@ BStateChange(hObject,eventdata,handles);
 if getappdata(handles.DMapp,'load_sessions'),
     Session = getappdata(handles.MTABrowser,'Session');
 
+
     % Select Valid Sessions
     files = dir(Session.path.data);
     re = '^[a-zA-Z]{1,2}[0-9]{2}[-][0-9]{8,8}$';% regular expression to match Session naming convention
@@ -651,11 +652,12 @@ if hObject ~= getappdata(handles.MTABrowserStates,'previousBState'),
     MLData.record = {};
     MLData.recording=0;
     MLData.MLRotaKeyPressFcn = [];
+    %MLData.parpool = parpool('local',2);
     % Rescale Play Speed slider for xyz Sample Rate
     psSliderMax = round(Session.xyz.sampleRate/2);
     set(handles.MLplayspeed_slider,'max',psSliderMax);
 
-    set(handles.MTABrowser,'keyPressFcn','MTABrowser(''MLkeyState'',hObject,eventdata,handles)')
+    set(findall(handles.MTABrowser,'Type','uicontrol'),'keyPressFcn','MTABrowser(''MLkeyState'',hObject,eventdata,handles)')
     
     
 
@@ -674,73 +676,21 @@ if hObject ~= getappdata(handles.MTABrowserStates,'previousBState'),
 
     MLData.MLxyzViewRotate = rotate3d(handles.MLxyzView);
 
+    
+    % 3D object Panel UIContextMenu
+    handles.MLobjectPanel.UIContextMenu = uicontextmenu('Parent',handles.MTABrowser);         
+    uimenu(handles.MLobjectPanel.UIContextMenu ,...
+           'Label','add object',...
+           'Callback',@MLobjectUIContextMenu_Callback);
+    uimenu(handles.MLobjectPanel.UIContextMenu ,...
+           'Label','remove object',...
+           'Callback',@MLobjectUIContextMenu_Callback);
 
+   % Load 3D object
     MLData.objects = {};
-    MLData.objects{end+1} = MTAB_create_3d_object(Session.load('xyz'),handles.MLxyzView,handles,1);
-% 
-%     if Session.xyz.isempty, Session.xyz.load(Session); end
-%     %if Session.ang.isempty, Session.ang.load(Session); end
-%     xyzpos = Session.xyz.data;
-%     
-%     %% Translate connection map to pairs
-%     markerConnections=[];
-%     for i = 1:length(Session.xyz.model.Connections)
-%         markerConnections= cat(1,markerConnections,....
-%                                [Session.xyz.model.gmi(Session.xyz.model.Connections{i}.marker1),...
-%                                 Session.xyz.model.gmi(Session.xyz.model.Connections{i}.marker2)]...
-%                               );
-%     end
-%     nSticks= length(Session.xyz.model.Connections);    
-% 
-%     %% Initialization of graphical elements
-%     stick_options = {};
-%     stick_options.width = 1;
-%     stick_options.erase = 'normal'; %{none|xor|background}
-%     stick_options.line_style = '-';
-%     %% Lines connecting the markers
-%     try
-%         delete(MLData.sticks);
-%     end
-%     MLData.sticks = repmat({0},1,length(Session.xyz.model.Connections));
-%     for l=1:length(Session.xyz.model.Connections),
-%         MLData.sticks{l} = animatedline;
-%         MLData.sticks{l}.Parent = handles.MLxyzView;
-%         MLData.sticks{l}.Tag = [Session.xyz.model.Connections{l}.marker1 ':' Session.xyz.model.Connections{l}.marker2];
-%         MLData.sticks{l}.addpoints([xyzpos(1,markerConnections(l,1),1),xyzpos(1,markerConnections(l,2),1)],...
-%                                    [xyzpos(1,markerConnections(l,1),2),xyzpos(1,markerConnections(l,2),2)],...
-%                                    [xyzpos(1,markerConnections(l,1),3),xyzpos(1,markerConnections(l,2),3)]);
-%         MLData.sticks{l}.LineWidth =  stick_options.width;
-%         %MLData.sticks{l}.Color    , Session.model.Connections{l}.color./255, ...
-%         MLData.sticks{l}.Visible = 'on';
-%         guidata(MLData.sticks{l},handles);
-%     end
-%     
-% 
-% 
-%     %% Markers
-%     marker_options = {};
-%     marker_options.style ='o' ;
-%     marker_options.size =6 ;
-%     marker_options.erase = 'normal'; %{none|xor|background}
-%     try
-%         delete(MLData.markers);
-%     end
-%     MLData.markers = repmat({0},1,Session.model.N);
-%     for l=1:Session.xyz.model.N,
-%         MLData.markers{l} = animatedline;
-%         MLData.markers{l}.Parent = handles.MLxyzView;
-%         MLData.markers{l}.Tag = Session.xyz.model.Markers{l}.name;
-%         MLData.markers{l}.addpoints([xyzpos(1,l,1),xyzpos(1,l,1)],...
-%                                     [xyzpos(1,l,2),xyzpos(1,l,2)],...
-%                                     [xyzpos(1,l,3),xyzpos(1,l,3)]);
-%         MLData.markers{l}.Marker           = marker_options.style;
-%         MLData.markers{l}.MarkerEdgeColor  = Session.xyz.model.Markers{l}.color./255;
-%         MLData.markers{l}.MarkerSize       = marker_options.size;
-%         MLData.markers{l}.MarkerFaceColor  = Session.xyz.model.Markers{l}.color./255;
-%         MLData.markers{l}.Visible          = 'on';
-%         guidata(MLData.markers{l},handles);
-%     end
-% 
+    MLData.objects{end+1} = MTAB_create_3d_object(Session.load('xyz'),handles.MLxyzView,handles,1,@MLobjectUIContextMenu_Callback);
+    MLData = MTAB_reorder_3d_object_buttons(MLData);
+    
     
     %% Plot MLstateView
     %% Set labels & keys
@@ -916,6 +866,7 @@ if hObject ~= getappdata(handles.MTABrowserStates,'previousBState'),
     if hObject ~= getappdata(handles.MLapp,'previousAppState'),
         AppStateChange(handles.MLdisplay,eventdata,handles);
     end
+    MLData.objects{1}.Button.Visible = 'on';
     
     guidata(hObject, handles);
     
@@ -950,7 +901,7 @@ function MLposition_slider_Callback(hObject, eventdata, handles)
 idx = round(get(hObject,'Value'));
 MLData = getappdata(handles.MTABrowser,'MLData');
 MLData.idx = idx;
-updateCircle(hObject,handles,0)
+update_MLxyzView(hObject,handles,0)
 setappdata(handles.MTABrowser,'MLData',MLData);
 set(hObject,'Value',MLData.idx);
 guidata(hObject,handles);
@@ -963,7 +914,7 @@ function MLplayforward_Callback(hObject, eventdata, handles)
 setappdata(handles.MLapp,'animation',~getappdata(handles.MLapp,'animation'));
 setappdata(handles.MLapp,'paused',0);
 while getappdata(handles.MLapp,'animation')
-    updateCircle(hObject,handles,1);
+    update_MLxyzView(hObject,handles,1);
 end
 
 function MLjumpforward_Callback(hObject, eventdata, handles)
@@ -982,20 +933,20 @@ if current_label~=0
         MLData.erase_tag = 0;
         setappdata(handles.MTABrowser,'MLData',MLData),
     end
-    updateCircle(hObject,handles,0)
+    update_MLxyzView(hObject,handles,0)
     MLData = getappdata(handles.MTABrowser,'MLData');
     MLData.flag_tag = flag_state;
     MLData.erase_tag = erase_tag;
     setappdata(handles.MTABrowser,'MLData',MLData),
 else
-    updateCircle(hObject,handles,50)
+    update_MLxyzView(hObject,handles,50)
 end
 
 function MLplayreverse_Callback(hObject, eventdata, handles)
 setappdata(handles.MLapp,'animation',~getappdata(handles.MLapp,'animation'));
 setappdata(handles.MLapp,'paused',0);
 while getappdata(handles.MLapp,'animation')
-    updateCircle(hObject, handles,-1);
+    update_MLxyzView(hObject, handles,-1);
 end
 
 function MLjumpback_Callback(hObject, eventdata, handles)
@@ -1014,13 +965,13 @@ if current_label~=0
         MLData.erase_tag = 0;
         setappdata(handles.MTABrowser,'MLData',MLData),
     end
-    updateCircle(hObject,handles,0)
+    update_MLxyzView(hObject,handles,0)
     MLData = getappdata(handles.MTABrowser,'MLData');
     MLData.flag_tag = 0;
     MLData.erase_tag = erase_tag;
     setappdata(handles.MTABrowser,'MLData',MLData),
 else
-    updateCircle(hObject,handles,-50)
+    update_MLxyzView(hObject,handles,-50)
 end
 
 % --- Executes on selection change in MLxyzSourceMenu.
@@ -1028,7 +979,7 @@ function MLxyzSourceMenu_Callback(hObject, eventdata, handles)
     Session = getappdata(handles.MTABrowser,'Session');
     MLData = getappdata(handles.MTABrowser,'MLData');  
     MTAB_delete_3d_object(MLData.objects{1}); % Needs revision when multiple objects are introduced
-    MLData.objects{1} = MTAB_create_3d_object(Session.load('xyz',hObject.String{hObject.Value}),handles.MLxyzView,handles,MLData.idx);
+    MLData.objects{1} = MTAB_create_3d_object(Session.load('xyz',hObject.String{hObject.Value}),handles.MLxyzView,handles,MLData.idx,@MLobjectUIContextMenu_Callback);
     MLxyzSourceMenu_UpdateFcn(hObject, eventdata, handles);
     setappdata(handles.MTABrowser,'MLData',MLData);
     guidata(hObject,handles);
@@ -1056,29 +1007,99 @@ MLData = getappdata(handles.MTABrowser,'MLData');
 MLData.idx = NearestNeighbor(MLData.t,str2double(get(hObject,'String')));
 setappdata(handles.MTABrowser,'MLData',MLData);
 
+function MLobjectButton_Callback(hObject, eventdata, handles)
+MLData = getappdata(handles.MTABrowser,'MLData');
+objInd = find(cell2mat(cellfun(@(objb,hobj)objb.Button==hobj,...
+                               MLData.objects,...
+                               repmat({hObject},size(MLData.objects)),...
+                               'uniformoutput',false)));        
+objVisible = MLData.objects{objInd}.visible;
+
+if strcmp(objVisible,'on'),objVisible='off';else objVisible='on';end
+nObj = numel(MLData.objects{objInd}.markers)+numel(MLData.objects{objInd}.sticks);
+cellfun(@set,...
+        cat(2,MLData.objects{objInd}.sticks,...
+              MLData.objects{objInd}.markers),...
+        repmat({'visible'},[1,nObj]),...
+        repmat({objVisible},[1,nObj]));
+%if objVisible,
+if strcmp(objVisible,'on'),    
+    hObject.BackgroundColor = get(0,'defaultUicontrolBackgroundColor');
+else
+    hObject.BackgroundColor = [0.5,0.5,0.5];
+end
+
+MLData.objects{objInd}.visible = objVisible;
+setappdata(handles.MTABrowser,'MLData',MLData);
+guidata(hObject,handles);
+
+
+function MLobjectUIContextMenu_Callback(hObject, eventdata)
+handles = guidata(gcbo);
+hObject = handles.MTABrowser.CurrentObject;
+MLData = getappdata(handles.MTABrowser,'MLData');
+switch eventdata.Source.Label,
+    case 'add object'
+        Session = getappdata(handles.MTABrowser,'Session');   
+        [filename,filepath] = uigetfile(['*.' Session.trialName '*.pos.*'],'Open Behavior Collection:',...
+                     Session.xyz.fpath,...
+                     'MultiSelect','off');
+        if isempty(filename)||~exist(fullfile(filepath,filename),'file'),
+            return
+        end
+        MLData.objects{end+1} = MTAB_create_3d_object(Session.load('xyz',filename),...
+                                                      handles.MLxyzView,...
+                                                      handles,...
+                                                      MLData.idx,@MLobjectUIContextMenu_Callback);
+        MLData = MTAB_reorder_3d_object_buttons(MLData);
+
+    case 'remove object'        
+        objInd = find(cell2mat(cellfun(@(objb,hobj)objb.Button==hobj,...
+                                       MLData.objects,...
+                                       repmat({hObject},size(MLData.objects)),...
+                                       'uniformoutput',false)));
+        MTAB_delete_3d_object(MLData.objects{objInd});
+        MLData.objects(objInd)=[];
+        MLData = MTAB_reorder_3d_object_buttons(MLData);
+
+ 
+    case 'hide object'        
+        objInd = find(cell2mat(cellfun(@(objb,hobj)objb.Button==hobj,...
+                                        MLData.objects,...
+                                        repmat({hObject},size(MLData.objects)),...
+                                        'uniformoutput',false)));        
+        objVisible = MLData.objects{objInd}.visible;
+        if strcmp(objVisible,'on'),objVisible='off';else,objVisible='on';end
+        set([MLData.objects{objInd}.sticks,...
+             MLData.objects{objInd}.markers],...
+            'visible',...
+            objVisible);
+        if strcmp(objVisible,'on'),
+            hObject.BackGroundColor = get(0,'defaultUicontrolBackgroundColor');
+        else
+            hObject.BackGroundColor = [0.5,0.5,0.5];
+        end
+end
+setappdata(handles.MTABrowser,'MLData',MLData);
 
 function MLtimeinput_CreateFcn(hObject, eventdata, handles)
 if ispc && isequal(get(hObject,'BackgroundColor'), get(0,'defaultUicontrolBackgroundColor'))
     set(hObject,'BackgroundColor','white');
 end
-
 function MLposition_slider_CreateFcn(hObject, eventdata, handles)
 set(hObject, 'Value', 1);
 if isequal(get(hObject,'BackgroundColor'), get(0,'defaultUicontrolBackgroundColor'))
     set(hObject,'BackgroundColor',[.9 .9 .9]);
 end
-
 function MLindexinput_CreateFcn(hObject, eventdata, handles)
 if ispc && isequal(get(hObject,'BackgroundColor'), get(0,'defaultUicontrolBackgroundColor'))
     set(hObject,'BackgroundColor','white');
 end
-
 function MLplayspeed_slider_CreateFcn(hObject, eventdata, handles)
 set(hObject, 'Value', 32);
 if isequal(get(hObject,'BackgroundColor'), get(0,'defaultUicontrolBackgroundColor'))
     set(hObject,'BackgroundColor',[.9 .9 .9]);
 end
-
 function MLjumpback_CreateFcn(hObject, eventdata, handles)
 icon = imread('skip_backward.png');
 set(hObject,'CData',icon);
@@ -1172,7 +1193,7 @@ end
 setappdata(handles.MTABrowser,'MLData',MLData);
 
 guidata(hObject, handles);
-updateCircle(hObject,handles,0)
+update_MLxyzView(hObject,handles,0)
 
 function MLSstateTable_CellEditCallback(hObject, eventdata, handles)
 % hObject    handle to MLSstateTable (see GCBO)
@@ -1584,7 +1605,7 @@ set(cell2mat(MLData.feature_display_YLimCB(selected_features)),'Visible','on');
 
 setappdata(handles.MTABrowser,'MLData',MLData);
 guidata(hObject, handles);
-updateCircle(hObject,handles,0)
+update_MLxyzView(hObject,handles,0)
 
 function MLauxdataUpdatePlot(hObject,eventdata,handles)
 MLData = getappdata(handles.MTABrowser,'MLData');
@@ -2043,7 +2064,7 @@ if length(eventdata.Modifier)==1,
             MLData = getappdata(handles.MTABrowser,'MLData');  
             MLData.idx = str2double(inputdlg('Index: ','Go To Index',1));
             setappdata(handles.MTABrowser,'MLData',MLData);
-            updateCircle(hObject,handles,0);
+            update_MLxyzView(hObject,handles,0);
             
           case 'leftarrow'
             MLjumpback_Callback(hObject, eventdata, handles);
@@ -2170,7 +2191,7 @@ end
 
 set(handles.MTABrowser,'CurrentCharacter','0');
 guidata(handles.MTABrowser,handles);
-function updateCircle(hObject,handles,idx)
+function update_MLxyzView(hObject,handles,idx)
 %% UpdateCircle
 
 play_speed = getappdata(handles.MLapp,'play_speed');
@@ -2213,12 +2234,14 @@ if ~getappdata(handles.MLapp,'paused'),
     % MOVE sticks
     for obj = MLData.objects,
         obj = obj{1};
-        for kk=1:obj.nSticks,
-            obj.sticks{kk}.clearpoints;
-            obj.sticks{kk}.addpoints([obj.xyzpos(MLData.idx,obj.markerConnections(kk,1),1),obj.xyzpos(MLData.idx,obj.markerConnections(kk,2),1)],...
-                [obj.xyzpos(MLData.idx,obj.markerConnections(kk,1),2),obj.xyzpos(MLData.idx,obj.markerConnections(kk,2),2)],...
-                [obj.xyzpos(MLData.idx,obj.markerConnections(kk,1),3),obj.xyzpos(MLData.idx,obj.markerConnections(kk,2),3)]);
-        end
+         for kk=1:obj.nSticks,
+             obj.sticks{kk}.clearpoints;
+             obj.sticks{kk}.addpoints([obj.xyzpos(MLData.idx,obj.markerConnections(kk,1),1),obj.xyzpos(MLData.idx,obj.markerConnections(kk,2),1)],...
+                 [obj.xyzpos(MLData.idx,obj.markerConnections(kk,1),2),obj.xyzpos(MLData.idx,obj.markerConnections(kk,2),2)],...
+                 [obj.xyzpos(MLData.idx,obj.markerConnections(kk,1),3),obj.xyzpos(MLData.idx,obj.markerConnections(kk,2),3)]);
+         end
+
+        
         % MOVE markers
         for kk=1:obj.nMarkers,
             obj.markers{kk}.clearpoints;
