@@ -20,7 +20,7 @@ else
 end
 
 % Create the xyzPeriods and concatinate all trials into one xyz array
-xyz = cell2mat(xyzData(~cellfun(@isempty,xyzData))');
+xyz = double(cell2mat(xyzData(~cellfun(@isempty,xyzData))'));
 
 % Create XYZ data object
 
@@ -46,6 +46,14 @@ Session.xyz = Dxyz;
 
 Session.ang = MTADang(Session.spath,Session.filebase,[],viconSampleRate,...
                       Session.xyz.sync,Session.xyz.origin,Session.model);
+
+Session.fet = MTADfet(Session.spath,...
+                      [],...
+                      [],...
+                      [],...
+                      Session.sync.copy,...
+                      Session.sync.data(1),...
+                      []);                  
 
 %% MTAStateCollection object holds all behavioral sets of periods
 Session.stc = MTAStateCollection(Session.spath,Session.filebase,'default',[],[],1);
