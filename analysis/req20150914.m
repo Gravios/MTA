@@ -32,28 +32,28 @@ Stc = Trial.stc.load(Trial,'hand_labeled_rev2');
 
 [fet,fett,fetd] = feval(featureSet,Trial,fetSampleRate,ifNormalize); % Load Feature matrix of the session
 
-[asmat,labels,keys] =  stc2mat(Stc,fet);
-asmat = MTADxyz('data',asmat,'sampleRate',fet.sampleRate);
-[~,asmat.data] = max(asmat.data,[],2);
-c = jet(numel(Stc.states));
-csmat = asmat.copy; 
-csmat.data = c(csmat.data,:);
 
-ind = Trial.stc{'a'};
+[asmat,labels,keys] =  stc2mat(Stc,fet);                     % Create NxK state matrix
+asmat = MTADxyz('data',asmat,'sampleRate',fet.sampleRate);   % Wrap state matrix in MTADxyz object
+[~,asmat.data] = max(asmat.data,[],2);                       % Eliminate overlaps by retriving winning state index for each time point
+c = jet(numel(Stc.states));                                  % Create base colors
+csmat = asmat.copy;                                          % Copy object 
+csmat.data = c(csmat.data,:);                                % Fill N time points with corect colors
 
-mfet = fet(ind,:);
-%mfet = fet(ind,fetInds{end});
-msmat = csmat(ind,:);
+ind = Trial.stc{'a'};                                        % Set selection index to all good periods {'gper' a.k.a. 'a'}
 
-start = 1;
-skip = 2;
-stop = size(mfet,1);
-no_dims = 2;
+mfet = fet(ind,:);                                           % Grab the gper subset of the features
+msmat = csmat(ind,:);                                        % Grab the gper subset of the state color matrix
+
+start = 1;                                                   % Define start of secondary subselection { tnse is super comp mondo expensive }
+skip = 2;                                                    % Third uniform subselection
+stop = size(mfet,1);                                         % Define end of secondary subselection
+no_dims = 2;                                                 % Number of dimensions for the dimensionallity reduction 
 
 ind = start:skip:stop;
-mappedX = tsne(mfet(ind,:), msmat(ind,:), no_dims, initial_dims, perplexity); 
+mappedX = tsne(mfet(ind,:), msmat(ind,:), no_dims, initial_dims, perplexity);  % Do It
 
-figparm = ['tSNE-fsr_' num2str(fetSampleRate) '-ind_' num2str(start) '_' ...
+figparm = ['tSNE-fsr_' num2str(fetSampleRate) '-ind_' num2str(start) '_' ...   % Rediculously long name
             num2str(skip) '_' num2str(stop) '-perplexity_' ...
             num2str(perplexity) '-initial_dims_' num2str(initial_dims) ...
             '-no_dims_' num2str(no_dims)];

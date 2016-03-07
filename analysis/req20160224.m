@@ -104,7 +104,7 @@ if train
     fetInds{end+1} =  find(dm>0.20);
 
     %state matrix of union between all states minus trarget and target
-    smat = stc2mat(tstc,fet,{[strjoin({states{find(cellfun(@isempty,regexp(states,states{sind})))}},'+'),'&gper'],states{sind}});
+    smat = stc2mat(tstc,tfet,{[strjoin({states{find(cellfun(@isempty,regexp(states,states{sind})))}},'+'),'&gper'],states{sind}});
     net = patternnet(200);
     [net,tr] = train(net,tfet(nniz(tfet),fetInds{end})',smat(nniz(tfet),:)');
 
