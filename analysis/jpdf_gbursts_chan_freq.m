@@ -2,11 +2,12 @@
 Trial = MTATrial('jg05-20120310');
 stc_mode = 'auto_wbhr';
 channels = 65:96;
-Trial.stc.updateMode(stc_mode);Trial.stc.load;
+Trial.stc.updateMode(stc_mode);
+Trial.stc.load;
 ds = load(fullfile(Trial.spath,[Trial.name '.SelectBursts3.lfpinterp.all.1-96.mat']));
 numsts = numel(Trial.stc.states);
 
-figure(32342)
+figure(32343)
 %skeys = Trial.stc.list_state_attrib('key');
 skeys = {'a','t','r','w','h','l'};
 skeys = cell2mat(skeys);
@@ -20,16 +21,18 @@ for s = skeys,
     for i = channels,
         bchanc(:,end+1) = histc(ds.BurstFreq(ismember(ds.BurstChan,i)&binds),fbins);
     end
-    subplot2(1,numsts,1,find(s==skeys));imagesc(fbins,channels,1-bsxfun(@rdivide,bsxfun(@minus,sum(bchanc,2),bchanc),sum(bchanc,2))');title(Trial.stc{s}.label);xlabel('Burst Frequency');
+    %subplot2(1,numsts,1,find(s==skeys));    imagesc(fbins,channels,1-bsxfun(@rdivide,bsxfun(@minus,sum(bchanc,2),bchanc),sum(bchanc,2))');title(Trial.stc{s}.label);xlabel('Burst Frequency');
     %subplot2(1,numsts,1,find(s==skeys));imagesc(fbins,channels,bsxfun(@rdivide,bchanc,sum(bchanc,2))');title(Trial.stc{s}.label);xlabel('Burst Frequency');
-    %subplot2(1,numsts,1,find(s==skeys));imagesc(fbins,channels,bsxfun(@rdivide,bchanc,sum(bchanc))');title(Trial.stc{s}.label);xlabel('Burst Frequency');
+    subplot2(1,numsts,1,find(s==skeys));imagesc(fbins,channels,bsxfun(@rdivide,bchanc,sum(bchanc))');title(Trial.stc{s}.label);xlabel('Burst Frequency');
     %subplot2(1,numsts,1,find(s==skeys));imagesc(fbins,channels,bchanc');title(Trial.stc{s}.label);xlabel('Burst Frequency');caxis([0,max(bchanc(:)/2)]);
     %subplot2(1,numsts,1,find(s==skeys));imagesc(fbins,channels,bchanc'/sum(bchanc(:)));title(Trial.stc{s}.label);xlabel('Burst Frequency');
+    colormap jet
     if s==1,ylabel('Channel'),end
 end
 suptitle('JPDF of detected bursts between channel and frequency given a behavioral or neural state');
 
 lfp = Trial.lfp.copy;
+lfp.filename = [Trial.name,'.lfp'];
 lfp.load(Trial,80);% LM Phase? or pyrmidal phase?
 lfp = lfp.phase;
 
@@ -60,6 +63,7 @@ subplot2(numel(chans),numsts,find(c==chans),s);imagesc(pedgs,fbins,(pchanc./repm
 end
 end
 
+round(ds.BurstTime*Trial.lfp.sampleRate-sper.origin)
 
 
 s = 3;

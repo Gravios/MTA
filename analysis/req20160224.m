@@ -112,6 +112,33 @@ end
 
 
 
+asmat = MTADfet('data',tstc,'sampleRate',fet.sampleRate);
+[~,asmat.data] = max(asmat.data,[],2);
+c = jet(numel(states));
+c = [0,0,1;...
+     1,0,0;...
+     0,1,0;...
+     0,1,1;...
+     1,0,1;...
+     1,1,0;];
+csmat = asmat.copy; 
+csmat.data = c(csmat.data,:);
+
+
+osts = numel(states);
+hfig = figure(3923924);clf
+hold on;
+mc = csmat(ind,:);
+for nc = 1:osts,
+    nind = all(bsxfun(@eq,c(nc,:),mc),2);
+    h = scatter(mappedX(nind,1),mappedX(nind,2),2,mc(nind,:));
+    try,h.MarkerFaceColor = h.CData(1,:);end
+end
+legend(states,'location','south','Orientation','horizontal');
+
+
+
+
 d_state = net(fet(:,fetInds{end})')';
 
 figure,plot(d_state)

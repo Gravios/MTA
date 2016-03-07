@@ -15,7 +15,7 @@ afet.data = reshape(afet.data,[],fxyz.size(2));
 % $$$ bfet.filter('ButFilter',3,2.4,'low');
 % $$$ bfet.resample(newSampleRate);
 
-figure,plot(afet.data)
+nnnfigure,plot(afet.data)
 Lines(Trial.stc{'w'}(:),[],'b');
 
 zv = afet.copy;
@@ -327,4 +327,116 @@ fxyz = xyz.copy;
 fxyz.filter('ButFilter',3,.5);
 fvxy = fxyz.vel([1,7],[1,2]);
 fang = create(MTADang,Trial,fxyz);
-figure,plot(abs(diff(fang(:,3,4,2)))),Lines(Trial.stc{'r'}(:),[],'r');
+figure,plot(abs(diff(fang(:,3,4,2)))),Lines(Trial.stc{'r'}(:),[], ...
+                                            'r');
+
+
+% FUN:ERCOR_fillgaps_RigidBody.m DATE:20160307
+
+Session = MTASession('jg05-20120317');
+xyz = Session.load('xyz');
+ang = create(MTADang,Session,xyz);
+
+bang = transform_origin(Session,xyz,'head_back','head_front',{'head_left','head_right'});
+rang = transform_origin(Session,xyz,'head_left','head_right',{'head_back','head_front'});
+good_index = 58320;
+
+
+rb_xyz = xyz.copy;
+trb_xyz = rb_xyz.copy;
+
+rb_xyz.data = xyz(:,rb_model.ml,:);
+rb_xyz.model = rb_model;
+
+nperm = factorial(rb_xyz.model.N);
+bperm = 1:rb_xyz.model.N;
+bperm = perms(bperm);
+fperms = bperm(:,1:rb_xyz.model.N-1)';
+
+
+efet = zeros([rb_xyz.size(1),nperm]);
+for c = 0:NumChunks,
+    if c~=NumChunks,
+        ind = (c*BufferSize+1):(c+1)*BufferSize;
+    else
+        ind = LastPiece;
+    end
+    trb_xyz.data = rb_xyz(ind,:,:);
+    imori = imo(trb_xyz);
+
+    i = 1;
+    for p = fperms,
+        efet(ind,i) = imori(:,p(1),p(2),p(3),p(4),1);
+        i = i+1;
+    end
+end
+
+dtgmori = var(bsxfun(@minus,efet,efet(good_index,:)),[],2);
+
+Efet = MTADxyz('data',efet,'sampleRate',xyz.sampleRate);
+
+figure,imagesc(efet');
+pm = 2;
+figure,hist(efet(:,pm),100)
+Lines(median(efet(nniz(efet),pm)),[],'r');
+
+eds = linspace(1,1.5,1000);
+figure,bar(eds,histc(efet(:,pm),eds),'histc')
+Lines(median(efet(nniz(efet),pm)),[],'r');
+
+eds = linspace(0,2.5,10000);
+figure,bar(eds,histc(Efet(Session.stc{'a'},pm),eds),'histc')
+Lines(median(Efet(Session.stc{'a'},pm)),[],'r');
+Lines(mean(Efet(Session.stc{'a'},pm)),[],'m');
+Lines(prctile(Efet(Session.stc{'a'},pm),[1,99]),[],'g');
+
+
+eds = linspace(0,2.5,10000);
+figure,bar(eds,histc(Efet(Session.stc{'a-e'},pm),eds),'histc')
+Lines(median(Efet(Session.stc{'a-e'},pm)),[],'r');
+Lines(mean(Efet(Session.stc{'a-e-s'},pm)),[],'m');
+Lines(prctile(Efet(Session.stc{'a-e'},pm),[1,99]),[],'g');
+
+figure,hist((Efet(Session.stc{'a-e'},pm)- median(Efet(Session.stc{'a-e'},pm)))./mad(Efet(Session.stc{'a-e'},pm),1),10000);
+
+prctile(Efet(Session.stc{'a'},pm),[1,99])
+
+bsxfun(@lt,,Efet(Session.stc{'a'},pm)
+
+
+figure,hist((Efet(Session.stc{'a'},pm) - median(Efet(Session.stc{'a'},pm)))./mad(Efet(Session.stc{'a'},pm),1),10000);
+
+mu = bsxfun(@rdivide,...
+            bsxfun(@minus,...
+                   Efet.data,...
+                   median(Efet(Session.stc{'a'},:))),...
+            mad(Efet(Session.stc{'a'},:),1));
+
+figure,imagesc(mu');caxis([-10,10]);colormap jet
+gp = fperms(:,abs(mu(125700,:))<10)
+
+
+interMarDist =  imd(rb_xyz);
+
+
+
+md = MTADxyz('data',subsref(reshape(interMarDist,size(interMarDist,1),[]),substruct('()',{':',logical(reshape(triu(ones(5,5),1),[],1))})),'sampleRate',xyz.sampleRate);
+md = MTADxyz('data',bsxfun(@rdivide,...
+            bsxfun(@minus,...
+                   md.data,...
+                   median(md(Session.stc{'a'},:))),...
+            mad(md(Session.stc{'a'},:),1)),...
+            'sampleRate',xyz.sampleRate);
+
+
+mi = find(logical(reshape(triu(ones(5,5),1),[],1)));
+mm = cell(1,2);
+[mm{:}] = ind2sub([rb_xyz.model.N,rb_xyz.model.N],mi)
+mm = cell2mat(mm);
+
+gp = mm(abs(md(125700,:))>10,:)
+
+figure,hist(md(Session.stc{'a'},1),10000);
+
+
+figure,imagesc(md.data'),caxis([-10,10]);colormap jet
