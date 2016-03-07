@@ -28,15 +28,15 @@ switch host_server % The severer where matlab is running.
 
     switch data_server % Where the data is located
       case 'lmu'
-        projPath = ['/storage/gravio/data/project/' project_name];
+        projPath = fullfile('/storage/gravio/data/project/',project_name);
         if ~exist(projPath),
             mkdir(projPath);
         end
         
-        if isempty(project_name),            
-            MTAConfiguration(projPath],'absolute');
+        if ~isempty(project_name),            
+            MTAConfiguration(projPath,'absolute');
         else
-            MTAConfiguration(['/storage/gravio/data/project/general' ],'absolute');
+            MTAConfiguration(fullfile(projPath,'general'),'absolute');
         end
     end
   
