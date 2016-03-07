@@ -1,6 +1,7 @@
 %Trial = MTATrial('Ed05-20140529','all','ont');
 Trial = MTATrial('Ed05-20140528');
 Trial = MTATrial('jg05-20120317');
+Trial = MTASession('jg05-20120317');
 
 xyz = Trial.load('xyz');
 rb = Trial.xyz.model.rb({'head_back','head_left','head_front','head_right'});
@@ -270,13 +271,22 @@ xyz.addMarker('nhr',[128,255,128],...
               {{'nhr','nhf',[1,0,0]}},...
               bsxfun(@plus,nx*ni(mind(i,1))+ny*nj(mind(i,2))+nz*nk(mind(i,3)),xyz(:,'head_right',:)));
 
-rbn = xyz.model.rb({'spine_lower','pelvis_root','spine_middle','spine_upper','nhb','nhl','nhf','nhr'})
+%xyz.data = ixyz.data;
+ixyz = xyz.copy;
+ixyz.updateFilename([Trial.filebase,'.preproc.pos.mat'])
+ixyz.load(Trial);
+ixyz.updateFilename([Trial.filebase,'.itr.pos.mat'])
+ixyz.data = xyz.data;
+ixyz.model = xyz.model;
+ixyz.save;          
+
+rbn = xyz.model.rb({'spine_lower','pelvis_root','spine_middle','spine_upper','nhb','nhl','nhf','nhr'});
 nxyz = Trial.xyz.copy;
 nxyz.data = xyz(:,rbn.ml,:);
 nxyz.model = rbn;
 
 rbhn = xyz.model.rb({'nhb','nhl','nhf','nhr'});
-txyz = Trial.xyz.copy
+txyz = Trial.xyz.copy;
 txyz.addMarker('hcom',[128,255,128],{{'head_back','head_front',[0,0,1]}},nxyz.com(rbhn));
 txyz.filter('ButFilter',3,2,'low');
 nxyz.addMarker('fhcom',[128,128,128],...
