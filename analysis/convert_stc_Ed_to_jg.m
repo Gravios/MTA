@@ -1,10 +1,15 @@
-function convert_stc_Ed_to_jg(Trial,varargin)
+function convert_stc_Ed_to_jg(Trial,stcMode,nRev,varargin)
+if isempty(stcMode),
+    stcMode = 'manual1';
+end
 
+if ~isa(Trial,'MTASession'),
 Trial = MTATrial.validate(Trial);
+end
 states = {'walk','rear','turn','pause','groom','sit','shake'};
 keys   = {'w'   ,'r'   ,'n'   ,'p'    ,'m'    ,'s'  ,'k'};   
 
-Trial.load('stc','manual1');
+Trial.load('stc',stcMode);
 
 while numel(varargin)>0,    
     switch varargin{1}
@@ -28,5 +33,5 @@ while numel(varargin)>0,
 end
 
 
-Trial.stc.updateMode('hand_labeled_rev1_Ed');
+Trial.stc.updateMode(['hand_labeled_rev' num2str(nRev) '_Ed']);
 Trial.stc.save(1);

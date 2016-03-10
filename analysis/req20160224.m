@@ -50,91 +50,18 @@ end
 
 
 if train
-    [tstc,~,tfet] = resample_whole_state_bootstrap_noisy_trim(stc,fet,states);
-
-    fetInds = {};
-    gStates = states;
-
-    mixy = zeros([1+numel(gStates),tfet.size(2)]);
-    for s = 0:numel(gStates),
-        
-        if s==0,
-            tStates = gStates;
-        else
-            tStates = gStates(~ismember(1:numel(gStates),s));
-        end
-
-        sm = stc2mat(tstc,tfet,tStates);
-        [~,smat] = max(sm,[],2);
-        smat(all(sm==0,2)) = 0;
-        
-        vind = smat&nniz(tfet);
-        nind = sum(vind);
-
-        for f = 1:tfet.size(2),
-
-            if numel(tStates)==6,
-                lsp{f} = mat2cell([prctile(tfet(vind,f),[1,99]),2^7],1,[1,1,1]);
-            end
-            
-            
-            edx = linspace(lsp{f}{:});
-            edy = .5:numel(tStates)+.5;
-            
-            fx = tfet(vind,f);
-            fy = smat(vind);
-
-            [out,xb,yb,p]=hist2([fx,fy],edx,edy);
-            pxy = out./nind;
-            px = histc(fx,xb); px = px(1:end-1)/nind;
-            py = histc(fy,yb); py = py(1:end-1)/nind;
-            mixy(s+1,f) = nansum(nansum(pxy.*log2(pxy./(px*py'))));
-        end
-
-    end
-
-    figure,
-    for s = 1:numel(gStates)
-        subplot(2,3,s);
-        plot(mixy([1,s+1],:)');
-    end
-
-    sind = 2; % rear
-    dm = (mixy(1,:)-mixy(sind+1,:))';
-    fetInds{end+1} =  find(dm>0.20);
-
+    hmi = select_features_hmi(Trial,stc,fet,states)
     %state matrix of union between all states minus trarget and target
+
     smat = stc2mat(tstc,tfet,{[strjoin({states{find(cellfun(@isempty,regexp(states,states{sind})))}},'+'),'&gper'],states{sind}});
+
+    
     net = patternnet(200);
     [net,tr] = train(net,tfet(nniz(tfet),fetInds{end})',smat(nniz(tfet),:)');
 
+    mta_tsne(Trial,tfet,
 end
 
-
-
-asmat = MTADfet('data',tstc,'sampleRate',fet.sampleRate);
-[~,asmat.data] = max(asmat.data,[],2);
-c = jet(numel(states));
-c = [0,0,1;...
-     1,0,0;...
-     0,1,0;...
-     0,1,1;...
-     1,0,1;...
-     1,1,0;];
-csmat = asmat.copy; 
-csmat.data = c(csmat.data,:);
-
-
-osts = numel(states);
-hfig = figure(3923924);clf
-hold on;
-mc = csmat(ind,:);
-for nc = 1:osts,
-    nind = all(bsxfun(@eq,c(nc,:),mc),2);
-    h = scatter(mappedX(nind,1),mappedX(nind,2),2,mc(nind,:));
-    try,h.MarkerFaceColor = h.CData(1,:);end
-end
-legend(states,'location','south','Orientation','horizontal');
 
 
 

@@ -80,7 +80,7 @@ end
 
 
 sli = 2;
-rli = 1;
+rli = 2;
 SesList = SessionList(slist{sli});
 SesList = {SesList(:).sessionName};
 
@@ -156,7 +156,7 @@ pause(.1)
 
 
 figure,hold on,
-fetSet  = 'fet_tsne_rev13';
+fetSet  = 'fet_tsne_rev15';
 k = 1;
 htl = {};
 set(gcf,'interpreter','none')

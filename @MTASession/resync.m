@@ -194,9 +194,9 @@ elseif isa(Data,'MTAData'),
     syncZeroIndex = syncFeature==0;
     
     if ~isempty(syncDataPeriods),
-        keyboard
+        %keyboard
         %syncshift = 0;
-        %syncshift = round(Data.sync(1).*Data.sampleRate)-newOrigin-1;
+        syncshift = round(Data.sync(1).*Data.sampleRate)-newOrigin-1;
         %syncshift = Data.sync(1)-newOrigin-1;
         if syncshift ==-2,syncshift=0;end
         Data.load(syncDataPeriods,[],syncshift);

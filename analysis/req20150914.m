@@ -23,12 +23,7 @@ hostPath = '/storage/gravio/figures/'; % Where reportfig should
 
 
 Trial = MTATrial('jg05-20120317');
-%Trial.stc.load(Trial,'hand_labeled_rev2');
-%Trial = MTATrial('Ed01-20140707');
-%Stc = Trial.stc.load(Trial,'hand_labeled_rev1');
-Stc = Trial.stc.load(Trial,'hand_labeled_rev2');
-
-
+Stc = Trial.stc.load(Trial,'hand_labeled_rev3');
 
 [fet,fett,fetd] = feval(featureSet,Trial,fetSampleRate,ifNormalize); % Load Feature matrix of the session
 
@@ -40,18 +35,25 @@ c = jet(numel(Stc.states));                                  % Create base color
 csmat = asmat.copy;                                          % Copy object 
 csmat.data = c(csmat.data,:);                                % Fill N time points with corect colors
 
-ind = Trial.stc{'a'};                                        % Set selection index to all good periods {'gper' a.k.a. 'a'}
+ind = Trial.stc{'a'}.cast('TimeSeries',fet);                 % Set selection index to all good periods {'gper' a.k.a. 'a'}
 
-mfet = fet(ind,:);                                           % Grab the gper subset of the features
-msmat = csmat(ind,:);                                        % Grab the gper subset of the state color matrix
+start = 1;                                                   % Define start of secondary subselection
+stop = size(fet,1);                                          % Define end of secondary subselection 
+tind = false([size(fet,1),1]);
+tind(start:stop) = true;
 
-start = 1;                                                   % Define start of secondary subselection { tnse is super comp mondo expensive }
 skip = 2;                                                    % Third uniform subselection
-stop = size(mfet,1);                                         % Define end of secondary subselection
-no_dims = 2;                                                 % Number of dimensions for the dimensionallity reduction 
+sind = cat(1,...
+           reshape([true(1,round(fet.size(1)/skip));...
+                    false(skip-1,round(fet.size(1)/skip))],...
+                  [],1),...
+           false([mod(fet.size(1),skip),1]));
 
+ind.data = ind.data&sind&tind;                               % Subselection
 ind = start:skip:stop;
-mappedX = tsne(mfet(ind,:), msmat(ind,:), no_dims, initial_dims, perplexity);  % Do It
+
+no_dims = 2;                                                 % N dims for the dimensionallity reduction 
+mappedX = tsne(fet(ind,:), csmat(ind,:), no_dims, initial_dims, perplexity);  % Do tSNE
 
 figparm = ['tSNE-fsr_' num2str(fetSampleRate) '-ind_' num2str(start) '_' ...   % Rediculously long name
             num2str(skip) '_' num2str(stop) '-perplexity_' ...
@@ -63,7 +65,7 @@ osts = numel(Stc.states);
 hfig = figure(3923923);clf
 hold on;
 sts = Stc.list_state_attrib('label');
-mc = msmat(ind,:);
+mc = csmat(ind,:);
 for nc = 1:osts,
     nind = all(bsxfun(@eq,c(nc,:),mc),2);
     h = scatter(mappedX(nind,1),mappedX(nind,2),2,mc(nind,:));
@@ -75,6 +77,10 @@ ylim([min(mappedX(:,2))-5,max(mappedX(:,2))+5]);
 
 reportfig([], hfig, 'tsne', 'req', false,Trial.filebase,figparm,[],SAVEFIG,'png');
 
+
+
+
+%% knn estimated fet maps
 
 mtfet =  MTADxyz('data',mfet(ind,:),'sampleRate',fet.sampleRate);
 mtpos =  MTADxyz('data',mappedX,'sampleRate',fet.sampleRate);

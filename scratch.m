@@ -418,8 +418,6 @@ gp = fperms(:,abs(mu(125700,:))<10)
 
 interMarDist =  imd(rb_xyz);
 
-
-
 md = MTADxyz('data',subsref(reshape(interMarDist,size(interMarDist,1),[]),substruct('()',{':',logical(reshape(triu(ones(5,5),1),[],1))})),'sampleRate',xyz.sampleRate);
 md = MTADxyz('data',bsxfun(@rdivide,...
             bsxfun(@minus,...
