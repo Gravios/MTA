@@ -118,7 +118,11 @@ filepath = fullfile(Trial.path.data,'analysis',figparm);
 
 % Run tSNE or Load data
 if ~exist(filepath,'file')||overwrite
-    mappedX = tsne(Fet(ind,:), csmat(ind,:), nDims, initDims, perplexity);  % Do tSNE
+    if ifReportFig, % lazy
+        mappedX = tsne(Fet(ind,:), csmat(ind,:), nDims, initDims, perplexity); 
+    else
+        mappedX = tsne(Fet(ind,:), [], nDims, initDims, perplexity);
+    end
     save(fullfile(Trial.path.data,'analysis',figparm),'states','Fet','csmat','ind','mappedX','perplexity');
 else
     load(filepath);
