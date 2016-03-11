@@ -1,4 +1,7 @@
 
+Trial = MTATrial('jg05-20120317');
+Trial.load('stc','hand_labeled_rev3_jg');
+states = {'walk','rear','turn','pause','groom','sit'};
 
 %Segmentation JPDF walk
 xyz = Trial.load('xyz');
@@ -32,7 +35,7 @@ for i = 1:numel(sts),
     o = conv2(o,F,'same');
     contour(X,Y,o',[30,30],'linewidth',2.5,'Color',stc(i,:))
 end
-legend(states)
+legend(states{:},'location','southeast')
 
 xlabel('log10(xy_{speed}) of Lower Body');
 ylabel('log10(xy_{speed}) of Head');

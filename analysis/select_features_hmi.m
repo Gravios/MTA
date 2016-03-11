@@ -1,8 +1,18 @@
 function [stateOrd,fetInds] = select_features_hmi(Trial,stc,fet)
+% function [stateOrd,fetInds] = select_features_hmi(Trial,stc,fet)
+% [states,display] = DefaultArgs(varargin,{{'rear','walk','turn','pause','groom','sit'},false});
+% select best features for binary classifier of state vs all/state
+% perform heirarchical analysis of mutual information gain at each
+% level for each state vs all/state.
+%
+% Use d' to find best features to discriminate between the final 
+% pair of states.
+
 [states,display] = DefaultArgs(varargin,{{'rear','walk','turn','pause','groom','sit'},false});
 
 fetInds = {};
 stateOrd = {};
+miAstates = {};
 
 while numel(gStates) > 2
 
@@ -45,7 +55,9 @@ while numel(gStates) > 2
                   'png',...         Format
                   16,10);%          width & height (cm)
     end
-
+    miAstates{end+1} = mixy;
     gStates(sind) = [];
 end
+
+
 

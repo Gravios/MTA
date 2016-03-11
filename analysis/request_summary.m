@@ -101,6 +101,13 @@
 % req20160114
 %    tau masked boundaries for confusion matrix computation
 
-% req20160211
-%    t-SNE MI feature selection / classification
+% req20160126
+%    gausshmm segmentation of features into states
+
+% req20160127
+%    head vs body vel JPDF w/ state contours
+
+
+% req20160212
+%    playing with feature copulas 
 
