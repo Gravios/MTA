@@ -29,7 +29,7 @@ if isa(a,'MTADepoch')&&~isa(b,'MTADepoch')
             b = b*a.sampleRate;
         end
         
-        if prod(size(b) == Data.size),
+        if prod(size(b) == Data.size)&&~(prod(size(b)==[1,2])),
             Data.data = Data.data+b;
         else
             Data.data = bsxfun(@plus,Data.data,b);
@@ -52,7 +52,7 @@ elseif isa(b,'MTADepoch')&&~isa(a,'MTADepoch')
             a = a*b.sampleRate;
         end
         
-        if prod(size(a) == Data.size),
+        if prod(size(a) == Data.size)&&~(prod(size(a)==[1,2])),
             Data.data = Data.data+a;
         else
             Data.data = bsxfun(@plus,Data.data,a);

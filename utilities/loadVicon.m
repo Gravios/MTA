@@ -59,3 +59,5 @@ Session.fet = MTADfet(Session.spath,...
 Session.stc = MTAStateCollection(Session.spath,Session.filebase,'default',[],[],1);
 Session.stc.updateSync(Session.sync);
 Session.stc.updateOrigin(0);
+
+Session.save

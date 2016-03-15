@@ -645,6 +645,7 @@ if hObject ~= getappdata(handles.MTABrowserStates,'previousBState'),
 
     % LOAD Session
     Session = getappdata(handles.MTABrowser,'Session');
+    
 %     handles.MLxyzView.ButtonDownFcn = @()MTABrowser('MLbuttonDownState');
     
     % DEFAULT args for the viewer
@@ -707,7 +708,7 @@ if hObject ~= getappdata(handles.MTABrowserStates,'previousBState'),
     else
         labels = {'default'};
         keys = 'd';
-        States{1}.data = zeros(Session.xyz.size(1),1);
+        States{1}.data = zeros([Session.load('xyz').size(1),1]);
     end
 
     current_label = 1;

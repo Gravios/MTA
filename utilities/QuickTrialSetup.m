@@ -103,7 +103,7 @@ elseif (isa(Sessions,'MTASession')&&~isa(Sessions,'MTATrial'))||ischar(Sessions)
         dropSyncInd = ~ismember(1:xsync.size(1),includeSyncInd);
     end
     xsync.data(dropSyncInd,:) = [];
-    Trial = MTATrial(Session,trialName,[],true,xsync);
+    Trial = MTATrial(Session,trialName,Session.maze.name,true,xsync);
     Trial.save;
 end
 

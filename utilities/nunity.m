@@ -5,7 +5,7 @@
 % i.e. [signal-mean(signal)] / std(signal)
 
 function [U,meanA,stdA] = nunity(A,varargin)
-[ifnniz,meanA,stdA,drpOutPrctile] = DefaultArgs(varargin,{@nan,[],[],[]},true);
+[ifnniz,meanA,stdA,drpOutPrctile,refDim] = DefaultArgs(varargin,{@nan,[],[],[],[]},true);
 
 nind = nniz(A);
 
@@ -17,10 +17,18 @@ end
 
 
 if isempty(meanA)
-    meanA = mean(Ao);
+    if ~isempty(refDim),
+        meanA = repmat(mean(Ao(:,refDim,:,:,:)),[1,size(Ao,2),size(Ao,3),size(Ao,4),size(Ao,5)]);
+    else
+        meanA = mean(Ao);
+    end    
 end
 if isempty(stdA)
-    stdA = std(Ao);
+    if ~isempty(refDim),
+        stdA = repmat(std(Ao(:,refDim,:,:,:)),[1,size(Ao,2),size(Ao,3),size(Ao,4),size(Ao,5)]);
+    else
+        stdA = std(Ao);
+    end
 end
 
 
