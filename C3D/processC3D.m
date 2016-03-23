@@ -7,7 +7,8 @@ function [ output_args ] = processC3D( varargin )
 %'F:\Vicon_Data\vicon\Top Level 3\'
 
 [sessionName,destPath, mazeName, subjectName, username, password, server, sourcePath] = ...
-DefaultArgs(varargin,{[],'G:\data\xyz\',[],'RS0615','justi_000',[],'172.25.9.20','G:\Vicon_Data\vicon\Top Level 2\'});
+DefaultArgs(varargin,{[],'E:\data\xyz\',[],'nk00','justi_000',[],'172.25.9.20','E:\vicon\Vicon_Right\Top Level 2\'});
+%DefaultArgs(varargin,{[],'G:\data\xyz\',[],'RS0615','justi_000',[],'172.25.9.20','G:\Vicon_Data\vicon\Top Level 2\'});
 
 
 
