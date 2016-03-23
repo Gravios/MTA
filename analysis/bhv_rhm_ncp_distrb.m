@@ -40,11 +40,11 @@ sparm = struct('nFFT'     ,2^9,...
                'nOverlap' ,2^7*.875,...
                'FreqRange',[1,20]);
 
-[ys,fs,ts] = fet_spec(Trial,rhm,'mtcsdglong',false);
+[ys,fs,ts] = fet_spec(Trial,rhm,'mtcsdglong',false,[],sparm);
 
 
 %% Get smoothed speed of the Body
-xyz = Trial.load('xyz').filter(gtwin(1,Trial.xyz.sampleRate));
+xyz = Trial.load('xyz').filter('ButFilter',3,2.4,'low');
 
 vh = xyz.vel('spine_lower',[1,2]);
 vh.resample(ys);
@@ -60,7 +60,7 @@ nys.data(~nniz(nys.data))=nan;
 nys.data = (nys.data-repmat(nanmedian(nys(nniz(nys),:,:,:)),[nys.size(1),1,1]))./repmat(nanstd(nys(nniz(nys),:,:,:)),[nys.size(1),1,1]);
 
 rhm_maxpow = MTADlfp('data',max(nys(:,fs>13&fs>5,1,1),[],2),'sampleRate',ys.sampleRate);
-ncp_maxpow = MTADlfp('data',max(nys(:,fs>12&fs>6,2,2),[],2),'sampleRate',ys.sampleRate);
+ncp_maxpow = MTADlfp('data',max(nys(:,fs>13&fs>5,2,2),[],2),'sampleRate',ys.sampleRate);
 
     
 chan_labels = {'Rhythmic Head Motion','Nasal Cavity Pressure'};
@@ -74,7 +74,8 @@ for s = 1;%:numel(Trial.stc.states)
 
     clf;
     %sind = Trial.stc.states{s}.copy;
-    sind = Trial.resync(Trial.stc{'a'}+[1,-1]);
+    sind = Trial.stc{'w+q'};%+[1,-1];
+    %sind = Trial.stc{'w+q'}+[1,-1];
     %sind.resample(ys);
 
     for m = 1:numel(mode),
@@ -95,7 +96,17 @@ for s = 1;%:numel(Trial.stc.states)
             vhs = ang(sind,'head_back','head_front',2);
             vhs = vhs(ind);
             vhlim = [-1.5, 1.5];
-            vh_label = 'Head Angle';
+            vh_label = 'Head Pitch';
+            vh_units = 'rad';
+          case 'bangle'
+            ang = Trial.ang.copy;
+            ang = ang.create(Trial,xyz);
+            ind = nniz(ang(sind,'spine_lower','spine_upper',2));
+            %ind = ncp_maxpow(sind)>ncp_thresh&ind;
+            vhs = ang(sind,'spine_lower','spine_upper',2);
+            vhs = vhs(ind);
+            vhlim = [-1.5, 1.5];
+            vh_label = 'Body Pitch';
             vh_units = 'rad';
           case 'speed'
             ind = nniz(vh(sind));
