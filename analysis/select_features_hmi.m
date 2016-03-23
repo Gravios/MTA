@@ -1,4 +1,4 @@
-function [stateOrd,fetInds] = select_features_hmi(Trial,stc,fet)
+function [stateOrd,fetInds,miAstates] = select_features_hmi(Trial,stc,fet,varargin)
 % function [stateOrd,fetInds] = select_features_hmi(Trial,stc,fet)
 % [states,display] = DefaultArgs(varargin,{{'rear','walk','turn','pause','groom','sit'},false});
 % select best features for binary classifier of state vs all/state
@@ -13,10 +13,12 @@ function [stateOrd,fetInds] = select_features_hmi(Trial,stc,fet)
 fetInds = {};
 stateOrd = {};
 miAstates = {};
+gStates = states;
+fetRanges = {};
 
 while numel(gStates) > 2
 
-    mixy = calculate_MI_states_vs_features(stc,fet,states);
+    [mixy,fetRanges] = calculate_MI_states_vs_features(stc,fet,gStates,fetRanges);
 
     dms = [];
     for s = 1:numel(gStates)
@@ -28,7 +30,7 @@ while numel(gStates) > 2
     [~,sind] = max(dms);
     dm = (mixy(1,:)-mixy(sind+1,:))';
     fetInds{end+1} =  find(dm>0.20);
-    staetOrd{end+1} = gStates{sind};
+    stateOrd{end+1} = gStates{sind};
 
     if display,
         hfig = figure(283823899);
@@ -56,8 +58,15 @@ while numel(gStates) > 2
                   16,10);%          width & height (cm)
     end
     miAstates{end+1} = mixy;
-    gStates(sind) = [];
+    gStates(~cellfun(@isempty,regexp(gStates,['^',stateOrd{end},'$'])))=[];
+
 end
 
+% Use d-prime to find best features to separate final two features
+dp = (nanmean(fet(stc{gStates{1}},:))-nanmean(fet(stc{gStates{2}},:)))./...
+     (0.5*(nanvar(fet(stc{gStates{1}},:))+nanvar(fet(stc{gStates{2}},:))));
+
+fetInds{end+1} = find(abs(dp)>2)';
+stateOrd = cat(2,stateOrd,gStates); % Need to specify order at some point
 
 

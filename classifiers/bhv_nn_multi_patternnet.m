@@ -57,11 +57,14 @@ defArgs = {...
                false,                                                   ... 
            ...
            ... normalize
-               false,                                                    ... 
-};
+               false                                                    ... 
+           ...
+           ... tag
+               ''                                                       ...
+          };
 
 [states,stcMode,featureSet,sampleRate,model,nNeurons,...
- nIter,randomizationMethod,map2reference,normalize] = DefaultArgs(varargin,defArgs);
+ nIter,randomizationMethod,map2reference,normalize,tag] = DefaultArgs(varargin,defArgs);
 
 
 % Load the feature set
@@ -73,13 +76,27 @@ else,
 end
 
 
+% Load the hand label
+if ischar(stcMode),
+    Trial.load('stc',stcMode);
+    StcHL = Trial.stc.copy;
+    %StcHL.states = StcHL(states{:});
+    %keys = StcHL.list_state_attrib('key');
+    keys = cellfun(@subsref,StcHL(states{:}),repmat({substruct('.','key')},size(states)));
+elseif isa(stcMode,'MTAStateCollection'),
+    StcHL = stcMode.copy;
+    stcMode = stcMode.mode;
+    keys = cellfun(@subsref,StcHL(states{:}),repmat({substruct('.','key')},size(states)));
+end
+
+
 % Default mode is labeling
 train = false;
 
 % If the model name is empty then create a composite name and 
 % toggle train to create new neural network models
 if isempty(model),
-    model = ['MTAC_BATCH-' featureSet ...
+    model = ['MTAC_BATCH-' tag featureSet ...
              '_SR_'  num2str(sampleRate) ...
              '_NORM_' num2str(normalize) ...             
              '_REF_' Trial.filebase ...
@@ -137,13 +154,6 @@ labelingStatsMulti.accuracy =    zeros([nIter,1]);
 % Initialize labeling timeperiods
 labelingEpochs = Trial.stc{'a'}.cast('TimeSeries');
 
-% Load the hand label
-if ~isempty(stcMode),
-    Trial.load('stc',stcMode);
-    StcHL = Trial.stc.copy;
-    StcHL.states = StcHL(states{:});
-    keys = StcHL.list_state_attrib('key');
-end
 
 % load hand labeled states
 shl = MTADxyz('data',double(0<stc2mat(StcHL,xyz,states)),'sampleRate',xyz.sampleRate);
@@ -306,7 +316,8 @@ for iter = 1:nIter,
             % Train Model
             bhv_nn (Trial,                                   ... Trial
             true,                                            ... ifTrain
-            StcRnd,                                          ... States
+            states,                                          ... States
+            StcRnd,                                          ... StateCollection
             trainingFeatures,                                ... feature set
             [model '_' num2str(iter)],                       ... model name
             'subset',trainingEpochs);                                        
@@ -315,9 +326,10 @@ for iter = 1:nIter,
         end
         % Label States
         [Stc,ps,Model_Information] = bhv_nn (Trial,     ... Trial
-                                             false,    ... ifTrain
-                                             StcHL,    ... States
-                                             features, ... feature set
+                                             false,     ... ifTrain
+                                             states,    ... States
+                                             StcHL,     ... StateCollection
+                                             features,  ... feature set
                                              [model '_' num2str(iter)]); % model name
 
         
@@ -339,7 +351,9 @@ for iter = 1:nIter,
             labelingStatsMulti.sensitivity(iter,:) = round(diag(tcm)'./sum(tcm),4).*100;
             labelingStatsMulti.accuracy(iter) = sum(diag(tcm))/sum(tcm(:));
         end
+        
     catch err,
+        keyboard
         warning(err);
         continue
     end

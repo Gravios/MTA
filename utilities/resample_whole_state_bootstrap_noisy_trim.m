@@ -26,6 +26,13 @@ stateBlockSize = 7500;
 trainingPerInds = {};
 labelingPerInds = {};
 
+% synth sync
+newsync = features.sync.sync.copy;
+newsync.data = [0,stateBlockSize.*numel(states)/features.sampleRate];
+newsync.sync = [0,stateBlockSize.*numel(states)/features.sampleRate];
+newsync.sync = newsync.copy;
+
+
 for s = StcHL(states{:}),
     s = s{1};
     rprs = randperm(s.size(1));
@@ -42,35 +49,43 @@ for s = StcHL(states{:}),
     tmpFeatures.data = features(s,:);
 
     s.data = [trainingFeatures.size(1)+1,trainingFeatures.size(1)+stateBlockSize];
+    s.sync = newsync.copy;
+    s.origin = 0;
+
     StcRnd.states{end+1} = s.copy;
     StcLab.states{end+1} = l.copy;
     
-    trainingFeatures.data = [trainingFeatures.data;
-                        tmpFeatures(randi(tmpFeatures.size(1),...
+    trainingFeatures.data = [trainingFeatures.data;...
+                             tmpFeatures(randi(tmpFeatures.size(1),...
                                           stateBlockSize,...
                                           1),...
-                                    :)];
+                                         :)];
 end
 
 
 
-sts = ThreshCross(nniz(trainingFeatures.data==i,0.5,1);
+sts = ThreshCross(nniz(trainingFeatures.data==i),0.5,1);
 if ~isempty(sts),
     sts = bsxfun(@plus,sts,[1,0]);
 end
+
+
+
 
 StcRnd.addState([],...
                 [],...
                 sts,...
                 trainingFeatures.sampleRate,...
-                feature.sync.copy,...
-                feature.origin,...
+                newsync.copy,...
+                0,...
                 'gper',...
                 'a',...
                 'TimePeriods');
 
 
 trainingFeatures.data = trainingFeatures.data+randn(trainingFeatures.size)/5;
+trainingFeatures.sync = newsync.copy;
+trainingFeatures.origin = 0;
 
 labelingEpochs = MTADepoch([],[],...
                            any(stc2mat(StcLab,features,states),2),...

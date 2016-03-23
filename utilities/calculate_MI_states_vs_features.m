@@ -1,4 +1,4 @@
-function calculate_MI_states_vs_features(stc,fet,states)
+function [mixy,fetRanges] = calculate_MI_states_vs_features(stc,fet,varargin)
 % function mixy = calculate_MI_states_vs_features(stc,fet,states)
 % MI:=Mutual Information
 %
@@ -6,9 +6,17 @@ function calculate_MI_states_vs_features(stc,fet,states)
 % The subsequent rows contains MI between state labels with one
 % held out and features
 % 
+[states,fetRanges] = DefaultArgs(varargin,{{'walk','rear','turn','pause','groom','sit'},{}});
 
 mixy = zeros([1+numel(states),fet.size(2)]);
-for s = 0:numel(states),
+
+if isempty(fetRanges)
+    calcFetRanges=true;
+else
+    calcFetRanges=false;
+end
+
+for s = 0:numel(states)
     
     if s==0,
         tStates = states;
@@ -22,14 +30,13 @@ for s = 0:numel(states),
     
     vind = smat&nniz(fet);
     nind = sum(vind);
-
     for f = 1:fet.size(2),
 
-        if numel(tStates)==6,
-            lsp{f} = mat2cell([prctile(fet(vind,f),[1,99]),2^7],1,[1,1,1]);
+        if calcFetRanges,
+            fetRanges{f} = mat2cell([prctile(fet(vind,f),[1,99]),2^7],1,[1,1,1]);
         end
-                
-        edx = linspace(lsp{f}{:});
+
+        edx = linspace(fetRanges{f}{:});
         edy = .5:numel(tStates)+.5;
         
         fx = fet(vind,f);

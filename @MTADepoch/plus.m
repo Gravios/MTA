@@ -72,7 +72,7 @@ elseif isa(a,'MTADepoch')&&isa(b,'MTADepoch')
         Data.path = [];
         Data.filename = [];
         Data.label = [a.label '+' b.label];
-        Data.key = [];
+        Data.key = 'c';
         if b.sampleRate ~= a.sampleRate, b.resample(a); end
         Data.data = JoinRanges(a.data,b.data);
         

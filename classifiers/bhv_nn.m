@@ -39,6 +39,9 @@ defArgs = {...
  ...           states
                Trial.stc.list_state_attrib('label'),   ...
  ...
+ ...           stc
+               Trial.stc.copy,   ...
+ ...
  ...           feature
                {'fet_tsne',Trial,10},  ...
  ...           
@@ -63,17 +66,11 @@ defArgs = {...
 
 
 
-[trainModel,states,feature,modelName,...
+[trainModel,states,Stc,feature,modelName,...
  display,other_state,nNeurons,subset,index] = DefaultArgs(varargin,defArgs);
 
-
-if isa(states,'MTAStateCollection'),
-    Stc = states.copy;
-    states = Stc.list_state_attrib('label');
-else
-    Stc = Trial.stc.copy;
-    Stc.states = Stc(states{:});
-end
+Stc = Stc.copy;
+Stc.states = Stc(states{:});
 
 keys = Stc.list_state_attrib('key');    
 
@@ -134,7 +131,7 @@ if trainModel||~exist(model_loc,'file'),
             Model_Information.state_keys   =  [Model_Information.state_keys{:},       {'o'}];
         end
     else % IF FALSE -> Create classifier model with only the specified states
-        ind = any(smat,2);
+        ind = any(smat,2)&nniz(feature);
     end
     
     
@@ -148,7 +145,8 @@ if trainModel||~exist(model_loc,'file'),
         
     % Train classifie
     net = patternnet(nNeurons);
-    net.trainParam.showWindow = false;
+    net.trainParam.showWindow = true;
+    %net.trainParam.showWindow = false;
     %view(net);    
     [net,tr] = train(net,feature(ind,:)',~~smat(ind,:)');
 

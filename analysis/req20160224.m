@@ -56,8 +56,6 @@ if train
     smat = stc2mat(tstc,tfet,{[strjoin({states{find(cellfun(@isempty,regexp(states,states{sind})))}},'+'),'&gper'],states{sind}});
 
     
-    net = patternnet(200);
-    [net,tr] = train(net,tfet(nniz(tfet),fetInds{end})',smat(nniz(tfet),:)');
 
     mta_tsne(Trial,tfet,
 end

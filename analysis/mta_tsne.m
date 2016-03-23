@@ -79,6 +79,7 @@ end
 
 % Create Color Mapping 
 [asmat,labels,keys] =  stc2mat(Stc,Fet,states);              % Create NxK state matrix
+aind = sum(asmat,2)~=0;
 asmat = MTADxyz('data',asmat,'sampleRate',Fet.sampleRate);   % Wrap state matrix in MTADxyz object
 [~,asmat.data] = max(asmat.data,[],2);                       % Eliminate overlaps by retriving winning state index for each time point
 c = jet(numel(Stc.states));                                  % Create base colors
@@ -103,7 +104,7 @@ sind = cat(1,...
                   [],1),...
            false([mod(Fet.size(1),skip),1]));
 
-ind.data = ind.data&sind&tind;                               % Subselection
+ind.data = ind.data&sind&tind&aind;                          % Subselection
 
 
 % Build filepath
@@ -112,8 +113,9 @@ figparm = ['tSNE-' Fet.label...
            '_subset_' num2str(subset(1)) '-' num2str(skip) '-' num2str(subset(2)) ...
            '_perplexity_' num2str(perplexity) ...
            '_initDims_' num2str(initDims) ...
-           '_nDims_' num2str(nDims)];
-filepath = fullfile(Trial.path.data,'analysis',figparm);
+           '_nDims_' num2str(nDims),...
+           '_states_' strjoin(states,'_')];
+filepath = fullfile(Trial.path.data,'analysis',[figparm,'.mat']);
 
 
 % Run tSNE or Load data
@@ -123,7 +125,7 @@ if ~exist(filepath,'file')||overwrite
     else
         mappedX = tsne(Fet(ind,:), [], nDims, initDims, perplexity);
     end
-    save(fullfile(Trial.path.data,'analysis',figparm),'states','Fet','csmat','ind','mappedX','perplexity');
+    save(filepath,'states','mappedX','perplexity');
 else
     load(filepath);
 end

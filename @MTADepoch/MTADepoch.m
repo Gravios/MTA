@@ -85,7 +85,8 @@ classdef MTADepoch < MTAData
             sync = DataCell{1}.sync.copy;
             origin = DataCell{1}.origin;
             newLabel = ['i_' DataCell{1}.key];
-            newKey = num2str(randi([0,9],1));
+            %newKey = num2str(randi([0,9],1));
+            newKey = 'c';
             newData = DataCell{1}.data;
             DataCell(1) = [];
             while ~isempty(DataCell),
@@ -122,7 +123,8 @@ classdef MTADepoch < MTAData
             origin = DataCell{1}.origin;
 
             newLabel = ['u_' DataCell{1}.key];
-            newKey = num2str(randi([0,9],1));
+            %newKey = num2str(randi([0,9],1));
+            newKey = 'c';
             newData = DataCell{1}.data;
             DataCell(1) = [];
 

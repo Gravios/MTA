@@ -2,6 +2,8 @@
 Trial = MTATrial('Ed05-20140528');
 Trial = MTATrial('jg05-20120317');
 Trial = MTASession('jg05-20120317');
+Trial = MTATrial('Ed03-20140625');
+
 
 xyz = Trial.load('xyz');
 rb = Trial.xyz.model.rb({'head_back','head_left','head_front','head_right'});
@@ -61,57 +63,57 @@ hold on,plot3(sxyz(ind,'hcom',1),sxyz(ind,'hcom',2),sxyz(ind,'hcom',3),'+g')
  i = [-100:10:100];
  j = [-100:10:100];
  k = [-100:10:0];
-% $$$ ind = Trial.stc{'a'};
-% $$$ vxyz = [];
-% $$$ x = 51;
-% $$$ y = 51;
-% $$$ z = 32; 
-% $$$ 
-% $$$ %pool = parpool(10);
-% $$$ 
-% $$$ txyz = xyz.copy;
-% $$$ txyz.data = xyz(:,nhm,:);
-% $$$ txyz.model = xyz.model.rb(nhm);
-% $$$ for x = 1:numel(i),tic
-% $$$     for y = 1:numel(j)
-% $$$         for z = 1:numel(k)
-% $$$ 
-% $$$             sxyz = txyz.copy;
-% $$$             sxyz.data = bsxfun(@plus,nx*i(x)+ny*j(y)+nz*k(z),sxyz.data);
-% $$$ 
-% $$$ 
-% $$$             fhcom = zeros([sxyz.size(1),1,3]);
-% $$$             fhcom(nniz(sxyz),:,:) = ButFilter(sxyz(nniz(sxyz),'hcom',:),3,2/(sxyz.sampleRate/2),'low');
-% $$$             sxyz.addMarker('fhcom',[128,255,128],{{'hbx','hcom',[0,0,1]}},fhcom);
-% $$$ 
-% $$$             sxyz.data = sxyz(ind,:,:);
-% $$$             ang = [sxyz(:,'hbx',:)-sxyz(:,'fhcom',:);...
-% $$$                    sxyz(:,'hrx',:)-sxyz(:,'fhcom',:);...
-% $$$                    sxyz(:,'htx',:)-sxyz(:,'fhcom',:);...
-% $$$                    ...
-% $$$                    sxyz(:,'hbt',:)-sxyz(:,'fhcom',:);...
-% $$$                    sxyz(:,'hbr',:)-sxyz(:,'fhcom',:);...
-% $$$                    sxyz(:,'hbrt',:)-sxyz(:,'fhcom',:);...
-% $$$                    sxyz(:,'hrt',:)-sxyz(:,'fhcom',:)];
-% $$$ 
-% $$$ 
-% $$$             ang = mat2cell(permute(ang,[1,3,2]),size(ang,1),[1,1,1]);
-% $$$             [~,~,ang] = cart2sph(ang{:});
-% $$$             ang = reshape(ang,[],7);
-% $$$ 
-% $$$             for m = 1:7,
-% $$$                 bnds = prctile(ang(:,m),[.1,99.1]);
-% $$$                 vxyz(m,x,y,z) = nanvar(ang(bnds(1)<ang(:,m)&ang(:,m)<bnds(2),m));
-% $$$                 
-% $$$             end
-% $$$ 
-% $$$         end
-% $$$     end
-% $$$     toc
-% $$$ end
-% $$$ 
+ind = Trial.stc{'a'};
+vxyz = [];
+x = 51;
+y = 51;
+z = 32; 
+
+%pool = parpool(10);
+
+txyz = xyz.copy;
+txyz.data = xyz(:,nhm,:);
+txyz.model = xyz.model.rb(nhm);
+for x = 1:numel(i),tic
+    for y = 1:numel(j)
+        for z = 1:numel(k)
+
+            sxyz = txyz.copy;
+            sxyz.data = bsxfun(@plus,nx*i(x)+ny*j(y)+nz*k(z),sxyz.data);
+
+
+            fhcom = zeros([sxyz.size(1),1,3]);
+            fhcom(nniz(sxyz),:,:) = ButFilter(sxyz(nniz(sxyz),'hcom',:),3,2/(sxyz.sampleRate/2),'low');
+            sxyz.addMarker('fhcom',[128,255,128],{{'hbx','hcom',[0,0,1]}},fhcom);
+
+            sxyz.data = sxyz(ind,:,:);
+            ang = [sxyz(:,'hbx',:)-sxyz(:,'fhcom',:);...
+                   sxyz(:,'hrx',:)-sxyz(:,'fhcom',:);...
+                   sxyz(:,'htx',:)-sxyz(:,'fhcom',:);...
+                   ...
+                   sxyz(:,'hbt',:)-sxyz(:,'fhcom',:);...
+                   sxyz(:,'hbr',:)-sxyz(:,'fhcom',:);...
+                   sxyz(:,'hbrt',:)-sxyz(:,'fhcom',:);...
+                   sxyz(:,'hrt',:)-sxyz(:,'fhcom',:)];
+
+
+            ang = mat2cell(permute(ang,[1,3,2]),size(ang,1),[1,1,1]);
+            [~,~,ang] = cart2sph(ang{:});
+            ang = reshape(ang,[],7);
+
+            for m = 1:7,
+                bnds = prctile(ang(:,m),[.1,99.1]);
+                vxyz(m,x,y,z) = nanvar(ang(bnds(1)<ang(:,m)&ang(:,m)<bnds(2),m));
+                
+            end
+
+        end
+    end
+    toc
+end
+
 % save(fullfile('/storage/gravio/manuscripts/man2015-jgEd-MoCap/p20150716/',[Trial.filebase '.xyz-shift.mat']),'i','j','k','vxyz');
-%save(fullfile(Trial.spath,[Trial.filebase '.xyz-shift.mat']),'i','j','k','vxyz');
+save(fullfile(Trial.spath,[Trial.filebase '.xyz-shift.mat']),'i','j','k','vxyz');
 
 load(fullfile(Trial.spath,[Trial.filebase '.xyz-shift.mat']));
 

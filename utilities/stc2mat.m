@@ -19,7 +19,10 @@ g = 1;
 
 for i = states,
     tper = [Stc{i{:}}];
-    tper = resample(tper.cast('TimeSeries'),Data);
+    tper.cast('TimeSeries');
+    if tper.sampleRate~=Data.sampleRate,
+        tper = resample(tper,Data);
+    end
     smat(tper==1,g) = g;
     if nargout>1,
         keys(g) = {tper.key};

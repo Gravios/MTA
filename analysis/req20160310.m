@@ -4,7 +4,7 @@ train = true;
 states = {'walk','rear','turn','pause','groom','sit'};
 target = 'sit';
 sampleRate = 12;
-gStates = states;
+
 
 
 if train
@@ -53,24 +53,93 @@ end
 
 if train,
     [tstc,~,tfet] = resample_whole_state_bootstrap_noisy_trim(stc,fet,states);
-    [stateOrd,fetInds] = select_features_hmi(Trial,tstc,tfet,states,true);
+    tstc.states{end}.data = [1,tfet.size(1)];
+    [stateOrd,fetInds,miAstates] = select_features_hmi(Trial,tstc,tfet,states,false);
+
     mpn = struct;
-    for s = stateOrd,
-        tstates = {[strjoin({gStates{find(cellfun(@isempty,regexp(gStates,gStates{sind})))}},'+'),'&gper'],...
-                   gStates{sind}})
+    opn = struct;
+    gStates = states;
+    for sind = 1:numel(stateOrd),
+        tstates = {[strjoin({gStates{find(cellfun(@isempty,regexp(gStates,['(',strjoin(stateOrd(1:sind),')|('),')'])))}},'+'),'&gper'],stateOrd{sind}};
         
-        [tsnem] = mta_tsne(Trial,tfet,12,tstc,tstates,5,2,80);
 
-        sfet = fet.copy;
-        sfet.data = tfet(:,fetInds{s});
+        % t-SNE 
+        % sfet = fet.copy;
+        % sfet.data = tfet(:,fetInds{sind});
+        % mta_tsne(Trial,sfet,12,tstc,tstates,5,2,80,'ifReportFig',false,'overwrite',false);
 
-        [mpn.Stc,mpn.d_state,mpn.labelingStats, ...
-         mpn.labelingStatsMulti,mpn.model,mpn.p_state] = ...
-            bhv_nn_muli_patternnet(Trial,states,stcMode,sfet,[],[],200,100,'WSBNT');
-        
-        gStates(stateOrd)=[];
+
+        % NN labeling 
+% $$$         sfet = fet.copy;
+% $$$         sfet.data = fet(:,fetInds{sind});
+% $$$         sfet.label = [sfet.label '_' stateOrd{sind}]
+% $$$         [mpn.Stc,mpn.d_state,mpn.labelingStats, ...
+% $$$          mpn.labelingStatsMulti,mpn.model,mpn.p_state] = ...
+% $$$             bhv_nn_multi_patternnet(Trial,tstates,stc,sfet,[],[],200,3,'WSBNT');
+       
+        gStates(~cellfun(@isempty,regexp(gStates,['^',stateOrd{sind},'$'])))=[];
     end
+
+afetinds = unique(vertcat(fetInds{:}));
+sfet = fet.copy;
+sfet.data = fet(:,afetinds);
+sfet.label = [sfet.label '_MIselectedSubset'];
+[mpn.Stc,mpn.d_state,mpn.labelingStats, ...
+ mpn.labelingStatsMulti,mpn.model,mpn.p_state] = ...
+    bhv_nn_multi_patternnet(Trial,states,stc,sfet,[],[],200,100,'WSBNT');
+
+
+[opn.Stc,opn.d_state,opn.labelingStats, ...
+ opn.labelingStatsMulti,opn.model,opn.p_state] = ...
+    bhv_nn_multi_patternnet(Trial,states,stc,sfet,[],mpn.model,200,3,'WSBNT');
+
+% Test if features without expansion work as well
+
+oind = [repmat([1:59],1,2)',zeros([118,1])];
+aind = oind(:,1);
+for sh = 1:117,
+    oind = [oind;[circshift(aind,-sh),aind]];
 end
 
 
+
+
+
+
+
+
+% $$$ 
+% $$$ for r = 1:4,
+% $$$     %r = 1;
+% $$$ hfig = figure;hold('on');
+% $$$ eds = linspace(-0.25,0.75,50);
+% $$$ tstates = states;
+% $$$ tstates = {gStates{find(cellfun(@isempty,regexp(tstates,['(',strjoin(stateOrd(1:r-1),')|('),')'])))}};
+% $$$ midsum = zeros([1,numel(tstates)]);
+% $$$ for s = 1:(size(miAstates{r},1)-1),
+% $$$     midiff = miAstates{r}(1,:)-miAstates{r}(1+s,:);
+% $$$     midsum(s) = sum(abs(midiff));
+% $$$     plot(eds,log10(histc(midiff,eds)+1),'linewidth',2);
+% $$$ end
+% $$$ xlabel(['States/feature MutInfo Difference between vs all vs all one ' ...
+% $$$         'held out'])
+% $$$ ylabel(['log10+1 count'])
+% $$$ legend(cellfun(@strcat,tstates,repmat({' sum(abs(d(mi))):'},1,numel(tstates)),cellfun(@num2str,mat2cell(midsum,1,ones(1,numel(tstates))),'uniformoutput',false),'uniformoutput',false));
+% $$$ 
+% $$$ saveas(hfig,fullfile('/storage/gravio/manuscripts/man2015-jgEd-MoCap/Figures/Figure_3/',...
+% $$$                 ['MIDIFF-' strjoin(tstates,'-') '.eps']),'epsc')
+
+% $$$         reportfig(fullfile(Trial.path.data,'figures'),... 
+% $$$                   hfig,...          Figure Handle 
+% $$$                   strjoin({Trial.filebase,fet.label,stc.mode,tstates{:}},'-'),... FileName
+% $$$                   'req20160310',...     Subdirectory 
+% $$$                   false,...         Preview
+% $$$                   strjoin({Trial.filebase,fet.label,stc.mode,tstates{:}},'-'),... Tag
+% $$$                   strjoin({Trial.filebase,fet.label,stc.mode,tstates{:}},'-'),... Comment
+% $$$                   200,...           Resolution
+% $$$                   true,...          SaveFig
+% $$$                   'png',...         Format
+% $$$                   16,10);%          width & height (cm)
+
+end
 %'tsnem','mpn'
