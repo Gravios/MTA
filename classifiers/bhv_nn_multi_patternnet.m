@@ -173,13 +173,17 @@ for iter = 1:nIter,
             trainingStates = states;
         end
 
+        if iter==1,
+            model = [model '_RAND_' randomizationMethod];
+            model = [model '/' model];
+        end
+
         if train,
             switch randomizationMethod
               case 'ERS' % equal_restructured_sampling
                 nRndPeriods = 100; 
                 prctTrain = 70;
                 trainingEpochs = [];
-                if iter==1,model = [model '_RAND_ERS'];end
                 % Create MTAStateColletion based on the blocks of
                 % data assymbled during the resampling.
                 StcRnd = StcHL.copy;
@@ -269,23 +273,20 @@ for iter = 1:nIter,
                                            'TimeSeries',       ...
                                            [],[],              ...
                                            'labeling',         ... label
-                'l'                ... key
+                                           'l'                 ... key
                 );
 
                         
                    
-              case 'WSB' %'whole_state_bootstrap'
-                if iter==1,model = [model '_RAND_WSB'];end
+              case 'WSB'   % whole state bootstrap
                 [StcRnd,labelingEpochs,trainingFeatures] = ...
                     resample_whole_state_bootstrap(StcHL,features,states);
                 trainingEpochs = [];
-              case 'WSBN' %'whole_state_bootstrap'
-                if iter==1,model = [model '_RAND_WSBN'];end
+              case 'WSBN'  % whole state bootstrap noisy
                 [StcRnd,labelingEpochs,trainingFeatures] = ...
                     resample_whole_state_bootstrap_noisy(StcHL,features,states);
                 trainingEpochs = [];
-              case 'WSBNT' %'whole_state_bootstrap'
-                if iter==1,model = [model '_RAND_WSBNT'];end
+              case 'WSBNT' % whole state bootstrap noisy with trimmed boundaries
                 [StcRnd,labelingEpochs,trainingFeatures] = ...
                     resample_whole_state_bootstrap_noisy_trim(StcHL,features,states);
                 trainingEpochs = [];
@@ -324,14 +325,14 @@ for iter = 1:nIter,
 
             
             % Train Model
-            bhv_nn (Trial,                                   ... Trial
-            true,                                            ... ifTrain
-            trainingStates,                                  ... States
-            StcRnd,                                          ... StateCollection
-            trainingFeatures,                                ... feature set
-            [model '_' num2str(iter)],                       ... model name
-            'subset',trainingEpochs);                                        
-        
+            bhv_nn (Trial,                              ... Trial
+                    true,                               ... ifTrain
+                    trainingStates,                     ... States
+                    StcRnd,                             ... StateCollection
+                    trainingFeatures,                   ... feature set
+                    [model '_' num2str(iter)],          ... model name
+                    'subset',trainingEpochs);                                        
+            
 
         end
         

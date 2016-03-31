@@ -145,8 +145,8 @@ if trainModel||~exist(model_loc,'file'),
         
     % Train classifie
     net = patternnet(nNeurons);
-    net.trainParam.showWindow = true;
-    %net.trainParam.showWindow = false;
+    %net.trainParam.showWindow = true;
+    net.trainParam.showWindow = false;
     %view(net);    
     [net,tr] = train(net,feature(ind,:)',~~smat(ind,:)');
 

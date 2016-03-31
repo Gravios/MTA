@@ -108,7 +108,33 @@ best_inds = histc(ofet,1:59);
 [~,sbind] = sort(best_inds,'descend');
 
 
-% stateOrd{1}_
+%s = 1;
+%mid = miAstates{1}(fetInds{s})-miAstates{1+s}(fetInds{s});
+%[~,mid_sind] = sort(mid,'descend');
+%for f = 1:numel(mid_sind),
+
+accum_acc = zeros([numel(sbind),1]);
+for f = 1:numel(sbind),
+    sub_fet = afet.copy;
+    sub_fet.data = afet(:,sbind(1:f));
+    sub_fet.label = [afet.label '-req20160310-' stateOrd{1} '-' num2str(f)];
+    sub_fet.key = 'x';
+    sub_fet.updateFilename(Trial);
+    
+    [mpn.Stc,mpn.d_state,mpn.labelingStats, ...
+     mpn.labelingStatsMulti,mpn.model,mpn.p_state] = ...
+        bhv_nn_multi_patternnet(Trial,states,stc,sub_fet,[],[],200,5, ...
+                                'WSBNT','targetState','rear');
+
+    [opn.Stc,opn.d_state,opn.labelingStats, ...
+     opn.labelingStatsMulti,opn.model,opn.p_state] = ...
+        bhv_nn_multi_patternnet(Trial,states,stc,sub_fet,[], mpn.model,200,5,...
+                                'WSBNT','targetState','rear');
+
+    accum_acc(f) = opn.labelingStats.accuracy;
+end    
+
+
 
 sqrt(fet.size(2))/2
 
