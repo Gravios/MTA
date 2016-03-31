@@ -61,10 +61,14 @@ defArgs = {...
            ...
            ... tag
                ''                                                       ...
+           ...
+           ... targetState
+               ''                                                       ...
           };
 
 [states,stcMode,featureSet,sampleRate,model,nNeurons,...
- nIter,randomizationMethod,map2reference,normalize,tag] = DefaultArgs(varargin,defArgs);
+ nIter,randomizationMethod,map2reference,normalize,tag,...
+ targetState] = DefaultArgs(varargin,defArgs);
 
 
 % Load the feature set
@@ -96,7 +100,7 @@ train = false;
 % If the model name is empty then create a composite name and 
 % toggle train to create new neural network models
 if isempty(model),
-    model = ['MTAC_BATCH-' tag featureSet ...
+    model = ['MTAC_BATCH-' tag targetState featureSet ...
              '_SR_'  num2str(sampleRate) ...
              '_NORM_' num2str(normalize) ...             
              '_REF_' Trial.filebase ...
@@ -161,7 +165,14 @@ shl = MTADxyz('data',double(0<stc2mat(StcHL,xyz,states)),'sampleRate',xyz.sample
 
 
 for iter = 1:nIter,
-    try,
+    try,        
+        if ~isempty(targetState),
+            compState = states(cellfun(@isempty,regexp(states,['^',targetState,'$'])));
+            trainingStates = {[strjoin(compState,'+'),'&geper'],targetState};
+        else
+            trainingStates = states;
+        end
+
         if train,
             switch randomizationMethod
               case 'ERS' % equal_restructured_sampling
@@ -311,12 +322,11 @@ for iter = 1:nIter,
                 );
             end
 
-
-
+            
             % Train Model
             bhv_nn (Trial,                                   ... Trial
             true,                                            ... ifTrain
-            states,                                          ... States
+            trainingStates,                                  ... States
             StcRnd,                                          ... StateCollection
             trainingFeatures,                                ... feature set
             [model '_' num2str(iter)],                       ... model name
@@ -324,10 +334,11 @@ for iter = 1:nIter,
         
 
         end
+        
         % Label States
         [Stc,ps,Model_Information] = bhv_nn (Trial,     ... Trial
                                              false,     ... ifTrain
-                                             states,    ... States
+                                             trainingStates,    ... States
                                              StcHL,     ... StateCollection
                                              features,  ... feature set
                                              [model '_' num2str(iter)]); % model name

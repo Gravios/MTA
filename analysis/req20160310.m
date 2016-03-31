@@ -2,7 +2,7 @@
 
 train = true;
 states = {'walk','rear','turn','pause','groom','sit'};
-target = 'sit';
+target = 'rear';
 sampleRate = 12;
 
 
@@ -59,26 +59,26 @@ if train,
     mpn = struct;
     opn = struct;
     gStates = states;
-% $$$     for sind = 1:numel(stateOrd),
-% $$$         tstates = {[strjoin({gStates{find(cellfun(@isempty,regexp(gStates,['(',strjoin(stateOrd(1:sind),')|('),')'])))}},'+'),'&gper'],stateOrd{sind}};
-% $$$         
-% $$$ 
-% $$$         % t-SNE 
-% $$$         % sfet = fet.copy;
-% $$$         % sfet.data = tfet(:,fetInds{sind});
-% $$$         % mta_tsne(Trial,sfet,12,tstc,tstates,5,2,80,'ifReportFig',false,'overwrite',false);
-% $$$ 
-% $$$ 
-% $$$         % NN labeling 
-% $$$ % $$$         sfet = fet.copy;
-% $$$ % $$$         sfet.data = fet(:,fetInds{sind});
-% $$$ % $$$         sfet.label = [sfet.label '_' stateOrd{sind}]
-% $$$ % $$$         [mpn.Stc,mpn.d_state,mpn.labelingStats, ...
-% $$$ % $$$          mpn.labelingStatsMulti,mpn.model,mpn.p_state] = ...
-% $$$ % $$$             bhv_nn_multi_patternnet(Trial,tstates,stc,sfet,[],[],200,3,'WSBNT');
-% $$$        
-% $$$         gStates(~cellfun(@isempty,regexp(gStates,['^',stateOrd{sind},'$'])))=[];
-% $$$     end
+    for sind = 1:numel(stateOrd),
+        tstates = {[strjoin({gStates{find(cellfun(@isempty,regexp(gStates,['(',strjoin(stateOrd(1:sind),')|('),')'])))}},'+'),'&gper'],stateOrd{sind}};
+        
+
+        % t-SNE 
+        % sfet = fet.copy;
+        % sfet.data = tfet(:,fetInds{sind});
+        % mta_tsne(Trial,sfet,12,tstc,tstates,5,2,80,'ifReportFig',false,'overwrite',false);
+
+
+        % NN labeling 
+% $$$         sfet = fet.copy;
+% $$$         sfet.data = fet(:,fetInds{sind});
+% $$$         sfet.label = [sfet.label '_' stateOrd{sind}]
+% $$$         [mpn.Stc,mpn.d_state,mpn.labelingStats, ...
+% $$$          mpn.labelingStatsMulti,mpn.model,mpn.p_state] = ...
+% $$$             bhv_nn_multi_patternnet(Trial,tstates,stc,sfet,[],[],200,3,'WSBNT');
+       
+        gStates(~cellfun(@isempty,regexp(gStates,['^',stateOrd{sind},'$'])))=[];
+    end
 
 afetinds = unique(vertcat(fetInds{:}));
 sfet = fet.copy;
@@ -86,8 +86,9 @@ sfet.data = fet(:,afetinds);
 sfet.label = [sfet.label '_MIselectedSubset'];
 [mpn.Stc,mpn.d_state,mpn.labelingStats, ...
  mpn.labelingStatsMulti,mpn.model,mpn.p_state] = ...
-    bhv_nn_multi_patternnet(Trial,states,stc,sfet,[],[],200,3,'WSBNT');
+    bhv_nn_multi_patternnet(Trial,states,stc,sfet,[],[],200,3,'WSBNT','targetState','rear');
 
+% bhv_nn_multi_patternnet(Trial,states,stc,sfet,[],[],200,3,'WSBNT','targetState','rear');
 
 % Test if features without expansion work as well
 
@@ -99,10 +100,17 @@ end
 
 
 slind = oind(afetinds,:);
-slind = oind(fetInds{6},:);
-ofet = unique(reshape(slind,[],1));
+slind = oind(fetInds{1},:);
+ofet =reshape(slind,[],1);
+ufet = unique(ofet);
+
+best_inds = histc(ofet,1:59);
+[~,sbind] = sort(best_inds,'descend');
 
 
+% stateOrd{1}_
+
+sqrt(fet.size(2))/2
 
 
 % $$$ 
