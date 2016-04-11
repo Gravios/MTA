@@ -65,6 +65,9 @@ if ischar(Fet),
     [Fet,fett,fetd] = feval(fet,Trial,sampleRate,ifNorm); % Load Feature matrix of the session
 elseif isa(Fet,'MTADfet')
     sampleRate = Fet.sampleRate; 
+    if Fet.isempty,
+        Fet.load(Trial);
+    end
 else
     error('MTA:analysis:mta_tsne:UnknownFet');    
 end
@@ -125,7 +128,7 @@ if ~exist(filepath,'file')||overwrite
     else
         mappedX = tsne(Fet(ind,:), [], nDims, initDims, perplexity);
     end
-    save(filepath,'states','mappedX','perplexity');
+    save(filepath,'states','mappedX','perplexity','filepath');
 else
     load(filepath);
 end

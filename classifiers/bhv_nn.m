@@ -70,7 +70,7 @@ defArgs = {...
  display,other_state,nNeurons,subset,index] = DefaultArgs(varargin,defArgs);
 
 Stc = Stc.copy;
-Stc.states = Stc(states{:});
+%Stc.states = Stc(states{:});
 
 keys = Stc.list_state_attrib('key');    
 

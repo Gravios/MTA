@@ -147,38 +147,51 @@ end
 % Use xyz as base for labeling output ... quit staring at this part.
 xyz = Trial.load('xyz');
 
+nStates = numel(states);
+if ~isempty(targetState),
+    nStates = 2;
+end
+
 % Initialize outputs
-p_state = zeros([xyz.size(1),numel(states)]);
-d_state = zeros([xyz.size(1),numel(states)]);
-labelingStatsMulti.confussionMatrix = zeros([nIter,numel(states),numel(states)]);
-labelingStatsMulti.precision =   zeros([nIter,numel(states)]);
-labelingStatsMulti.sensitivity = zeros([nIter,numel(states)]);
+p_state = zeros([xyz.size(1),nStates]);
+d_state = zeros([xyz.size(1),nStates]);
+labelingStatsMulti.confussionMatrix = zeros([nIter,nStates,nStates]);
+labelingStatsMulti.precision =   zeros([nIter,nStates]);
+labelingStatsMulti.sensitivity = zeros([nIter,nStates]);
 labelingStatsMulti.accuracy =    zeros([nIter,1]);
 
 % Initialize labeling timeperiods
 labelingEpochs = Trial.stc{'a'}.cast('TimeSeries');
 
+if ~isempty(targetState),
+    compState = states(cellfun(@isempty,regexp(states,['^',targetState,'$'])));
+    trainingStates = {[strjoin(compState,'+')],targetState};
+else
+    trainingStates = states;
+end
+
 
 % load hand labeled states
-shl = MTADxyz('data',double(0<stc2mat(StcHL,xyz,states)),'sampleRate',xyz.sampleRate);
+shl = MTADxyz('data',double(0<stc2mat(StcHL,xyz,trainingStates)),'sampleRate',xyz.sampleRate);
 
 
 
 for iter = 1:nIter,
     try,        
-        if ~isempty(targetState),
-            compState = states(cellfun(@isempty,regexp(states,['^',targetState,'$'])));
-            trainingStates = {[strjoin(compState,'+'),'&geper'],targetState};
-        else
-            trainingStates = states;
-        end
-
-        if iter==1,
+        % 00:30 FTS
+        if iter==1&&train
             model = [model '_RAND_' randomizationMethod];
+        end
+        if iter==1,
+            model_out = model;
+            model_path = fileparts(mfilename('fullpath'));
+            mkdir(fullfile(model_path,model));
             model = [model '/' model];
         end
 
+
         if train,
+
             switch randomizationMethod
               case 'ERS' % equal_restructured_sampling
                 nRndPeriods = 100; 
@@ -199,7 +212,7 @@ for iter = 1:nIter,
 
                 trainingPerInds = {};
                 labelingPerInds = {};
-                for s = StcHL(states{:}),
+                for s = StcHL(trainingStates{:}),
                     s = s{1};
                     rprs = randperm(s.size(1));
                     % select random half of the periods
@@ -266,7 +279,7 @@ for iter = 1:nIter,
                 end
 
                 labelingEpochs = MTADepoch([],[],...
-                                           any(stc2mat(StcLab,features,states),2),...
+                                           any(stc2mat(StcLab,features,trainingStates),2),...
                                            features.sampleRate,... 
                                            features.sync.copy, ... 
                                            features.origin,    ... 
@@ -297,7 +310,7 @@ for iter = 1:nIter,
                 trndInd(rndInd) = true;
                 rndInd = trndInd;
                 trainingFeatures = features.copy;
-                StcRnd = states;
+                StcRnd = trainingStates;
 
 
                 trainingEpochs = MTADepoch([],[],              ...
@@ -347,7 +360,7 @@ for iter = 1:nIter,
         
 
 
-        ysm = MTADxyz('data',double(0<stc2mat(Stc,  xyz,states)),'sampleRate',xyz.sampleRate); 
+        ysm = MTADxyz('data',double(0<stc2mat(Stc,xyz)),'sampleRate',xyz.sampleRate); 
         d_state = ysm.data+d_state;
         p_state = p_state +ps;
         if nargout>=4,
@@ -401,7 +414,7 @@ maxState(~nniz(xyz),:) = 0;
 % Stats in comparision to the collection of labels specified in the stcMode
 ysm = MTADxyz('data',zeros([shl.size]),'sampleRate',xyz.sampleRate); 
 ysm.data = ysm.data';
-ysm.data([1:6:size(ysm,2).*6]+maxState'-1) = 1;
+ysm.data([1:size(ysm,1):size(ysm,2).*size(ysm,1)]+maxState'-1) = 1;
 ysm.data = ysm.data';
 ind = any(shl.data,2)&any(ysm.data,2)&labelingEpochs.data;
 tcm = confmat(shl(ind&labelingEpochs,:),ysm(ind&labelingEpochs,:)); % #DEP: netlab
@@ -427,7 +440,7 @@ labelingStats.accuracy = sum(diag(tcm))/sum(tcm(:));
 
 % Create new StateCollection ... well copy
 Stc = Trial.stc.copy;
-Stc.updateMode([model '-' cell2mat(Model_Information.state_keys)]);
+Stc.updateMode([model_out '-' cell2mat(Model_Information.state_keys)]);
 Stc.states = {};
 
 
@@ -454,5 +467,5 @@ if nargout>=1, varargout{1} = Stc;                end
 if nargout>=2, varargout{2} = d_state.data;            end
 if nargout>=3, varargout{3} = labelingStats;      end
 if nargout>=4, varargout{4} = labelingStatsMulti; end
-if nargout>=5, varargout{5} = model; end
+if nargout>=5, varargout{5} = model_out; end
 if nargout>=6, varargout{6} = p_state; end

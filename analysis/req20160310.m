@@ -1,144 +1,115 @@
 
 
-train = true;
-states = {'walk','rear','turn','pause','groom','sit'};
-target = 'rear';
-sampleRate = 12;
+% PA - Heiarchical Segmentation of Behaviors 
+% 1. Preproc features and Order selection
+% 2. tsne dimensionallity reduction
+% 3. Train neural networks on the target state vs all others
+% 4. Accumulate stats of network output
+
+Trial = 'jg05-20120317.cof.all';
+Trial = MTATrial.validate(Trial);
+local=false;
 
 
+% 1. Preproc features
 
-if train
-    %Train Parm
-    stcMode = 'hand_labeled_rev3_jg';
-    Trial = MTATrial.validate('jg05-20120317');
-    Trial.load('stc',stcMode);
-    stc = Trial.stc.copy;
-    RefTrial = [];
-    rMean = []; rStd = [];
+file_preproc = fullfile(Trial.path.data,'analysis','req20160310_1_preproc.mat');
+if ~exist(file_preproc,'file')&&~local,
+    jid = popen(['MatSubmitLRZ --config lrzc_hugemem.conf -l' Trial.name ' req20160310_1_preproc']);
+    jid = char(jid.readLine);
 else
-    %Test Parm
-    %Trial = MTATrial.validate('Ed03-20140625');
-    stcMode = 'hand_labeled_rev1_Ed';
-    Trial = MTATrial.validate({'Ed05-20140529','all','ont'});    
-    Trial.load('stc',stcMode);
-    stc = Trial.stc.copy;
-    RefTrial = MTATrial.validate('jg05-20120317');
-    RefTrial.load('stc','hand_labeled_rev3_jg');
-    rfet = fet_all(RefTrial,sampleRate,[]);
-    rfet.data = [rfet.data,rfet.data.^2];
-    rafet = rfet.copy;
-    for sh = 1:rfet.size(2)-1;
-        rfet.data = [rfet.data,circshift(rafet.data',-sh)'.*rafet.data];
-    end
-    [~,rMean,rStd] = unity(rfet);
-    clear('rfet')
+    req20160310_1_preproc(Trial);
 end
 
 
-% LOAD all features
-fet = fet_all(Trial,sampleRate,RefTrial);
-fet.data = [fet.data,fet.data.^2];
-afet = fet.copy;
-for sh = 1:fet.size(2)-1;
-    fet.data = [fet.data,circshift(afet.data',-sh)'.*afet.data];
-end
 
-% NORMALIZE features
-if ~isempty(rMean)&&~isempty(rStd),
-    fet = unity(fet,[],rMean,rStd);
+%2. t-SNE
+
+file_preproc = fullfile(Trial.spath','req20160310_2_preproc.mat');
+if ~exist(file_preproc,'file')&&~local,
+    [~,~,err] = popen(['MatSubmitLRZ --config lrzc_hugemem.conf -d ' jid ' -l' Trial.name ...
+                       ' req20160310_2_tsne']);
 else
-    fet = fet.unity;
+    req20160310_2_tsne(Trial);
 end
 
 
-if train,
-    [tstc,~,tfet] = resample_whole_state_bootstrap_noisy_trim(stc,fet,states);
-    tstc.states{end}.data = [1,tfet.size(1)];
-    [stateOrd,fetInds,miAstates] = select_features_hmi(Trial,tstc,tfet,states,false);
+% 3. Train neural networks on the target state vs all others
 
-    mpn = struct;
-    opn = struct;
-    gStates = states;
-    for sind = 1:numel(stateOrd),
-        tstates = {[strjoin({gStates{find(cellfun(@isempty,regexp(gStates,['(',strjoin(stateOrd(1:sind),')|('),')'])))}},'+'),'&gper'],stateOrd{sind}};
-        
-
-        % t-SNE 
-        % sfet = fet.copy;
-        % sfet.data = tfet(:,fetInds{sind});
-        % mta_tsne(Trial,sfet,12,tstc,tstates,5,2,80,'ifReportFig',false,'overwrite',false);
-
-
-        % NN labeling 
-% $$$         sfet = fet.copy;
-% $$$         sfet.data = fet(:,fetInds{sind});
-% $$$         sfet.label = [sfet.label '_' stateOrd{sind}]
-% $$$         [mpn.Stc,mpn.d_state,mpn.labelingStats, ...
-% $$$          mpn.labelingStatsMulti,mpn.model,mpn.p_state] = ...
-% $$$             bhv_nn_multi_patternnet(Trial,tstates,stc,sfet,[],[],200,3,'WSBNT');
-       
-        gStates(~cellfun(@isempty,regexp(gStates,['^',stateOrd{sind},'$'])))=[];
-    end
-
-afetinds = unique(vertcat(fetInds{:}));
-sfet = fet.copy;
-sfet.data = fet(:,afetinds);
-sfet.label = [sfet.label '_MIselectedSubset'];
-[mpn.Stc,mpn.d_state,mpn.labelingStats, ...
- mpn.labelingStatsMulti,mpn.model,mpn.p_state] = ...
-    bhv_nn_multi_patternnet(Trial,states,stc,sfet,[],[],200,3,'WSBNT','targetState','rear');
-
-% bhv_nn_multi_patternnet(Trial,states,stc,sfet,[],[],200,3,'WSBNT','targetState','rear');
-
-% Test if features without expansion work as well
-
-oind = [repmat([1:59],1,2)',zeros([118,1])];
-aind = oind(:,1);
-for sh = 1:117,
-    oind = [oind;[circshift(aind,-sh),aind]];
+file_preproc = fullfile(Trial.spath','req20160310_3_trainNN.mat');
+if ~exist(file_preproc,'file')&&~local,
+    pid = popen(['MatSubmitLRZ --config lrzc_serial.conf -d ' jid ' -l' Trial.name ...
+                 ' req20160310_3_trainNN']);
+    pid = char(jid.readLine);
+else
+    req20160310_3_trainNN(Trial);
 end
 
 
-slind = oind(afetinds,:);
-slind = oind(fetInds{1},:);
-ofet =reshape(slind,[],1);
-ufet = unique(ofet);
 
-best_inds = histc(ofet,1:59);
-[~,sbind] = sort(best_inds,'descend');
+% 4. Accumulate stats of network output
 
-
-%s = 1;
-%mid = miAstates{1}(fetInds{s})-miAstates{1+s}(fetInds{s});
-%[~,mid_sind] = sort(mid,'descend');
-%for f = 1:numel(mid_sind),
-
-accum_acc = zeros([numel(sbind),1]);
-for f = 1:numel(sbind),
-    sub_fet = afet.copy;
-    sub_fet.data = afet(:,sbind(1:f));
-    sub_fet.label = [afet.label '-req20160310-' stateOrd{1} '-' num2str(f)];
-    sub_fet.key = 'x';
-    sub_fet.updateFilename(Trial);
-    
-    [mpn.Stc,mpn.d_state,mpn.labelingStats, ...
-     mpn.labelingStatsMulti,mpn.model,mpn.p_state] = ...
-        bhv_nn_multi_patternnet(Trial,states,stc,sub_fet,[],[],200,5, ...
-                                'WSBNT','targetState','rear');
-
-    [opn.Stc,opn.d_state,opn.labelingStats, ...
-     opn.labelingStatsMulti,opn.model,opn.p_state] = ...
-        bhv_nn_multi_patternnet(Trial,states,stc,sub_fet,[], mpn.model,200,5,...
-                                'WSBNT','targetState','rear');
-
-    accum_acc(f) = opn.labelingStats.accuracy;
-end    
+file_preproc = fullfile(Trial.spath','req20160310_4_accumStats.mat');
+if ~exist(file_preproc,'file')&&~local,
+    [~,~,err] = popen(['MatSubmitLRZ --config lrzc_mpp1.conf -d ' pid ' -l' Trial.name ...
+                       ' req20160310_4_accumStats']);
+else
+    req20160310_4_accumStats(Trial);
+end
 
 
 
-sqrt(fet.size(2))/2
 
-
+% $$$ 
+% $$$ oind = [repmat([1:59],1,2)',zeros([118,1])];
+% $$$ aind = oind(:,1);
+% $$$ for sh = 1:117,
+% $$$     oind = [oind;[circshift(aind,-sh),aind]];
+% $$$ end
+% $$$ 
+% $$$ pobj = parpool('local');
+% $$$ 
+% $$$ accum_acc = zeros([round(afet.size(2)/2),numel(fetInds)]);
+% $$$ accum_pre = zeros([round(afet.size(2)/2),numel(fetInds)]);
+% $$$ accum_sen = zeros([round(afet.size(2)/2),numel(fetInds)]);
+% $$$ for s = 1:numel(fetInds);
+% $$$     slind = oind(fetInds{s},:);
+% $$$     ofet =reshape(slind,[],1);
+% $$$     best_inds = histc(ofet,1:59);
+% $$$     [~,sbind] = sort(best_inds,'descend');
+% $$$ 
+% $$$     for f = 1:round(numel(sbind)/2),    
+% $$$         opn = struct;
+% $$$         sub_fet = afet.copy;
+% $$$         sub_fet.data = afet(:,sbind(1:f));
+% $$$         sub_fet.label = [afet.label '-req20160310-' stateOrd{1} '-' num2str(f)];
+% $$$         sub_fet.key = 'x';
+% $$$         sub_fet.updateFilename(Trial);
+% $$$         
+% $$$         model = ['MTAC_BATCH-' stateOrd{s} sub_fet.label ...
+% $$$                  '_SR_'  num2str(sub_fet.sampleRate) ...
+% $$$                  '_NORM_' num2str(0) ...             
+% $$$                  '_REF_' Trial.filebase ...
+% $$$                  '_STC_' stcMode ...
+% $$$                  '_NN_'  num2str(nNeurons)...
+% $$$                  '_NI_'  num2str(nIter)...
+% $$$                  '_'     'NN_multiPN'...
+% $$$                  '_'     'RAND_' rndMethod];
+% $$$ 
+% $$$         [opn.Stc,opn.d_state,opn.labelingStats, ...
+% $$$          opn.labelingStatsMulti,opn.model,opn.p_state] = ...
+% $$$             bhv_nn_multi_patternnet(Trial,states,stc,sub_fet,...
+% $$$                                     [], model,nNeurons,nIter,...
+% $$$                                     rndMethod,'targetState',stateOrd{s});
+% $$$ 
+% $$$         accum_acc(f,s) = opn.labelingStats.accuracy;
+% $$$         accum_pre(f,s) = opn.labelingStats.precision(1);
+% $$$         accum_sen(f,s) = opn.labelingStats.sensitivity(2);
+% $$$     end
+% $$$     
+% $$$ end
+% $$$ 
+% $$$ delete(pobj)
 % $$$ 
 % $$$ for r = 1:4,
 % $$$     %r = 1;
@@ -172,14 +143,4 @@ sqrt(fet.size(2))/2
 % $$$                   'png',...         Format
 % $$$                   16,10);%          width & height (cm)
 
-end
-%'tsnem','mpn'
-model = mpn.model;
-model ='MTAC_BATCH-fet_all_MIselectedSubset_SR_12_NORM_0_REF_jg05-20120317.cof.all_STC_hand_labeled_rev3_jg_NN_200_NI_3_NN_multiPN_RAND_WSBNT';
 
-sfet = fet.copy;
-sfet.data = fet(:,afetinds);
-sfet.label = [sfet.label '_MIselectedSubset'];
-[opn.Stc,opn.d_state,opn.labelingStats, ...
- opn.labelingStatsMulti,opn.model,opn.p_state] = ...
-    bhv_nn_multi_patternnet(Trial,states,stc,sfet,[],model,200,3,'WSBNT');

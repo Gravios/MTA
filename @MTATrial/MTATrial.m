@@ -143,9 +143,18 @@ classdef MTATrial < MTASession
             if isa(Trial,'MTATrial'),
                 return;
             elseif ischar(Trial),
-                Trial = MTATrial(Trial);
+                pat =['(?<sessionName>[a-z_A-Z]+\d{2,2}[-]\d{8,8})\.'...
+                      '(?<mazeName>\w+)\.'...
+                      '(?<trialName>\w+)'];
+                tok = regexp('jg05-20120317.cof.all',pat,'names')
+                if ~isempty(tok),
+                    Trial = tok;
+                end
+                Trial = MTATrial(Trial);                
+                
             elseif iscell(Trial),
                 Trial = MTATrial(Trial{:});
+                
             elseif isstruct(Trial),
                 stcMode = '';
                 if isfield(Trial,'stcMode'),
