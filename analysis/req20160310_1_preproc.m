@@ -10,9 +10,9 @@ defargs = {...
     ...stcMode
        'hand_labeled_rev3_jg',...
     ...train
-       false,...
+       true,...
     ...RefTrial
-       {'jg05-20120317','all','cof'},...
+       'jg05-20120317.all.cof',...
     ...
     ...RefStcMode
        'hand_labeled_rev3_jg',...
@@ -27,20 +27,16 @@ defargs = {...
        'WSBNT'...
 };
 
-
-nIter    = 100;
-rndMethod = 'WSBNT';
-
-
-[sampleRate,states,stcMode,train,RefTrial,RefStcMode] = DefaultArgs(varargin,defargs);
+[sampleRate,states,stcMode,train,RefTrial,RefStcMode,nNeurons,nIter,rndMethod] = DefaultArgs(varargin,defargs);
 
 if train
     %Train Parm
-    Trial = MTATrial.validate();
+    Trial = MTATrial.validate(Trial);
     Trial.load('stc',stcMode);
     stc = Trial.stc.copy;
     RefTrial = [];
     rMean = []; rStd = [];
+    fet = fet_all(Trial,sampleRate);        
 else
     %Test Parm
     Trial = MTATrial.validate(Trial);    
@@ -51,37 +47,24 @@ else
     RefTrial.load('stc',RefStcMode);
 
     rfet = fet_all(RefTrial,sampleRate,[]);
-    rfet.data = [rfet.data,rfet.data.^2];
     rafet = rfet.copy;
+    rfet.data = [rfet.data,rfet.data.^2];
     for sh = 1:rfet.size(2)-1;
         rfet.data = [rfet.data,circshift(rafet.data',-sh)'.*rafet.data];
     end
     [~,raMean,raStd] = unity(rafet);
     [~,rMean,rStd] = unity(rfet);
     clear('rfet')
+    fet = fet_all(Trial,sampleRate,RefTrial);    
 end
 
 % LOAD all features
-try
-    afet = Trial.fet.copy;
-    afet.label = 'fet_all';
-    afet.load;
-catch
-    afet = fet_all(Trial,sampleRate,RefTrial);
-    afet.save;
-end
 
-try
-    fet = Trial.fet.copy;
-    fet.label = 'fet_all_quad';
-    fet.load;
-catch
-    fet.data = [fet.data,fet.data.^2];
-    afet = fet.copy;
-    for sh = 1:fet.size(2)-1;
-        fet.data = [fet.data,circshift(afet.data',-sh)'.*afet.data];
-    end
-    fet.save;
+
+afet = fet.copy;
+fet.data = [fet.data,fet.data.^2];
+for sh = 1:fet.size(2)-1;
+    fet.data = [fet.data,circshift(afet.data',-sh)'.*afet.data];
 end
 
 

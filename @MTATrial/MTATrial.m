@@ -146,11 +146,14 @@ classdef MTATrial < MTASession
                 pat =['(?<sessionName>[a-z_A-Z]+\d{2,2}[-]\d{8,8})\.'...
                       '(?<mazeName>\w+)\.'...
                       '(?<trialName>\w+)'];
-                tok = regexp('jg05-20120317.cof.all',pat,'names')
+                tok = regexp(Trial,pat,'names');
                 if ~isempty(tok),
                     Trial = tok;
+                    Trial = MTATrial.validate(Trial);
+                else
+                    Trial = MTATrial(Trial);                                    
                 end
-                Trial = MTATrial(Trial);                
+
                 
             elseif iscell(Trial),
                 Trial = MTATrial(Trial{:});

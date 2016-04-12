@@ -1,4 +1,4 @@
-
+function req20160310(Trial)
 
 % PA - Heiarchical Segmentation of Behaviors 
 % 1. Preproc features and Order selection
@@ -6,8 +6,9 @@
 % 3. Train neural networks on the target state vs all others
 % 4. Accumulate stats of network output
 
-Trial = 'jg05-20120317.cof.all';
+%Trial = 'jg05-20120317.cof.all';
 Trial = MTATrial.validate(Trial);
+cd(Trial.path.data);
 local=false;
 
 
@@ -15,9 +16,11 @@ local=false;
 
 file_preproc = fullfile(Trial.path.data,'analysis','req20160310_1_preproc.mat');
 if ~exist(file_preproc,'file')&&~local,
-    jid = popen(['MatSubmitLRZ --config lrzc_hugemem.conf -l' Trial.name ' req20160310_1_preproc']);
-    jid = char(jid.readLine);
+    jid = popen(['MatSubmitLRZ --config lrzc_hugemem.conf'...
+                 ' -y ' Trial.path.data ' -l ' Trial.name ' req20160310_1_preproc']);
+    r1jid = [' -d afterok:' char(jid.readLine)];
 else
+    r1jid = char(jid.readLine);
     req20160310_1_preproc(Trial);
 end
 
@@ -25,9 +28,10 @@ end
 
 %2. t-SNE
 
-file_preproc = fullfile(Trial.spath','req20160310_2_preproc.mat');
+file_preproc = fullfile(Trial.spath,'req20160310_2_preproc.mat');
 if ~exist(file_preproc,'file')&&~local,
-    [~,~,err] = popen(['MatSubmitLRZ --config lrzc_hugemem.conf -d ' jid ' -l' Trial.name ...
+    [~,~,err] = popen(['MatSubmitLRZ --config lrzc_hugemem.conf '...
+                       ' -y ' Trial.path.data ' -d ' jid ' -l ' Trial.name ...
                        ' req20160310_2_tsne']);
 else
     req20160310_2_tsne(Trial);
@@ -36,9 +40,9 @@ end
 
 % 3. Train neural networks on the target state vs all others
 
-file_preproc = fullfile(Trial.spath','req20160310_3_trainNN.mat');
+file_preproc = fullfile(Trial.spath,'req20160310_3_trainNN.mat');
 if ~exist(file_preproc,'file')&&~local,
-    pid = popen(['MatSubmitLRZ --config lrzc_serial.conf -d ' jid ' -l' Trial.name ...
+    pid = popen(['MatSubmitLRZ --config lrzc_mpp1.conf -d ' jid ' -l ' Trial.name ...
                  ' req20160310_3_trainNN']);
     pid = char(jid.readLine);
 else
@@ -49,9 +53,9 @@ end
 
 % 4. Accumulate stats of network output
 
-file_preproc = fullfile(Trial.spath','req20160310_4_accumStats.mat');
+file_preproc = fullfile(Trial.spath,'req20160310_4_accumStats.mat');
 if ~exist(file_preproc,'file')&&~local,
-    [~,~,err] = popen(['MatSubmitLRZ --config lrzc_mpp1.conf -d ' pid ' -l' Trial.name ...
+    [~,~,err] = popen(['MatSubmitLRZ --config lrzc_mpp1.conf -d ' pid ' -l ' Trial.name ...
                        ' req20160310_4_accumStats']);
 else
     req20160310_4_accumStats(Trial);
@@ -144,3 +148,4 @@ end
 % $$$                   16,10);%          width & height (cm)
 
 
+end
