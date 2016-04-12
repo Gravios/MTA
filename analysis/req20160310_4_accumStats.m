@@ -48,3 +48,4 @@ end
 
 delete(pobj)
 
+save(fullfile(Trial.spath,'req20160310_3_accumStats'),'stats','-v7.3');

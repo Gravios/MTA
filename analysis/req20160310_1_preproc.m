@@ -87,4 +87,4 @@ else
     load(fullfile(Trial.path.data,'analysis','req20160310_1_preproc.mat'));
 end
 
-save(fullfile(Trial.spath,'req20160310_1_preproc.mat'));
+save(fullfile(Trial.spath,'req20160310_1_preproc.mat'),'-v7.3');

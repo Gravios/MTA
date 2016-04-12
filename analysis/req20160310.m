@@ -1,5 +1,4 @@
 function req20160310(Trial)
-
 % PA - Heiarchical Segmentation of Behaviors 
 % 1. Preproc features and Order selection
 % 2. tsne dimensionallity reduction
@@ -8,55 +7,47 @@ function req20160310(Trial)
 
 %Trial = 'jg05-20120317.cof.all';
 Trial = MTATrial.validate(Trial);
-cd(Trial.path.data);
-local=false;
-
+%cd(Trial.path.data);
+local = false;
+overwrite = true;
 
 % 1. Preproc features
-
 file_preproc = fullfile(Trial.path.data,'analysis','req20160310_1_preproc.mat');
-if ~exist(file_preproc,'file')&&~local,
+if (~exist(file_preproc,'file')&&~local)||overwrite,
     jid = popen(['MatSubmitLRZ --config lrzc_hugemem.conf'...
                  ' -y ' Trial.path.data ' -l ' Trial.name ' req20160310_1_preproc']);
     r1jid = [' -d afterok:' char(jid.readLine)];
 else
-    r1jid = char(jid.readLine);
     req20160310_1_preproc(Trial);
 end
 
-
-
 %2. t-SNE
-
-file_preproc = fullfile(Trial.spath,'req20160310_2_preproc.mat');
-if ~exist(file_preproc,'file')&&~local,
-    [~,~,err] = popen(['MatSubmitLRZ --config lrzc_hugemem.conf '...
-                       ' -y ' Trial.path.data ' -d ' jid ' -l ' Trial.name ...
-                       ' req20160310_2_tsne']);
+file_preproc = fullfile(Trial.spath,'req20160310_2_tsne.mat');
+if (~exist(file_preproc,'file')&&~local)||overwrite,
+    popen(['MatSubmitLRZ --config lrzc_hugemem.conf '...
+           ' -y ' Trial.path.data r1jid ' -l ' Trial.name ...
+           ' req20160310_2_tsne']);
 else
     req20160310_2_tsne(Trial);
 end
 
-
 % 3. Train neural networks on the target state vs all others
-
 file_preproc = fullfile(Trial.spath,'req20160310_3_trainNN.mat');
-if ~exist(file_preproc,'file')&&~local,
-    pid = popen(['MatSubmitLRZ --config lrzc_mpp1.conf -d ' jid ' -l ' Trial.name ...
+if (~exist(file_preproc,'file')&&~local)||overwrite,
+    jid = popen(['MatSubmitLRZ --config lrzc_mpp1.conf ' ...
+                 ' -y ' Trial.path.data r1jid ' -l ' Trial.name ...
                  ' req20160310_3_trainNN']);
-    pid = char(jid.readLine);
+    r3jid = [' -d afterok:' char(jid.readLine)];
 else
     req20160310_3_trainNN(Trial);
 end
 
-
-
 % 4. Accumulate stats of network output
-
 file_preproc = fullfile(Trial.spath,'req20160310_4_accumStats.mat');
-if ~exist(file_preproc,'file')&&~local,
-    [~,~,err] = popen(['MatSubmitLRZ --config lrzc_mpp1.conf -d ' pid ' -l ' Trial.name ...
-                       ' req20160310_4_accumStats']);
+if (~exist(file_preproc,'file')&&~local)||overwrite,
+    popen(['MatSubmitLRZ --config lrzc_mpp1.conf ' ...
+           ' -y ' Trial.path.data r3jid ' -l ' Trial.name ...
+           ' req20160310_4_accumStats']);
 else
     req20160310_4_accumStats(Trial);
 end
