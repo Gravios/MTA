@@ -31,7 +31,7 @@ else
     req20160310_2_tsne(Trial);
 end
 
-%HELLO AGAIN
+%HELLO AGAIN... HEY
 % 3. Train neural networks on the target state vs all others
 for s = 1:5,
     file_preproc = fullfile(Trial.spath,'req20160310_3_trainNN',num2str(s),'.mat');
