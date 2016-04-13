@@ -1,18 +1,22 @@
 function stats = req20160310_4_accumStats(Trial,afet,s)
 
 load(fullfile(Trial.spath,'req20160310_1_preproc.mat'),...
-     'states','stateOrd','tfet','tstc','fet','nNeurons','nIter','rndMethod');
+     'states','fetInds','stateOrd','afet','nNeurons','nIter','rndMethod');
 
 
-fetInds,stateOrd,nNeurons,nIter,rndMethod
+accum_acc = zeros([round(afet.size(2)/2),1]);
+accum_pre = zeros([round(afet.size(2)/2),1]);
+accum_sen = zeros([round(afet.size(2)/2),1]);
 
-stats.accum_acc = zeros([round(afet.size(2)/2),1]);
-stats.accum_pre = zeros([round(afet.size(2)/2),1]);
-stats.accum_sen = zeros([round(afet.size(2)/2),1]);
 
+oind = [repmat([1:59],1,2)',zeros([118,1])];
+aind = oind(:,1);
+for sh = 1:117,
+    oind = [oind;[circshift(aind,-sh),aind]];
+end
 slind = oind(fetInds{s},:);
 ofet =reshape(slind,[],1);
-best_inds = histc(ofet,1:59);
+obest_inds = histc(ofet,1:59);
 [~,sbind] = sort(best_inds,'descend');
 
 pobj = parpool('local');
@@ -41,11 +45,11 @@ parfor f = 1:round(numel(sbind)/2),
                                 [], model,nNeurons,nIter,...
                                 rndMethod,'targetState',stateOrd{s});
 
-    stats.accum_acc(f) = opn.labelingStats.accuracy;
-    stats.accum_pre(f) = opn.labelingStats.precision(1);
-    stats.accum_sen(f) = opn.labelingStats.sensitivity(2);
+    accum_acc(f) = opn.labelingStats.accuracy;
+    accum_pre(f) = opn.labelingStats.precision(1);
+    accum_sen(f) = opn.labelingStats.sensitivity(2);
 end
 
 delete(pobj)
 
-save(fullfile(Trial.spath,'req20160310_3_accumStats'),'stats','-v7.3');
+save(fullfile(Trial.spath,'req20160310_4_accumStats',num2str(s),'.mat'),'accum_acc','accum_pre','accum_sen','-v7.3');
