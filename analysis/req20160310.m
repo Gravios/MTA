@@ -32,26 +32,29 @@ else
 end
 
 % 3. Train neural networks on the target state vs all others
-file_preproc = fullfile(Trial.spath,'req20160310_3_trainNN.mat');
-if (~exist(file_preproc,'file')&&~local)||overwrite,
-    jid = popen(['MatSubmitLRZ --config lrzc_mpp1.conf ' ...
-                 ' -y ' Trial.path.data r1jid ' -l ' Trial.name ...
-                 ' req20160310_3_trainNN']);
-    r3jid = [' -d afterok:' char(jid.readLine)];
-else
-    req20160310_3_trainNN(Trial);
+for s = 1:5,
+    file_preproc = fullfile(Trial.spath,'req20160310_3_trainNN',num2str(s),'.mat');
+    if (~exist(file_preproc,'file')&&~local)||overwrite,
+        jid = popen(['MatSubmitLRZ --config lrzc_mpp1.conf ' ...
+                     ' -y ' Trial.path.data r1jid ' -l ' Trial.name ...
+                     ' req20160310_3_trainNN ',num2str(s)]);
+        r3jid = [' -d afterok:' char(jid.readLine)];
+    else
+        req20160310_3_trainNN(Trial);
+    end
 end
 
 % 4. Accumulate stats of network output
-file_preproc = fullfile(Trial.spath,'req20160310_4_accumStats.mat');
-if (~exist(file_preproc,'file')&&~local)||overwrite,
-    popen(['MatSubmitLRZ --config lrzc_mpp1.conf ' ...
-           ' -y ' Trial.path.data r3jid ' -l ' Trial.name ...
-           ' req20160310_4_accumStats']);
-else
-    req20160310_4_accumStats(Trial);
+for s = 1:5,
+    file_preproc = fullfile(Trial.spath,'req20160310_4_accumStats',num2str(s),'.mat');
+    if (~exist(file_preproc,'file')&&~local)||overwrite,
+        popen(['MatSubmitLRZ --config lrzc_mpp1.conf ' ...
+               ' -y ' Trial.path.data r3jid ' -l ' Trial.name ...
+               ' req20160310_4_accumStats ',num2str(s)]);
+    else
+        req20160310_4_accumStats(Trial);
+    end
 end
-
 
 
 
@@ -139,4 +142,3 @@ end
 % $$$                   16,10);%          width & height (cm)
 
 
-end
