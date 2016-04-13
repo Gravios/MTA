@@ -107,7 +107,31 @@
 % req20160127
 %    head vs body vel JPDF w/ state contours
 
+% req20160128
+%    Train nn classifiers with bhv_nn_multi_patternnet
+
+
+%% 2016 02 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 
 % req20160212
 %    playing with feature copulas 
+
+% req20160224
+%    precursor to req20160310
+
+
+%% 2016 03 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+
+% req20160310
+%    miha feature selection
+
+% req20160315
+%    preliminary analysis of optogenetic rat data and mouse data
+%    with optitrack
+
+
+
+
+
+
 

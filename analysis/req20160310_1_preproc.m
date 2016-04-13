@@ -62,9 +62,10 @@ end
 
 
 afet = fet.copy;
-fet.data = [fet.data,fet.data.^2];
-for sh = 1:fet.size(2)-1;
-    fet.data = [fet.data,circshift(afet.data',-sh)'.*afet.data];
+fet.data = [afet.data,afet.data.^2];
+qfet = fet.copy;
+for sh = 1:qfet.size(2)-1;
+    fet.data = [fet.data,circshift(qfet.data',-sh)'.*qfet.data];
 end
 
 

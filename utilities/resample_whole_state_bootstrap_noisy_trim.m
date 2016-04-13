@@ -1,10 +1,5 @@
 function [StcRnd,labelingEpochs,trainingFeatures] = resample_whole_state_bootstrap_noisy_trim(StcHL,features,states,varargin)
-
-if ~isempty(varargin),
-    prctTrain = varargin{1};
-else
-    prctTrain = 90;
-end
+[prctTrain,stateBlockSize] = DefaultArgs(varargin,{90,7500},true);
 
 trainingEpochs = [];
 
@@ -20,8 +15,6 @@ trainingFeatures = features.copy;
 trainingFeatures.clear;
 tmpFeatures = features.copy;
 tmpFeatures.clear;
-
-stateBlockSize = 7500;
 
 trainingPerInds = {};
 labelingPerInds = {};
