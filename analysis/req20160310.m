@@ -11,9 +11,6 @@ Trial = MTATrial.validate(Trial);
 local = false;
 overwrite = true;
 
-data_path = '/home/hpc/pr84qa/di68tor/data/project/general';
-data_path = Trial.path.data;
-
 % 1. Preproc features
 file_preproc = fullfile(Trial.path.data,'analysis','req20160310_1_preproc.mat');
 if (~exist(file_preproc,'file')&&~local)||overwrite,
