@@ -130,8 +130,8 @@
 %    with optitrack
 
 
+%% 2016 04 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 
-
-
-
+% req20160411
+%    Examine inter-session overlap in t-sne space
 

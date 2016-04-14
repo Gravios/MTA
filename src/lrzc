@@ -1,0 +1,159 @@
+#!/bin/bash
+
+# lrzc
+#
+# Type: utilitiy 
+# Author: Justin Graboski
+# Last Modified: 20160411
+# Purpose: submits a job or a list of jobs
+#          to the LMU LRZ center clusters.
+#
+# Version: 0.01 (alpha)
+# 
+# Dependencies: matlab_sumbit_lrz.c
+#
+
+# Default Args
+case $key in
+
+    sbatch)	    
+        shift
+	if [ "$HOSTNAME" == "theta" -o "$HOSTNAME" == "gamma"* ]
+	then
+	    local=0
+	    host=lxlogin1.lrz.de
+	else
+	    host="localhost"
+	    local=1
+	fi
+	cmd="matlab_submit_lrz"
+	dir_data='./'
+	dir_list='script'
+	dependency=''
+	config=''
+	isScript=1
+	verbose=0
+	declare -a INPUT_ARGS
+	declare -a FINAL_COMMAND
+	declare -a job_id
+
+	# Parse optional flags
+	while [[ $# > 1 ]]
+	do
+	    key="$1"
+
+	    case $key in
+		-c|--config)   
+		    config="--config $2"
+		    shift
+		    ;;
+		-d|--dependency)      
+		    dependency="-d $2"
+		    shift
+		    ;;    
+		-y|--dir_data)      
+		    dir_data="$2"
+		    shift
+		    ;;    
+		-h|--help)     
+		    echo "display_help"
+		    exit 1
+		    ;;
+		-l|--dir_list) 
+		    dir_list="$2"
+		    isScript=0
+		    shift
+		    ;;
+		-s|--host)     
+		    host="$2"
+		    local=0 
+		    shift
+		    ;;
+		-v|--verbose)  
+		    verbose=1
+		    ;;
+		*)            
+		    INPUT_ARGS[${#INPUT_ARGS[@]}]=$1
+		    ;;
+	    esac
+	    shift 
+	done
+
+	if [[ -n $1 ]]; then
+	    INPUT_ARGS[${#INPUT_ARGS[@]}]=$1
+	fi
+
+	matlab_func=${INPUT_ARGS[0]}
+	unset INPUT_ARGS[0]
+	fargs=${INPUT_ARGS[@]}
+
+	current=`pwd`
+	joblog=$matlab_func-$dir_list.jlist
+
+
+	if [[ $dir_list != 'script' ]]
+	then
+	    if [[ -d $dir_data/$dir_list ]]
+	    then    
+		dlist="$dir_list"
+	    else
+		dlist=`cat $dir_list`
+	    fi
+	fi
+
+	if [[ $verbose -eq 1 ]]
+	then
+	    if [[ $local -eq 1 ]] 
+	    then
+		echo "Running Local"
+	    fi
+	    echo "Running: $matlab_func on $dir_list"
+	    echo "config: $config"
+	    echo "Submitting file $dir_list to function $matlab_func with $config configuration to $host"
+	    echo "$dlist"
+	fi
+
+
+
+
+	if [[ $local -eq 1 ]]
+	then
+	    cmd_prefix="" 
+	    cmd_postfix=""
+	else
+	    cmd_prefix="ssh -n $host -l $USERNAME_LRZ "
+	    cmd_postfix=""
+	fi
+
+
+	while read -r filebase
+	do
+	    [[ $filebase = \#* ]] && continue
+	    if [[ $verbose -eq 1 ]]
+	    then
+		echo "$cmd_prefix$cmd $config $dependency $matlab_func $filebase $fargs$cmd_postfix"
+	    fi
+
+	    job_id[${#jobid[@]}]=`$cmd_prefix"$cmd $config $dependency $matlab_func $filebase $fargs$cmd_postfix"`
+
+	    echo "$matlab_func $filebase $job_id" >> $dir_data/$joblog
+	    cd $current
+	done <<< "$dlist"
+
+
+	if [[ $verbose -eq 1 ]]
+	then
+	    echo "job assignments are written into $current/$joblog"
+	fi
+
+	echo "${job_id[@]}"
+	;;
+
+    matlab)
+	;;
+    squeue)
+	;;
+    scancel)
+	;;
+    
+esac

@@ -1,0 +1,47 @@
+#! /bin/bash
+cwd=$(pwd)
+
+while [[ $# > 1 ]]
+do
+    key="$1"
+
+    case $key in
+	-T|--files-from)   
+            file_list=$2
+            shift
+        -h|--help)     
+	    echo "display_help"
+	    exit 1
+            ;;
+	-s|--host)     
+	    host="$2"
+            local=0 
+            shift
+	    ;;
+	-u|--user)
+	    USERNAME_LRZ=$2
+            shift	    
+	-v|--verbose)  
+	    v="v"
+            ;;
+	*)            
+            ;;
+    esac
+    shift 
+done
+
+if [ "$HOSTNAME" == "theta" -o "$HOSTNAME" == "gamma"* ]
+then
+    tar c${v}fz - -T $file_list |            \
+    ssh $USERNAME_LRZ@lxlogin1.lrz.de    \
+        "cd ~/matlab/MTA/;  tar x${v}fz -" 
+#else    
+#    cd ~/matlab/MTA
+#    ssh $USER@10.153.170.1                    \
+#	"cd /storage/share/matlab/MTA/;       \
+#         git diff --name-only HEAD~1 HEAD~2 | \
+#         tar cfz - -T - ./" |                 \
+#    tar xvfz -
+fi
+
+cd $cwd

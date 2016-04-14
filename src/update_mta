@@ -1,0 +1,24 @@
+#! /bin/bash
+cwd=$(pwd)
+
+
+if [ "$HOSTNAME" == "theta" -o "$HOSTNAME" == "gamma"* ]
+then
+    Cmessage=date
+    cd /storage/share/matlab/MTA
+    git commit -am "update_mta: `date` "
+    git push origin master
+    git diff --name-only HEAD~0 HEAD~2 | \
+    tar cfz - -T - |                     \
+    ssh $USERNAME_LRZ@lxlogin1.lrz.de    \
+        "cd ~/matlab/MTA/;  tar xvfz -" 
+#else    
+#    cd ~/matlab/MTA
+#    ssh $USER@10.153.170.1                    \
+#	"cd /storage/share/matlab/MTA/;       \
+#         git diff --name-only HEAD~1 HEAD~2 | \
+#         tar cfz - -T - ./" |                 \
+#    tar xvfz -
+fi
+
+cd $cwd

@@ -282,9 +282,20 @@ int main (int argc, char* argv[])
     while (++optind<argc);
   }
 
-  strncpy(aux_script_args_tag,aux_script_args,sizeof(aux_script_args_tag));
-  aux_script_args_tag[strcspn(aux_script_args_tag, "\\\"\'/ ,")] = '_';
+  strncpy(aux_script_args_tag,aux_script_args,sizeof(aux_script_args_tag));  
+  int badCharIndex = strcspn(aux_script_args_tag,",\"\' ");
+  while (&badCharIndex!=NULL){
+    badCharIndex = strcspn(aux_script_args_tag,",\"\' ");
+    //printf("%i\n",badCharIndex);
+    //printf("%s\n",aux_script_args_tag);
+    aux_script_args_tag[badCharIndex] = '+';
+    if (aux_script_args_tag[badCharIndex+1]=='\0'){ 
+      break; 
+    }
+  }
   
+ 
+ 
   char  filebase_fullpath[500];
 
   snprintf(script_fullpath,      sizeof(script_fullpath),      "%s/%s.m"         ,matlab_dir,script_name);
