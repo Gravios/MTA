@@ -47,8 +47,9 @@ void print_usage (FILE* stream, int exit_code)
           "\n\n Output Control:\n"
 	  "    -w  --diary                       Create diary output file from matlab execution.\n"
 	  "    -e  --email            EMAIL_LRZ  Default email address is EMAIL_LRZ sysenv.\n"
-	  "    -o  --output            filename  Write output to file.\n"
 	  "    -i  --mail-type  [all,start,end]  Email alert options.\n"
+	  "    -o  --output            filename  Write output to file.\n"
+	  "    -s  --submission-mode [matlab,sbatch] Submit script to either matlab or sbatch(def).\n"
           "\n\n Matlab Controls:\n"
           "  (not functional)   --nojvm                       suppress java virtual machine at matlab startup"
           "\n\n Miscellaneous:\n"
@@ -107,6 +108,7 @@ int main (int argc, char* argv[])
   int  requeue  = 0;
   const char* dependency = NULL;  
 
+  const char* submission_mode = NULL;    
   /* Misc options*/
   const char* output_filename = NULL;    // 
   int diary    = 0;                     // flag to record matlab output
@@ -140,7 +142,7 @@ int main (int argc, char* argv[])
 
   /*START of Argument Parsing */
   /* A string listing valid short options letters.  */
-  const char* const short_options = "c:D:d:J:m:n:p:rt:we:o:i:hv";
+  const char* const short_options = "c:D:d:J:m:n:p:rt:we:i:o:s:hv";
   /* An array describing valid long options.  */
   const struct option long_options[] = {
     { "clusters",     1, NULL, 'c'},
@@ -153,8 +155,9 @@ int main (int argc, char* argv[])
     { "requeue",      0, NULL, 'r'},
     { "time",         1, NULL, 't'},
     { "diary",        0, NULL, 'w'},
-    { "output",       1, NULL, 'o'},
     { "mail-type",    1, NULL, 'i'},
+    { "output",       1, NULL, 'o'},
+    { "submission-type",1, NULL, 's'},
     { "help",         0, NULL, 'h'},
     { "verbose",      0, NULL, 'v'},
     { "cluster-list", 0, NULL, 'l' },
@@ -203,6 +206,7 @@ int main (int argc, char* argv[])
       case 'e': /* -e  --email     */      strcpy(email,optarg);          break;
       case 'i': /* -i  --mail-type */      strcpy(mail_type,optarg);      break;
       case 'o': /* -o  --output    */      output_filename = optarg;      break;
+      case 's': /* -s  --submission-type*/ submission_mode = optarg;      break;
 
 	/* Miscellaneous */
       case 'h': /* -h  --help      */      print_usage (stdout, 0);
@@ -216,6 +220,9 @@ int main (int argc, char* argv[])
   }
   while (next_option != -1);
 
+  if (submission_mode==NULL){
+    submission_mode="sbatch";
+  }
   if (verbose==1) {
     printf("\n----------------------------------------------------------------------"
            "\n Starting: %s"
@@ -402,13 +409,19 @@ int main (int argc, char* argv[])
   //fprintf(fp_mat,"cd %s/%s\n",data_dir,filebase);
   if (diary) { fprintf(fp_mat, "diary %s\n\n",sbatch_fullpath_diary); }
 
-
+  fprintf(fp_mat,"try,\n");
   if (isScript) {
     fprintf(fp_mat,"%s\n",script_name);
   }
   else{
     fprintf(fp_mat,"%s(\'%s\'%s)\n",script_name,filebase,aux_script_args);
   }
+  fprintf(fp_mat,"catch err\n" 
+                 "    for e = 1:numel(err.stack),\n"
+                 "        err.stack(e)\n"
+                 "    end\n" 
+   	         "end\n\n");  //add some error handeling here later
+
 
   if (diary) {fprintf(fp_mat, "diary off\n",sbatch_fullpath_diary); }
 
@@ -424,48 +437,71 @@ int main (int argc, char* argv[])
 
 
 
-
-  /* START sbatch submission */
-  if (verbose==1) {
-    printf("\n----------------------------------------------------------------------"
-	   "\n Submitting script to cluster: %s\n"
-	   ,clusters);
-  }
-
+  /* START script submission */
   char cmd_start[500]; 
   char cmd_out  [500];
   char *cmd_jid = cmd_out;
   FILE *fp_sysout;
 
-  snprintf(cmd_start,sizeof(cmd_start),"sbatch %s",sbatch_fullpath_cmd); 
-  fp_sysout = popen(cmd_start,"r");
-  fgets(cmd_out,sizeof(cmd_out),fp_sysout);
-  fclose(fp_sysout);
+  switch(submission_mode[0]){
+  case 'm':
+    if (verbose==1) {
+      printf("\n----------------------------------------------------------------------"
+	     "\n Submitting lrz cluster head node\n"
+	     );
+    }
+          
+    fprintf(fp_sbatch,"matlab -r -nodesktop -nosplash < %s \n",sbatch_fullpath_m;
+    snprintf(cmd_start,sizeof(cmd_start),"module load matlab && matlab -r -nodesktop -nosplash < %s ",sbatch_fullpath_m); 
+    system(cmd_start,"r");
+    
 
-  if (verbose==1) {
-    printf("    ... complete"
-           "\n----------------------------------------------------------------------");
+    if (verbose==1) {
+      printf("    ... complete"
+	     "\n----------------------------------------------------------------------");
+    }
+    /* END matlab submission */
+
+
+  case 's':
+    /* START sbatch submission */
+    if (verbose==1) {
+      printf("\n----------------------------------------------------------------------"
+	     "\n Submitting script to cluster: %s\n"
+	     ,clusters);
+    }
+
+    snprintf(cmd_start,sizeof(cmd_start),"sbatch %s",sbatch_fullpath_cmd); 
+    fp_sysout = popen(cmd_start,"r");
+    fgets(cmd_out,sizeof(cmd_out),fp_sysout);
+    fclose(fp_sysout);
+
+    if (verbose==1) {
+      printf("    ... complete"
+	     "\n----------------------------------------------------------------------");
+    }
+    /* END sbatch submission */
+
+
+    /* Log job in active list */
+    int reti;
+    size_t nmatch = 1;
+    char job_id  [20];
+    regmatch_t pmatch[1];
+    reti = regcomp(&regex,"job \\([[:digit:]]*\\) on",0);
+    reti = regexec(&regex,cmd_out,nmatch,pmatch,0);
+    rpegfree(&regex);
+    snprintf(job_id, sizeof(job_id),"%.*s",
+	     pmatch[0].rm_eo-pmatch[0].rm_so-7,cmd_jid+pmatch[0].rm_so+4);
+    if (verbose==1) {
+      printf("\n %s "
+	     "\n Job Id : %s\n"
+	     "\n Expect email updates at: %s \n\n"
+	     ,cmd_out,job_id,email);
+    }
+    printf("%s", job_id);
+    
   }
-  /* END sbatch submission */
-
-
-  /* Log job in active list */
-  int reti;
-  size_t nmatch = 1;
-  char job_id  [20];
-  regmatch_t pmatch[1];
-  reti = regcomp(&regex,"job \\([[:digit:]]*\\) on",0);
-  reti = regexec(&regex,cmd_out,nmatch,pmatch,0);
-  regfree(&regex);
-  snprintf(job_id, sizeof(job_id),"%.*s",
-           pmatch[0].rm_eo-pmatch[0].rm_so-7,cmd_jid+pmatch[0].rm_so+4);
-  if (verbose==1) {
-    printf("\n %s "
-	   "\n Job Id : %s\n"
-	   "\n Expect email updates at: %s \n\n"
-	   ,cmd_out,job_id,email);
-  }
-  printf("%s", job_id);
 
   return 0;
 }

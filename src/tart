@@ -1,26 +1,49 @@
 #! /bin/bash
+# tart - tar file transfer over ssh
+# advantage over scp: copies relative links rather
+# than following to hard copy
 cwd=$(pwd)
+
+hostname=$HOST_LRZ
+file_list="./"
+user=$USERNAME_LRZ
+
+if [[ $# -eq 0 ]]
+then
+echo "tart [-h help] [-l login_name] [-T filelist] "
+echo "     [-o remote_output_dir] [-p port] [[user@]hostname]"
+fi
 
 while [[ $# > 1 ]]
 do
     key="$1"
 
     case $key in
+        -h|--help)     
+	    echo "tart [-l login_name] [-T filelist] [-o remote_output_dir]"
+	    echo "     [-p port] [-u user] [[user@]hostname]"
+	    exit 1
+            ;;
+	-l|--login-name)
+	    login_name=$2
+	    shift
+	    ;;
+        -o|--remote-output-dir)
+            remote_output_dir=$2
+            shift
+            ;;
+        -p|--port)
+            port="-p $2"
+            shift
+	    ;;
 	-T|--files-from)   
             file_list=$2
             shift
-        -h|--help)     
-	    echo "display_help"
-	    exit 1
-            ;;
-	-s|--host)     
-	    host="$2"
-            local=0 
-            shift
 	    ;;
 	-u|--user)
-	    USERNAME_LRZ=$2
+	    user=$2
             shift	    
+	    ;;
 	-v|--verbose)  
 	    v="v"
             ;;
@@ -30,18 +53,18 @@ do
     shift 
 done
 
-if [ "$HOSTNAME" == "theta" -o "$HOSTNAME" == "gamma"* ]
+if [[ $# -eq 1 ]]
 then
-    tar c${v}fz - -T $file_list |            \
-    ssh $USERNAME_LRZ@lxlogin1.lrz.de    \
-        "cd ~/matlab/MTA/;  tar x${v}fz -" 
-#else    
-#    cd ~/matlab/MTA
-#    ssh $USER@10.153.170.1                    \
-#	"cd /storage/share/matlab/MTA/;       \
-#         git diff --name-only HEAD~1 HEAD~2 | \
-#         tar cfz - -T - ./" |                 \
-#    tar xvfz -
+  hostname=$1
 fi
+
+# check if user specifed output
+#if [ hostname =~ ".*[:].+" ]
+#then
+#    remote_output_dir=''
+#fi
+
+tar c${v}fz - -T $file_list |  \
+`ssh $port $user@$hostname -l $login_name  "cd ~/$remote_output_dir;  tar x${v}fz -"`
 
 cd $cwd

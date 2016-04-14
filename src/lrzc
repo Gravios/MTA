@@ -14,7 +14,8 @@
 #
 
 # Default Args
-case $key in
+skey=$1
+case $skey in
 
     sbatch)	    
         shift
