@@ -117,8 +117,8 @@ then
     cmd_prefix="" 
     cmd_postfix=""
 else
-    cmd_prefix="ssh -n $host -l $USERNAME_LRZ \""
-    cmd_postfix="\""
+    cmd_prefix="ssh -n $host -l $USERNAME_LRZ "
+    cmd_postfix=""
 fi
 
 
@@ -130,8 +130,8 @@ do
 	echo "$cmd_prefix$cmd $config $dependency $matlab_func $filebase $fargs$cmd_postfix"
     fi
 
-    job_id[${#jobid[@]}]=`$cmd_prefix$cmd $config $dependency $matlab_func $filebase $fargs$cmd_postfix`
-    
+    job_id[${#jobid[@]}]=`$cmd_prefix"$cmd $config $dependency $matlab_func $filebase $fargs$cmd_postfix"`
+
     echo "$matlab_func $filebase $job_id" >> $dir_data/$joblog
     cd $current
 done <<< "$dlist"

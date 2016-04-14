@@ -261,7 +261,8 @@ int main (int argc, char* argv[])
   
   /* Designate if the first input is a script or a function
      if it is a function then use the first input as value  */
-  char  aux_script_args [500];
+  char  aux_script_args     [500];
+  char  aux_script_args_tag [500];
   if (optind==argc-1) { 
     filebase = "script";
     isScript = 1; 
@@ -280,16 +281,19 @@ int main (int argc, char* argv[])
     }
     while (++optind<argc);
   }
+
+  strncpy(aux_script_args_tag,aux_script_args,sizeof(aux_script_args_tag));
+  aux_script_args_tag[strcspn(aux_script_args_tag, "\\\"\'/ ,")] = '_';
   
   char  filebase_fullpath[500];
 
   snprintf(script_fullpath,      sizeof(script_fullpath),      "%s/%s.m"         ,matlab_dir,script_name);
   snprintf(filebase_fullpath,    sizeof(filebase_fullpath),    "%s/%s"           ,data_dir,filebase);
   snprintf(sbatch_base,          sizeof(sbatch_base),          "%s/%s_%s"        ,sbatch_dir,script_name,filebase);
-  snprintf(sbatch_fullpath_cmd,  sizeof(sbatch_fullpath_cmd),  "%s/%s_%s.cmd"    ,sbatch_base,script_name,filebase);
-  snprintf(sbatch_fullpath_m,    sizeof(sbatch_fullpath_m),    "%s/%s_%s.m"      ,sbatch_base,script_name,filebase);
-  snprintf(sbatch_fullpath_diary,sizeof(sbatch_fullpath_diary),"%s/%s_%s.diary"  ,sbatch_base,script_name,filebase);
-  snprintf(sbatch_fullpath_out,  sizeof(sbatch_fullpath_out),  "%s/%s_%s.out"    ,sbatch_base,script_name,filebase);
+  snprintf(sbatch_fullpath_cmd,  sizeof(sbatch_fullpath_cmd),  "%s/%s_%s%s.cmd"  ,sbatch_base,script_name,filebase,aux_script_args_tag);
+  snprintf(sbatch_fullpath_m,    sizeof(sbatch_fullpath_m),    "%s/%s_%s%s.m"    ,sbatch_base,script_name,filebase,aux_script_args_tag);
+  snprintf(sbatch_fullpath_diary,sizeof(sbatch_fullpath_diary),"%s/%s_%s%s.diary",sbatch_base,script_name,filebase,aux_script_args_tag);
+  snprintf(sbatch_fullpath_out,  sizeof(sbatch_fullpath_out),  "%s/%s_%s%s.out"  ,sbatch_base,script_name,filebase,aux_script_args_tag);
 
   mkdir(sbatch_base,( S_IRWXU | S_IRGRP | S_IROTH ));
 
