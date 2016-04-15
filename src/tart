@@ -10,7 +10,7 @@ then
     user=$USERNAME_LRZ
     onClu=0
 else
-    hostname="10.153.170.1"
+    hostname=$HOST_THETA
     user=$USERNAME_THETA
     onClu=1
 fi
@@ -32,7 +32,7 @@ do
             shift
             ;;
 	-l|--login-name)
-	    login_name=$2
+	    login_name="-l $2"
 	    shift
 	    ;;
         -o|--remote-output-dir)
@@ -44,6 +44,10 @@ do
             shift
 	    ;;
 	-T|--files-from)   
+            file_list="-T $2"
+            shift
+	    ;;
+	-t|--file)   
             file_list=$2
             shift
 	    ;;
@@ -64,9 +68,10 @@ done
 
 if [[ $onClu -eq 0 ]]
 then
-    tar c${v}fz - -T $file_list | ssh $port $user@$hostname -l $login_name  "cd $PROJECT/$remote_output_dir;  tar x${v}fz -"
+    tar c${v}fz - $file_list | ssh $port $user@$hostname $login_name  "cd $PROJECT_LRZ/$remote_output_dir;  tar x${v}fz - "
 else
-    ssh $port $user@$hostname -l $login_name  "cd $PROJECT/$remote_input_dir;  tar c${v}fz  -T $file_list " | tar x${v}fz -
+    echo "ssh $port $user@$hostname $login_name  \"cd $PROJECT_THETA/$remote_input_dir;  tar c${v}fz - $file_list \" | tar x${v}fz -"
+    ssh $port $user@$hostname $login_name  "cd $PROJECT_THETA/$remote_input_dir;  tar c${v}fz - $file_list " | tar x${v}fz -
 fi
 
 
