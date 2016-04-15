@@ -36,8 +36,13 @@ do
             port="-p $2"
             shift
 	    ;;
-	-T|--files-from)   
-            file_list=$2
+	-T|--files-from)
+	    if [ -d $2 ]
+	    then		
+		file_list="$2"
+	    else
+		file_list="-T $2"
+	    fi
             shift
 	    ;;
 	-u|--user)
@@ -64,7 +69,8 @@ fi
 #    remote_output_dir=''
 #fi
 
-tar c${v}fz - -T $file_list |  \
+
+tar c${v}fz - $file_list |  \
 `ssh $port $user@$hostname -l $login_name  "cd ~/$remote_output_dir;  tar x${v}fz -"`
 
 cd $cwd

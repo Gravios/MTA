@@ -52,7 +52,15 @@ do
 	    shift
 	    ;;    
         -h|--help)     
-	    echo "display_help"
+	    echo "MatSubmitLRZ opts matlab_script"
+            echo " -c|--config      specify a set of slurm parameters"
+            echo " -d|--dependency  specify a prerequisite job"
+            echo " -y|--dir_data    specify your data’s location"
+            echo " -h|--help        admit defeat"
+            echo " -l|--dir_list    provide a list of sessions"
+            echo " -s|--host        send the job somewhere else"
+            echo " -v|--verbose     peek under the hood"
+	    echo " "
 	    exit 1
             ;;
 	-l|--dir_list) 
@@ -89,7 +97,7 @@ joblog=$matlab_func-$dir_list.jlist
 
 if [[ $dir_list != 'script' ]]
 then
-    if [[ -d $dir_data/$dir_list ]]
+    if [[ -d $dir_data/$dir_list -o [[ ! -f $dir_data/$dir_list ]] ]]
     then    
 	dlist="$dir_list"
     else
