@@ -34,7 +34,7 @@ declare -a FINAL_COMMAND
 declare -a job_id
 
 # Parse optional flags
-while [[ $# > 1 ]]
+while [[ $# > 0 ]]
 do
     key="$1"
 
@@ -83,9 +83,6 @@ do
     shift 
 done
 
-if [[ -n $1 ]]; then
-    INPUT_ARGS[${#INPUT_ARGS[@]}]=$1
-fi
 
 matlab_func=${INPUT_ARGS[0]}
 unset INPUT_ARGS[0]
@@ -97,13 +94,14 @@ joblog=$matlab_func-$dir_list.jlist
 
 if [[ $dir_list != 'script' ]]
 then
-    if [[ -d $dir_data/$dir_list -o [[ ! -f $dir_data/$dir_list ]] ]]
+    if [ -d $dir_data/$dir_list ] ||  [ ! -f $dir_data/$dir_list ] 
     then    
 	dlist="$dir_list"
     else
 	dlist=`cat $dir_list`
     fi
 fi
+
 
 if [[ $verbose -eq 1 ]]
 then
@@ -138,7 +136,7 @@ do
 	echo "$cmd_prefix$cmd $config $dependency $matlab_func $filebase $fargs$cmd_postfix"
     fi
 
-    job_id[${#jobid[@]}]=`$cmd_prefix""$cmd $config $dependency $matlab_func $filebase $fargs$cmd_postfix""`
+    #job_id[${#jobid[@]}]=`$cmd_prefix""$cmd $config $dependency $matlab_func $filebase $fargs$cmd_postfix""`
 
     echo "$matlab_func $filebase $job_id" >> $dir_data/$joblog
     cd $current
