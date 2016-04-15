@@ -1,33 +1,38 @@
 #! /bin/bash
-
 # tart - tar file transfer over ssh
 # advantage over scp: copies relative links rather
 # than following to hard copy
 cwd=$(pwd)
 
-
-hostname=$HOST_LRZ
-file_list="./"
-user=$USERNAME_LRZ
-
-
-if [[ $# -eq 0 ]]
+if [ "$HOSTNAME" == "theta" -o "$HOSTNAME" == "gamma"* ]
 then
-echo "tart [-h help] [-l login_name] [-T filelist] "
-echo "     [-o remote_output_dir] [-p port] [[user@]hostname]"
+    hostname=$HOST_LRZ
+    user=$USERNAME_LRZ
+    onClu=0
+else
+    hostname="10.153.170.1"
+    user=$USERNAME_THETA
+    onClu=1
 fi
+
+file_list="./"
 
 while [[ $# > 0 ]]
 do
     key="$1"
+
     case $key in
-        -h|--help)
+        -h|--help)     
 	    echo "tart [-l login_name] [-T filelist] [-o remote_output_dir]"
 	    echo "     [-p port] [-u user] [[user@]hostname]"
 	    exit 1
             ;;
+        -i|--remote-input-dir)
+            remote_input_dir=$2
+            shift
+            ;;
 	-l|--login-name)
-	    login_name="-l $2"
+	    login_name=$2
 	    shift
 	    ;;
         -o|--remote-output-dir)
@@ -38,13 +43,8 @@ do
             port="-p $2"
             shift
 	    ;;
-	-T|--files-from)
-	    if [ -d $2 ]
-	    then		
-		file_list="$2"
-	    else
-		file_list="-T $2"
-	    fi
+	-T|--files-from)   
+            file_list=$2
             shift
 	    ;;
 	-u|--user)
@@ -54,15 +54,20 @@ do
 	-v|--verbose)  
 	    v="v"
             ;;
-	*)
-	    hostname=$1
+	*)    
+	    hostname=$1        
             ;;
     esac
     shift 
 done
 
-tar c${v}fz - $file_list |  \
-echo "ssh $port $user@$hostname $login_name \"cd ~/$remote_output_dir;  tar x${v}fz - \""
-ssh $port $user@$hostname -l $login_name  "cd ~/$remote_output_dir;  tar x${v}fz - "
+
+if [[ $onClu -eq 0 ]]
+then
+    tar c${v}fz - -T $file_list | ssh $port $user@$hostname -l $login_name  "cd $PROJECT/$remote_output_dir;  tar x${v}fz -"
+else
+    ssh $port $user@$hostname -l $login_name  "cd $PROJECT/$remote_input_dir;  tar c${v}fz  -T $file_list " | tar x${v}fz -
+fi
+
 
 cd $cwd
