@@ -54,4 +54,4 @@ end
 
 delete(pobj)
 
-save(fullfile(Trial.spath,'req20160310_4_accumStats',num2str(s),'.mat'),'accum_acc','accum_pre','accum_sen','-v7.3');
+save(fullfile(Trial.spath,['req20160310_4_accumStats',num2str(s),'.mat']),'accum_acc','accum_pre','accum_sen','-v7.3');

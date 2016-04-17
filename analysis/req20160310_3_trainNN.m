@@ -42,5 +42,5 @@ end
 
 delete(pobj)
 
-save(fullfile(Trial.spath,'req20160310_3_trainNN',num2str(s),'.mat'),'gStates','-v7.3');
+save(fullfile(Trial.spath,['req20160310_3_trainNN',num2str(s),'.mat']),'gStates','-v7.3');
 
