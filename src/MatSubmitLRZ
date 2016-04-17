@@ -136,7 +136,8 @@ do
 	echo "$cmd_prefix$cmd $config $dependency $matlab_func $filebase $fargs$cmd_postfix"
     fi
 
-    #job_id[${#jobid[@]}]=`$cmd_prefix""$cmd $config $dependency $matlab_func $filebase $fargs$cmd_postfix""`
+    echo "$cmd_prefix$cmd $config $dependency $matlab_func $filebase $fargs$cmd_postfix"
+    job_id[${#jobid[@]}]=`$cmd_prefix""$cmd $config $dependency $matlab_func $filebase $fargs$cmd_postfix""`
 
     echo "$matlab_func $filebase $job_id" >> $dir_data/$joblog
     cd $current

@@ -15,7 +15,7 @@ overwrite = true;
 file_preproc = fullfile(Trial.path.data,'analysis','req20160310_1_preproc.mat');
 if (~exist(file_preproc,'file')&&~local)||overwrite,
     jid = popen(['MatSubmitLRZ --config lrzc_hugemem.conf'...
-                 ' -y ' Trial.path.data ' -l ' Trial.name ' req20160310_1_preproc']);
+                 ' -l ' Trial.name ' req20160310_1_preproc']);
     r1jid = [' -d afterok:' char(jid.readLine)];
 else
     req20160310_1_preproc(Trial);
@@ -26,7 +26,7 @@ for s = 1:5,
     file_preproc = fullfile(Trial.spath,'req20160310_2_tsne',num2str(s),'.mat');
     if (~exist(file_preproc,'file')&&~local)||overwrite,
         popen(['MatSubmitLRZ --config lrzc_hugemem.conf '...
-               ' -y ' Trial.path.data r1jid ' -l ' Trial.name ...
+                r1jid ' -l ' Trial.name ...
                ' req20160310_2_tsne ',num2str(s)]);
     else
         req20160310_2_tsne(Trial,s);
@@ -47,11 +47,12 @@ for s = 1:5,
 end
 
 % 4. Accumulate stats of network output
+r3jid='';
 for s = 1:5,
     file_preproc = fullfile(Trial.spath,'req20160310_4_accumStats',num2str(s),'.mat');
     if (~exist(file_preproc,'file')&&~local)||overwrite,
-        popen(['MatSubmitLRZ --config lrzc_mpp1.conf ' ...
-               ' -y ' Trial.path.data r3jid ' -l ' Trial.name ...
+        system(['MatSubmitLRZ --config lrzc_mpp1.conf ' ...
+                r3jid ' -l ' Trial.name ...
                ' req20160310_4_accumStats ',num2str(s)]);
     else
         req20160310_4_accumStats(Trial,s);
