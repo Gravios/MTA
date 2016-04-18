@@ -1,7 +1,6 @@
 function req20160310_2_tsne(Trial,s)
 
-load(fullfile(Trial.spath,'req20160310_1_preproc.mat'),...
-     'states','fetInds','stateOrd','tfet','tstc','fet');
+load(fullfile(Trial.spath,'req20160310_1_preproc-tfet.mat'));
 
 out = struct;
 

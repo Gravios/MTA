@@ -22,6 +22,7 @@ else
 end
 
 %2. t-SNE
+r1jid='';
 for s = 1:5,
     file_preproc = fullfile(Trial.spath,'req20160310_2_tsne',num2str(s),'.mat');
     if (~exist(file_preproc,'file')&&~local)||overwrite,
@@ -33,11 +34,13 @@ for s = 1:5,
     end
 end
 
+
 % 3. Train neural networks on the target state vs all others
+r1jid='';
 for s = 1:5,
     file_preproc = fullfile(Trial.spath,'req20160310_3_trainNN',num2str(s),'.mat');
     if (~exist(file_preproc,'file')&&~local)||overwrite,
-        jid = popen(['MatSubmitLRZ --config lrzc_mpp1.conf ' ...
+        jid = popen(['MatSubmitLRZ --config lrzc_serial.conf ' ...
                      ' -y ' Trial.path.data r1jid ' -l ' Trial.name ...
                      ' req20160310_3_trainNN ',num2str(s)]);
         r3jid = [' -d afterok:' char(jid.readLine)];
@@ -51,7 +54,7 @@ r3jid='';
 for s = 1:5,
     file_preproc = fullfile(Trial.spath,'req20160310_4_accumStats',num2str(s),'.mat');
     if (~exist(file_preproc,'file')&&~local)||overwrite,
-        system(['MatSubmitLRZ --config lrzc_mpp1.conf ' ...
+        system(['MatSubmitLRZ --config lrzc_serial.conf ' ...
                 r3jid ' -l ' Trial.name ...
                ' req20160310_4_accumStats ',num2str(s)]);
     else
