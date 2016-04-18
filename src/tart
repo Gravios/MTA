@@ -1,78 +1,50 @@
 #! /bin/bash
-# tart - tar file transfer over ssh
-# advantage over scp: copies relative links rather
-# than following to hard copy
 cwd=$(pwd)
 
-if [ "$HOSTNAME" == "theta" -o "$HOSTNAME" == "gamma"* ]
-then
-    hostname=$HOST_LRZ
-    user=$USERNAME_LRZ
-    onClu=0
-else
-    hostname=$HOST_THETA
-    user=$USERNAME_THETA
-    onClu=1
-fi
+nCommits=4
+message="update_mta: `date` "
+gdir="/storage/share/matlab/MTA"
 
-file_list="./"
 
 while [[ $# > 0 ]]
 do
-    key="$1"
-
+    key=$1
     case $key in
-        -h|--help)     
-	    echo "tart [-l login_name] [-T filelist] [-o remote_output_dir]"
-	    echo "     [-p port] [-u user] [[user@]hostname]"
-	    exit 1
-            ;;
-        -i|--remote-input-dir)
-            remote_input_dir=$2
-            shift
-            ;;
-	-l|--login-name)
-	    login_name="-l $2"
+	-d|--git-directory)
+	    gdir=$2
 	    shift
 	    ;;
-        -o|--remote-output-dir)
-            remote_output_dir=$2
-            shift
-            ;;
-        -p|--port)
-            port="-p $2"
-            shift
+	-m|--message)
+	    message=$2
+	    shift
 	    ;;
-	-T|--files-from)   
-            file_list="-T $2"
-            shift
+	-n|--n-previous-commits)
+	    n=$2
+	    shift
 	    ;;
-	-t|--file)   
-            file_list=$2
-            shift
+	*)
 	    ;;
-	-u|--user)
-	    user=$2
-            shift	    
-	    ;;
-	-v|--verbose)  
-	    v="v"
-            ;;
-	*)    
-	    hostname=$1        
-            ;;
     esac
-    shift 
+    shift
 done
 
 
-if [[ $onClu -eq 0 ]]
+if [ "$HOSTNAME" == "theta" -o "$HOSTNAME" == "gamma"* ]
 then
-    tar c${v}fz - $file_list | ssh $port $user@$hostname $login_name  "cd $PROJECT_LRZ/$remote_output_dir;  tar x${v}fz - "
-else
-    echo "ssh $port $user@$hostname $login_name  \"cd $PROJECT_THETA/$remote_input_dir;  tar c${v}fz - $file_list \" | tar x${v}fz -"
-    ssh $port $user@$hostname $login_name  "cd $PROJECT_THETA/$remote_input_dir;  tar c${v}fz - $file_list " | tar x${v}fz -
+    cd $gdir
+    git commit -am "\"$message\""
+    git push origin master
+    git diff --name-only HEAD~0 HEAD~$nCommits | \
+    tar cfz - -T - |                     \
+    ssh $USERNAME_LRZ@lxlogin1.lrz.de    \
+        "cd ~/matlab/MTA/;  tar xvfz -" 
+#else    
+#    cd ~/matlab/MTA
+#    ssh $USER@10.153.170.1                    \
+#	"cd /storage/share/matlab/MTA/;       \
+#         git diff --name-only HEAD~1 HEAD~2 | \
+#         tar cfz - -T - ./" |                 \
+#    tar xvfz -
 fi
-
 
 cd $cwd
