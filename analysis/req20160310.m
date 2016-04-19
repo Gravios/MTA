@@ -8,7 +8,7 @@ function req20160310(Trial)
 Trial = 'jg05-20120317.cof.all';
 Trial = MTATrial.validate(Trial);
 %cd(Trial.path.data);
-local = false;
+local = true;
 overwrite = true;
 
 % 1. Preproc features
@@ -37,6 +37,7 @@ end
 
 % 3. Train neural networks on the target state vs all others
 r1jid='';
+pobj = parpool(4);
 for s = 1:5,
     file_preproc = fullfile(Trial.spath,'req20160310_3_trainNN',num2str(s),'.mat');
     if (~exist(file_preproc,'file')&&~local)||overwrite,
@@ -48,6 +49,13 @@ for s = 1:5,
         req20160310_3_trainNN(Trial,s);
     end
 end
+r1jid='';
+pobj = parpool(3);
+parfor s = 3:5,
+        req20160310_3_trainNN(Trial,s);
+end
+
+delete(pobj);
 
 % 4. Accumulate stats of network output
 r3jid='';

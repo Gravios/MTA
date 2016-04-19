@@ -3,7 +3,7 @@ function req20160310_3_trainNN(Trial,s)
 Trial = MTATrial.validate(Trial);
 
 %'states','fetInds','stateOrd','afet','nNeurons','nIter','rndMethod'
-load(fullfile(Trial.spath,'req20160310_1_preproc-afet.mat'));
+ds = load(fullfile(Trial.spath,'req20160310_1_preproc-afet.mat'));
 
 oind = [repmat([1:59],1,2)',zeros([118,1])];
 aind = oind(:,1);
@@ -22,9 +22,9 @@ gStates = ds.states(cellfun(@isempty,...
                          )...
                  );
 
-%pobj = parpool('local');
+%pobj = parpool(4);
 
-parfor f = 1:round(numel(sbind)/2),%numel(sbind),    
+for f = 1:round(numel(sbind)/2),%numel(sbind),    
     mpn = struct;
     sub_fet = ds.afet.copy;
     sub_fet.data = ds.afet(:,sbind(1:f));
