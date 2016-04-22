@@ -2,10 +2,10 @@ function transform_rigidBody(Trial,varargin);
 [disp,overwrite] = DefaultArgs(varargin,{false,false});
 
 %Trial = MTATrial('Ed05-20140529','all','ont');
-Trial = MTATrial('Ed05-20140528');
-Trial = MTATrial('jg05-20120317');
-Trial = MTASession('jg05-20120317');
-Trial = MTATrial('Ed03-20140625');
+%Trial = MTATrial('Ed05-20140528');
+%Trial = MTATrial('jg05-20120317');
+%Trial = MTASession('jg05-20120317');
+%Trial = MTATrial('Ed03-20140625');
 %disp = false;
 %overwrite = false;
 
@@ -300,8 +300,10 @@ nxyz.data(:,nxyz.model.gmi('head_front'),:) =  bsxfun(@plus,nx*ni(mind(i,1))+ny*
 nxyz.data(:,nxyz.model.gmi('head_right'),:) =  bsxfun(@plus,nx*ni(mind(i,1))+ny*nj(mind(i,2))+nz*nk(mind(i,3)),xyz(:,'head_right',:));
 
 
-
-nxyz.updateFilename([Trial.filebase,'.trb.pos.mat'])
+nxyz.label = 'trb';
+nxyz.key  = 't';
+nxyz.name = 'tr_corrected_head';
+nxyz.updateFilename(Trial);      
 nxyz.save;          
 
 

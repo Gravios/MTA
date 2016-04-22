@@ -1,8 +1,8 @@
 function req20160310_2_tsne(Trial,s)
 
-load(fullfile(Trial.spath,'req20160310_1_preproc-tfet.mat'));
+Trial = MTATrial.validate(Trial);
 
-out = struct;
+load(fullfile(Trial.spath,'req20160310_1_preproc-tfet.mat'));
 
 % State list which excludes previous states
 gStates = states(cellfun(@isempty,...
@@ -18,5 +18,5 @@ sfet.data = tfet(:,fetInds{s});
 out = mta_tsne(Trial,sfet,12,tstc,tstates,5,2,80,'ifReportFig',false,'overwrite',false);    
 
 
-save(fullfile(Trial.spath,'req20160310_2_tsne',num2str(s),'.mat'),'out','-v7.3');
+save(fullfile(Trial.spath,['req20160310_2_tsne',num2str(s),'.mat']),'out','-v7.3');
 

@@ -1,6 +1,9 @@
 function [xyz,ss] = preproc_xyz(Trial,varargin)
 %function [xyz,ss] = preproc_xyz(Trial,varargin)
 %[procOpt] = DefaultArgs(varargin,{{}},true);
+%
+% An attempt to normalize marker positions along the spine
+% between subjects using a 
 
 [procOpts] = DefaultArgs(varargin,{{}},true);
 
@@ -30,48 +33,13 @@ while ~isempty(procOpts)
     switch procOpts{1}
       
       case 'spline_spine'
-        try 
-            ss = Trial.load('fet','3dss');
-            ss.resample(xyz);
-        catch
-            txyz = xyz.data;
-            pnts = zeros([xyz.size(1),105,3]);
-            for ind = 1:xyz.size(1),
-                try
-                    pnts(ind,:,:) = fnplt(cscvn(sq(txyz(ind,:,:))'))';
-                end
-            end
-            name = '3d spline interpolated spine'; label = '3dss'; key = 's';
-            ss = MTADfet.encapsulate(Trial,...
-                                     pnts,...
-                                     xyz.sampleRate,...
-                                     name,label,key);
-            ss.updateFilename(Trial);
-            ss.save;
-        end
+        ss = fet_spline_spine(Trial,xyz);
+        
         xyz.data(:,1:4,:) = ss(:,[5,35,65,95],:);
       
       case 'spline_spine_eqd'
-        try 
-            ss = Trial.load('fet','3dss');
-            ss.resample(xyz);
-        catch
-            txyz = xyz.data;
-            pnts = zeros([xyz.size(1),105,3]);
-            for ind = 1:xyz.size(1),
-                try
-                    pnts(ind,:,:) = fnplt(cscvn(sq(txyz(ind,1:4,:))'))';
-                end
-            end
-            name = '3d spline interpolated spine'; label = '3dss'; key = 's';
-            ss = MTADfet.encapsulate(Trial,...
-                                     pnts,...
-                                     xyz.sampleRate,...
-                                     name,label,key);
-            ss.updateFilename(Trial);
-            ss.save;
-        end
-         
+        ss = fet_spline_spine(Trial,xyz);
+        
         spineLength = MTADxyz('data',sqrt(sum(diff(ss.data,1,2).^2,3)),'sampleRate',xyz.sampleRate);
         totalSpineLength = sum( spineLength.data ,2);
         cumSpineLength = cumsum( spineLength.data ,2);
