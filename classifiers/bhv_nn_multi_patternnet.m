@@ -80,18 +80,16 @@ else,
 end
 
 
-% Load the hand label
+% Load the hand labels
 if ischar(stcMode),
     Trial.load('stc',stcMode);
     StcHL = Trial.stc.copy;
-    %StcHL.states = StcHL(states{:});
-    %keys = StcHL.list_state_attrib('key');
-    keys = cellfun(@subsref,StcHL(states{:}),repmat({substruct('.','key')},size(states)));
 elseif isa(stcMode,'MTAStateCollection'),
     StcHL = stcMode.copy;
     stcMode = stcMode.mode;
-    keys = cellfun(@subsref,StcHL(states{:}),repmat({substruct('.','key')},size(states)));
 end
+StcHL.states = StcHL(states{:});
+keys = cellfun(@subsref,StcHL(states{:}),repmat({substruct('.','key')},size(states)));
 
 
 % Default mode is labeling
@@ -171,9 +169,8 @@ else
 end
 
 
-% load hand labeled states
+% load hand labeled state matrix
 shl = MTADxyz('data',double(0<stc2mat(StcHL,xyz,trainingStates)),'sampleRate',xyz.sampleRate);
-
 
 
 for iter = 1:nIter,
@@ -379,7 +376,7 @@ for iter = 1:nIter,
         
     catch err,
         keyboard
-        warning(err);
+        warning([err.identifier,', ',err.message]);
         continue
     end
     

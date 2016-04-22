@@ -1,54 +1,11 @@
 function [fet,featureTitles,featureDesc,Nmean,Nstd] = fet_tsne_rev15(Trial,varargin)
-[newSampleRate,normalize] = DefaultArgs(varargin,{15,false},1);
-
-if ischar(Trial),
-    Trial = MTATrial(Trial);
-elseif iscell(Trial),
-    Trial = MTATrial(Trial{:});
-end
+[newSampleRate,normalize,procOpts] = DefaultArgs(varargin,{15,false,{'spline_spine'}},1);
 
 
-
-if isempty(Trial.fet),
-    Trial.fet = MTADfet(Trial.spath,...
-                        [],...
-                        [],...
-                        [],...
-                        Trial.sync.copy,...
-                        Trial.sync.data(1),...
-                        []);                  
-end
+Trial = MTATrial.validate(Trial);
 
 
-xyz = Trial.load('xyz');
-
-try 
-    ss = Trial.load('fet','3dss');
-    ss.resample(xyz);
-catch
-    txyz = xyz.data;
-    pnts = zeros([xyz.size(1),105,3]);
-    for ind = 1:xyz.size(1),
-        try
-            pnts(ind,:,:) = fnplt(cscvn(sq(txyz(ind,1:4,:))'))';
-        end
-    end
-    name = '3d spline interpolated spine'; label = '3dss'; key = 's';
-    ss = MTADfet.encapsulate(Trial,...
-                             pnts,...
-                             xyz.sampleRate,...
-                             name,label,key);
-    ss.updateFilename(Trial);
-    ss.save;
-end
-
-xyz.data(:,1:4,:) = ss(:,[5,35,65,95],:);
-
-xyz.addMarker('bcom',[.7,0,.7],{},...
-    xyz.com(xyz.model.rb({'spine_lower','pelvis_root','spine_middle'})));
-xyz.addMarker('hcom',[.7,0,.7],{},...
-    xyz.com(xyz.model.rb({'head_back','head_left','head_front','head_right'})));
-
+[xyz,ss] = preproc_xyz(Trial,procOpts);
 
 
 %% TRAJ feature

@@ -1,5 +1,5 @@
 function distributions_features(varargin)
-[sList,featureSet,state,normalize,mapToReference,RefTrial] = DefaultArgs(varargin,{'hand_labeled_jg','fet_tsne_rev10','gper',true,false,{'jg05-20120317','all','cof'}});
+[sList,featureSet,state,normalize,mapToReference,RefTrial] = DefaultArgs(varargin,{'hand_labeled_jg','fet_tsne_rev15','gper',true,false,{'jg05-20120317','all','cof'}});
 
 
 sesList = SessionList(sList);

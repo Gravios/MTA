@@ -28,13 +28,14 @@ gStates = ds.states(cellfun(@isempty,...
                  );
 
 
-%pobj = parpool('local');
+pobj = parpool(12);
 
-for f = 1:round(numel(sbind)/2),    
+%for f = 1:round(numel(sbind)/2),    
+parfor f = 1:round(numel(sbind)/2),    
     opn = struct;
     sub_fet = ds.afet.copy;
     sub_fet.data = ds.afet(:,sbind(1:f));
-    sub_fet.label = [ds.afet.label '-req20160310-' ds.stateOrd{1} '-' num2str(f)];
+    sub_fet.label = [ds.afet.label '-req20160310-' ds.stateOrd{s} '-' num2str(f)];
     sub_fet.key = 'x';
     sub_fet.updateFilename(Trial);
     
@@ -59,6 +60,6 @@ for f = 1:round(numel(sbind)/2),
     accum_sen(f) = opn.labelingStats.sensitivity(2);
 end
 
-%delete(pobj)
+delete(pobj);
 
-save(fullfile(Trial.spath,['req20160310_4_accumStats',num2str(s),'.mat']),'accum_acc','accum_pre','accum_sen','-v7.3');
+save(fullfile(Trial.spath,['req20160310_4_accumStats',num2str(s),'.mat']),'sbind','accum_acc','accum_pre','accum_sen','-v7.3');
