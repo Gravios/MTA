@@ -128,8 +128,8 @@ if ~exist(filepath,'file')||overwrite
     else
         mappedX = tsne(Fet(ind,:), [], nDims, initDims, perplexity);
     end
-    save(filepath,'states','mappedX','perplexity','filepath');
-else
+    save(filepath,'states','mappedX','perplexity',...
+                  'filepath','ind','csmat','nDims','initDims')
     load(filepath);
 end
 
