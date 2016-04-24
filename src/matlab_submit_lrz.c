@@ -77,16 +77,16 @@ int main (int argc, char* argv[])
 
   if (project_dir==NULL) { project_dir = home_dir; }
 
-  char  sbatch_dir            [500];
-  char  data_dir              [500];
-  char  matlab_dir            [500];
-  char  lrz_dir               [500];
+  char  sbatch_dir            [1024];
+  char  data_dir              [1024];
+  char  matlab_dir            [1024];
+  char  lrz_dir               [1024];
 
-  char  sbatch_base           [500];
-  char  sbatch_fullpath_cmd   [500]; 
-  char  sbatch_fullpath_m     [500];
-  char  sbatch_fullpath_diary [500];
-  char  sbatch_fullpath_out   [500];
+  char  sbatch_base           [1024];
+  char  sbatch_fullpath_cmd   [1024]; 
+  char  sbatch_fullpath_m     [1024];
+  char  sbatch_fullpath_diary [1024];
+  char  sbatch_fullpath_out   [1024];
 
   snprintf(data_dir,  sizeof(data_dir),   "%s/data"          ,project_dir);
   snprintf(sbatch_dir,sizeof(sbatch_dir), "%s/code/sbatch"   ,project_dir);
@@ -116,7 +116,7 @@ int main (int argc, char* argv[])
 
 
   /* Load an optional config file */
-  char conf_fullpath [500];
+  char conf_fullpath [1024];
   snprintf(conf_fullpath,sizeof(conf_fullpath),"%s/%s",lrz_dir,"lrzc_mpp1.conf");
   FILE* fp_conf;
   char line [80];
@@ -258,8 +258,8 @@ int main (int argc, char* argv[])
   
   /* Create paths based on script and filebase */
   char* script_name = argv[optind];
-  char  script_base     [500];
-  char  script_fullpath [500];
+  char  script_base     [1024];
+  char  script_fullpath [1024];
   char* filebase = NULL;
   int isScript   = 0; 
 
@@ -268,8 +268,8 @@ int main (int argc, char* argv[])
   
   /* Designate if the first input is a script or a function
      if it is a function then use the first input as value  */
-  char  aux_script_args     [500];
-  char  aux_script_args_tag [500];
+  char  aux_script_args     [1024];
+  char  aux_script_args_tag [1024];
   if (optind==argc-1) { 
     filebase = "script";
     isScript = 1; 
@@ -286,7 +286,7 @@ int main (int argc, char* argv[])
       strncat(aux_script_args,argv[optind],sizeof(argv[optind]));
       if (verbose) { printf ("\n%s\n",aux_script_args); }
     }
-    while (++optind<argc-1);
+    while (optind++<argc-1);
   }
 
   strncpy(aux_script_args_tag,aux_script_args,sizeof(aux_script_args_tag));  
@@ -303,7 +303,7 @@ int main (int argc, char* argv[])
   
  
  
-  char  filebase_fullpath[500];
+  char  filebase_fullpath[1024];
 
   snprintf(script_fullpath,      sizeof(script_fullpath),      "%s/%s.m"         ,matlab_dir,script_name);
   snprintf(filebase_fullpath,    sizeof(filebase_fullpath),    "%s/%s"           ,data_dir,filebase);
@@ -370,7 +370,7 @@ int main (int argc, char* argv[])
   fprintf(fp_sbatch,"export OMP_NUM_THREADS=%s\n\n",cpus_per_task ); 
 
   /* Redundant at the momemnt */
-  //char pwd[500]; 
+  //char pwd[1024]; 
   //FILE *fp_pwd;
   //fp_pwd = popen("pwd","r");
   //fgets(pwd,sizeof(pwd),fp_pwd);
@@ -440,8 +440,8 @@ int main (int argc, char* argv[])
 
 
   /* START script submission */
-  char cmd_start[500]; 
-  char cmd_out  [500];
+  char cmd_start[1024]; 
+  char cmd_out  [1024];
   char *cmd_jid = cmd_out;
   FILE *fp_sysout;
 
