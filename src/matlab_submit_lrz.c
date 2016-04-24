@@ -279,14 +279,14 @@ int main (int argc, char* argv[])
   }
 
   /* Concatenate further input as a list be evaluated by matlab */
-  if (++optind<argc){
+  if (++optind<argc-1){
     do {  
       //snprintf(aux_script_args,sizeof(aux_script_args),"%s,%s",aux_script_args,argv[optind]);
       strncat(aux_script_args,",",1);
       strncat(aux_script_args,argv[optind],sizeof(argv[optind]));
       if (verbose) { printf ("\n%s\n",aux_script_args); }
     }
-    while (++optind<argc);
+    while (++optind<argc-1);
   }
 
   strncpy(aux_script_args_tag,aux_script_args,sizeof(aux_script_args_tag));  
@@ -451,9 +451,9 @@ int main (int argc, char* argv[])
 	     );
     }
           
-    fprintf(fp_sbatch,"matlab -r -nodesktop -nosplash < %s \n",sbatch_fullpath_m;
+    fprintf(fp_sbatch,"matlab -r -nodesktop -nosplash < %s \n",sbatch_fullpath_m);
     snprintf(cmd_start,sizeof(cmd_start),"module load matlab && matlab -r -nodesktop -nosplash < %s ",sbatch_fullpath_m); 
-    system(cmd_start,"r");
+    system(cmd_start);
     
 
     if (verbose==1) {
@@ -490,7 +490,7 @@ int main (int argc, char* argv[])
     regmatch_t pmatch[1];
     reti = regcomp(&regex,"job \\([[:digit:]]*\\) on",0);
     reti = regexec(&regex,cmd_out,nmatch,pmatch,0);
-    rpegfree(&regex);
+    regfree(&regex);
     snprintf(job_id, sizeof(job_id),"%.*s",
 	     pmatch[0].rm_eo-pmatch[0].rm_so-7,cmd_jid+pmatch[0].rm_so+4);
     if (verbose==1) {
@@ -500,8 +500,7 @@ int main (int argc, char* argv[])
 	     ,cmd_out,job_id,email);
     }
     printf("%s", job_id);
-    
-  }
+  } 
 
-  return 0;
-}
+    return 0;
+  }

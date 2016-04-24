@@ -4,9 +4,19 @@ function Sessions = SessionList(varargin)
 %                          '/gpfs01/sirota/home/gravio/data/xyz/',...
 %                          '/gpfs01/sirota/home/gravio/data/nlx/'});
 
+prjPath_xyz = '';
+prjPath_nlx = '';
+
+datPath = getenv('PROJECT')
+if ~isempty(datPath),
+    prjPath_xyz = fullfile(datPath,'data','processed','xyz');
+    prjPath_nlx = fullfile(datPath,'data','processed','nlx');
+end
+
+
 [Seslist,my_xyz,my_nlx] = DefaultArgs(varargin,{'all_Sessions',...
-                          '/storage/gravio/data/processed/xyz/',...
-                          '/storage/gravio/data/processed/nlx/'});
+                          prjPath_xyz,...
+                          prjPath_nlx});
 
 path = load('MTAPaths.mat');
 

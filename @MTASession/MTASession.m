@@ -476,5 +476,48 @@ classdef MTASession < hgsetget
         
     end %methods
 
+    methods (Static)
+        function Session = validate(Session)
+            
+            if isa(Session,'MTASession'),
+                return;
+            elseif ischar(Session),
+                pat =['(?<sessionName>[a-z_A-Z]+\d{2,2}[-]\d{8,8})\.'...
+                      '(?<mazeName>\w+)\.'...
+                      '(?<trialName>\w+)'];
+                tok = regexp(Session,pat,'names');
+                if ~isempty(tok),
+                    Session = tok;
+                    Session = MTASession.validate(Session);
+                else
+                    Session = MTASession(Session);                                    
+                end
+
+                
+            elseif iscell(Session),
+                Session = MTASession(Session{:});
+                
+            elseif isstruct(Session),
+                stcMode = '';
+                if isfield(Session,'stcMode'),
+                    stcMode = Session.stcMode;
+                end
+
+                Session = MTASession(Session.sessionName,...
+                                     Session.mazeName,...
+                                     Session.trialName);
+
+                if ~isempty(stcMode),
+                    Session.load('stc',stcMode);
+                end
+
+            else
+                error('MTA:validate_trial: unrecognized format');
+            end
+
+        end
+    end
+
+    
 end %MTASession
 

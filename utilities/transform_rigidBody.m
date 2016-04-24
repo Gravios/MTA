@@ -1,21 +1,23 @@
-function transform_rigidBody(Trial,varargin);
+function transform_rigidBody(Session,varargin);
 [disp,overwrite] = DefaultArgs(varargin,{false,false});
 
-%Trial = MTATrial('Ed05-20140529','all','ont');
-%Trial = MTATrial('Ed05-20140528');
-%Trial = MTATrial('jg05-20120317');
-%Trial = MTASession('jg05-20120317');
-%Trial = MTATrial('Ed03-20140625');
+Session = MTASession.validate(Session);
+
+%Session = MTASession('Ed05-20140529','all','ont');
+%Session = MTASession('Ed05-20140528');
+%Session = MTASession('jg05-20120317');
+%Session = MTASession('jg05-20120317');
+%Session = MTASession('Ed03-20140625');
 %disp = false;
 %overwrite = false;
 
 
-xyz = Trial.load('xyz');
-rb = Trial.xyz.model.rb({'head_back','head_left','head_front','head_right'});
+xyz = Session.load('xyz');
+rb = Session.xyz.model.rb({'head_back','head_left','head_front','head_right'});
 hcom = xyz.com(rb);
 
 xyz.addMarker('fhcom',[128,255,128],{{'head_back','head_front',[0,0,1]}},...
-               ButFilter(hcom,3,[2]./(Trial.xyz.sampleRate/2),'low'));
+               ButFilter(hcom,3,[2]./(Session.xyz.sampleRate/2),'low'));
 xyz.addMarker('hcom',[128,255,128],{{'head_back','head_front',[0,0,1]}},hcom);
 
 nz = -cross(xyz(:,'head_back',:)-hcom,xyz(:,'head_left',:)-hcom);
@@ -73,7 +75,7 @@ end
 
 
 
-FileName_coarse = fullfile(Trial.spath,[Trial.filebase '.xyz-shift.mat']);
+FileName_coarse = fullfile(Session.spath,[Session.filebase '.xyz-shift.mat']);
 if ~exist(FileName_coarse,'file')||overwrite,
 
     i = [-100:10:100];
@@ -81,7 +83,7 @@ if ~exist(FileName_coarse,'file')||overwrite,
     k = [-100:10:0];
 
 
-    ind = Trial.stc{'a'};
+    ind = Session.stc{'a'};
     vxyz = [];
 
 % $$$ x = 51;
@@ -154,11 +156,11 @@ end
 % $$$     xlabel('x-axis shift from origin mm');
 % $$$     ylabel('y-axis shift from origin mm');
 % $$$ end
-% $$$ suptitle(Trial.filebase)
+% $$$ suptitle(Session.filebase)
 % $$$ 
 
 
-FileName_fine = fullfile(Trial.spath,[Trial.filebase '.xyz-shift_fine.mat']);
+FileName_fine = fullfile(Session.spath,[Session.filebase '.xyz-shift_fine.mat']);
 
 if ~exist(FileName_fine,'file')||overwrite,
 
@@ -173,7 +175,7 @@ if ~exist(FileName_fine,'file')||overwrite,
     ni = [ni(1):2:ni(2)];
     nj = [nj(1):2:nj(2)];
     nk = [nk(1):2:nk(2)];
-    ind = Trial.stc{'a'}.cast('TimeSeries').resample(xyz);
+    ind = Session.stc{'a'}.cast('TimeSeries').resample(xyz);
     ind.data = logical(ind.data);
     nvxyz = zeros([7,numel(ni),numel(nj),numel(nk)]);
 
@@ -222,8 +224,8 @@ else
     load(FileName_fine);
 end
 
-%save(fullfile(Trial.spath,[Trial.filebase '.xyz-shift_fine_a-m-s.mat']),'ni','nj','nk','nvxyz');
-%load(fullfile(Trial.spath,[Trial.filebase '.xyz-shift_fine_a-m-s.mat']),'ni','nj','nk','nvxyz');
+%save(fullfile(Session.spath,[Session.filebase '.xyz-shift_fine_a-m-s.mat']),'ni','nj','nk','nvxyz');
+%load(fullfile(Session.spath,[Session.filebase '.xyz-shift_fine_a-m-s.mat']),'ni','nj','nk','nvxyz');
 
 mind = [];
 for m = 1:7,
@@ -240,7 +242,7 @@ end
 % $$$     xlabel('x-axis shift from origin mm');
 % $$$     ylabel('y-axis shift from origin mm');
 % $$$ end
-% $$$ suptitle(Trial.filebase)
+% $$$ suptitle(Session.filebase)
 
 ijk = cell(1,3);
 [ijk{:}] = meshgrid(ni,nj,nk);
@@ -293,7 +295,7 @@ xyz.addMarker('nhr',[128,255,128],...
               {{'nhr','nhf',[1,0,0]}},...
               bsxfun(@plus,nx*ni(mind(i,1))+ny*nj(mind(i,2))+nz*nk(mind(i,3)),xyz(:,'head_right',:)));
 
-nxyz = Trial.load('xyz');
+nxyz = Session.load('xyz');
 nxyz.data(:,nxyz.model.gmi('head_back'),:) =  bsxfun(@plus,nx*ni(mind(i,1))+ny*nj(mind(i,2))+nz*nk(mind(i,3)),xyz(:,'head_back',:));
 nxyz.data(:,nxyz.model.gmi('head_left'),:) =  bsxfun(@plus,nx*ni(mind(i,1))+ny*nj(mind(i,2))+nz*nk(mind(i,3)),xyz(:,'head_left',:));
 nxyz.data(:,nxyz.model.gmi('head_front'),:) =  bsxfun(@plus,nx*ni(mind(i,1))+ny*nj(mind(i,2))+nz*nk(mind(i,3)),xyz(:,'head_front',:));
@@ -303,17 +305,17 @@ nxyz.data(:,nxyz.model.gmi('head_right'),:) =  bsxfun(@plus,nx*ni(mind(i,1))+ny*
 nxyz.label = 'trb';
 nxyz.key  = 't';
 nxyz.name = 'tr_corrected_head';
-nxyz.updateFilename(Trial);      
+nxyz.updateFilename(Session);      
 nxyz.save;          
 
 
 
-% $$$ xyz = Trial.load('xyz');
-% $$$ ang = create(MTADang,Trial,xyz);
-% $$$ nang = create(MTADang,Trial,ixyz);
+% $$$ xyz = Session.load('xyz');
+% $$$ ang = create(MTADang,Session,xyz);
+% $$$ nang = create(MTADang,Session,ixyz);
 % $$$ 
 % $$$ rbn = xyz.model.rb({'spine_lower','pelvis_root','spine_middle','spine_upper','nhb','nhl','nhf','nhr'});
-% $$$ nxyz = Trial.xyz.copy;
+% $$$ nxyz = Session.xyz.copy;
 % $$$ nxyz.data = xyz(:,rbn.ml,:);
 % $$$ nxyz.model = rbn;
 % $$$ 
