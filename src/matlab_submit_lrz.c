@@ -417,7 +417,8 @@ int main (int argc, char* argv[])
     fprintf(fp_mat,"%s(\'%s\'%s)\n",script_name,filebase,aux_script_args);
   }
   fprintf(fp_mat,"catch err\n" 
-                 "    for e = 1:numel(err.stack),\n"
+                 "    warning([err.identifier,', ',err.message]);"
+	         "    for e = 1:numel(err.stack),\n"
                  "        err.stack(e)\n"
                  "    end\n" 
    	         "end\n\n");  //add some error handeling here later

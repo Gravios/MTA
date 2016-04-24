@@ -57,6 +57,28 @@ while ~isempty(procOpts)
         xyz.name = 'spline_spine_eqd';
         xyz.updateFilename(Trial);      
         xyz.save
+
+      case 'spline_spine_head_eqd'
+        ss = fet_spline_spine(Trial,xyz);
+        xyz = Trial.load('xyz','trb');
+        
+        spineLength = MTADxyz('data',sqrt(sum(diff(ss.data,1,2).^2,3)),'sampleRate',xyz.sampleRate);
+        totalSpineLength = sum( spineLength.data ,2);
+        cumSpineLength = cumsum( spineLength.data ,2);
+        meanSpineLength = nanmean(totalSpineLength);        
+        nNewMarkers = 4;
+        xs = zeros([spineLength.size(1),4]);
+        for t = 1:spineLength.size(1)-1,
+            [~,xi,~] = NearestNeighbour(cumSpineLength(t,:),...
+                                          [0:nNewMarkers-1].*totalSpineLength(t)/(nNewMarkers-1),'both');
+            xyz.data(t,1:4,:) = ss(t,xi,:);
+            xs(t,:) = xi;
+        end
+        xyz.label = 'sed';
+        xyz.key  = 'e';
+        xyz.name = 'spline_spine_eqd';
+        xyz.updateFilename(Trial);      
+        xyz.save
         
       case 'load_trb_xyz'
         xyz = Trial.load('xyz','trb');
