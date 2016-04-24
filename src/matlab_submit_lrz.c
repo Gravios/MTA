@@ -283,8 +283,8 @@ int main (int argc, char* argv[])
     do {  
       //snprintf(aux_script_args,sizeof(aux_script_args),"%s,%s",aux_script_args,argv[optind]);
       strncat(aux_script_args,",",1);
-      printf("%s",argv[optind]);
-      strncat(aux_script_args,argv[optind],sizeof(argv[optind]));
+      printf("%s\n",argv[optind]);
+      strncat(aux_script_args,argv[optind],sizeof(aux_script_args));
       if (verbose) { printf ("\n%s\n",aux_script_args); }
     }
     while (optind++<argc-1);
