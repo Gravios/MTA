@@ -416,8 +416,9 @@ int main (int argc, char* argv[])
   else{
     fprintf(fp_mat,"%s(\'%s\'%s)\n",script_name,filebase,aux_script_args);
   }
-  fprintf(fp_mat,"catch err\n" 
-                 "    warning([err.identifier,', ',err.message]);"
+  fprintf(fp_mat,"catch err\n"
+	         "    dbstack\n "
+                 "    warning([err.identifier,', ',err.message]);\n"
 	         "    for e = 1:numel(err.stack),\n"
                  "        err.stack(e)\n"
                  "    end\n" 
