@@ -55,7 +55,13 @@ function varargout = DefaultArgs(Args, DefArgs, varargin)
 % If varargin is empty, setup path to the m-file calling, hereafter
 % known as CMF, DefaultsArgs.
 if numel(varargin)>0,
-    FuncPath = varargin{1};
+    switch varargin{1}
+      case '--struct'
+        FuncPath = dbstack('-completenames');         
+        DefArgs = struct2varargin(DefArgs);
+      otherwise
+        FuncPath = varargin{1};        
+    end
 else
     FuncPath = dbstack('-completenames'); 
 end

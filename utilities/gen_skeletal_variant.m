@@ -15,7 +15,7 @@ for s = 1:numel(slist),
         if ~local,
             system(['MatSubmitLRZ --config lrzc_hugemem.conf '...
                     r1jid ' -l ' Trial.name ...
-                    ' transform_rigidBody ']);
+                    ' transform_rigidBody']);
         else
             transform_rigidBody(slist(s));
         end

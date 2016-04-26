@@ -1,5 +1,5 @@
 function transform_rigidBody(Session,varargin);
-[disp,overwrite] = DefaultArgs(varargin,{false,false});
+[display,overwrite] = DefaultArgs(varargin,{false,false});
 
 Session = MTASession.validate(Session);
 
@@ -8,7 +8,7 @@ Session = MTASession.validate(Session);
 %Session = MTASession('jg05-20120317');
 %Session = MTASession('jg05-20120317');
 %Session = MTASession('Ed03-20140625');
-%disp = false;
+%display = false;
 %overwrite = false;
 
 
@@ -46,7 +46,7 @@ xyz.addMarker('hrt',[128,255,128],{{'head_back','head_front',[0,0,1]}},...
 nhm = {'hcom','hbx','hrx','htx','hbt','hbr','hbrt','hrt'};    
 
 
-if disp,
+if display,
     ind = 10000;
     figure, daspect([1,1,1])
     hold on,plot3(xyz(ind,7,1),xyz(ind,7,2),xyz(ind,7,3),'.b')
@@ -84,7 +84,12 @@ if ~exist(FileName_coarse,'file')||overwrite,
 
 
     ind = Session.stc{'a'};
-    vxyz = [];
+    if isempty(ind),
+        ind=':';
+    end
+    
+
+    vxyz = zeros([7,numel(i),numel(j),numel(k)]);
 
 % $$$ x = 51;
 % $$$ y = 51;
@@ -176,7 +181,12 @@ if ~exist(FileName_fine,'file')||overwrite,
     nj = [nj(1):2:nj(2)];
     nk = [nk(1):2:nk(2)];
     ind = Session.stc{'a'}.cast('TimeSeries').resample(xyz);
-    ind.data = logical(ind.data);
+    if isempty(ind),
+        ind = ':';
+    else
+        ind.data = logical(ind.data);
+    end
+    
     nvxyz = zeros([7,numel(ni),numel(nj),numel(nk)]);
 
     nhm = {'hcom','hbx','hrx','htx','hbt','hbr','hbrt','hrt'};
@@ -249,7 +259,7 @@ ijk = cell(1,3);
 
 clist = 'rbgymck';
 
-if disp,
+if display,
     figure
     for m =1:7,
         svxyz = log10(sq(nvxyz(m,:,:,:)));

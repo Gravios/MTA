@@ -51,7 +51,7 @@ classdef MTATrial < MTASession
 
     methods 
         function Trial = MTATrial(Session,varargin)
-            [mazeName,trialName,overwrite,sync] = DefaultArgs(varargin,{'all','cof',0,[]});
+            [mazeName,trialName,overwrite,sync] = DefaultArgs(varargin,{'cof','all',0,[]});
             if ~isa(Session,'MTASession'),
                 Session = MTASession(Session,mazeName);
             end

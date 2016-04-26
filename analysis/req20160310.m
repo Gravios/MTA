@@ -43,8 +43,7 @@ end
 
 % 3. Train neural networks on the target state vs all others
 r1jid='';
-pobj = parpool(5);
-parfor s = 1:5,
+for s = 1:5,
     file_preproc = fullfile(Trial.spath,'req20160310_3_trainNN',num2str(s),'.mat');
     if ~exist(file_preproc,'file')||overwrite,
         if ~local,
@@ -59,7 +58,6 @@ parfor s = 1:5,
         end
     end
 end
-delete(pobj);
 
 
 % 4. Accumulate stats of network output
@@ -75,15 +73,64 @@ for s = 1:5,
     end
 end
 
-.
 
-% 5. optfetord 
+
+% 5. genfigs
 %    a. sort feature order to maximize accuracy gain from incremental
 %       addition of features to neural network model. 
 %    b. generate figures for suplementary plots
 %
 file_preproc = fullfile(Trial.spath,'req20160310_5_genfigs.mat');
-fi ~exist(file_preproc,'file'||overwrite,
+if ~exist(file_preproc,'file'||overwrite,
     req20160310_5_genfigs(Trial)
+end
+
+
+% 6. trainOptNN
+%    train nn's with incremental addition of features selected
+%    during req20160310_5_genfigs
+
+r5jid='';
+for s = 1:5,
+    file_preproc = fullfile(Trial.spath,'req20160310_6_trainOptNN',num2str(s),'.mat');
+    if ~exist(file_preproc,'file')||overwrite,
+        if ~local,
+            jid = popen(['MatSubmitLRZ --config lrzc_serial.conf ' ...
+                         r5jid ...
+                         ' -l ' Trial.name ...
+                         ' req20160310_6_trainOptNN '...
+                         num2str(s)]);
+            r6jid = [' -d afterok:' char(jid.readLine)];
+        else
+            req20160310_6_trainOptNN(Trial,s);
+        end
     end
 end
+
+
+
+% 7. accumOptStats
+
+for s = 1:5,
+    file_preproc = fullfile(Trial.spath,'req20160310_7_accumOptStats',num2str(s),'.mat');
+    if (~exist(file_preproc,'file')||overwrite)
+        if ~local,
+            jid = popen(['MatSubmitLRZ --config lrzc_serial.conf ' ...
+                         r6jid ' -l ' Trial.name ...
+                         ' req20160310_7_accumOptStats ',num2str(s)]);
+            r6jid = [' -d afterok:' char(jid.readLine)];    
+        else (~exist(file_preproc,'file')||overwrite)
+            req20160310_7_accumOptStats(Trial,s);
+            
+        end
+    end
+end
+
+
+% 8. genOptfigs
+file_preproc = fullfile(Trial.spath,'req20160310_5_genfigs.mat');
+if ~exist(file_preproc,'file'||overwrite,
+    req20160310_5_genfigs(Trial)
+end
+req20160310_8_genOptfigs
+

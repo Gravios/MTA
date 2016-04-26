@@ -5,7 +5,7 @@ Trial = MTATrial.validate(Trial);
 
 dsd = load(fullfile(Trial.spath,'req20160310_1_preproc-afet.mat'));
 for s = 1:5,
-    ds(s) = load(fullfile(Trial.spath,['req20160310_4_accumStats',num2str(s),'.mat']));
+    ds = load(fullfile(Trial.spath,['req20160310_4_accumStats',num2str(s),'.mat']));
 
     oind = [repmat([1:59],1,2)',zeros([118,1])];
     aind = oind(:,1);
@@ -15,10 +15,16 @@ for s = 1:5,
     slind = oind(dsd.fetInds{s},:);
     ofet =reshape(slind,[],1);
     best_inds = histc(ofet,1:59);
-    [~,sbind(:,s)] = sort(best_inds,'descend');
+    [~,sbind] = sort(best_inds,'descend');
+    [~,fetLInds] = sort([0;diff(cell2mat({ds.accum_acc}))],'descend');
+    fetLInds(fetLInds==1)=[];
+    fetLInds = [1;fetLInds];
+    oFetInds = sbind(1:size(fetLInds));    
+    bFetInds{s} = oFetInds(fetLInds);
 end
 
-fetLScore = diff(cell2mat({ds.accum_acc}));
+
+save(fullfile(Trial.spath,['req20160310_5_genfigs.mat']),'bFetInds','-v7.3');
 
 
 % $$$ 

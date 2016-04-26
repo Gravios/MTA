@@ -33,7 +33,7 @@ while ~isempty(procOpts)
     switch procOpts{1}
       
       case 'spline_spine'
-        ss = fet_spline_spine(Trial,xyz);
+        ss = fet_spline_spine(Trial,'3dss',xyz);
         
         xyz.data(:,1:4,:) = ss(:,[5,35,65,95],:);
       
@@ -58,9 +58,10 @@ while ~isempty(procOpts)
         xyz.updateFilename(Trial);      
         xyz.save
 
-      case 'spline_spine_head_eqd'
-        ss = fet_spline_spine(Trial,xyz);
+      case 'SPLINE_SPINE_HEAD_EQD'        
         xyz = Trial.load('xyz','trb');
+        ss = fet_spline_spine(Trial,'3dssh',xyz);        
+        xyz = Trial.load('xyz','trb'); % Again.. see no evil, hear no evil, speak no evil
         
         spineLength = MTADxyz('data',sqrt(sum(diff(ss.data,1,2).^2,3)),'sampleRate',xyz.sampleRate);
         totalSpineLength = sum( spineLength.data ,2);
@@ -74,9 +75,9 @@ while ~isempty(procOpts)
             xyz.data(t,1:4,:) = ss(t,xi,:);
             xs(t,:) = xi;
         end
-        xyz.label = 'sed';
-        xyz.key  = 'e';
-        xyz.name = 'spline_spine_eqd';
+        xyz.label = 'seh';
+        xyz.key  = 'h';
+        xyz.name = 'spline_spine_head_eqd';
         xyz.updateFilename(Trial);      
         xyz.save
         

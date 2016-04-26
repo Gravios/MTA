@@ -1177,9 +1177,7 @@ switch mode,
   case 'lpf_psd_jpdf'
     %% Figure 6 - 
 
-    MTAConfiguration('/gpfs01/sirota/bach/data/gravio','absolute');
-    %MTAConfiguration('/data/data/gravio','absolute');
-    sname = 'jg05-20120317';
+    Trial = 'jg05-20120317.cof.all';
     %sname = 'jg05-20120310';
     %sname = 'jg05-20120309';
     display = 0;
@@ -1187,41 +1185,42 @@ switch mode,
     chans = [71:2:96];
     marker = 'spine_lower'
 
-    Trial = MTATrial(sname,'all');
-    Trial.ang.load(Trial);
-    Trial.xyz.load(Trial);
-    Trial.lfp.load(Trial,chans);
+    Trial = MTATrial.validate(Trial); 
+
+    xyz = Trial.load('xyz');
+    ang = create(MTADang,Trial,xyz);
+    lfp = Trial.load(lfp,chans);
 
 
-    wlfp = WhitenSignal(Trial.lfp.data,[],1);
+    wlfp = WhitenSignal(lfp.data,[],1);
 
 
-    matlabpool open 12
+    pobj = parpool(8);
 
     tl=[];
     fl=[];
     yl=[];
-    parfor i = 1:Trial.lfp.size(2),
-        [yl(:,:,i),fl(:,i),tl(:,i)] = mtchglong(wlfp(:,i),2^12,Trial.lfp.sampleRate,2^11,2^11*0.875,[],[],[],[1,40]);
+    parfor i = 1:lfp.size(2),
+        [yl(:,:,i),fl(:,i),tl(:,i)] = mtchglong(wlfp(:,i),2^12,lfp.sampleRate,2^11,2^11*0.875,[],[],[],[1,40]);
     end
 
     th=[];
     fh=[];
     yh=[];
-    parfor i = 1:Trial.lfp.size(2),
-        [yh(:,:,i),fh(:,i),th(:,i)] = mtchglong(wlfp(:,i),2^9,Trial.lfp.sampleRate,2^8,2^8*0.875,[],[],[],[40,120]);
+    parfor i = 1:lfp.size(2),
+        [yh(:,:,i),fh(:,i),th(:,i)] = mtchglong(wlfp(:,i),2^9,lfp.sampleRate,2^8,2^8*0.875,[],[],[],[40,120]);
     end
     yld = MTADlfp('data',yl,'sampleRate',1/diff(tl(1:2,1)));
     yhd = MTADlfp('data',yh,'sampleRate',1/diff(th(1:2,1)));
 
-    bang = ButFilter(Trial.ang(:,4,5,3),3,[1,20]./(Trial.ang.sampleRate./2),'bandpass');
-    bhh = ButFilter(Trial.xyz(:,7,3),3,[1,20]./(Trial.xyz.sampleRate./2),'bandpass');
-    bhx = ButFilter(Trial.xyz(:,7,1),3,[1,20]./(Trial.xyz.sampleRate./2),'bandpass');
-    bhy = ButFilter(Trial.xyz(:,7,2),3,[1,20]./(Trial.xyz.sampleRate./2),'bandpass');
+    bang = ButFilter(ang(:,4,5,3),3,[1,20]./(ang.sampleRate./2),'bandpass');
+    bhh = ButFilter(xyz(:,7,3),3,[1,20]./(xyz.sampleRate./2),'bandpass');
+    bhx = ButFilter(xyz(:,7,1),3,[1,20]./(xyz.sampleRate./2),'bandpass');
+    bhy = ButFilter(xyz(:,7,2),3,[1,20]./(xyz.sampleRate./2),'bandpass');
     if display, figure,plot([bang,bhh,bhx,bhy]+3.*repmat(1:4,size(bang,1),1)), end
 
     wang = WhitenSignal([bang,bhh,bhx,bhy],[],1);
-    [ya,fa,ta,phia,fsta] = mtchglong(wang,2^9,Trial.ang.sampleRate,2^8,2^8*0.875,[],[],[],[2,16]);
+    [ya,fa,ta,phia,fsta] = mtchglong(wang,2^9,ang.sampleRate,2^8,2^8*0.875,[],[],[],[2,16]);
 
     %figure,plot(mean(ya(:,fa>9&fa<12),2)./mean(ya(:,fa<7),2))
     %figure,plot([mean(ya(:,fa>9&fa<12,1,1),2),mean(ya(:,fa>9&fa<12,2,2),2)])
@@ -1233,9 +1232,9 @@ switch mode,
 
 
     % VELOCITY 
-    xyz = Trial.xyz.copy;
+    xyz = xyz.copy;
     xyz.filter(gausswin(31)./sum(gausswin(31)));
-    v = MTADxyz([],[],sqrt(sum(diff(xyz(:,marker,[1,2])).^2,3)).*Trial.xyz.sampleRate./10,Trial.xyz.sampleRate);
+    v = MTADxyz([],[],sqrt(sum(diff(xyz(:,marker,[1,2])).^2,3)).*xyz.sampleRate./10,xyz.sampleRate);
 
 
 
