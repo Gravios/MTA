@@ -1,28 +1,18 @@
-function stats = req20160310_4_accumStats(Trial,s)
+function req20160310_7_accumOptStats(Trial,s)
 
 Trial = MTATrial.validate(Trial);
 RefTrial = MTATrial.validate('jg05-20120317.cof.all');
 RefTrial.load('stc','hand_labeled_rev3_jg');
 
-
 %'states','fetInds','stateOrd','afet','nNeurons','nIter','rndMethod'
 ds = load(fullfile(Trial.spath,'req20160310_1_preproc-afet.mat'));
+bs = load(fullfile(Trial.spath,'req20160310_5_genfigs.mat'));
 
+sbind = bs.bFetInds{s};
 
 accum_acc = zeros([round(ds.afet.size(2)/2),1]);
 accum_pre = zeros([round(ds.afet.size(2)/2),1]);
 accum_sen = zeros([round(ds.afet.size(2)/2),1]);
-
-
-oind = [repmat([1:59],1,2)',zeros([118,1])];
-aind = oind(:,1);
-for sh = 1:117,
-    oind = [oind;[circshift(aind,-sh),aind]];
-end
-slind = oind(ds.fetInds{s},:);
-ofet =reshape(slind,[],1);
-best_inds = histc(ofet,1:59);
-[~,sbind] = sort(best_inds,'descend');
 
 gStates = ds.states(cellfun(@isempty,...
                          regexp(ds.states,...
@@ -30,15 +20,13 @@ gStates = ds.states(cellfun(@isempty,...
                          )...
                  );
 
-
 pobj = parpool(6);
 
-%for f = 1:round(numel(sbind)/2),    
-parfor f = 1:round(numel(sbind)/2),    
+parfor f = 1:numel(sbind),    
     opn = struct;
     sub_fet = ds.afet.copy;
     sub_fet.data = ds.afet(:,sbind(1:f));
-    sub_fet.label = [ds.afet.label '-req20160310-' ds.stateOrd{s} '-' num2str(f)];
+    sub_fet.label = [ds.afet.label '-req20160310-optfet' ds.stateOrd{s} '-' num2str(f)];
     sub_fet.key = 'x';
     sub_fet.updateFilename(Trial);
     
@@ -65,4 +53,4 @@ end
 
 delete(pobj);
 
-save(fullfile(Trial.spath,['req20160310_4_accumStats',num2str(s),'.mat']),'sbind','accum_acc','accum_pre','accum_sen','-v7.3');
+save(fullfile(Trial.spath,[mfilename,num2str(s),'.mat']),'sbind','accum_acc','accum_pre','accum_sen','-v7.3');

@@ -1,0 +1,15 @@
+#!/bin/bash
+
+# 
+echo cp ./MatSubmitLRZ $PROJECT/bin/MatSubmitLRZ
+cp ./MatSubmitLRZ $PROJECT/bin/MatSubmitLRZ
+echo cp ./tart $PROJECT/bin/tart
+cp ./tart $PROJECT/bin/tart
+
+
+# Compile and install the matlab_submit_lrz code
+echo make
+echo chmod +x ./matlab_submit_lrz
+chmod +x ./matlab_submit_lrz
+echo cp ./matlab_submit_lrz
+ cp ./matlab_submit_lrz

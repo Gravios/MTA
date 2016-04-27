@@ -1,0 +1,54 @@
+#!/bin/bash
+
+# lrzc
+#
+# Type: utilitiy 
+# Author: Justin Graboski
+# Last Modified: 20160411
+# Purpose: submits a job or a list of jobs
+#          to the LMU LRZ center clusters.
+#
+# Version: 0.01 (alpha)
+# 
+# Dependencies: matlab_sumbit_lrz.c
+#
+
+function print_help(){
+    echo "help - I don't know what I do"
+}
+
+
+
+if [[ "$#" == 0 ]]
+then    
+   print_help
+fi
+   
+
+
+key="$1"
+
+
+case $key in
+    sbatch)
+	shift
+	if [[ "$#" == 0 ]]
+	then
+	    MatSubmitLRZ --help
+	else
+       	    MatSubmitLRZ "$@"
+	fi
+	;;
+    matlab)
+	;;
+    squeue)
+	squeue 
+	;;
+    scancel)
+	;;
+    "help")
+        print_help
+	;;
+    *)
+	;;
+esac
