@@ -22,10 +22,10 @@ function Data = load(Data,varargin)
         load(Data.fpath)
     end
     if ~isempty(Session),
-        Session.resync(Data);
+        Data.resync(Session);
     end
     if ~isempty(sync),
-        Data = resync(Data,[],sync);
+        Data.resync([],sync);
     end
 
 end

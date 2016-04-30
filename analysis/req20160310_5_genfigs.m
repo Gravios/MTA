@@ -25,7 +25,7 @@ end
 
 
 save(fullfile(Trial.spath,['req20160310_5_genfigs.mat']),'bFetInds','-v7.3');
-
+save(fullfile(Trial.path.data,'analysis',['req20160310_5_genfigs-',Trial.filebase,'.mat']),'bFetInds','-v7.3');
 
 % $$$ 
 % $$$ oind = [repmat([1:59],1,2)',zeros([118,1])];

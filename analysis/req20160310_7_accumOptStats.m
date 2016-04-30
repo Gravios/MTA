@@ -6,7 +6,7 @@ RefTrial.load('stc','hand_labeled_rev3_jg');
 
 %'states','fetInds','stateOrd','afet','nNeurons','nIter','rndMethod'
 ds = load(fullfile(Trial.spath,'req20160310_1_preproc-afet.mat'));
-bs = load(fullfile(Trial.spath,'req20160310_5_genfigs.mat'));
+bs = load(fullfile(RefTrial.spath,'req20160310_5_genfigs.mat'));
 
 sbind = bs.bFetInds{s};
 

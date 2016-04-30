@@ -5,7 +5,7 @@ function [xyz,ss] = preproc_xyz(Trial,varargin)
 % An attempt to normalize marker positions along the spine
 % between subjects using a 
 
-[procOpts] = DefaultArgs(varargin,{{}},true);
+[sampleRate,procOpts] = DefaultArgs(varargin,{12,{}},true);
 
 
 %Trial = MTATrial.validate(Trial);
@@ -67,7 +67,7 @@ while ~isempty(procOpts)
         totalSpineLength = sum( spineLength.data ,2);
         cumSpineLength = cumsum( spineLength.data ,2);
         meanSpineLength = nanmean(totalSpineLength);        
-        nNewMarkers = 4;
+        nNewMarkers = 5;
         xs = zeros([spineLength.size(1),4]);
         for t = 1:spineLength.size(1)-1,
             [~,xi,~] = NearestNeighbour(cumSpineLength(t,:),...
@@ -115,3 +115,8 @@ xyz.addMarker('acom',...    Name
                {'head_back',   'acom',[0,0,255]},...
                {'head_front',  'acom',[0,0,255]}},...
               xyz.com(xyz.model.rb({'spine_lower','pelvis_root','spine_middle','spine_upper','head_back','head_front'})));
+
+              
+xyz.resample(sampleRate);
+ss.resample(xyz);
+              

@@ -99,7 +99,7 @@ classdef MTAStateCollection < hgsetget
                 Stc.path = Session.spath;
                 Stc.sync = Session.sync;
                for s = 1:numel(Stc.states(:)),
-                   Session.resync(Stc.states{s});
+                   Stc.states{s}.resync(Session);
                end
 
             end

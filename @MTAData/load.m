@@ -39,10 +39,10 @@ end
 switch class(Session)
   case 'MTASession'
     Data.sync.sync = Session.sync.copy;
-    Session.resync(Data);                    
+    Data.resync(Session);                    
   case 'MTATrial'
     Data.sync.sync = Session.sync.copy;
-    Session.resync(Data);                    
+    Data.resync(Session);                    
   case 'double'
     if ~isempty(Session),
         mf = matfile(Data.fpath);

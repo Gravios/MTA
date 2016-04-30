@@ -120,11 +120,11 @@ classdef MTATrial < MTASession
                 prop = Trial.(props{p});
                                 
                 if isa(prop,'MTAData'),
-                    Trial.resync(prop);
+                    prop.resync(Trial);
                 elseif isa(prop,'MTAStateCollection')
                     if ~prop.isempty,
                         for s = 1:numel(prop.states(:)),
-                            Trial.resync(prop.states{s});
+                            prop.states{s}.resync(Trial);
                         end
                     end
                 end

@@ -59,6 +59,7 @@ if numel(varargin)>0,
       case '--struct'
         FuncPath = dbstack('-completenames');         
         DefArgs = struct2varargin(DefArgs);
+        DefArgs = DefArgs(2:2:end);
       otherwise
         FuncPath = varargin{1};        
     end

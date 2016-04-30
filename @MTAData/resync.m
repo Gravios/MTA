@@ -83,7 +83,7 @@ elseif isa(Data,'MTAData'),
     % The periods when the data was recorded
     dataEpoch = Data.sync.copy;
     dataEpoch.cast('TimeSeries',Data.sampleRate,'absolute');
-    dataOrigin = round(Data.sync(1)*Data.sampleRate);
+    dataOrigin = round(Data.sync.data(1)*Data.sampleRate);
     
     % The periods of data which are already loaded
     loadedData = ones(Data.size(1),1);
@@ -99,6 +99,10 @@ elseif isa(Data,'MTAData'),
     end
     
     loadedDataEnd = find(loadedData==1,1,'last');
+% $$$     if isempty(loadedDataEnd),
+% $$$         loadedDataEnds = numel(loadedData);
+% $$$     end
+    
     
     % The desired synchronization periods
     syncEpoch = Data.sync.sync.copy;
