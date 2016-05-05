@@ -2,6 +2,8 @@ function ssp = fet_spline_spine(Trial,varargin)
 % function ss = fet_spline_spine(Trial)
 % An attempt to normalize marker positions along the spine
 % between subjects using a 
+Trial = MTASession.validate(Trial);
+
 [label,xyz,markers,overwrite] = ...
     DefaultArgs(varargin,{'3dssh',Trial.load('xyz'),{'spine_lower','pelvis_root','spine_middle','spine_upper','hcom'},false});
 
