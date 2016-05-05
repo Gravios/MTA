@@ -171,6 +171,10 @@ if ~exist(FileName_fine,'file')||overwrite,
 
     nrange = [min(mind)-2;max(mind)+2]';
 
+    nrange(1,:) = clip(nrange(1,:),1,numel(i));
+    nrange(2,:) = clip(nrange(2,:),1,numel(j));
+    nrange(3,:) = clip(nrange(3,:),1,numel(k));
+        
     ni = i(nrange(1,:));
     nj = j(nrange(2,:));
     nk = k(nrange(3,:));

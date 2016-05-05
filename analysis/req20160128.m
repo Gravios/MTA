@@ -2,7 +2,8 @@
 %Trian bhv_nn_multi_patternnet and plot 
 rlist = SessionList('training_hand_labeled');
 slist = {'hand_labeled_jg';'hand_labeled_Ed'};
-fetSet  = 'fet_tsne_rev15';
+%fetSet  = 'fet_tsne_rev15';
+fetSet  = 'fet_mis';
 sampleRate = 12;
 nNeurons = 100;
 nIter = 100;
@@ -43,7 +44,7 @@ for sli = 1:numel(slist),
 
         stc = {}; d_state = {};p_state = {}; ls = {}; lsm = {};mdl = {};
         for s = SesList
-            Trial = MTATrial(s.sessionName,s.trialName,s.mazeName);
+            Trial = MTATrial.validate(s);
             Trial.load('stc',s.stcMode);
             clear('mod');
             mod.states     = states;
@@ -79,7 +80,7 @@ end
 % respect to a second set of labels (Usually hand labeled)
 
 
-sli = 2;
+sli = 1;
 rli = 2;
 SesList = SessionList(slist{sli});
 SesList = {SesList(:).sessionName};

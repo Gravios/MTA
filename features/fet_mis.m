@@ -22,8 +22,9 @@ fet = MTADfet(Trial.spath,...
               [],'TimeSeries',[],'req20160310_selected_features','fet_mis','m');                  
 
 % XYZ preprocessed 
-[xyz,ss] = preproc_xyz(Trial,newSampleRate,procOpts);
+[xyz,ss] = preproc_xyz(Trial,procOpts);
 xyz.resample(newSampleRate);
+ss.resample(newSampleRate);
 
 % XYZ filtered 
 fxyz = xyz.copy;
@@ -50,7 +51,7 @@ sd = sqrt(sum((ss.data-circshift(ss.data,-1,2)).^2,3));
 sn = sum(sd(:,2:end-1),2)./sd(:,end);
 sv = Trial.xyz.copy;
 sv.data = sn;
-sv.resample(fxyz);
+
 
 % AV 
 sang = [circ_dist(fang(:,1,2,1),fang(:,2,3,1)),...

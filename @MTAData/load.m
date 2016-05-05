@@ -39,9 +39,15 @@ end
 switch class(Session)
   case 'MTASession'
     Data.sync.sync = Session.sync.copy;
-    Data.resync(Session);                    
+    if ~strcmp(Data.path,Session.spath),
+        Data.updatePath(Session.spath);
+    end    
+    Data.resync(Session);              
   case 'MTATrial'
     Data.sync.sync = Session.sync.copy;
+    if ~strcmp(Data.path,Session.spath),
+        Data.updatePath(Session.spath);
+    end        
     Data.resync(Session);                    
   case 'double'
     if ~isempty(Session),

@@ -1,12 +1,17 @@
 function GoThroughSessions(SessionListName,funcHandle,varargin)
-
+% function GoThroughSessions(SessionListName,funcHandle,varargin)
+% 
+% run funcHandle over a list of trials
+% 
+% Note: assumes first argument of funcHandle to accept an MTASession
 Sessions = SessionList(SessionListName);
-
-
-for s = 1:numel(Sessions)
-MTAstartup([],Sessions{s}{4});
-Session = MTASession(Sessions{s}{1},Sessions{s}{2});
-
-feval(funcHandle,Session,varargin{:});
+for s = Sessions
+    try,
+        feval(funcHandle,MTASession.validate(s),varargin{:});
+    catch err
+        for e = err.stack'
+            disp(e)
+        end
+    end
 
 end

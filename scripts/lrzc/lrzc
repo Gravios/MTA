@@ -27,8 +27,6 @@ fi
 
 
 key="$1"
-
-
 case $key in
     sbatch)
 	shift
@@ -39,13 +37,40 @@ case $key in
        	    MatSubmitLRZ "$@"
 	fi
 	;;
-    matlab)
-	;;
     squeue)
-	squeue 
+	shift
+	if [[ "$#" == 0 ]]
+	then
+           ssh "$USERNAME_LRZ@$HOST_LRZ" "squeue --user USERNAME_LRZ --clusters hugemem,mpp1,mpp2,serial"
+	else
+	   ssh "$USERNAME_LRZ@$HOST_LRZ" "squeue $@"
+	fi
 	;;
+
     scancel)
+	shift
+	if [[ "$#" == 0 ]]
+	then
+           ssh "$USERNAME_LRZ@$HOST_LRZ" "scancel --user USERNAME_LRZ --clusters hugemem,mpp1,mpp2,serial"
+	else
+	   ssh "$USERNAME_LRZ@$HOST_LRZ" "scancel --user USERNAME_LRZ $@"
+	fi
 	;;
+
+    matlab)	
+	;;
+    sync)
+	shift
+	if [[ "$#" == 0 ]]
+	then
+           tart -d 1 -s data/
+	else
+           tart "$@"
+	fi
+	
+	;;
+    
+    
     "help")
         print_help
 	;;

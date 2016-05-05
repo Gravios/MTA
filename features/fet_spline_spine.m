@@ -39,7 +39,7 @@ end
 filename = cellstr_append_str([Trial.spath,'/'],listFiles(Trial.name,[Trial.trialName,'.fet.',label]));
 if overwrite||isempty(filename),
     txyz = xyz(:,markers,:);
-    pnts = zeros([xyz.size(1),105,3]);
+    pnts = zeros([xyz.size(1),size(fnplt(cscvn(sq(txyz(1,:,:))'))',1),3]);
     for ind = 1:xyz.size(1),
         try
             pnts(ind,:,:) = fnplt(cscvn(sq(txyz(ind,:,:))'))';

@@ -5,10 +5,7 @@ function [xyz,ss] = preproc_xyz(Trial,varargin)
 % An attempt to normalize marker positions along the spine
 % between subjects using a 
 
-[sampleRate,procOpts] = DefaultArgs(varargin,{12,{}},true);
-
-
-%Trial = MTATrial.validate(Trial);
+[procOpts] = DefaultArgs(varargin,{{}},true);
 
 
 % DELBLOCK if version>=3,
@@ -58,29 +55,40 @@ while ~isempty(procOpts)
         xyz.updateFilename(Trial);      
         xyz.save
 
-      case 'SPLINE_SPINE_HEAD_EQD'        
-        xyz = Trial.load('xyz','trb');
+      case 'SPLINE_SPINE_HEAD_EQD'
         ss = fet_spline_spine(Trial,'3dssh',xyz);        
-        xyz = Trial.load('xyz','trb'); % Again.. see no evil, hear no evil, speak no evil
-        
-        spineLength = MTADxyz('data',sqrt(sum(diff(ss.data,1,2).^2,3)),'sampleRate',xyz.sampleRate);
-        totalSpineLength = sum( spineLength.data ,2);
-        cumSpineLength = cumsum( spineLength.data ,2);
-        meanSpineLength = nanmean(totalSpineLength);        
-        nNewMarkers = 5;
-        xs = zeros([spineLength.size(1),4]);
-        for t = 1:spineLength.size(1)-1,
-            [~,xi,~] = NearestNeighbour(cumSpineLength(t,:),...
-                                          [0:nNewMarkers-1].*totalSpineLength(t)/(nNewMarkers-1),'both');
-            xyz.data(t,1:4,:) = ss(t,xi,:);
-            xs(t,:) = xi;
+        try,
+            xyz = Trial.load('xyz','seh');
+        catch
+            xyz = Trial.load('xyz','trb');
+            % COM head Center of Mass
+            xyz.addMarker('hcom',...     Name
+                          [.7,0,.7],...  Color
+                          {{'head_back', 'hcom',[0,0,255]},... Sticks to visually connect
+                           {'head_left', 'hcom',[0,0,255]},... new marker to skeleton
+                           {'head_front','hcom',[0,0,255]},...
+                           {'head_right','hcom',[0,0,255]}},... 
+                             xyz.com(xyz.model.rb({'head_back','head_left','head_front','head_right'})));
+            
+            mid = xyz.model.gmi({'spine_lower','pelvis_root','spine_middle','spine_upper','hcom'});
+            spineLength = MTADxyz('data',sqrt(sum(diff(ss.data,1,2).^2,3)),'sampleRate',xyz.sampleRate);
+            totalSpineLength = sum( spineLength.data ,2);
+            cumSpineLength = cumsum( spineLength.data ,2);
+            meanSpineLength = mean(totalSpineLength(nniz(totalSpineLength)));
+            nNewMarkers = 5;
+            for t = 1:spineLength.size(1)-1,
+                [~,xi,~] = NearestNeighbour(cumSpineLength(t,:),...
+                                            [0:nNewMarkers-1].*totalSpineLength(t)/(nNewMarkers-1),'both');
+                xyz.data(t,mid,:) = ss(t,xi,:);
+            end
+            xyz.label = 'seh';
+            xyz.key  = 'h';
+            xyz.name = 'spline_spine_head_eqd';
+            xyz.updateFilename(Trial);      
+            xyz.save 
         end
-        xyz.label = 'seh';
-        xyz.key  = 'h';
-        xyz.name = 'spline_spine_head_eqd';
-        xyz.updateFilename(Trial);      
-        xyz.save
         
+       
       case 'load_trb_xyz'
         xyz = Trial.load('xyz','trb');
     
@@ -117,6 +125,4 @@ xyz.addMarker('acom',...    Name
               xyz.com(xyz.model.rb({'spine_lower','pelvis_root','spine_middle','spine_upper','head_back','head_front'})));
 
               
-xyz.resample(sampleRate);
-ss.resample(xyz);
               

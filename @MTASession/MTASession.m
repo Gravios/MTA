@@ -504,8 +504,7 @@ classdef MTASession < hgsetget
                 end
 
                 Session = MTASession(Session.sessionName,...
-                                     Session.mazeName,...
-                                     Session.trialName);
+                                     Session.mazeName);
 
                 if ~isempty(stcMode),
                     Session.load('stc',stcMode);

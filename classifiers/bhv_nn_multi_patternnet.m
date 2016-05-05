@@ -117,7 +117,6 @@ if map2reference,
     filebasePattern = '[a-zA-Z]{1,2}[0-9]{2}[-][0-9]{8,8}(\.[a-zA-Z0-9]+){2,2}';
     refSession = regexp(model,filebasePattern,'match');
     refSession = strsplit(refSession{1},'.');
-    refSession = refSession([1,3,2]);
     refSession = MTATrial(refSession{:});
     
     % parse and load the stcMode used in nn training
@@ -129,7 +128,9 @@ if map2reference,
     
     % Map features via linear or circular shift to the training Session
     % of the Neural Network.
-    features.map_to_reference_session(Trial,refSession);
+    if ~strcmp(Trial.filebase,refSession.filebase),
+        features.map_to_reference_session(Trial,refSession);
+    end
     if normalize,
         rfet = feval(featureSet,refSession,sampleRate,false);
         [~,refMean,refStd] = nunity(rfet(refSession.stc{'a'},:));

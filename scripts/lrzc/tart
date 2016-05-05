@@ -2,20 +2,18 @@
 # tart - tar file transfer over ssh
 # advantage over scp: copies relative links rather
 # than following to hard copy
+#
+
 cwd=$(pwd)
 
-if [ "$HOSTNAME" == "theta" -o "$HOSTNAME" == "gamma"* ]
-then
-    hostname=$HOST_LRZ
-    user=$USERNAME_LRZ
-    onClu=0
-else
-    hostname=$HOST_THETA
-    user=$USERNAME_THETA
-    onClu=1
-fi
 
 file_list="./"
+
+days_since_mod=''
+sync_dir=''
+ex_pat=''
+
+declare -a HOSTS
 
 while [[ $# > 0 ]]
 do
@@ -23,58 +21,212 @@ do
 
     case $key in
         -d|--date-modified)
+            days_since_mod=$2
+	    shift
             ;;
+	-e|--exclude)
+	    ex_pat=$2
+	    shift
+	    ;;
         -h|--help)     
-	    echo "tart [-l login_name] [-T filelist] [-o remote_output_dir]"
+	    echo "tart [-l login_name] [-T filelist] [-s sync_dir]"
 	    echo "     [-p port] [-u user] [[user@]hostname]"
 	    exit 1
-            ;;
-        -i|--remote-input-dir)
-            remote_input_dir=$2
-            shift
             ;;
 	-l|--login-name)
 	    login_name="-l $2"
 	    shift
 	    ;;
-        -o|--remote-output-dir)
-            remote_output_dir=$2
+        -s|--sync-dir)
+            sync_dir=$2
             shift
             ;;
-        -p|--port)
-            port="-p $2"
-            shift
-	    ;;
 	-T|--files-from)   
-            file_list="-T $2"
+            file_list=$(echo `cat $2`)
             shift
 	    ;;
 	-t|--file)   
             file_list=$2
             shift
 	    ;;
-	-u|--user)
-	    user=$2
-            shift	    
-	    ;;
 	-v|--verbose)  
 	    v="v"
             ;;
-	*)    
-	    hostname=$1        
+	*)
+	    HOSTS[${#HOSTS[@]}]=$1	    
             ;;
     esac
     shift 
 done
 
 
-if [[ $onClu -eq 0 ]]
+# Check for the identity of the host server
+if [ "$HOSTNAME" == "theta" -o "$HOSTNAME" == "gamma"* ]
 then
-    tar c${v}fz - $file_list | ssh $port $user@$hostname $login_name  "cd $PROJECT_LRZ/$remote_output_dir;  tar x${v}fz - "
+    hostname=$HOST_LRZ
+    user=$USERNAME_LRZ
+    on_lrz=0
 else
-    echo "ssh $port $user@$hostname $login_name  \"cd $PROJECT_THETA/$remote_input_dir;  tar c${v}fz - $file_list \" | tar x${v}fz -"
-    ssh $port $user@$hostname $login_name  "cd $PROJECT_THETA/$remote_input_dir;  tar c${v}fz - $file_list " | tar x${v}fz -
+    hostname=$HOST_THETA
+    user=$USERNAME_THETA
+    on_lrz=1
 fi
 
+# Check direction of the transfer
+if [ "${HOSTS[0]}" == "$USERNAME_THETA@$HOST_THETA" ]
+then
+    from_theta_to_lrz=1
+else
+    from_theta_to_lrz=0
+fi
+
+# If age limit is specified only transfer new files modified after that date
+if [[ ${#days_since_mod} -gt 0 ]]
+then
+    tmpdir=$(mktemp -dt "$(basename $0).XXXXXXXXXXXX")
+    tmpfile_theta=$(mktemp -p $tmpdir "$(basename $0).XXXXXXXXXXXX")
+    tmpfile_lrz=$(mktemp -p $tmpdir "$(basename $0).XXXXXXXXXXXX")
+
+    tmpfile_lrzDtheta=$(mktemp -p $tmpdir "$(basename $0).XXXXXXXXXXXX")
+    tmpfile_thetaDlrz=$(mktemp -p $tmpdir "$(basename $0).XXXXXXXXXXXX")
+
+    tmpfile_lrzDtheta_strp=$(mktemp -p $tmpdir "$(basename $0).XXXXXXXXXXXX")
+    tmpfile_thetaDlrz_strp=$(mktemp -p $tmpdir "$(basename $0).XXXXXXXXXXXX")
+
+    tmpfile_unique_lrz=$(mktemp -p $tmpdir "$(basename $0).XXXXXXXXXXXX")
+    tmpfile_unique_theta=$(mktemp -p $tmpdir "$(basename $0).XXXXXXXXXXXX")
+    tmpfile_common=$(mktemp -p $tmpdir "$(basename $0).XXXXXXXXXXXX")
+
+    ssh "$USERNAME_THETA@$HOST_THETA" "ls_md5sum \$PROJECT/$sync_dir $days_since_mod" > $tmpfile_theta
+    ssh "$USERNAME_LRZ@$HOST_LRZ" "ls_md5sum \$PROJECT/$sync_dir $days_since_mod" > $tmpfile_lrz
+
+    
+    echo "THETA: `cat $tmpfile_theta`"
+    echo ""
+    echo "LRZ: `cat $tmpfile_lrz`"
+    echo ""
+    echo ""
+
+    if [ ! -z $ex_pat ]
+    then
+	sed -i "/$ex_pat/d;G" $tmpfile_theta
+	sed -i "/$ex_pat/d;G" $tmpfile_lrz
+        #$tmpfile_theta < <(sed -n '/$ex_pat/!p' $tmpfile_theta)
+	#$tmpfile_lrz < <(sed -n '/$ex_pat/!p' $tmpfile_lrz)
+    fi
+    
+    echo "theta: ex_pat: $ex_pat "
+    echo `cat $tmpfile_theta`
+    echo ""    
+    echo "lrz: ex_pat: $ex_pat "
+    echo `cat $tmpfile_lrz`
+    echo ""    
+    echo ""
+
+
+    
+    grep -Fxv -f $tmpfile_theta $tmpfile_lrz > $tmpfile_thetaDlrz
+    grep -Fxv -f $tmpfile_lrz $tmpfile_theta > $tmpfile_lrzDtheta
+
+    cut -d ' ' -f2 $tmpfile_lrzDtheta > $tmpfile_lrzDtheta_strp
+    cut -d ' ' -f2 $tmpfile_thetaDlrz > $tmpfile_thetaDlrz_strp
+
+    echo "THETA_strp: "
+    echo `cat $tmpfile_lrzDtheta_strp`
+    echo ""
+    echo "LRZ_strp: "
+    echo `cat $tmpfile_thetaDlrz_strp`
+    echo ""    
+    echo ""
+    
+    comm -12 --nocheck-order $tmpfile_lrzDtheta_strp $tmpfile_thetaDlrz_strp > $tmpfile_common
+    comm -13 --nocheck-order $tmpfile_lrzDtheta_strp $tmpfile_thetaDlrz_strp > $tmpfile_unique_lrz
+    comm -23 --nocheck-order $tmpfile_lrzDtheta_strp $tmpfile_thetaDlrz_strp > $tmpfile_unique_theta
+    echo "common: "
+    echo `cat $tmpfile_common`
+    echo ""    
+    echo "theta: "
+    echo `cat $tmpfile_unique_theta`
+    echo ""    
+    echo "lrz: "
+    echo `cat $tmpfile_unique_lrz`
+    echo ""    
+    echo ""
+
+    
+    ls -lh "$tmpfile_common"
+    echo ""    
+    
+    if [ -s "$tmpfile_common" ]
+    then
+	while read -r date_t date_l filename
+	do
+            echo ""    
+	    echo "$date_t and $date_l for $filename"
+	    if [[ $date_t -gt $date_l ]]
+	    then
+		echo "echo $filename >> $tmpfile_unique_theta : theta -> lrz"
+		echo "$filename" >> $tmpfile_unique_theta
+	    else
+		echo "echo $filename >> $tmpfile_unique_lrz : lrz -> theta"
+		echo "$filename" >> $tmpfile_unique_lrz
+	    fi
+	done < <(paste <(echo "stat -c \"%Y %n\" `echo \`cat $tmpfile_common\``" | \
+				ssh "$USERNAME_THETA@$HOST_THETA" \
+				    "cd $PROJECT_THETA/$sync_dir/ ; bash  " | \
+                         cut -d' ' -f1 - ) \
+                       <(echo "stat -c \"%Y %n\" `echo \`cat $tmpfile_common\``" | \
+				ssh "$USERNAME_LRZ@$HOST_LRZ" \
+				    "cd $PROJECT_LRZ/$sync_dir/ ; bash  "))
+    fi
+
+    echo "theta final: "
+    echo `cat $tmpfile_unique_theta`
+    echo ""    
+    echo "lrz final: "
+    echo `cat $tmpfile_unique_lrz`
+    echo ""    
+    echo ""
+
+    
+    echo "transfering files from lrz to theta" 
+    tart2 -s $sync_dir -T $tmpfile_unique_lrz "$USERNAME_LRZ@$HOST_LRZ" "$USERNAME_THETA@$HOST_THETA" 
+    echo "transfering files from theta to lrz" 
+    tart2 -s $sync_dir -T $tmpfile_unique_theta "$USERNAME_THETA@$HOST_THETA" "$USERNAME_LRZ@$HOST_LRZ" 
+    rm -rf $tmpdir
+    
+else
+    echo "Hosts: ${HOSTS[@]}"
+    if [[ $on_lrz -eq 0 ]]
+    then
+	echo "from_theta_to_lrz: $from_theta_to_lrz"
+	if [[ $from_theta_to_lrz -eq 1 ]]
+	then
+	    echo "t t to l ${HOSTS[1]}"
+	    echo "#files: ${#file_list} filelist:  $file_list"
+	    cd $PROJECT/$sync_dir	    
+        	tar c${v}fz - $file_list | ssh "${HOSTS[1]}" $login_name "mkdir \$PROJECT/$sync_dir; cd \$PROJECT/$sync_dir;  tar x${v}fz - "
+	else
+	    echo "t l to t ${HOSTS[0]}"
+	    echo "#files: ${#file_list} filelist:  $file_list"
+	    cd $PROJECT/$sync_dir
+      	    ssh "${HOSTS[0]}" $login_name "mkdir \$PROJECT/$sync_dir; cd \$PROJECT/$sync_dir;  tar c${v}fz - $file_list " | tar x${v}fz -
+	fi	
+    else
+	if [[ $from_theta_to_lrz -eq 1 ]]
+	then
+	    echo "l t to l ${HOSTS[0]}"
+	    echo "#files: ${#file_list} filelist:  $file_list"	    
+	    cd $PROJECT/$sync_dir
+	    ssh "${HOSTS[0]}" $login_name  "mkdir \$PROJECT/$sync_dir; cd \$PROJECT/$sync_dir;  tar c${v}fz - $file_list " | tar x${v}fz -
+	else
+	    echo "l l to t ${HOSTS[1]}"
+	    echo "#files: ${#file_list} filelist:  $file_list"	    
+	    cd $PROJECT/$sync_dir
+            tar c${v}fz - $file_list | ssh ${HOSTS[1]} $login_name "mkdir \$PROJECT/$sync_dir; cd \$PROJECT/$sync_dir;  tar x${v}fz - "
+	    
+	fi
+    fi
+fi
 
 cd $cwd

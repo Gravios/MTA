@@ -14,6 +14,11 @@ function Data = addMarker(Data,name,color,sticks,data)
 %             stick_color - numericArray: rgb values range - [0,1] (e.g.[0.4,1,0])
 %
 
+%check if marker exists
+if Data.model.gmi(name),
+    %warning('MTA:MTADxyz:addMarker:MarkerExists, aborting marker assignment');
+    return;
+end
 Marker = MTAMarker(name,color);
 Data.model.Markers{end+1} = Marker;
 Data.model.N = Data.model.N + 1;

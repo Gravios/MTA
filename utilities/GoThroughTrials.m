@@ -5,11 +5,12 @@ function GoThroughTrials(TrialListName,funcHandle,varargin)
 % 
 % Note: assumes first argument of funcHandle to accept an MTATrial/MTASession
 Trials = SessionList(TrialListName);
-
-for s = 1:numel(Trials)
-    Trial = MTATrial.validate(Trials(s));
+for t = Trials
     try,
-        feval(funcHandle,Trial,varargin{:});
+        feval(funcHandle,MTATrial.validate(Trials(t)),varargin{:});
+    catch err
+        for e = err.stack'
+            disp(e)
+        end
     end
-
 end

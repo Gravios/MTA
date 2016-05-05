@@ -15,6 +15,12 @@ if ~strcmp(features.label,'fet_all'), % Sorry this exists ...
 end
 
 switch features.label
+  
+  case 'fet_mis'
+    fetInds =      [   1:5                      , 7:10                ];
+    stdThresh = cat(2, repmat({.1},    1,5)     , repmat({10},    1,4));
+    diffFun =   cat(2, repmat({@circ_dist},1,5) , repmat({@minus},1,4));
+
   case 'fet_all'
 
     xyz = preproc_xyz(RefTrial,'spline_spine');

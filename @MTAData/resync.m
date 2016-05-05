@@ -31,6 +31,7 @@ switch class(Data)
     if exist(Data.fpath,'file')&&~isempty(Data.filename),
         Data.load;
     end
+  
 end
 
 if ~isempty(sync)
@@ -200,9 +201,8 @@ elseif isa(Data,'MTAData'),
     syncZeroIndex = syncFeature==0;
     
     if ~isempty(syncDataPeriods),
-        keyboard
         %syncshift = 0;
-        %syncshift = round(Data.sync(1).*Data.sampleRate)-newOrigin-1;
+        syncshift = round(Data.sync.data(1).*Data.sampleRate)-newOrigin-1;
         %syncshift = Data.sync(1)-newOrigin-1;
         if syncshift ==-2,syncshift=0;end
         Data.load(syncDataPeriods,[],syncshift);
