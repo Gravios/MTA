@@ -279,14 +279,14 @@ int main (int argc, char* argv[])
   }
 
   /* Concatenate further input as a list be evaluated by matlab */
-  if (++optind<argc-1){
+  if (++optind<argc){
     do {  
       //snprintf(aux_script_args,sizeof(aux_script_args),"%s,%s",aux_script_args,argv[optind]);
       strncat(aux_script_args,",",1);
       strncat(aux_script_args,argv[optind],sizeof(aux_script_args));
       if (verbose) { printf ("\n%s\n",aux_script_args); }
     }
-    while (++optind<=argc-1);
+    while (++optind<argc);
   }
 
   strncpy(aux_script_args_tag,aux_script_args,sizeof(aux_script_args_tag));  
