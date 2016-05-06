@@ -286,7 +286,7 @@ int main (int argc, char* argv[])
       strncat(aux_script_args,argv[optind],sizeof(aux_script_args));
       if (verbose) { printf ("\n%s\n",aux_script_args); }
     }
-    while (optind++<argc-1);
+    while (++optind<=argc-1);
   }
 
   strncpy(aux_script_args_tag,aux_script_args,sizeof(aux_script_args_tag));  

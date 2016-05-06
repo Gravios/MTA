@@ -113,6 +113,7 @@ then
     echo "config: $config"
     echo "Submitting file $dir_list to function $matlab_func with $config configuration to $host"
     echo "$dlist"
+    echo "fargs: ${fargs[@]}"
 fi
 
 
