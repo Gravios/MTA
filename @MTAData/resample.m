@@ -23,9 +23,14 @@ switch Data.type
         end
         newSampleRate = DataObj.sampleRate;       
     else
+        if Data.sampleRate==DataObj,
+            return;
+        end
         newSampleRate = DataObj;
     end
 
+    Data.data(~nniz(Data),:,:,:,:) = 0;
+    
     if isa(Data,'MTADepoch'),
         interpMethod = 'nearest';
     end

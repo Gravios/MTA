@@ -137,7 +137,7 @@ if map2reference,
         features.unity([],refMean,refStd);
     end
 elseif normalize,
-   [~,fetMean,fetStd] = nunity(features(Trial.stc{'a'},:));
+    [~,fetMean,fetStd] = nunity(features(Trial.stc{'a'},:));
     features.unity([],fetMean,fetStd);
 end
 

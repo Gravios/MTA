@@ -60,6 +60,7 @@ while ~isempty(procOpts)
         try,
             xyz = Trial.load('xyz','seh');
         catch
+            Trial = MTASession.validate(Trial.filebase);
             xyz = Trial.load('xyz','trb');
             % COM head Center of Mass
             xyz.addMarker('hcom',...     Name
@@ -81,11 +82,17 @@ while ~isempty(procOpts)
                                             [0:nNewMarkers-1].*totalSpineLength(t)/(nNewMarkers-1),'both');
                 xyz.data(t,mid,:) = ss(t,xi,:);
             end
+            if isa(Trial,'MTATrial')
+                xyz.sync = Trial.sync.copy;
+                xyz.sync.sync = Trial.sync.copy;
+            end
             xyz.label = 'seh';
             xyz.key  = 'h';
             xyz.name = 'spline_spine_head_eqd';
             xyz.updateFilename(Trial);      
             xyz.save 
+            Trial = MTATrial.validate(Trial.filebase);
+            xyz = Trial.load('xyz','seh');
         end
         
        
