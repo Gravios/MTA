@@ -6,7 +6,7 @@ function [xyz,ss] = preproc_xyz(Trial,varargin)
 % between subjects using a 
 
 [procOpts] = DefaultArgs(varargin,{{}},true);
-
+Trial = MTATrial.validate(Trial);
 
 % DELBLOCK if version>=3,
 if isempty(Trial.fet),
