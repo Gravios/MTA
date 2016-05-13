@@ -17,8 +17,14 @@ keys = {};
 labels = {};
 g = 1;
 
-for i = states,
-    tper = [Stc{i{:}}];
+if numel(states)==1&&iscell(states)
+    sts = {Stc(states{:})};    
+else
+    sts = Stc(states{:});        
+end
+
+for tper = sts
+    tper = tper{1};
     tper.cast('TimeSeries');
     if tper.sampleRate~=Data.sampleRate,
         tper = resample(tper,Data);

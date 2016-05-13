@@ -1,10 +1,10 @@
-function fet = fet_all(Trial,varargin)
+function [fet,featureTitles,featureDesc] = fet_all(Trial,varargin)
 %function fet = fet_all(Trial)
 %
 % exhaustive set of features derived from the raw data
 %
 %
-[newSampleRate,RefTrial] = DefaultArgs(varargin,{20,[]},1);
+[newSampleRate,RefTrial,procOpts] = DefaultArgs(varargin,{20,[],'spline_spine'},1);
 
 fet = MTADfet(Trial.spath,...
               [],...
@@ -16,7 +16,7 @@ fet = MTADfet(Trial.spath,...
 
 % Loads preprocessed version of xyz
 nm = Trial.xyz.model.N;
-[xyz,ss] = preproc_xyz(Trial,'spline_spine');
+[xyz,ss] = preproc_xyz(Trial,procOpts);
 
 
 if ~isempty(RefTrial),
@@ -183,8 +183,8 @@ fet.data =  [fet.data,...
             ];
 
 
-
-
+featureTitles = {};
+featureDesc = {};
 
 
 

@@ -23,6 +23,7 @@ end
 
 % XYZ Positions of Markers
 xyz = Trial.load('xyz');
+ss = fet_spline_spine(Trial,'3dss',xyz);
 
 if ~iscell(procOpts), procOpts = {procOpts}; end
     
@@ -56,11 +57,12 @@ while ~isempty(procOpts)
         xyz.save
 
       case 'SPLINE_SPINE_HEAD_EQD'
-        ss = fet_spline_spine(Trial,'3dssh',xyz);        
+
         try,
             xyz = Trial.load('xyz','seh');
         catch
             Trial = MTASession.validate(Trial.filebase);
+            ss = fet_spline_spine(Trial,'3dssh',xyz);                
             xyz = Trial.load('xyz','trb');
             % COM head Center of Mass
             xyz.addMarker('hcom',...     Name
@@ -94,7 +96,7 @@ while ~isempty(procOpts)
             Trial = MTATrial.validate(Trial.filebase);
             xyz = Trial.load('xyz','seh');
         end
-        
+        ss = fet_spline_spine(Trial,'3dssh',xyz);                
        
       case 'load_trb_xyz'
         xyz = Trial.load('xyz','trb');

@@ -26,7 +26,14 @@ newsync.sync = [0,stateBlockSize.*numel(states)/features.sampleRate];
 newsync.sync = newsync.copy;
 
 
-for s = StcHL(states{:}),
+
+if numel(states)==1
+    sts = {StcHL(states{:})};    
+else
+    sts = StcHL(states{:});        
+end
+
+for s = sts
     s = s{1};
     rprs = randperm(s.size(1));
     % select random sets of the periods
@@ -64,7 +71,7 @@ end
 
 
 
-
+try,
 StcRnd.addState([],...
                 [],...
                 sts,...
@@ -74,7 +81,7 @@ StcRnd.addState([],...
                 'gper',...
                 'a',...
                 'TimePeriods');
-
+end
 
 trainingFeatures.data = trainingFeatures.data+randn(trainingFeatures.size)/5;
 trainingFeatures.sync = newsync.copy;

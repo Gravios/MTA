@@ -15,7 +15,8 @@ NEW_SAMPLE_RATE = 10;   % Reduce the sample rate of the feature matrix
 HOST_PATH = '/storage/gravio/figures/'; % Where reportfig should
                                        % save stuff
 states = {'walk','rear','turn','pause','groom','sit'};
-featureSet = 'fet_tsne_rev15';
+%featureSet = 'fet_tsne_rev15';
+featureSet = 'fet_mis';
 normalize = true;
 map2reference = true;
 sessionSet = 'hand_labeled';
@@ -23,7 +24,7 @@ mfilename = 'req20151203';
 
 
 %Reference Trial Stuff
-RefTrial = MTATrial('jg05-20120317');
+RefTrial = MTATrial.validate('jg05-20120317.cof.all');
 if normalize,
     RefState = RefTrial.stc{'a'};
     rfet = feval(featureSet,RefTrial,NEW_SAMPLE_RATE);
@@ -46,8 +47,7 @@ if ~exist(fileLoc,'file'),
     Stc = {};
     sts = [];
     for s = 1:numel(slist),
-        Trial = MTATrial(slist(s).sessionName,slist(s).trialName,slist(s).mazeName);
-        Trial.load('stc',slist(s).stcMode);
+        Trial = MTATrial.validate(slist(s));
         Stc = Trial.stc.copy;
         % Load Feature matrix of the session    
         [tfet,fett,fetd] = feval(featureSet,Trial,NEW_SAMPLE_RATE);

@@ -16,17 +16,18 @@ HOST_PATH = '/storage/gravio/figures/'; % Where reportfig should
                                        % save stuff
 states = {'walk','rear','turn','pause','groom','sit'};
 featureSet = 'fet_all';
-featureSet = 'fet_tsne_rev15';
+%featureSet = 'fet_tsne_rev15';
+featureSet = 'fet_mis';
 normalize = false;
 map2reference = true;
 sessionSet = 'hand_labeled';
 mfilename = 'req20160411';
 overwrite = false;
-nSamples = 2000;
+nSamples = 4000;
 
 
 %Reference Trial Stuff
-RefTrial = MTATrial('jg05-20120317');
+RefTrial = MTATrial.validate('jg05-20120317.cof.all');
 
 
 if map2reference, mapping =    ['-map2_' RefTrial.filebase];else mapping    = '';end
@@ -43,8 +44,7 @@ if ~exist(fileLoc,'file')||overwrite,
     Stc = {};
     sts = [];
     for s = 1:numel(slist),
-        Trial = MTATrial(slist(s).sessionName,slist(s).trialName,slist(s).mazeName);
-        Trial.load('stc',slist(s).stcMode);
+        Trial = MTATrial.validate(slist(s));
         Stc = Trial.stc.copy;
         % Load Feature matrix of the session    
         

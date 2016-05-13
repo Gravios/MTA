@@ -7,7 +7,7 @@ function GoThroughTrials(TrialListName,funcHandle,varargin)
 Trials = SessionList(TrialListName);
 for t = Trials
     try,
-        feval(funcHandle,MTATrial.validate(Trials(t)),varargin{:});
+        feval(funcHandle,MTATrial.validate(t),varargin{:});
     catch err
         for e = err.stack'
             disp(e)

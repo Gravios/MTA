@@ -1,5 +1,22 @@
 function distributions_features(varargin)
-[sList,featureSet,state,normalize,mapToReference,RefTrial] = DefaultArgs(varargin,{'hand_labeled_jg','fet_tsne_rev15','gper',true,false,{'jg05-20120317','all','cof'}});
+
+% Default arguments for distributions_features(varargin)
+defargs.sList          = 'hand_labeled';
+defargs.featureSet     = 'fet_mis';
+defargs.featureOpts    = {'newSampleRate',12,'procOpts','spline_spine'};
+defargs.featureName    = '';
+defargs.state          = 'gper';
+defargs.resample       = true;
+defargs.normalize      = true;
+defargs.mapToReference = false;
+defargs.RefTrial       = 'jg05-20120317.cof.all';
+
+
+[sList,featureSet,featureOpts,featureName,state,resample,normalize,mapToReference,RefTrial] = DefaultArgs(varargin,defargs,'--struct');
+
+if isempty(featureName)
+    featureName = featureSet;
+end
 
 
 sesList = SessionList(sList);
@@ -10,38 +27,51 @@ for s = 1:numel(sesList),
     snames{s} = sesList(s).sessionName; 
 end
 
-
-
-NEW_SAMPLE_RATE = 10;
-RP_PATH = '/storage/gravio/figures';
-
 %Reference Trial Stuff
+
+if mapToReference||normalize,
+    RefTrial = MTATrial.validate(RefTrial);
+end
+
 if normalize,
-    RefTrial = MTATrial(RefTrial{:});
+    RefTrial = MTATrial.validate(RefTrial);
     RefState = RefTrial.stc{'a'};
-    rfet = feval(featureSet,RefTrial,NEW_SAMPLE_RATE);
+    rfet = feval(featureSet,RefTrial,featureOpts{:});
     [rfet,Rmean,Rstd] = unity(rfet,[],[],[],[]);
 end
     
 
 cfet = {};
-Stc = {};
+oStc = {};
 for s = 1:numel(sesList),
-    Trial = MTATrial(sesList(s).sessionName,...
-                     sesList(s).trialName,...
-                     sesList(s).mazeName);
+    Trial = MTATrial.validate(sesList(s));
     Trial.load('stc',sesList(s).stcMode);
-    if s ==1,
-        [cfet{s},fett,fetd] = feval(featureSet,Trial,NEW_SAMPLE_RATE);
+    if s == 1,
+        [cfet{s},fett,fetd] = feval(featureSet,Trial,featureOpts{:});
     else
-        [cfet{s}] = feval(featureSet,Trial,NEW_SAMPLE_RATE);
+        [cfet{s}] = feval(featureSet,Trial,featureOpts{:});
     end
 
-    if mapToReference, cfet{s}.map_to_reference_session(Trial,RefTrial); end
-    if normalize,      cfet{s} = unity(cfet{s},[],Rmean,Rstd);           end
+    if mapToReference&&~strcmp(Trial.filebase,RefTrial.filebase), 
+        cfet{s}.map_to_reference_session(Trial,RefTrial); 
+    end
+    if normalize,
+        cfet{s} = unity(cfet{s},[],Rmean,Rstd);           
+    end
 
     Stc = Trial.load('stc',sesList(s).stcMode);
+
+    if resample
+        [Stc,~,cfet{s}] = resample_whole_state_bootstrap_noisy_trim(Stc,cfet{s},{state});
+    end
+
     cfet{s}.data = cfet{s}(Stc{state},:);
+end
+
+
+if isempty(fett)||isempty(fetd)
+    fett = repmat( {''}, [1,cfet.size(2)] );
+    fetd = repmat( {''}, [1,cfet.size(2)] );
 end
 
 c = jet(numel(cfet));
@@ -54,13 +84,13 @@ for f = 1:cfet{1}.size(2),
     for s = 1:numel(cfet),
         hs = bar(eds,histc(cfet{s}(:,f),eds),'histc');
         hs.FaceColor = c(cind,:);    
-        hs.FaceAlpha = .5;
+        hs.FaceAlpha = .3;
         cind = cind+1;
     end
     legend(snames{:});
     pause(.3)
-    reportfig(RP_PATH, hfig, featureSet, 'features', false,sList, ...
-              ['feature: ',num2str(f)],[],false,'png');
+    reportfig(fullfile(getenv('PROJECT'),'figures'), hfig, [featureName '-' state], 'features', false,sList, ...
+              ['feature: ',num2str(f),' - ' fetd{f}],[],false,'png');
     close(hfig)           
 end
 
