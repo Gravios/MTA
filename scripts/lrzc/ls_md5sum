@@ -1,0 +1,8 @@
+#!/bin/bash
+
+dir_local=$((find $1/. -type f -mtime -$2 ) 2>&1);
+len_loc_path=$((${#1}+1))
+while read -r line
+do
+    (echo "$(( md5sum $line | awk '{print $1 }' ) 2>&1) ${line:$len_loc_path:${#line}}") 2>&1
+done <<< "$dir_local"
