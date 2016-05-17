@@ -18,7 +18,7 @@ states = {'walk','rear','turn','pause','groom','sit'};
 featureSet = 'fet_all';
 %featureSet = 'fet_tsne_rev15';
 featureSet = 'fet_mis';
-normalize = false;
+normalize = true;
 map2reference = true;
 sessionSet = 'hand_labeled';
 mfilename = 'req20160411';
@@ -62,6 +62,10 @@ if ~exist(fileLoc,'file')||overwrite,
             tfet.map_to_reference_session(Trial,RefTrial);
         end
 
+        if normalize
+            tfet.unity([],rMean,rStd);
+        end
+        
         % Resample features
         [sStc,~,sfet] = resample_whole_state_bootstrap_noisy_trim(Stc,tfet,states,90,nSamples);
 
@@ -89,9 +93,6 @@ if ~exist(fileLoc,'file')||overwrite,
 
 
 
-    if normalize
-        fet.unity([],rMean,rStd);
-    end
 
 
     % Add colors to states
@@ -112,8 +113,10 @@ if ~exist(fileLoc,'file')||overwrite,
     skip = 3;
     stop = size(fet,1);
     no_dims = 2;
-    ind = start:skip:stop;
-
+    rind = randperm(stop);
+    rind(rind<start)=[];
+    ind = rind(1:skip:end);
+    
 
     mappedX = tsne(fet(ind,:), csmat(ind,:), no_dims, initial_dims, perplexity); 
 
@@ -135,7 +138,9 @@ cses = [0,0,1;...
         1,0,0;...
         0,1,0;...
         1,0,1;...
+        0,1,1;...
         1,1,0;];
+        
 
 sesIdMat = MTADfet('data',reshape(bsxfun(@times,ones([nSamples*nsts,nses]),1:nses),[],1),...
                    'sampleRate',fet.sampleRate);

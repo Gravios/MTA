@@ -1713,54 +1713,39 @@ switch mode,
   case 'time_shifted_comodugram_rhm_lfp'
     %% Figure - 12 Time Shifted Comodugram rhm and lfp
 
-
-    MTAConfiguration('/gpfs01/sirota/bach/data/gravio','absolute');
+    %MTAConfiguration('/gpfs01/sirota/bach/data/gravio','absolute');
     %MTAConfiguration('/data/data/gravio','absolute');
+    sname = 'jg05-20120310.cof.all';
 
-    %sname = 'jg05-20120315';
-    sname = 'jg05-20120310';
-    %sname = 'jg05-20120309';
-    %sname = 'jg04-20120129';
-    %sname = 'jg04-20120130';
-    %sname = 'co01-20140222';
+    sname = 'jg05-20120317.cof.all';
+    chans = 65:3:96;
+    
+    Trial = MTATrial.validate(sname);
 
-    %sname = 'jg05-20120317';
-    chans = 68:4:95;
+    Trial.lfp.filename = [Trial.name,'.lfp']; % Remove later
+    lfp = Trial.load('lfp',chans);
 
-    Trial = MTATrial(sname,'all');
-    %Trial.ang.load(Trial);
-    Trial.xyz.load(Trial);
-    Trial.lfp.load(Trial,chans);
-    Trial.lfp.resample(Trial.xyz);
+    rhm = fet_rhm(Trial,[],'mta');
+    rhm.resample(lfp);
+    
+    lbang = WhitenSignal([lfp.data,rhm.data],[],1);
 
-    rb = Trial.xyz.model.rb({'head_back','head_left','head_front','head_right'});
-    hcom = Trial.com(rb);
-    Trial.addMarker(Trial.xyz,'hcom',[.7,0,.7],{{'head_back','head_front',[0,0,1]}},hcom);
-    Trial.addMarker(Trial.xyz,'fhcom',[.7,1,.7],{{'head_back','head_front',[0,0,1]}},permute(Filter0(gausswin(61)./sum(gausswin(61)),hcom),[1,3,2]));
-
-    ang = Trial.ang.copy;
-    ang.create(Trial);
-    ang.data = ang(:,7,11,3);
-    ang = ang.data;
-    ang(isnan(ang))=nanmean(ang);
-    bang = ang;
-    lbang = WhitenSignal([Trial.lfp.data,bang],[],1);
-    %lbang = MTADlfp([],[],lbang,Trial.ang.sampleRate);
-
-
-    states = [-400,-250,-175,-70,-20,0,20,70,175,250,400];
-    nsts = numel(states);
+    tshift = [-400,-250,-175,-70,-20,0,20,70,175,250,400];
+    nts = numel(tshift);
     nchan = numel(chans);
     figure,
-    for s = 1:nsts
-        lb = MTADlfp([],[],lbang(:,1:end-1),Trial.ang.sampleRate);
-        ab = MTADlfp([],[],circshift(lbang(:,end),states(s)),Trial.ang.sampleRate);
-        [Co,f] = Comodugram([lb(Trial.stc{'l'},:),ab(Trial.stc{'l'},:)],2^9,Trial.ang.sampleRate,[1,30],2^8);
+    sts = 'w';
+    for s = 1:nts
+        lb = MTADlfp([],[],[lbang(:,1:end-1),circshift(lbang(:,end),tshift(s))],lfp.sampleRate);
+
+        lb = MTADlfp([],[],[lbang(:,3),circshift(lbang(:,end),tshift(s))],lfp.sampleRate);
+        [Co,f] = Comodugram(Trial,lb,Trial.stc{sts});
 
         for i =1:nchan
-            subplot2(nchan,nsts,i,s),
-            imagesc(f,f,Co(:,:,i,nchan+1)'),axis xy,
-            if i==1,title(Trial.stc{'l'}.label),end
+            subplot2(nchan,nsts,i,s);
+            imagesc(f,f,Co(:,:,i,nchan+1)');
+            axis xy;
+            if i==1,title(Trial.stc{sts}.label),end
             if i==1&s==1,ylabel([ 'Channel: ',num2str(chans(i))]),end
             caxis([-.65,.65])
             sub_pos = get(gca,'position'); % get subplot axis position
@@ -1770,6 +1755,54 @@ switch mode,
 
     end
 
+    
+    
+  case 'state_dependent_comodugram_rhm_lfp'
+    %% Figure - 12 Time Shifted Comodugram rhm and lfp
+
+    %MTAConfiguration('/gpfs01/sirota/bach/data/gravio','absolute');
+    %MTAConfiguration('/data/data/gravio','absolute');
+    sname = 'jg05-20120310.cof.all';
+
+    sname = 'jg05-20120317.cof.all';
+    chans = 65:3:96;
+    
+    Trial = MTATrial.validate(sname);
+
+    Trial.lfp.filename = [Trial.name,'.lfp']; % Remove later
+    lfp = Trial.load('lfp',chans);
+
+    rhm = fet_rhm(Trial,[],'mta');
+    rhm.resample(lfp);
+    
+    lbang = WhitenSignal([lfp.data,rhm.data],[],1);
+
+
+
+
+    figure,
+    sts = 'awrpms';
+    nsts = numel(sts);
+    nchan = numel(chans);    
+    for s = 1:nsts
+        %lb = MTADlfp([],[],lbang(:,[1,end]),lfp.sampleRate);
+        lb = MTADlfp([],[],lbang,lfp.sampleRate);
+        [Co,f] = Comodugram(Trial,lb,Trial.stc{sts(s)});
+
+        for i =1:nchan
+            subplot2(nchan,nsts,i,s);
+            imagesc(f,f,Co(:,:,i,nchan+1)');
+            axis xy;
+            if i==1,title(Trial.stc{sts(s)}.label),end
+            if i==1&s==1,ylabel([ 'Channel: ',num2str(chans(i))]),end
+            caxis([-.65,.65])
+            sub_pos = get(gca,'position'); % get subplot axis position
+            set(gca,'position',sub_pos.*[1 1 1.2 1.2]) % stretch its width and height
+
+        end
+
+    end
+    
 
   case 'marker_reconstruction noise'
     %% Figure 13 - Marker to marker distances
@@ -1932,7 +1965,7 @@ switch mode,
     tdr.data = (tdr.data-repmat(nanmedian(tdr.data),[tdr.size(1),1,1]))./repmat(nanstd(tdr.data),[tdr.size(1),1,1]);
 
 
-    evt = 1;
+    evt = p1;
     sts = 'r';
     figure,imagesc(sq(nanmean(GetSegs(tdr.data,round(Trial.stc{sts,yld.sampleRate}.data(diff(Trial.stc{sts}.data,1,2)>200,evt)-2*yld.sampleRate-tshift/yld.sampleRate),round(4*yld.sampleRate),0),2))')
 
@@ -2131,6 +2164,53 @@ switch mode,
         title(num2str(sid));
         pause(.4)
     end
+    
+  case 'spk_trig_lfp_ave'
+    sname = 'jg05-20120310.cof.all';
+
+    sname = 'jg05-20120317.cof.all';
+    chans = 65:1:96;
+    
+    Trial = MTATrial.validate(sname);
+
+    Trial.lfp.filename = [Trial.name,'.lfp']; % Remove later
+    lfp = Trial.load('lfp',chans);
+    
+    sts = 'awrpms';
+    nsts = numel(sts)
+    for s = 1:nsts,
+        spk{s} = Trial.spk.copy;
+        spk{s}.create(Trial,xyz.sampleRate,sts(s),[],'deburst');
+        for u = spk{s}.map(:,1)',
+            try,
+                spkTrigAve(:,:,u,s) = sq(mean(lfp.segs(spk{s}(u)-120,240),2));
+            end
+        end
+    end
+
+    hfig = figure,
+    for u = 1:size(spkTrigAve,3)
+        clf
+        for s = 1:nsts,
+            subplot(nsts,1,s);
+            imagesc(spkTrigAve(:,:,u,s)');
+            title(['unit: ' num2str(u) sts(s)]);
+            caxis([-3000,3000]);
+            colormap jet;
+        end
+        reportfig(fullfile(getenv('PROJECT'),'figures'),  ... Path where figures are stored
+          hfig,                                ... Figure handle
+          ['lfpSpkTrigAve'],                   ... Figure Set Name
+          'req',                               ... Directory where figures reside
+          false,                               ... Do Not Preview
+          [Trial.filebase '-' num2str(u)],     ... Tumbnail caption
+          [Trial.filebase '-' num2str(u)],     ... Expanded caption
+          [],                                  ... Resolution
+          false,                               ... Do Not Save FIG
+          'png',4,8);                                % Output Format
+    end
+
+    
     
 end
 

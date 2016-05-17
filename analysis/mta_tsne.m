@@ -17,48 +17,20 @@ function out = mta_tsne(Trial,varargin)
 %           overwrite (false)
 %
 
-defArgs = {                                                 ...
-    ...        Fet
-              'fet_tsne_rev15',                             ...
-    ...
-    ...        sampleRate
-               12,                                          ...
-    ...
-    ...        Stc
-               'hand_labeled',                              ...
-    ...
-    ...        states
-               {'rear','walk','turn','pause','groom','sit'},...
-    ...
-    ...        initDims
-               5,                                           ...
-    ...
-    ...        nDims
-               2,                                           ...
-    ...
-    ...        perplexity
-               100,                                         ...
-    ...
-    ...        ifNorm
-               true,                                        ...
-    ...
-    ...        ifReportFig
-               false,                                       ...
-    ...
-    ...        subset
-               [],                                          ...
-    ...
-    ...        hostPath
-               '/storage/gravio/figures/',                  ...
-    ...
-    ...        overwrite
-               false                                        ...
-};
-
+defArgs = struct('Fet',           'fet_tsne_rev15',...
+                 'sampleRate',    12,...
+                 'Stc',           'hand_labeled',...
+                 'states',        {{'rear','walk','turn','pause','groom','sit'}},...
+                 'initDims',      5,...
+                 'nDims',         2,...
+                 'perplexity',     100,...
+                 'ifNorm',        true,...
+                 'ifReportFig',   false,...
+                 'subset',        [],...
+                 'overwrite',      false);
 
 [Fet,sampleRate,Stc,states,initDims,nDims,...
- perplexity,ifNorm,ifReportFig,subset,hostPath,overwrite] = DefaultArgs(varargin,defArgs);
-
+ perplexity,ifNorm,ifReportFig,subset,overwrite] = DefaultArgs(varargin,defArgs,'--struct');
 
 % Load Features
 if ischar(Fet),
@@ -83,9 +55,22 @@ end
 % Create Color Mapping 
 [asmat,labels,keys] =  stc2mat(Stc,Fet,states);              % Create NxK state matrix
 aind = sum(asmat,2)~=0;
-asmat = MTADxyz('data',asmat,'sampleRate',Fet.sampleRate);   % Wrap state matrix in MTADxyz object
+asmat = MTADfet('data',asmat,'sampleRate',Fet.sampleRate);   % Wrap state matrix in MTADxyz object
 [~,asmat.data] = max(asmat.data,[],2);                       % Eliminate overlaps by retriving winning state index for each time point
-c = jet(numel(Stc.states));                                  % Create base colors
+switch numel(states)
+  case 1
+    c = [0,0,1];
+  case 2
+    c = [0,0,1;...
+         1,0,0];
+  case 3
+    c = [0,0,1;...
+         0,1,0;...         
+         1,0,0];
+  otherwise
+    c = jet(numel(Stc.states));                                  % Create base colors
+end
+
 csmat = asmat.copy;                                          % Copy object 
 csmat.data = c(csmat.data,:);                                % Fill N time points with corect colors
 
@@ -107,7 +92,8 @@ sind = cat(1,...
                   [],1),...
            false([mod(Fet.size(1),skip),1]));
 
-ind.data = ind.data&sind&tind&aind;                          % Subselection
+ind.data(isnan(ind.data))=0;
+ind.data = ind.data&sind&tind&aind&nniz(Fet);                          % Subselection
 
 
 % Build filepath
@@ -123,16 +109,11 @@ filepath = fullfile(Trial.path.data,'analysis',[figparm,'.mat']);
 
 % Run tSNE or Load data
 if ~exist(filepath,'file')||overwrite
-    if ifReportFig, % lazy
-        mappedX = tsne(Fet(ind,:), csmat(ind,:), nDims, initDims, perplexity); 
-    else
-        mappedX = tsne(Fet(ind,:), [], nDims, initDims, perplexity);
-    end
+    mappedX = tsne(Fet(ind,:), [], nDims, initDims, perplexity);
     save(filepath,'states','mappedX','perplexity',...
                   'filepath','ind','csmat','nDims','initDims')
-    load(filepath);
 end
-
+load(filepath);
 
 % Don't complain about this I won't hear it
 if nargout>0
@@ -141,6 +122,13 @@ end
 
 % Report Figure 
 if ifReportFig, 
+    folderName = dbstack;
+    if numel(folderName)>1,
+        folderName = folderName(end-1).name;
+    else
+        folderName = folderName.name;
+    end
+    
     osts = numel(states);
     hfig = figure(3923923);clf
     hold on;
@@ -154,7 +142,7 @@ if ifReportFig,
     xlim([min(mappedX(:,1))-5,max(mappedX(:,1))+30]);
     ylim([min(mappedX(:,2))-5,max(mappedX(:,2))+5]);
 
-    reportfig([], hfig, 'tsne', 'req', false,Trial.filebase,figparm,[],true,'png');
+    reportfig(fullfile(getenv('PROJECT'),'figures'), hfig, folderName, 'req', false,Trial.filebase,figparm,[],true,'png');
 end
 
 
