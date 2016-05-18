@@ -12,8 +12,9 @@ A = permute(A,[2,3,1]);
 A = sq(mat2cell(A,size(A,1),size(A,2),ones([size(A,3),1])));
 [U,S,V]=cellfun(@svd,A,'uniformoutput',false);
 
-[t,p,r] = cart2sph(coeff(1),coeff(2),coeff(3))
-
+for t = 1:numel(V),
+    [t(t),pf(t),r(t)] = cart2sph(V{t}(1,3),V{t}(2,3),V{t}(3,3));
+end
 
 
 V1=[coeff(1:3)]';
