@@ -1,8 +1,10 @@
 function req20160310_10_tsneSubspaces(Trial,s)
-RefTrial = 'jg05-20120317.cof.all';
+
+%RefTrial = 'jg05-20120317.cof.all';
 
 Trial = MTATrial.validate(Trial);
-RefTrial = MTATrial.validate(RefTrial);
+RefTrial = Trial;
+%RefTrial = MTATrial.validate(RefTrial);
 
 load(fullfile(Trial.spath,'req20160310_1_preproc-afet.mat'));
 bs = load(fullfile(RefTrial.spath,'req20160310_5_genfigs.mat'));

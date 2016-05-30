@@ -26,11 +26,16 @@ vxy.data = log10(vxy.data);
 [~,ind_v_h] = histc(vxy(:,'hcom'),VEL_HISTOGRAM_BOUNDARIES);
 
 % Select only non-zero points whithout rearing and grooming
-if strcmp(Trial.stc.mode(1:12),'hand_labeled'),
+if ~isempty(regexpi(Trial.stc.mode,'^hand_labeled.*')),
     ind = Trial.stc('a-m-r').cast('TimeSeries');
     ind.resample(Data);
 else
-    % Need some hard thresholds for cleaning 
+    ind = Trial.stc('a').cast('TimeSeries');
+    ind.resample(Data);
+    % Need some hard thresholds for subspace selection 
+    bang = ang(:,1,4,3).*cos(ang(:,1,4,2));
+    bang = MTADxyz('data',bang/prctile(bang(nniz(bang)),95),'sampleRate',xyz.sampleRate);
+    ind.data = ind.data&bang>.8;
 end
 
 mind = nniz([ind_v_b,ind_v_h])&ind.data==1;

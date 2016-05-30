@@ -1,8 +1,9 @@
 function req20160310_7_accumOptStats(Trial,s)
 
 Trial = MTATrial.validate(Trial);
-RefTrial = MTATrial.validate('jg05-20120317.cof.all');
-RefTrial.load('stc','hand_labeled_rev3_jg');
+RefTrial = Trial;
+%RefTrial = MTATrial.validate('jg05-20120317.cof.all');
+%RefTrial.load('stc','hand_labeled_rev3_jg');
 
 %'states','fetInds','stateOrd','afet','nNeurons','nIter','rndMethod'
 ds = load(fullfile(Trial.spath,'req20160310_1_preproc-afet.mat'));
@@ -20,7 +21,7 @@ gStates = ds.states(cellfun(@isempty,...
                          )...
                  );
 
-pobj = parpool(6);
+pobj = parpool(10);
 
 parfor f = 1:numel(sbind),    
     opn = struct;

@@ -24,6 +24,7 @@ if exist('Par','var'),
     lfpSyncPeriods = MTADepoch([],[],recordSync+[1/Par.lfpSampleRate,1/Par.lfpSampleRate],1,recordSync,0);
     clear('lfp');
     Session.lfp = MTADlfp(Session.spath,[Session.name '.lfp'],[],Par.lfpSampleRate,lfpSyncPeriods,0);    
+    Session.lfp.filename = [Session.name '.lfp'];
     Session.sampleRate = Par.SampleRate;
 end
 

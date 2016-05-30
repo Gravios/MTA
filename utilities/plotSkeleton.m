@@ -1,5 +1,5 @@
 function [markers,sticks,markerConnections,traj] = plotSkeleton(Trial,xyz,ind,varargin)
-%function [markers,sticks,markerConnections] = plotSkeleton(xyz,ind,varargin)
+%function [markers,sticks,markerConnections] = plotSkeleton(Trial,xyz,ind,varargin)
 %[plot_type,ang,t_ante,t_post] = DefaultArgs(varargin,{'line',[],0,0},true);
 
 default_args = ...

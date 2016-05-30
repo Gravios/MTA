@@ -28,47 +28,23 @@ Trial = MTATrial.validate(Trial);
 varargout = cell([1,nargout-1]);
 
 % Default Arguments for uninitiated variables
-defArgs = {...
-           ... states
-               {'walk','rear','turn','pause','groom','sit'}             ...
-           ...
-           ... stcMode
-               '',                                                      ...
-           ...
-           ... featureSet 
-               'fet_tsne_rev3',                                         ...
-           ...
-           ... sampleRate
-               12,                                                      ...
-           ...
-           ... model
-               [],                                                      ...
-           ...
-           ... nNeurons          
-               100,                                                     ...
-           ...
-           ... nIter
-               100,                                                     ...
-           ...
-           ... randomizationMethod
-               '',                                                      ...
-           ...
-           ... map2reference
-               false,                                                   ... 
-           ...
-           ... normalize
-               false                                                    ... 
-           ...
-           ... tag
-               ''                                                       ...
-           ...
-           ... targetState
-               ''                                                       ...
-          };
+defArgs = struct('states',      {{'walk','rear','turn','pause','groom','sit'}},...
+                 'stcMode',     '',...
+                 'featureSet',  'fet_tsne_rev3',...
+                 'sampleRate',  12,...
+                 'model',       [],...
+                 'nNeurons',    100,...          
+                 'nIter',       100,...
+                 'randomizationMethod','',...
+                 'map2reference', false,... 
+                 'normalize',   false,...
+                 'tag',         '',...
+                 'targetState', ''...
+);
 
 [states,stcMode,featureSet,sampleRate,model,nNeurons,...
  nIter,randomizationMethod,map2reference,normalize,tag,...
- targetState] = DefaultArgs(varargin,defArgs);
+ targetState] = DefaultArgs(varargin,defArgs,'--struct');
 
 
 % Load the feature set
@@ -79,18 +55,18 @@ else,
     features = feval(featureSet,Trial,sampleRate,false);
 end
 
-
 % Load the hand labels
-if ischar(stcMode),
-    Trial.load('stc',stcMode);
-    StcHL = Trial.stc.copy;
-elseif isa(stcMode,'MTAStateCollection'),
-    StcHL = stcMode.copy;
-    stcMode = stcMode.mode;
+if ~isempty(stcMode),
+    if ischar(stcMode),
+        Trial.load('stc',stcMode);
+        StcHL = Trial.stc.copy;
+    elseif isa(stcMode,'MTAStateCollection'),
+        StcHL = stcMode.copy;
+        stcMode = stcMode.mode;
+    end
+    StcHL.states = StcHL(states{:});
+    keys = cellfun(@subsref,StcHL(states{:}),repmat({substruct('.','key')},size(states)));
 end
-StcHL.states = StcHL(states{:});
-keys = cellfun(@subsref,StcHL(states{:}),repmat({substruct('.','key')},size(states)));
-
 
 % Default mode is labeling
 train = false;
@@ -98,6 +74,8 @@ train = false;
 % If the model name is empty then create a composite name and 
 % toggle train to create new neural network models
 if isempty(model),
+
+    
     model = ['MTAC_BATCH-' tag targetState featureSet ...
              '_SR_'  num2str(sampleRate) ...
              '_NORM_' num2str(normalize) ...             
@@ -171,8 +149,9 @@ end
 
 
 % load hand labeled state matrix
-shl = MTADxyz('data',double(0<stc2mat(StcHL,xyz,trainingStates)),'sampleRate',xyz.sampleRate);
-
+if ~isempty(stcMode)
+    shl = MTADxyz('data',double(0<stc2mat(StcHL,xyz,trainingStates)),'sampleRate',xyz.sampleRate);
+end
 
 for iter = 1:nIter,
     try,        
@@ -348,31 +327,29 @@ for iter = 1:nIter,
         end
         
         % Label States
-        [Stc,ps,Model_Information] = bhv_nn (Trial,     ... Trial
-                                             false,     ... ifTrain
-                                             trainingStates,    ... States
-                                             StcHL,     ... StateCollection
-                                             features,  ... feature set
+        [Stc,ps,Model_Information] = bhv_nn (Trial,         ... Trial
+                                             false,         ... ifTrain
+                                             trainingStates,... States
+                                             Trial.stc.copy,... StateCollection
+                                             features,      ... feature_set
                                              [model '_' num2str(iter)]); % model name
 
-        
-
-
-        ysm = MTADxyz('data',double(0<stc2mat(Stc,xyz)),'sampleRate',xyz.sampleRate); 
-        d_state = ysm.data+d_state;
-        p_state = p_state +ps;
-        if nargout>=4,
-            
-
-            labelingEpochs.resample(xyz);
-
-            ind = any(shl.data,2)&any(ysm.data,2)&labelingEpochs.data;
-
-            tcm = confmat(shl(ind&labelingEpochs,:),ysm(ind&labelingEpochs,:)); % DEP: netlab
-            labelingStatsMulti.confusionMatrix(iter,:,:) = round(tcm./xyz.sampleRate,2);
-            labelingStatsMulti.precision(iter,:) = round(diag(tcm)./sum(tcm,2),4).*100;
-            labelingStatsMulti.sensitivity(iter,:) = round(diag(tcm)'./sum(tcm),4).*100;
-            labelingStatsMulti.accuracy(iter) = sum(diag(tcm))/sum(tcm(:));
+        % if an stc was provided get comparison stats
+            ysm = MTADxyz('data',double(0<stc2mat(Stc,xyz)),'sampleRate',xyz.sampleRate); 
+            d_state = ysm.data+d_state;
+            p_state = p_state +ps;
+        if ~isempty(stcMode)            
+            if nargout>=4,
+                labelingEpochs.resample(xyz);
+    
+                ind = any(shl.data,2)&any(ysm.data,2)&labelingEpochs.data;
+    
+                tcm = confmat(shl(ind&labelingEpochs,:),ysm(ind&labelingEpochs,:)); % DEP: netlab
+                labelingStatsMulti.confusionMatrix(iter,:,:) = round(tcm./xyz.sampleRate,2);
+                labelingStatsMulti.precision(iter,:) = round(diag(tcm)./sum(tcm,2),4).*100;
+                labelingStatsMulti.sensitivity(iter,:) = round(diag(tcm)'./sum(tcm),4).*100;
+                labelingStatsMulti.accuracy(iter) = sum(diag(tcm))/sum(tcm(:));
+            end
         end
         
     catch err,
@@ -410,17 +387,19 @@ maxState(~nniz(xyz),:) = 0;
 
 
 % Stats in comparision to the collection of labels specified in the stcMode
-ysm = MTADxyz('data',zeros([shl.size]),'sampleRate',xyz.sampleRate); 
-ysm.data = ysm.data';
-ysm.data([1:size(ysm,1):size(ysm,2).*size(ysm,1)]+maxState'-1) = 1;
-ysm.data = ysm.data';
-ind = any(shl.data,2)&any(ysm.data,2)&labelingEpochs.data;
-tcm = confmat(shl(ind&labelingEpochs,:),ysm(ind&labelingEpochs,:)); % #DEP: netlab
-labelingStats.confusionMatrix = round(tcm./xyz.sampleRate,2);
-labelingStats.precision = round(diag(tcm)./sum(tcm,2),4).*100;
-labelingStats.sensitivity = round(diag(tcm)'./sum(tcm),4).*100;
-labelingStats.accuracy = sum(diag(tcm))/sum(tcm(:));
-
+labelingStats = struct();
+if ~isempty(stcMode),
+    ysm = MTADxyz('data',zeros([shl.size]),'sampleRate',xyz.sampleRate); 
+    ysm.data = ysm.data';
+    ysm.data([1:size(ysm,1):size(ysm,2).*size(ysm,1)]+maxState'-1) = 1;
+    ysm.data = ysm.data';
+    ind = any(shl.data,2)&any(ysm.data,2)&labelingEpochs.data;
+    tcm = confmat(shl(ind&labelingEpochs,:),ysm(ind&labelingEpochs,:)); % #DEP: netlab
+    labelingStats.confusionMatrix = round(tcm./xyz.sampleRate,2);
+    labelingStats.precision = round(diag(tcm)./sum(tcm,2),4).*100;
+    labelingStats.sensitivity = round(diag(tcm)'./sum(tcm),4).*100;
+    labelingStats.accuracy = sum(diag(tcm))/sum(tcm(:));
+end
 % Copy State Collection object to store new labeled periods
 % $$$ Stc = Trial.stc.copy;
 % $$$ Stc.updateMode([MODEL_TYPE '-' Model_Information.StcMode...

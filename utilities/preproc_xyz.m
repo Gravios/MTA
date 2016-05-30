@@ -5,7 +5,7 @@ function [xyz,ss] = preproc_xyz(Trial,varargin)
 % An attempt to normalize marker positions along the spine
 % between subjects using a 
 
-[procOpts] = DefaultArgs(varargin,{{}},true);
+[procOpts,overwrite] = DefaultArgs(varargin,{{},false},true);
 Trial = MTATrial.validate(Trial);
 
 % DELBLOCK if version>=3,
@@ -58,12 +58,13 @@ while ~isempty(procOpts)
 
       case 'SPLINE_SPINE_HEAD_EQD'
 
-        try,
+        if ~isempty(listFiles(Trial.name,'\.seh\.h')) && ~overwrite
             xyz = Trial.load('xyz','seh');
-        catch
+        else
             Trial = MTASession.validate(Trial.filebase);
-            ss = fet_spline_spine(Trial,'3dssh',xyz);                
             xyz = Trial.load('xyz','trb');
+            ss = fet_spline_spine(Trial,'3dssh',xyz,'overwrite',true);                
+
             % COM head Center of Mass
             xyz.addMarker('hcom',...     Name
                           [.7,0,.7],...  Color

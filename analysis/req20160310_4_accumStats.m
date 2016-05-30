@@ -1,8 +1,9 @@
 function stats = req20160310_4_accumStats(Trial,s)
 
 Trial = MTATrial.validate(Trial);
-RefTrial = MTATrial.validate('jg05-20120317.cof.all');
-RefTrial.load('stc','hand_labeled_rev3_jg');
+RefTrial = Trial;
+%RefTrial = MTATrial.validate('jg05-20120317.cof.all');
+%RefTrial.load('stc','hand_labeled_rev3_jg');
 
 
 %'states','fetInds','stateOrd','afet','nNeurons','nIter','rndMethod'
@@ -31,7 +32,7 @@ gStates = ds.states(cellfun(@isempty,...
                  );
 
 
-pobj = parpool(6);
+pobj = parpool(10);
 
 %for f = 1:round(numel(sbind)/2),    
 parfor f = 1:round(numel(sbind)/2),    

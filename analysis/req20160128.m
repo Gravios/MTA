@@ -1,22 +1,29 @@
+function [out] = req20160128(varargin);
 
-%Trian bhv_nn_multi_patternnet and plot 
-rlist = SessionList('training_hand_labeled');
-slist = {'hand_labeled_jg';'hand_labeled_Ed'};
-%fetSet  = 'fet_tsne_rev15';
-fetSet  = 'fet_mis';
-sampleRate = 12;
-nNeurons = 100;
-nIter = 100;
-states = {'walk','rear','turn','pause','groom','sit'};
-rndMethod = 'WSBNT';
-norm = true;
-mref = true;
-%mode = 'train';
-%mode = 'compute';
-mode = 'display';
+defargs = struct('fetSet',   'fet_mis',...
+                 'mode',     'display',...
+                 'tag',      '',...
+                 'rlist',    'training_hand_labeled',...
+                 'slist',   {{'hand_labeled_jg';'hand_labeled_Ed'}},...
+                 'sampleRate', 12,...
+                 'nNeurons',   100,...
+                 'nIter',      100,...
+                 'states',   {{'walk','rear','turn','pause','groom','sit'}},...
+                 'rndMethod', 'WSBNT',...
+                 'norm',      true,...
+                 'mref',      true...
+);
+
+
+[fetSet, mode, tag, rlist, slist, sampleRate, nNeurons, nIter,...
+ states, rndMethod, norm, mref] = DefaultArgs(varargin,defargs,'--struct');
+
+rlist = SessionList(rlist);
+
+out = [];
 
 switch mode
-  case 'train'
+  case 'train' %Trian bhv_nn_multi_patternnet 
     for s = rlist
         clear('mod');
         mod.states     = states;
@@ -27,18 +34,19 @@ switch mode
         mod.nIter      = nIter;
         mod.randomizationMethod = rndMethod;
         mod.normalize = norm;
+        mod.tag = tag;
         argin = struct2varargin(mod);
         bhv_nn_multi_patternnet(MTATrial.validate(s),argin{:});
     end
 
 
 
-  case 'compute'
+  case 'compute' % labels for trials in slist
     % Ed 
     for sli = 1:numel(slist),
         for rli = 1:numel(rlist),
             SesList = SessionList(slist{sli});
-            model = ['MTAC_BATCH-' fetSet ...
+            model = ['MTAC_BATCH-' tag fetSet ...
                      '_SR_' num2str(sampleRate) ...
                      '_NORM_' num2str(norm) ...
                      '_REF_' rlist(rli).sessionName, '.' rlist(rli).mazeName '.' rlist(rli).trialName ...
@@ -99,6 +107,14 @@ switch mode
                      '_NI_' num2str(nIter) ...         
                      '_NN_multiPN_RAND_' rndMethod];
 
+
+            if mref
+                mapped = '-map2ref';
+            else
+                mapped = '';
+            end
+            
+            
             load(fullfile(MTASession().path.data,'analysis',[slist{sli},'-',model,mapped,'.mat']))
             slist = {'hand_labeled_jg';'hand_labeled_Ed'};
 

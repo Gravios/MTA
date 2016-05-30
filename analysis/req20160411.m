@@ -10,9 +10,9 @@ initial_dims = 3;       % number of dimensions of the feature matrix used
                         % in preliminary rounds of t-SNE
 perplexity = 80;       % arbitrary scale use to control the malability
                         % of the distributions during dimension reduction
-SAVEFIG = false;         % boolean flag, Save figures along with png's 
+SAVEFIG = true;         % boolean flag, Save figures along with png's 
 NEW_SAMPLE_RATE = 12;   % Reduce the sample rate of the feature matrix
-HOST_PATH = '/storage/gravio/figures/'; % Where reportfig should
+HOST_PATH = fullfile(getenv('PROJECT'),'figures'); % Where reportfig should
                                        % save stuff
 states = {'walk','rear','turn','pause','groom','sit'};
 featureSet = 'fet_all';
@@ -62,7 +62,7 @@ if ~exist(fileLoc,'file')||overwrite,
             tfet.map_to_reference_session(Trial,RefTrial);
         end
 
-        if normalize
+        if normalize&&~strcmp(Trial.filebase,RefTrial.filebase)
             tfet.unity([],rMean,rStd);
         end
         
@@ -131,6 +131,32 @@ end
 %% For when all points have state labels
 
 
+osts = numel(states);
+hfig = figure(3923924);clf;
+hfig.Position = [10,10,1200,800];
+hold on;
+mc = csmat(ind,:);
+for nc = 1:osts,
+    nind = all(bsxfun(@eq,c(nc,:),mc),2);
+    h = scatter(mappedX(nind,1),mappedX(nind,2),2,mc(nind,:));
+    try,h.MarkerFaceColor = h.CData(1,:);end
+end
+legend(states,'location','south','Orientation','horizontal');
+reportfig(HOST_PATH,           ...
+          'FigHandle',hfig,    ...
+          'FileName','tsne-stateXsession',   ...
+          'FigDir','req',      ...
+          'Preview',false,     ...
+          'Tag',[sessionSet,'-',featureSet],...
+          'Comment',['tsne-all'],    ...
+          'Resolution',100,    ...
+          'SaveFig', SAVEFIG,  ...
+          'format','png',      ...
+          'width',12,           ...
+          'height',8);
+
+
+
 
 nsts = numel(states);
 nses = numel(slist);
@@ -152,6 +178,7 @@ mc = csmat(ind,:);
 
 for stsId = 1:nsts;
     hfig = figure(3923925);clf
+    hfig.Position = [10,10,1200,800];
     hold on;
     
     for nc = 1:nses,
@@ -160,18 +187,21 @@ for stsId = 1:nsts;
         h.MarkerFaceColor = h.CData(1,:);
     end
     
+    xlim([-150,150])
+    ylim([-125,125])
+    
     legend({slist.sessionName},'location','south','Orientation','horizontal');
     reportfig(HOST_PATH,           ...
               'FigHandle',hfig,    ...
               'FileName','tsne-stateXsession',   ...
               'FigDir','req',      ...
               'Preview',false,     ...
-              'Tag',[sessionSet,'-',featureSet,'-nomap'],...
+              'Tag',[sessionSet,'-',featureSet],...
               'Comment',['tsne-',states{stsId}],    ...
               'Resolution',100,    ...
               'SaveFig', SAVEFIG,  ...
               'format','png',      ...
-              'width',10,           ...
+              'width',12,           ...
               'height',8);
 end
 

@@ -42,22 +42,22 @@ overwrite = true;
 
 
 % 3. Train neural networks on the target state vs all others
-r1jid='';
-for s = 1:5,
-    file_preproc = fullfile(Trial.spath,'req20160310_3_trainNN',num2str(s),'.mat');
-    if ~exist(file_preproc,'file')||overwrite,
-        if ~local,
-            jid = popen(['MatSubmitLRZ --config lrzc_serial.conf ' ...
-                         r1jid ...
-                         ' -l ' Trial.name ...
-                         ' req20160310_3_trainNN '...
-                         num2str(s)]);
-            r3jid = [' -d afterok:' char(jid.readLine)];
-        else
-            req20160310_3_trainNN(Trial,s);
-        end
-    end
-end
+% $$$ r1jid='';
+% $$$ for s = 1:5,
+% $$$     file_preproc = fullfile(Trial.spath,'req20160310_3_trainNN',num2str(s),'.mat');
+% $$$     if ~exist(file_preproc,'file')||overwrite,
+% $$$         if ~local,
+% $$$             jid = popen(['MatSubmitLRZ --config lrzc_serial.conf ' ...
+% $$$                          r1jid ...
+% $$$                          ' -l ' Trial.name ...
+% $$$                          ' req20160310_3_trainNN '...
+% $$$                          num2str(s)]);
+% $$$             r3jid = [' -d afterok:' char(jid.readLine)];
+% $$$         else
+% $$$             req20160310_3_trainNN(Trial,s);
+% $$$         end
+% $$$     end
+% $$$ end
 
 
 % 4. Accumulate stats of network output
