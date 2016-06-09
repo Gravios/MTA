@@ -43,6 +43,12 @@ end
 
 
 % $$$ figure
+% $$$ set(hfig,'PaperPositionMode','auto');
+% $$$ set(gcf,'units','centimeters');
+% $$$ set(gcf,'Position',[0,0,25,5.5])
+% $$$ set(gcf,'PaperUnits','centimeters');
+% $$$ set(gcf,'PaperPosition',[0,0,25,5.5])
+% $$$ 
 % $$$ for s = 1:5;
 % $$$ subplot2(1,5,1,s);
 % $$$ hold on,
@@ -52,25 +58,28 @@ end
 % $$$ hs = plot(acc_opt(:,s).*100);
 % $$$ hs.Color = [1,0,0];
 % $$$ 
-% $$$ 
-% $$$ %sen
-% $$$ hs = plot(sen_ori(:,s));
-% $$$ hs.Color = [0.75,0.75,1];
-% $$$ hs = plot(sen_opt(:,s));
-% $$$ hs.Color = [0,0,1];
-% $$$ 
-% $$$ %pre
-% $$$ hs = plot(pre_ori(:,s));
-% $$$ hs.Color = [0.75,1,0.75];
-% $$$ hs = plot(pre_opt(:,s));
-% $$$ hs.Color = [0,1,0];
-% $$$ legend({'Accuracy: MIS','Accuracy: ADS',...
-% $$$         'Sensitivity: MIS','Sensitivity: ADS',...
-% $$$         'Precision: MIS','Precision: ADS'},...
-% $$$        'location','southeast');
+% $$$ % $$$ %sen
+% $$$ % $$$ hs = plot(sen_ori(:,s));
+% $$$ % $$$ hs.Color = [0.75,0.75,1];
+% $$$ % $$$ hs = plot(sen_opt(:,s));
+% $$$ % $$$ hs.Color = [0,0,1];
+% $$$ % $$$ 
+% $$$ % $$$ %pre
+% $$$ % $$$ hs = plot(pre_ori(:,s));
+% $$$ % $$$ hs.Color = [0.75,1,0.75];
+% $$$ % $$$ hs = plot(pre_opt(:,s));
+% $$$ % $$$ hs.Color = [0,1,0];
 % $$$ title(dsd.stateOrd{s})
+% $$$ yl = ylim;
+% $$$ ylim([yl(1),100]);
+% $$$ xlim([1,30])
+% $$$ set(gca,'units','centimeters');
+% $$$ cpos = get(gca,'Position');
+% $$$ set(gca,'Position',[cpos(1),cpos(2),2.5,3.5])
 % $$$ end
-
+% $$$     set(findall(gcf,'-property','FontSize'),'FontSize',8)
+% $$$ print(gcf,'-depsc2',fullfile(getenv('PROJECT'),'manuscripts/man2015-jgEd-MoCap/Figures/Figure_3',...
+% $$$                      'fig3_B_accuracy.eps'))
 
 
 % jg05-20120317
@@ -110,6 +119,8 @@ save(fullfile(Trial.spath,[mfilename,'.mat']),'bfets','-v7.3');
 % $$$ caxis([0,40])
 % $$$ end
 
+
+
 % $$$ % Rear
 % $$$ s = 1;
 % $$$ cstate = Trial.stc{'r+s+m+p+w+n&a'};
@@ -147,6 +158,7 @@ save(fullfile(Trial.spath,[mfilename,'.mat']),'bfets','-v7.3');
 % $$$           true,                                ... Save FIG
 % $$$           'png');                                % Output Format
 % $$$ 
+
 % $$$ s = 1;
 % $$$ cstate = Trial.stc{'r+s+m+p+w+n&a'};
 % $$$ sts = {'rear','s+m+p+w+n&a'};
@@ -156,6 +168,8 @@ save(fullfile(Trial.spath,[mfilename,'.mat']),'bfets','-v7.3');
 % $$$ [edgs{:}] = get_histBinCenters(edgs);
 % $$$ [X,Y] = meshgrid(edgs{:});
 % $$$ hfig = figure(201603108);clf;
+% $$$ set(hfig,'units','centimeters');
+% $$$ set(hfig,'Position',[0,0,8,8])
 % $$$ hist2([dsd.afet(cstate,bfets{s}(1)),dsd.afet(cstate,bfets{s}(3))],hedgs{:});
 % $$$ caxis([0,40])
 % $$$ hold on,
@@ -169,19 +183,24 @@ save(fullfile(Trial.spath,[mfilename,'.mat']),'bfets','-v7.3');
 % $$$ xlabel('Normalized Spine Pitch (A.U.)')
 % $$$ ylabel('Normalized Head Speed Z-axis (A.U.)')
 % $$$ title('Rear Vs All Excluding: Rear')
-% $$$ legend({'Rear','All x {Rear}'},'location','northeast');
-% $$$ reportfig(fullfile(getenv('PROJECT'),'figures'),  ... Path where figures are stored
-% $$$           hfig,                                ... Figure handle
-% $$$           [mfilename,'-fet'],                         ... Figure Set Name
-% $$$           'req',                               ... Directory where figures reside
-% $$$           false,                               ... Do Not Preview
-% $$$           [Trial.filebase '-' dsd.stateOrd{s}],... Tumbnail caption
-% $$$           [Trial.filebase '-' dsd.stateOrd{s}],... Expanded caption
-% $$$           [],                                  ... Resolution
-% $$$           true,                                ... Save FIG
-% $$$           'png');                                % Output Format
-% $$$           
-% $$$ 
+% $$$ % $$$ legend({'Rear','All x {Rear}'},'location','northeast');
+% $$$ % $$$ reportfig(fullfile(getenv('PROJECT'),'figures'),  ... Path where figures are stored
+% $$$ % $$$           hfig,                                ... Figure handle
+% $$$ % $$$           [mfilename,'-fet'],                         ... Figure Set Name
+% $$$ % $$$           'req',                               ... Directory where figures reside
+% $$$ % $$$           false,                               ... Do Not Preview
+% $$$ % $$$           [Trial.filebase '-' dsd.stateOrd{s}],... Tumbnail caption
+% $$$ % $$$           [Trial.filebase '-' dsd.stateOrd{s}],... Expanded caption
+% $$$ % $$$           [],                                  ... Resolution
+% $$$ % $$$           true,                                ... Save FIG
+% $$$ % $$$           'png');                                % Output Format
+% $$$ set(gca,'units','centimeters');
+% $$$ set(gca,'Position',[4-3.5/2,4-3.5/2,3.5,3.5])
+% $$$ set(findall(gcf,'-property','FontSize'),'FontSize',8)
+% $$$ print(hfig,'-depsc2',fullfile(getenv('PROJECT'),'manuscripts/man2015-jgEd-MoCap/Figures/Figure_2',...
+% $$$                      'fig3_C_jpdf_rear.eps'))
+          
+
 % $$$ 
 % $$$ % sit
 % $$$ % PCA

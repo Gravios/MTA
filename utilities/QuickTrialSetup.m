@@ -73,8 +73,7 @@ if isstruct(Sessions),
             MTAstartup(s.project,host,s.host);
         end
         
-        Session = MTASession(s.sessionName,...
-            s.mazeName);
+        Session = MTASession(s.sessionName,s.mazeName);
         
         xsync = Session.xyz.sync.copy;
         xsync = xsync+offsets;
@@ -86,10 +85,10 @@ if isstruct(Sessions),
         
         xsync.data(dropSyncInd,:) = [];
         Trial = MTATrial(Session,...
-            s.trialName,...
-            s.mazeName,...
-            overwrite,...
-            xsync);
+                         s.mazeName,...
+                         s.trialName,...                         
+                         overwrite,...
+                         xsync);
         Trial.save;
     end
 elseif (isa(Sessions,'MTASession')&&~isa(Sessions,'MTATrial'))||ischar(Sessions),
@@ -103,7 +102,7 @@ elseif (isa(Sessions,'MTASession')&&~isa(Sessions,'MTATrial'))||ischar(Sessions)
         dropSyncInd = ~ismember(1:xsync.size(1),includeSyncInd);
     end
     xsync.data(dropSyncInd,:) = [];
-    Trial = MTATrial(Session,trialName,Session.maze.name,true,xsync);
+    Trial = MTATrial(Session,Session.maze.name,trialName,true,xsync);
     Trial.save;
 end
 

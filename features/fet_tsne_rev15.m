@@ -1,5 +1,5 @@
 function [fet,featureTitles,featureDesc,Nmean,Nstd] = fet_tsne_rev15(Trial,varargin)
-[newSampleRate,normalize,procOpts] = DefaultArgs(varargin,{15,false,{'spline_spine'}},1);
+[newSampleRate,normalize,procOpts] = DefaultArgs(varargin,{15,false,{'SPLINE_SPINE_HEAD_EQD'}},1);
 
 
 Trial = MTATrial.validate(Trial);

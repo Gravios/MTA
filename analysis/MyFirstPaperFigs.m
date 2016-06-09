@@ -149,13 +149,11 @@ switch mode,
   case 'duno'
     %% Figure 3 - PlaceFields of behaviors for multiple units sorted by behavioral modulation
 
-    MTAConfiguration('/gpfs01/sirota/bach/data/gravio','absolute');
-    sname = 'jg05-20120310';
-    Trial = MTATrial(sname,'all');
+    sname = 'jg05-20120310.cof.all';
+    Trial = MTATrial.validate(sname);
     Trial.load('nq');
 
     states = {'walk&theta','hwalk&theta','lwalk&theta'};
-    %states = {'walk&theta','hwalk&theta','lwalk&theta'};
 
     % Get the place fields
     pfs = {};
@@ -1174,7 +1172,7 @@ switch mode,
 
 
 
-  case 'lpf_psd_jpdf'
+  case 'lfp_psd_jpdf'
     %% Figure 6 - 
 
     Trial = 'jg05-20120317.cof.all';
@@ -1546,66 +1544,34 @@ switch mode,
 
     %% Figure - 9 Comodugram rhm and lfp
 
-
-    MTAConfiguration('/gpfs01/sirota/bach/data/gravio','absolute');
-    %MTAConfiguration('/data/data/gravio','absolute');
-
+    %sname = 'jg05-20120317';
     %sname = 'jg05-20120315';
-    sname = 'jg05-20120310';
+    sname = 'jg05-20120310.cof.all';
     %sname = 'jg05-20120309';
     %sname = 'jg04-20120129';
     %sname = 'jg04-20120130';
-    %sname = 'co01-20140222';
 
-    %sname = 'jg05-20120317';
     chans = 68:3:95;
 
-    Trial = MTATrial(sname,'all');
+    Trial = MTATrial.validate(sname);
     %Trial.ang.load(Trial);
-    Trial.xyz.load(Trial);
-    Trial.lfp.load(Trial,chans);
-    Trial.lfp.resample(Trial.xyz);
-
-    rb = Trial.xyz.model.rb({'head_back','head_left','head_front','head_right'});
-    hcom = Trial.com(rb);
-    Trial.addMarker(Trial.xyz,'hcom',[.7,0,.7],{{'head_back','head_front',[0,0,1]}},hcom);
-    Trial.addMarker(Trial.xyz,'fhcom',[.7,1,.7],{{'head_back','head_front',[0,0,1]}},permute(Filter0(gausswin(61)./sum(gausswin(61)),hcom),[1,3,2]));
-
-    ang = Trial.ang.copy;
-    ang.create(Trial);
-    ang.data = ang(:,7,11,3);
-    %ang.resample(Trial.lfp);
-    ang = ang.data;
-    ang(isnan(ang))=nanmean(ang);
-
-    %bang = ButFilter(ang,3,[1,20]./(Trial.ang.sampleRate./2),'bandpass').*500;
-    bang = ang;
-
-    %abang = WhitenSignal(bang);
-    %lbang = WhitenSignal(Trial.lfp.data,[],1);
-    lbang = WhitenSignal([Trial.lfp.data,bang],[],1);
-    %lbang = MTADlfp([],[],lbang,Trial.lfp.sampleRate);
-    lbang = MTADlfp([],[],lbang,Trial.ang.sampleRate);
-    %lbang = MTADlfp([],[],[lbang,abang],Trial.ang.sampleRate);
+    xyz = Trial.load('xyz');
+    lfp = Trial.load('lfp',chans);
 
 
+    bang = fet_rhm(Trial,[],'mta');
+    bang.resample(lfp);
+    
+    lbang = MTADlfp('data',WhitenSignal([lfp.data,bang.data],[],1),...
+                    'sampleRate',lfp.sampleRate);
 
-    %[ta,fa,ya,pha,sfa] = mtchglong(lbang(:,[1,9]),2^9,Trial.ang.sampleRate,2^8,(2^8)*.875,[],[],[],[1,30]);
-
-    %figure,subplot(211),bar(linspace(1,4,64),histc(max(log10(ya(Trial.stc{'g'},fa>5&fa<14,2,2)),[],2),linspace(1,4,64)),'histc')
-    %subplot(212),bar(linspace(1,4,64),histc(max(log10(ya(Trial.stc{'l'},fa>5&fa<14,2,2)),[],2),linspace(1,4,64)),'histc')
-
-    %figure,subplot(211),bar(linspace(1,4,128),histc(log10(Trial.xyz(Trial.stc{'g'},7,3)),linspace(1,4,128)),'histc')
-    %       subplot(212),bar(linspace(1,4,128),histc(log10(Trial.xyz(Trial.stc{'l'},7,3)),linspace(1,4,128)),'histc')
-
-    states = 'wgl';
+    states = 'awrpm';
     nsts = numel(states);
     nchan = numel(chans);
     figure,
     for s = 1:nsts
         x = [lbang(Trial.stc{states(s)},:)];
-        %[Co,f] = Comodugram(x,2^11,Trial.lfp.sampleRate,[1,120],2^10);
-        [Co,f] = Comodugram(x,2^9,Trial.ang.sampleRate,[1,30],2^8);
+        [Co,f] = Comodugram(x,2^10,lbang.sampleRate,[1,30],2^9);
 
         for i =1:nchan
             subplot2(nchan,nsts,i,s),
@@ -1619,24 +1585,6 @@ switch mode,
         end
 
     end
-
-
-
-
-    %% Figure 10 - Behavior Label Confusion Matrix
-
-
-
-    %xlim([1.731139e+05,2.254813e+05])
-    %xlim([2.862903e+05,3.185484e+05])
-    %xlim([6.137097e+05,6.330645e+05])
-    %disp(sprintf('xlim([%s,%s])',xlim));
-
-
-
-
-
-
 
 
 
@@ -1978,15 +1926,15 @@ switch mode,
   case 'uhhh'
     %% Figure # Unit state place field formation
 
-    sname = 'jg05-20120317';
-    Trial = MTATrial(sname,'all');
+    sname = 'jg05-20120317.cof.all';
+    Trial = MTATrial.validate(sname);
     Trial.stc.updateMode('auto_wbhr');
     Trial.stc.load;
     states = 'rwgl';
 
     for i = 1:numel(states),
-        Trial.spk.create(Trial,Trial.xyz.sampleRate,states(i));
         spk{i} = Trial.spk.copy;
+        spk{i}.create(Trial,Trial.xyz.sampleRate,states(i));        
         sts{i} = Trial.stc{states(i)}.copy;
         sts{i}.cast('TimeSeries');
         endn
@@ -2010,7 +1958,11 @@ switch mode,
 
     end
 
-
+    
+    
+    
+    
+% case 'head_motion' -----------------------------------------------------------------------------
   case 'head_motion'
     Trial = MTATrial('jg05-20120317');
     fs = []; ts = [];
@@ -2023,7 +1975,7 @@ switch mode,
     % add coordinates of the model's center of mass to the xyz object
     xyz.addMarker('fhcom',[.7,1,.7],{{'head_back','head_front',[0,0,1]}},ButFilter(hcom,3,[2]./(Trial.xyz.sampleRate/2),'low'));
 
-    xyz.filter(gausswin(5)./sum(gausswin(5)));
+    xyz.filter('ButFilter',3,50,'low');
 
     ang = create(Trial.ang.copy,Trial,xyz);
     bang = ButFilter(ang(:,'head_back','fhcom',3),3,[2,30]./(Trial.ang.sampleRate/2),'bandpass');
@@ -2102,7 +2054,9 @@ switch mode,
      nind = nniz(fet);figure,N = hist2([fet(nind,:)*isig(11,:)',fet(nind,:)*isig(2,:)'],linspace(-10,10,100),linspace(-15,15,100));
      
 
+
      
+% case 'dz-lfp comodulation' ------------------------------------------------------------------------
   case 'dz-lfp comodulation'
     
     %% comodulation of low frequency oscillations in the lowerspine
@@ -2165,6 +2119,7 @@ switch mode,
         pause(.4)
     end
     
+% case 'spk_trig_lfp_ave'    ---------------------------------------------------------------
   case 'spk_trig_lfp_ave'
     sname = 'jg05-20120310.cof.all';
 
@@ -2210,9 +2165,252 @@ switch mode,
           'png',4,8);                                % Output Format
     end
 
+  case 'spk_trig_lfp_psd_ave'
+    sname = 'jg05-20120310.cof.all';
+    sname = 'jg05-20120317.cof.all';
+
+    chans = 65:1:96;
     
+    Trial = MTATrial.validate(sname);
+
+    Trial.stc.load(Trial,['MTAC_BATCH-fet_mis'...
+                          '_SR_12_NORM_1_REF_jg05-20120317.cof.all'...
+                          '_STC_hand_labeled_rev3_jg_NN_100_NI_100'...
+                          '_NN_multiPN_RAND_WSBNT-wrnpmsa']);
+
+    xyz = Trial.load('xyz');
+    
+    Trial.lfp.filename = [Trial.name,'.lfp']; % Remove later
+    lfp = Trial.load('lfp',chans);
+    lfp.resample(xyz);
+    
+    sts = 'awrpms';
+    nsts = numel(sts)
+    for s = 6:nsts,
+        spk{s} = Trial.spk.copy;
+        spk{s}.create(Trial,Trial.xyz.sampleRate,sts(s),[],'deburst');
+        for u = spk{s}.map(:,1)',
+            try,
+                spkTrigAve(:,:,u,s) = sq(mean(lfp.segs(spk{s}(u)-60,120),2));
+            end
+        end
+    end
+
+    hfig = figure,
+    for u = 1:size(spkTrigAve,3)
+        clf
+        for s = 1:nsts,
+            subplot(nsts,1,s);
+            imagesc(spkTrigAve(:,:,u,s)');
+            title(['unit: ' num2str(u) sts(s)]);
+            caxis([-3000,3000]);
+            colormap jet;
+        end
+        reportfig(fullfile(getenv('PROJECT'),'figures'),  ... Path where figures are stored
+          hfig,                                ... Figure handle
+          ['lfpSpkTrigAve'],                   ... Figure Set Name
+          'req',                               ... Directory where figures reside
+          false,                               ... Do Not Preview
+          [Trial.filebase '-' num2str(u)],     ... Tumbnail caption
+          [Trial.filebase '-' num2str(u)],     ... Expanded caption
+          [],                                  ... Resolution
+          false,                               ... Do Not Save FIG
+          'png',4,8);                                % Output Format
+    end
+
+
+    
+    
+% case 'spk_trig_lfpPSD_ave' -----------------------------------------------------------------
+  case 'spk_trig_lfpPSD_ave'
+    sname = 'jg05-20120310.cof.all';
+    sname = 'jg05-20120317.cof.all';
+
+    chans = 65:1:96;
+    
+    Trial = MTATrial.validate(sname);
+
+    Trial.stc.load(Trial,['MTAC_BATCH-fet_mis'...
+                          '_SR_12_NORM_1_REF_jg05-20120317.cof.all'...
+                          '_STC_hand_labeled_rev3_jg_NN_100_NI_100'...
+                          '_NN_multiPN_RAND_WSBNT-wrnpmsa']);
+
+    xyz = Trial.load('xyz');
+    
+    Trial.lfp.filename = [Trial.name,'.lfp']; % Remove later
+    lfp = Trial.load('lfp',chans);
+
+    wlfp = lfp.copy;
+    wlfp.data = WhitenSignal(lfp.data,[],1);
+    
+    
+    parspec = struct('nFFT',2^10,...
+                     'Fs',  wlfp.sampleRate,...
+                     'WinLength',2^9,...
+                     'nOverlap',2^9*.5,...
+                     'NW',3,...
+                     'Detrend',[],...
+                     'nTapers',[],...
+                     'FreqRange',[1,140]);
+    
+
+    swlfp = wlfp.copy;
+    swlfp.data = wlfp(:,1);
+    [ys,fs,ts] = fet_spec(Trial,swlfp,'mtchglong',false,[],parspec);   
+    for c = 2:numel(chans),
+        swlfp.data = wlfp(:,c);
+        tys = fet_spec(Trial,swlfp,'mtchglong',false,[],parspec);
+        ys.data(:,:,c) = tys.data;
+    end
+
+        
+    nys = ys.copy;
+    nys.unity;
+
+    sts = 'awrpms';
+    nsts = numel(sts)
+    for s = 1:nsts,
+        spk{s} = Trial.spk.copy;
+        spk{s}.create(Trial,ys.sampleRate,sts(s),[],'deburst');
+    end
+    
+    clear('spkTrigAve');
+    for s = 1:nsts,
+        for u = spk{s}.map(:,1)',
+            try,
+                spks = spk{s}(u);
+                spkTrigAve(:,:,u,s) = sq(nanmean(nys(spks,:,:)));
+            end
+        end
+    end
+
+    hfig = figure(30239230);
+    for u = 1:size(spkTrigAve,3)
+        clf
+        for s = 1:nsts,
+            subplot(nsts,1,s);
+            imagesc(fs,chans,spkTrigAve(:,:,u,s)');
+            title(['unit: ' num2str(u) sts(s)]);
+            caxis([-1,1]);
+            colormap jet;
+        end
+        reportfig(fullfile(getenv('PROJECT'),'figures'),  ... Path where figures are stored
+          hfig,                                ... Figure handle
+          ['lfpPSDSpkTrigAve'],                   ... Figure Set Name
+          'req',                               ... Directory where figures reside
+          false,                               ... Do Not Preview
+          [Trial.filebase '-' num2str(u)],     ... Tumbnail caption
+          [Trial.filebase '-' num2str(u)],     ... Expanded caption
+          [],                                  ... Resolution
+          false,                               ... Do Not Save FIG
+          'png',3,9);                                % Output Format
+    end
+
+    
+% case 'get_back_on_task'    --------------------------------------------------------------
+    case 'get_back_on_task'
+    
+    sname = 'jg05-20120310.cof.all';
+    sname = 'jg05-20120317.cof.all';
+
+    chans = 65:1:96;
+    
+    Trial = MTATrial.validate(sname);
+
+    Trial.stc.load(Trial,['MTAC_BATCH-fet_mis'...
+                          '_SR_12_NORM_1_REF_jg05-20120317.cof.all'...
+                          '_STC_hand_labeled_rev3_jg_NN_100_NI_100'...
+                          '_NN_multiPN_RAND_WSBNT-wrnpmsa']);
+
+    xyz = Trial.load('xyz');
+    
+    Trial.lfp.filename = [Trial.name,'.lfp']; % Remove later
+    lfp = Trial.load('lfp',chans);
+
+    wlfp = lfp.copy;
+    [~,arm] = WhitenSignal(lfp(nniz(lfp.data),1));
+    wlfp.data = WhitenSignal(lfp.data,[],1,arm);    
+    
+    n = 10;    
+    frng = fliplr(2:1:145);
+
+    f = frng(1);    
+
+    wb = round(1/f*lfp.sampleRate*n);        
+    parspec = struct('nFFT',wb*2,...
+                     'Fs',  wlfp.sampleRate,...
+                     'WinLength',wb,...
+                     'nOverlap',round(wb*.875),...
+                     'NW',3,...
+                     'Detrend',[],...
+                     'nTapers',[],...
+                     'FreqRange',[f-1,f+1]);
+    
+
+    swlfp = wlfp.copy;
+    swlfp.data = wlfp(:,1);
+    [ys,fs,ts] = fet_spec(Trial,swlfp,'mtchglong',false,[],parspec);    
+
+    fsa = [];
+    fsa = cat(1,fs,fsa);        
+
+
+    for f = frng(2:end),
+        wb = round(1/f*lfp.sampleRate*n);        
+        parspec = struct('nFFT',wb*2,...
+                         'Fs',  wlfp.sampleRate,...
+                         'WinLength',wb,...
+                         'nOverlap',round(wb*.875),...
+                         'NW',3,...
+                         'Detrend',[],...
+                         'nTapers',[],...
+                         'FreqRange',[f-5,f+5]);
+        [tys,fs] = fet_spec(Trial,swlfp,'mtchglong',false,[],parspec);
+        fsa = cat(1,fs,fsa);        
+        tys.resample(ys);
+        ys.data = cat(2,tys.data,ys.data);
+    end
+
+    ysg = ys.copy;
+
+    [fsg,fid] = sort(fsa);
+    ysg.data = ysg(:,fid);
+    figure,imagesc(ts,1:846,log10(abs(ysg.data))')    
+    caxis([0,4]),colormap jet    
+
+    figure,
+    imagesc(ts,1:846,nunity(log10(abs(ysg.data)))')    
+    caxis([-3,3]),colormap jet    
+    axis xy
+    
+    [fsg,fid] = sort(fsa);    
+    [fsu,fud] = unique(fsg);
+
+    ysn = ysg.copy;
+    ysn.data = ysn(1:2000,fud);    
+    ysn.data = interp1(ysn.data',repmat(fsu,1,ysn.size(1))',repmat([.5:.5:140],ysn.size(1),1)','spline');    
+
+    ysp = ysn.copy;
+    ysp.data = zeros([size(ysn,1),numel([.5:.5:140])]);    
+    for t = 1:size(ysn,1),
+        try
+        ysp.data(t,:) = interp1(ysn(t,:),fsu',[.5:.5:140],'linear'); 
+        end
+    end
+    
+    f = 140
+    swlfp = wlfp.copy;
+    swlfp.data = wlfp(:,1);
+    [ys,fs,ts] = fet_spec(Trial,swlfp,'mtchglong',false,[],parspec);   
+    for c = 2:numel(chans),
+        swlfp.data = wlfp(:,c);
+        tys = fet_spec(Trial,swlfp,'mtchglong',false,[],parspec);
+        ys.data(:,:,c) = tys.data;
+    end
+
     
 end
+
 
 
 

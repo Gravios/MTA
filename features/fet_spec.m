@@ -17,7 +17,7 @@ parspec = empty_spec;
 
 varargout = cell([1,nargout-1]);
 
-if sampleRate<fet.sampleRate,
+if sampleRate<fet.sampleRate&&~strcmp(fet.ext,'lfp'),
     fet.resample(sampleRate); 
 else
     sampleRate = fet.sampleRate;

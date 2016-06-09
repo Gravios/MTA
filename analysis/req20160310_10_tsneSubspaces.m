@@ -22,7 +22,7 @@ tstates = {[strjoin({gStates{find(cellfun(@isempty,regexp(gStates,['(',strjoin(s
 
 sfet = afet.copy;
 sfet.data = afet(:,ts.bfets{s});
-out = mta_tsne(Trial,sfet,12,Trial.stc.copy,tstates,3,2,80,'ifReportFig',true,'overwrite',true);    
+out = mta_tsne(Trial,sfet,12,Trial.stc.copy,tstates,3,2,80,'ifReportFig',true,'overwrite',false);    
 
 
 save(fullfile(Trial.spath,['req20160310_10_tsneSubspaces',num2str(s),'.mat']),'out','-v7.3');

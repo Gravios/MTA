@@ -44,9 +44,9 @@ end
 nind = nind&states;
 
 if ~isempty(drpOutPrctile),
-    A = prctile(Data.data(nind,:),drpOutPrctile);
+    A = prctile(Data.data(nind,:,:,:,:,:),drpOutPrctile);
 else
-    A = Data.data(nind,:);
+    A = Data.data(nind,:,:,:,:,:);
 end
 
 if isempty(meanA)
@@ -58,6 +58,6 @@ end
 
 Data.data = feval(ifnniz,size(A));
 
-Data.data(nind,:) = bsxfun(@rdivide,bsxfun(@minus,A,meanA),stdA);
+Data.data(nind,:,:,:,:,:) = bsxfun(@rdivide,bsxfun(@minus,A,meanA),stdA);
 
 
