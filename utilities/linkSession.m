@@ -1,5 +1,10 @@
 function linkSession(session_name,xyz_path,nlx_path)
 %function linkSession(session_name,xyz_path,nlx_path)
+%
+%  Creates Session folder in the current MTA project
+%  and creates symlinks pointed to folders containing
+%  session data.
+% 
 % TODO make linkSession windows compatible 
     
 %need to make cygwin system('C:\cygwin64\bin\bash -c CYGWIN=winsymlinks:native;/bin/ls')    

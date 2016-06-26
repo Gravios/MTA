@@ -40,7 +40,7 @@ defArgs = ...
 {... good_index
      [],...
  ... rb_model
-     xyz.model.rb({'head_back','head_left','head_right','head_front','head_top'}),...
+     {'head_back','head_left','head_right','head_front','head_top'},...
  ... MarkerSwapErrorThreshold
      0.01,...
  ... BufferSize
@@ -74,6 +74,10 @@ end
 assert(rb_model.N<=6,['MTA:utilities:ERCOR_fillgaps_RidgidBody, ' ...
                       'number of markers in rb correction must be eq or lt 6']);
 
+assert(rb_model.N>3,['MTA:utilities:ERCOR_fillgaps_RidgidBody, ' ...
+                      'number of markers in rb correction must be gt 3']);
+
+
 hfig = figure(3848283);
 hfig.CurrentCharacter = ' ';
 
@@ -86,9 +90,11 @@ while ~strcmp(get(hfig,'CurrentCharacter'),'q'),
     rb_xyz.model = rb_model;
         
     nperm = factorial(rb_xyz.model.N);
+
     bperm = 1:rb_xyz.model.N;
     bperm = perms(bperm);
-    fperms = bperm(:,1:rb_xyz.model.N-1)';
+    fperms = bperm(:,1:4)';
+
     
     
     efet = zeros([rb_xyz.size(1),nperm]);
@@ -145,10 +151,10 @@ while ~strcmp(get(hfig,'CurrentCharacter'),'q'),
             
             j = 1;
             for p = fperms,
-                tectry(:,j) = imori(:,p(1),p(2),p(3),p(4),1);
+                tectry(bids,j) = imori(:,p(1),p(2),p(3),p(4),1);
                 j = j+1;
             end
-            ectry(:,k) = var(bsxfun(@minus,tectry,efet(good_index,:)),[],2);
+            ectry(bids,k) = var(bsxfun(@minus,tectry(bids,:),efet(good_index,:)),[],2);
             k = k+1;
         end
         

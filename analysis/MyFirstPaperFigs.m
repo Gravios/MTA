@@ -1550,11 +1550,13 @@ switch mode,
     %sname = 'jg05-20120309';
     %sname = 'jg04-20120129';
     %sname = 'jg04-20120130';
-
+    Trial.lfp.filename = [Trial.name '.lfp'];
     chans = 68:3:95;
 
     Trial = MTATrial.validate(sname);
+
     %Trial.ang.load(Trial);
+    stc = Trial.load('stc','MTAC_BATCH-fet_mis_SR_12_NORM_1_REF_jg05-20120317.cof.all_STC_hand_labeled_rev3_jg_NN_100_NI_100_NN_multiPN_RAND_WSBNT-wrnpmsa');        
     xyz = Trial.load('xyz');
     lfp = Trial.load('lfp',chans);
 
@@ -1565,25 +1567,23 @@ switch mode,
     lbang = MTADlfp('data',WhitenSignal([lfp.data,bang.data],[],1),...
                     'sampleRate',lfp.sampleRate);
 
-    states = 'awrpm';
+    states = {'gper','walk','rear','pause','groom','sit'};
     nsts = numel(states);
     nchan = numel(chans);
     figure,
-    for s = 1:nsts
-        x = [lbang(Trial.stc{states(s)},:)];
-        [Co,f] = Comodugram(x,2^10,lbang.sampleRate,[1,30],2^9);
+    [Co,f] = Comodugram(Trial,lbang,stc.states(stc.gsi(states)));
 
+    for s = 1:numel(states),
         for i =1:nchan
-            subplot2(nchan,nsts,i,s),
-            imagesc(f,f,Co(:,:,i,nchan+1)'),axis xy,
-            if i==1,title(Trial.stc{states(s)}.label),end
+            subplot2(nchan,nsts,i,s);
+            imagesc(f,f,Co(:,:,i,nchan+1,s)'),axis xy,
+            if i==1,title(states{s}),end
             if i==1&s==1,ylabel([ 'Channel: ',num2str(chans(i))]),end
             caxis([-.5,.5])
+            colormap jet
             sub_pos = get(gca,'position'); % get subplot axis position
             set(gca,'position',sub_pos.*[1 1 1.2 1.2]) % stretch its width and height
-
         end
-
     end
 
 

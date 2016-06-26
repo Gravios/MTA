@@ -1,0 +1,6 @@
+#!/bin/bash
+
+echo cp ./MatSubmitLRZ $PROJECT/bin/MatSubmitLRZ
+cp ./MatSubmitLRZ $PROJECT/bin/MatSubmitLRZ
+echo
+cp ./tart $PROJECT/bin/tart

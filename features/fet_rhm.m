@@ -8,6 +8,8 @@ function [rhm,varargout] = fet_rhm(Trial,varargin)
 
 parspec = empty_spec;
 xyz = Trial.load('xyz');
+%xyz = Trial.load('xyz','seh');
+%xyz.data(isnan(xyz.data(:)))=0;
 varargout = cell([1,nargout-1]);
 
 [sampleRate,mode,wsig,defspec,overwrite,newSR,type] = DefaultArgs(varargin,{'xyz','mta',1,def_spec_parm(xyz),false,[],'mta'});
@@ -29,17 +31,17 @@ if isa(sampleRate,'MTAData'),
 elseif sampleRate > 120, 
     xyz.resample(120); 
 end
-xyz.filter('ButFilter',3,55);
+xyz.filter('ButFilter',3,55,'low');
 
 
 ang = create(MTADang,Trial,xyz);
 
 fet = Trial.xyz.copy;
 %fet.data = ButFilter(ang(:,'head_back','fhcom',3),3,[2,50]./(Trial.ang.sampleRate/2),'bandpass');
-bang = ButFilter(ang(:,'head_back','fhcom',3),3,[2,50]./(Trial.ang.sampleRate/2),'bandpass');
+bang = ButFilter(ang(:,'head_back','fhcom',3),3,[.5,50]./(Trial.ang.sampleRate/2),'bandpass');
 %$$$ bang = [bang,ButFilter(ang(:,'head_right','fhcom',3),3,[2,30]./(Trial.ang.sampleRate/2),'bandpass')];
 % $$$ bang = [bang,ButFilter(ang(:,'head_top','fhcom',3),3,[2,30]./(Trial.ang.sampleRate/2),'bandpass')];
-fet.data = [0;ButFilter(diff(bang),3,[2,50]/(ang.sampleRate/2),'bandpass')];
+fet.data = [0;ButFilter(diff(bang),3,[.5,50]/(ang.sampleRate/2),'bandpass')];
 
 switch mode
   case 'mta'

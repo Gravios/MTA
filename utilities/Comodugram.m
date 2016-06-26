@@ -30,11 +30,11 @@ function [Co, f] = Comodugram(Trial,x,varargin)
 
 parspec = empty_spec;
 
-defargs.state   = Trial.stc{'a'};
+defargs.states   = Trial.stc{'a'};
 defargs.mode    = 'mtcsglong';
 defargs.defspec = def_spec_parm(x);
 
-[state,mode, defspec] = DefaultArgs(varargin,defargs,'--struct');
+[states,mode, defspec] = DefaultArgs(varargin,defargs,'--struct');
 
 
 dsf = fieldnames(defspec);
@@ -61,39 +61,46 @@ szy = size(spex);
 spex = MTADlfp('data',cat(1,zeros([pad(1),szy(2:end)]),spex,zeros([pad(2),szy(2:end)])),'sampleRate',ssr);
 ts = cat(2,([1:pad(1)]./ssr),ts',([pad(1)+size(ts,1)]+[1:pad(2)])./ssr)';
 
+s = 1;
+for state = states,
+    state = state{1};
+    state.cast('TimeSeries');
+    state.resample(spex);
 
+    tspex = spex(state.data==1,:,:,:);
 
-spex = spex(state,:,:,:);
+    % find frequency bins to consider
 
-% find frequency bins to consider
+    nTimeBins = size(tspex,1);
+    nFreqBins = size(tspex,2);
 
-nTimeBins = size(spex,1);
-nFreqBins = size(spex,2);
+    % calculate correlation coefficients
+    DataMat = reshape(tspex, [nTimeBins, nFreqBins*nChannels]);
+    
+    CorrMat = corrcoef(DataMat);
+    if (Clip) CorrMat = clip(CorrMat, 0, 1); end;
 
-% calculate correlation coefficients
-DataMat = reshape(spex, [nTimeBins, nFreqBins*nChannels]);
-				
-CorrMat = corrcoef(DataMat);
-if (Clip) CorrMat = clip(CorrMat, 0, 1); end;
+    % produce output array and plot(if required)
+    C = zeros(nFreqBins,nFreqBins);
 
-% produce output array and plot(if required)
-C = zeros(nFreqBins,nFreqBins);
-
-for i=1:nChannels
+    for i=1:nChannels
 	for j=1:nChannels
-		
-		C = CorrMat((i-1)*nFreqBins + (1:nFreqBins), (j-1)*nFreqBins + (1:nFreqBins));
-		
-  		if (nargout<1)
- 			subplot(nChannels, nChannels, j + (i-1) * nChannels);
-			imagesc(f, f, C(:,:));
-            set(gca,'ydir','norm');
-            drawnow;
-        else
-            Co(:,:,i,j) = C(:,:);
+            
+            C = CorrMat((i-1)*nFreqBins + (1:nFreqBins), (j-1)*nFreqBins + (1:nFreqBins));
+            
+            if (nargout<1)
+                subplot(nChannels, nChannels, j + (i-1) * nChannels);
+                imagesc(f, f, C(:,:));
+                set(gca,'ydir','norm');
+                drawnow;
+            else
+                Co(:,:,i,j,s) = C(:,:);
+            end
         end
-		
-	end
+    end
+    
+    s = s + 1;
+
 end
 
 % 

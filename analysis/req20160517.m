@@ -1,5 +1,6 @@
 function req20160517(Trial,varargin)
 Trial = 'jg05-20120317.cof.all';
+%Trial = 'er02-20110908.cof.all';
 Trial = MTATrial.validate(Trial);
 xyz = Trial.load('xyz');
 
@@ -16,9 +17,20 @@ t = zeros([numel(V),1]);
 p = zeros([numel(V),1]);
 r = zeros([numel(V),1]);
 
+mPlane = zeros([numel(V),3]);
+
 for i = 1:numel(V),
-    [t(i),p(i),r(i)] = cart2sph(V{i}(1,3),V{i}(2,3),V{i}(3,3));
+    mPlane(i,:) = V{i}(:,3);
 end
+
+mPlane(mPlane(:,3)<0,:) = sign(mPlane(mPlane(:,3)<0,:)).*mPlane(mPlane(:,3)<0,:);
+
+for i = 1:numel(V),
+    [t(i),p(i),r(i)] = cart2sph(mPlane(i,1),mPlane(i,2),mPlane(i,3));
+end
+
+
+figure,plot(asin(sqrt(sum(cross(mPlane,circshift(mPlane,-1)).^2,2))))
 
 th = t;
 th(p<0)=th(p<0)+pi/2;

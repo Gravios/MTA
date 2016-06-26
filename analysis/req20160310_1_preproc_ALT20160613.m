@@ -1,4 +1,4 @@
-function req20160310_1_preproc(Trial,varargin);
+function req20160310_1_preproc_ALT20160613(Trial,varargin);
 %function req20160310_1_preproc(Trial,varargin);
 % 1. Preprocess features and select state order
 %
@@ -33,7 +33,7 @@ defargs = ...
 );
 
 [sampleRate,states,stcMode,train,RefTrial,...
- RefStcMode,nNeurons,nIter,rndMethod] = DefaultArgs(varargin,defargs);
+ RefStcMode,nNeurons,nIter,rndMethod] = DefaultArgs(varargin,defargs,'--struct');
 
 if train
     %Train Parm
@@ -68,11 +68,11 @@ end
 
 
 afet = fet.copy;
-fet.data = [afet.data,afet.data.^2];
-qfet = fet.copy;
-for sh = 1:qfet.size(2)-1;
-    fet.data = [fet.data,circshift(qfet.data',-sh)'.*qfet.data];
-end
+% $$$ fet.data = [afet.data,afet.data.^2];
+% $$$ qfet = fet.copy;
+% $$$ for sh = 1:qfet.size(2)-1;
+% $$$     fet.data = [fet.data,circshift(qfet.data',-sh)'.*qfet.data];
+% $$$ end
 
 
 % NORMALIZE features
@@ -88,13 +88,13 @@ if train
     [tstc,~,tfet] = resample_whole_state_bootstrap_noisy_trim(stc,fet,states);
     tstc.states{end}.data = [1,tfet.size(1)];    
     [stateOrd,fetInds,miAstates] = select_features_hmi(Trial,tstc,tfet,states,false);
-    save(fullfile(Trial.path.data,'analysis','req20160310_1_preproc.mat'),...
+    save(fullfile(Trial.path.data,'analysis','req20160310_1_preproc_ALT20160613.mat'),...
          'stateOrd','fetInds','miAstates');
 else
-    load(fullfile(Trial.path.data,'analysis','req20160310_1_preproc.mat'));
+    load(fullfile(Trial.path.data,'analysis','req20160310_1_preproc_ALT20160613.mat'));
 end
 
-save(fullfile(Trial.spath,'req20160310_1_preproc-tfet.mat'),...
+save(fullfile(Trial.spath,'req20160310_1_preproc-tfet_ALT20160613.mat'),...
      'states','fetInds','stateOrd','tfet','tstc','fet','-v7.3');
-save(fullfile(Trial.spath,'req20160310_1_preproc-afet.mat'),...
+save(fullfile(Trial.spath,'req20160310_1_preproc-afet_ALT20160613.mat'),...
      'states','fetInds','stateOrd','afet','nNeurons','nIter','rndMethod','-v7.3');
