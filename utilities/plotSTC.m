@@ -1,6 +1,6 @@
 function hax = plotSTC(Stc,varargin)
 %function hax = plotSTC(Stc,varargin)
-%[sampleRate,label_method,states,stateColors] = DefaultArgs(varargin,{Stc.states{1}.sampleRate,'',{},''},true);
+%[sampleRate,label_method,states,stateColors,staggeredStates] = DefaultArgs(varargin,{Stc.states{1}.sampleRate,'',{},'',true},true);
 [sampleRate,label_method,states,stateColors,staggeredStates] = DefaultArgs(varargin,{Stc.states{1}.sampleRate,'',{},'',true},true);
 
 

@@ -6,94 +6,114 @@ if isempty(Stc),
 end
 
 
-sempty = isempty(Stc{'p'})||isempty(Stc{'c'});
-% if sempty||overwrite,
-%     if ~sempty, 
-%         Stc.states(Stc.gsi('p')) = [];
-%         Stc.states(Stc.gsi('c')) = [];
-%     end
-%     
-%     atype = 'bhv_rhm_distrb';
-%     ftype = 'RHM_psd_distrib_height_hangle';
-%     fpath = fullfile(Trial.path.data,'figures',atype,ftype,[ ftype,'-' Trial.filebase '.fig']);
-%     if ~exist(fpath,'file'),
-%         bhv_rhm_distrb(Trial);
-%     end
-%     afig = hgload(fpath);
-%     rhm_distrb = get(findobj(findall(get(afig,'children')),'tag','bhv_rhm_distrb-hangle'));
-%     rhm_distrb = get(rhm_distrb.Children(end));
-%     %figure,plot(rhm_distrb.XData,nanmean(rhm_distrb.CData(rhm_distrb.YData>6&rhm_distrb.YData<13,:,1)));    
-%     mrhmp = nanmean(rhm_distrb.CData(rhm_distrb.YData>6&rhm_distrb.YData<13,:,1));
-%     mrhmp(mrhmp==0) = nan;
-%     angThresh = rhm_distrb.XData(find(mrhmp<.5,1,'first'));
-%     delete(afig);
-%     % Split walking state into low and high walk
-%     Stc.states = cat(2,Stc.states,walk_ang(Trial,angThresh));
-% end
-
 sempty = isempty(Stc{'h'})||isempty(Stc{'l'});
 if sempty||overwrite,
-    [rhm,fs,ts] = fet_rhm(Trial,[],'mtcsdglong',true);
-    xyz = Trial.xyz.copy;xyz.load(Trial);xyz.filter('ButFilter',3,4);
-    ang = create(MTADang,Trial,xyz);
-
-    nrhm = rhm.copy;
-    nrhm.data = log10(nrhm.data);
-    nrhm.data(nrhm.data<-9) = nan;
-
-    rhmpow =median(nrhm(:,fs>5&fs<14),2);
-    rhmpow = MTADlfp('data',rhmpow,'sampleRate',nrhm.sampleRate);
-    ang.resample(rhmpow);
-    xyz.resample(rhmpow);
-
-    rhmlims = linspace(-6,-2,40);
-    anglims = linspace(-1.4,1.4,40);
-
-    bper = Stc{'w',rhmpow.sampleRate}.copy;
-    bper.cast('TimeSeries');
-    if bper.size(1)-ang.size(1)<0,bper.data=[bper.data;false([abs(bper.size(1)-ang.size(1)),1])];end
-    xaind = nniz(ang(:,5,7,2))&nniz(rhmpow.data)&bper(1:ang.size(1));
-    fet = [ang(xaind,5,7,2),rhmpow(xaind)];
-    [bsts,bhmm,bdcd] = gausshmm(fet,2);
-
-    fasts = zeros([ang.size(1),1]);
-    fasts(xaind) = bsts;
-
-
-
-    if mean(ang(fasts==1,5,7,2))<mean(ang(fasts==2,5,7,2))
-        g = 2;l = 1;
-    else
-        g = 1;l = 2;
+    if ~sempty, 
+        Stc.states(Stc.gsi('h')) = [];
+        Stc.states(Stc.gsi('l')) = [];
     end
-    Stc.states(Stc.gsi('h')) = [];
-    Stc.addState(Trial.spath,...
-                 Trial.filebase,...
-                 ThreshCross(fasts==g,.5,1),...                   
-                 rhmpow.sampleRate,...
-                 Trial.sync.copy,...
-                 Trial.sync.data(1),...
-                 'hswalk','h','TimePeriods');
-    Stc.states{Stc.gsi('h')} = Stc{'h',Trial.xyz.sampleRate}&Stc{'w'};
-    Stc.states{Stc.gsi('h')} = Stc{'h'}+[1/Trial.xyz.sampleRate,-1/Trial.xyz.sampleRate];
-    %Stc.states{Stc.gsi('h')}.cast('TimePeriods');
+    
+    fpath = fullfile(Trial.spath,'figures','RHM_psd_distrib_height_hangle.fig');
+    if ~exist(fpath,'file'),
+        bhv_rhm_distrb(Trial);
+    end
 
-    Stc.states(Stc.gsi('l')) = [];
-    Stc.addState(Trial.spath,...
-                 Trial.filebase,...
-                 ThreshCross(fasts==l,.5,1),...
-                 rhmpow.sampleRate,...
-                 Trial.sync.copy,...
-                 Trial.sync.data(1),...
-                 'lswalk','l','TimePeriods');
-    %Stc.states{Stc.gsi('l')}.cast('TimePeriods');
-    Stc.states{Stc.gsi('l')} = Stc{'l',Trial.xyz.sampleRate}&Stc{'w'};
+    afig = hgload(fpath);
+    rhm_distrb = get(findobj(findall(get(afig,'children')),'tag','bhv_rhm_distrb-hangle'));
+    rhm_distrb = rhm_distrb(1);
+    figure,plot(rhm_distrb.XData,nanmean(rhm_distrb.CData(rhm_distrb.YData>6&rhm_distrb.YData<13,:,1)));   
+    mrhmp = nanmean(rhm_distrb.CData(rhm_distrb.YData>6&rhm_distrb.YData<13,:,1));
+    mrhmp(mrhmp==0) = nan;
+    rhmThresh = nanmean(nanmean(rhm_distrb.CData(rhm_distrb.YData>6&rhm_distrb.YData<13,:,1)))...
+        +0.5*nanstd(nanmean(rhm_distrb.CData(rhm_distrb.YData>6&rhm_distrb.YData<13,:,1)));
+    angThresh = rhm_distrb.XData(find(mrhmp<rhmThresh,1,'first'));
+    delete(afig);
+    % Split walking state into low and high walk
+    wind = Stc{'w'}.copy;
+    lang = Stc{'w'}.copy;
+    hang = Stc{'w'}.copy;    
+
+    ang = create(MTADang,Trial,Trial.load('xyz'));
+
+    lang.data = ThreshCross(ang(:,5,7,2)<angThresh,.5,round(.1/ang.sampleRate));
+    lang.label = 'lwalk';
+    lang.key = 'l';
+    lang.filename = [Trial.filebase '.sst.lwalk.l.mat'];
+    Stc.states{end+1} = lang&wind.data;
+
+    hang.data = ThreshCross(ang(:,5,7,2)>angThresh,.5,round(.1/ang.sampleRate));
+    hang.label = 'hwalk';
+    hang.key = 'h';
+    hang.filename = [Trial.filebase '.sst.hwalk.h.mat'];
+    Stc.states{end+1} = hang&wind.data;
+    
 end
-
 
 Stc.save(1);
 Trial.stc = Stc;
 Trial.save;
+
+
+% $$$ sempty = isempty(Stc{'h'})||isempty(Stc{'l'});
+% $$$ if sempty||overwrite,
+% $$$     [rhm,fs,ts] = fet_rhm(Trial,[],'mtcsdglong',true);
+% $$$     xyz = Trial.xyz.copy;xyz.load(Trial);xyz.filter('ButFilter',3,4);
+% $$$     ang = create(MTADang,Trial,xyz);
+% $$$ 
+% $$$     nrhm = rhm.copy;
+% $$$     nrhm.data = log10(nrhm.data);
+% $$$     nrhm.data(nrhm.data<-9) = nan;
+% $$$ 
+% $$$     rhmpow =median(nrhm(:,fs>5&fs<14),2);
+% $$$     rhmpow = MTADlfp('data',rhmpow,'sampleRate',nrhm.sampleRate);
+% $$$     ang.resample(rhmpow);
+% $$$     xyz.resample(rhmpow);
+% $$$ 
+% $$$     rhmlims = linspace(-6,-2,40);
+% $$$     anglims = linspace(-1.4,1.4,40);
+% $$$ 
+% $$$     bper = Stc{'w',rhmpow.sampleRate}.copy;
+% $$$     bper.cast('TimeSeries');
+% $$$     if bper.size(1)-ang.size(1)<0,bper.data=[bper.data;false([abs(bper.size(1)-ang.size(1)),1])];end
+% $$$     xaind = nniz(ang(:,5,7,2))&nniz(rhmpow.data)&bper(1:ang.size(1));
+% $$$     fet = [ang(xaind,5,7,2),rhmpow(xaind)];
+% $$$     [bsts,bhmm,bdcd] = gausshmm(fet,2);
+% $$$ 
+% $$$     fasts = zeros([ang.size(1),1]);
+% $$$     fasts(xaind) = bsts;
+% $$$ 
+% $$$ 
+% $$$ 
+% $$$     if mean(ang(fasts==1,5,7,2))<mean(ang(fasts==2,5,7,2))
+% $$$         g = 2;l = 1;
+% $$$     else
+% $$$         g = 1;l = 2;
+% $$$     end
+% $$$     Stc.states(Stc.gsi('h')) = [];
+% $$$     Stc.addState(Trial.spath,...
+% $$$                  Trial.filebase,...
+% $$$                  ThreshCross(fasts==g,.5,1),...                   
+% $$$                  rhmpow.sampleRate,...
+% $$$                  Trial.sync.copy,...
+% $$$                  Trial.sync.data(1),...
+% $$$                  'hswalk','h','TimePeriods');
+% $$$     Stc.states{Stc.gsi('h')} = Stc{'h',Trial.xyz.sampleRate}&Stc{'w'};
+% $$$     Stc.states{Stc.gsi('h')} = Stc{'h'}+[1/Trial.xyz.sampleRate,-1/Trial.xyz.sampleRate];
+% $$$     %Stc.states{Stc.gsi('h')}.cast('TimePeriods');
+% $$$ 
+% $$$     Stc.states(Stc.gsi('l')) = [];
+% $$$     Stc.addState(Trial.spath,...
+% $$$                  Trial.filebase,...
+% $$$                  ThreshCross(fasts==l,.5,1),...
+% $$$                  rhmpow.sampleRate,...
+% $$$                  Trial.sync.copy,...
+% $$$                  Trial.sync.data(1),...
+% $$$                  'lswalk','l','TimePeriods');
+% $$$     %Stc.states{Stc.gsi('l')}.cast('TimePeriods');
+% $$$     Stc.states{Stc.gsi('l')} = Stc{'l',Trial.xyz.sampleRate}&Stc{'w'};
+% $$$ end
+
+
 
 
 

@@ -2,14 +2,16 @@ function QuickSessionSetup(SessionParm,varargin)
 HostConf = load('MTAConf');
 [host,local] = DefaultArgs(varargin,{HostConf.host_server,false},1);
     
-    
         
+    % Expecting Name of Session list, cell, or struct
     if ischar(SessionParm), 
         Sessions = SessionList(SessionParm);
     else
-        Sessions = {SessionParm};
+        Sessions = SessionParm;
     end
 
+    
+    % SessionList Struct Type
     if isstruct(Sessions),
         for s = 1:numel(Sessions)
             if local,
@@ -24,21 +26,27 @@ HostConf = load('MTAConf');
                             Sessions(s).nlx_host);
             end
             
+            % Check for MoCap SampleRate
             if isfield(Sessions(s),'xyzSampleRate'),
                 xyzSampleRate = Sessions(s).xyzSampleRate;
             else
                 xyzSampleRate = [];
             end
             
+            % Create/Overwrite Session
             Session = MTASession(Sessions(s).sessionName,...
                                  Sessions(s).mazeName,...
                                  true,...
                                  Sessions(s).TTLValue,...
                                  'xyzSampleRate',xyzSampleRate);
         end
+    
+    % SessionList Cell Type
     elseif iscell(Sessions),    
         for s = 1:numel(Sessions)
+            % Setup MTA
             MTAstartup(host,Sessions{s}{4});
+            % Create/Overwrite Session
             Session = MTASession(Sessions{s}{1},Sessions{s}{2},true,Sessions{s}{5});
         end
 

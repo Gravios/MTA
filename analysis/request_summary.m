@@ -135,3 +135,35 @@
 % req20160411
 %    Examine inter-session overlap in t-sne space
 
+% req20160419
+%    Testing Fast Artificial Neural Network (FANN) c library
+
+
+
+%% 2016 05 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+
+% req20160510
+%    Report feature distributions for a set of mappings and
+%    normalizations
+
+% req20160517
+%    find plane through lower 4 head markers
+
+% req20160518
+%    Accumulate stats for all label/train pairings for
+%    bhv_multi_patternnet
+
+
+%% 2016 06 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+
+% req20160615
+%    Check the transform_rigidbody script against emperical values
+
+% req20160620
+%    Examination of head pitch dependence on joint estimation from
+%    rigidbody dynamics
+
+% req20160621
+%    Examination of translated vs raw data rhm coherence with ncp
+
+

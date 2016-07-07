@@ -93,7 +93,7 @@ if ~exist(FileName_coarse,'file')||overwrite,
     eds = linspace(-pi/2,pi/2,40);
     %figure,bar(eds,histc(oang(ind,5,7,2),eds),'histc')
     gHeadPitch = oang(ind,5,7,2);
-    [~,ainds] = histc(gHeadPitch,eds);
+    [hpv,ainds] = histc(gHeadPitch,eds);
 
 
     vxyz = zeros([7,numel(i),numel(j),numel(k),numel(eds)]);
@@ -153,11 +153,27 @@ end
 
 
 %% Figure of search
+figure 
+hold on
 mind = [];
+mind = zeros([7,numel(eds),3]);
 for m = 1:7,
-[mind(m,:),mv] = LocalMinimaN(sq(vxyz(m,:,:,:)),100,100);
+    for b =  unique(ainds)'
+        try
+        [mind(m,b,:),mv] = LocalMinimaN(sq(vxyz(m,:,:,:,b)),100, ...
+                                        100);
+        plot3(mind(m,b,1),mind(m,b,2),mind(m,b,3),'.')
+        end
+    end
 end
 
+figure,hold on
+m = 1;
+    for b =  unique(ainds)'
+        if ismember(0,[mind(m,b,1),mind(m,b,2),mind(m,b,3)]),continue,end
+        plot3(mind(m,b,1),mind(m,b,2),mind(m,b,3),'.')
+    end
+    
 % $$$ figure,
 % $$$ clf
 % $$$ for m = 1:7,
@@ -172,19 +188,20 @@ end
 % $$$ 
 
 
-FileName_fine = fullfile(Session.spath,[Session.filebase '.xyz-shift_fine.mat']);
+FileName_fine = fullfile(Session.spath,[Session.filebase,'-req20160620','.xyz-shift_fine.mat']);
 
 if ~exist(FileName_fine,'file')||overwrite,
 
-    nrange = [min(mind)-2;max(mind)+2]';
+    
+    nrange = [sq(min(nanmean(mind,2),[],1))'-2;sq(min(nanmean(mind,2),[],1))'+2]';
 
     nrange(1,:) = clip(nrange(1,:),1,numel(i));
     nrange(2,:) = clip(nrange(2,:),1,numel(j));
     nrange(3,:) = clip(nrange(3,:),1,numel(k));
         
-    ni = i(nrange(1,:));
-    nj = j(nrange(2,:));
-    nk = k(nrange(3,:));
+    ni = i(round(nrange(1,:)));
+    nj = j(round(nrange(2,:)));
+    nk = k(round(nrange(3,:)));
 
 
     %% Fine grain search
@@ -197,8 +214,16 @@ if ~exist(FileName_fine,'file')||overwrite,
     else
         ind.data = logical(ind.data);
     end
+
+    % Create binned 
+    oang = create(MTADang,Session,xyz);
+    eds = linspace(-pi/2,pi/2,40);
+    %figure,bar(eds,histc(oang(ind,5,7,2),eds),'histc')
+    gHeadPitch = oang(ind,5,7,2);
+    [hpv,ainds] = histc(gHeadPitch,eds);
+
     
-    nvxyz = zeros([7,numel(ni),numel(nj),numel(nk)]);
+    nvxyz = zeros([7,numel(ni),numel(nj),numel(nk),numel(eds)]);
 
     nhm = {'hcom','hbx','hrx','htx','hbt','hbr','hbrt','hrt'};
     txyz = xyz.copy;
@@ -208,37 +233,41 @@ if ~exist(FileName_fine,'file')||overwrite,
         disp(['x: ' num2str(x)]),tic
         for y = 1:numel(nj)
             for z = 1:numel(nk)
+                for b = unique(ainds)'
 
-                sxyz = txyz.copy;
-                sxyz.data = bsxfun(@plus,nx*ni(x)+ny*nj(y)+nz*nk(z),sxyz.data);
+                    sxyz = txyz.copy;
+                    sxyz.data = bsxfun(@plus,nx*ni(x)+ny*nj(y)+nz*nk(z),sxyz.data);
 
-                fhcom = zeros([sxyz.size(1),1,3]);
-                fhcom(nniz(sxyz),:,:) = ButFilter(sxyz(nniz(sxyz),'hcom',:),3,2/(sxyz.sampleRate/2),'low');
-                sxyz.addMarker('fhcom',[128,255,128],{{'hbx','hcom',[0,0,1]}},fhcom);
+                    fhcom = zeros([sxyz.size(1),1,3]);
+                    fhcom(nniz(sxyz),:,:) = ButFilter(sxyz(nniz(sxyz),'hcom',:),3,2/(sxyz.sampleRate/2),'low');
+                    sxyz.addMarker('fhcom',[128,255,128],{{'hbx','hcom',[0,0,1]}},fhcom);
 
-                sxyz.data = sxyz(ind,:,:);
-                ang = [sxyz(:,'hbx',:)-sxyz(:,'fhcom',:);...
-                       sxyz(:,'hrx',:)-sxyz(:,'fhcom',:);...
-                       sxyz(:,'htx',:)-sxyz(:,'fhcom',:);...
-                       ...
-                       sxyz(:,'hbt',:)-sxyz(:,'fhcom',:);...
-                       sxyz(:,'hbr',:)-sxyz(:,'fhcom',:);...
-                       sxyz(:,'hbrt',:)-sxyz(:,'fhcom',:);...
-                       sxyz(:,'hrt',:)-sxyz(:,'fhcom',:)];
+                    sxyz.data = sxyz(ind,:,:);
+                    ang = [sxyz(:,'hbx',:)-sxyz(:,'fhcom',:);...
+                           sxyz(:,'hrx',:)-sxyz(:,'fhcom',:);...
+                           sxyz(:,'htx',:)-sxyz(:,'fhcom',:);...
+                           ...
+                           sxyz(:,'hbt',:)-sxyz(:,'fhcom',:);...
+                           sxyz(:,'hbr',:)-sxyz(:,'fhcom',:);...
+                           sxyz(:,'hbrt',:)-sxyz(:,'fhcom',:);...
+                           sxyz(:,'hrt',:)-sxyz(:,'fhcom',:)];
 
 
-                ang = mat2cell(permute(ang,[1,3,2]),size(ang,1),[1,1,1]);
-                [~,~,ang] = cart2sph(ang{:});
-                ang = reshape(ang,[],7);
-                
-                for m = 1:7,
-                    bnds = prctile(ang(:,m),[.1,99.1]);
-                    nvxyz(m,x,y,z) = nanvar(ang(bnds(1)<ang(:,m)&ang(:,m)<bnds(2),m));
+                    ang = mat2cell(permute(ang,[1,3,2]),size(ang,1),[1,1,1]);
+                    [~,~,ang] = cart2sph(ang{:});
+                    ang = reshape(ang,[],7);
                     
+                    minds = b==ainds;                
+                    for m = 1:7,
+                        bnds = prctile(ang(minds,m),[.1,99.1]);
+                        nvxyz(m,x,y,z,b) = nanvar(ang(bnds(1)<ang(minds,m)&ang(minds,m)<bnds(2),m));
+                    end
                 end
             end
+
+            
         end
-        toc
+            toc        
     end
     save(FileName_fine,'ni','nj','nk','nvxyz');
 else
@@ -247,6 +276,29 @@ end
 
 %save(fullfile(Session.spath,[Session.filebase '.xyz-shift_fine_a-m-s.mat']),'ni','nj','nk','nvxyz');
 %load(fullfile(Session.spath,[Session.filebase '.xyz-shift_fine_a-m-s.mat']),'ni','nj','nk','nvxyz');
+
+%% Figure of search
+figure 
+hold on
+mind = [];
+mind = zeros([7,numel(eds),3]);
+for m = 1:7,
+    for b =  unique(ainds)'
+        try
+        [mind(m,b,:),mv] = LocalMinimaN(sq(nvxyz(m,:,:,:,b)),100, ...
+                                        100);
+        plot3(mind(m,b,1),mind(m,b,2),mind(m,b,3),'.')
+        end
+    end
+end
+
+figure,hold on
+m = 1;
+    for b =  unique(ainds)'
+        if ismember(0,[mind(m,b,1),mind(m,b,2),mind(m,b,3)]),continue,end
+        plot3(mind(m,b,1),mind(m,b,2),mind(m,b,3),'.')
+    end
+
 
 mind = [];
 for m = 1:7,

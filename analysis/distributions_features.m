@@ -14,7 +14,8 @@ defargs = struct(...
 );
 
 
-[sList,featureSet,featureOpts,featureName,state,resample,normalize,mapToReference,RefTrial] = DefaultArgs(varargin,defargs,'--struct');
+[sList,featureSet,featureOpts,featureName,state,...
+ resample,normalize,mapToReference,RefTrial] = DefaultArgs(varargin,defargs,'--struct');
 
 if isempty(featureName)
     featureName = featureSet;

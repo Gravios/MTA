@@ -265,6 +265,26 @@ for s = 1;%:numel(stc.states)
 
     end
 
+    figPath = fullfile(Trial.spath,'figures');
+    if ~exist(figPath,'dir'),
+        mkdir(figPath);
+    end
+    
+    saveas(hfig, fullfile(figPath,[mfilename '.fig']),'fig');
+
+
+% $$$     reportfig(Trial.spath,    ... Path where figures are stored
+% $$$               hfig,           ... Figure handle
+% $$$               [mfilename],    ... Figure Set Name
+% $$$               'figures',      ... Directory where figures reside
+% $$$               false,          ... Do Not Preview
+% $$$               '',             ... thmb_cap  
+% $$$               '',             ... exp_cap
+% $$$               [],             ... Resolution
+% $$$               true,           ... Save FIG
+% $$$               'png',(4+2)*numel(mode)+2,4*(3+2)+2);       % Output Format
+    
+
 % $$$     reportfig(fullfile(Trial.path.data,'figures'),hfig, ...
 % $$$               'FileName',['mean_Coherence_RHM_NCP_X_' strjoin(mode,'_')],...
 % $$$               'Comment',[Trial.filebase ':BhvState: ' stc.states{s}.label],...

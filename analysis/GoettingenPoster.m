@@ -317,21 +317,22 @@ hist(ang(Trial.stc{'a'},'head_back','head_right',3),10:.02:37)
 
 %% Time Series Example of sniffing sub-behavior
 Trial = MTATrial('jg05-20120310');
-[rhm,fs,ts] = fet_rhm(Trial,[],'wcsd');
-xyz = Trial.load('xyz');xyz.filter(gtwin(.05,xyz.sampleRate));
-ang = Trial.ang.copy;ang.create(Trial,xyz);
+[rhm,fs,ts] = fet_rhm(Trial,[],'mtchglong',true);
+xyz = Trial.load('xyz');
+xyz.filter('ButFilter',3,40,'low');
+ang = create(MTADang,Trial,xyz);
 tx = [0:(xyz.size(1)-1)]/xyz.sampleRate;
 tx = MTADxyz('data',tx,'sampleRate',xyz.sampleRate);
 
-th = tx(Trial.stc{'hang'});
-tl = tx(Trial.stc{'lang'});
+th = tx(Trial.stc{'hwalk'});
+tl = tx(Trial.stc{'lwalk'});
 
-hper = Trial.stc{'hang'};hper.resample(1);
-lper = Trial.stc{'lang'};lper.resample(1);
+hper = Trial.stc{'hwalk'};hper.resample(1);
+lper = Trial.stc{'lwalk'};lper.resample(1);
 rper = Trial.stc{'rear'};rper.resample(1);
 
 sp = [];
-figure,
+hfig = figure,
 sp(1) = subplot(2,1,1);
 
 %area([0,0;0,300;300,0;300,300],[-2,2;2,-2],'facecolor',[.2,.5,1])
@@ -357,17 +358,17 @@ ptx = [ptx(1),ptx,ptx(end)];
 fill(ptx,[-.47,ang(psts,5,7,2)',-.47],'r');
 legend('Head Pitch','Angle Threshold','High Walk','Low Walk','Rearing');
 
-for t = hper.data(1:20,:)',
+for t = hper.data(1:50,:)',
     psts = find(tx>=t(1),1,'first'):find(tx>=t(2),1,'first');
-    ptx = tx(psts);
+    ptx = tx(1,psts);
     ptx = [ptx(1),ptx,ptx(end)];
     fill(ptx,[-.47,ang(psts,5,7,2)',-.47],'b');
 end
 
 
-for t = lper.data(1:20,:)',
+for t = lper.data(1:50,:)',
     psts = find(tx>=t(1),1,'first'):find(tx>=t(2),1,'first');
-    ptx = tx(psts);
+    ptx = tx(1,psts);
     ptx = [ptx(1),ptx,ptx(end)];
     fill(ptx,[-.47,ang(psts,5,7,2)',-.47],'g');
 end
@@ -390,9 +391,9 @@ imagesc([0:(rhm.size(1)-1)]/rhm.sampleRate,fs,log10(rhm.data)');
 axis xy;
 caxis([-5,-2.8]);
 linkaxes(sp,'x');
-ylabel('RHM Frequencey Hz')
-xlabel('Time (s)')
-
+ylabel('RHM Frequencey Hz');
+xlabel('Time (s)');
+colormap('jet');
 
 %% Place fields
 

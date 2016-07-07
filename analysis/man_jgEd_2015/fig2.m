@@ -74,11 +74,11 @@ plotSkeleton(Trial,xyz,exPer(1)+2300,pMode,ang,[0,0]);% rear
 
 zlim([0,300]);
 
-saveas(hfig,fullfile(figPath,'Fig2B_NEW_Skeleton.epas'),'epsc');
+saveas(hfig,fullfile(figPath,'Fig2B_NEW_Skeleton.eps'),'epsc');
 
 
 % Fig:2:B - feature matrix
-[fet,flabels,fdisc] = fet_tsne_rev13(Trial);
+[fet,flabels,fdisc] = fet_mis(Trial);
 axes('Position',[ 0.1300,0.4,0.7750,0.2000])
 ts = (1:fet.size(1))./fet.sampleRate;
 per = round(exPer./xyz.sampleRate)+pPad;
@@ -97,7 +97,10 @@ set(gca,'XTickLabelMode','manual',...
         'XTick',[],...
         'XTickLabel',{});
 set(gca,'TickDir','out');
-saveas(hfig,fullfile(figPath,'Fig2B_NEW_fetmat.epas'),'epsc');
+saveas(hfig,fullfile(figPath,'Fig2B_NEW_fetmat.eps'),'epsc');
+print(gcf,'-depsc2',fullfile(getenv('PROJECT'),'manuscripts/man2015-jgEd-MoCap/Figures/Figure_2',...
+                     ['Fig2B_NEW_fetmat.eps']))
+
 
 
 % Fig:2:C - Expert Labels
