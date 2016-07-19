@@ -6,6 +6,8 @@ HostConf = load('MTAConf');
     % Expecting Name of Session list, cell, or struct
     if ischar(SessionParm), 
         Sessions = SessionList(SessionParm);
+    elseif iscell(SessionParm),
+        Sessions = SessionList(SessionParm{:});
     else
         Sessions = SessionParm;
     end

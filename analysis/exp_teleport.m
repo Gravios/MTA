@@ -25,7 +25,7 @@ QuickTrialSetup('Ed10VR_teleport');
 %Session = MTASession('er06-20130614');
 %Trial = MTATrial('jg05-20120317');
 
-Trial = MTATrial('Ed10-20140820','all','rov');
+Trial = MTATrial('Ed10-20140820','rov','all');
 Trial.stc.updateMode('default');
 Trial.stc.load;
 % $$$ Trial = MTATrial('Ed10-20140820','telcrtl1','rov');
@@ -76,7 +76,7 @@ end
 
 
 if isempty(Trial.stc.gsi('t')),
-    Trial = labelTheta(Trial,[],7);
+    Trial = labelTheta(Trial,[],32);
 end
 
 
@@ -87,7 +87,7 @@ nsts = size(states,2);
 
 display = true;
 overwrite = false;
-units = 1:120;
+units = 1:160;
 
 [accg,tbin] = autoccg(Trial,units,'theta');
 
@@ -96,7 +96,7 @@ stc = Trial.stc.copy;
 
 
 for t = 1:nt
-    Trial = MTATrial('Ed10-20140820',tnames{t},'rov');    
+    Trial = MTATrial('Ed10-20140820','rov',tnames{t});    
     Trial.stc = Stc.copy;
     Trial.stc.load(Trial);
     for i = 1:nsts,
@@ -115,26 +115,15 @@ if display,
         for t = 1:nt,
             for i = 1:nsts,
                 %subplot2(nt,nsts+1,t,i);cla
-                subplot2(nt,nsts,t,i);cla
+                subplot2(nt+1,nsts,t,i);cla
 
                 %imagesc(pfs{1}.adata.bins{1},pfs{1}.adata.bins{2},reshape(pfs{t}.data.rateMap(:,unit),35,60)),colorbar
                 pfs{t,i}.plot(unit,[],true,[],false);
                 title([pfs{t,i}.session.trialName ':' pfs{t,i}.parameters.states,': ',num2str(unit)]);
             end
         end
-        %subplot2(nt,nsts+1,1,nsts+1); cla,bar(tbin,accg(:,unit));axis tight;
-% $$$         subplot2(5,2,1,1); cla; pfs{1}.plot(unit,[],true);
-% $$$         title([pfs{1}.session.trialName ':' pfs{1}.parameters.states,': ',num2str(unit)]);
-% $$$         subplot2(5,2,2,1); cla; pfs{2}.plot(unit,[],true);
-% $$$         title([pfs{2}.session.trialName ':' pfs{2}.parameters.states,': ',num2str(unit)]);
-% $$$         subplot2(5,2,3,1); cla; pfs{3}.plot(unit,[],true);
-% $$$         title([pfs{3}.session.trialName ':' pfs{3}.parameters.states,': ',num2str(unit)]);
-% $$$         subplot2(5,2,4,1); cla; pfs{4}.plot(unit,[],true);
-% $$$         title([pfs{4}.session.trialName ':' pfs{4}.parameters.states,': ',num2str(unit)]);
-% $$$         subplot2(5,2,5,1); cla; pfs{5}.plot(unit,[],true);
-% $$$         title([pfs{5}.session.trialName ':' pfs{5}.parameters.states,': ',num2str(unit)]);
-% $$$         subplot2(5,2,1,2); cla,bar(tbin,accg(:,unit));axis tight;
-% $$$         subplotfit(6,6);cla,bar(tbin,accg(:,unit));axis tight;
+        subplot2(nt+1,nsts,nt+1,1);
+        bar(accg(:,unit));
 
         reportfig('/storage/gravio/figures/',...
                   hfig,...
@@ -147,7 +136,7 @@ if display,
                   false,...             SaveFig
                   'png',...             Format
                   8,...                 Width
-                  8,...                 Height
+                  12,...                 Height
                   unit...               Id
         );
         unit = figure_controls(hfig,unit,units,autoincr);
