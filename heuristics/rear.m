@@ -6,10 +6,9 @@ end
 
 
 xyz = Trial.load('xyz');
-ang = create(Trial.ang.copy,Trial,xyz);
+%if xyz.sampleRate>120,xyz.resample(120);end
 
-if xyz.sampleRate>120,xyz.resample(120);end
-if ang.sampleRate>120,ang.resample(120);end
+ang = create(MTADang,Trial,xyz);
 
 rear_feature = abs(xyz(:,'head_front',3)-xyz(:,'spine_lower',3)).*ang(:,'spine_middle','spine_upper',2);
 rear_feature(isnan(rear_feature))=0;
