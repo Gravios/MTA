@@ -18,7 +18,7 @@ xyz.save;
 Trials = SessionList('Ed10VR_opticflow',...
                      '/storage/gravio/data/processed/xyz/Ed10/',...
                      '/storage/eduardo/data/processed/nlx/Ed10/');
-QuickTrialSetup(Trials);
+%QuickTrialSetup(Trials);
 
 Trial = MTATrial('Ed10-20140821','rov','all');
 Trial.stc.updateMode('default');
@@ -93,7 +93,7 @@ states = {'theta','velthresh','velHthresh'};
 nsts = size(states,2);
 
 display = true;
-overwrite = true;
+overwrite = false;
 units = 1:160;
 
 [accg,tbin] = autoccg(Trial,units,'theta');
@@ -121,12 +121,15 @@ if display,
     while unit~=-1,
         for t = 1:nt,
         for i = 1:nsts,
-            subplot2(nt,nsts,t,i);cla
+            subplot2(nt+1,nsts,t,i);cla
             try,pfs{t,i}.plot(unit,[],true,[],false);
             title([pfs{t,i}.session.trialName ' ' pfs{t,i}.parameters.states,': ',num2str(unit)]);
+            
+            end
         end
         end
-        end
+        subplot2(nt+1,nsts,t+1,1);cla
+        bar(tbin,accg(:,unit));
         %reportfig('/gpfs01/sirota/home/gravio/figures/',hfig,...
         %          ['exp_optflow-' Trial.name] ,false,Trial.name);
 
