@@ -1,116 +1,132 @@
 MTAstartup('vr_exp');
+overwriteSession = false;
+overwriteTrials  = false;
+overwriteStc     = false;
+trialList = 'Ed10VR_teleport';
 
-Session = MTASession('Ed10-20140820',...
-                     'rov',...
-                      true,...
-                     '0x0002',...
-                     'vicon',...
-                     'nlx',...
-                     149.9974321...
-);
-Session = MTASession('Ed10-20140820','rov');
-xyz = Session.load('xyz');
-xyz.data(:,:,1) = xyz.data(:,:,1)-70;
-xyz.data(:,:,2) = xyz.data(:,:,2)-325;
-xyz.save;
+T = SessionList(trialList);
 
-% $$$ QuickTrialSetup('Ed10VR_teleport');
+if overwriteSession,
+    Session = MTASession(T(1).sessionName,  ...
+                         T(1).mazeName,     ...
+                         true,              ...
+                         T(1).TTLValue,     ...
+                         'vicon',           ...
+                         'nlx',             ...
+                         T(1).xyzSampleRate ...
+    );
 
-Trial = MTATrial('Ed10-20140820','rov','all');
-Trial.stc.updateMode('default');
-Trial.stc.load;
+    xyz = Session.load('xyz');
+    xyz.data(:,:,1) = xyz.data(:,:,1)+T(1).xOffSet;
+    xyz.data(:,:,2) = xyz.data(:,:,2)-T(1).yOffSet;
+    xyz.save;
+end
 
-tnames = {'tel_C1','tel_S1','tel_C2','tel_S2','tel_A1'};
+if overwriteTrials = QuickTrialSetup(T);
+
+T = {'all','tel_C1','tel_S1','tel_C2','tel_S2','tel_A1'};
+
+Trial = MTATrial.validate(T(1));
+Trial.load('stc',T(1).stcMode);
+
+
+
 
 %% Basic Threshold BHV and LFP Labeling
 
-if isempty(Trial.stc.gsi('v')),
-    xyz = Trial.load('xyz');
-    xyz.filter('ButFilter',3,2.4);
-    fvxy = xyz.vel(1,[1,2]);
-    fvxy.data(fvxy.data<1e-3)=1e-3;
-    fvxy.data = log10(fvxy.data);
-    vper = ThreshCross(fvxy.data,0.5,round(.25*xyz.sampleRate));
-    Trial.stc.addState(Trial.spath,...
-                       Trial.filebase,...
-                       vper,...
-                       xyz.sampleRate,...
-                       Trial.sync.copy,...
-                       Trial.sync.data(1),...
-                       'velthresh','v');
+if overwriteStc
+    if isempty(Trial.stc.gsi('v')),
+        xyz = Trial.load('xyz');
+        xyz.filter('ButFilter',3,2.4);
+        fvxy = xyz.vel(1,[1,2]);
+        fvxy.data(fvxy.data<1e-3)=1e-3;
+        fvxy.data = log10(fvxy.data);
+        vper = ThreshCross(fvxy.data,0.5,round(.25*xyz.sampleRate));
+        Trial.stc.addState(Trial.spath,...
+                           Trial.filebase,...
+                           vper,...
+                           xyz.sampleRate,...
+                           Trial.sync.copy,...
+                           Trial.sync.data(1),...
+                           'velthresh','v');
+    end
+
+    if isempty(Trial.stc.gsi('h')),
+        xyz = Trial.load('xyz');
+        xyz.filter('ButFilter',3,2.4);
+        fvxy = xyz.vel(6,[1,2]);
+        fvxy.data(fvxy.data<1e-3)=1e-3;
+        fvxy.data = log10(fvxy.data);
+        vper = ThreshCross(fvxy.data,0.5,round(.25*xyz.sampleRate));
+        Trial.stc.addState(Trial.spath,...
+                           Trial.filebase,...
+                           vper,...
+                           xyz.sampleRate,...
+                           Trial.sync.copy,...
+                           Trial.sync.data(1),...
+                           'velHthresh','h');
+    end
+
+    if isempty(Trial.stc.gsi('r')),
+        rper = rear(Trial,'com',45);
+        Trial.stc.addState(Trial.spath,...
+                           Trial.filebase,...
+                           rper,...
+                           xyz.sampleRate,...
+                           Trial.sync.copy,...
+                           Trial.sync.data(1),...
+                           'rear','r');
+    end
+
+
+    if isempty(Trial.stc.gsi('n')),
+        Trial.stc.states{end+1} = Trial.stc{'v'}-(Trial.stc{'r',120}+[-.5,.5]);
+        Trial.stc.states{end}.key = 'n';
+        Trial.stc.states{end}.label = 'NRvel';    
+        Trial.stc.states{end}.updateFilename([Trial.filebase,'.sst.',...
+                            Trial.stc.states{end}.label,'.',...
+                            Trial.stc.states{end}.key,'.mat']);
+    end
+
+    if isempty(Trial.stc.gsi('t')),
+        Trial = labelTheta(Trial,[],32);
+    end
+    
+    Stc.save(1);
 end
-
-if isempty(Trial.stc.gsi('h')),
-    xyz = Trial.load('xyz');
-    xyz.filter('ButFilter',3,2.4);
-    fvxy = xyz.vel(6,[1,2]);
-    fvxy.data(fvxy.data<1e-3)=1e-3;
-    fvxy.data = log10(fvxy.data);
-    vper = ThreshCross(fvxy.data,0.5,round(.25*xyz.sampleRate));
-    Trial.stc.addState(Trial.spath,...
-                       Trial.filebase,...
-                       vper,...
-                       xyz.sampleRate,...
-                       Trial.sync.copy,...
-                       Trial.sync.data(1),...
-                       'velHthresh','h');
-end
-
-if isempty(Trial.stc.gsi('r')),
-    rper = rear(Trial,'com',45);
-    Trial.stc.addState(Trial.spath,...
-                   Trial.filebase,...
-                   rper,...
-                   xyz.sampleRate,...
-                   Trial.sync.copy,...
-                   Trial.sync.data(1),...
-                   'rear','r');
-end
-
-
-if isempty(Trial.stc.gsi('n')),
-    Trial.stc.states{end+1} = Trial.stc{'v'}-(Trial.stc{'r',120}+[-.5,.5]);
-    Trial.stc.states{end}.key = 'n';
-    Trial.stc.states{end}.label = 'NRvel';    
-    Trial.stc.states{end}.updateFilename([Trial.filebase,'.sst.',...
-                                          Trial.stc.states{end}.label,'.',...
-                                          Trial.stc.states{end}.key,'.mat']);
-end
-
-if isempty(Trial.stc.gsi('t')),
-    Trial = labelTheta(Trial,[],32);
-end
-
 
 % Calculate and plot
 Stc = Trial.stc.copy;
-nt = numel(tnames);
+nt = numel(T);
 states = {'theta','velthresh','velHthresh'};
 nsts = size(states,2);
 
 display = true;
 overwrite = true;
-units = 1:160;
+units = 1:180;
 
+% Generate unit auto correlogram
 [accg,tbin] = autoccg(Trial,units,'theta');
 
+
+% Gererate unit rate maps 
 pfs = {};
+mRate = []
 for t = 1:nt
     Trial = MTATrial('Ed10-20140820','rov',tnames{t});    
     Trial.stc = Stc.copy;
     Trial.stc.load(Trial);
     for i = 1:nsts,
-        pfs{t,i} = oMTAApfs(Trial,units,states{i},overwrite,'binDims',[20,20],'SmoothingWeights',[2.2,2.2]);
-        %pfs{t,i} = MTAAknnpfs(Trial,units,states{i},overwrite,'numIter',1,'ufrShufBlockSize',0,'binDims',[20,20],'distThreshold',125,'nNearestNeighbors',150);
+        pfs{t,i} = MTAApfs(Trial,units,states{i},overwrite, ...
+                           'binDims',[20,20],'SmoothingWeights',[2.2,2.2]);
+        if t==1, mRate(t,i) = pfs{t,i}.maxRate;
     end
+
 end
 
+%nq = load(fullfile(Trial.spath,[Trial.name '.NeuronQuality.mat']));
 
-nq = load(fullfile(Trial.spath,[Trial.name '.NeuronQuality.mat']));
-
-if display,
-
-    
+if display,    
     spOpts.width  = 4;
     spOpts.height = 2;
     spOpts.ny = numel(tnames)+1;
