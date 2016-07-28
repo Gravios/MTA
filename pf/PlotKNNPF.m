@@ -19,11 +19,12 @@ end
 
 
 mywu = ufr.copy;
-%mywu.data = mywu(:,1);
-mywu.data = repmat(mywu.data,[1,1,nbins]);
+mywu = mywu(:,1);
+%mywu.data = repmat(mywu.data,[1,1,nbins]);
+mywu.data = repmat(mywu,[1,1,nbins]);
 
 if isempty(distdw)&&isempty(distIndw)
-    mywx = repmat(pos.data,[1,1,nbins]);
+    mywx = repmat(pos,[1,1,nbins]);
     xy = cell(ndims,1);
     [xy{:}]= meshgrid(Bins{:});
     xy = repmat(permute(reshape(cat(3,xy{:}),nbins,ndims),fliplr(1:3)),size(mywx,1),1);
@@ -36,7 +37,7 @@ if size(distdw,1)>nnn,
     pfknnmdw = permute(nanmedian(distdw(1:nnn,:,:,:),1),[2,3,1]);
     s = size(mywu);
     cm = reshape(repmat([0:s(1):prod(s)-1],s(1),1),s);     
-    smywut = mywu.data(repmat(distIndw,[1,size(mywu,2)])+cm);
+    smywut = mywu(repmat(distIndw,[1,size(mywu,2)])+cm);
     RateMap = permute(feval(stat_fun,smywut(1:nnn,:,:,:)),[3,2,1]);
     RateMap(repmat(pfknnmdw,[1,1,size(ufr,2)])>dthresh) = nan;
 else

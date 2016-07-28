@@ -39,7 +39,7 @@ classdef MTAApfs < hgsetget %< MTAAnalysis
                     Pfs.path = Session.spath;
                     Pfs.tag  = tag;
                     
-                    Pfs.session.name = SessionName;
+                    Pfs.session.sessionName = SessionName;
                     Pfs.session.trialName   = TrialName;
                     Pfs.session.mazeName    = MazeName;
 
@@ -82,8 +82,8 @@ classdef MTAApfs < hgsetget %< MTAAnalysis
                     
                 case 'MTAApfs'
                     Pfs = Obj;
-                    Session = MTASession(Obj.session.name,Obj.session.mazeName);
-                    Session = MTATrial(Session,Obj.session.trialName);
+                    Session = MTASession(Obj.session.sessionName,Obj.session.mazeName);
+                    Session = MTATrial(Session,Obj.session.mazeName,Obj.session.trialName);
                     pfsState = Session.stc{Pfs.states,Session.xyz.sampleRate}.copy;
                     
                 otherwise
@@ -303,8 +303,9 @@ classdef MTAApfs < hgsetget %< MTAAnalysis
                 case 2
                    bin1 = Pfs.adata.bins{1};
                    bin2 = Pfs.adata.bins{2};
-
-                   if isCircular,
+                   %MTATrial.validate(Pfs.session).maze.shape
+                   switch 'bob'
+                     case 'circle'
                        width = Pfs.adata.binSizes(1);
                        height = Pfs.adata.binSizes(2);
                        radius = round(Pfs.adata.binSizes(1)/2)-...
@@ -314,7 +315,7 @@ classdef MTAApfs < hgsetget %< MTAAnalysis
                        [W,H] = meshgrid(1:width,1:height);           
                        mask = double(sqrt((W-centerW-.5).^2 + (H-centerH-.5).^2) < radius);
                        mask(mask==0)=nan;
-                   else
+                     otherwise
                        mask = 1;
                    end
                   
@@ -366,8 +367,7 @@ classdef MTAApfs < hgsetget %< MTAAnalysis
 % $$$                         end
                         axis xy
                     end
-        % $$$ 
-        % $$$                     
+
         % $$$                     [X,Y,Z] = meshgrid(Pfs.adata.bins{:});
         % $$$                     var = permute(reshape(Pfs.data.rateMap(:,Pfs.data.clu==unit,1),Pfs.adata.binSizes'),[2,1,3]);
         % $$$                     if nargout==0,                        
@@ -438,6 +438,27 @@ classdef MTAApfs < hgsetget %< MTAAnalysis
             
         end
 
+        function rho = spatialCoherence(Pfs,units)
+        % rho = spatialCoherence(Pfs,units);
+        % The correlation between a list of firing rates in each
+        % pixel and a corresponding list of firing rates averaged
+        % over the 8 nearestneighbors of each pixel. 
+        % muller_kubie_1989
+            if isempty(units),
+                units = Pfs.data.clu;
+            end
+            rho = nan(numel(units),1);
+            for u = units,
+                rm = Pfs.plot(u);
+                cmat = [1,1,1;1,0,1;1,1,1];
+                c = conv2(rm,cmat,'valid')./8;
+                rmss = rm(2:end-1,2:end-1);
+                ind = ~isnan(c)&~isnan(rmss);
+                rho(u==units) = corr(c(ind),rmss(ind));
+            end
+        end
+        
+        
         function Pfs = updateFilename(Pfs,Session,varargin)
             Pfs.tag= varargin{1};
 

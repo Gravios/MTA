@@ -31,6 +31,8 @@ Trial = MTATrial.validate(T(1));
 Trial.load('stc',T(1).stcMode);
 
 
+
+
 %% Basic Threshold BHV and LFP Labeling
 
 if overwriteStc
@@ -90,8 +92,6 @@ if overwriteStc
     if isempty(Trial.stc.gsi('t')),
         Trial = labelTheta(Trial,[],32);
     end
-    events = LoadEvents(fullfile(Trial.spath, [Trial.name '.all.evt']));
-
     
     Stc.save(1);
 end
@@ -111,9 +111,6 @@ units = 1:180;
 
 
 % Gererate unit rate maps 
-%binDims = [60,60];
-binDims = [40,40];
-smoothingWeights = [1.2,1.2];
 pfs = {};
 for t = 1:nt
     Trial = MTATrial(T(t).sessionName,T(t).mazeName,T(t).trialName);    
@@ -121,12 +118,12 @@ for t = 1:nt
     Trial.stc.load(Trial);
     for i = 1:nsts,
         pfs{t,i} = MTAApfs(Trial,units,states{i},overwrite, ...
-                           'binDims',binDims,'SmoothingWeights',smoothingWeights);
+                           'binDims',[60,60],'SmoothingWeights',[0.8,0.8,0.8]);
     end
 end
 
-t = 1;
-mRate = [];
+t = 1
+mRate = []
 for i = 1:nsts,
     if t==1, 
         mRate(t,i,:) = pfs{t,i}.maxRate(units);;
@@ -248,8 +245,8 @@ for t = 1:nt
     Trial.stc.load(Trial);
     for i = 1:nsts,
         pfx{t,i} = MTAApfs(Trial,units,states{i},overwrite, ...
-                           'binDims',[60],...
-                           'SmoothingWeights',[0.8],...
+                           'binDims',[20],...
+                           'SmoothingWeights',[2.2],...
                            'type','x');
     end
 end
@@ -258,7 +255,7 @@ end
 
 unit = units(1);
 autoincr = false;
-figHnum = 666995;
+figHnum = 666999;
 set(0,'defaultAxesFontSize',8,...
       'defaultTextFontSize',8)
 hfig = figure(figHnum);clf
@@ -270,28 +267,21 @@ while unit~=-1,
     clf;
     hold('on');
     i = 3;
-    for t = 2:nt-1,
+    for t = 1:nt,
         plot(pfx{t,i}.adata.bins{1},pfx{t,i}.data.rateMap(:,pfx{t,i}.data.clu==unit));
     end
-    legend({T(2:end-1).trialName});
+    legend({T.trialName});
 
     unit = figure_controls(hfig,unit,units,autoincr);
 end
 
-t = 1;
-i = 1;
-u = 3;
-unit = 5;
-pfstats = {};
-pfshuff = {};
-for u = 1:numel(units)
-    for t = 1:nt
-        Trial = MTATrial(T(t).sessionName,T(t).mazeName,T(t).trialName);    
-        Trial.stc = Stc.copy;
-        Trial.stc.load(Trial);
-        for i = 1:nsts,        
-            [pfstats{t,i,u},pfshuff{t,i,u}] = PlaceFieldStats(Trial,pfs{t,i},units(u));
-        end
-    end
-end
 
+pfk = {};
+t = 1;
+i = 3;
+Trial = MTATrial(T(t).sessionName,T(t).mazeName,T(t).trialName);    
+Trial.stc = Stc.copy;
+Trial.stc.load(Trial);
+pfk{t,i} = MTAAknnpfs(Trial,units,states{i},overwrite);
+
+%pfk{t,i}.adata.bins{1},pfx{t,i}.data.rateMap(:,pfx{t,i}.data.clu==unit));

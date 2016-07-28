@@ -2,10 +2,10 @@ function [pfstats,pfshuff] = PlaceFieldStats(Trial,pf,unit)
 
 map = sq(pf.data.rateMap(:,unit==pf.data.clu,:));
 pkfr = max(map(:,1));
-rateThreshold = prctile(sq(max(map(:,:))),90);
+rateThreshold = prctile(sq(map(:,:)),90);
 maxNumPatches =2;
 
-ratemap = pf.plot(unit);
+ratemap = pf.plot(unit,'isCircular',false);
 
 %keyboard
 % Maximum firing rate found within the normal place field

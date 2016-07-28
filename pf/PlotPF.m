@@ -26,16 +26,23 @@ Pos = round((pos-repmat(bound_lims(:,1)',size(pos,1),1)).*repmat(k',size(pos,1),
 for i = 1:ndims   
     Pos(Pos(:,i)<1|Pos(:,i)>Nbin(i)|~nniz(Pos),:) = [];
 end
-Occupancy = accumarray(Pos,1,msize')./posSampleRate;
+
+if ndims==1,
+    amsize = [msize',1];
+else
+    amsize = msize';
+end
+
+Occupancy = accumarray(Pos,1,amsize)./posSampleRate;
 
 if ~isempty(spkpos),
     spkpos = round((spkpos-repmat(bound_lims(:,1)',size(spkpos,1),1)).*repmat(k',size(spkpos,1),1))+1;
     for i = 1:ndims
         spkpos(spkpos(:,i)<1|spkpos(:,i)>Nbin(i)|~nniz(spkpos),:) = [];
     end
-    SpikeCount = accumarray(spkpos,1,msize');
+    SpikeCount = accumarray(spkpos,1,amsize);
 else
-    SpikeCount = zeros(msize');
+    SpikeCount = zeros([amsize,1]);
 end
 
 
