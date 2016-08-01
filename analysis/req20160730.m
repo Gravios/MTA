@@ -259,6 +259,11 @@ for d =  1:numel(rots)
 
     nvec = cat(2,evec(ind,:,:),nvec);
 
+    % create an orthogonal vector around which to rotate
+    %head_norm = cross(xyz_hb_b,xyz_hb_r);
+    %head_norm = multiprod(head_norm,1./sqrt(sum(head_norm.^2,2)),2);
+
+    
     m = 4;
     ax_ord = [1,2,3];
     j =1:3;
