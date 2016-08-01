@@ -2,9 +2,10 @@ MTAstartup('vr_exp');
 overwriteSession = false;
 overwriteTrials  = false;
 overwriteStc     = false;
-trialList = 'Ed10VR_teleport';
+trialList = 'Ed10VR_20160823';
 
 T = SessionList(trialList);
+
 
 if overwriteSession,
     Session = MTASession(T(1).sessionName,  ...
@@ -18,7 +19,7 @@ if overwriteSession,
 
     xyz = Session.load('xyz');
     xyz.data(:,:,1) = xyz.data(:,:,1)+T(1).xOffSet;
-    xyz.data(:,:,2) = xyz.data(:,:,2)-T(1).yOffSet;
+    xyz.data(:,:,2) = xyz.data(:,:,2)+T(1).yOffSet;
     xyz.save;
 end
 
@@ -90,21 +91,21 @@ if overwriteStc
     if isempty(Trial.stc.gsi('t')),
         Trial = labelTheta(Trial,[],32);
     end
-    events = LoadEvents(fullfile(Trial.spath, [Trial.name '.all.evt']));
+    %events = LoadEvents(fullfile(Trial.spath, [Trial.name '.all.evt']));
 
     
-    Stc.save(1);
+    Trial.stc.save(1);
 end
 
 % Calculate and plot
 Stc = Trial.stc.copy;
-nt = numel(T);
+nt = numel(T)-1;
 states = {'theta','velthresh','velHthresh'};
 nsts = size(states,2);
 
 display = true;
 overwrite = false;
-units = 1:185;
+units = [];
 
 % Generate unit auto correlogram
 [accg,tbin] = autoccg(Trial,units,'theta');
@@ -127,21 +128,21 @@ end
 
 
 
-for i = 1:nsts,
-    pfs{t,i} = MTAApfs(Trial,units,['shifted&',states{i}],overwrite, ...
-                       'binDims',binDims,...
-                       'SmoothingWeights',smoothingWeights,...
-                       'type','xy');
-end
-
-t = t+1;
-for i = 1:nsts,
-    pfs{t,i} = MTAApfs(Trial,units,[states{i},'-shifted'],overwrite, ...
-                       'binDims',binDims,...
-                       'SmoothingWeights',smoothingWeights,...
-                       'type','xy');
-end
-
+% $$$ for i = 1:nsts,
+% $$$     pfs{t,i} = MTAApfs(Trial,units,['shifted&',states{i}],overwrite, ...
+% $$$                        'binDims',binDims,...
+% $$$                        'SmoothingWeights',smoothingWeights,...
+% $$$                        'type','xy');
+% $$$ end
+% $$$ 
+% $$$ t = t+1;
+% $$$ for i = 1:nsts,
+% $$$     pfs{t,i} = MTAApfs(Trial,units,[states{i},'-shifted'],overwrite, ...
+% $$$                        'binDims',binDims,...
+% $$$                        'SmoothingWeights',smoothingWeights,...
+% $$$                        'type','xy');
+% $$$ end
+% $$$ 
 
 
 t = 1;
@@ -158,7 +159,7 @@ units = find(sq(mRate(1,1,:))>3);
 if display,    
     spOpts.width  = 4;
     spOpts.height = 2;
-    spOpts.ny = numel(T)+1+1;
+    spOpts.ny = numel(T)+1;
     spOpts.nx = numel(states);
     spOpts.padding = 2;
     spOpts.units = 'centimeters';
@@ -185,7 +186,7 @@ if display,
     unit = units(1);
     while unit~=-1,
         clf
-        for t = 1:nt+1,
+        for t = 1:nt,
             for i = 1:nsts,
                 sp(t,i) = axes('Units',spOpts.units,...
                                'Position',[(spOpts.width +round(spOpts.padding/2))*(i-1)+round(spOpts.padding/2),...
@@ -194,7 +195,7 @@ if display,
                                             spOpts.height]...
                 );
 
-                pfs{t,i}.plot(unit,[],true,[0,max(mRate(1,i,unit)).*1.5],false);
+                pfs{t,i}.plot(unit,[],true,[0,max(mRate(1,i,unit))],false);
                 title([pfs{t,i}.session.trialName ':' pfs{t,i}.parameters.states,': ',num2str(unit)]);
             end
         end
@@ -210,13 +211,13 @@ if display,
         );
         bar(tbin,accg(:,unit));
         xlim([min(tbin),max(tbin)]);
-        title([' AutoCCG: Unit ',num2str(unit)]);
+        title([' AutoCCG: Unit ',num2str(unit)])
 
-        print(gcf,'-depsc2',fullfile(getenv('PROJECT'),'figures/vr_exp/Ed10-20140820-shift_teleport',...
-                                     ['pfs_',num2str(unit),'.eps']));
-        print(gcf,'-dpng',fullfile(getenv('PROJECT'),'figures/vr_exp/Ed10-20140820-shift_teleport',...
-                                     ['pfs_',num2str(unit),'.png']));
-% $$$ % $$$         
+        print(gcf,'-depsc2',fullfile(getenv('PROJECT'),'figures/vr_exp/Ed10-20140823-shift_teleport',...
+                                     ['pfs_',num2str(unit),'.eps']))
+        print(gcf,'-dpng',fullfile(getenv('PROJECT'),'figures/vr_exp/Ed10-20140823-shift_teleport',...
+                                     ['pfs_',num2str(unit),'.png']))
+
 % $$$         reportfig('/storage/gravio/figures/',...
 % $$$                   hfig,...
 % $$$                   ['exp_teleport-' Trial.name],...

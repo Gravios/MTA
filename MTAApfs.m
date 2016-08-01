@@ -21,13 +21,17 @@ classdef MTAApfs < hgsetget %< MTAAnalysis
 
             units = units(:)';            
 
-                
+            
             switch class(Obj)
                 case 'MTATrial'
                     Session = Obj;
                     SessionName = Session.name;
                     MazeName    = Session.maze.name;
                     TrialName   = Session.trialName;
+
+                    % Update map - need better method
+                    Session.spk.create(Session);
+                    
                     
                     if xyzp.isempty,
                         xyz = Session.xyz.copy;

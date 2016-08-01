@@ -2,7 +2,7 @@ MTAstartup('vr_exp');
 overwriteSession = false;
 overwriteTrials  = false;
 overwriteStc     = false;
-trialList = 'Ed10VR_teleport';
+trialList = 'Ed10_20140822.rov';
 
 T = SessionList(trialList);
 
@@ -18,7 +18,7 @@ if overwriteSession,
 
     xyz = Session.load('xyz');
     xyz.data(:,:,1) = xyz.data(:,:,1)+T(1).xOffSet;
-    xyz.data(:,:,2) = xyz.data(:,:,2)-T(1).yOffSet;
+    xyz.data(:,:,2) = xyz.data(:,:,2)+T(1).yOffSet;
     xyz.save;
 end
 
@@ -103,8 +103,8 @@ states = {'theta','velthresh','velHthresh'};
 nsts = size(states,2);
 
 display = true;
-overwrite = false;
-units = 1:185;
+overwrite = true;
+units = [];
 
 % Generate unit auto correlogram
 [accg,tbin] = autoccg(Trial,units,'theta');
@@ -125,22 +125,6 @@ for t = 1:nt
     end
 end
 
-
-
-for i = 1:nsts,
-    pfs{t,i} = MTAApfs(Trial,units,['shifted&',states{i}],overwrite, ...
-                       'binDims',binDims,...
-                       'SmoothingWeights',smoothingWeights,...
-                       'type','xy');
-end
-
-t = t+1;
-for i = 1:nsts,
-    pfs{t,i} = MTAApfs(Trial,units,[states{i},'-shifted'],overwrite, ...
-                       'binDims',binDims,...
-                       'SmoothingWeights',smoothingWeights,...
-                       'type','xy');
-end
 
 
 
@@ -171,7 +155,7 @@ if display,
 
     
     sp = [];
-    autoincr = true;
+    autoincr = false;
 
     figHnum = 666999;
     set(0,'defaultAxesFontSize',8,...
@@ -185,7 +169,7 @@ if display,
     unit = units(1);
     while unit~=-1,
         clf
-        for t = 1:nt+1,
+        for t = 1:nt,
             for i = 1:nsts,
                 sp(t,i) = axes('Units',spOpts.units,...
                                'Position',[(spOpts.width +round(spOpts.padding/2))*(i-1)+round(spOpts.padding/2),...

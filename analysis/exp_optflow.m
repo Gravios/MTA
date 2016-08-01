@@ -95,6 +95,7 @@ nsts = size(states,2);
 display = true;
 overwrite = false;
 units = 1:160;
+units = [];
 
 [accg,tbin] = autoccg(Trial,units,'theta');
 
@@ -106,13 +107,13 @@ for t = 1:nt
     Trial.stc = Stc.copy;
     Trial.stc.load(Trial);
     for i = 1:nsts,
-        pfs{t,i} = MTAApfs(Trial,units,states{i},overwrite,'binDims',[20,20],'SmoothingWeights',[2.2,2.2]);
+        pfs{t,i} = MTAApfs(Trial,units,states{i},overwrite,'binDims',[40,40],'SmoothingWeights',[1.2,1.2]);
     end
 end
 
 
 
-
+units = pfs{1,1}.data.clu;
 
 if display,
 
