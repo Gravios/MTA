@@ -27,7 +27,7 @@ if overwriteTrials
 end
 
 
-Trial = MTATrial.validate(T(1));
+Trial = MTATrial.validate(T(1)).;
 Trial.load('stc',T(1).stcMode);
 
 
@@ -290,27 +290,7 @@ end
 
 
 
-unit = units(1);
-autoincr = false;
-figHnum = 666995;
-set(0,'defaultAxesFontSize',8,...
-      'defaultTextFontSize',8)
-hfig = figure(figHnum);clf
-set(hfig,'units',figOpts.units)
-set(hfig,'Position',figOpts.position)
-set(hfig,'PaperPositionMode','auto');
 
-while unit~=-1,
-    clf;
-    hold('on');
-    i = 3;
-    for t = 2:nt-1,
-        plot(pfx{t,i}.adata.bins{1},pfx{t,i}.data.rateMap(:,pfx{t,i}.data.clu==unit));
-    end
-    legend({T(2:end-1).trialName});
-
-    unit = figure_controls(hfig,unit,units,autoincr);
-end
 
 t = 1;
 i = 1;
@@ -329,19 +309,57 @@ for u = 1:numel(units)
     end
 end
 
+% Test this version should be able to run multiple units at once
+for t = 1:nt
+    Trial = MTATrial(T(t).sessionName,T(t).mazeName,T(t).trialName);    
+    Trial.stc = Stc.copy;
+    Trial.stc.load(Trial);
+    for i = 1:nsts,        
+        [pfstats{t,i},pfshuff{t,i}] = PlaceFieldStats(Trial,pfs{t,i},units);
+    end
+end
 
+
+
+%pfstats{t,i}.patchCom
+
+pfstats{2,i}-pfstats{3,i}
+pfstats{4,i}-pfstats{5,i}
+
+
+
+% 1D version of place fields
+unit = units(1);
+autoincr = false;
+figHnum = 666995;
+set(0,'defaultAxesFontSize',8,...
+      'defaultTextFontSize',8)
+hfig = figure(figHnum);clf
+set(hfig,'units',figOpts.units)
+set(hfig,'Position',figOpts.position)
+set(hfig,'PaperPositionMode','auto');
+while unit~=-1,
+    clf;
+    hold('on');
+    i = 3;
+    for t = 2:nt-1,
+        plot(pfx{t,i}.adata.bins{1},pfx{t,i}.data.rateMap(:,pfx{t,i}.data.clu==unit));
+    end
+    legend({T(2:end-1).trialName});
+    unit = figure_controls(hfig,unit,units,autoincr);
+end
+
+
+% time X xyz X ufr
 xyz = Trial.load('xyz');
 xyz.resample(10);
 ufr = Trial.ufr.copy;
 ufr = ufr.create(Trial,xyz,'theta',units,0.2);
-
-
-
-
-
 unit = units(3);
 c = zeros([xyz.size(1),3]);
 c(ufr(:,unit)>=5,1) = 1;
 figure, clf
-scatter(1:xyz.size(1),xyz(:,6,1),10,c);
+pscatter(1:xyz.size(1),xyz(:,6,1),10,c);
 Lines(round((Trial.sync.data(:)-Trial.sync.data(1)).*10)+1,[],'m');
+
+
