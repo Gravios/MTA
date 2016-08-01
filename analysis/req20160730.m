@@ -103,13 +103,13 @@ xyzSampleRate = 150;
 % xyz(time,marker,dimension)
 xyz(:,1,:) = data.data(:,[4,2,3]);
 % Add a low passed (0.8 Hz) version of center of mass with slight time shift
-xyz(:,2,:) = circshift(ButFilter(xyz(:,1,:),3,[.8]./(Trial.xyz.sampleRate/2),'low'),round(xyzSampleRate/4));
+xyz(:,2,:) = circshift(ButFilter(xyz(:,1,:),3,[.8]./(xyzSampleRate/2),'low'),round(xyzSampleRate/4));
 % Add a low passed (0.2 Hz) version of center of mass with large time shift
 xyz(:,3,:) = circshift(ButFilter(xyz(:,1,:),3,[.2]./(0.5*xyzSampleRate),'low'),round(xyzSampleRate));
 % Add orientation vector + center of mass reduce in length
 xyz(:,4,:) = 0.05.*data.data(:,[10,8,9])+data.data(:,[4,2,3]);
 % Add a low passed (2 Hz) version of center of mass with no time shift
-xyz(:,5,:) = ButFilter(xyz(:,1,:),3,[2]./(Trial.xyz.sampleRate/2),'low');
+xyz(:,5,:) = ButFilter(xyz(:,1,:),3,[2]./(xyzSampleRate/2),'low');
 % Add markers surrounding the center of mass to create a head basis
 xyz(:,6,:) =  sq(evec(:,1,:))+data.data(:,[4,2,3]);
 xyz(:,7,:) =  sq(evec(:,2,:))+data.data(:,[4,2,3]);
@@ -216,7 +216,8 @@ figure,plot([1:size(ang,1)]./xyzSampleRate,[0;diff(ButFilter(ang(:,4,5,3),3,20/(
 
 % Find Best orientation (good luck)
 
-ind = data.data(:,11)==sesClus(1);
+
+ind = data.data(:,11)==sessionIds(1);
 
 m = 3;
 ax_ord = [2,3,1];
@@ -331,20 +332,23 @@ end
 
 
 
-pfigure,hold on
-sind = 1200;
-plot3(xyz(sind,1,1),xyz(sind,1,2),xyz(sind,1,3),'.m')
-plot3(xyz(sind,6,1),xyz(sind,6,2),xyz(sind,6,3),'.r')
-plot3(xyz(sind,7,1),xyz(sind,7,2),xyz(sind,7,3),'.g')
-plot3(xyz(sind,8,1),xyz(sind,8,2),xyz(sind,8,3),'.k')
-plot3(xyz(sind,8,1),xyz(sind,8,2),xyz(sind,8,3),'.k')
-plot3(nmark(sind,1),nmark(sind,2),nmark(sind,3),'*r')
-daspect([1,1,1])
+figure,imagesc(spw')
 
-
-
-scatter3(xyz(ind,1,1),xyz(ind,1,2),xyz(ind,1,3),30,'m')
-plot3(xyz(ind,6,1),xyz(ind,6,2),xyz(ind,6,3),'.r')
-plot3(xyz(ind,4,1),xyz(ind,4,2),xyz(ind,4,3),'.c')
-plot3(xyz(ind,7,1),xyz(ind,7,2),xyz(ind,7,3),'.g')
-plot3(xyz(ind,8,1),xyz(ind,8,2),xyz(ind,8,3),'.k')
+% $$$ 
+% $$$ figure,hold on
+% $$$ sind = 1200;
+% $$$ plot3(xyz(sind,1,1),xyz(sind,1,2),xyz(sind,1,3),'.m')
+% $$$ plot3(xyz(sind,6,1),xyz(sind,6,2),xyz(sind,6,3),'.r')
+% $$$ plot3(xyz(sind,7,1),xyz(sind,7,2),xyz(sind,7,3),'.g')
+% $$$ plot3(xyz(sind,8,1),xyz(sind,8,2),xyz(sind,8,3),'.k')
+% $$$ plot3(xyz(sind,8,1),xyz(sind,8,2),xyz(sind,8,3),'.k')
+% $$$ plot3(nmark(sind,1),nmark(sind,2),nmark(sind,3),'*r')
+% $$$ daspect([1,1,1])
+% $$$ 
+% $$$ 
+% $$$ 
+% $$$ scatter3(xyz(ind,1,1),xyz(ind,1,2),xyz(ind,1,3),30,'m')
+% $$$ plot3(xyz(ind,6,1),xyz(ind,6,2),xyz(ind,6,3),'.r')
+% $$$ plot3(xyz(ind,4,1),xyz(ind,4,2),xyz(ind,4,3),'.c')
+% $$$ plot3(xyz(ind,7,1),xyz(ind,7,2),xyz(ind,7,3),'.g')
+% $$$ plot3(xyz(ind,8,1),xyz(ind,8,2),xyz(ind,8,3),'.k')
