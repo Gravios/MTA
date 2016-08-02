@@ -39,7 +39,7 @@ if ~isempty(B),
         patchRateMap(1,1,i,1:npix) = ratemap(sub2ind(pf.adata.binSizes',nB{i}(:,1),nB{i}(:,2)));
 
         patchRateInd(1,1,i,:,1:npix) = nB{i}';
-        pxy = [pf.adata.bins{1}(nB{i}(:,1)),pf.adata.bins{1}(nB{i}(:,2))];
+        pxy = [pf.adata.bins{1}(nB{i}(:,1)),pf.adata.bins{2}(nB{i}(:,2))];
         patchCOM(1,1,i,:)  = [sq(patchRateMap(1,1,i,1:npix))'*pxy(:,1),sq(patchRateMap(1,1,i,1:npix))'*pxy(:,2)]/nansum(patchRateMap(1,1,i,1:npix));
         patchPFR(1,1,i)    = max    (patchRateMap(1,1,i,1:npix),[],4);
         patchMFR(1,1,i)    = nanmean(patchRateMap(1,1,i,1:npix),4);

@@ -27,7 +27,7 @@ if overwriteTrials
 end
 
 
-Trial = MTATrial.validate(T(1)).;
+Trial = MTATrial.validate(T(1));
 Trial.load('stc',T(1).stcMode);
 
 
@@ -104,7 +104,7 @@ nsts = size(states,2);
 
 display = true;
 overwrite = false;
-units = 1:185;
+units = [];
 
 % Generate unit auto correlogram
 [accg,tbin] = autoccg(Trial,units,'theta');
@@ -126,17 +126,17 @@ for t = 1:nt
 end
 
 
-
+t = t+1;
 for i = 1:nsts,
-    pfs{t,i} = MTAApfs(Trial,units,['shifted&',states{i}],overwrite, ...
+    pfs{t,i} = MTAApfs(Trial,units,[states{i},'-shifted'],overwrite, ...
                        'binDims',binDims,...
                        'SmoothingWeights',smoothingWeights,...
                        'type','xy');
 end
 
-t = t+1;
+
 for i = 1:nsts,
-    pfs{t,i} = MTAApfs(Trial,units,[states{i},'-shifted'],overwrite, ...
+    pfs{t,i} = MTAApfs(Trial,units,['shifted&',states{i}],overwrite, ...
                        'binDims',binDims,...
                        'SmoothingWeights',smoothingWeights,...
                        'type','xy');
@@ -238,26 +238,146 @@ if display,
 end
 
 
-
-unts = [4,25,27,234,235];
-hfig = figure(666989);
-unit = units(1);
-
-i = 4;
-
-for t=1:5,
-for unit = unts,
-    sp = subplot2(nt,numel(unts),t,find(ismember(unts,unit)));cla
-    pfs{t,i}.plot(unit,[],true);
-    title([pfs{t,i}.session.trialName ':' pfs{t,i}.parameters.states,': ',num2str(unit)]);
-end
-end
-
-
-reportfig('/gpfs01/sirota/home/gravio/figures/',hfig,...
-          ['exp_teleport_selected_units-' Trial.name] ,false,Trial.name);
     
 
+
+
+
+
+t = 1;
+i = 1;
+u = 3;
+unit = 5;
+pfstats = {};
+pfshuff = {};
+
+% Test this version should be able to run multiple units at once
+for u = 1:numel(units)
+    for t = 1:nt
+        Trial = MTATrial(T(t).sessionName,T(t).mazeName,T(t).trialName);    
+        Trial.stc = Stc.copy;
+        Trial.stc.load(Trial);
+        for i = 1:nsts,        
+            [pfstats{t,i,u},pfshuff{t,i,u}] = PlaceFieldStats(Trial,pfs{t,i},units(u));
+        end
+    end
+end
+for u = 1:numel(units)
+    for i = 1:nsts,        
+        [pfstats{t+1,i,u},pfshuff{t+1,i,u}] = PlaceFieldStats(Trial,pfs{t+1,i},units(u));
+    end
+end
+
+for t = 1:nt+1
+    for i = 1:nsts,        
+        pcom = cellfun(@(x) sq(x.patchCOM(1,1,find(max(x.patchPFR)==x.patchPFR),:)),pfstats(t,i,:),'UniformOutput',false);
+        pind = ~cellfun(@isempty,pcom);
+        peakPatchCOM(t,i,pind,:) = sq(cell2mat(pcom(pind)))';
+        peakPatchRate(t,i,:) = sq(cellfun(@(x) max(x.patchPFR),pfstats(1,1,:)));
+    end
+end
+
+
+
+
+%pfstats{t,i}.patchCom
+for u = 1:numel(units)
+    for i = 1:nsts,            
+        for t = 1:nt
+            %pfstats{2,i,}-pfstats{3,i}
+            %pfstats{4,i}-pfstats{5,i}
+        end
+        
+    end
+end
+
+
+
+
+spOpts.width  = 4;
+spOpts.height = 2;
+spOpts.ny = numel(T)+1+1;
+spOpts.nx = numel(states);
+spOpts.padding = 2;
+spOpts.units = 'centimeters';
+
+figOpts.units = 'centimeters';
+figOpts.headerPadding = 4;
+figOpts.footerPadding = 4;
+figOpts.position = [1,1,(spOpts.width+round(spOpts.padding/2)) *spOpts.nx+round(spOpts.padding/2),...
+                    (spOpts.height+round(spOpts.padding/2))*spOpts.ny+figOpts.headerPadding+figOpts.footerPadding];
+
+
+sp = [];
+autoincr = false;
+
+figHnum = 666999;
+set(0,'defaultAxesFontSize',8,...
+      'defaultTextFontSize',8)
+hfig = figure(figHnum);clf
+set(hfig,'units',figOpts.units)
+set(hfig,'Position',figOpts.position)
+set(hfig,'PaperPositionMode','auto');
+
+
+unit = units(1);
+while unit~=-1,
+    clf
+    for t = 1:nt+1,
+        for i = 1:nsts,
+            pf = pfs{t,i};
+            sp(t,i) = axes('Units',spOpts.units,...
+                           'Position',[(spOpts.width +round(spOpts.padding/2))*(i-1)+round(spOpts.padding/2),...
+                                (spOpts.height+round(spOpts.padding/2))*(spOpts.ny-t+1)+round(spOpts.padding/2),...
+                                spOpts.width,...
+                                spOpts.height]...
+                           );
+            hold('on')
+            ratemap = pf.plot(unit,'isCircular',false);
+            imagesc(pf.adata.bins{1},pf.adata.bins{2},ratemap');
+            pf.plot(unit,[],true,[0,max(mRate(1,i,unit)).*1.5],false);
+            title([pf.session.trialName ':' pf.parameters.states,': ',num2str(unit)]);
+            plot(peakPatchCOM(t,i,unit==units,2),...
+                 peakPatchCOM(t,i,unit==units,1),'*w');
+            xlim([-600,600]),ylim([-350,350])        
+        end
+    end
+
+
+    
+    t = t+1;
+    i = 1;
+    sp(t,i) = axes('Units',spOpts.units,...
+                   'Position',[(spOpts.width +round(spOpts.padding/2))*(i-1)+round(spOpts.padding/2),...
+                        (spOpts.height+round(spOpts.padding/2))*(spOpts.ny-t+1)+round(spOpts.padding/2),...
+                        spOpts.width,...
+                        spOpts.height]...
+                   );
+    bar(tbin,accg(:,unit));
+    xlim([min(tbin),max(tbin)]);
+    title([' AutoCCG: Unit ',num2str(unit)]);
+
+    
+% $$$         print(gcf,'-depsc2',fullfile(getenv('PROJECT'),'figures/vr_exp/Ed10-20140820-shift_teleport',...
+% $$$                                      ['pfs_',num2str(unit),'.eps']));
+% $$$         print(gcf,'-dpng',fullfile(getenv('PROJECT'),'figures/vr_exp/Ed10-20140820-shift_teleport',...
+% $$$                                      ['pfs_',num2str(unit),'.png']));
+
+    unit = figure_controls(hfig,unit,units,autoincr);
+    
+end
+
+
+
+
+
+
+
+
+
+
+
+%% 1D analysis stuff
 
 
 pfx = {};
@@ -288,43 +408,6 @@ for i = 1:nsts,
                        'type','x');
 end
 
-
-
-
-
-t = 1;
-i = 1;
-u = 3;
-unit = 5;
-pfstats = {};
-pfshuff = {};
-for u = 1:numel(units)
-    for t = 1:nt
-        Trial = MTATrial(T(t).sessionName,T(t).mazeName,T(t).trialName);    
-        Trial.stc = Stc.copy;
-        Trial.stc.load(Trial);
-        for i = 1:nsts,        
-            [pfstats{t,i,u},pfshuff{t,i,u}] = PlaceFieldStats(Trial,pfs{t,i},units(u));
-        end
-    end
-end
-
-% Test this version should be able to run multiple units at once
-for t = 1:nt
-    Trial = MTATrial(T(t).sessionName,T(t).mazeName,T(t).trialName);    
-    Trial.stc = Stc.copy;
-    Trial.stc.load(Trial);
-    for i = 1:nsts,        
-        [pfstats{t,i},pfshuff{t,i}] = PlaceFieldStats(Trial,pfs{t,i},units);
-    end
-end
-
-
-
-%pfstats{t,i}.patchCom
-
-pfstats{2,i}-pfstats{3,i}
-pfstats{4,i}-pfstats{5,i}
 
 
 
