@@ -262,6 +262,7 @@ for u = 1:numel(units)
         end
     end
 end
+
 for u = 1:numel(units)
     for i = 1:nsts,        
         [pfstats{t+1,i,u},pfshuff{t+1,i,u}] = PlaceFieldStats(Trial,pfs{t+1,i},units(u));
@@ -284,12 +285,39 @@ end
 for u = 1:numel(units)
     for i = 1:nsts,            
         for t = 1:nt
-            %pfstats{2,i,}-pfstats{3,i}
-            %pfstats{4,i}-pfstats{5,i}
-        end
-        
+            for j = 1:nt
+            pfShift(t,j,i,u) = peakPatchCOM(t,i,u)-peakPatchCOM(j,i,u);
+            end
+        end        
     end
 end
+
+t = t+1;
+for u = 1:numel(units)
+    for i = 1:nsts,            
+        for j = 1:nt
+            pfShift(t,j,i,u) = peakPatchCOM(t,i,u)-peakPatchCOM(j,i,u);
+        end        
+    end
+end
+
+t = t-1;
+j = j+1;
+for u = 1:numel(units)
+    for i = 1:nsts,            
+        for t = 1:nt
+            pfShift(t,j,i,u) = peakPatchCOM(t,i,u)-peakPatchCOM(j,i,u);
+        end        
+    end
+end
+
+t = t+1;
+for u = 1:numel(units)
+    for i = 1:nsts,            
+        pfShift(t,j,i,u) = peakPatchCOM(t,i,u)-peakPatchCOM(j,i,u);
+    end
+end
+
 
 
 
@@ -442,7 +470,9 @@ unit = units(3);
 c = zeros([xyz.size(1),3]);
 c(ufr(:,unit)>=5,1) = 1;
 figure, clf
-pscatter(1:xyz.size(1),xyz(:,6,1),10,c);
+scatter(1:xyz.size(1),xyz(:,6,1),10,c);
 Lines(round((Trial.sync.data(:)-Trial.sync.data(1)).*10)+1,[],'m');
 
-
+t = [1:xyz.size(1)]./xyz.sampleRate;
+tedg = 0:60:t(end);
+tbs = histc(tedg,t);
