@@ -45,7 +45,7 @@ defArgs = struct('states',      {{'walk','rear','turn','pause','groom','sit'}},.
 
 [states,stcMode,featureSet,sampleRate,model,nNeurons,...
  nIter,randomizationMethod,map2reference,normalize,tag,...
- targetState] = DefaultArgs(varargin,defArgs,'--struct');
+ targetState,prctTrain] = DefaultArgs(varargin,defArgs,'--struct');
 
 
 % Load the feature set

@@ -2407,9 +2407,88 @@ switch mode,
         tys = fet_spec(Trial,swlfp,'mtchglong',false,[],parspec);
         ys.data(:,:,c) = tys.data;
     end
+    
+  case 'ufr copulas'
+    Trial = MTATrial.validate('jg05-20120310');
+    
+    xyz = Trial.load('xyz');
+    ufr = create(MTADufr,Trial,xyz,[],[],0.2);
 
+    u = [29,24];
+    figure,
+    hist2([MakeUniformDistr(ufr(ufr(:,u(1))~=0|ufr(:,u(2))~=0,u(1))),...
+           MakeUniformDistr(ufr(ufr(:,u(1))~=0|ufr(:,u(2))~=0,u(2)))],...
+          20,...
+          20);
+
+    figure
+    u = [11,32];
+    hist2(log10(abs([ufr(ufr(:,u(1))~=0|ufr(:,u(2))~=0,u(1))+randn(size(ufr(ufr(:,u(1))~=0|ufr(:,u(2))~=0,u(1)),1),1),...
+           ufr(ufr(:,u(1))~=0|ufr(:,u(2))~=0,u(2))+randn(size(ufr(ufr(:,u(1))~=0|ufr(:,u(2))~=0,u(1)),1),1)])),...
+          linspace(1,2,100),...
+          linspace(1,2,100));
+    
+  case 'BHVPFS'
+    Trial= MTATrial('jg05-20120310');    
+    Trial.load('stc','nn0317_PP');
+    states = Trial.stc.list_state_attrib;
+    binDims = [40,40];
+    smoothingWeights = [1.2,1.2];
+    units = [];
+    overwrite = true;
+    for s = 7:numel(states)
+        pfs{s} = MTAApfs(Trial,units,states{s},overwrite, ...
+                         'binDims',binDims,'SmoothingWeights',smoothingWeights);
+    end
+    units = pfs{1}.data.clu;    
+
+    [accg,tbin] = autoccg(Trial,units,'theta');
+
+    t = 1;
+    mRate = pfs{9}.maxRate;
+    %units = find(sq(mRate(1,1,:))>3);
+
+
+
+    autoincr = false;
+    hfig = figure(849274);    
+    unit = units(1);
+    while unit~=-1,
+        for s = 1:numel(states)
+            subplot(3,4,s)
+            hold('on')
+            pf = pfs{s};
+            ratemap = pf.plot(unit,'isCircular',true);
+            ratemap(isnan(ratemap)) = -1;
+            imagesc(pf.adata.bins{1},pf.adata.bins{2},ratemap');    
+            text(pf.adata.bins{1}(1)+30,pf.adata.bins{2}(end)-50,...
+                 sprintf('%2.1f',max(ratemap(:))),'Color','w','FontWeight','bold','FontSize',10)
+            colormap([0,0,0;parula]);
+
+
+% $$$             plot(peakPatchCOM(t,i,unit==units,1),...
+% $$$                  peakPatchCOM(t,i,unit==units,2),'*k');
+% $$$             xlim([-600,600]),ylim([-350,350])                    
+            title([pf.session.trialName ':' pf.parameters.states,': ',num2str(unit)]);
+        end   
+        ForAllSubplots('colormap([0,0,0;parula])');
+        ForAllSubplots(['caxis([-1,',num2str(sq(mRate(unit))),'.*1.5])']);
+
+        subplot(3,4,10)
+        bar(tbin,accg(:,unit));
+        xlim([min(tbin),max(tbin)]);
+        title([' AutoCCG: Unit ',num2str(unit)]);
+
+        unit = figure_controls(hfig,unit,units,autoincr);
+    end
+    
+    
+    
+    
+    
     
 end
+
 
 
 

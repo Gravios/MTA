@@ -57,7 +57,7 @@ if isstruct(Sessions),
         Session = MTASession(s.sessionName,s.mazeName);
         
         xsync = Session.xyz.sync.copy;
-        xsync = xsync+offsets;
+        xsync = xsync+s.offsets;
         if isfield(s,'includeSyncInd'),
             if ~isempty(s.includeSyncInd)
                 dropSyncInd = ~ismember(1:xsync.size(1),s.includeSyncInd);

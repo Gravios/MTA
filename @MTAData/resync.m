@@ -164,7 +164,7 @@ elseif isa(Data,'MTAData'),
             loadedData = loadedData(newOrigin:endSync);
             syncEpoch.data = syncEpoch.data(newOrigin:endSync);
         else
-            Data.data = Data.data(startShiftIndex:endSync-newOrigin,:,:,:,:);
+            Data.data = Data.data(startShiftIndex:startShiftIndex+endSync-newOrigin,:,:,:,:);
             dataEpoch.data = dataEpoch.data(newOrigin:endSync);
             loadedData = loadedData(newOrigin:endSync);
             syncEpoch.data = syncEpoch.data(newOrigin:endSync);

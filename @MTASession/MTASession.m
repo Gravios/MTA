@@ -507,7 +507,12 @@ classdef MTASession < hgsetget
                                      Session.mazeName);
 
                 if ~isempty(stcMode),
-                    Session.load('stc',stcMode);
+                    try,
+                        Session.load('stc',stcMode);                        
+                    catch err
+                        disp(err);
+                    end
+
                 end
 
             else

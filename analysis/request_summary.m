@@ -167,3 +167,12 @@
 %    Examination of translated vs raw data rhm coherence with ncp
 
 
+%% 2016 07 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+
+% req20160730
+%    Create script which from a rigid body, will find a vector in
+%    the direction of locomotion which best represents the
+%    orientation of the head. Uses rhythmic head motion as primary
+%    classification feature. Assumes the front to back to front
+%    motion of the head during respiration is relatively contstant
+%    between animals.

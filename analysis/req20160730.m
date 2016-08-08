@@ -150,14 +150,8 @@ ang = zeros(size(xyz,1),size(xyz,2),size(xyz,2),3);
 for i=1:size(xyz,2),
     for j=1:size(xyz,2),
         if i==j,continue,end                    
-        switch size(xyz,3)
-          case 3
-            tang =cell(1,3);
-            [tang{:}] = cart2sph(diffMat(:,i,j,1),diffMat(:,i,j,2),diffMat(:,i,j,3));
-          case 2
-            tang =cell(1,2);
-            [tang{:}] = cart2pol(diffMat(:,i,j,1),diffMat(:,i,j,2),diffMat(:,i,j,3));
-        end
+        tang =cell(1,3);
+        [tang{:}] = cart2sph(diffMat(:,i,j,1),diffMat(:,i,j,2),diffMat(:,i,j,3));
         ang(:,i,j,:) = cell2mat(tang);
     end
 end

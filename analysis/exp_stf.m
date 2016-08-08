@@ -2,13 +2,9 @@ MTAstartup('vr_exp');
 overwriteSession = false;
 overwriteTrials  = false;
 overwriteStc     = false;
-trialList = 'Ed10_20140822.rov';
+trialList = 'Ed10VR_teleport';
 
-
-T = SessionList(trialList,...
-                '/storage/gravio/data/processed/xyz/Ed10/',...
-                '/storage/eduardo/data/processed/nlx/Ed10/');
-
+T = SessionList(trialList);
 
 if overwriteSession,
     Session = MTASession(T(1).sessionName,  ...
@@ -22,7 +18,7 @@ if overwriteSession,
 
     xyz = Session.load('xyz');
     xyz.data(:,:,1) = xyz.data(:,:,1)+T(1).xOffSet;
-    xyz.data(:,:,2) = xyz.data(:,:,2)+T(1).yOffSet;
+    xyz.data(:,:,2) = xyz.data(:,:,2)-T(1).yOffSet;
     xyz.save;
 end
 
@@ -108,7 +104,7 @@ nsts = size(states,2);
 
 display = true;
 overwrite = true;
-units = [];
+units = 1:185;
 
 % Generate unit auto correlogram
 [accg,tbin] = autoccg(Trial,units,'theta');
@@ -130,6 +126,24 @@ for t = 1:nt
 end
 
 
+
+for i = 1:nsts,
+    pfs{t,i} = MTAApfs(Trial,units,['shifted&',states{i}],overwrite, ...
+                       'binDims',binDims,...
+                       'SmoothingWeights',smoothingWeights,...
+                       'type','xy');
+end
+
+t = t+1;
+for i = 1:nsts,
+    pfs{t,i} = MTAApfs(Trial,units,[states{i},'-shifted'],overwrite, ...
+                       'binDims',binDims,...
+                       'SmoothingWeights',smoothingWeights,...
+                       'type','xy');
+end
+
+
+
 t = 1;
 mRate = [];
 for i = 1:nsts,
@@ -144,7 +158,7 @@ units = find(sq(mRate(1,1,:))>3);
 if display,    
     spOpts.width  = 4;
     spOpts.height = 2;
-    spOpts.ny = numel(T)+1;
+    spOpts.ny = numel(T)+1+1;
     spOpts.nx = numel(states);
     spOpts.padding = 2;
     spOpts.units = 'centimeters';
@@ -157,7 +171,7 @@ if display,
 
     
     sp = [];
-    autoincr = true;
+    autoincr = false;
 
     figHnum = 666999;
     set(0,'defaultAxesFontSize',8,...
@@ -171,7 +185,7 @@ if display,
     unit = units(1);
     while unit~=-1,
         clf
-        for t = 1:nt,
+        for t = 1:nt+1,
             for i = 1:nsts,
                 sp(t,i) = axes('Units',spOpts.units,...
                                'Position',[(spOpts.width +round(spOpts.padding/2))*(i-1)+round(spOpts.padding/2),...
@@ -198,11 +212,25 @@ if display,
         xlim([min(tbin),max(tbin)]);
         title([' AutoCCG: Unit ',num2str(unit)]);
 
-        print(gcf,'-depsc2',fullfile(getenv('PROJECT'),'figures/vr_exp/Ed10-20140822-rov-all',...
+        print(gcf,'-depsc2',fullfile(getenv('PROJECT'),'figures/vr_exp/Ed10-20140820-shift_teleport',...
                                      ['pfs_',num2str(unit),'.eps']));
-        print(gcf,'-dpng',  fullfile(getenv('PROJECT'),'figures/vr_exp/Ed10-20140822-rov-all',...
+        print(gcf,'-dpng',fullfile(getenv('PROJECT'),'figures/vr_exp/Ed10-20140820-shift_teleport',...
                                      ['pfs_',num2str(unit),'.png']));
-
+% $$$ % $$$         
+% $$$         reportfig('/storage/gravio/figures/',...
+% $$$                   hfig,...
+% $$$                   ['exp_teleport-' Trial.name],...
+% $$$                   'vr_exp',...
+% $$$                   false,...
+% $$$                   ['Unit: ' num2str(unit)],...  Tag
+% $$$                   '',...                Comment
+% $$$                   100,...                Resolution
+% $$$                   false,...             SaveFig
+% $$$                   'png',...             Format
+% $$$                   8,...                 Width
+% $$$                   12,...                 Height
+% $$$                   unit...               Id
+% $$$         );
         unit = figure_controls(hfig,unit,units,autoincr);
     
     end

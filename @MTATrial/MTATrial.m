@@ -169,7 +169,11 @@ classdef MTATrial < MTASession
                                  Trial.trialName);
 
                 if ~isempty(stcMode),
-                    Trial.load('stc',stcMode);
+                    try,
+                        Trial.load('stc',stcMode);
+                    catch err
+                        disp(err);
+                    end
                 end
 
             else

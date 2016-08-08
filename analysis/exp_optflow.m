@@ -15,10 +15,10 @@ xyz.data(:,:,2) = xyz.data(:,:,2)-325;
 xyz.save;
 
 
-Trials = SessionList('Ed10VR_opticflow',...
+T = SessionList('Ed10VR_opticflow',...
                      '/storage/gravio/data/processed/xyz/Ed10/',...
                      '/storage/eduardo/data/processed/nlx/Ed10/');
-%QuickTrialSetup(Trials);
+%QuickTrialSetup(T);
 
 Trial = MTATrial('Ed10-20140821','rov','all');
 Trial.stc.updateMode('default');
@@ -86,24 +86,23 @@ Trial.stc.save(1);
 
 
 % Calculate and plot
-nt = numel(Trials);
+nt = numel(T);
 Stc = Trial.stc.copy;
 
 states = {'theta','velthresh','velHthresh'};
 nsts = size(states,2);
 
 display = true;
-overwrite = false;
-units = 1:160;
+overwrite = true;
 units = [];
 
 [accg,tbin] = autoccg(Trial,units,'theta');
 
 pfs = {};
 for t = 1:nt
-    Trial = MTATrial(Trials(t).sessionName,...
-                     Trials(t).mazeName,...
-                     Trials(t).trialName);
+    Trial = MTATrial(T(t).sessionName,...
+                     T(t).mazeName,...
+                     T(t).trialName); 
     Trial.stc = Stc.copy;
     Trial.stc.load(Trial);
     for i = 1:nsts,
@@ -111,42 +110,27 @@ for t = 1:nt
     end
 end
 
-
-
-units = pfs{1,1}.data.clu;
-
-if display,
-
-    hfig = figure;
-    unit = units(1);
-    while unit~=-1,
-        for t = 1:nt,
-        for i = 1:nsts,
-            subplot2(nt+1,nsts,t,i);cla
-            try,pfs{t,i}.plot(unit,[],true,[],false);
-            title([pfs{t,i}.session.trialName ' ' pfs{t,i}.parameters.states,': ',num2str(unit)]);
-            
-            end
-        end
-        end
-        subplot2(nt+1,nsts,t+1,1);cla
-        bar(tbin,accg(:,unit));
-        %reportfig('/gpfs01/sirota/home/gravio/figures/',hfig,...
-        %          ['exp_optflow-' Trial.name] ,false,Trial.name);
-
-        unit = figure_controls(hfig,unit,units);
+t = 1;
+mRate = [];
+for i = 1:nsts,
+    if t==1, 
+        mRate(t,i,:) = pfs{t,i}.maxRate;
     end
-
+    
 end
 
+units = find(sq(mRate(1,1,:))>3);
+
 
 
 if display,
 
+    dir = fullfile(getenv('PROJECT'),'figures/vr_exp/Ed10-20140821-rov');
+    if ~exist(dir,'dir'),mkdir(dir); end
     
     spOpts.width  = 4;
     spOpts.height = 2;
-    spOpts.ny = numel(tnames)+1;
+    spOpts.ny = numel(T)+1;
     spOpts.nx = numel(states);
     spOpts.padding = 2;
     spOpts.units = 'centimeters';
@@ -157,7 +141,6 @@ if display,
     figOpts.position = [1,1,(spOpts.width+round(spOpts.padding/2)) *spOpts.nx+round(spOpts.padding/2),...
                             (spOpts.height+round(spOpts.padding/2))*spOpts.ny+figOpts.headerPadding+figOpts.footerPadding];
 
-    
     sp = [];
     autoincr = true;
 
@@ -188,7 +171,7 @@ if display,
                                             spOpts.height]...
                 );
 
-                pfs{t,i}.plot(unit,[],true,[0,max(pfsMaxRate(:,i))],false);
+                pfs{t,i}.plot(unit,[],true,[0,max(mRate(1,i,unit)).*1.5],false);
                 title([pfs{t,i}.session.trialName ':' pfs{t,i}.parameters.states,': ',num2str(unit)]);
             end
         end
@@ -206,25 +189,11 @@ if display,
         xlim([min(tbin),max(tbin)]);
         title([' AutoCCG: Unit ',num2str(unit)])
 
-        print(gcf,'-depsc2',fullfile(getenv('PROJECT'),'figures/vr_exp/Ed10-20140820-shift_teleport',...
+        print(gcf,'-depsc2',fullfile(dir,...
                                      ['pfs_',num2str(unit),'.eps']))
-        print(gcf,'-dpng',fullfile(getenv('PROJECT'),'figures/vr_exp/Ed10-20140820-shift_teleport',...
+        print(gcf,'-dpng',fullfile(dir,...
                                    ['pfs_',num2str(unit),'.png']))
-% $$$         
-% $$$         reportfig('/storage/gravio/figures/',...
-% $$$                   hfig,...
-% $$$                   ['exp_teleport-' Trial.name],...
-% $$$                   'vr_exp',...
-% $$$                   false,...
-% $$$                   ['Unit: ' num2str(unit)],...  Tag
-% $$$                   '',...                Comment
-% $$$                   100,...                Resolution
-% $$$                   false,...             SaveFig
-% $$$                   'png',...             Format
-% $$$                   8,...                 Width
-% $$$                   12,...                 Height
-% $$$                   unit...               Id
-% $$$         );
+
         unit = figure_controls(hfig,unit,units,autoincr);
     
     end

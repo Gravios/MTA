@@ -20,6 +20,8 @@ defargs = struct('RefTrial',           'jg05-20120317.cof.all',  ...
 [RefTrial, refStcMode, fetSet, stcMode, tag_preprocessing, tag_postprocessing, sampleRate,...
  nNeurons, nIter, states, rndMethod, norm, map2ref] = DefaultArgs(varargin,defargs,'--struct');
 
+
+Trial = MTATrial.validate(Trial);
 RefTrial = MTATrial.validate(RefTrial);
 
 % MAIN -------------------------------------------------------------------------
