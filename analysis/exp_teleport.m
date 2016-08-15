@@ -740,20 +740,20 @@ units = units(ind);
 
 %% Gererate unit rate maps (Place Fields)
 
-MTASTARTUP('VR_EXP');
-TRIALLIST = 'ED10VR_TELEPORT';
-T = SESSIONLIST(TRIALLIST,...
-                '/STORAGE/GRAVIO/DATA/PROCESSED/XYZ/ED10/',...
-                '/STORAGE/EDUARDO/DATA/PROCESSED/NLX/ED10/');
-T(3).OFFSETS = [15,-90];
+MTAstartup('vr_exp');
+triallist = 'Ed10VR_teleport';
+T = SessionList(triallist,...
+                '/storage/gravio/data/processed/xyz/Ed10/',...
+                '/storage/eduardo/data/processed/nlx/Ed10/');
+T(3).offsets = [15,-90];
 
 
-TRIAL = MTATRIAL.VALIDATE(T(1));
-TRIAL.LOAD('STC',T(1).STCMODE);
+Trial = MTATrial.validate(T(1));
+Trial.load('stc',T(1).stcMode);
 
 
 
-units =[1,5,16,18,22,23,28,29,39,77,79,94,99,101,104,107,110,122,134,138,139,142,146,158,168,184,185]';
+units =[1,5,7,9,16,18,22,28,29,94,99,101,104,107,110,122,134,158,168,184,185]';
 
 Stc = Trial.stc.copy;
 nt = numel(T);
@@ -815,32 +815,157 @@ pfk{t-1} = MTAAknnpfs_bs(Trial,units,['shifted&',states{i}],overwrite, ...
 
 
 
-
+%% Place Field Statistics 
 
 
 pfkstats = {};
 pfkshuff = {};
 % Test this version should be able to run multiple units at once
-for u = 1:numel(units)
-    for t = 2:nt
+for t = 2:nt
+    for u = 1:numel(units)        
         Trial = MTATrial(T(t).sessionName,T(t).mazeName,T(t).trialName);    
         Trial.stc = Stc.copy;
         Trial.stc.load(Trial);
-        [pfkstats{t-1,i,u},pfkshuff{t-1,i,u}] = PlaceFieldStats(Trial,pfk{t-1,i},units(u));
+        [pfkstats{t-1,u},pfkshuff{t-1,u}] = PlaceFieldStats(Trial,pfk{t-1},units(u));
     end
 end
+
+
 for u = 1:numel(units)
-    [pfkstats{t+1,i,u},pfkshuff{t+1,i,u}] = PlaceFieldStats(Trial,pfs{t+1,i},units(u));
+    [pfkstats{t,u},pfkshuff{t,u}] = PlaceFieldStats(Trial,pfk{t},units(u));
 end
 
 
 
-for t = 1:nt+1
-        pcom = cellfun(@(x) sq(x.patchCOM(1,1,find(max(x.patchPFR)==x.patchPFR),:)),pfstats(t,i,:),'UniformOutput',false);
+for t = 1:nt
+    for k = 1:numIter,
+        pcom = cellfun(@(x,y) sq(x.patchCOM(1,y,find(max(x.patchPFR(1,y,:))==x.patchPFR(1,y,:)),:)),pfkshuff(t,:),repmat({k},[1,numel(units)]),'UniformOutput',false);
         pind = ~cellfun(@isempty,pcom);
-        peakPatchCOM(t,i,pind,:) = sq(cell2mat(pcom(pind)))';
-        peakPatchRate(t,i,:) = sq(cellfun(@(x) max(x.patchPFR),pfstats(1,1,:)));
-        parea = cellfun(@(x) sq(x.patchArea(1,1,find(max(x.patchPFR)==x.patchPFR),:)),pfstats(t,i,:),'UniformOutput',false);
+        peakPatchCOM(t,k,pind,:) = cell2mat(cellfun(@(x) x(:,1),pcom(pind),'uniformoutput',false))';
+        peakPatchRate(t,k,:) = sq(cellfun(@(x,y) max(x.patchPFR(1,y,:)),pfkshuff(t,:),repmat({k},[1,numel(units)])));
+        parea = cellfun(@(x,y) sq(x.patchArea(1,y,find(max(x.patchPFR(1,y,:))==x.patchPFR(1,y,:)),:)),pfkshuff(t,:),repmat({k},[1,numel(units)]),'UniformOutput',false);
         pind = ~cellfun(@isempty,parea);
-        peakPatchArea(t,i,pind) = sq(cell2mat(parea(pind)))';
+        peakPatchArea(t,k,pind) = sq(cell2mat(cellfun(@(x) x(1),parea(pind),'uniformoutput',false))');
+    end
 end
+
+
+
+
+
+figure,imagesc(pfk{1}.adata.bins{1},pfk{1}.adata.bins{2}, ...
+               reshape(pfk{1}.data.rateMap(:,1,1),fliplr(cellfun(@numel,pfk{1}.adata.bins)))),axis xy
+hold on,plot(pfkshuff{1,1}.patchCOM(1,1,1,2),pfkshuff{1,1}.patchCOM(1,1,1,1),'*w')
+hold on,plot(sq(peakPatchCOM(1,:,1,2)),sq(peakPatchCOM(1,:,1,1)),'*m');
+
+figure,hold on,
+hs = bar(eds,histc(sq(peakPatchCOM(1,:,1,2)),eds),'histc');
+hs.FaceAlpha = 0.5;
+hs.FaceColor = 'c';
+hs.EdgeColor = 'c';
+hs.EdgeAlpha = 0.5;
+xlim([-600,600,]);
+
+
+
+
+eds = linspace([-600,600,500]);
+
+display = true;
+if display,
+    hfig = figure(394929939);
+    hold on
+    set(0,'defaultAxesFontSize',8,...
+          'defaultTextFontSize',8)
+    set(hfig,'Units','centimeters')
+    set(hfig,'Position',[15,0,5,25]);
+    set(hfig,'PaperPositionMode','auto');
+    
+    FigDir = 'Ed10-20140820-shift_teleport_pfk_hvel_bs_patch';
+    mkdir(fullfile(OwnDir,FigDir))
+    
+    fpind = 1:3:7;
+    for u = 1:numel(units);
+        clf
+        for i = 1:2:5,
+
+            k = floor(i/2)+1;
+            j = ceil(i/2)+1;
+            
+            subplot(9,1,fpind(k));hold on,        
+            imagesc(pfk{i}.adata.bins{1},...
+                    pfk{i}.adata.bins{2}, ...
+                    reshape(pfk{i}.data.rateMap(:,pfk{i}.data.clu==units(u),1), ...
+                            fliplr(pfk{i}.adata.binSizes')));
+            axis xy
+            hold on,plot(sq(peakPatchCOM(i,:,u,2)),sq(peakPatchCOM(i,:,u,1)),'*m');
+            
+            xlim([-600,600]);
+            ylim([-350,350]);
+            if i ==1,
+                title(['BS pfk patch pos, unit: ',num2str(units(u))]);
+            end
+            
+
+            % patchCOM distribution along x axis
+            subplot(9,1,i+k); hold on,
+            hs = bar(eds,histc(sq(peakPatchCOM(i,:,u,2)),eds),'histc');
+            hs.FaceAlpha = 0.5;
+            hs.FaceColor = 'c';
+            hs.EdgeColor = 'c';
+            hs.EdgeAlpha = 0.5;
+            
+            ho = bar(eds,histc(sq(peakPatchCOM(i+1,:,u,2)),eds),'histc');
+            ho.FaceAlpha = 0.5;
+            ho.FaceColor = 'r';
+            ho.EdgeColor = 'r';
+            ho.EdgeAlpha = 0.5;
+            xlim([-600,600]);
+            
+            subplot(9,1,i+j); hold on,    
+            imagesc(pfk{i+1}.adata.bins{1},...
+                    pfk{i+1}.adata.bins{2}, ...
+                    reshape(pfk{i+1}.data.rateMap(:,pfk{i+1}.data.clu==units(u),1), ...
+                            fliplr(pfk{i+1}.adata.binSizes')));
+            axis xy
+            hold on,plot(sq(peakPatchCOM(i+1,:,u,2)),sq(peakPatchCOM(i+1,:,u,1)),'*m');        
+            xlim([-600,600]);
+            ylim([-350,350]);
+
+        end
+        print(gcf,'-depsc2',fullfile(OwnDir,FigDir,['pfs_bs_patch',num2str(units(u)),'.eps']));
+        print(gcf,'-dpng',  fullfile(OwnDir,FigDir,['pfs_bs_patch',num2str(units(u)),'.png']));
+        
+    end
+end
+
+dprime = @(x,y) (mean(x(nniz(x')))-mean(y(nniz(y'))))/sqrt(0.5*(var(x(nniz(x')))+var(y(nniz(y')))));
+dprx = nan([nt-1,numel(units)]);
+dpry = nan([nt-1,numel(units)]);
+
+for i = 1:5,
+    for u = 1:numel(units);    
+        dprx(i,u) = dprime(peakPatchCOM(i,:,u,2),peakPatchCOM(i+1,:,u,2));
+        dpry(i,u) = dprime(peakPatchCOM(i,:,u,1),peakPatchCOM(i+1,:,u,1));
+    end    
+end
+
+figure
+for i = 1:5,
+    subplot(1,5,i);
+    
+    %axes([1+i,2,2.5,2.5])
+    plot(dprx(i,:),dpry(i,:),'.')
+    xlim([-20,20]),ylim([-20,20])    
+    Lines(nanmean(dprx(i,:)),[],'k')
+    Lines([],nanmean(dpry(i,:)),'k')
+    grid on
+end
+
+
+
+
+
+
+
+
