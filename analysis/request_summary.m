@@ -1,5 +1,6 @@
 
 %% 2015 07 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+% format: v0.1
 
 % req20150728
 %    create video of rear 
@@ -7,6 +8,7 @@
 
 
 %% 2015 08 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+% format: v0.1
 
 % req20150817
 %    Feature exploration and visualization 
@@ -22,6 +24,7 @@
 
 
 %% 2015 09 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+% format: v0.1
 
 % req20150914
 %    Run tsne on a session and overlay the hand labels, and then plot
@@ -37,6 +40,7 @@
 
 
 %% 2015 10 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+% format: v0.1
 
 % req20151007
 %    logistic regression models 
@@ -49,6 +53,7 @@
 
 
 %% 2015 11 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+% format: v0.1
 
 % req20151103
 %    Neural network stuff
@@ -69,6 +74,7 @@
 
 
 %% 2015 12 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+% format: v0.1
 
 % req20151203:
 %    tSNE over all jg05 sessions excluding jg05-20120317
@@ -96,7 +102,7 @@
 
 
 %% 2016 01 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
-
+% format: v0.1
 
 % req20160114
 %    tau masked boundaries for confusion matrix computation
@@ -112,6 +118,7 @@
 
 
 %% 2016 02 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+% format: v0.1
 
 % req20160212
 %    playing with feature copulas 
@@ -121,16 +128,22 @@
 
 
 %% 2016 03 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+% format: v0.1
 
 % req20160310
 %    miha feature selection
 
-% req20160315
+% req20160315 (stasis)
+%
+%  Final_Forms:
+%
+%  Description:
 %    preliminary analysis of optogenetic rat data and mouse data
 %    with optitrack
 
 
 %% 2016 04 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+% format: v0.1
 
 % req20160411
 %    Examine inter-session overlap in t-sne space
@@ -141,6 +154,7 @@
 
 
 %% 2016 05 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+% format: v0.1
 
 % req20160510
 %    Report feature distributions for a set of mappings and
@@ -154,25 +168,67 @@
 %    bhv_multi_patternnet
 
 
-%% 2016 06 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 
-% req20160615
+
+%% 2016 06 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+% format: v0.1
+
+% req20160615 (stasis) ---------------------------------------------
 %    Check the transform_rigidbody script against emperical values
 
-% req20160620
+% req20160620 (stasis) ---------------------------------------------
 %    Examination of head pitch dependence on joint estimation from
 %    rigidbody dynamics
 
-% req20160621
+% req20160621 (statis) ---------------------------------------------
 %    Examination of translated vs raw data rhm coherence with ncp
 
 
-%% 2016 07 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 
-% req20160730
+
+
+%% 2016 07 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+% format: v0.2
+
+% req20160719 ----------------------------------------------------
+%
+%  Status: retired
+%
+%  Final_Forms: analysis/exp_teleport.m
+%               analysis/exp_teleport_0823.m
+%
+%  Description:
+%    Initial script for the shift teleportation experiment of the
+%    VR system. 
+%
+
+
+
+% req20160721 ----------------------------------------------------
+%
+%  Status: Active
+%
+%  Final_Forms: NA
+%
+%  Description: 
+%    Exploration of head features for the segmentation of states
+%    which have previously required body features (postures/kinematics)
+%
+
+
+
+% req20160730 ----------------------------------------------------
+%
+%  Status: retired
+%
+%  Final_Forms: utilities/orient_head_to_rhm.m
+%
+%  Description:
 %    Create script which from a rigid body, will find a vector in
 %    the direction of locomotion which best represents the
 %    orientation of the head. Uses rhythmic head motion as primary
 %    classification feature. Assumes the front to back to front
 %    motion of the head during respiration is relatively contstant
 %    between animals.
+%
+

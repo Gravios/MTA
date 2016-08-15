@@ -1,7 +1,7 @@
 function [RateMap,Bins,distdw,distIndw]= PlotKNNPF(Session,ufr,pos,varargin)
 %function [RateMap,Bins,distdw,distIndw]= PlotKNNPF(Session,ufr,pos,varargin)
 %[binDims,nnn,dthresh,downSampleRate,type,distdw,distIndw] = DefaultArgs(varargin,{50,70,.5*Session.xyz.sampleRate,20,'xy',[],[]});
-[binDims,nnn,dthresh,type,distdw,distIndw,bound_lims,stat_fun] = DefaultArgs(varargin,{50,70,.5*Session.xyz.sampleRate,'xy',[],[],[],@nanmean},1);
+[binDims,nnn,dthresh,type,distdw,distIndw,bound_lims,stat_fun] = DefaultArgs(varargin,{50,70,80,'xy',[],[],[],@nanmean},1);
 
 
 ndims = numel(binDims);
@@ -18,10 +18,10 @@ end
 
 
 
-mywu = ufr.copy;
+mywu = ufr;
 mywu = mywu(:,1);
 %mywu.data = repmat(mywu.data,[1,1,nbins]);
-mywu.data = repmat(mywu,[1,1,nbins]);
+mywu = repmat(mywu,[1,1,nbins]);
 
 if isempty(distdw)&&isempty(distIndw)
     mywx = repmat(pos,[1,1,nbins]);

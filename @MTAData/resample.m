@@ -106,6 +106,19 @@ switch Data.type
         Data.data(mind-1,2)=Data.data(mind,2);
         Data.data(mind,:)=[];
     end
+
+    if isa(DataObj,'MTAData'),
+        % Remove periods which exist past the end of the reference object
+        while Data.data(end,1)>size(DataObj,1)
+            Data.data(end,:) = [];
+        end
+        
+        % Adjust final end point to match the end point of the reference object
+        if Data.data(end)>size(DataObj,1)
+            Data.data(end) = size(DataObj,1);
+        end
+    end
+    
 % $$$                   if isa(Data.sync,'MTAData'),
 % $$$                       Data.origin = rf(Data.origin/Data.sampleRate*newSampleRate); 
 % $$$                   else

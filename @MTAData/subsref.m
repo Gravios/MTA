@@ -16,7 +16,7 @@ switch Data.type
         for i = epicDataInd,
             epoch = S(1).subs{i}.copy;
             if Data.sampleRate~=epoch.sampleRate,
-                epoch.resample(Data.sampleRate);
+                epoch.resample(Data);
             end
             S(1).subs{i} = epoch.data;
         end

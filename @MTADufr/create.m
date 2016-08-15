@@ -1,6 +1,7 @@
 function Data = create(Data,Session,varargin)
 %create(Data,Session,DataObj,state,units,twin,overwrite)
-%Calculate the instantaneous firing rate of individual units
+%
+% Calculate the instantaneous firing rate of individual units
 %
 [DataObj,state,units,twin,overwrite] = DefaultArgs(varargin,{Session.lfp,[],[],0.05,0});
 
@@ -25,18 +26,29 @@ if isa(DataObj,'MTAApfs'),
 else
     
     Data.sampleRate = DataObj.sampleRate;
-    %if ~exist(Data.fpath,'file')||overwrite,
+
+    % Load unit activity
     spk = Session.spk.copy();
     spk.create(Session,DataObj.sampleRate,state,units);
+
+    
     if ~DataObj.isempty,
         dsize = DataObj.size(1);
     else
         dsize = diff(round(DataObj.sync.sync([1,end])*DataObj.sampleRate+1));
     end
-    Data.data = zeros(dsize,numel(units));
+    
+    % Pre-allocate output array
+    Data.data = zeros([dsize,numel(units)]);
+    
+    % If no units were provided load all units
     if isempty(units), units = 1:spk.map(end,1);end
+    
+    % create convolution window 
     swin = round(twin*DataObj.sampleRate);
     gwin = ones([swin,1]);
+
+    % accumulate and convolve activity of each unit
     for unit = units(:)'
         res = spk.res(spk.clu==unit);
         res(res==0) = 1;

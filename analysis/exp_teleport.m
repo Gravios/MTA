@@ -106,8 +106,7 @@ nt = numel(T);
 states = {'theta','velthresh','velHthresh'};
 nsts = size(states,2);
 
-display = true;
-overwrite = true;
+overwrite = false;
 units = [];
 
 % Generate unit auto correlogram
@@ -119,6 +118,10 @@ units = [];
 %% Gererate unit rate maps (Place Fields)
 binDims = [40,40];
 smoothingWeights = [1.2,1.2];
+%numIter = 100;
+%bootstrap = 0.9;
+numIter = 1;
+bootstrap = 0;
 pfs = {};
 for t = 1:nt-1
     Trial = MTATrial(T(t).sessionName,T(t).mazeName,T(t).trialName);    
@@ -126,7 +129,10 @@ for t = 1:nt-1
     Trial.stc.load(Trial); 
    for i = 1:nsts,
         pfs{t,i} = MTAApfs(Trial,units,states{i},overwrite, ...
-                           'binDims',binDims,'SmoothingWeights',smoothingWeights);
+                           'binDims',binDims,...
+                           'SmoothingWeights',smoothingWeights,...
+                           'numIter',numIter,...
+                           'bootstrap',bootstrap);
     end
 end
 
@@ -139,15 +145,20 @@ for i = 1:nsts,
     pfs{t,i} = MTAApfs(Trial,units,[states{i},'-shifted'],overwrite, ...
                        'binDims',binDims,...
                        'SmoothingWeights',smoothingWeights,...
-                       'type','xy');
+                       'numIter',numIter,...
+                       'bootstrap',bootstrap);
+
 end
 t = nt+1;
 for i = 1:nsts,
     pfs{t,i} = MTAApfs(Trial,units,['shifted&',states{i}],overwrite, ...
                        'binDims',binDims,...
                        'SmoothingWeights',smoothingWeights,...
-                       'type','xy');
+                       'numIter',numIter,...
+                       'bootstrap',bootstrap);
 end
+
+
 
 
 
@@ -155,11 +166,12 @@ end
 %% Select Units with Firing rate greater than 3Hz in all.theta
 t = 1;
 mRate = [];
-for i = 1:nsts,
-    if t==1, 
+for t = 1:nt;
+    for i = 1:nsts,
+
         mRate(t,i,:) = pfs{t,i}.maxRate;
+        
     end
-    
 end
 units = find(sq(mRate(1,1,:))>3);
 
@@ -208,7 +220,7 @@ spOpts.ny = numel(T)+1;
 spOpts.nx = numel(states);
 spOpts.padding = 2;
 spOpts.units = 'centimeters';
-figOpts.units = 'centimeters';a
+figOpts.units = 'centimeters';n
 figOpts.headerPadding = 2;
 figOpts.footerPadding = 2;
 figOpts.position = [1,1,(spOpts.width+round(spOpts.padding/2)) *spOpts.nx+round(spOpts.padding/2),...
@@ -217,8 +229,8 @@ figOpts.position = [1,1,(spOpts.width+round(spOpts.padding/2)) *spOpts.nx+round(
 
 mkdir(fullfile(OwnDir,'Ed10-20140820-shift_teleport_pfs_bcx'));
 sp = [];
-%autoincr = false;
-autoincr = true;
+autoincr = false;
+%autoincr = true;
 
 figHnum = 666999;
 set(0,'defaultAxesFontSize',8,...
@@ -243,15 +255,12 @@ while unit~=-1,
             pf = pfs{t,i};
 
             ratemap = pf.plot(unit,'isCircular',false);
-            minv = min(ratemap(:));
-            maxv = sq(mRate(1,i,unit));
-            ratemap(isnan(ratemap)) = minv-((maxv-minv)/20);
+            ratemap(isnan(ratemap)) = -1;
             imagesc(pf.adata.bins{1},pf.adata.bins{2},ratemap');    
-            text(pf.adata.bins{1}(1)+950,pf.adata.bins{2}(end)-70,...
+            text(pf.adata.bins{1}(end)-350,pf.adata.bins{2}(end)-50,...
                  sprintf('%2.1f',max(ratemap(:))),'Color','w','FontWeight','bold','FontSize',10)
             colormap([0,0,0;parula]);
-            ca = caxis;
-            caxis([ca(1),sq(mRate(1,i,unit)).*1.5]);
+            caxis([-1,sq(mRate(1,i,unit)).*1.5]);
             plot(peakPatchCOM(t,i,unit==units,1),...
                  peakPatchCOM(t,i,unit==units,2),'*k');
             xlim([-600,600]),ylim([-350,350])                    
@@ -270,11 +279,11 @@ while unit~=-1,
     bar(tbin,accg(:,unit));
     xlim([min(tbin),max(tbin)]);
     title([' AutoCCG: Unit ',num2str(unit)]);
-
-    print(gcf,'-depsc2',fullfile(OwnDir,'Ed10-20140820-shift_teleport_pfs',...
-                                 ['pfs_',num2str(unit),'.eps']));
-    print(gcf,'-dpng',  fullfile(OwnDir,'Ed10-20140820-shift_teleport_pfs',...
-                                 ['pfs_',num2str(unit),'.png']));
+% $$$ 
+% $$$     print(gcf,'-depsc2',fullfile(OwnDir,'Ed10-20140820-shift_teleport_pfs',...
+% $$$                                  ['pfs_',num2str(unit),'.eps']));
+% $$$     print(gcf,'-dpng',  fullfile(OwnDir,'Ed10-20140820-shift_teleport_pfs',...
+% $$$                                  ['pfs_',num2str(unit),'.png']));
 
     unit = figure_controls(hfig,unit,units,autoincr);    
 end
@@ -288,7 +297,7 @@ for u = 1:numel(units)
     for i = 1:nsts,            
         for t = 1:nt
             for j = 1:nt
-            pfShift(t,j,i,u) = peakPatchCOM(t,i,u)-peakPatchCOM(j,i,u);
+            pfShift(t,j,i,u,:) = peakPatchCOM(t,i,u,:)-peakPatchCOM(j,i,u,:);
             end
         end        
     end
@@ -297,7 +306,7 @@ t = t+1;
 for u = 1:numel(units)
     for i = 1:nsts,            
         for j = 1:nt
-            pfShift(t,j,i,u) = peakPatchCOM(t,i,u)-peakPatchCOM(j,i,u);
+            pfShift(t,j,i,u,:) = peakPatchCOM(t,i,u,:)-peakPatchCOM(j,i,u,:);
         end        
     end
 end
@@ -306,14 +315,14 @@ j = j+1;
 for u = 1:numel(units)
     for i = 1:nsts,            
         for t = 1:nt
-            pfShift(t,j,i,u) = peakPatchCOM(t,i,u)-peakPatchCOM(j,i,u);
+            pfShift(t,j,i,u,:) = peakPatchCOM(t,i,u,:)-peakPatchCOM(j,i,u,:);
         end        
     end
 end
 t = t+1;
 for u = 1:numel(units)
     for i = 1:nsts,            
-        pfShift(t,j,i,u) = peakPatchCOM(t,i,u)-peakPatchCOM(j,i,u);
+        pfShift(t,j,i,u,:) = peakPatchCOM(t,i,u,:)-peakPatchCOM(j,i,u,:);
     end
 end
 
@@ -374,62 +383,6 @@ title('Alt. control -> shift')
 ForAllSubplots('xlim([-120,120])')
 
 
-
-
-%% 1D analysis stuff
-
-
-pfx = {};
-for t = 1:nt
-    Trial = MTATrial(T(t).sessionName,T(t).mazeName,T(t).trialName);    
-    Trial.stc = Stc.copy;
-    Trial.stc.load(Trial);
-    for i = 1:nsts,
-        pfx{t,i} = MTAApfs(Trial,units,states{i},overwrite, ...
-                           'binDims',[60],...
-                           'SmoothingWeights',[0.8],...
-                           'type','x');
-    end
-end
-
-for i = 1:nsts,
-    pfx{t,i} = MTAApfs(Trial,units,[states{i},'&shifted'],overwrite, ...
-                       'binDims',[60],...
-                       'SmoothingWeights',[0.8],...
-                       'type','x');
-end
-
-t = t+1
-for i = 1:nsts,
-    pfx{t,i} = MTAApfs(Trial,units,[states{i},'-shifted'],overwrite, ...
-                       'binDims',[60],...
-                       'SmoothingWeights',[0.8],...
-                       'type','x');
-end
-
-
-
-
-% 1D version of place fields
-unit = units(1);
-autoincr = false;
-figHnum = 666995;
-set(0,'defaultAxesFontSize',8,...
-      'defaultTextFontSize',8)
-hfig = figure(figHnum);clf
-set(hfig,'units',figOpts.units)
-set(hfig,'Position',figOpts.position)
-set(hfig,'PaperPositionMode','auto');
-while unit~=-1,
-    clf;
-    hold('on');
-    i = 3;
-    for t = 2:nt-1,
-        plot(pfx{t,i}.adata.bins{1},pfx{t,i}.data.rateMap(:,pfx{t,i}.data.clu==unit));
-    end
-    legend({T(2:end-1).trialName});
-    unit = figure_controls(hfig,unit,units,autoincr);
-end
 
 
 %% time X xyz X ufr
@@ -662,11 +615,13 @@ end
 
 
 
+% Portrait
+
 sunits = [1,5,18];
 
 spOpts.width  = 4;
 spOpts.height = 2;
-spOpts.ny = numel(sunits)+2;
+spOpts.ny = numel(sunits);
 spOpts.nx = numel(T);
 spOpts.padding = 2;
 spOpts.units = 'centimeters';
@@ -677,8 +632,9 @@ figOpts.position = [1,1,(spOpts.width+round(spOpts.padding/2)) *spOpts.nx+round(
                      (spOpts.height+round(spOpts.padding/2))*spOpts.ny+figOpts.headerPadding+figOpts.footerPadding];
 
 
-
-mkdir(fullfile(OwnDir,'Ed10-20140820-shift_teleport_ufr_pfs_xySdist'))
+figSet = 1;
+FigDir = 'Ed10-20140820-shift_teleport_ufr_pfs_xySdist_hvel';
+mkdir(fullfile(OwnDir,FigDir))
 figHnum = 399329239;;
 set(0,'defaultAxesFontSize',8,...
       'defaultTextFontSize',8)
@@ -689,66 +645,202 @@ set(hfig,'PaperPositionMode','auto');
 
 hfig = figure(399329239);
 unit =units(1);
-i = 1;
+i = 3;
 clf
 
 for unit = sunits
     for t = 1:nt,
         pf = pfs{t+1,i};
         uind = find(unit==sunits);
+        % Create axes
         sp(t,i) = axes('Units',spOpts.units,...
                        'Position',[(spOpts.width +round(spOpts.padding/2))*(uind-1)+round(spOpts.padding/2),...
-                            (spOpts.height+round(spOpts.padding/2))*(spOpts.ny-t+1)+round(spOpts.padding/2),...
+                            (spOpts.height+round(spOpts.padding/2))*(spOpts.ny-t+1+2)+round(spOpts.padding/2),...
                             spOpts.width,...
                             spOpts.height]...
                        );
         
         hold('on')
+
+        % Correct color of nans and plot place field
         ratemap = pf.plot(unit,'isCircular',false);
-        minv = min(ratemap(:));
-        maxv = sq(mRate(1,i,unit));
-        ratemap(isnan(ratemap)) = minv-((maxv-minv)/20);
+        ratemap(isnan(ratemap)) = -1;
         imagesc(pf.adata.bins{1},pf.adata.bins{2},ratemap');    
         text(pf.adata.bins{1}(end)-350,pf.adata.bins{2}(end)-50,...
              sprintf('%2.1f',max(ratemap(:))),'Color','w','FontWeight','bold','FontSize',10)
         colormap([0,0,0;parula]);
-        ca = caxis;
-        caxis([ca(1),sq(mRate(1,i,unit)).*1.5]);
+        caxis([-1,sq(mRate(1,i,unit)).*1.5]);
+        
         if uind==1,ylabel([pf.session.trialName ':' pf.parameters.states]);end
+
+        % Plot cross over 
         plot(peakPatchCOM(t+1,i,unit==units,1),...
              peakPatchCOM(t+1,i,unit==units,2),'*k');
         Lines(-200.*mod(t+1,2),[],'k');
         xlim([-600,600]),ylim([-350,350])        
         set(gca,'YTickLabel',{})
         set(gca,'XTickLabel',{})
+        
+        % set colormap 
+        
     end
 end
 
 
 
 spCohere = pfs{1,1}.spatialCoherence(units);
-ind =spCohere>0.99;
+%ind =spCohere>0.99;
+ind = sq(all(mRate(:,3,units)>3))&spCohere>0.99;
 
+% Inter trial x shift dist
 for i = 0:2:8;
-axes('Units',spOpts.units,...
-     'Position',[18,(4-i/2)*3+2.5,2.5,2.5]);
-hold on
-xlim([-40,40]),ylim([-40,40])
-Lines([],0,[.75,.75,.75]);
-Lines(0,[],[.75,.75,.75]);
-Lines(20,[],'r');
-Lines(-20,[],'r');
+    axes('Units',spOpts.units,...
+         'Position',[18,(4-i/2)*3+2.5,2.5,2.5]);
+    hold on
+    xlim([-40,40]),ylim([-40,40])
+    Lines([],0,[.75,.75,.75]);
+    Lines(0,[],[.75,.75,.75]);
+    Lines(20,[],'r');
+    Lines(-20,[],'r');
 % $$$ Lines([],20,'r');
 % $$$ Lines([],-20,'r');
-plot(-sq(pfShift(i/2+2,i/2+3,2,ind))/10,-sq(pfShift(i/2+2,i/2+3,1,ind))/10,'.')
+    plot(-sq(pfShift(i/2+2,i/2+3,3,ind,1))/10,-sq(pfShift(i/2+2,i/2+3,3,ind,2))/10,'.')
+    hold on,
+    error_ellipse(cov([-sq(pfShift(i/2+2,i/2+3,3,ind,1))/10,-sq(pfShift(i/2+2,i/2+3,3,ind,2))/10]))
 
-if i~=8,set(gca,'XTickLabel',{}),end
+    if i~=8,set(gca,'XTickLabel',{}),end
+end
+
+
+% Fist to current x shift dist
+for i = 0:2:8;
+    axes('Units',spOpts.units,...
+         'Position',[22,(4-i/2)*3+2.5,2.5,2.5]);
+    hold on
+    xlim([-40,40]),ylim([-40,40])
+    Lines([],0,[.75,.75,.75]);
+    Lines(0,[],[.75,.75,.75]);
+    Lines(20,[],'r');
+    Lines(-20,[],'r');
+% $$$ Lines([],20,'r');
+% $$$ Lines([],-20,'r');
+    plot(-sq(pfShift(2,i/2+3,3,ind,1))/10,-sq(pfShift(2,i/2+3,3,ind,2))/10,'.')
+    error_ellipse(cov([-sq(pfShift(2,i/2+3,3,ind,1))/10,-sq(pfShift(2,i/2+3,3,ind,2))/10]))
+    if i~=8,set(gca,'XTickLabel',{}),end
+end
+
+
+print(gcf,'-depsc2',fullfile(OwnDir,FigDir,['ufr_pfs_',num2str(figSet),'.eps']));
+print(gcf,'-dpng',  fullfile(OwnDir,FigDir,['xShiftD_',num2str(figSet),'.png']));
+
+
+
+
+units = units(ind);
+
+%% Gererate unit rate maps (Place Fields)
+
+MTASTARTUP('VR_EXP');
+TRIALLIST = 'ED10VR_TELEPORT';
+T = SESSIONLIST(TRIALLIST,...
+                '/STORAGE/GRAVIO/DATA/PROCESSED/XYZ/ED10/',...
+                '/STORAGE/EDUARDO/DATA/PROCESSED/NLX/ED10/');
+T(3).OFFSETS = [15,-90];
+
+
+TRIAL = MTATRIAL.VALIDATE(T(1));
+TRIAL.LOAD('STC',T(1).STCMODE);
+
+
+
+units =[1,5,16,18,22,23,28,29,39,77,79,94,99,101,104,107,110,122,134,138,139,142,146,158,168,184,185]';
+
+Stc = Trial.stc.copy;
+nt = numel(T);
+states = {'theta','velthresh','velHthresh'};
+nsts = size(states,2);
+
+    
+binDims = [20,20];
+numIter = 1000;
+nNearestNeighbors = 300;
+distThreshold = 125;
+ufrShufBlockSize = 1;
+sampleRate = 30;
+pfk = {};
+overwrite = false;
+i = 3;
+
+for t = 2:nt-1
+    Trial = MTATrial(T(t).sessionName,T(t).mazeName,T(t).trialName);    
+    Trial.stc = Stc.copy;
+    Trial.stc.load(Trial); 
+    xyz = Trial.load('xyz');
+    xyz.resample(sampleRate);
+
+    pfk{t-1} = MTAAknnpfs_bs(Trial,units,states{i},overwrite, ...
+                             'binDims',binDims,...
+                             'nNearestNeighbors',nNearestNeighbors,...
+                             'ufrShufBlockSize',ufrShufBlockSize,...
+                             'distThreshold',distThreshold,...
+                             'pos',xyz,...
+                             'numIter',numIter);
+end
+
+
+t = nt;
+Trial = MTATrial(T(t).sessionName,T(t).mazeName,T(t).trialName);    
+Trial.stc = Stc.copy;
+Trial.stc.load(Trial); 
+xyz = Trial.load('xyz');
+xyz.resample(sampleRate);
+
+
+pfk{t-1} = MTAAknnpfs_bs(Trial,units,[states{i},'-shifted'],overwrite, ...
+                       'binDims',binDims,...
+                       'nNearestNeighbors',nNearestNeighbors,...
+                       'ufrShufBlockSize',ufrShufBlockSize,...
+                       'distThreshold',distThreshold,...
+                       'pos',xyz,...
+                       'numIter',numIter);
+
+t = nt+1;
+pfk{t-1} = MTAAknnpfs_bs(Trial,units,['shifted&',states{i}],overwrite, ...
+                       'binDims',binDims,...
+                       'nNearestNeighbors',nNearestNeighbors,...
+                       'ufrShufBlockSize',ufrShufBlockSize,...
+                       'distThreshold',distThreshold,...                       
+                       'pos',xyz,...
+                       'numIter',numIter);
+
+
+
+
+
+
+pfkstats = {};
+pfkshuff = {};
+% Test this version should be able to run multiple units at once
+for u = 1:numel(units)
+    for t = 2:nt
+        Trial = MTATrial(T(t).sessionName,T(t).mazeName,T(t).trialName);    
+        Trial.stc = Stc.copy;
+        Trial.stc.load(Trial);
+        [pfkstats{t-1,i,u},pfkshuff{t-1,i,u}] = PlaceFieldStats(Trial,pfk{t-1,i},units(u));
+    end
+end
+for u = 1:numel(units)
+    [pfkstats{t+1,i,u},pfkshuff{t+1,i,u}] = PlaceFieldStats(Trial,pfs{t+1,i},units(u));
 end
 
 
 
-print(gcf,'-depsc2',fullfile(OwnDir,'Ed10-20140820-shift_teleport_ufr_pfs_xySdist',...
-                             ['ufr_pfs_',num2str(unit),'.eps']));
-print(gcf,'-dpng',  fullfile(OwnDir,'Ed10-20140820-shift_teleport_ufr_pfs_xySdist',...
-                             ['ufr_pfs_',num2str(unit),'.png']));
-
+for t = 1:nt+1
+        pcom = cellfun(@(x) sq(x.patchCOM(1,1,find(max(x.patchPFR)==x.patchPFR),:)),pfstats(t,i,:),'UniformOutput',false);
+        pind = ~cellfun(@isempty,pcom);
+        peakPatchCOM(t,i,pind,:) = sq(cell2mat(pcom(pind)))';
+        peakPatchRate(t,i,:) = sq(cellfun(@(x) max(x.patchPFR),pfstats(1,1,:)));
+        parea = cellfun(@(x) sq(x.patchArea(1,1,find(max(x.patchPFR)==x.patchPFR),:)),pfstats(t,i,:),'UniformOutput',false);
+        pind = ~cellfun(@isempty,parea);
+        peakPatchArea(t,i,pind) = sq(cell2mat(parea(pind)))';
+end

@@ -110,8 +110,7 @@ nt = numel(T);
 states = {'theta','velthresh','velHthresh'};
 nsts = size(states,2);
 
-display = true;
-overwrite = true;
+overwrite = false;
 units = [];
 
 % Generate unit auto correlogram
@@ -267,7 +266,7 @@ for u = 1:numel(units)
     for i = 1:nsts,            
         for t = 1:nt
             for j = 1:nt
-            pfShift(t,j,i,u) = peakPatchCOM(t,i,u)-peakPatchCOM(j,i,u);
+            pfShift(t,j,i,u,:) = peakPatchCOM(t,i,u,:)-peakPatchCOM(j,i,u,:);
             end
         end        
     end
@@ -275,7 +274,8 @@ end
 
 
 
-
+t = 2;
+i = 3;
 spCohere = pfs{t,i}.spatialCoherence(units);
 
 figure,hold on,
@@ -370,7 +370,7 @@ end
 % final fig 
 
 
-sunits = [1,5,18];
+sunits = [13,18,42];
 
 spOpts.width  = 4;
 spOpts.height = 2;
@@ -385,8 +385,8 @@ figOpts.position = [1,1,(spOpts.width+round(spOpts.padding/2)) *spOpts.nx+round(
                      (spOpts.height+round(spOpts.padding/2))*spOpts.ny+figOpts.headerPadding+figOpts.footerPadding];
 
 
-
-mkdir(fullfile(OwnDir,'Ed10-20140820-shift_teleport_ufr_pfs_xySdist'))
+FigDir = 'Ed10-20140823-shift_teleport_ufr_pfs_xySdist';
+mkdir(fullfile(OwnDir,FigDir))
 figHnum = 399329239;;
 set(0,'defaultAxesFontSize',8,...
       'defaultTextFontSize',8)
@@ -397,11 +397,11 @@ set(hfig,'PaperPositionMode','auto');
 
 hfig = figure(399329239);
 unit =units(1);
-i = 1;
+i = 3;
 clf
 
 for unit = sunits
-    for t = 1:nt,
+    for t = 1:nt-1,
         pf = pfs{t+1,i};
         uind = find(unit==sunits);
         sp(t,i) = axes('Units',spOpts.units,...
@@ -413,20 +413,18 @@ for unit = sunits
         
         hold('on')
         ratemap = pf.plot(unit,'isCircular',false);
-        minv = min(ratemap(:));
-        maxv = sq(mRate(1,i,unit));
-        ratemap(isnan(ratemap)) = minv-((maxv-minv)/20);
-        imagesc(pf.adata.bins{1},pf.adata.bins{1},ratemap');    
+        ratemap(isnan(ratemap)) = -1;
+        imagesc(pf.adata.bins{1},pf.adata.bins{2},ratemap');    
         text(pf.adata.bins{1}(end)-350,pf.adata.bins{2}(end)-50,...
              sprintf('%2.1f',max(ratemap(:))),'Color','w','FontWeight','bold','FontSize',10)
         colormap([0,0,0;parula]);
-        ca = caxis;
-        caxis([ca(1),sq(mRate(1,i,unit)).*1.5]);
+        caxis([-1,sq(mRate(1,i,unit)).*1.5]);
+        
         if uind==1,ylabel([pf.session.trialName ':' pf.parameters.states]);end
         plot(peakPatchCOM(t+1,i,unit==units,1),...
              peakPatchCOM(t+1,i,unit==units,2),'*k');
         Lines(-200.*mod(t+1,2),[],'k');
-        xlim([-600,600]),ylim([-400,400])        
+        xlim([-600,600]),ylim([-350,350])        
         set(gca,'YTickLabel',{})
         set(gca,'XTickLabel',{})
     end
@@ -435,9 +433,10 @@ end
 
 
 spCohere = pfs{1,1}.spatialCoherence(units);
-ind =spCohere>0.99;
+%ind =spCohere>0.99;
+ind = sq(mRate(1,3,units)>3)&spCohere>0.99;
 
-for i = 0:2:8;
+for i = 0:2:2;
 axes('Units',spOpts.units,...
      'Position',[18,(4-i/2)*3+2.5,2.5,2.5]);
 hold on
@@ -459,6 +458,20 @@ print(gcf,'-depsc2',fullfile(OwnDir,'Ed10-20140820-shift_teleport_ufr_pfs_xySdis
                              ['ufr_pfs_',num2str(unit),'.eps']));
 print(gcf,'-dpng',  fullfile(OwnDir,'Ed10-20140820-shift_teleport_ufr_pfs_xySdist',...
                              ['ufr_pfs_',num2str(unit),'.png']));
+
+
+figure,plot(sq(peakPatchCOM(2,3,ind,1)),-sq(pfShift(2,3,3,ind,1))/10,'.')
+ grid on
+ 
+hold on,plot(sq(peakPatchCOM(3,3,ind,1)),-sq(pfShift(3,4,3,ind,1))/10,'.')
+
+figure,plot(sq(peakPatchCOM(3,3,ind,1)),-sq(pfShift(3,4,3,ind,1))/10,'.')
+grid on
+
+
+
+
+
 
 
 

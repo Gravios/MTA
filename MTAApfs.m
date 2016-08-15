@@ -16,8 +16,8 @@ classdef MTAApfs < hgsetget %< MTAAnalysis
 
         function Pfs = MTAApfs(Obj, varargin)     
         % MTAApfs(Obj,{units,states,overwrite,tag,binDims,SmoothingWeights,type,spkShuffle,posShuffle,numIter})
-            [units,states,overwrite,tag,binDims,SmoothingWeights,type,spkShuffle,posShuffle,numIter,xyzp,bound_lims]=...
-            DefaultArgs(varargin,{[],'walk',0,[],[30,30],[1.2,1.2],'xy',0,0,1,MTADxyz([]),[]});
+            [units,states,overwrite,tag,binDims,SmoothingWeights,type,spkShuffle,posShuffle,numIter,xyzp,bound_lims,bootstrap]=...
+            DefaultArgs(varargin,{[],'walk',0,[],[30,30],[1.2,1.2],'xy',0,0,1,MTADxyz([]),[],0});
 
             units = units(:)';            
 
@@ -65,6 +65,7 @@ classdef MTAApfs < hgsetget %< MTAAnalysis
                     end
                     Pfs.parameters.smoothingWeights   = SmoothingWeights;
                     Pfs.parameters.binDims = binDims;
+                    Pfs.parameters.bootstrap = bootstrap;
                     
                     Pfs.adata.trackingMarker = Session.trackingMarker;
                     Pfs.adata.bins = [];
@@ -255,11 +256,16 @@ classdef MTAApfs < hgsetget %< MTAAnalysis
 % $$$                         end
                     end
                     
+                    % shifts the position of the res along the sstpos
+                    sresind = bsxfun(@plus,sstres,repmat(randi([-posShuffle,posShuffle],1,numIter),numel(sstres),1));
+                    % Wraps negative res to end of the sstpos vector
+                    sresind(sresind<=0) = sresind(sresind<=0)+size(sstpos,1);                           
+                    % Wraps res greater than the size of the sstpos vector
+                    sresind(sresind>size(sstpos,1)) = sresind(sresind>size(sstpos,1))-size(sstpos,1);   
                     
-                    sresind = sstres + repmat(randi([-posShuffle,posShuffle],1,numIter),numel(sstres),1);        % shifts the position of the res along the sstpos
-                    sresind(sresind<=0) = sresind(sresind<=0)+size(sstpos,1);                           % Wraps negative res to end of the sstpos vector
-                    sresind(sresind>size(sstpos,1)) = sresind(sresind>size(sstpos,1))-size(sstpos,1);   % Wraps res greater than the size of the sstpos vector
-                    
+                    if bootstrap,
+                        sresind = reshape(sresind(randi(nSpk,[round(nSpk.*bootstrap),numIter]),1),[],numIter);
+                    end
 
                     %% Caluculate Place Fields
                     [Pfs.data.rateMap(:,dind(i),1), Pfs.adata.bins] =  ...
@@ -477,7 +483,7 @@ classdef MTAApfs < hgsetget %< MTAAnalysis
                 Pfs.filename = [Session.filebase ...
                     '.pfs.' Pfs.parameters.type '.' Session.trackingMarker '.' Session.stc.mode '.' pfsState.label '.' ...
                     'ss' num2str(Pfs.parameters.spkShuffle) 'ps' num2str(Pfs.parameters.posShuffle) ...
-                    'bs' num2str(Pfs.parameters.numIter) 'sm' smwTag...
+                    'ni' num2str(Pfs.parameters.numIter) 'bs' num2str(Pfs.parameters.bootstrap) 'sm' smwTag...
                     'bd' binDimTag '.mat'];
             else
                 Pfs.filename = [Session.filebase '.Pfs.' Pfs.tag '.mat'];

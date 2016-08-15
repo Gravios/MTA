@@ -2435,8 +2435,8 @@ switch mode,
     binDims = [40,40];
     smoothingWeights = [1.2,1.2];
     units = [];
-    overwrite = true;
-    for s = 7:numel(states)
+    overwrite = false;
+    for s = 1:numel(states)
         pfs{s} = MTAApfs(Trial,units,states{s},overwrite, ...
                          'binDims',binDims,'SmoothingWeights',smoothingWeights);
     end

@@ -11,6 +11,9 @@ function orient_head_to_rhm(filename,varargin)
 %filename =
 %'/storage/gravio/ownCloud/Shared/VR_Methods/matlab/justin_VRObj_ratdata_CorrectedOrientation.mat';
 
+filename = '/storage/gravio/ownCloud/Shared/VR_Methods/matlab/justin_VRObj_ratdata_CorrectedOrientation_spwFiltered_nsr.mat';
+outputFileName = '/storage/gravio/ownCloud/Shared/VR_Methods/matlab/justin_VRObj_ratdata_CorrectedOrientation_spwFiltered_nsr.mat';
+
 
 [dir,filename,ext] = fileparts(filename);
 load(fullfile(dir,[filename,ext]));
@@ -32,6 +35,10 @@ if dispFigs,
           'defaultTextFontSize',10)
     mkdir(fullfile(odir,ofilename));
 end
+
+
+xyzSampleRate = 240;
+
 %data(:,1): time
 % rigidbody center of mass
 %data(:,2): Y    Nick's X
@@ -89,7 +96,7 @@ evec = evec(:,:,[3,1,2]);
 sessionIds = unique(data(:,11));
 
 %xyzSampleRate = 150;
-xyzSampleRate = 240;
+
 % store XYZ rigid body center of mass in meters
 % X -> long axis of maze
 % Y -> short axis of maze
