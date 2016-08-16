@@ -1,21 +1,78 @@
 classdef MTAApfs < hgsetget %< MTAAnalysis
+% function Pfs = MTAApfs(Obj,varargin)            
+%
+%  Obj (MTATrial/MTASession/MTAApfs):
+%
+%    MTATrial & MTASession -> Create rate maps for neural units
+%
+%    MTAApfs -> update object???
+%
+%    otherwise -> return empty MTAApfs object
+%
+%-----------------------------------------------------------------------------
+%
+%  varargin:
+%    units
+%    states
+%    overwrite
+%    tag
+%    binDims
+%    SmoothingWeights
+%    type
+%    spkShuffle
+%    posShuffle
+%    numIter
+%    xyzp
+%    bound_lims
+%    bootstrap
+%
+%-----------------------------------------------------------------------------
+%
+%  Description
+%    Create an object which contains and manages rate maps,which
+%    are spatially binned expected rates for individual neurons
+%
+%-----------------------------------------------------------------------------
+%  Output:
+%    Pfs (MTAApfs object) - 
+%  
+%
+%  Examples:
+    
+%  MTAApfs(Obj,units,states,overwrite,tag,binDims,SmoothingWeights,type,spkShuffle,posShuffle,numIter)
 
     properties 
+        %path - string: location of file containing MTAApfs object
         path
+        
+        %filename - string: location of file containing MTAApfs object
         filename = '';
+        
+        %session - struct(sessionName; mazeName; trialName): requried to load parent session
         session
+        
+        %tag - string: unique identifier
         tag
+        
+        %ext - string: file extention
         ext
+        
+        %parameters - struct:
         parameters
+        
+        %mdata - struct: metadata
         mdata
+        
+        %adata - struct: auxdata 
         adata
+
+        %data - struct: placefield data
         data
     end
 
     methods
 
         function Pfs = MTAApfs(Obj, varargin)     
-        % MTAApfs(Obj,{units,states,overwrite,tag,binDims,SmoothingWeights,type,spkShuffle,posShuffle,numIter})
             [units,states,overwrite,tag,binDims,SmoothingWeights,type,spkShuffle,posShuffle,numIter,xyzp,bound_lims,bootstrap]=...
             DefaultArgs(varargin,{[],'walk',0,[],[30,30],[1.2,1.2],'xy',0,0,1,MTADxyz([]),[],0});
 
