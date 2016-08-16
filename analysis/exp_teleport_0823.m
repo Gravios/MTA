@@ -578,3 +578,262 @@ Trial = MTATrial.validate(T(3));
 pxyz = Trial.load('xyz');
 figure,plot(pxyz(:,5,1))
 
+
+%% PFK stuff
+
+MTAstartup('vr_exp');
+overwriteSession = false;
+overwriteTrials  = false;
+overwriteStc     = false;
+trialList = 'Ed10VR_20160823';
+OwnDir = '/storage/gravio/ownCloud/Shared/VR_Methods/matlab/';
+
+T = SessionList(trialList,...
+                '/storage/gravio/data/processed/xyz/Ed10/',...
+                '/storage/eduardo/data/processed/nlx/Ed10/');
+
+Trial = MTATrial.validate(T(1));
+Trial.load('stc',T(1).stcMode);
+
+%units =[1,5,7,9,16,18,22,28,29,94,99,101,104,107,110,122,134,158,168,184,185]';
+
+Stc = Trial.stc.copy;
+nt = numel(T);
+states = {'theta','velthresh','velHthresh'};
+nsts = size(states,2);
+
+    
+binDims = [20,20];
+numIter = 1000;
+nNearestNeighbors = 300;
+distThreshold = 125;
+ufrShufBlockSize = 1;
+sampleRate = 30;
+pfk = {};
+overwrite = false;
+i = 3;
+
+for t = 2:nt
+    Trial = MTATrial(T(t).sessionName,T(t).mazeName,T(t).trialName);    
+    Trial.stc = Stc.copy;
+    Trial.stc.load(Trial); 
+    xyz = Trial.load('xyz');
+    xyz.resample(sampleRate);
+
+    pfk{t-1} = MTAAknnpfs_bs(Trial,units,states{i},overwrite, ...
+                             'binDims',binDims,...
+                             'nNearestNeighbors',nNearestNeighbors,...
+                             'ufrShufBlockSize',ufrShufBlockSize,...
+                             'distThreshold',distThreshold,...
+                             'pos',xyz,...
+                             'numIter',numIter);
+end
+
+
+
+
+%% Place Field Statistics 
+
+
+pfkstats = {};
+pfkshuff = {};
+% Test this version should be able to run multiple units at once
+for t = 2:nt
+    for u = 1:numel(units)        
+        Trial = MTATrial(T(t).sessionName,T(t).mazeName,T(t).trialName);    
+        Trial.stc = Stc.copy;
+        Trial.stc.load(Trial);
+        [pfkstats{t-1,u},pfkshuff{t-1,u}] = PlaceFieldStats(Trial,pfk{t-1},units(u));
+    end
+end
+
+
+for t = 1:nt-1
+    for k = 1:numIter,
+        % Retrieve the patch center of mass from patch with the highest firing rate
+        pcom = ...
+            cellfun(@(x,y) sq(x.patchCOM(1,y,find(max(x.patchPFR(1,y,:))==x.patchPFR(1,y,:)),:)),...
+                    pfkshuff(t,:),...
+                    repmat({k},[1,numel(units)]),...
+                    'UniformOutput',false);
+
+        pind = ~cellfun(@isempty,pcom);
+        peakPatchCOM(t,k,pind,:) = ...
+            cell2mat(cellfun(@(x) x(:,1),...
+                             pcom(pind),...
+                             'uniformoutput',false))';
+
+        
+        % Retrieve the max patch Firing rate
+        peakPatchRate(t,k,:) = ...
+            sq(cellfun(@(x,y) max(x.patchPFR(1,y,:)),...
+                       pfkshuff(t,:),...
+                       repmat({k},[1,numel(units)])));
+
+        
+        % Retrieve the patch area from patch with highest firing rate
+        parea = ...
+            cellfun(@(x,y) sq(x.patchArea(1,y,find(max(x.patchPFR(1,y,:))==x.patchPFR(1,y,:)),:)),...
+                    pfkshuff(t,:),...
+                    repmat({k},[1,numel(units)]),...
+                    'UniformOutput',false);
+        pind = ~cellfun(@isempty,parea);
+        peakPatchArea(t,k,pind) = sq(cell2mat(cellfun(@(x) x(1),...
+                                                      parea(pind),...
+                                                      'uniformoutput',false))');
+    end
+end
+
+
+
+
+
+% $$$ figure,imagesc(pfk{1}.adata.bins{1},pfk{1}.adata.bins{2}, ...
+% $$$                reshape(pfk{1}.data.rateMap(:,1,1),fliplr(cellfun(@numel,pfk{1}.adata.bins)))),axis xy
+% $$$ hold on,plot(pfkshuff{1,1}.patchCOM(1,1,1,2),pfkshuff{1,1}.patchCOM(1,1,1,1),'*w')
+% $$$ hold on,plot(sq(peakPatchCOM(1,:,1,2)),sq(peakPatchCOM(1,:,1,1)),'*m');
+% $$$ 
+% $$$ figure,hold on,
+% $$$ hs = bar(eds,histc(sq(peakPatchCOM(1,:,1,2)),eds),'histc');
+% $$$ hs.FaceAlpha = 0.5;
+% $$$ hs.FaceColor = 'c';
+% $$$ hs.EdgeColor = 'c';
+% $$$ hs.EdgeAlpha = 0.5;
+% $$$ xlim([-600,600,]);
+
+
+
+
+eds = linspace([-600,600,500]);
+
+display = true;
+if display,
+    hfig = figure(394929939);
+    hold on
+    set(0,'defaultAxesFontSize',8,...
+          'defaultTextFontSize',8)
+    set(hfig,'Units','centimeters')
+    set(hfig,'Position',[15,0,5,25]);
+    set(hfig,'PaperPositionMode','auto');
+    
+    FigDir = 'Ed10-20140823-shift_teleport_pfk_hvel_bs_patch';
+    mkdir(fullfile(OwnDir,FigDir))
+    
+    fpind = 1:3:7;
+    for u = 1:numel(units);
+        clf
+        for i = 1:2:3,
+
+            k = floor(i/2)+1;
+            j = ceil(i/2)+1;
+            
+            subplot(9,1,fpind(k));hold on,        
+            imagesc(pfk{i}.adata.bins{1},...
+                    pfk{i}.adata.bins{2}, ...
+                    reshape(pfk{i}.data.rateMap(:,pfk{i}.data.clu==units(u),1), ...
+                            fliplr(pfk{i}.adata.binSizes')));
+            axis xy
+            hold on,plot(sq(peakPatchCOM(i,:,u,2)),sq(peakPatchCOM(i,:,u,1)),'*m');
+            
+            xlim([-600,600]);
+            ylim([-350,350]);
+            if i ==1,
+                title(['BS pfk patch pos, unit: ',num2str(units(u))]);
+            end
+            
+
+            % patchCOM distribution along x axis
+            subplot(9,1,i+k); hold on,
+            hs = bar(eds,histc(sq(peakPatchCOM(i,:,u,2)),eds),'histc');
+            hs.FaceAlpha = 0.5;
+            hs.FaceColor = 'c';
+            hs.EdgeColor = 'c';
+            hs.EdgeAlpha = 0.5;
+            
+            ho = bar(eds,histc(sq(peakPatchCOM(i+1,:,u,2)),eds),'histc');
+            ho.FaceAlpha = 0.5;
+            ho.FaceColor = 'r';
+            ho.EdgeColor = 'r';
+            ho.EdgeAlpha = 0.5;
+            xlim([-600,600]);
+            
+            subplot(9,1,i+j); hold on,    
+            imagesc(pfk{i+1}.adata.bins{1},...
+                    pfk{i+1}.adata.bins{2}, ...
+                    reshape(pfk{i+1}.data.rateMap(:,pfk{i+1}.data.clu==units(u),1), ...
+                            fliplr(pfk{i+1}.adata.binSizes')));
+            axis xy
+            hold on,plot(sq(peakPatchCOM(i+1,:,u,2)),sq(peakPatchCOM(i+1,:,u,1)),'*m');        
+            xlim([-600,600]);
+            ylim([-350,350]);
+
+        end
+        print(gcf,'-depsc2',fullfile(OwnDir,FigDir,['pfs_bs_patch',num2str(units(u)),'.eps']));
+        print(gcf,'-dpng',  fullfile(OwnDir,FigDir,['pfs_bs_patch',num2str(units(u)),'.png']));
+        
+    end
+end
+
+dprime = @(x,y) (mean(x(nniz(x')))-mean(y(nniz(y'))))/sqrt(0.5*(var(x(nniz(x')))+var(y(nniz(y')))));
+dprx = nan([nt-2,numel(units)]);
+dpry = nan([nt-2,numel(units)]);
+
+for i = 1:5,
+    for u = 1:numel(units);    
+        dprx(i,u) = dprime(peakPatchCOM(i,:,u,2),peakPatchCOM(i+1,:,u,2));
+        dpry(i,u) = dprime(peakPatchCOM(i,:,u,1),peakPatchCOM(i+1,:,u,1));
+    end    
+end
+
+
+
+
+FigDir = 'Ed10-20140823-shift_teleport_dprime_xyshift';
+mkdir(fullfile(OwnDir,FigDir))
+figHnum = 84827377;
+hfig = figure(figHnum);clf
+set(hfig,'units','centimeters')
+set(hfig,'Position',[2,0,22,6])
+set(hfig,'PaperPositionMode','auto');
+for i = 1:3,
+    axes('Units',centimeters',...
+         'Position',[2+i*2.5,2,2.5,2.5]);
+    plot(dprx(i,:),dpry(i,:),'.')
+    xlim([-20,20]),ylim([-20,20])    
+    Lines(nanmean(dprx(i,:)),[],'k')
+    Lines([],nanmean(dpry(i,:)),'k')
+    grid on
+    title({T(1).sessionName,[T(i+1).trialName,' vs ',T(i+2).trialName]});    
+end
+print(gcf,'-depsc2',fullfile(OwnDir,FigDir,['pfk_dprime.eps']));
+print(gcf,'-dpng',  fullfile(OwnDir,FigDir,['pfk_dprime.png']));
+
+
+
+
+%% Plot dprx vs xshift
+
+FigDir = 'Ed10-20140823-shift_teleport_dprx_xshift';
+mkdir(fullfile(OwnDir,FigDir))
+figHnum = 84827377;
+hfig = figure(figHnum);clf
+set(hfig,'units','centimeters')
+set(hfig,'Position',[2,0,22,6])
+set(hfig,'PaperPositionMode','auto');
+for i = 1:3,
+    axes('Units',centimeters',...
+         'Position',[2+i*2.5,2,2.5,2.5]);
+    plot(peakPatchCOM(i,1,:,2),dprx(i,:),'.')
+    xlim([-20,20]),ylim([-20,20])    
+    Lines(nanmean(dprx(i,:)),[],'k')
+    Lines([],nanmean(dpry(i,:)),'k')
+    xlabel('pfk Shift')
+    grid on
+    title({T(1).sessionName,[T(i+1).trialName,' vs ',T(i+2).trialName]});    
+end
+print(gcf,'-depsc2',fullfile(OwnDir,FigDir,['pfk_dprx_x.eps']));
+print(gcf,'-dpng',  fullfile(OwnDir,FigDir,['pfk_dprx_x.png']));
+
+
+
+

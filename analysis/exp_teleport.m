@@ -950,21 +950,54 @@ for i = 1:5,
     end    
 end
 
-figure
-for i = 1:5,
-    subplot(1,5,i);
-    
-    %axes([1+i,2,2.5,2.5])
+
+
+
+FigDir = 'Ed10-20140820-shift_teleport_dprime_xyshift';
+mkdir(fullfile(OwnDir,FigDir))
+figHnum = 84827377;
+hfig = figure(figHnum);clf
+set(hfig,'units','centimeters')
+set(hfig,'Position',[2,0,22,6])
+set(hfig,'PaperPositionMode','auto');
+for i = 1:3,
+    axes('Units',centimeters',...
+         'Position',[2+i*2.5,2,2.5,2.5]);
     plot(dprx(i,:),dpry(i,:),'.')
     xlim([-20,20]),ylim([-20,20])    
     Lines(nanmean(dprx(i,:)),[],'k')
     Lines([],nanmean(dpry(i,:)),'k')
     grid on
+    title({T(1).sessionName,[T(i+1).trialName,' vs ',T(i+2).trialName]});    
 end
+print(gcf,'-depsc2',fullfile(OwnDir,FigDir,['pfk_dprime.eps']));
+print(gcf,'-dpng',  fullfile(OwnDir,FigDir,['pfk_dprime.png']));
 
 
 
 
+%% Plot dprx vs xshift
+
+FigDir = 'Ed10-20140820-shift_teleport_dprx_xshift';
+mkdir(fullfile(OwnDir,FigDir))
+figHnum = 84827377;
+hfig = figure(figHnum);clf
+set(hfig,'units','centimeters')
+set(hfig,'Position',[2,0,22,6])
+set(hfig,'PaperPositionMode','auto');
+for i = 1:3,
+    axes('Units',centimeters',...
+         'Position',[2+i*2.5,2,2.5,2.5]);
+    plot(peakPatchCOM(i,1,:,2),dprx(i,:),'.')
+    xlim([-20,20]),ylim([-20,20])    
+    Lines(nanmean(dprx(i,:)),[],'k')
+    Lines([],nanmean(dpry(i,:)),'k')
+    xlabel('pfk Shift')
+    grid on
+    title({T(1).sessionName,[T(i+1).trialName,' vs ',T(i+2).trialName]});    
+end
+print(gcf,'-depsc2',fullfile(OwnDir,FigDir,['pfk_dprx_x.eps']));
+print(gcf,'-dpng',  fullfile(OwnDir,FigDir,['pfk_dprx_x.png']));
 
 
 
