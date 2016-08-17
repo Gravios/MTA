@@ -53,7 +53,9 @@ if isa(featureSet,'MTADfet'),
     features = featureSet.copy;
     featureSet = features.label;
 else,
-    features = feval(featureSet,Trial,sampleRate,false);
+    if ~strcmp(featureSet,'fet_all'), % For the love of God remove this!
+        features = feval(featureSet,Trial,sampleRate,false);
+    end
 end
 
 % Load the hand labels
@@ -107,13 +109,21 @@ if map2reference,
         refSession.load('stc',refStcMode{1}{1});
     end
     
-    % Map features via linear or circular shift to the training Session
-    % of the Neural Network.
-    if ~strcmp(Trial.filebase,refSession.filebase),
-        features.map_to_reference_session(Trial,refSession);
+    if strcmp(featureSet,'fet_all'),% For the love of God remove this!
+        features = feval(featureSet,Trial,sampleRate,refSession);
+    else
+        % Map features via linear or circular shift to the training Session
+        % of the Neural Network.
+        if ~strcmp(Trial.filebase,refSession.filebase),
+            features.map_to_reference_session(Trial,refSession);
+        end
     end
     if normalize,
-        rfet = feval(featureSet,refSession,sampleRate,false);
+        if strcmp(featureSet,'fet_all'),% For the love of God remove this!
+            rfet = feval(featureSet,refSession,sampleRate,[]);
+        else
+            rfet = feval(featureSet,refSession,sampleRate,false);
+        end
         [~,refMean,refStd] = nunity(rfet(refSession.stc{'a'},:));
         features.unity([],refMean,refStd);
     end

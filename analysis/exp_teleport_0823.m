@@ -579,7 +579,7 @@ pxyz = Trial.load('xyz');
 figure,plot(pxyz(:,5,1))
 
 
-%% PFK stuff
+%% PFK bootstrap patch COM
 
 MTAstartup('vr_exp');
 overwriteSession = false;
@@ -596,6 +596,7 @@ Trial = MTATrial.validate(T(1));
 Trial.load('stc',T(1).stcMode);
 
 %units =[1,5,7,9,16,18,22,28,29,94,99,101,104,107,110,122,134,158,168,184,185]';
+units = [13,17,18,20,21,28,32,42,48,56,57,58,59,62,64,68,77,80,87,107,112,116,120,142,147,160,164,167,172,174];
 
 Stc = Trial.stc.copy;
 nt = numel(T);
@@ -713,37 +714,42 @@ if display,
     set(0,'defaultAxesFontSize',8,...
           'defaultTextFontSize',8)
     set(hfig,'Units','centimeters')
-    set(hfig,'Position',[15,0,5,25]);
+    set(hfig,'Position',[15,0,16,16]);
     set(hfig,'PaperPositionMode','auto');
     
     FigDir = 'Ed10-20140823-shift_teleport_pfk_hvel_bs_patch';
     mkdir(fullfile(OwnDir,FigDir))
     
-    fpind = 1:3:7;
+    k = 1:2:6;
     for u = 1:numel(units);
         clf
-        for i = 1:2:3,
+        for i = 1:3
 
-            k = floor(i/2)+1;
-            j = ceil(i/2)+1;
-            
-            subplot(9,1,fpind(k));hold on,        
-            imagesc(pfk{i}.adata.bins{1},...
-                    pfk{i}.adata.bins{2}, ...
-                    reshape(pfk{i}.data.rateMap(:,pfk{i}.data.clu==units(u),1), ...
-                            fliplr(pfk{i}.adata.binSizes')));
+            % Plot place fields
+            sp(i) = subplot2(6,2,[k(i),k(i)+1],1);
+            pf = pfk{i};
+            imagesc(pf.adata.bins{1},...
+                    pf.adata.bins{2}, ...
+                    reshape(pf.data.rateMap(:,pf.data.clu==units(u),1), ...
+                            fliplr(pf.adata.binSizes')));
             axis xy
-            hold on,plot(sq(peakPatchCOM(i,:,u,2)),sq(peakPatchCOM(i,:,u,1)),'*m');
-            
+            hold on,
+            plot(sq(peakPatchCOM(i,1,u,2)),sq(peakPatchCOM(i,1,u,1)),'*m');                        
+            text(pf.adata.bins{1}(end)-250,pf.adata.bins{2}(end)-50,...
+                 sprintf('%2.1f',max(pf.data.rateMap(:,pf.data.clu==units(u),1))),'Color','w','FontWeight','bold','FontSize',10)
+
             xlim([-600,600]);
             ylim([-350,350]);
             if i ==1,
                 title(['BS pfk patch pos, unit: ',num2str(units(u))]);
             end
             
-
+        end
+        
+        for i = 1:2
             % patchCOM distribution along x axis
-            subplot(9,1,i+k); hold on,
+            sp(3+i) = subplot2(6,2,[k(i),k(i)+1]+1,2);
+            hold on,
             hs = bar(eds,histc(sq(peakPatchCOM(i,:,u,2)),eds),'histc');
             hs.FaceAlpha = 0.5;
             hs.FaceColor = 'c';
@@ -756,21 +762,15 @@ if display,
             ho.EdgeColor = 'r';
             ho.EdgeAlpha = 0.5;
             xlim([-600,600]);
-            
-            subplot(9,1,i+j); hold on,    
-            imagesc(pfk{i+1}.adata.bins{1},...
-                    pfk{i+1}.adata.bins{2}, ...
-                    reshape(pfk{i+1}.data.rateMap(:,pfk{i+1}.data.clu==units(u),1), ...
-                            fliplr(pfk{i+1}.adata.binSizes')));
-            axis xy
-            hold on,plot(sq(peakPatchCOM(i+1,:,u,2)),sq(peakPatchCOM(i+1,:,u,1)),'*m');        
-            xlim([-600,600]);
-            ylim([-350,350]);
+        end        
 
-        end
+        for i = 1:5,
+            sp(i).Units = 'centimeters';
+            sp(i).Position([3,4]) = [4,2];
+        end        
         print(gcf,'-depsc2',fullfile(OwnDir,FigDir,['pfs_bs_patch',num2str(units(u)),'.eps']));
         print(gcf,'-dpng',  fullfile(OwnDir,FigDir,['pfs_bs_patch',num2str(units(u)),'.png']));
-        
+        %waitforbuttonpress        
     end
 end
 
@@ -778,7 +778,7 @@ dprime = @(x,y) (mean(x(nniz(x')))-mean(y(nniz(y'))))/sqrt(0.5*(var(x(nniz(x')))
 dprx = nan([nt-2,numel(units)]);
 dpry = nan([nt-2,numel(units)]);
 
-for i = 1:5,
+for i = 1:3,
     for u = 1:numel(units);    
         dprx(i,u) = dprime(peakPatchCOM(i,:,u,2),peakPatchCOM(i+1,:,u,2));
         dpry(i,u) = dprime(peakPatchCOM(i,:,u,1),peakPatchCOM(i+1,:,u,1));
@@ -793,15 +793,15 @@ mkdir(fullfile(OwnDir,FigDir))
 figHnum = 84827377;
 hfig = figure(figHnum);clf
 set(hfig,'units','centimeters')
-set(hfig,'Position',[2,0,22,6])
+set(hfig,'Position',[2,0,16,6])
 set(hfig,'PaperPositionMode','auto');
-for i = 1:3,
-    axes('Units',centimeters',...
-         'Position',[2+i*2.5,2,2.5,2.5]);
-    plot(dprx(i,:),dpry(i,:),'.')
-    xlim([-20,20]),ylim([-20,20])    
-    Lines(nanmean(dprx(i,:)),[],'k')
-    Lines([],nanmean(dpry(i,:)),'k')
+for i = 1:2,
+    axes('Units','centimeters',...
+         'Position',[2+(i-1)*(2.5+2),2,2.5,2.5]);
+    plot(dprx(i,:),dpry(i,:),'.');
+    xlim([-10,10]),ylim([-10,10]) ;   
+    Lines(nanmean(dprx(i,:)),[],'k');
+    Lines([],nanmean(dpry(i,:)),'k');
     grid on
     title({T(1).sessionName,[T(i+1).trialName,' vs ',T(i+2).trialName]});    
 end
@@ -818,15 +818,15 @@ mkdir(fullfile(OwnDir,FigDir))
 figHnum = 84827377;
 hfig = figure(figHnum);clf
 set(hfig,'units','centimeters')
-set(hfig,'Position',[2,0,22,6])
+set(hfig,'Position',[2,0,18,6])
 set(hfig,'PaperPositionMode','auto');
-for i = 1:3,
-    axes('Units',centimeters',...
-         'Position',[2+i*2.5,2,2.5,2.5]);
-    plot(peakPatchCOM(i,1,:,2),dprx(i,:),'.')
-    xlim([-20,20]),ylim([-20,20])    
-    Lines(nanmean(dprx(i,:)),[],'k')
-    Lines([],nanmean(dpry(i,:)),'k')
+for i = 1:2,
+    axes('Units','centimeters',...
+         'Position',[2+(i-1)*(2.5+2),2,2.5,2.5]);
+    plot(-sq(peakPatchCOM(i,1,:,2)-peakPatchCOM(i+1,1,:,2))/10,dprx(i,:),'.')
+    xlim([-20,20]),ylim([-10,10])    
+    Lines(nanmean(-sq(peakPatchCOM(i,1,:,2)-peakPatchCOM(i+1,1,:,2))/10),[],'k')
+    Lines([],nanmean(dprx(i,:)),'k')
     xlabel('pfk Shift')
     grid on
     title({T(1).sessionName,[T(i+1).trialName,' vs ',T(i+2).trialName]});    
