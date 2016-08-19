@@ -195,9 +195,10 @@ classdef MTAAknnpfs_bs < hgsetget %< MTAAnalysis
                 ufrBlockInd = reshape(1:size(sstufr,1),[],ufrShufBlockCount);
                 ufrShufPermIndices = zeros([numIter,randSubsetSize]);
 
-                for i = 1:numIter,
+                for i = 1:2:numIter-1,
                     rp = randperm(ufrShufBlockCount);
-                    ufrShufPermIndices(i,:) = rp(1:randSubsetSize);
+                    ufrShufPermIndices(i  ,:) = rp(1:randSubsetSize);
+                    ufrShufPermIndices(i+1,:) = rp(randSubsetSize+1:end);
                 end
             else 
                 ufrBlockInd = ':';
