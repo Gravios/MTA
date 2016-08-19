@@ -742,6 +742,7 @@ units = units(ind);
 
 MTAstartup('vr_exp');
 triallist = 'Ed10VR_teleport';
+OwnDir = '/storage/gravio/ownCloud/Shared/VR_Methods/matlab/';
 T = SessionList(triallist,...
                 '/storage/gravio/data/processed/xyz/Ed10/',...
                 '/storage/eduardo/data/processed/nlx/Ed10/');
@@ -906,7 +907,6 @@ for d = dunits,
             rsind = rsind(1:numIter);
         end
         
-        
         peakPatchCOM(t,:,d==units,2) = zeros;
         peakPatchCOM(t,1:numel(rsind),d==units,2) = pcomx(rsind);
         peakPatchCOM(t,:,d==units,1) = zeros;
@@ -1030,12 +1030,14 @@ set(hfig,'Position',[2,0,14,6])
 set(hfig,'PaperPositionMode','auto');
 for i = 1:3,
     axes('Units','centimeters',...
-         'Position',[2+(i-1)*(2.5+1),2,2.5,2.5]);
+         'Position',[2+(i-1)*(2.5+2),2,2.5,2.5]);
     plot(dprx(i,:),dpry(i,:),'.')
-    xlim([-20,20]),
-    ylim([-20,20])    
-    Lines(nanmean(dprx(i,:)),[],'k');
-    Lines([],nanmean(dpry(i,:)),'k');
+    xlim([-20,20]);
+    ylim([-20,20]);   
+    %Lines(nanmean(dprx(i,:)),[],'k');
+    %Lines([],nanmean(dpry(i,:)),'k');
+    xlabel('x-shift (d-prime)');
+    ylabel('y-shift (d-prime)');
     grid on
     title({T(1).sessionName,[T(i+1).trialName,' vs ',T(i+2).trialName]});    
 end

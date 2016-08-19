@@ -20,10 +20,13 @@ nm = Trial.xyz.model.N;
 
 
 if ~isempty(RefTrial),
+    markers = {'spine_lower','pelvis_root','spine_middle','spine_upper',...
+               'head_back',  'head_left'  ,'head_front',  'head_right',...
+               'bcom',       'hcom',       'acom'};
     mfet = fet.copy;
-    mfet.data = xyz(:,:,3);
+    mfet.data = xyz(:,markers,3);
     mfet.map_to_reference_session(Trial,RefTrial);
-    xyz.data(:,:,3) = mfet.data;
+    xyz.data(:,xyz.model.gmi(markers),3) = mfet.data;
 end              
               
 xyz.resample(newSampleRate);

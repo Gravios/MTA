@@ -2432,61 +2432,109 @@ switch mode,
     Trial= MTATrial('jg05-20120310');    
     Trial.load('stc','nn0317_PP');
     states = Trial.stc.list_state_attrib;
-    binDims = [40,40];
-    smoothingWeights = [1.2,1.2];
-    units = [];
-    overwrite = false;
-    for s = 1:numel(states)
-        pfs{s} = MTAApfs(Trial,units,states{s},overwrite, ...
-                         'binDims',binDims,'SmoothingWeights',smoothingWeights);
-    end
-    units = pfs{1}.data.clu;    
+% $$$     binDims = [20,20];
+% $$$     smoothingWeights = [2.2,2.2];
+% $$$     units = [];
+% $$$     overwrite = false;
 
+    binDims = [20,20];
+    numIter = 0;
+    nNearestNeighbors = 300;
+    distThreshold = 125;
+    ufrShufBlockSize = 1;
+    sampleRate = 30;
+
+    overwrite = false;
+
+
+    
+    pfk = {};
+    for s = 1:numel(states)
+        pfk{s} = MTAAknnpfs_bs(Trial,units,states{s},overwrite, ...
+                             'binDims',binDims,...
+                             'nNearestNeighbors',nNearestNeighbors,...
+                             'ufrShufBlockSize',ufrShufBlockSize,...
+                             'distThreshold',distThreshold,...
+                             'pos',xyz,...
+                             'numIter',numIter);
+        
+% $$$         pfs{s} = MTAApfs(Trial,units,states{s},overwrite, ...
+% $$$                          'binDims',binDims,'SmoothingWeights',smoothingWeights);
+    end
+    units = pfk{1}.data.clu;    
+    mRate = pf{9}.maxRate;
+    
     [accg,tbin] = autoccg(Trial,units,'theta');
 
-    t = 1;
-    mRate = pfs{9}.maxRate;
-    %units = find(sq(mRate(1,1,:))>3);
-
-
-
     autoincr = false;
-    hfig = figure(849274);    
+    hfig = figure(849274);clf
     unit = units(1);
     while unit~=-1,
         for s = 1:numel(states)
-            subplot(3,4,s)
-            hold('on')
-            pf = pfs{s};
-            ratemap = pf.plot(unit,'isCircular',true);
+            subplot(4,4,s)
+            hold('on')            
+            pf = pfk{s};
+
+            % Correct color of nans and plot place field
+            ratemap = reshape(pf.data.rateMap(:,unit==pf.data.clu,1),fliplr(pf.adata.binSizes'));
             ratemap(isnan(ratemap)) = -1;
-            imagesc(pf.adata.bins{1},pf.adata.bins{2},ratemap');    
-            text(pf.adata.bins{1}(1)+30,pf.adata.bins{2}(end)-50,...
+            imagesc(pf.adata.bins{1},pf.adata.bins{2},ratemap);    
+            text(pf.adata.bins{1}(end)-250,pf.adata.bins{2}(end)-50,...
                  sprintf('%2.1f',max(ratemap(:))),'Color','w','FontWeight','bold','FontSize',10)
             colormap([0,0,0;parula]);
+            %caxis([-1,sq(mRate(1,unit==sunits)).*1.5]);
+            caxis([-1,mRate(unit==units)]);        
+            
 
-
-% $$$             plot(peakPatchCOM(t,i,unit==units,1),...
-% $$$                  peakPatchCOM(t,i,unit==units,2),'*k');
-% $$$             xlim([-600,600]),ylim([-350,350])                    
             title([pf.session.trialName ':' pf.parameters.states,': ',num2str(unit)]);
         end   
         ForAllSubplots('colormap([0,0,0;parula])');
         ForAllSubplots(['caxis([-1,',num2str(sq(mRate(unit))),'.*1.5])']);
 
-        subplot(3,4,10)
+        subplot(4,4,16)
         bar(tbin,accg(:,unit));
         xlim([min(tbin),max(tbin)]);
         title([' AutoCCG: Unit ',num2str(unit)]);
 
         unit = figure_controls(hfig,unit,units,autoincr);
     end
-    
-    
-    
-    
-    
-    
+
+
+
+    xyz = Trial.load('xyz');
+    ang = create(MTADang,Trial,xyz);
+    eds = linspace([40,190,100]);
+
+    figure,hold on
+    ind = Trial.stc{'q'};    
+    hs = bar(eds,histc(xyz(ind,5,3),eds),'histc');
+    hs.FaceAlpha = 0.5;
+    hs.EdgeAlpha = 0.5;
+    hs.FaceColor = 'c';
+    hs.EdgeColor = 'c';
+    ind = Trial.stc{'j'};    
+    hs = bar(eds,histc(xyz(ind,5,3),eds),'histc');
+    hs.FaceAlpha = 0.5;
+    hs.EdgeAlpha = 0.5;
+    hs.FaceColor = 'r';
+    hs.EdgeColor = 'r';
+
+    eds = linspace([-pi/2,pi/2,100]);    
+    figure,hold on
+    ind = Trial.stc{'q'};    
+    hs = bar(eds,histc(ang(ind,5,7,2),eds),'histc');
+    hs.FaceAlpha = 0.5;
+    hs.EdgeAlpha = 0.5;
+    hs.FaceColor = 'c';
+    hs.EdgeColor = 'c';
+    ind = Trial.stc{'j'};    
+    hs = bar(eds,histc(ang(ind,5,7,2),eds),'histc');
+    hs.FaceAlpha = 0.5;
+    hs.EdgeAlpha = 0.5;
+    hs.FaceColor = 'r';
+    hs.EdgeColor = 'r';
+
+
 end
 
 

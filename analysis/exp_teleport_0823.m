@@ -111,7 +111,8 @@ states = {'theta','velthresh','velHthresh'};
 nsts = size(states,2);
 
 overwrite = false;
-units = [];
+%units = [];
+units = [13,17,18,20,21,28,32,42,48,56,57,58,59,62,64,68,77,80,87,107,112,116,120,142,147,160,164,167,172,174];
 
 % Generate unit auto correlogram
 [accg,tbin] = autoccg(Trial,units,'theta');
@@ -144,7 +145,7 @@ for i = 1:nsts,
     end
     
 end
-units = find(sq(mRate(1,1,:))>3);
+%units = find(sq(mRate(1,1,:))>3);
 
 
 
@@ -714,10 +715,10 @@ if display,
     set(0,'defaultAxesFontSize',8,...
           'defaultTextFontSize',8)
     set(hfig,'Units','centimeters')
-    set(hfig,'Position',[15,0,16,16]);
+    set(hfig,'Position',[15,0,20,16]);
     set(hfig,'PaperPositionMode','auto');
     
-    FigDir = 'Ed10-20140823-shift_teleport_pfk_hvel_bs_patch';
+    FigDir = 'Ed10-20140823-shift_teleport_pfk_pfs_hvel_bs_patch';
     mkdir(fullfile(OwnDir,FigDir))
     
     k = 1:2:6;
@@ -725,19 +726,30 @@ if display,
         clf
         for i = 1:3
 
-            % Plot place fields
-            sp(i) = subplot2(6,2,[k(i),k(i)+1],1);
+            % Setup subplot
+            sp(i) = subplot2(6,3,[k(i),k(i)+1],1);
+            hold('on');
+
+            
             pf = pfk{i};
+            % Plot ratemap
+            ratemap = reshape(pf.data.rateMap(:,pf.data.clu==units(u),1), ...
+                            fliplr(pf.adata.binSizes'));
+            ratemap(isnan(ratemap)) = -1;
             imagesc(pf.adata.bins{1},...
                     pf.adata.bins{2}, ...
-                    reshape(pf.data.rateMap(:,pf.data.clu==units(u),1), ...
-                            fliplr(pf.adata.binSizes')));
+                    ratemap);
+            colormap([0,0,0;parula]);
+            caxis([-1,sq(mRate(1,3,u)).*1.5]);
             axis xy
-            hold on,
-            plot(sq(peakPatchCOM(i,1,u,2)),sq(peakPatchCOM(i,1,u,1)),'*m');                        
+
+            % Plot placefield center
+            plot(sq(nanmean(peakPatchCOM(i,nniz(peakPatchCOM(i,:,u,2)')&nniz(peakPatchCOM(i,:,u,1)'),u,2))),...
+                 sq(nanmean(peakPatchCOM(i,nniz(peakPatchCOM(i,:,u,1)')&nniz(peakPatchCOM(i,:,u,2)'),u,1))),'*m');
             text(pf.adata.bins{1}(end)-250,pf.adata.bins{2}(end)-50,...
                  sprintf('%2.1f',max(pf.data.rateMap(:,pf.data.clu==units(u),1))),'Color','w','FontWeight','bold','FontSize',10)
 
+            
             xlim([-600,600]);
             ylim([-350,350]);
             if i ==1,
@@ -745,10 +757,40 @@ if display,
             end
             
         end
+
+        for i = 1:3
+
+            % Plot place fields
+            sp(i+3) = subplot2(6,3,[k(i),k(i)+1],2);
+            pf = pfs{i+1,3};
+            ratemap = pf.plot(units(u),'isCircular',false);
+            ratemap(isnan(ratemap)) = -1;
+            imagesc(pf.adata.bins{1},pf.adata.bins{2},ratemap');    
+
+            text(pf.adata.bins{1}(1)+950,pf.adata.bins{2}(end)-70,...
+                 sprintf('%2.1f',max(ratemap(:))),'Color','w','FontWeight','bold','FontSize',10)
+            title([pf.session.trialName ':' pf.parameters.states,': ',num2str(units(u))]);
+            colormap([0,0,0;parula]);
+            caxis([-1,sq(mRate(1,3,u)).*1.5]);
+            
+            axis xy
+            hold on,
+            plot(sq(nanmean(peakPatchCOM(i,nniz(peakPatchCOM(i,:,u,2)')&nniz(peakPatchCOM(i,:,u,1)'),u,2))),...
+                 sq(nanmean(peakPatchCOM(i,nniz(peakPatchCOM(i,:,u,1)')&nniz(peakPatchCOM(i,:,u,2)'),u,1))),'*m');
+
+            xlim([-600,600]);
+            ylim([-350,350]);
+            if i ==1,
+                title(['BS pfs unit: ',num2str(units(u))]);
+            end
+            
+        end
+        
+
         
         for i = 1:2
             % patchCOM distribution along x axis
-            sp(3+i) = subplot2(6,2,[k(i),k(i)+1]+1,2);
+            sp(i+6) = subplot2(6,3,[k(i),k(i)+1]+1,3);
             hold on,
             hs = bar(eds,histc(sq(peakPatchCOM(i,:,u,2)),eds),'histc');
             hs.FaceAlpha = 0.5;
@@ -764,7 +806,7 @@ if display,
             xlim([-600,600]);
         end        
 
-        for i = 1:5,
+        for i = 1:8,
             sp(i).Units = 'centimeters';
             sp(i).Position([3,4]) = [4,2];
         end        
@@ -778,7 +820,7 @@ dprime = @(x,y) (mean(x(nniz(x')))-mean(y(nniz(y'))))/sqrt(0.5*(var(x(nniz(x')))
 dprx = nan([nt-2,numel(units)]);
 dpry = nan([nt-2,numel(units)]);
 
-for i = 1:3,
+for i = 1:2,
     for u = 1:numel(units);    
         dprx(i,u) = dprime(peakPatchCOM(i,:,u,2),peakPatchCOM(i+1,:,u,2));
         dpry(i,u) = dprime(peakPatchCOM(i,:,u,1),peakPatchCOM(i+1,:,u,1));
@@ -799,11 +841,15 @@ for i = 1:2,
     axes('Units','centimeters',...
          'Position',[2+(i-1)*(2.5+2),2,2.5,2.5]);
     plot(dprx(i,:),dpry(i,:),'.');
+    xlabel('x dprime')
+    ylabel('y dprime')    
     xlim([-10,10]),ylim([-10,10]) ;   
     Lines(nanmean(dprx(i,:)),[],'k');
     Lines([],nanmean(dpry(i,:)),'k');
     grid on
-    title({T(1).sessionName,[T(i+1).trialName,' vs ',T(i+2).trialName]});    
+    title({[T(1).sessionName                        ],...
+           [T(i+1).trialName,' vs ',T(i+2).trialName],...
+           ['Placefield bootstrapped center dprime' ]});    
 end
 print(gcf,'-depsc2',fullfile(OwnDir,FigDir,['pfk_dprime.eps']));
 print(gcf,'-dpng',  fullfile(OwnDir,FigDir,['pfk_dprime.png']));
@@ -824,15 +870,129 @@ for i = 1:2,
     axes('Units','centimeters',...
          'Position',[2+(i-1)*(2.5+2),2,2.5,2.5]);
     plot(-sq(peakPatchCOM(i,1,:,2)-peakPatchCOM(i+1,1,:,2))/10,dprx(i,:),'.')
-    xlim([-20,20]),ylim([-10,10])    
-    Lines(nanmean(-sq(peakPatchCOM(i,1,:,2)-peakPatchCOM(i+1,1,:,2))/10),[],'k')
-    Lines([],nanmean(dprx(i,:)),'k')
+    xlim([-10,10]),ylim([-10,10])    
+    %Lines(nanmean(-sq(peakPatchCOM(i,1,:,2)-peakPatchCOM(i+1,1,:,2))/10),[],'k')
+    %Lines([],nanmean(dprx(i,:)),'k')
     xlabel('pfk Shift')
     grid on
     title({T(1).sessionName,[T(i+1).trialName,' vs ',T(i+2).trialName]});    
 end
 print(gcf,'-depsc2',fullfile(OwnDir,FigDir,['pfk_dprx_x.eps']));
 print(gcf,'-dpng',  fullfile(OwnDir,FigDir,['pfk_dprx_x.png']));
+
+
+
+
+
+
+
+%% Portrait with pfknn
+
+
+for i = 1:3,
+    for u = 1:numel(units),
+        mpcom(i,u,2) = mean(peakPatchCOM(i,nniz(sq(peakPatchCOM(i,:,u,2))'),u,2));
+        mpcom(i,u,1) = mean(peakPatchCOM(i,nniz(sq(peakPatchCOM(i,:,u,1))'),u,1));    
+    end
+end
+
+
+sunits = [20,28,160];
+t = 1;
+mRate = [];
+for t = 1:nt-1;
+    mRate(t,:) = pfk{t}.maxRate(sunits);
+end
+
+spOpts.width  = 4;
+spOpts.height = 2;
+spOpts.ny = numel(sunits);
+spOpts.nx = numel(T);
+spOpts.padding = 2;
+spOpts.units = 'centimeters';
+figOpts.units = 'centimeters';
+figOpts.headerPadding = 2;
+figOpts.footerPadding = 8;
+figOpts.position = [1,1,(spOpts.width+round(spOpts.padding/2)) *spOpts.nx+round(spOpts.padding/2),...
+                     (spOpts.height+round(spOpts.padding/2))*spOpts.ny+figOpts.headerPadding+figOpts.footerPadding];
+
+
+figSet = 1;
+FigDir = 'Ed10-20140823-shift_teleport_ufr_pfk_xySdist_hvel';
+mkdir(fullfile(OwnDir,FigDir))
+figHnum = 399329239;;
+set(0,'defaultAxesFontSize',8,...
+      'defaultTextFontSize',8)
+hfig = figure(figHnum);clf
+set(hfig,'units',figOpts.units)
+set(hfig,'Position',figOpts.position)
+set(hfig,'PaperPositionMode','auto');
+
+hfig = figure(399329239);
+unit =units(1);
+i = 3;
+clf
+
+for unit = sunits
+    for t = 1:3,
+        pf = pfk{t};
+        uind = find(unit==sunits);
+        % Create axes
+        sp(t,i) = axes('Units',spOpts.units,...
+                       'Position',[(spOpts.width +round(spOpts.padding/2))*(uind-1)+round(spOpts.padding/2),...
+                            (spOpts.height+round(spOpts.padding/2))*(spOpts.ny-t+1+2)+round(spOpts.padding/2),...
+                            spOpts.width,...
+                            spOpts.height]...
+                       );
+        
+        hold('on')
+
+        % Correct color of nans and plot place field
+        ratemap = reshape(pf.data.rateMap(:,unit==pf.data.clu,1),fliplr(pf.adata.binSizes'));
+        ratemap(isnan(ratemap)) = -1;
+        imagesc(pf.adata.bins{1},pf.adata.bins{2},ratemap);    
+        text(pf.adata.bins{1}(end)-250,pf.adata.bins{2}(end)-50,...
+             sprintf('%2.1f',max(ratemap(:))),'Color','w','FontWeight','bold','FontSize',10)
+        colormap([0,0,0;parula]);
+        %caxis([-1,sq(mRate(1,unit==sunits)).*1.5]);
+        caxis([-1,15]);        
+        if uind==1,ylabel([pf.session.trialName ':' pf.parameters.states]);end
+
+        % Plot cross over 
+        plot(mpcom(t,unit==units,2),...
+             mpcom(t,unit==units,1),'*k');
+        Lines(-200.*mod(t+1,2),[],'k');
+        xlim([-600,600]),ylim([-350,350])        
+        set(gca,'YTickLabel',{})
+        set(gca,'XTickLabel',{})
+        
+        % set colormap 
+        
+    end
+end
+
+
+
+
+% Inter trial x shift dist
+for i = 0:2:2;
+    axes('Units',spOpts.units,...
+         'Position',[18,(4-i/2)*3+2.5,2.5,2.5]);
+    hold on
+    xlim([-40,40]),ylim([-40,40])
+    Lines([],0,[.75,.75,.75]);
+    Lines(0,[],[.75,.75,.75]);
+    Lines(20,[],'r');
+    Lines(-20,[],'r');
+    plot(-(mpcom(i/2+1,:,2)-mpcom(i/2+2,:,2))/10,-(mpcom(i/2+1,:,1)-mpcom(i/2+2,:,1))/10,'.')
+
+    if i~=4,set(gca,'XTickLabel',{}),end
+end
+
+
+
+print(gcf,'-depsc2',fullfile(OwnDir,FigDir,['pfk_xyshift',num2str(figSet),'.eps']));
+print(gcf,'-dpng',  fullfile(OwnDir,FigDir,['pfk_xyshift',num2str(figSet),'.png']));
 
 
 

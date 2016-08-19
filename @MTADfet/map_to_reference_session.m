@@ -26,7 +26,9 @@ switch features.label
     xyz = preproc_xyz(RefTrial,'spline_spine');
 
     rfet = xyz.copy;
-    rfet.data = rfet(:,:,3);
+    rfet.data = xyz(:,{'spine_lower','pelvis_root','spine_middle','spine_upper',...
+                       'head_back',  'head_left'  ,'head_front',  'head_right',...
+                       'bcom',       'hcom',       'acom'},3);
 
     fetInds = 1:rfet.size(2);
     stdThresh = repmat({15},1,rfet.size(2));
