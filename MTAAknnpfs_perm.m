@@ -1,4 +1,4 @@
-classdef MTAAknnpfs_bs < hgsetget %< MTAAnalysis
+classdef MTAAknnpfs_perm < hgsetget %< MTAAnalysis
     properties 
         path
         filename = '';
@@ -13,7 +13,7 @@ classdef MTAAknnpfs_bs < hgsetget %< MTAAnalysis
 
     methods
 
-        function Pfs = MTAAknnpfs_bs(Obj, varargin)     
+        function Pfs = MTAAknnpfs_perm(Obj, varargin)     
         %            [units,states,overwrite,tag,binDims,nNearestNeighbors,distThreshold,...
         %             type,ufrShufBlockSize,numIter]=...
 

@@ -763,10 +763,10 @@ nsts = size(states,2);
 
     
 binDims = [20,20];
-numIter = 1000;
+numIter = 1001;
 nNearestNeighbors = 300;
 distThreshold = 125;
-ufrShufBlockSize = 1;
+ufrShufBlockSize = 2;
 sampleRate = 30;
 pfk = {};
 overwrite = false;
@@ -1217,3 +1217,56 @@ end
 
 print(gcf,'-depsc2',fullfile(OwnDir,FigDir,['pfk_xyshift',num2str(figSet),'.eps']));
 print(gcf,'-dpng',  fullfile(OwnDir,FigDir,['pfk_xyshift',num2str(figSet),'.png']));
+
+
+
+
+% Intra-trial variance
+
+figure,
+subplot(211);bar(-200:5:200,hist(sq(peakPatchCOM(1,2:2:1001,2,2)-peakPatchCOM(1,3:2:1001,2,2)),-200:5:200),'histc')
+subplot(212);bar(-200:5:200,hist(sq(peakPatchCOM(2,2:2:1001,2,2)-peakPatchCOM(2,3:2:1001,2,2)),-200:5:200),'histc')
+
+
+figure,hist(sq(peakPatchCOM(1,2:2:1001,2,1)-peakPatchCOM(2,3:2:1001,2,1)),100)
+
+figure,hist(sq(peakPatchCOM(1,2:2:1001,4,1)),100)
+
+
+
+unit = 1;
+t = 1;
+
+X = sq(peakPatchCOM(t  ,2:2:1001, unit,2));
+Y = sq(peakPatchCOM(t+1,3:2:1001, unit,2));
+nxind = nniz(X(:));
+nyind = nniz(Y(:));
+
+figure,
+subplot(411);
+pf = pfk{t};
+ratemap = reshape(pf.data.rateMap(:,unit,1),fliplr(pf.adata.binSizes'));
+imagesc(pf.adata.bins{1},pf.adata.bins{2},ratemap);    
+axis xy
+subplot(412);hist(X(nxind),100),xlim([-600,600])
+subplot(413);hist(Y(nyind),100),xlim([-600,600])
+subplot(414);
+pf = pfk{t+1};
+ratemap = reshape(pf.data.rateMap(:,unit,1),fliplr(pf.adata.binSizes'));
+imagesc(pf.adata.bins{1},pf.adata.bins{2},ratemap);    
+axis xy
+ 
+[H,P,CI] = ttest2(X(nxind),Y(nyind),'tail','both','vartype','unequal')
+[P,H,STATS] = ranksum(X(nxind),Y(nyind),'tail','both')
+[H,P,CI] = ttest2(X(nxind),mean(Y(nyind)),'tail','both')
+
+[H,P,CI] = vartest2(X(nxind),Y(nyind),'tail','both')
+[H,P,CI] = ztest(X(nxind),nanmean(Y(nyind)),nanstd(Y(nyind)),'tail','both')
+
+
+
+
+
+
+
+

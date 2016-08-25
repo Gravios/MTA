@@ -1777,58 +1777,152 @@ switch mode,
     %sname = 'jg05-20120317';
     sname = 'jg05-20120310';
     %sname = 'jg05-20120309';
+    
     display = 0;
     %chans = [1:2:8];
     chans = [65:1:96];
-    marker = 'spine_lower'
+    marker = 'spine_lower';
 
-    Trial = MTATrial(sname,'all');
-    Trial.ang.load(Trial);
-    Trial.xyz.load(Trial);
-    Trial.lfp.load(Trial,chans);
-    Trial.stc.updateMode('auto_wbhr');
-    Trial.stc.load;
+    Trial = MTATrial(sname);
 
-    wlfp = WhitenSignal(Trial.lfp.data,[],1);
+    xyz = Trial.load('xyz');
+    ang = create(MTADang,Trial,xyz);
 
-    matlabpool open 12
+    Trial.lfp.filename = [Trial.name,'.lfp'];
+    lfp = Trial.load('lfp',chans);
+
+    stc = Trial.stc.copy;
+    %stc = Trial.load('stc','nn0317_PP');
+
+    
+
+    wlfp = WhitenSignal(lfp.data,[],1);
+
+    try,delete(gcp('nocreate')),end
+    parp = parpool(10);
 
     tl=[];
     fl=[];
     yl=[];
-    spectral.nfft = 2^11;
-    spectral.window = 2^10;
-    parfor i = 1:Trial.lfp.size(2),
-        [yl(:,:,i),fl(:,i),tl(:,i)] = mtchglong(wlfp(:,i),spectral.nfft,Trial.lfp.sampleRate,spectral.window,spectral.window*0.875,[],[],[],[1,40]);
+    spectral.nfft = 2^12;
+    spectral.window = 2^11;
+    parfor i = 1:lfp.size(2),
+        [yl(:,:,i),fl(:,i),tl(:,i)] = mtchglong(wlfp(:,i),...
+                                                spectral.nfft,...
+                                                lfp.sampleRate,...
+                                                spectral.window,...
+                                                spectral.window*0.875,...
+                                                [],[],[],[1,40]);
     end
     fl = fl(:,1);
     tl = tl(:,1);
-    yld = MTADlfp('data',yl,'sampleRate',1/diff(tl(1:2,1)));
+    tindShift = round(spectral.window/2/lfp.sampleRate*1/diff(tl(1:2,1))-1);
+    yld = MTADlfp('data',cat(1,zeros([tindShift,size(yl,2),size(yl,3)]),yl),...
+                  'sampleRate',1/diff(tl(1:2,1)));
     yld.data(yld.data==0)=nan;
     yld.data = log10(yld.data);
-    yld.data = (yld.data-repmat(nanmedian(yld.data),[yld.size(1),1,1]))./repmat(nanstd(yld.data),[yld.size(1),1,1]);
-    tshift = round(spectral.window/2/Trial.lfp.sampleRate*yld.sampleRate);
-
+    yld.data = (yld.data-repmat(nanmedian(yld.data),[yld.size(1),1,1]))./...
+                repmat(nanstd(yld.data),[yld.size(1),1,1]);    
+    tl = [[0:tindShift-1]'./yld.sampleRate;tl+spectral.window/2/lfp.sampleRate];
 
 
 
     sts='r'
-    evt=1;
+    evt=2;
     figure,cnt=1;
-    for i=linspace(-2,2,40).*yld.sampleRate
-        imagesc(fl,1:13,sq(nanmean(yld(round(Trial.stc{sts,yld.sampleRate}.data(diff(Trial.stc{sts}.data,1,2)>200,evt)+i-tshift),:,:),1))'),
-        caxis([-1,1])
+    for i=linspace(-1,1,80).*yld.sampleRate
+        imagesc(fl,1:numel(chans),...
+                sq(nanmean(yld(round(stc{sts,yld.sampleRate}.data(diff(stc{sts}.data,1,2)>150,evt)+i),:,:),1))'),
+        caxis([-2,2])
         text( 35,13,num2str((i)./yld.sampleRate),'HorizontalAlignment','center','BackgroundColor',[.7 .9 .7])
-        pause(.2)
+        colorbar
+        pause(.1)        
         frms(cnt) = getframe;
         cnt=cnt+1;
     end
 
-    prm.fps = 5;
+    prm.fps = 10;
     prm.loop = inf;
-    makeGif(frms,'/gpfs01/sirota/bach/homes/gravio/figures/spect_rear_on_theta.gif',prm);
+    makeGif(frms,['/storage/gravio//ownCloud/MjgEdER2016/spect_rear_trans',num2str(evt),'_1:40.gif'],prm);
 
+    
+    
+    OwnDir = '/storage/gravio/ownCloud/MjgEdER2016/';
+    for sts='wrnpms',
+    for evt = 1:2,
+        try,
+    tlabel = {'onset','offset'};
+    sper = stc{sts,yld.sampleRate};
+    evttime = sort(sper.data(:,evt));
+    evttime = unique(evttime(diff(stc{sts}.data,1,2)>150));
+    ytrns = reshape(GetSegs(yld.data,round(evttime-1*yld.sampleRate),round(2*yld.sampleRate)),[],numel(evttime),numel(fl),numel(chans));
 
+    set(0,'defaultAxesFontSize',8,...
+          'defaultTextFontSize',8)
+    
+    hfig = figure(82747472),clf
+
+    set(hfig,'units','centimeters')
+    set(hfig,'Position',[18,5,7,20])
+    set(hfig,'PaperPositionMode','auto');
+    
+    imagesc(linspace(-1,1,10),1:numel(chans),sq(nanmean(nanmean(ytrns(:,:,6<fl&fl<13,:),2),3))')
+    xlabel('Time(s)');
+    ylabel('Channels');    
+    title({['Mean theta power(6-13Hz) '],['@ ',sper.label,' ',tlabel{evt}]});
+    cax = colorbar;
+    caxis([-max(abs(caxis)),max(abs(caxis))])    
+    ylabel(cax,'z-score');
+
+    print(hfig,'-depsc2',fullfile(OwnDir,...
+                          [Trial.filebase,'-meanPSD_6-13Hz_',sper.label,'_',tlabel{evt},'.eps']));
+    print(hfig,'-dpng',  fullfile(OwnDir,...
+                          [Trial.filebase,'-meanPSD_6-13Hz_',sper.label,'_',tlabel{evt},'.png']));
+    end
+    end
+    end
+    
+
+    
+    OwnDir = '/storage/gravio/ownCloud/MjgEdER2016/';
+    for sts='wrnpms',
+    for evt = 1:2,
+        try,
+    tlabel = {'onset','offset'};
+    sper = stc{sts,yld.sampleRate};
+    evttime = sort(sper.data(:,evt));
+    evttime = unique(evttime(diff(stc{sts}.data,1,2)>100));
+    ytrns = yld(evttime,:,:,:);
+
+    set(0,'defaultAxesFontSize',8,...
+          'defaultTextFontSize',8)
+    
+    hfig = figure(82747472),clf
+
+    set(hfig,'units','centimeters')
+    set(hfig,'Position',[ 18    13    18    12]);
+    set(hfig,'PaperPositionMode','auto');
+    
+    imagesc(fl,1:numel(chans),sq(nanmean(ytrns))');
+    xlabel('Frequency (Hz)');
+    ylabel('Channels');    
+    title({['Mean PSD '],['@ ',sper.label,' ',tlabel{evt}]});
+    cax = colorbar;
+    caxis([-max(abs(caxis)),max(abs(caxis))])    
+    ylabel(cax,'z-score');
+
+    print(hfig,'-depsc2',fullfile(OwnDir,...
+                          [Trial.filebase,'-meanPSD',sper.label,'_',tlabel{evt},'.eps']));
+    print(hfig,'-dpng',  fullfile(OwnDir,...
+                          [Trial.filebase,'-meanPSD',sper.label,'_',tlabel{evt},'.png']));
+    end
+    end
+    end
+    
+    
+    
+    
+    
     th=[];
     fh=[];
     yh=[];
@@ -2429,74 +2523,112 @@ switch mode,
           linspace(1,2,100));
     
   case 'BHVPFS'
+    OwnDir = '/storage/gravio/ownCloud/MjgEdER2016/';    
     Trial= MTATrial('jg05-20120310');    
     Trial.load('stc','nn0317_PP');
     states = Trial.stc.list_state_attrib;
-% $$$     binDims = [20,20];
-% $$$     smoothingWeights = [2.2,2.2];
-% $$$     units = [];
-% $$$     overwrite = false;
+    
+    binDims = [20,20];
+    smoothingWeights = [2.2,2.2];
+    units = [];
+    overwrite = false;
 
+    
     binDims = [20,20];
     numIter = 0;
     nNearestNeighbors = 300;
     distThreshold = 125;
     ufrShufBlockSize = 1;
     sampleRate = 30;
-
+    units = [];
     overwrite = false;
+
 
 
     
     pfk = {};
+    pfs = {};    
     for s = 1:numel(states)
-        pfk{s} = MTAAknnpfs_bs(Trial,units,states{s},overwrite, ...
-                             'binDims',binDims,...
-                             'nNearestNeighbors',nNearestNeighbors,...
-                             'ufrShufBlockSize',ufrShufBlockSize,...
-                             'distThreshold',distThreshold,...
-                             'pos',xyz,...
-                             'numIter',numIter);
+% $$$         pfk{s} = MTAAknnpfs_bs(Trial,units,states{s},overwrite, ...
+% $$$                              'binDims',binDims,...
+% $$$                              'nNearestNeighbors',nNearestNeighbors,...
+% $$$                              'ufrShufBlockSize',ufrShufBlockSize,...
+% $$$                              'distThreshold',distThreshold,...
+% $$$                              'numIter',numIter);
         
-% $$$         pfs{s} = MTAApfs(Trial,units,states{s},overwrite, ...
-% $$$                          'binDims',binDims,'SmoothingWeights',smoothingWeights);
+        pfs{s} = MTAApfs(Trial,units,states{s},overwrite, ...
+                         'binDims',binDims,'SmoothingWeights',smoothingWeights);
+        fprintf('pfk %s: complete\n',states{s});
     end
     units = pfk{1}.data.clu;    
-    mRate = pf{9}.maxRate;
+    mRate = pfk{7}.maxRate(units);
     
     [accg,tbin] = autoccg(Trial,units,'theta');
 
-    autoincr = false;
+
+
+    width = pfk{1}.adata.binSizes(1);
+    height = pfk{1}.adata.binSizes(2);
+    radius = round(pfk{1}.adata.binSizes(1)/2)-find(pfk{1}.adata.bins{1}<-420,1,'last');
+    centerW = width/2;
+    centerH = height/2;
+    [W,H] = meshgrid(1:width,1:height);           
+    mask = double(sqrt((W-centerW-.5).^2 + (H-centerH-.5).^2) < radius);
+    mask(mask==0)=nan;
+
+    
+    %FigDir = '/jg05-20120310_pfk_bhv';
+    FigDir = '/jg05-20120310_pfs_bhv';
+    FigPrefix = 'pfs_';
+    try,mkdir(fullfile(OwnDir,FigDir));end
+
+
+
+    autoincr = true;
+    %autoincr = false;    
     hfig = figure(849274);clf
     unit = units(1);
+    set(hfig,'units','centimeters')
+    set(hfig,'Position',[26,2,25,24])
+    set(hfig,'PaperPositionMode','auto');
+    
     while unit~=-1,
         for s = 1:numel(states)
             subplot(4,4,s)
             hold('on')            
-            pf = pfk{s};
+            pf = pfs{s};
 
             % Correct color of nans and plot place field
-            ratemap = reshape(pf.data.rateMap(:,unit==pf.data.clu,1),fliplr(pf.adata.binSizes'));
+
+            % PFS plot
+            ratemap = pf.plot(unit,'isCircular',false);
+
+            % PFK plot
+            %ratemap = reshape(pf.data.rateMap(:,unit==pf.data.clu,1),fliplr(pf.adata.binSizes'));
+
+            ratemap = ratemap.*mask;
             ratemap(isnan(ratemap)) = -1;
-            imagesc(pf.adata.bins{1},pf.adata.bins{2},ratemap);    
+            imagesc(pf.adata.bins{1},pf.adata.bins{2},ratemap);
+
             text(pf.adata.bins{1}(end)-250,pf.adata.bins{2}(end)-50,...
                  sprintf('%2.1f',max(ratemap(:))),'Color','w','FontWeight','bold','FontSize',10)
             colormap([0,0,0;parula]);
-            %caxis([-1,sq(mRate(1,unit==sunits)).*1.5]);
             caxis([-1,mRate(unit==units)]);        
-            
 
             title([pf.session.trialName ':' pf.parameters.states,': ',num2str(unit)]);
         end   
-        ForAllSubplots('colormap([0,0,0;parula])');
-        ForAllSubplots(['caxis([-1,',num2str(sq(mRate(unit))),'.*1.5])']);
 
         subplot(4,4,16)
         bar(tbin,accg(:,unit));
         xlim([min(tbin),max(tbin)]);
         title([' AutoCCG: Unit ',num2str(unit)]);
 
+        print(gcf,'-depsc2',fullfile(OwnDir,FigDir,[FigPrefix,num2str(unit),'.eps']));
+        print(gcf,'-dpng',  fullfile(OwnDir,FigDir,[FigPrefix,num2str(unit),'.png']));
+
+        
         unit = figure_controls(hfig,unit,units,autoincr);
+        
     end
 
 
