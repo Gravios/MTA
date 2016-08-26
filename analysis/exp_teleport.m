@@ -1265,8 +1265,72 @@ axis xy
 
 
 
+%% Compute permutations
 
+Trial = MTATrial.validate(T(1));
+Trial.load('stc',T(1).stcMode);
 
+offsets =  [15,-15;...
+            15,-90;...
+            15,-15;...
+            15,-15];
+
+% add trials as states
+trialLabels = {'Coreg1PEVR1','Shift1PEVR2','Coreg2PEVR3','Shift2PEVR4'};
+
+for t = 1:4,
+aper = resample(Trial.sync.copy,txyz.sampleRate);
+aper.data = aper.data-aper.data(1)+1;
+aper = aper+offsets(t,:);
+Stc.addState(Trial.spath,...
+                   Trial.filebase,...
+                   aper.data,...
+                   txyz.sampleRate,...
+                   Trial.sync.copy,...
+                   Trial.sync.data(1),...
+                   'gper','');
+end
+
+states = cellfun(@horzcat,trialLabels,repmat({'&velHthresh'},size(trialLabels)));
+states = {'Coreg1PEVR1&velHthresh',...
+          'Shift1PEVR2&velHthresh',...
+          'Coreg2PEVR3&velHthresh',...
+          'Shift2PEVR4&velHthresh'};
+
+units =[1,5,7,9,16,18,22,28,29,99,101,104,107,110,122,134,158,168,184,185]';
+
+Stc = Trial.stc.copy;
+nt = numel(T);
+states = {'theta','velthresh','velHthresh'};
+nsts = size(states,2);
+
+    
+binDims = [20,20];
+numIter = 1001;
+nNearestNeighbors = 300;
+distThreshold = 125;
+ufrShufBlockSize = 2;
+sampleRate = 30;
+pfk = {};
+overwrite = false;
+
+xyz = Trial.load('xyz');
+xyz.resample(sampleRate);
+
+for s1 = 1:numel(states)
+    for s2 = s1+1:numel(states)
+
+        pfk{s1,s2} = MTAAknnpfs_perm(Trial,units,states([s1,s2]),overwrite, ...
+                                     'binDims',binDims,...
+                                     'nNearestNeighbors',nNearestNeighbors,...
+                                     'ufrShufBlockSize',ufrShufBlockSize,...
+                                     'distThreshold',distThreshold,...
+                                     'pos',xyz,...
+                                     'numIter',numIter);
+    end
+end
+
+        
 
 
 

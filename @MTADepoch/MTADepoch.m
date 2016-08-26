@@ -41,6 +41,12 @@ classdef MTADepoch < MTAData
 %    syncOrigin:  double, point of origin in the overall session timeline
 %                         where the obejec begins (rewrite this)
 %
+%    type:        string, soft enumerated either [TimeSeries, TimePeriods]
+%
+%    ext:         string, 3-4 char file extention 
+%
+%    name:        string, descriptive name for plotting
+%
 %    label:       string, name associated with the type of epochs
 %
 %    key:           char, single character used for keyboard shortcuts and indexing
@@ -74,19 +80,34 @@ classdef MTADepoch < MTAData
     
     methods (Static)
         function Data = intersect(DataCell)            
-            samplingRates = cellfun(@getfield,DataCell,repmat({'sampleRate'},1,numel(DataCell)));
+        % function (static) Data = intersect(DataCell)            
+        % From a set of MTADepochs of type TimePeriods,
+        % return the intersection of their periods.
+
+            
+            % Collect the sampleRate of all objects
+            samplingRates = cellfun(@getfield,DataCell, ...
+                                    repmat({'sampleRate'},1,numel(DataCell)));
+            % Select the highest sampleRate which will be assigned
+            % to the final output object "Data"
             msr = max(samplingRates);
+            % If the collected sampleRates are not all equal,
+            % resample the dispairate objects to the common,
+            % final sampleRate
             if numel(unique(samplingRates))~=1,
                 rsi = find(samplingRates~=msr);
                 for i = rsi,
                     DataCell{i}.resample(msr);
                 end
             end
+            % Copy the synchronization objects and origin
             sync = DataCell{1}.sync.copy;
             origin = DataCell{1}.origin;
+            % create composite label indicating which objects were intersected
             newLabel = ['i_' DataCell{1}.key];
-            %newKey = num2str(randi([0,9],1));
+            % Default key for composite state is 'c'
             newKey = 'c';
+            % Intersect periods
             newData = DataCell{1}.data;
             DataCell(1) = [];
             while ~isempty(DataCell),
@@ -94,7 +115,7 @@ classdef MTADepoch < MTAData
                 newData = IntersectRanges(newData,DataCell{1}.data);
                 DataCell(1) = [];
             end            
-            
+            % Assign intersected periods to new MTADepoch object.
             Data = MTADepoch([],[],newData,msr,sync,origin,[],[],[],newLabel,newKey);
         end
 

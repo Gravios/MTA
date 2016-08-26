@@ -169,6 +169,8 @@ classdef MTAAknnpfs_perm < hgsetget %< MTAAnalysis
             if isempty(pos), 
                 pos = Session.load('xyz');
             end
+            
+            pfsState = cellfun(@resample,pfsState,repmat({pos},size(pfsState)));
                 
             sstpos = sq(pos(pfsState,Session.trackingMarker,1:numel(binDims))); 
             
