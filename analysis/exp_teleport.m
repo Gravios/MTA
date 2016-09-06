@@ -37,67 +37,9 @@ Trial.load('stc',T(1).stcMode);
 
 %% Basic Threshold BHV and LFP Labeling
 
-if overwriteStc
-    if isempty(Trial.stc.gsi('v')),
-        xyz = Trial.load('xyz');
-        xyz.filter('ButFilter',3,2.4);
-        fvxy = xyz.vel(1,[1,2]);
-        fvxy.data(fvxy.data<1e-3)=1e-3;
-        fvxy.data = log10(fvxy.data);
-        vper = ThreshCross(fvxy.data,0.5,round(.25*xyz.sampleRate));
-        Trial.stc.addState(Trial.spath,...
-                           Trial.filebase,...
-                           vper,...
-                           xyz.sampleRate,...
-                           Trial.sync.copy,...
-                           Trial.sync.data(1),...
-                           'velthresh','v');
-    end
-
-    if isempty(Trial.stc.gsi('h')),
-        xyz = Trial.load('xyz');
-        xyz.filter('ButFilter',3,2.4);
-        fvxy = xyz.vel(6,[1,2]);
-        fvxy.data(fvxy.data<1e-3)=1e-3;
-        fvxy.data = log10(fvxy.data);
-        vper = ThreshCross(fvxy.data,0.5,round(.25*xyz.sampleRate));
-        Trial.stc.addState(Trial.spath,...
-                           Trial.filebase,...
-                           vper,...
-                           xyz.sampleRate,...
-                           Trial.sync.copy,...
-                           Trial.sync.data(1),...
-                           'velHthresh','h');
-    end
-
-    if isempty(Trial.stc.gsi('r')),
-        rper = rear(Trial,'com',45);
-        Trial.stc.addState(Trial.spath,...
-                           Trial.filebase,...
-                           rper,...
-                           xyz.sampleRate,...
-                           Trial.sync.copy,...
-                           Trial.sync.data(1),...
-                           'rear','r');
-    end
-
-
-    if isempty(Trial.stc.gsi('n')),
-        Trial.stc.states{end+1} = Trial.stc{'v'}-(Trial.stc{'r',120}+[-.5,.5]);
-        Trial.stc.states{end}.key = 'n'; 
-        Trial.stc.states{end}.label = 'NRvel';    
-        Trial.stc.states{end}.updateFilename([Trial.filebase,'.sst.',...
-                            Trial.stc.states{end}.label,'.',...
-                            Trial.stc.states{end}.key,'.mat']);
-    end
-
-    if isempty(Trial.stc.gsi('t')),
-        Trial = labelTheta(Trial,[],32);
-    end
-    events = LoadEvents(fullfile(Trial.spath, [Trial.name '.all.evt']));
-
-    
-    Trial.stc.save(1);
+if overwriteStc, 
+    Trial = labelBhvBasic(Trial); 
+    Trial = labelTheta(Trial,[],32);
 end
 
 % Calculate and plot
@@ -1208,15 +1150,18 @@ for i = 0:2:4;
     Lines(0,[],[.75,.75,.75]);
     Lines(20,[],'r');
     Lines(-20,[],'r');
-    plot(-(mpcom(i/2+1,:,2)-mpcom(i/2+2,:,2))/10,-(mpcom(i/2+1,:,1)-mpcom(i/2+2,:,1))/10,'.')
-
+    plot(-(mpcom(i/2+1,:,2)-mpcom(i/2+2,:,2))/10,-(mpcom(i/2+1,:,1)-mpcom(i/2+2,:,1))/10,'ob')
+    plot(-(mpcom(i/2+1,permPval(i/2+1,:)<0.05,2)...
+          -mpcom(i/2+2,permPval(i/2+1,:)<0.05,2))/10,...
+          -(mpcom(i/2+1,permPval(i/2+1,:)<0.05,1)-mpcom(i/2+2,permPval(i/2+1,:)<0.05,1))/10,'om')
+    
     if i~=4,set(gca,'XTickLabel',{}),end
 end
 
 
 
-print(gcf,'-depsc2',fullfile(OwnDir,FigDir,['pfk_xyshift',num2str(figSet),'.eps']));
-print(gcf,'-dpng',  fullfile(OwnDir,FigDir,['pfk_xyshift',num2str(figSet),'.png']));
+print(gcf,'-depsc2',fullfile(OwnDir,FigDir,['pfk_xyshift_perm_circle',num2str(figSet),'.eps']));
+print(gcf,'-dpng',  fullfile(OwnDir,FigDir,['pfk_xyshift_perm_circle',num2str(figSet),'.png']));
 
 
 
@@ -1262,75 +1207,6 @@ axis xy
 
 [H,P,CI] = vartest2(X(nxind),Y(nyind),'tail','both')
 [H,P,CI] = ztest(X(nxind),nanmean(Y(nyind)),nanstd(Y(nyind)),'tail','both')
-
-
-
-%% Compute permutations
-
-Trial = MTATrial.validate(T(1));
-Trial.load('stc',T(1).stcMode);
-
-offsets =  [15,-15;...
-            15,-90;...
-            15,-15;...
-            15,-15];
-
-% add trials as states
-trialLabels = {'Coreg1PEVR1','Shift1PEVR2','Coreg2PEVR3','Shift2PEVR4'};
-
-for t = 1:4,
-aper = resample(Trial.sync.copy,txyz.sampleRate);
-aper.data = aper.data-aper.data(1)+1;
-aper = aper+offsets(t,:);
-Stc.addState(Trial.spath,...
-                   Trial.filebase,...
-                   aper.data,...
-                   txyz.sampleRate,...
-                   Trial.sync.copy,...
-                   Trial.sync.data(1),...
-                   'gper','');
-end
-
-states = cellfun(@horzcat,trialLabels,repmat({'&velHthresh'},size(trialLabels)));
-states = {'Coreg1PEVR1&velHthresh',...
-          'Shift1PEVR2&velHthresh',...
-          'Coreg2PEVR3&velHthresh',...
-          'Shift2PEVR4&velHthresh'};
-
-units =[1,5,7,9,16,18,22,28,29,99,101,104,107,110,122,134,158,168,184,185]';
-
-Stc = Trial.stc.copy;
-nt = numel(T);
-states = {'theta','velthresh','velHthresh'};
-nsts = size(states,2);
-
-    
-binDims = [20,20];
-numIter = 1001;
-nNearestNeighbors = 300;
-distThreshold = 125;
-ufrShufBlockSize = 2;
-sampleRate = 30;
-pfk = {};
-overwrite = false;
-
-xyz = Trial.load('xyz');
-xyz.resample(sampleRate);
-
-for s1 = 1:numel(states)
-    for s2 = s1+1:numel(states)
-
-        pfk{s1,s2} = MTAAknnpfs_perm(Trial,units,states([s1,s2]),overwrite, ...
-                                     'binDims',binDims,...
-                                     'nNearestNeighbors',nNearestNeighbors,...
-                                     'ufrShufBlockSize',ufrShufBlockSize,...
-                                     'distThreshold',distThreshold,...
-                                     'pos',xyz,...
-                                     'numIter',numIter);
-    end
-end
-
-        
 
 
 

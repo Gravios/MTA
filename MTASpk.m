@@ -152,8 +152,9 @@ classdef MTASpk < hgsetget
                 if ischar(states),
                     [Res,sind] = SelectPeriods(Res,[Session.stc{states,Spk.sampleRate}.data],'d',1,0);
                 else
-                    states.resample(Spk.sampleRate);
-                    [Res,sind] = SelectPeriods(Res,states.data,'d',1,0);                   
+                    sst = states.copy;
+                    sst.resample(Spk.sampleRate);
+                    [Res,sind] = SelectPeriods(Res,sst.data,'d',1,0);                   
                 end
                 Clu = Clu(sind);
             end

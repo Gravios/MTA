@@ -339,7 +339,7 @@ for iter = 1:nIter,
         end
         
         % Label States
-        [Stc,ps,Model_Information] = bhv_nn (Trial,         ... Trial
+        [Stc,ps,Model_Information,ns] = bhv_nn (Trial,         ... Trial
                                              false,         ... ifTrain
                                              trainingStates,... States
                                              Trial.stc.copy,... StateCollection
@@ -349,7 +349,7 @@ for iter = 1:nIter,
         % if an stc was provided get comparison stats
             ysm = MTADxyz('data',double(0<stc2mat(Stc,xyz)),'sampleRate',xyz.sampleRate); 
             d_state = ysm.data+d_state;
-            p_state = p_state +ps;
+            p_state = p_state +ns;
         if ~isempty(stcMode)            
             if nargout>=4,
                 labelingEpochs.resample(xyz);

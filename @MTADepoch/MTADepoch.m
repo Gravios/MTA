@@ -138,6 +138,9 @@ classdef MTADepoch < MTAData
             end
             for i = 1:numel(DataCell)
                 DataCell{i}.cast('TimeSeries');
+                if i~=1,
+                    DataCell{1}.data = DataCell{1}.data + DataCell{i}.data;
+                end
             end
 
             sync = DataCell{1}.sync.copy;
@@ -149,7 +152,8 @@ classdef MTADepoch < MTAData
             newData = DataCell{1}.data;
             DataCell(1) = [];
 
-            Data = MTADepoch([],[],newData,msr,sync,origin,[],[],[],newLabel,newKey);
+            Data = MTADepoch([],[],newData,msr,sync,origin,'TimeSeries',[],[],newLabel,newKey);
+
         end
 
 

@@ -17,6 +17,7 @@ switch Data.type
             epoch = S(1).subs{i}.copy;
             if Data.sampleRate~=epoch.sampleRate,
                 epoch.resample(Data);
+                epoch.clean;
             end
             S(1).subs{i} = epoch.data;
         end

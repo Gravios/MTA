@@ -195,6 +195,13 @@ classdef MTAStateCollection < hgsetget
                             
                         end
 
+                        if iscell(queries{1})&numel(queries)<2,
+                            queries = queries{1};
+                        else
+                            queries = cat(2,queries{1},queries(2:end));
+                        end
+                        
+
                         out = cell([1,numel(queries)]);
                         for s = 1:numel(queries),
                             if ischar(queries{1}),

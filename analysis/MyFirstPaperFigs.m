@@ -3,6 +3,40 @@ function MyFirstPaperFigs(Trial,mode,varargin)
 % Various Figures for the first paper
 % 
 % for a list of figures and their options enter 'help' into the var mode
+% help
+% figure1
+% figure3
+% bhvJPDF
+% duno
+% phaseTemp
+% phaseZ
+% phase2dDRZ
+% phase2dRTC
+% phase3dRTC
+% phase3dRTCVTC
+% markerDistJPDF
+% StateUFR
+% lfp_psd_jpdf
+% fet_select
+% rhm_distrb
+% time_shifted_comodugram_rhm_lfp
+% state_dependent_comodugram_rhm_lfp
+% marker_reconstruction noise
+% bhv_lfp_psd
+% uhhh
+% head_motion
+% head_motion
+% dz-lfp comodulation
+% dz-lfp comodulation
+% spk_trig_lfp_ave
+% spk_trig_lfp_ave
+% spk_trig_lfp_psd_ave
+% spk_trig_lfpPSD_ave
+% spk_trig_lfpPSD_ave
+% get_back_on_task
+% get_back_on_task
+% ufr copulas
+% BHVPFS
 
 
 switch mode,
@@ -384,26 +418,44 @@ switch mode,
     end
 
 
+%%%%%%% phase2dDRZ %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%    
   case 'phase2dDRZ'
     %% Figure 4 - Classical 2-D phase precession
-    %Trial = MTATrial(sname,'all');
-    [chans,phase_chan] = DefaultArgs(varargin,{4,1});
+   
+    Trial = MTATrial.validate(Trial);
+    OwnDir = '/storage/gravio/ownCloud/MjgEdER2016/';
+    FigDir = 'phase2dDRZ';
+    mkdir(fullfile(OwnDir,FigDir))
 
+    % Testing Args
+    %Trial = MTATrial.validate('jg05-20120310');
+    %chans = 72;
+    %phase_chan = 1;
+    
+    [chans,phase_chan,stcMode] = DefaultArgs(varargin,{72,1,'nn0317'});
+
+    
+    % Load Position
     xyz = Trial.load('xyz');
-    xyz.filter(gtwin(.25,xyz.sampleRate));
+    xyz.filter('ButFilter',3,2.4,'low');
 
+    % Load Units
     units = select_units(Trial,18);
     Trial.load('nq');
-    units = units(Trial.nq.SNR(units)>.8);
-    lfp = Trial.lfp.copy;
-    lfp.load(Trial,chans);
+    units = units(Trial.nq.SNR(units)>.75);
+
+    % Load LFP
+    Trial.lfp.filename = [Trial.name,'.lfp'];
+    lfp = Trial.load('lfp',chans);
     lfp.resample(xyz);
     tbp_phase = lfp.phase;
 
-
-    states = {'theta','rear&theta','walk&theta','lswalk&theta','hswalk&theta'};
+    % Load Stc
+    Trial.load('stc',stcMode);
+    states = Trial.stc.list_state_attrib;
     nsts = numel(states);
-    ow = true;
+
+    
     spk = {};
     pfs = {};
     pmr = {};
@@ -412,42 +464,52 @@ switch mode,
     pfd = {};
     DRZ = {};
 
-    ow = true;
-
-    for s = 1:nsts
-        pfs{s} = MTAApfs(Trial,[],states{s},ow,'binDims',[50,50],'SmoothingWeights',[1.5,1.5]);
-
+    overwrite = false;
+    tag = '';
+    binDims = [20,20];
+    smoothingWeights = [2.2,2.2];
+    type = 'xy';
+    
+    for s = 1:nsts,        
+        % Load/Create place fields
+        pfs{s} = MTAApfs(Trial,...
+                         units,...
+                         states{s},...
+                         overwrite,...
+                         tag,...
+                         binDims,...
+                         smoothingWeights,...
+                         type);
+        
+        % Load spikes 
         spk{s} = Trial.spk.copy;
         spk{s}.create(Trial,xyz.sampleRate,states{s},[],'deburst');
 
-        % Get the expected ufr for each xy 
+        
+        % Get the mean firing rate for each xy position along trajectory 
         wpmr{s} = zeros(xyz.size(1),numel(units));
-        %wpmr{s} = ones(xyz.size(1),numel(units));
-        [~,indx] = min(abs(repmat(pfs{s}.adata.bins{1}',xyz.size(1),1)-repmat(xyz(:,Trial.trackingMarker,1),1,numel(pfs{s}.adata.bins{1}))),[],2);
-        [~,indy] = min(abs(repmat(pfs{s}.adata.bins{2}',xyz.size(1),1)-repmat(xyz(:,Trial.trackingMarker,2),1,numel(pfs{s}.adata.bins{2}))),[],2);
-        indrm = sub2ind(pfs{s}.adata.binSizes',indx,indy);
 
+        [~,indx] = min(abs( repmat(pfs{s}.adata.bins{1}',xyz.size(1),1)...
+                           -repmat(xyz(:,Trial.trackingMarker,1),1,numel(pfs{s}.adata.bins{1}))),...
+                       [],2);
 
+        [~,indy] = min(abs( repmat(pfs{s}.adata.bins{2}',xyz.size(1),1)...
+                           -repmat(xyz(:,Trial.trackingMarker,2),1,numel(pfs{s}.adata.bins{2}))),...
+                       [],2);
+
+        rateMapIndex = sub2ind(pfs{s}.adata.binSizes',indx,indy);
         for unit = units,
-            rateMap = pfs{s}.plot(unit);
-            %rateMap = rot90(rot90(rateMap)');
-            wpmr{s}(:,unit==units) = rateMap(indrm);
+            rateMap = pfs{s}.plot(unit);      %  for MTAApfs
+            %rateMap = rot90(rot90(rateMap)'); % for MTAAknnpfs
+            wpmr{s}(:,unit==units) = rateMap(rateMapIndex);
         end
 
-        % wpmr(wpmr<1)=1;
-        % figure,scatter(xyz(1:61:end,7,1),xyz(1:61:end,7,2),wpmr(1:61:end,20))
-
+        % Get the peak firing rate and position of each place field
         [pmr{s},pmp{s}] = pfs{s}.maxRate(units);
         pmr{s} = repmat(pmr{s}(:)',xyz.size(1),1);
 
 
-        %[pr,px] = pfs.maxRate(units)
-        %pfs.plot(unit);
-        %figure,imagesc(pfs.adata.bins{1},pfs.adata.bins{2},rateMap');
-        %hold on,plot(px(unit==units,1),px(unit==units,2),'w*')
-
-
-
+        % Get the rat's heading 
         pfds = [];
         for unit = units
             pfhxy = xyz(:,{'head_back','head_front'},:);
@@ -469,24 +531,33 @@ switch mode,
         pfd{s}(abs(pfds)<=pi/2)=-1;
         pfd{s}(abs(pfds)>pi/2)=1;
 
-
-        %DRZ 
+        % Calculate DRZ 
         DRZ{s} = pfd{s}.*(1-wpmr{s}./pmr{s});
-
-% $$$         ind = nniz(xyz(:,Trial.trackingMarker,1));
-% $$$         figure,
-% $$$         plotcc(xyz(ind,Trial.trackingMarker,1),...
-% $$$                 xyz(ind,Trial.trackingMarker,2),...
-% $$$                 DRZ{1}(ind,11))
-% $$$         colorbar
-% $$$         xlim([-500,500])
-% $$$         ylim([-500,500])
 
     end
 
-    aIncr = true;
+
+    
+    width = pfs{1}.adata.binSizes(1);
+    height = pfs{1}.adata.binSizes(2);
+    radius = round(pfs{1}.adata.binSizes(1)/2)-find(pfs{1}.adata.bins{1}<-420,1,'last');
+    centerW = width/2;
+    centerH = height/2;
+    [W,H] = meshgrid(1:width,1:height);           
+    mask = double(sqrt((W-centerW-.5).^2 + (H-centerH-.5).^2) < radius);
+    mask(mask==0)=nan;
+    
+    
+    % 2d DRZ figure
+    set(0,'defaultAxesFontSize',8,...
+          'defaultTextFontSize',8)
+
+    aIncr = false;
     hfig = figure(38384);
-    set(hfig,'paperposition',get(hfig,'position').*[0,0,1,1]./30)
+    hfig.Units = 'centimeters';
+    hfig.Position = [1,1,40,24];    
+    hfig.PaperPositionMode = 'auto';
+
     unit = units(1);
     while unit~=-1,
         
@@ -501,37 +572,50 @@ switch mode,
             
             gind = ~isnan(drzspk)&~isnan(phzspk);
             
-            subplot2(6,nsts,[1,2],s);
-            plot(xyz(res,Trial.trackingMarker,1),xyz(res,Trial.trackingMarker,2),'.');
+            subplot2(9,nsts,[1,2],s);
+            plot(xyz(res,Trial.trackingMarker,1),xyz(res,Trial.trackingMarker,2),'.b');
             xlim([-500,500]),ylim([-500,500])
             title(states{s})
             
-            subplot2(6,nsts,[3,4],s);
-            pfs{s}.plot(unit);
+            subplot2(9,nsts,[4,5],s);
+            ratemap = pfs{s}.plot(unit,'isCircular',false);
+            ratemap = ratemap.*mask;
+            ratemap(isnan(ratemap)) = -1;
+            imagesc(pfs{s}.adata.bins{1},pfs{s}.adata.bins{2},ratemap);
+
+            text(pf.adata.bins{1}(end)-250,pf.adata.bins{2}(end)-50,...
+                 sprintf('%2.1f',max(ratemap(:))),'Color','w','FontWeight','bold','FontSize',10)
+            colormap([0,0,0;parula]);
+            caxis([-1,pmr{s}(1,unit==units)]);        
+
             hold on,plot(pmp{s}(unit==units,1),pmp{s}(unit==units,2),'w*')
             title(num2str(unit))
             
             if sum(gind)>10,
-                subplot2(6,nsts,[5,6],s);plot(drzspk(gind),circ_rad2ang(phzspk(gind)),'.');
-                hold on,          plot(drzspk(gind),circ_rad2ang(phzspk(gind))+360,'.');
-                hold on,          plot(drzspk(gind),circ_rad2ang(phzspk(gind))+720,'.');
-                xlim([-1,1]),
-                ylim([-180,900])
-% $$$                 subplot2(6,nsts,6,s);
-% $$$                 hist2([[drzspk(gind);drzspk(gind)],...
-% $$$                        [circ_rad2ang(phzspk(gind));circ_rad2ang(phzspk(gind))+360],...
-% $$$                        [circ_rad2ang(phzspk(gind));circ_rad2ang(phzspk(gind))+720]],30,25);
+                subplot2(9,nsts,[7,9],s);
+                    hold('on');
+                    plot(drzspk(gind),circ_rad2ang(phzspk(gind)),'b.');
+                    plot(drzspk(gind),circ_rad2ang(phzspk(gind))+360,'b.');
+                    plot(drzspk(gind),circ_rad2ang(phzspk(gind))+720,'b.');
+                    xlim([-1,1]),
+                    ylim([-180,900])
             end
         end
         
-        saveas(hfig,['/gpfs01/sirota/home/gravio/figures/bhvPhasePrecession/',[Trial.filebase,'.bpp_2dDRZ-',num2str(unit),'.png']],'png');
-        unit = figure_controls(hfig,unit,units,aIncr);
         
-        %reportfig(gcf,'er06-20130613-2Dphspredb',0,num2str(unit),[],0);
+        FigName = [Trial.filebase,'_',FigDir,'_unit',num2str(unit)];
+        print(gcf,'-dpng',  fullfile(OwnDir,FigDir,[FigName,'.png']));
+        print(gcf,'-depsc2',fullfile(OwnDir,FigDir,[FigName,'.eps']));
+
+        unit = figure_controls(hfig,unit,units,aIncr);        
         
     end
- 
 
+
+    
+    
+    
+%%%%%%% phase2dRTC %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
   case 'phase2dRTC'
     [chans,phase_chan] = DefaultArgs(varargin,{4,1});
 
@@ -560,55 +644,20 @@ switch mode,
     pfr = {};
     DRZ = {};
 
-    ow = true;
-    for s = 1:nsts,
+
+    % For each state
+    for s = 1:nsts,        
         pfs{s} = MTAApfs(Trial,[],states{s},ow,'binDims',[50,50],'SmoothingWeights',[1.5,1.5]);
 
+        % Load Spikes 
         spk{s} = Trial.spk.copy;
         spk{s}.create(Trial,xyz.sampleRate,states{s},[],'deburst');
 
+        % Place field max rate and center
         [pmr{s},pmp{s}] = pfs{s}.maxRate(units);
-    end
 
-    units = units(max(cell2mat(pmr),[],2)>5);
-
-    for s = 1:nsts,
-        [pmr{s},pmp{s}] = pfs{s}.maxRate(units);
-    end
-
-    for s = 1:nsts,
-        pfrs = [];
-        pfds = [];
-        for unit = units
-            pfhxy = cat(3,xyz(:,{'head_back','head_front'},[1,2]),zeros([xyz.size(1),2]));
-            pfhxy = cat(2,pfhxy,permute(repmat([pmp{s}(unit==units,:),0],xyz.size(1),1),[1,3,2]));
-            pfhxy = MTADxyz([],[],pfhxy,xyz.sampleRate);
-            
-            cor = cell(1,3);
-            [cor{:}] = cart2sph(pfhxy(:,2,1)-pfhxy(:,1,1),pfhxy(:,2,2)-pfhxy(:,1,2),pfhxy(:,2,3)-pfhxy(:,1,3));
-            cor = cell2mat(cor);
-            
-            por = cell(1,3);
-            [por{:}] = cart2sph(pfhxy(:,3,1)-pfhxy(:,1,1),pfhxy(:,3,2)-pfhxy(:,1,2),pfhxy(:,3,3)-pfhxy(:,1,3));
-            por = cell2mat(por);
-
-
-            [~,~,pfrs(:,unit==units)] = cart2sph(pfhxy(:,3,1)-pfhxy(:,2,1),pfhxy(:,3,2)-pfhxy(:,1,2),pfhxy(:,3,3)-pfhxy(:,2,3));
-
-
-            
-            %pfrs(:,unit==units) = por(:,3);
-            pfds(:,unit==units) = circ_dist(cor(:,1),por(:,1));
-        end
-        
-        pfr{s} = pfrs;
-        pfd{s} = zeros(size(pfds));
-        pfd{s}(abs(pfds)<=pi/2)=-1;
-        pfd{s}(abs(pfds)>pi/2)=1;
-
-
-        %DRZ 
-        DRZ{s} = pfd{s}.*pfr{s};
+        % DRZ 
+        DRZ{s} = pfDRZ(xyz,pmp{s});
 
     end
 
@@ -673,8 +722,12 @@ switch mode,
         %reportfig(gcf,'er06-20130613-2Dphspredb',0,num2str(unit),[],0);
         
     end
- 
 
+
+    
+    
+    
+%%%%%%% phase3dRTC %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
   case 'phase3dRTC'
     [chans,phase_chan] = DefaultArgs(varargin,{4,1});
 
@@ -805,7 +858,6 @@ switch mode,
 
   case 'phase3dRTCVTC'
     [chans,phase_chan] = DefaultArgs(varargin,{4,1});
-
          
     %vars for er06-20130612
     Trial = MTATrial('er06-20130612');
@@ -849,9 +901,25 @@ switch mode,
     pfs = {};    pmr = {};    pmp = {};
     DRZ = {};    VTC = {};
 
+    overwrite = false;
+    tag = '';
+    binDims = [20,20];
+    smoothingWeights = [2.2,2.2];
+    type = 'xy';
+    
     for s = 1:nsts,
-        pfs{s} = MTAApfs(Trial,[],'theta',ow,'binDims',[50,50,50],'SmoothingWeights',[1.5,1.5,1.5],'type','xyz');
-        %pfs{s} = MTAApfs(Trial,[],states{s},ow,'binDims',[50,50],'SmoothingWeights',[1.5,1.5],'type','xy');
+        %pfs{s} =
+        %MTAApfs(Trial,[],'theta',ow,'binDims',[50,50,50],'SmoothingWeights',[1.5,1.5,1.5],'type','xyz');
+        
+        pfs{s} = MTAApfs(Trial,...
+                         units,...
+                         states{s},...
+                         overwrite,...
+                         tag,...
+                         binDims,...
+                         smoothingWeights,...
+                         type);
+        
         [pmr{s},pmp{s}] = pfs{s}.maxRate(units);
         pmp{s}(pmp{s}(:,3)<50,3) = 75;        
 
@@ -865,23 +933,24 @@ switch mode,
 %     end
 
     %get DRZ and VTC
-    drzdims = [1,2,3];
+    drzdims = [1,2];
+    %drzdims = [1,2,3];    
     txyz = xyz.copy;
     txyz.data = xyz(:,{'head_back','head_front'},drzdims);
     sxyz = xyz.copy;
     sxyz.data = cat(2,xyz(:,'head_back',drzdims),circshift(xyz(:,'head_back',drzdims),-round(xyz.sampleRate/2)));
     for s = 1:nsts,
-        %DRZ{s} = pfDRZ(txyz,pmp{s});
-        %VTC{s} = pfDRZ(sxyz,pmp{s});
-        DRZ{s} = pfDRD(txyz,pmp{s});
-        VTC{s} = pfDRD(sxyz,pmp{s});
+        DRZ{s} = pfDRZ(txyz,pmp{s});
+        VTC{s} = pfDRZ(sxyz,pmp{s});
+        %DRZ{s} = pfDRD(txyz,pmp{s});
+        %VTC{s} = pfDRD(sxyz,pmp{s});
     end
     
     vel = xyz.vel('head_front',[1,2]);
     vel.data = log10(vel.data);
 
-    ang = Trial.ang.copy;
-    ang.create(Trial,xyz);
+
+    ang = create(MTADang,Trial,xyz);
     ael = circ_dist(ang(:,'head_back','head_front',1),circshift(ang(:,'head_back','head_front',1),10));
     ael = ang(:,'head_back','head_front',2);
 
@@ -894,7 +963,8 @@ switch mode,
     hfig = figure(38338);
     set(hfig,'paperposition',get(hfig,'position').*[0,0,1,1]./30)
     unit = units(1);
-    pname = '3dVTDZ';
+    %pname = '3dVTDZ';
+    pname = '2dVTDZ';
     %unit = 71;
     while unit~=-1,
         
@@ -992,8 +1062,8 @@ switch mode,
         end
         
 
-        figname = ['/gpfs01/sirota/home/gravio/figures/PIM20150112/PhasePrecession/',[Trial.filebase,'.bpp_',pname,'-',num2str(unit),'.png']];
-        unit = figure_controls(hfig,unit,units,aIncr,figname);
+        %figname = ['/gpfs01/sirota/home/gravio/figures/PIM20150112/PhasePrecession/',[Trial.filebase,'.bpp_',pname,'-',num2str(unit),'.png']];
+        unit = figure_controls(hfig,unit,units,aIncr);
         
     end 
 
@@ -1777,35 +1847,39 @@ switch mode,
     %sname = 'jg05-20120317';
     sname = 'jg05-20120310';
     %sname = 'jg05-20120309';
-    
+    sname = 'er02-20110908.cof.all';
     display = 0;
     %chans = [1:2:8];
     chans = [65:1:96];
     marker = 'spine_lower';
 
-    Trial = MTATrial(sname);
+    Trial = MTATrial.validate(sname);
 
     xyz = Trial.load('xyz');
     ang = create(MTADang,Trial,xyz);
 
+    
     Trial.lfp.filename = [Trial.name,'.lfp'];
     lfp = Trial.load('lfp',chans);
 
-    stc = Trial.stc.copy;
-    %stc = Trial.load('stc','nn0317_PP');
-
+    lfp.data = cat(2,lfp.data,fet_rhm(Trial,lfp,'raw'));
     
+    stc = Trial.stc.copy;
+    stc = Trial.load('stc','nn0317_PP');
+    stc = Trial.load('stc','nn0317');    
+    stc = Trial.load('stc','NN0317');
+    
+    wlfp = WhitenSignal(lfp.data,[],1);    
+    %wlfp = lfp.data;
 
-    wlfp = WhitenSignal(lfp.data,[],1);
 
+    %% Low frequency stuff
     try,delete(gcp('nocreate')),end
     parp = parpool(10);
 
-    tl=[];
-    fl=[];
-    yl=[];
-    spectral.nfft = 2^12;
-    spectral.window = 2^11;
+    tl=[];    fl=[];    yl=[];
+    spectral.nfft = 2^11;
+    spectral.window = 2^10;
     parfor i = 1:lfp.size(2),
         [yl(:,:,i),fl(:,i),tl(:,i)] = mtchglong(wlfp(:,i),...
                                                 spectral.nfft,...
@@ -1820,19 +1894,209 @@ switch mode,
     yld = MTADlfp('data',cat(1,zeros([tindShift,size(yl,2),size(yl,3)]),yl),...
                   'sampleRate',1/diff(tl(1:2,1)));
     yld.data(yld.data==0)=nan;
+    tpow = yld.copy;
+    tpow.clear;    
+    tpow.data = [nanmean(nanmean(yld(:,6<fl&fl<12,[6,7]),2)./nanmean(yld(:,fl<5,[6,7]),2),3),...
+                 nanmean(nanmean(yld(:,6<fl&fl<12,[16:20]),2)./nanmean(yld(:,fl<5,[16:20]),2),3)];    
     yld.data = log10(yld.data);
-    yld.data = (yld.data-repmat(nanmedian(yld.data),[yld.size(1),1,1]))./...
-                repmat(nanstd(yld.data),[yld.size(1),1,1]);    
-    tl = [[0:tindShift-1]'./yld.sampleRate;tl+spectral.window/2/lfp.sampleRate];
+    nyld = yld.copy;
+    nyld.data = (clip(yld.data,0.01,100)-repmat(nanmedian(clip(yld.data,0.01,100)),[yld.size(1),1,1]))./...
+                repmat(nanstd(clip(yld.data,0.01,100)),[yld.size(1),1,1]);    
+    tl = [[0:tindShift-1]'./yld.sampleRate;tl+spectral.window/2/lfp.sampleRate];    
+    
+    
+    %% High frequency stuff    
+    th=[];    fh=[];    yh=[];
+    spectral.nfft = 2^8;
+    spectral.window = 2^7;
+    spectral.freq = [30,200];
+    parfor i = 1:lfp.size(2),
+        [yh(:,:,i),fh(:,i),th(:,i)] = mtchglong(wlfp(:,i),spectral.nfft,lfp.sampleRate,spectral.window,spectral.window*0.875,[],[],[],spectral.freq);
+    end
+    fh = fh(:,1);
+    th = th(:,1);
+    tindShift = round(spectral.window/2/lfp.sampleRate*1/diff(th(1:2,1))-1);        
+    yhd = MTADlfp('data',yh,'sampleRate',1/diff(th(1:2, 1)));
+    yhd.data(yhd.data==0)=nan;
+tyhd = yhd.copy;    
+    yhd.data = clip(yhd.data,0.01,1e8);
+    nyhd = yhd.copy;    
+    nyhd.data = bsxfun(@rdivide,...
+                       bsxfun(@minus,yhd.data,nanmedian(yhd.data)),...
+                       nanstd(yhd.data));
+
+    th = [[0:tindShift-1]'./yhd.sampleRate;th+spectral.window/2/lfp.sampleRate];
+    try,delete(gcp('nocreate')),end
+    
+    
+    %% speed    
+    vxy = xyz.copy;
+    vxy.filter('ButFilter',3,2.4);
+    vxy = vxy.vel([1,7],[1,2]);
+    
+    vxyl = vxy.copy;    
+    vxyl.resample(yld);
+    vxyl.data(vxyl.data<1e-3)=1e-3;
+    vxyl.data = log10(vxyl.data);
+    
+    vxyh = vxy.copy;        
+    vxyh.resample(yhd);
+    vxyh.data(vxyh.data<1e-3)=1e-3;
+    vxyh.data = log10(vxyh.data);
+
+    vxy.data(vxy.data<1e-3)=1e-3;
+    vxy.data = log10(vxy.data);
+
+    dnanThreshl = [prctile(reshape(10.*log10(yld.data),[],33),50)'];
+    %                  prctile(reshape(10.*log10(yhd.data),[],33),90)'];
+    
+    nanyld = yld.copy;
+    nanyld.data = 10*log10(nanyld.data)>repmat(permute(dnanThreshl(:,1),[3,2,1]),yld.size([1,2]));
 
 
+    
+    
+% $$$     ind = stc{'w'};
+% $$$     ind.cast('TimeSeries',yhd);
+% $$$     ind = ind.data==1&vxyh(:,2)>0&vxyh(:,2)<0.5;
+% $$$     figure,
+% $$$     subplot
+% $$$     imagesc(fh,1:32,sq(nansum(nanyhd(ind,:,1:numel(chans))))')
+% $$$     colormap jet
+
+    hfig = figure(93993492);
+    vstep = -2:0.5:1.5;
+    for i = 1:numel(vstep)    
+        ind = stc{'w'};
+        ind.cast('TimeSeries',yld);
+        ind = ind.data==1&vxyl(:,2)>0+vstep(i)&vxyl(:,2)<0.5+vstep(i);    
+        subplot(1,numel(vstep),i);  
+        imagesc(fl,1:32,sq(nansum(nanyld(ind,:,1:numel(chans))))')
+        colormap jet    
+    end
+
+    % Computing theta phase for all channels 
+    tlfp = lfp.copy;
+    tlfp.data = lfp(:,1:numel(chans));
+    thetaPhase =  tlfp.phase;       
+
+    
+figure,imagesc(th,fh,10*log10(tyhd(:,:,30))')
+
+    figure,
+    imagesc(1:sum(nniz(thetaPhase)),1:numel(chans),thetaPhase(nniz(thetaPhase),:)');
+    colormap hsv
+
+    
+    
+    % nan thresholds
+    dnanThresh = [prctile(reshape(10.*log10(yhd.data),[],33),75)'];
+    %             prctile(reshape(10.*log10(yhd.data),[],33),90)'];
+    
+    nanyhd = yhd.copy;
+    nanyhd.data = 10*log10(nanyhd.data)>repmat(permute(dnanThresh(:,1),[3,2,1]),yhd.size([1,2]));
+
+% $$$     
+% $$$     ind = stc{'w'};
+% $$$     ind.cast('TimeSeries',yhd);
+% $$$     ind = ind.data==1&vxyh(:,2)>0&vxyh(:,2)<0.5;
+% $$$     figure,
+% $$$     subplot
+% $$$     imagesc(fh,1:32,sq(nansum(nanyhd(ind,:,1:numel(chans))))')
+% $$$     colormap jet
+
+    figure
+    vstep = -2:0.5:1.5;
+    for i = 1:numel(vstep)
+        ind = stc{'w'};
+        ind.cast('TimeSeries',yhd);
+        ind = ind.data==1&vxyh(:,2)>0+vstep(i)&vxyh(:,2)<0.5+vstep(i);    
+        subplot(1,numel(vstep),i);  
+        imagesc(fh,1:32,sq(nansum(nanyhd(ind,:,1:numel(chans))))')
+        colormap jet    
+    end
+    
+    figure,
+    imagesc(fh,1:32,sq(nanmedian(nyhd(ind,:,1:numel(chans))))')
+
+    figure,
+    imagesc(fh,1:32,sq(nanmedian(nanyhd(ind,:,1:numel(chans))))')
+
+
+
+    
+    figure,
+    imagesc(fh,1:32,sq(bsxfun(@rdivide,10*log10(nanmedian(yhd(ind,:,1:numel(chans)))),10*log10(nanmean(yhd(:,:,1:numel(chans))))))')
+
+    
+    figure,
+    imagesc(fh,1:32,sq(bsxfun(@rdivide,10*log10(nanmedian(yhd(ind,:,1:numel(chans)))),10*log10(nanmean(yhd(:,:,1:numel(chans))))))')
+    
+
+    ind = stc{'w',yhd.sampleRate};
+    ind = bsxfun(@plus,ind.data(:,1),[
+    ind.cast('TimeSeries',yhd);
+    ind = ind.data==1&vxyh(:,2)>1&vxyh(:,2)<1.5;
+    
+    
+    ind = stc{'r'};
+    figure,
+    imagesc(fl,1:32,sq(nanmedian(nyld(ind,:,1:numel(chans))))')
+    
+    figure,imagesc(th,fh,10.*log10(yhd(:,:,24))'),
+    %    caxis([35,38]),
+caxis([prctile(reshape(10.*log10(yhd(:,:,24))',[],1),40),...
+       prctile(reshape(10.*log10(yhd(:,:,24))',[],1),90)]);
+
+        
+        colormap jet, 
+    axis xy
+
+    figure,imagesc(th,fh,nyhd(:,1:32,18)'),
+    caxis([1,3]),
+    colormap jet, 
+    axis xy
+
+    figure,imagesc(th,fh,nanyhd(:,1:32,18)'),
+    caxis([1,3]),
+    colormap jet, 
+    axis xy
+
+    figure,imagesc(tl,fl,yld(:,:,33)'),
+    colormap jet, 
+    axis xy
+
+    ind = vxyl(:,2)>0;
+    ind = stc{'w'};
+    figure,plot(yld(ind,15,7)',vxyl(ind,2)','.'),                
+    figure,plot(yld(ind,15,33)',yld(ind,32,20)','.'),        
+
+    ind = vxyh(:,2)>0;
+    ind = stc{'w'};
+    figure,plot(yld(ind,11,7)',vxyl(ind,2)','.'),                
+    figure,plot(yhd(ind,15,33)',yhd(ind,11,20)','.'),        
+
+
+    rld = yld.copy;
+    rld.data = rld(:,:,33);
+    rld.resample(yhd);
+        
+    ind = vxyh(:,2)>0;
+    figure,plot(rld(ind,15)',yhd(ind,11,18)','.'),                        
+        
+    figure,imagesc((nyhd(:,1:32,18))'),caxis([.1,5]),colormap jet    
+    
+
+    figure,
+    imagesc(fl,1:32,sq(nanmedian(nanyld(ind,:,1:numel(chans))))')
+    
 
     sts='r'
     evt=2;
     figure,cnt=1;
     for i=linspace(-1,1,80).*yld.sampleRate
         imagesc(fl,1:numel(chans),...
-                sq(nanmean(yld(round(stc{sts,yld.sampleRate}.data(diff(stc{sts}.data,1,2)>150,evt)+i),:,:),1))'),
+                sq(nanmean(nyld(round(stc{sts,yld.sampleRate}.data(diff(stc{sts}.data,1,2)>150,evt)+i),:,1:numel(chans)),1))'),
         caxis([-2,2])
         text( 35,13,num2str((i)./yld.sampleRate),'HorizontalAlignment','center','BackgroundColor',[.7 .9 .7])
         colorbar
@@ -1883,63 +2147,170 @@ switch mode,
     end
     
 
+
+    [Co,f] = Comodugram(Trial,lfp,{'walk','rear','turn','pause','groom','sit'},'mtchglong');
+    figure,imagesc(f,f,Co(:,:,12,33,2)')
+    axis xy
+    
+    figure
+    plot([nanmean(nanmean(yld(:,6<fl&fl<12,[6,7]),3),2),nanmean(nanmean(yld(:,6<fl&fl<12,[16:20]),3),2)])
+
+    chanS = [7:8];
+    freqS = [6,12];    
+    freqS = [12,24];        
+    chanD = [16:19];
+    freqD = [6,12];
+    freqD = [12,24];
+
+    shift = [.30,-0.30];
+    
+    figure,hold on
+    ind = Trial.stc{'w'}+shift;
+    ind.clean;
+    [~,sind] = sort(ind.data(:,1));
+    ind.data = ind.data(sind,:);
+    plot(nanmean(nanmean(nyld(ind,freqS(1)<fl&fl<freqS(2),chanS),3),2),...
+         nanmean(nanmean(nyld(ind,freqD(1)<fl&fl<freqD(2),chanD),3),2),'.c');
+    [rho,pval] = corr([nanmean(nanmean(nyld(ind,freqS(1)<fl&fl<freqS(2),chanS),3),2),...
+                      nanmean(nanmean(nyld(ind,freqD(1)<fl&fl<freqD(2),chanD),3),2)])
+    ind = Trial.stc{'r'}+shift;
+    ind.clean;    
+    plot(nanmean(nanmean(nyld(ind,freqS(1)<fl&fl<freqS(2),chanS),3),2),...
+         nanmean(nanmean(nyld(ind,freqD(1)<fl&fl<freqD(2),chanD),3),2),'.r');
+    [rho,pval] = corr([nanmean(nanmean(nyld(ind,freqS(1)<fl&fl<freqS(2),chanS),3),2),...
+                      nanmean(nanmean(nyld(ind,freqD(1)<fl&fl<freqD(2),chanD),3),2)])
+    
+    
+    figure,hold on
+    ind = Trial.stc{'w'}+shift;
+    ind.clean;    
+    [~,sind] = sort(ind.data(:,1));
+    ind.data = ind.data(sind,:);
+    plot((nanmean(nanmean(nyld(ind,freqS(1)<fl&fl<freqS(2),chanS),3),2)),...
+         (nanmean(nanmean(nyld(ind,freqD(1)<fl&fl<freqD(2),chanD),3),2)),'.c');
+    ind = Trial.stc{'r'}+shift;
+    ind.clean;    
+    plot((nanmean(nanmean(nyld(ind,freqS(1)<fl&fl<freqS(2),chanS),3),2)),...
+         (nanmean(nanmean(nyld(ind,freqD(1)<fl&fl<freqD(2),chanD),3),2)),'.r');
+
+    
+    
+    figure,hold on
+    
+    ind = Trial.stc{'t'};
+    [~,sind] = sort(ind.data(:,1));
+    ind.data = ind.data(sind,:);    
+    plot(nanmean(nanmean(nyld(ind,6<fl&fl<12,[6,7]),3),2),...
+         nanmean(nyld(ind,6<fl&fl<12,end),2),'.c');
+    [rho,pval] = corr([nanmean(nanmean(nyld(ind,6<fl&fl<12,[6,7]),3),2),...
+                       nanmean(nyld(ind,6<fl&fl<12,end),2)])
+
+    ind = Trial.stc{'r'};
+    plot(nanmean(nanmean(nyld(ind,6<fl&fl<12,[16:20]),3),2),...
+         nanmean(nyld(ind,6<fl&fl<12,end),2),'.r');
+    [rho,pval] = corr([nanmean(nanmean(nyld(ind,6<fl&fl<12,[6,7]),3),2),...
+         nanmean(nyld(ind,6<fl&fl<12,end),2)])
+
+
+
+
+        
+    figure,hold on
+    ind = Trial.stc{'w'};
+    [~,sind] = sort(ind.data(:,1));
+    ind.data=  ind.data(sind,:);
+    %plot(tpow(ind,1),tpow(ind,2),'.c');        
+    plot(log10(tpow(ind,1)),log10(tpow(ind,2)),'.c');        
+    [rho,pval] = corr(tpow(ind,:))
+    ind = Trial.stc{'r'};
+    %plot(tpow(ind,1),tpow(ind,2),'.r');    
+    plot(log10(tpow(ind,1)),log10(tpow(ind,2)),'.r');            
+    [rho,pval] = corr(tpow(ind,:))
+
+
+
+    
+    figure,
+    imagesc(tl,fl,yld(:,:,33)')
+    axis xy,
+    colormap jet,
+    caxis([-.5,.2])    
     
     OwnDir = '/storage/gravio/ownCloud/MjgEdER2016/';
     for sts='wrnpms',
-    for evt = 1:2,
-        try,
-    tlabel = {'onset','offset'};
-    sper = stc{sts,yld.sampleRate};
-    evttime = sort(sper.data(:,evt));
-    evttime = unique(evttime(diff(stc{sts}.data,1,2)>100));
-    ytrns = yld(evttime,:,:,:);
+        for evt = 1:2,
+            try,
+                tlabel = {'onset','offset'};
+                sper = stc{sts,yld.sampleRate};
+                evttime = sort(sper.data(:,evt));
+                evttime = unique(evttime(diff(stc{sts}.data,1,2)>100));
+                ytrns = yld(evttime,:,:,:);
 
-    set(0,'defaultAxesFontSize',8,...
-          'defaultTextFontSize',8)
-    
-    hfig = figure(82747472),clf
+                set(0,'defaultAxesFontSize',8,...
+                      'defaultTextFontSize',8)
+                
+                hfig = figure(82747472),clf
 
-    set(hfig,'units','centimeters')
-    set(hfig,'Position',[ 18    13    18    12]);
-    set(hfig,'PaperPositionMode','auto');
-    
-    imagesc(fl,1:numel(chans),sq(nanmean(ytrns))');
-    xlabel('Frequency (Hz)');
-    ylabel('Channels');    
-    title({['Mean PSD '],['@ ',sper.label,' ',tlabel{evt}]});
-    cax = colorbar;
-    caxis([-max(abs(caxis)),max(abs(caxis))])    
-    ylabel(cax,'z-score');
+                set(hfig,'units','centimeters')
+                set(hfig,'Position',[ 18    13    18    12]);
+                set(hfig,'PaperPositionMode','auto');
+                
+                imagesc(fl,1:numel(chans),sq(nanmean(ytrns))');
+                xlabel('Frequency (Hz)');
+                ylabel('Channels');    
+                title({['Mean PSD '],['@ ',sper.label,' ',tlabel{evt}]});
+                cax = colorbar;
+                caxis([-max(abs(caxis)),max(abs(caxis))])    
+                ylabel(cax,'z-score');
 
-    print(hfig,'-depsc2',fullfile(OwnDir,...
-                          [Trial.filebase,'-meanPSD',sper.label,'_',tlabel{evt},'.eps']));
-    print(hfig,'-dpng',  fullfile(OwnDir,...
-                          [Trial.filebase,'-meanPSD',sper.label,'_',tlabel{evt},'.png']));
+                print(hfig,'-depsc2',fullfile(OwnDir,...
+                                              [Trial.filebase,'-meanPSD',sper.label,'_',tlabel{evt},'.eps']));
+                print(hfig,'-dpng',  fullfile(OwnDir,...
+                                              [Trial.filebase,'-meanPSD',sper.label,'_',tlabel{evt},'.png']));
+            end
+        end
     end
-    end
-    end
-    
-    
-    
-    
-    
-    th=[];
-    fh=[];
-    yh=[];
-    spectral.nfft = 2^9;
-    spectral.window = 2^7;
-    spectral.freq = [40,120];
-    parfor i = 1:Trial.lfp.size(2),
-        [yh(:,:,i),fh(:,i),th(:,i)] = mtchglong(wlfp(:,i),spectral.nfft,Trial.lfp.sampleRate,spectral.window,spectral.window*0.875,[],[],[],spectral.freq);
-    end
-    fh = fh(:,1);
-    th = th(:,1);
-    yhd = MTADlfp('data',yh,'sampleRate',1/diff(th(1:2,1)));
-    yhd.data(yhd.data==0)=nan;
-    yhd.data = log10(yhd.data);
-    yhd.data = (yhd.data-repmat(nanmedian(yhd.data),[yhd.size(1),1,1]))./repmat(nanstd(yhd.data),[yhd.size(1),1,1]);
-    tshift = round(spectral.window/2/Trial.lfp.sampleRate*yhd.sampleRate);
 
+    
+    OwnDir = '/storage/gravio/ownCloud/MjgEdER2016/';
+    for sts='wrnpms',
+        for evt = 1:2,
+            try,
+                tlabel = {'onset','offset'};
+                sper = stc{sts,yhd.sampleRate};
+                evttime = sort(sper.data(:,evt));
+                evttime = unique(evttime(diff(stc{sts}.data,1,2)>100));
+                ytrns = log10(yhd(evttime,:,1:numel(chans)));
+                ytrns = nyhd(evttime,:,1:numel(chans));
+                %ytrns(yhd(evttime,:,:,:)==0,:,:)=[];
+                
+
+                set(0,'defaultAxesFontSize',8,...
+                      'defaultTextFontSize',8)
+                
+                hfig = figure(82747472),clf
+
+                set(hfig,'units','centimeters')
+                set(hfig,'Position',[ 18    13    18    12]);
+                set(hfig,'PaperPositionMode','auto');
+                
+                imagesc(fh,1:numel(chans),sq(nanmean(ytrns))');
+                xlabel('Frequency (Hz)');
+                ylabel('Channels');    
+                title({['Mean PSD '],['@ ',sper.label,' ',tlabel{evt}]});
+                cax = colorbar;
+                %caxis([-max(abs(caxis)),max(abs(caxis))])    
+                ylabel(cax,'z-score');
+
+                print(hfig,'-depsc2',fullfile(OwnDir,...
+                                              [Trial.filebase,'-meanPSD40-120',sper.label,'_',tlabel{evt},'.eps']));
+                print(hfig,'-dpng',  fullfile(OwnDir,...
+                                              [Trial.filebase,'-meanPSD40-120',sper.label,'_',tlabel{evt},'.png']));
+            end
+        end
+    end
+    
+    
     sts='r'
     evt=2;
     figure,cnt=1;

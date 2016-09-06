@@ -6,7 +6,7 @@ end
 
 
 xyz = Trial.load('xyz');
-%if xyz.sampleRate>120,xyz.resample(120);end
+if xyz.sampleRate>120,xyz.resample(120);end
 
 ang = create(MTADang,Trial,xyz);
 

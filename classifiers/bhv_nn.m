@@ -1,4 +1,4 @@
-function [Stc,d_state,Model_Information] = bhv_nn(Trial,varargin)
+function [Stc,d_state,Model_Information,n_state] = bhv_nn(Trial,varargin)
 %function [Stc,d_state] = bhv_nn(Trial,varargin)
 %
 % varargin:
@@ -152,6 +152,7 @@ d_state = net(feature.data')';
 d_state = MTADxyz('data',d_state,'sampleRate',feature.sampleRate);
 d_state.resample(xyz);
 d_state = d_state.data;
+n_state = d_state;
 
 % Separate the winners from the losers
 [~,maxState] = max(d_state,[],2);

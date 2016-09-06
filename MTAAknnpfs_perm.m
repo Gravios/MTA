@@ -38,9 +38,8 @@ classdef MTAAknnpfs_perm < hgsetget %< MTAAnalysis
                     Pfs.session.mazeName    = Session.maze.name;
 
                     
+                    %pfsState = Session.stc.states(Session.stc.gsi(states));
                     pfsState = Session.stc{states};
-                    
-                    
                     
                     Pfs.parameters.states = states;
                     Pfs.parameters.type   = type;
@@ -60,7 +59,7 @@ classdef MTAAknnpfs_perm < hgsetget %< MTAAnalysis
                                       'el',         [],...
                                       'rateMap',    []);
                     Pfs.updateFilename(Session,tag);
-                    Pfs.ext = 'pfs';
+                    Pfs.ext = 'pfkPerm';
                     
                 case 'MTAApfs'
                     Pfs = Obj;
@@ -110,7 +109,7 @@ classdef MTAAknnpfs_perm < hgsetget %< MTAAnalysis
                             newdata =struct( 'clu',        zeros(1,numNewUnits),...
                                 'elClu',      zeros(1,numNewUnits),...
                                 'el',         zeros(1,numNewUnits),...
-                                'rateMap',    zeros(prod(Pfs.adata.binSizes),numNewUnits,numIter));
+                                'rateMap',    zeros(prod(Pfs.adata.binSizes),numNewUnits,numIter+1));
                             field = fieldnames(newdata);
                             for f = 1:numel(field);
                                 Pfs.data.(field{f}) = cat(2,Pfs.data.(field{f}),newdata.(field{f}));
@@ -141,7 +140,7 @@ classdef MTAAknnpfs_perm < hgsetget %< MTAAnalysis
                     newdata =struct( 'clu',        zeros(1,numNewUnits),...
                                      'elClu',      zeros(1,numNewUnits),...
                                      'el',         zeros(1,numNewUnits),...
-                                     'rateMap',    zeros(prod(Pfs.adata.binSizes),numNewUnits,numIter));
+                                     'rateMap',    zeros(prod(Pfs.adata.binSizes),numNewUnits,numIter+1));
                     field = fieldnames(newdata);
                     for f = 1:numel(field);
                         Pfs.data.(field{f}) = cat(2,Pfs.data.(field{f}),newdata.(field{f}));
@@ -161,7 +160,7 @@ classdef MTAAknnpfs_perm < hgsetget %< MTAAnalysis
                 Pfs.data =struct('clu',        zeros(1,numUnits),...
                                  'elClu',      zeros(1,numUnits),...
                                  'el',         zeros(1,numUnits),...
-                                 'rateMap',    zeros(prod(Pfs.adata.binSizes),numUnits,numIter));
+                                 'rateMap',    zeros(prod(Pfs.adata.binSizes),numUnits,numIter+1));
             end
             
 
@@ -170,8 +169,25 @@ classdef MTAAknnpfs_perm < hgsetget %< MTAAnalysis
                 pos = Session.load('xyz');
             end
             
-            pfsState = cellfun(@resample,pfsState,repmat({pos},size(pfsState)));
+            
+
+            pfsState = cellfun(@resample,pfsState,repmat({pos},size(pfsState)),'UniformOutput',false);
+
+            % SampleCount for each state
+            sstSampleCount = cell2mat(cellfun(@sum,...
+                                              cellfun(@(x) diff(x.data,1,2),pfsState,'UniformOutput',false),...
+                                              'UniformOutput',false...
+                                              )...
+                                      );
+
+            
+            pfsState = cellfun(@(x) x.copy,pfsState,'UniformOutput',false);
+
+            pfsState = MTADepoch.join(pfsState);
                 
+            pfsState.cast('TimePeriods',pos);
+            %pfSind = MTADepoch.join(pfsState);
+
             sstpos = sq(pos(pfsState,Session.trackingMarker,1:numel(binDims))); 
             
             
@@ -179,7 +195,7 @@ classdef MTAAknnpfs_perm < hgsetget %< MTAAnalysis
 
             if isempty(ufr),
                 ufr = Session.ufr.copy;
-                ufr = ufr.create(Session,pos,pfsState.label,selected_units,0.8);
+                ufr = ufr.create(Session,pos,pfsState,selected_units,0.8);
             end
             sstufr = ufr(pfsState,:);
 
@@ -193,15 +209,14 @@ classdef MTAAknnpfs_perm < hgsetget %< MTAAnalysis
                 sstpos = sstpos(1:vlen-trim,:);
                 sstufr = sstufr(1:vlen-trim,:);
                 ufrShufBlockCount = (vlen-trim)/samplesPerBlock;
-                randSubsetSize =(ufrShufBlockCount-mod(ufrShufBlockCount,2))/2;
-                                % round(0.5*ufrShufBlockCount);                
+                rsSize = round(sstSampleCount./samplesPerBlock./sum(sstSampleCount/samplesPerBlock).*ufrShufBlockCount);
                 ufrBlockInd = reshape(1:size(sstufr,1),[],ufrShufBlockCount);
-                ufrShufPermIndices = zeros([numIter,randSubsetSize]);
+                ufrShufPermIndices = nan([numIter,max(rsSize)]);
 
                 for i = 1:2:numIter,
                     rp = randperm(ufrShufBlockCount);
-                    ufrShufPermIndices(i  ,:) = rp(1:randSubsetSize);
-                    ufrShufPermIndices(i+1,:) = rp(randSubsetSize+1:2*randSubsetSize);
+                    ufrShufPermIndices(i  ,1:rsSize(1)) = rp(          1:rsSize(1));
+                    ufrShufPermIndices(i+1,1:rsSize(2)) = rp(rsSize(1)+1:rsSize(1)+rsSize(2));
                 end
             else 
                 ufrBlockInd = ':';
@@ -237,14 +252,22 @@ classdef MTAAknnpfs_perm < hgsetget %< MTAAnalysis
                 tic
 
                 if numIter>1,
-                    RandRateMap = zeros([size(Pfs.data.rateMap,1),numIter-1]);
+                    RandRateMap = zeros([size(Pfs.data.rateMap,1),numIter]);
 
-                    
                     parfor bsi = 1:numIter-1,
+                        
+                        if mod(bsi,2)==0,
+                            %uspi = ufrShufPermIndices(bsi,1:ufrShufBlockCount-randSubsetSize);
+                            uspi = ufrShufPermIndices(bsi,1:rsSize(2));
+                        else                          
+                            %uspi = ufrShufPermIndices(bsi,:);                            
+                            uspi = ufrShufPermIndices(bsi,1:rsSize(1));                            
+                        end
+                        
                         RandRateMap(:,bsi) = ...
                         PlotKNNPF(Session,...
-                                  sstufr(reshape(ufrBlockInd(:,ufrShufPermIndices(bsi+1,:)),[],1),unit==selected_units),...
-                                  sstpos(reshape(ufrBlockInd(:,ufrShufPermIndices(bsi+1,:)),[],1),:),...
+                                  sstufr(reshape(ufrBlockInd(:,uspi),[],1),unit==selected_units),...
+                                  sstpos(reshape(ufrBlockInd(:,uspi),[],1),:),...
                                   binDims,...
                                   nNearestNeighbors,...
                                   distThreshold,...
@@ -379,14 +402,15 @@ classdef MTAAknnpfs_perm < hgsetget %< MTAAnalysis
         function Pfs = updateFilename(Pfs,Session,varargin)
             Pfs.tag= varargin{1};
 
-            pfsState = Session.stc{Pfs.parameters.states};
             if isempty(Pfs.tag)
                 binDimTag = num2str(Pfs.parameters.binDims);
                 binDimTag(isspace(binDimTag)&isspace(circshift(binDimTag',1)'))=[];
                 binDimTag(isspace(binDimTag)) = '_';
                 nnnTag = num2str(Pfs.parameters.nNearestNeighbors);
                 Pfs.filename = [Session.filebase ...
-                    '.pfknn.' Pfs.parameters.type '.' Session.trackingMarker '.' pfsState.label '.' ...
+                    '.pfknn.' Pfs.parameters.type '.' ...
+                              Session.trackingMarker '.' ...
+                              strjoin(Pfs.parameters.states,'+') '.' ...
                     'us' num2str(Pfs.parameters.ufrShufBlockSize) ...
                     'bs' num2str(Pfs.parameters.numIter) ...
                     'nnn' nnnTag ...

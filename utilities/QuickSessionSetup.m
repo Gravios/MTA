@@ -1,4 +1,8 @@
 function QuickSessionSetup(SessionParm,varargin)
+% function QuickSessionSetup(SessionParm,varargin)
+% HostConf = load('MTAConf');
+% [host,local] = DefaultArgs(varargin,{HostConf.host_server,false},1);
+
 HostConf = load('MTAConf');
 [host,local] = DefaultArgs(varargin,{HostConf.host_server,false},1);
     

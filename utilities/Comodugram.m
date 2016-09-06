@@ -48,9 +48,7 @@ nChannels = size(x,2);
 nSamples = size(x,1);
 
 % calculate spectrograms
-
-
-[spex,f,ts] = spec(str2func(mode),x.data,parspec);
+[spex,f,ts] = spec(str2func(mode),x.data,parspec,false);
 spex = log(2*(parspec.NW*2-1)*spex)  - log(repmat(mean(spex), [size(spex,1),1, 1]));
 spex = abs(spex);
 % Modify time stamps and spec; add padding (0's)
@@ -64,6 +62,9 @@ ts = cat(2,([1:pad(1)]./ssr),ts',([pad(1)+size(ts,1)]+[1:pad(2)])./ssr)';
 s = 1;
 for state = states,
     state = state{1};
+    if ischar(state),
+        state = Trial.stc{state};
+    end
     state.cast('TimeSeries');
     state.resample(spex);
 

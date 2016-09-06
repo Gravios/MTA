@@ -39,7 +39,6 @@ out.tanTraj = [];
 for s = sessionIds'    
     ind = data(:,11)==s;    
     xyzSampleRate = 1/median(diff(data(ind,1)));
-    out.sampleRate = cat(1,out.sampleRate, xyzSampleRate);
     % store XYZ rigid body center of mass in meters
     % X -> long axis of maze
     % Y -> short axis of maze
@@ -60,7 +59,11 @@ for s = sessionIds'
     % Add a low passed (0.2 Hz) version of center of mass with large time shift
     xyz(:,7,:) = ButFilter(xyz(:,1,:),3,[.2]./(0.5*xyzSampleRate),'low');
 
-    out.xyz = cat(1,out.xyz,xyz);
+    xyz = MTADxyz('data',xyz,'sampleRate',xyzSampleRate);
+    xyz.resample(120);
+    xyz = xyz.data;
+    xyzSampleRate = 120;
+
 
     % create low passed (2.4 Hz) speed in xy plane
     markers = [1:6];
@@ -68,8 +71,13 @@ for s = sessionIds'
     vxy(vxy(:)<1e-3) = 1e-3;
     vxy = log10(vxy);
 
+    
+    out.sampleRate = cat(1,out.sampleRate, xyzSampleRate);    
+    out.xyz = cat(1,out.xyz,xyz);    
     out.vel = cat(1,out.vel,vxy);
 
+    
+    
     %% Calculate RHM
     fxyz = ButFilter(xyz(:,[5,2],:),3,[50]./(xyzSampleRate/2),'low');
 
@@ -98,7 +106,7 @@ for s = sessionIds'
     %% Caculate RHM power spectrum
 
     parspec = struct('nFFT',2^9,...
-                     'Fs',  xyzSampleRate,...
+                     'Fs',  120,...
                      'WinLength',2^7,...
                      'nOverlap',2^7*.875,...
                      'NW',3,...
@@ -110,31 +118,15 @@ for s = sessionIds'
 
 
     % Modify time stamps and spec; add padding (0's)
-    ts = ts+(parspec.WinLength/2)/xyzSampleRate;
+    ts = ts+(parspec.WinLength/2)/120;
     ssr = 1/diff(ts(1:2));
-    pad = round([ts(1),mod(size(rhm,1)-round(parspec.WinLength/2),parspec.WinLength)/xyzSampleRate].*ssr)-[1,0];
+    pad = round([ts(1),mod(size(rhm,1)-round(parspec.WinLength/2),parspec.WinLength)/120].*ssr)-[1,0];
     szy = size(ys);
     rhmpsd =cat(1,zeros([pad(1),szy(2:end)]),ys,zeros([pad(2),szy(2:end)]));
     rhmpsdSampleRate = ssr;
     ts = cat(2,([1:pad(1)]./ssr),ts',([pad(1)+size(ts,1)]+[1:pad(2)])./ssr)';
 
     rhmpow = median(rhmpsd(:,fs>6&fs<12),2);
-
-% $$$ figure,
-% $$$ imagesc(ts,fs,log10(rhmpsd)')
-% $$$ axis xy
-% $$$ colormap jet
-
-
-% $$$ xeds = linspace(-.600,.600,60);
-% $$$ yeds = linspace(-.400,.400,40);
-% $$$ drat = xyzSampleRate/rhmpsdSampleRate;
-% $$$ dind = round(linspace(1,size(fxyz,1),numel(rhmpow)));
-% $$$ cfx = clip(fxyz(dind,1,1),-.6,.6);
-% $$$ cfy = clip(fxyz(dind,1,2),-.4,.4);
-% $$$ [~,xinds] = histc(cfx,xeds);
-% $$$ [~,yinds] = histc(cfy,yeds);
-
 
     out.rhm.feature = cat(1,out.rhm.feature,rhm);
     out.rhm.time = cat(1,out.rhm.time,ts);
@@ -190,12 +182,31 @@ for s = sessionIds'
     out.angVel = cat(1,out.angVel,circ_dist(ang(:,4,5,1),circshift(ang(:,4,3,1),10)));
 
 
-
-    m = 6;
+    bprd = MTADxyz('data',bsxfun(@rdivide,data(ind,[10,8,9]),sqrt(sum(data(ind,[10,8,9]).^2,2))),'sampleRate',1/median(diff(data(ind,1))));
+    bprd.resample(120);
+    bprd = bprd.data;
+    m = 6;    
     dtan = [xyz(:,m,1)-circshift(xyz(:,m,1),-round(0.1*xyzSampleRate)),...
             xyz(:,m,2)-circshift(xyz(:,m,2),-round(0.1*xyzSampleRate)),...
             xyz(:,m,3)-circshift(xyz(:,m,3),-round(0.1*xyzSampleRate))];
-    bpr = -sum(dtan.*bsxfun(@rdivide,data(ind,[10,8,9]),sqrt(sum(data(ind,[10,8,9]).^2,2))),2);
 
+    bpr = -sum(dtan.*bprd,2);
+
+    
     out.tanTraj = cat(1,out.tanTraj,bpr);
 end
+
+
+
+% $$$ rhmp = MTADxyz('data',out.rhm.rhmPow,...
+% $$$                'sampleRate',out.rhm.sampleRate(1));
+% $$$ 
+% $$$ xyzc = MTADxyz('data',out.xyz,...
+% $$$                'sampleRate',out.sampleRate(1));
+% $$$ 
+% $$$ xyzc.resample(rhmp);
+% $$$ vxyc = [0;sqrt(sum(diff(xyzc(:,1,[1,2])).^2,3))].*out.sampleRate(1)*10;
+% $$$ 
+% $$$ ind = vxyc>5;
+% $$$ figure,plot(sqrt(sum(xyzc(ind,1,[1,2]).^2,3)),log10(rhmp(ind)),'.')
+

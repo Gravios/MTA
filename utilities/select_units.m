@@ -20,7 +20,6 @@ elseif ischar(SessionList)
     Trial = MTATrial(SessionList);
     Trial.load('nq');
     anq = Trial.nq;
-
 elseif isa(SessionList,'MTASession'),
     Trial = SessionList;
     Trial.load('nq');

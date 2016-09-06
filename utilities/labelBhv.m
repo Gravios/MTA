@@ -368,7 +368,15 @@ wper = round(ThreshCross(wf_mov,0.5,5)./ntrajSampleRate.*txyz.sampleRate);
 
 
 %% @(BHV-FILTER,MAX_REAR_HEIGHT)
-cur_rper = rear(Trial,'com',45); %50
+rear_feature = abs(txyz(:,'head_front',3)-txyz(:,'spine_lower',3)).*tang(:,'spine_middle','spine_upper',2);
+rear_feature(isnan(rear_feature))=0;
+rearThresh = 45;
+minimum_interval = 64;
+rear_feature = MTADxyz('data',rear_feature,'sampleRate',txyz.sampleRate);
+rearPeriods = ThreshCross(rear_feature.filter('ButFilter',3,1)>rearThresh,...
+                          0.5,minimum_interval);
+
+cur_rper = rearPeriods;%rear(Trial,'com',45); %50
 mrh = zeros(size(cur_rper,1),1);
 for i = 1:size(cur_rper,1),
     mrh(i) = max(txyz(cur_rper(i,1):cur_rper(i,2),Trial.model.gmi('head_front'),3));
