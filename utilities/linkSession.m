@@ -21,7 +21,7 @@ function linkSession(session_name,xyz_path,nlx_path)
             
             for maze = 1:numel(xyz_maze_dirs),
                 try,mkdir(fullfile(xyzDir,xyz_maze_dirs(maze).name));end
-                system(['ln -sif ' fullfile(xyz_path,session_name,xyz_maze_dirs(maze).name) '/* ' fullfile(xyzDir,xyz_maze_dirs(maze).name)]);
+                system(['ln -sf ' fullfile(xyz_path,session_name,xyz_maze_dirs(maze).name) '/* ' fullfile(xyzDir,xyz_maze_dirs(maze).name)]);
             end
         else
             
@@ -36,14 +36,14 @@ function linkSession(session_name,xyz_path,nlx_path)
             nlxDir = fullfile(Session.path.data,'nlx',session_name);
             mkdir(nlxDir);
             if numel(dir(fullfile(nlx_path,session_name)))>2,
-                system(['ln -sif ' fullfile(nlx_path,session_name) '/* ' nlxDir]);
+                system(['ln -sf ' fullfile(nlx_path,session_name) '/* ' nlxDir]);
             end
         else
             % if nlx_path is within the MTA data collection
             nlxDir = fullfile(nlx_path,session_name);
         end
         cd(datDir);
-        system(['ln -sif ../nlx/' session_name '/* ' datDir ])
+        system(['ln -sf ../nlx/' session_name '/* ' datDir ])
         
     end
     
@@ -55,13 +55,13 @@ function linkSession(session_name,xyz_path,nlx_path)
             try,mkdir(xyz_maze_dirs(maze).name);end
             
             try
-                system(['ln -sif ../xyz/' session_name '/' xyz_maze_dirs(maze).name '/' ...
+                system(['ln -sf ../xyz/' session_name '/' xyz_maze_dirs(maze).name '/' ...
                         session_name '-' xyz_maze_dirs(maze).name '.vsk ' ...
                         datDir '/' session_name '-' xyz_maze_dirs(maze).name '.vsk ']);
             end
             cd(fullfile(datDir,xyz_maze_dirs(maze).name))
             try,
-                system(['ln -sif ../../xyz/' session_name '/' ...
+                system(['ln -sf ../../xyz/' session_name '/' ...
                         xyz_maze_dirs(maze).name '/* ' datDir '/' ...
                         xyz_maze_dirs(maze).name '/']);
             end

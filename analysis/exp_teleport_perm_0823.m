@@ -164,7 +164,7 @@ end
 
 %% Bootstrapped place fields
 Stc = Trial.stc.copy;
-nt = numel(T)-1;
+nt = numel(T);
 states = {'velHthresh'};
 nsts = numel(states);
 
@@ -205,7 +205,7 @@ for t = 1:nt
     end
 end
 
-for t = 1:4
+for t = 1:nt
     for k = 1:numIter,
         % Retrieve the patch center of mass from patch with the
         % highest firing rate
@@ -217,14 +217,14 @@ for t = 1:4
                     'UniformOutput',false);
 
         pind = ~cellfun(@isempty,pcom);
-        CpeakPatchCOM(t,k,pind,:) = ...
+        peakPatchCOM(t,k,pind,:) = ...
             cell2mat(cellfun(@(x) x(:,1),...
                              pcom(pind),...
                              'uniformoutput',false))';
 
         
         % Retrieve the max patch Firing rate
-        CpeakPatchRate(t,k,:) = ...
+        peakPatchRate(t,k,:) = ...
             sq(cellfun(@(x,y) max(x.patchPFR(1,y,:)),...
                        pfkshuff(t,:),...
                        repmat({k},[1,numel(units)])));
@@ -237,7 +237,7 @@ for t = 1:4
                     repmat({k},[1,numel(units)]),...
                     'UniformOutput',false);
         pind = ~cellfun(@isempty,parea);
-        CpeakPatchArea(t,k,pind) = sq(cell2mat(cellfun(@(x) x(1),...
+        peakPatchArea(t,k,pind) = sq(cell2mat(cellfun(@(x) x(1),...
                                                       parea(pind),...
                                                       'uniformoutput',false))');
     end
@@ -250,7 +250,7 @@ end
 
 mRate = [];
 for t = 1:nt;
-    for u = units'
+    for u = units
         mRate(t,find(u==units)) = pfk{t}.maxRate(u);
     end
 end
@@ -259,7 +259,7 @@ end
 
 
 
-FigDir = 'Ed10-20140820-permutation_test';
+FigDir = [Trial.filebase,'-permutation_test'];
 mkdir(fullfile(OwnDir,FigDir))
 
 
@@ -276,7 +276,7 @@ eds = linspace(-1000,1000,500);
 while unit~=-1
     clf
 
-    for t = 1:4,
+    for t = 1:nt,
         ypos = [2*t-1,2*t-1+1];
 
         % Plot Place Fields
@@ -303,15 +303,15 @@ while unit~=-1
         end
         
         
-        if t<4,
+        if t<nt,
             % Calculate distributions
             u = find(unit==units);
             s = [t,t+1];
 
-            ind2 = CpeakPatchCOM(s(2),:,u,2)~=0;
-            ind1 = CpeakPatchCOM(s(1),:,u,2)~=0;
+            ind2 = peakPatchCOM(s(2),:,u,2)~=0;
+            ind1 = peakPatchCOM(s(1),:,u,2)~=0;
 
-            cpdiff = bsxfun(@minus,CpeakPatchCOM(s(2),ind2(2:end),u,2),CpeakPatchCOM(s(1),ind1(2:end),u,2)');
+            cpdiff = bsxfun(@minus,peakPatchCOM(s(2),ind2(2:end),u,2),peakPatchCOM(s(1),ind1(2:end),u,2)');
             cpdiff = cpdiff(:);
 
             gpdiff = bsxfun(@minus,sq(peakPatchCOMperm(s(1),s(2),2:2:end,u,2)),sq(peakPatchCOMperm(s(1),s(2),3:2:end,u,2))');
@@ -356,8 +356,8 @@ while unit~=-1
         end    
     end
 
-% $$$     print(gcf,'-depsc2',fullfile(OwnDir,FigDir,['pfk_perm',num2str(units(u)),'.eps']));
-% $$$     print(gcf,'-dpng',  fullfile(OwnDir,FigDir,['pfk_perm',num2str(units(u)),'.png']));
+    print(gcf,'-depsc2',fullfile(OwnDir,FigDir,['pfk_perm',num2str(units(u)),'.eps']));
+    print(gcf,'-dpng',  fullfile(OwnDir,FigDir,['pfk_perm',num2str(units(u)),'.png']));
 
     unit = figure_controls(hfig,unit,units,autoincr);
 end

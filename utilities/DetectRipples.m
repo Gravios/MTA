@@ -32,8 +32,9 @@ end
 
 
 if ~FileExists([Trial.filebase '.spw']) | Overwrite
-    lfp = Trial.lfp.copy;
-    lfp.load(Trial,Channels); 
+
+    lfp.filename = [Trial.name,'.lfp'];
+    lfp = Trial.load('lfp',Channels); 
     switch Mode
       case 'modeled'
         Rips = DetectStructuredOscilations(Trial,lfp, FreqRange, [], [], Threshold, Model);        

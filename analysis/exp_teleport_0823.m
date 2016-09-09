@@ -984,15 +984,19 @@ for i = 0:2:2;
     Lines(0,[],[.75,.75,.75]);
     Lines(20,[],'r');
     Lines(-20,[],'r');
-    plot(-(mpcom(i/2+1,:,2)-mpcom(i/2+2,:,2))/10,-(mpcom(i/2+1,:,1)-mpcom(i/2+2,:,1))/10,'.')
+    plot(-(mpcom(i/2+1,:,2)-mpcom(i/2+2,:,2))/10,-(mpcom(i/2+1,:,1)-mpcom(i/2+2,:,1))/10,'.b')
+    plot(-(mpcom(i/2+1,permPval(i/2+1,:)<0.05,2)...
+          -mpcom(i/2+2,permPval(i/2+1,:)<0.05,2))/10,...
+          -(mpcom(i/2+1,permPval(i/2+1,:)<0.05,1)-mpcom(i/2+2,permPval(i/2+1,:)<0.05,1))/10,'.m')
 
     if i~=4,set(gca,'XTickLabel',{}),end
 end
 
 
 
-print(gcf,'-depsc2',fullfile(OwnDir,FigDir,['pfk_xyshift',num2str(figSet),'.eps']));
-print(gcf,'-dpng',  fullfile(OwnDir,FigDir,['pfk_xyshift',num2str(figSet),'.png']));
+
+print(gcf,'-depsc2',fullfile(OwnDir,FigDir,['pfk_xyshift_perm_dot',num2str(figSet),'.eps']));
+print(gcf,'-dpng',  fullfile(OwnDir,FigDir,['pfk_xyshift_perm_dot',num2str(figSet),'.png']));
 
 
 

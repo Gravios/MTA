@@ -4,7 +4,7 @@ function QuickSessionSetup(SessionParm,varargin)
 % [host,local] = DefaultArgs(varargin,{HostConf.host_server,false},1);
 
 HostConf = load('MTAConf');
-[host,local] = DefaultArgs(varargin,{HostConf.host_server,false},1);
+[host,local,link] = DefaultArgs(varargin,{HostConf.host_server,false,true},1);
     
         
     % Expecting Name of Session list, cell, or struct
@@ -26,7 +26,7 @@ HostConf = load('MTAConf');
                 MTAstartup(host,Sessions(s).host);
             end
                 
-            if all(isfield(Sessions(s),{'xyz_host','nlx_host'}))&&~ispc,
+            if all(isfield(Sessions(s),{'xyz_host','nlx_host'}))&&~ispc&&link,
                 linkSession(Sessions(s).sessionName,...
                             Sessions(s).xyz_host,...
                             Sessions(s).nlx_host);

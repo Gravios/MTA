@@ -61,7 +61,7 @@ Smoother = Smoother./sum(Smoother(:));
 SOcc = convn(Occupancy,Smoother,'same');
 SCount = convn(SpikeCount,Smoother,'same');
 
-OccThresh = .001;%0.06;0.12;%
+OccThresh = 0.1.^numel(binDims);%0.06;0.12;%
                  %OccThresh = .03;%0.06;0.12;%
 %% Find the total occupancy and each pixels 
 %% probability of occupancy

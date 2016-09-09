@@ -490,8 +490,14 @@ classdef MTAApfs < hgsetget %< MTAAnalysis
 
             mxr = nan(numel(units),1);
             mxp = nan(numel(units),1);
-            for u = units,
-                [mxr(u==units),mxp(u==units)] = max(Pfs.data.rateMap(:,Pfs.data.clu==u,1).*mask);
+            
+            for u = units(:)',
+                rateMap = Pfs.data.rateMap(:,Pfs.data.clu==u,1);
+                if size(rateMap,2)==0,
+                    rateMap = nan([size(Pfs.data.rateMap,1),1]);
+                end
+
+                [mxr(u==units),mxp(u==units)] = max(rateMap.*mask);
             end
             mxp = Ind2Sub(Pfs.adata.binSizes',mxp);
             if numel(Pfs.parameters.type)>2,

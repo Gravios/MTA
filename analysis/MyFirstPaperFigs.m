@@ -2896,14 +2896,14 @@ caxis([prctile(reshape(10.*log10(yhd(:,:,24))',[],1),40),...
   case 'BHVPFS'
     OwnDir = '/storage/gravio/ownCloud/MjgEdER2016/';    
     Trial= MTATrial('jg05-20120310');    
-    Trial.load('stc','nn0317_PP');
+    Trial.load('stc','nn0317');
     states = Trial.stc.list_state_attrib;
     
     binDims = [20,20];
     smoothingWeights = [2.2,2.2];
     units = [];
     overwrite = false;
-
+    numIter = 1;
     
     binDims = [20,20];
     numIter = 0;
@@ -2913,8 +2913,6 @@ caxis([prctile(reshape(10.*log10(yhd(:,:,24))',[],1),40),...
     sampleRate = 30;
     units = [];
     overwrite = false;
-
-
 
     
     pfk = {};
@@ -2926,9 +2924,12 @@ caxis([prctile(reshape(10.*log10(yhd(:,:,24))',[],1),40),...
 % $$$                              'ufrShufBlockSize',ufrShufBlockSize,...
 % $$$                              'distThreshold',distThreshold,...
 % $$$                              'numIter',numIter);
-        
-        pfs{s} = MTAApfs(Trial,units,states{s},overwrite, ...
-                         'binDims',binDims,'SmoothingWeights',smoothingWeights);
+        pfs{s} = MTAApfs(Trial,units,...
+                         states{s},...
+                         overwrite, ...
+                         'binDims',binDims,...
+                         'SmoothingWeights',smoothingWeights,...
+                         'numIter',numIter);
         fprintf('pfk %s: complete\n',states{s});
     end
     units = pfk{1}.data.clu;    

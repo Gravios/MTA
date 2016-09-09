@@ -33,7 +33,9 @@ if sempty||overwrite,
     lang = Stc{'w'}.copy;
     hang = Stc{'w'}.copy;    
 
-    ang = create(MTADang,Trial,Trial.load('xyz'));
+    xyz = Trial.load('xyz');
+    xyz.filter('ButFilter',3,1.4,'low');    
+    ang = create(MTADang,Trial,xyz);
 
     lang.data = ThreshCross(ang(:,5,7,2)<angThresh,.5,round(dthresh/ang.sampleRate));
     lang.label = 'lwalk';
@@ -73,11 +75,13 @@ if sempty||overwrite,
     angThresh = rhm_distrb.XData(find(mrhmp<rhmThresh,1,'first'));
     delete(afig);
     % Split walking state into low and high walk
-    wind = Stc{'t'}.copy;
-    lang = Stc{'t'}.copy;
-    hang = Stc{'t'}.copy;    
+    wind = Stc{'n'}.copy;
+    lang = Stc{'n'}.copy;
+    hang = Stc{'n'}.copy;    
 
-    ang = create(MTADang,Trial,Trial.load('xyz'));
+    xyz = Trial.load('xyz');
+    xyz.filter('ButFilter',3,1.4,'low');    
+    ang = create(MTADang,Trial,xyz);
 
     lang.data = ThreshCross(ang(:,5,7,2)<angThresh,.5,round(dthresh/ang.sampleRate));
     lang.label = 'lturn';
@@ -121,7 +125,9 @@ if sempty||overwrite,
     lang = Stc{'p'}.copy;
     hang = Stc{'p'}.copy;    
 
-    ang = create(MTADang,Trial,Trial.load('xyz'));
+    xyz = Trial.load('xyz');
+    xyz.filter('ButFilter',3,1.4,'low');        
+    ang = create(MTADang,Trial,xyz);
 
     lang.data = ThreshCross(ang(:,5,7,2)<angThresh,.5,round(dthresh/ang.sampleRate));
     lang.label = 'lpause';

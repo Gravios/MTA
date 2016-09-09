@@ -17,6 +17,12 @@ catch
              'not exist'])
 end
 
+%% Because users make me cry 
+% $$$ delete(fullfile(Session.spath,['*',Session.maze.name,'.all*']));
+% $$$ delete(fullfile(Session.spath,['*.ses.*']));
+% $$$ delete(fullfile(Session.spath,['*.trl.*']));
+
+
 if exist('Par','var'),
     %% Load single channel of lfp to check the exact number of samples
     lfp = LoadBinary(fullfile(Session.spath, [Session.name '.lfp']),1,Par.nChannels,4)';

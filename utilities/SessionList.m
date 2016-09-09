@@ -304,7 +304,7 @@ switch varargin{1}
                 {'Ed10-20140825',     'rov',     'all',   'lmu',  '0x0002',      149.9974321}}%   CA1
     
 
-    case 'ER06'
+  case 'ER06'
 
     my_xyz = fullfile(my_xyz,'ER06');
     my_nlx = '/storage/evgeny/data/processed/ER06';
@@ -404,13 +404,68 @@ switch varargin{1}
       'stcMode',      'default'        ...
       );
 
-    
-% $$$
-% $$$                 {'er06-20130612',     'cof',     'all',    'lmu',  'Vicon start', 199.997752},... CA1
-% $$$                 {'er06-20130613',     'cof', 'all-cof',    'lmu',  'Vicon start', 199.997752},... CA1
-% $$$                 {'er06-20130614',     'cof', 'all-cof',    'lmu',  'Vicon start', 199.997752},... CA1
+      
+      
+  case 'Ed10_cof'
 
-    case 'Ed10VR_opticflow'
+    my_xyz = fullfile(my_xyz,'Ed10');
+    my_nlx = '/storage/eduardo/data/processed/nlx/Ed10';
+
+    Sessions(1) = struct('sessionName',  'Ed10-20140812', ...
+        'mazeName',     'cof',           ...
+        'trialName',    'all',           ...
+        'xyz_host',      my_xyz,         ...
+        'nlx_host',      my_nlx,         ...
+        'xyzSampleRate', 119.881035,     ...
+        'host',         'lmu',           ...
+        'project',      'general',       ...
+        'TTLValue',     '0x0002',        ...
+        'includeSyncInd',[],             ...
+        'offsets',       [15,-15],       ...
+        'xOffSet',       0,              ...
+        'yOffSet',       0,              ...
+        'stcMode',      'default'        ...
+        );
+
+    Sessions(end+1) = Sessions(1);
+    Sessions(end).sessionName = 'Ed10-20140813';
+
+    Sessions(end+1) = Sessions(1);
+    Sessions(end).sessionName = 'Ed10-20140814';
+
+    Sessions(end+1) = Sessions(1);    
+    Sessions(end).sessionName = 'Ed10-20140815';
+
+    Sessions(end+1) = Sessions(1);    
+    Sessions(end).sessionName = 'Ed10-20140816';
+
+    Sessions(end+1) = Sessions(1);    
+    Sessions(end).sessionName = 'Ed10-20140817';
+    
+    Sessions(end+1) = Sessions(1);    
+    Sessions(end).sessionName = 'Ed10-20140819';
+
+    Sessions(end+1) = Sessions(1);    
+    Sessions(end).sessionName = 'Ed10-20140820';
+
+    Sessions(end+1) = Sessions(1);    
+    Sessions(end).sessionName = 'Ed10-20140821';
+    
+    Sessions(end+1) = Sessions(1);    
+    Sessions(end).sessionName = 'Ed10-20140822';
+    
+    Sessions(end+1) = Sessions(1);    
+    Sessions(end).sessionName = 'Ed10-20140823';
+    
+    Sessions(end+1) = Sessions(1);    
+    Sessions(end).sessionName = 'Ed10-20140824';
+    
+    Sessions(end+1) = Sessions(1);    
+    Sessions(end).sessionName = 'Ed10-20140825';
+    
+    
+
+  case 'Ed10VR_opticflow'
     Sessions(1) = struct('sessionName',   'Ed10-20140821',...
                          'mazeName',      'rov',...
                          'trialName',     'all',...
