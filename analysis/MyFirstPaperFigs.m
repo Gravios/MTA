@@ -1899,6 +1899,9 @@ switch mode,
     tpow.data = [nanmean(nanmean(yld(:,6<fl&fl<12,[6,7]),2)./nanmean(yld(:,fl<5,[6,7]),2),3),...
                  nanmean(nanmean(yld(:,6<fl&fl<12,[16:20]),2)./nanmean(yld(:,fl<5,[16:20]),2),3)];    
     yld.data = log10(yld.data);
+    %thpow = yld.copy;
+    %    thpow = nanmean(yld(:,6<fl&fl<12,[6,7]),2)
+    
     nyld = yld.copy;
     nyld.data = (clip(yld.data,0.01,100)-repmat(nanmedian(clip(yld.data,0.01,100)),[yld.size(1),1,1]))./...
                 repmat(nanstd(clip(yld.data,0.01,100)),[yld.size(1),1,1]);    
@@ -1954,6 +1957,7 @@ tyhd = yhd.copy;
     nanyld.data = 10*log10(nanyld.data)>repmat(permute(dnanThreshl(:,1),[3,2,1]),yld.size([1,2]));
 
 
+    
     
     
 % $$$     ind = stc{'w'};
@@ -2227,6 +2231,7 @@ caxis([prctile(reshape(10.*log10(yhd(:,:,24))',[],1),40),...
     plot(log10(tpow(ind,1)),log10(tpow(ind,2)),'.r');            
     [rho,pval] = corr(tpow(ind,:))
 
+    
 
 
     
@@ -2387,6 +2392,13 @@ caxis([prctile(reshape(10.*log10(yhd(:,:,24))',[],1),40),...
     figure,imagesc(fl,fl,U),axis xy
 
 
+    
+
+    ind = Trial.stc{'w'};
+    tpow = MTADxyz('data',sq(nanmean(yld(:,fl>6&fl<12,:),2)),'sampleRate',yld.sampleRate);
+    figure,
+    imagesc(sq(nanmean(tpow.segs(ind(:,1)-5,10),2))')
+    caxis([1,3])    
 
   case 'uhhh'
     %% Figure # Unit state place field formation
@@ -2898,38 +2910,37 @@ caxis([prctile(reshape(10.*log10(yhd(:,:,24))',[],1),40),...
     Trial= MTATrial('jg05-20120310');    
     Trial.load('stc','nn0317');
     states = Trial.stc.list_state_attrib;
-    
-    binDims = [20,20];
-    smoothingWeights = [2.2,2.2];
+    states(~cellfun(@isempty,regexp(states,'^spw$')))=[]; % drop the spw    
+
+    binDims = [20,20];    
     units = [];
     overwrite = false;
-    numIter = 1;
+    numIter = 1001;
     
-    binDims = [20,20];
-    numIter = 0;
+    smoothingWeights = [2.2,2.2];
+    
     nNearestNeighbors = 300;
     distThreshold = 125;
     ufrShufBlockSize = 1;
     sampleRate = 30;
-    units = [];
-    overwrite = false;
+
 
     
     pfk = {};
     pfs = {};    
     for s = 1:numel(states)
-% $$$         pfk{s} = MTAAknnpfs_bs(Trial,units,states{s},overwrite, ...
-% $$$                              'binDims',binDims,...
-% $$$                              'nNearestNeighbors',nNearestNeighbors,...
-% $$$                              'ufrShufBlockSize',ufrShufBlockSize,...
-% $$$                              'distThreshold',distThreshold,...
-% $$$                              'numIter',numIter);
-        pfs{s} = MTAApfs(Trial,units,...
-                         states{s},...
-                         overwrite, ...
-                         'binDims',binDims,...
-                         'SmoothingWeights',smoothingWeights,...
-                         'numIter',numIter);
+        pfk{s} = MTAAknnpfs_bs(Trial,units,states{s},overwrite, ...
+                             'binDims',binDims,...
+                             'nNearestNeighbors',nNearestNeighbors,...
+                             'ufrShufBlockSize',ufrShufBlockSize,...
+                             'distThreshold',distThreshold,...
+                             'numIter',numIter);
+% $$$         pfs{s} = MTAApfs(Trial,units,...
+% $$$                          states{s},...
+% $$$                          overwrite, ...
+% $$$                          'binDims',binDims,...
+% $$$                          'SmoothingWeights',smoothingWeights,...
+% $$$                          'numIter',numIter);
         fprintf('pfk %s: complete\n',states{s});
     end
     units = pfk{1}.data.clu;    
@@ -2968,17 +2979,25 @@ caxis([prctile(reshape(10.*log10(yhd(:,:,24))',[],1),40),...
         for s = 1:numel(states)
             subplot(4,4,s)
             hold('on')            
-            pf = pfs{s};
+            pf = pfk{s};
+            %pf = pfs{s};
 
             % Correct color of nans and plot place field
 
             % PFS plot
-            ratemap = pf.plot(unit,'isCircular',false);
+            %ratemap = pf.plot(unit,'isCircular',false);
 
             % PFK plot
             %ratemap = reshape(pf.data.rateMap(:,unit==pf.data.clu,1),fliplr(pf.adata.binSizes'));
+            ratemap = reshape(pf.data.rateMap(:,unit==pf.data.clu,2:end),...
+                              [fliplr(pf.adata.binSizes'),1000]);
+            
+            if size(ratemap,3)>1
+                ratemap = mean(ratemap,3)'.*mask;
+            else
+                ratemap = ratemap.*mask;
+            end
 
-            ratemap = ratemap.*mask;
             ratemap(isnan(ratemap)) = -1;
             imagesc(pf.adata.bins{1},pf.adata.bins{2},ratemap);
 
@@ -3038,7 +3057,28 @@ caxis([prctile(reshape(10.*log10(yhd(:,:,24))',[],1),40),...
     hs.FaceColor = 'r';
     hs.EdgeColor = 'r';
 
+    unit = 26;
+    ratemap = reshape(pfk{1}.data.rateMap(:,unit==pfk{1}.data.clu,2:end),...
+                      [fliplr(pfk{1}.adata.binSizes'),1000]);
+    oratemap = reshape(pfk{1}.data.rateMap(:,unit==pfk{1}.data.clu,1),...
+                      [fliplr(pfk{1}.adata.binSizes')]);
+    figure,
+    subplot(131);
+    imagesc((mean(ratemap,3)'./std(ratemap,[],3)').*mask),axis xy,
+    subplot(132);
+    imagesc(mean(ratemap,3)'.*mask),axis xy,
+    subplot(133);
+    imagesc(std(ratemap,[],3)'.*mask),axis xy,
 
+    figure
+    subplot(131);
+    imagesc(oratemap'.*mask),axis xy
+    subplot(132);
+    imagesc(mean(ratemap,3)'.*mask),axis xy,
+    subplot(133);
+    imagesc((oratemap'-mean(ratemap,3)').*mask),axis xy,
+
+    
 end
 
 

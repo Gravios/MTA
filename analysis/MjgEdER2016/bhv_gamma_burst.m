@@ -208,3 +208,54 @@ end
 
 
 
+
+
+
+freqRange = [20,40;...
+             30,50;...
+             40,60;...
+             50,70;...
+             60,80;...
+             70,90;80,100;90,110;100,120;110,130;120,140;130,150;140,160];
+tfr = bsxfun(@plus,[1:6;2:7],[5;5])';
+tph = bsxfun(@plus,[-pi:.5:pi-.25],[0;0.5])';
+
+velRange = bsxfun(@plus,[-3:.5:1.5]',[0,0.5]);
+bmp=[];
+bsp=[];
+bte=[];
+for i = channels,
+    for f = 1:size(freqRange,1),
+        for r = 1:numel(pchans),
+            for v = 1:size(velRange),
+            %for t = 1:size(tfr,1),
+                %for p = 1:size(tph,1),
+                    bselind = ismember(ds.BurstChan,i)...
+                              &ds.BurstFreq<freqRange(f,2)...
+                              &ds.BurstFreq>freqRange(f,1)...
+                              &ds.BurstHeadSpeed(:,2)<velRange(v,2)...
+                              &ds.BurstHeadSpeed(:,2)>velRange(v,1);
+                    %&ds.BurstThetaFreq<tfr(t,2)...
+                    %&ds.BurstThetaFreq>tfr(t,1);...
+
+                    %&ds.BurstThetaFreq<tfr(t,2)...
+                    %&ds.BurstThetaFreq>tfr(t,1);...
+                    %&ds.BurstThetaPhase(:,1)<tph(p,2)...
+                    %          &ds.BurstThetaPhase(:,1)>tph(p,1);
+                    bmp(f,i-64,r,v) = circ_mean(ds.BurstThetaPhase(bselind,r));
+                    bsp(f,i-64,r,v) = circ_std(ds.BurstThetaPhase(bselind,r));
+%bte(f,i-64,r,t,p) = mean(ds.BurstThetaEnvelope(bselind,1));
+%bte(f,i-64,t,p) = mean(ds.BurstThetaEnvelope(bselind,1));
+%end
+%end
+            end
+        end    
+    end
+end
+
+
+rper = Trial.stc{'r'};
+bc = ds.BurstChan==73;
+bt = round(ds.BurstTime(bc).*rper.sampleRate)+1;
+bf = round(ds.BurstFreq(bc),-1);
+[trl,tri,trc] = TrigRasters(rper(:,1)-60,120,bt,bf,rper.sampleRate,1);

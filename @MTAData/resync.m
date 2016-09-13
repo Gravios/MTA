@@ -1,5 +1,14 @@
 function Data = resync(Data,varargin)
-% Data = resync(Session,Data,varargin)
+% Data = resync(Data,varargin)
+%
+%  Data: MTAData - 
+%
+%  varargin:
+%    
+%     Session: MTASession - 
+%
+%     sync:    MTADepoch - 
+%    
 % Resync uses the sync object of a session or one given through the
 % varargin option. 
 %

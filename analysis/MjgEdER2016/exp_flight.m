@@ -1,40 +1,58 @@
 
 
+
 Slist = SessionList('ER06');
 
-% $$$ QuickSessionSetup(Slist(4));
-% $$$ 
-s = MTASession.validate(Slist(4));
-% $$$ pXY(s);
-% $$$ pZ(s);
-% $$$ 
-% $$$ NeuronQuality(s);
 
-xyz = s.load('xyz');
+i = 4;
+QuickSessionSetup(Slist(i)); 
+
+s = MTASession.validate(Slist(i));
+pXY(s);
+pZ(s);
+NeuronQuality(s);
+PlotSessionErrors(s);
+
 % $$$ xyz.data(:,:,1) = xyz.data(:,:,1)+Slist(2).xOffSet;
 % $$$ xyz.data(:,:,2) = xyz.data(:,:,2)+Slist(2).yOffSet;
 % $$$ xyz.save;
 
 Tlist = SessionList('exp_flight');
-
+QuickTrialSetup(s,'includeSyncInd',[Tlist(:).includeSyncInd],'overwrite',true); % Write the session trial 
 QuickTrialSetup(Tlist,'overwrite',true);
 
+% Load trial
+Trial = MTATrial.validate('ER06-20130614.cof.all');
+% Label trial behavior with neural network model
+Trial = labelBhv_NN(Trial,'NN0317');
+
+
+%% Place field vars
+% Select pyramidal units
+units = select_units(Trial,18,'pyr');
+% Set Overwrite flag variable for place field calculations
+overwrite = false;
+% Initialize place field variable
+pfs = {};
+
+
+%% Pre flight exploration 
+% Load pre flight exploration trial
 Trial = MTATrial.validate('ER06-20130614.cof.gnd');
 Trial.maze.boundaries(end) = 450;
 
-display = true;
-overwrite = true;
-units = select_units(Trial,18,'pyr');
+% Label periods of hippocampal theta activity 
 
-
-Trial = labelBhv_NN(Trial,'NN0317');
-Trial = labelTheta(Trial,[],73);
-
+Trial.load('stc','NN0317_PP');
+if isempty(Trial.stc.gsi('t')),Trial = labelTheta(Trial);end
+%Trial = labelTheta(Trial,[],73)
 
 
 
 
-pfs = {};
+
+
+
 pfs{1} = MTAApfs(Trial,units,'theta',...
                  overwrite,...
                  'numIter',1,...
@@ -43,12 +61,13 @@ pfs{1} = MTAApfs(Trial,units,'theta',...
                  'SmoothingWeights',[2.2,2.2,2.2]);
 
 
+%% Flight p
+% Load Flight Trial
 Trial = MTATrial.validate('ER06-20130614.cof.fly');
 Trial.maze.boundaries(end) = 450;
-
 if isempty(Trial.stc.gsi('t')),Trial = labelTheta(Trial);end
-if isempty(Trial.stc.gsi('f')),Trial = labelFlight(Trial);end
 %Trial = labelFlight(Trial,[],1,'set');
+if isempty(Trial.stc.gsi('f')),Trial = labelFlight(Trial);end
 
 
 
@@ -70,10 +89,16 @@ pfs{3} = MTAApfs(Trial,units,'flight&theta',...
 
 
 
+%% setup figure paths
+OwnDir = '/storage/gravio/ownCloud/MjgEdER2016';
+FigDir = ['pfs_flight_',Trial.filebase];
+mkdir(fullfile(OwnDir,FigDir));
+
+
 
 
 %% Plot placefields across height
-slices = 1:2:19;
+slices = 1:2:17;
 
 spOpts.width  = 2;
 spOpts.height = 2;
@@ -99,28 +124,47 @@ mask(mask==0)=nan;
     
 
 unit = units(128);
-hfig = figure(393929);clf
-for i  = 1:3
-pf = pfs{i};
-ratemap = pf.plot(unit,'isCircular',false);
-ratemap(isnan(ratemap)) = -1;
-for s = 1:numel(slices)
-    sp(i,s) = axes('Units',spOpts.units,...
-                   'Position',[(spOpts.width+round(spOpts.padding/2))*(s+1)+round(spOpts.padding/2),...
-                        (spOpts.height+round(spOpts.padding/2))*(i-1)+round(spOpts.padding/2),...
-                        spOpts.width,...
-                        spOpts.height]...
-                   );
-    hold('on')
-    imagesc(pf.adata.bins{1},pf.adata.bins{2},ratemap(:,:,slices(s)).*mask');    
-    axis xy
-    colormap([0,0,0;parula]);
-    caxis([-1,max(ratemap(:).*reshape(repmat(mask,[1,1,size(ratemap,3)]),[],1))]);
-    title(num2str(round(pf.adata.bins{3}(slices(s)))))
-    text(pf.adata.bins{1}(end)-350,pf.adata.bins{2}(end)-50,...
-         sprintf('%2.1f',max(max(ratemap(:,:,slices(s))))),'Color','w','FontWeight','bold','FontSize',10)
+hfig = figure(393929);
+autoincr = true;
+unit = units(1);
+set(hfig,'Units','centimeters');
+set(hfig,'Position',[1,1,40,15]);
+set(hfig,'PaperPositionMode','auto');
+i = 1;
+
+while unit~=-1,
+    clf
+    for i  = 1:3
+        pf = pfs{i};
+        ratemap = pf.plot(unit,'isCircular',false);
+        ratemap(isnan(ratemap)) = -1;
+        for s = 1:numel(slices)
+            sp(i,s) = axes('Units',spOpts.units,...
+                           'Position',[(spOpts.width+round(spOpts.padding/2))*(s+1)+round(spOpts.padding/2),...
+                                       (spOpts.height+round(spOpts.padding/2))*(i-1)+round(spOpts.padding/2),...
+                                        spOpts.width,...
+                                        spOpts.height]...
+                           );
+            hold('on')
+            imagesc(pf.adata.bins{1},pf.adata.bins{2},ratemap(:,:,slices(s)).*mask');    
+            axis xy
+            colormap([0,0,0;parula]);
+            caxis([-1,max(ratemap(:).*reshape(repmat(mask,[1,1,size(ratemap,3)]),[],1))]);
+            title(num2str(round(pf.adata.bins{3}(slices(s)))))
+            text(pf.adata.bins{1}(end)-350,pf.adata.bins{2}(end)-50,...
+                 sprintf('%2.1f',max(max(ratemap(:,:,slices(s))))),'Color','w','FontWeight','bold','FontSize',10)
+        end
+    end
+
+    FigName = ['pfs_unit-',num2str(unit)];
+    %print(gcf,'-depsc2',fullfile(OwnDir,FigDir,[FigName,'.eps']));
+    print(gcf,'-dpng',  fullfile(OwnDir,FigDir,[FigName,'.png']));
+
+    unit = figure_controls(hfig,unit,units,autoincr);    
 end
-end
+
+
+
 
 
 
@@ -158,3 +202,17 @@ if display,
     end
 
 end
+
+
+
+
+
+
+
+pfs{s} = MTAApfs(Trial,units,'theta',...
+                 overwrite,...
+                 'numIter',1,...
+                 'binDims',[20,20,20],...
+                 'type','xyz',...
+                 'SmoothingWeights',[2.2,2.2,2.2]);
+

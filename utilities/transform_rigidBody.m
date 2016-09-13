@@ -1,7 +1,9 @@
 function transform_rigidBody(Session,varargin);
 [display,overwrite] = DefaultArgs(varargin,{false,false});
 
-Session = MTASession.validate(Session);
+if ~strcmp(Session.trialName,'all'),
+    Session = MTASession.validate(Session);
+end
 
 %Session = MTASession('Ed05-20140529','all','ont');
 %Session = MTASession('Ed05-20140528');
