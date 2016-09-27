@@ -61,7 +61,8 @@ while ~isempty(procOpts)
         if ~isempty(listFiles(Trial.name,'\.seh\.h')) && ~overwrite
             xyz = Trial.load('xyz','seh');
         else
-            Trial = MTASession.validate(Trial.filebase);
+            
+            %Trial = MTASession.validate(Trial.filebase);
             xyz = Trial.load('xyz','trb');
             ss = fet_spline_spine(Trial,'3dssh',xyz,'overwrite',true);                
 

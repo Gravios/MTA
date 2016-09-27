@@ -14,7 +14,7 @@ figPath  = '/storage/gravio/figures/';
 figPath  = '/gpfs01/sirota/home/gravio/figures/';
 baseFigNum = 2838293;
 
-Trials = SessionList(sltag);
+Trials = get_session_list(sltag);
 numOfTrials = numel(Trials);
 
 Scolors = jet(numOfTrials);
@@ -111,7 +111,7 @@ end
 % $$$ figTitle = 'BLBU_{pitch} vs d(BMBU_{pitch})/dt';
 % $$$ figPath  = '/storage/gravio/figures/';
 % $$$ hfig = figure(2838293);clf
-% $$$ Trials = SessionList(sltag);
+% $$$ Trials = get_session_list(sltag);
 % $$$ numOfTrials = numel(Trials);
 % $$$ Scolors = jet(numOfTrials);
 % $$$ tlist = {};
@@ -139,7 +139,7 @@ end
 % $$$ figTitle = 'BLBU_{pitch} vs d(BMBU_{pitch})/dt';
 % $$$ figPath  = '/storage/gravio/figures/';
 % $$$ hfig = figure(2838293);clf
-% $$$ Trials = SessionList(sltag);
+% $$$ Trials = get_session_list(sltag);
 % $$$ numOfTrials = numel(Trials);
 % $$$ Scolors = jet(numOfTrials);
 % $$$ tlist = {};
@@ -161,7 +161,7 @@ end
 % $$$ figTitle = 'BLBU_{pitch} vs d(BMBU_{pitch})/dt';
 % $$$ figPath  = '/storage/gravio/figures/';
 % $$$ hfig = figure(2838293);clf
-% $$$ Trials = SessionList(sltag);
+% $$$ Trials = get_session_list(sltag);
 % $$$ numOfTrials = numel(Trials);
 % $$$ Scolors = jet(numOfTrials);
 % $$$ tlist = {};

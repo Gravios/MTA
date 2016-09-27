@@ -58,7 +58,7 @@ accuracy = sum(diag(tcm))/sum(tcm(:)).*100
 
 
 
-rlist = SessionList('training_hand_labeled');
+rlist = get_session_list('training_hand_labeled');
 slist = {'hand_labeled_jg';'hand_labeled_Ed'};
 fetSet  = 'fet_tsne_rev15';
 sampleRate = 12;

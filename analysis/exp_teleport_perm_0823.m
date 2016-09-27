@@ -256,10 +256,22 @@ for t = 1:nt;
 end
 
 
+% Calculate the dprime for each distribit
+dprime = @(x,y) (mean(x(nniz(x')))-mean(y(nniz(y'))))/sqrt(0.5*(var(x(nniz(x')))+var(y(nniz(y')))));
+dprx = nan([nt-1,numel(units)]);
+dpry = nan([nt-1,numel(units)]);
+
+for i = 1:2,
+    for u = 1:numel(units);    
+        dprx(i,u) = dprime(peakPatchCOM(i,:,u,2),peakPatchCOM(i+1,:,u,2));
+        dpry(i,u) = dprime(peakPatchCOM(i,:,u,1),peakPatchCOM(i+1,:,u,1));
+    end    
+end
 
 
 
-FigDir = [Trial.filebase,'-permutation_test'];
+FigDir = 'Ed10-20140823-permutation_test_selected2';
+%FigDir = [Trial.filebase,'-permutation_test'];
 mkdir(fullfile(OwnDir,FigDir))
 
 
@@ -295,8 +307,8 @@ while unit~=-1
         caxis([-1,10]);        
         ylabel([pf.session.trialName ':' pf.parameters.states]);
 
-        plot(median(CpeakPatchCOM(t,:,unit==units,2)),...
-             median(CpeakPatchCOM(t,:,unit==units,1)),'*k');
+        plot(median(peakPatchCOM(t,:,unit==units,2)),...
+             median(peakPatchCOM(t,:,unit==units,1)),'*k');
         xlim([-600,600]),ylim([-350,350])                    
         if t==1,
             title(['Unit: ',num2str(unit)]);
@@ -366,3 +378,15 @@ end
 
 
 
+figure,plot(dprx(2,:),log(permPval(2,:)),'.'),Lines([],-3,'k');
+
+save('/storage/gravio/ownCloud/Shared/VR_Methods/matlab/pfs_shift_perm_0823_all.mat','-v7.3');
+
+
+save('/storage/gravio/ownCloud/Shared/VR_Methods/matlab/pfs_shift_perm_0823.mat','-v7.3',...
+     'units',...
+     'peakPatchCOM',...
+     'peakPatchRate',...
+     'permPval',...
+     'dprx',...
+     'dpry');

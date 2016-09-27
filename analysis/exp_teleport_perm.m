@@ -16,12 +16,12 @@ OwnDir = '/storage/gravio/ownCloud/Shared/VR_Methods/matlab/';
 
 %% Load and preprocesses data
 
-S = SessionList(sessionList,...
+S = get_session_list(sessionList,...
                 '/storage/gravio/data/processed/xyz/Ed10/',...
                 '/storage/eduardo/data/processed/nlx/Ed10/');
 
 
-T = SessionList(trialList,...
+T = get_session_list(trialList,...
                 '/storage/gravio/data/processed/xyz/Ed10/',...
                 '/storage/eduardo/data/processed/nlx/Ed10/');
 T(3).offsets = [15,-90];
@@ -167,7 +167,7 @@ dunits = [22,29,99,104,134];
 dims = 1;
 cens = 2;
 for d = dunits,
-    fprintf('double placefield unit: %i',d);
+    fprintf('double placefield unit: %i\n',d);
 % $$$     for s1 = 1:nsts-1
 % $$$         for s2 = s1+1:nsts 
 
@@ -296,7 +296,7 @@ dunits = [22,29,99,104,134];
 dims = 1;
 cens = 2;
 for d = dunits,
-    fprintf('double placefield unit: %i',d);
+    fprintf('double placefield unit: %i\n',d);
     for t = 1:nt
 
         pcomx = reshape(pfkshuff{t,d==units}.patchCOM(1,:,:,2),[],1);
@@ -332,6 +332,17 @@ end
 
 
 
+% Calculate the dprime for each distribit
+dprime = @(x,y) (mean(x(nniz(x')))-mean(y(nniz(y'))))/sqrt(0.5*(var(x(nniz(x')))+var(y(nniz(y')))));
+dprx = nan([nt-1,numel(units)]);
+dpry = nan([nt-1,numel(units)]);
+
+for i = 1:3,
+    for u = 1:numel(units);    
+        dprx(i,u) = dprime(peakPatchCOM(i,:,u,2),peakPatchCOM(i+1,:,u,2));
+        dpry(i,u) = dprime(peakPatchCOM(i,:,u,1),peakPatchCOM(i+1,:,u,1));
+    end    
+end
 
 
 
@@ -347,7 +358,7 @@ end
 
 
 
-FigDir = 'Ed10-20140820-permutation_test_selected';
+FigDir = 'Ed10-20140820-permutation_test_selected2';
 mkdir(fullfile(OwnDir,FigDir))
 
 
@@ -450,7 +461,15 @@ while unit~=-1
     unit = figure_controls(hfig,unit,units,autoincr);
 end
 
+save('/storage/gravio/ownCloud/Shared/VR_Methods/matlab/pfs_shift_perm_0820_all.mat','-v7.3');
 
 
 
 
+save('/storage/gravio/ownCloud/Shared/VR_Methods/matlab/pfs_shift_perm_0820.mat','-v7.3',...
+     'units',...
+     'peakPatchCOM',...
+     'peakPatchRate',...
+     'permPval',...
+     'dprx',...
+     'dpry');

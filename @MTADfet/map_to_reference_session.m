@@ -16,6 +16,11 @@ end
 
 switch features.label
   
+  case 'fet_head_pitch'
+    fetInds   = [1];
+    stdThresh = {0.1};
+    diffFun   = {@circ_dist};
+    
   case 'fet_mis'
     fetInds =      [   1:5                      , 7:10                ];
     stdThresh = cat(2, repmat({.1},    1,5)     , repmat({15},    1,4));
@@ -127,9 +132,14 @@ for ind = inSync,
         mzd = diffFun{f==fetInds}(tarMean{f}(:),refMean{f}(:));
         
         mshift = nanmean(mzd(nnz));
-        features.data(ind(1):ind(2),f) = bsxfun(diffFun{f==fetInds},...
-                                               features.data(ind(1):ind(2),f),...
-                                               mshift);
+
+        sind = ind(1):ind(2);
+        zind = features.data(sind,f)==0;
+        features.data(sind,f) = bsxfun(diffFun{f==fetInds},...
+                                       features.data(ind(1):ind(2),f),...
+                                       mshift);
+
+        zind = features.data(sind(zind),f)==0;        
     end
 end
 features.resample(tempFet);

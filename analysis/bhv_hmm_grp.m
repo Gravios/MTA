@@ -1,7 +1,7 @@
 
 
 
-trialList = SessionList('jg05');
+trialList = get_session_list('jg05');
 
 fet = [];
 tfs = [];

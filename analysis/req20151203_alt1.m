@@ -40,7 +40,7 @@ fileLoc = fullfile(MTASession([]).path.data,'analysis',...
 
 if ~exist(fileLoc,'file'),
 
-    slist = SessionList(sessionSet);
+    slist = get_session_list(sessionSet);
 
     sfet = [];
     Stc = {};

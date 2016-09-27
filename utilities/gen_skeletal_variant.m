@@ -1,7 +1,7 @@
 function [xyz] = gen_skeletal_variant(Trial,varargin)
 [slist] = DefaultArgs(varargin,{'hand_labeled'},true);
 
-slist = SessionList(slist);
+slist = get_session_list(slist);
 
 local = false;
 overwrite = true;

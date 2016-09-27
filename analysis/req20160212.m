@@ -24,7 +24,7 @@ if normalize,
 end
 
 
-slist = SessionList(sessionSet);
+slist = get_session_list(sessionSet);
 
 sfet = [];
 Stc = {};

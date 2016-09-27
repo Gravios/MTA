@@ -1,5 +1,5 @@
 function R = JoinRanges(R1,R2)
-%function R = JoinRanges(varargin)
+%function R = JoinRanges(R1,R2)
 %
 % Joins ranges R2 and R1 : R = R1+R2
 %

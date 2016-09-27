@@ -9,9 +9,9 @@ HostConf = load('MTAConf');
         
     % Expecting Name of Session list, cell, or struct
     if ischar(SessionParm), 
-        Sessions = SessionList(SessionParm);
+        Sessions = get_session_list(SessionParm);
     elseif iscell(SessionParm),
-        Sessions = SessionList(SessionParm{:});
+        Sessions = get_session_list(SessionParm{:});
     else
         Sessions = SessionParm;
     end

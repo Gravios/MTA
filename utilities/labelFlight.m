@@ -50,6 +50,6 @@ switch mode
 end
 
 
-Stc.save(1);
+%Stc.save(1);
 Trial.stc = Stc;
-Trial.save;
+%Trial.save;

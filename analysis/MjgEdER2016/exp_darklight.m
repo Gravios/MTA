@@ -22,12 +22,12 @@ mkdir(OwnDir);
 
 
 % Compile Sessions and Trials from data 
-Slist = SessionList(sessionList);
+Slist = get_session_list(sessionList);
 if overWriteSessions, 
     QuickSessionSetup(Slist,[],[],false); 
     QuickTrialSetup(Slist);
 end
-Tlist = SessionList(trialList);
+Tlist = get_session_list(trialList);
 if overWriteTrials,   
     QuickTrialSetup(Tlist,'overwrite',true); 
 end

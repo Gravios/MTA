@@ -25,6 +25,8 @@ function varargout = QuickTrialSetup(Session,varargin)
 %                   Display some diagnostic plots
 %
 %
+
+% DEFARGS ----------------------------------------------------------------------
 HostConf = load('MTAConf');
 
 defargs = struct( 'trialName',     'all',                ...
@@ -37,15 +39,16 @@ defargs = struct( 'trialName',     'all',                ...
                   'host',          HostConf.host_server, ...
                   'local',         false,                ...
                   'overwrite',     false                 ...
-);
+);%-----------------------------------------------------------------------------
 
 [trialName, mazeName, offsets, dropSyncInd, includeSyncInd,...
  autolabel, debug, host,local, overwrite] = ...
     DefaultArgs(varargin,defargs,'--struct');
 
 
+% MAIN -------------------------------------------------------------------------
 % Try to grab a session list if one exists otherwise pass on the 
-Sessions = SessionList(Session);
+Sessions = get_session_list(Session);
 if isstruct(Sessions),
     for s = Sessions,
         if local,
@@ -89,11 +92,6 @@ end
 
 
 
-
-
-
-
-
 assert(offsets(:,1)>=0&offsets(:,2)<=0,'MTA:utilities:QuickTrialSetup:offsets, see help QuickTrialSetup for offsets specifications');
 
 %% Run labelBhv if all required markers are present
@@ -126,5 +124,4 @@ if debug,
     plot(Trial.xyz(:,7,1),Trial.xyz(:,7,2),'.');
 end
 
-
-
+% END MAIN -------------------------------------------------------------------------

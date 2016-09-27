@@ -262,6 +262,7 @@ classdef MTAApfs < hgsetget %< MTAAnalysis
             
             
             %% Get State Positions
+            if pfsState.isempty,return,end
             sstpos = sq(xyz(pfsState,:));
 
             

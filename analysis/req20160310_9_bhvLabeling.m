@@ -1,7 +1,7 @@
 function req20160310_9_bhvLabeling(Trial)
 
 
-rlist = SessionList('training_hand_labeled');
+rlist = get_session_list('training_hand_labeled');
 slist = {'hand_labeled_jg';'hand_labeled_Ed'};
 
 

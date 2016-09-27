@@ -38,7 +38,7 @@ fileLoc = fullfile(MTASession([]).path.data,'analysis',...
 
 if ~exist(fileLoc,'file')||overwrite,
 
-    slist = SessionList(sessionSet);
+    slist = get_session_list(sessionSet);
 
     cfet = [];
     Stc = {};

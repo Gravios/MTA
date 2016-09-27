@@ -1,7 +1,7 @@
 
 
 
-Slist = SessionList('ER06');
+Slist = get_session_list('ER06');
 
 
 i = 4;
@@ -17,14 +17,17 @@ PlotSessionErrors(s);
 % $$$ xyz.data(:,:,2) = xyz.data(:,:,2)+Slist(2).yOffSet;
 % $$$ xyz.save;
 
-Tlist = SessionList('exp_flight');
+Tlist = get_session_list('exp_flight');
 QuickTrialSetup(s,'includeSyncInd',[Tlist(:).includeSyncInd],'overwrite',true); % Write the session trial 
 QuickTrialSetup(Tlist,'overwrite',true);
 
 % Load trial
 Trial = MTATrial.validate('ER06-20130614.cof.all');
 % Label trial behavior with neural network model
-Trial = labelBhv_NN(Trial,'NN0317');
+%Trial = labelBhv_NN(Trial,'NN0317');
+% $$$ if isempty(Trial.stc.gsi('t')),Trial = labelTheta(Trial);end
+Stc = Trial.load('stc','default');
+
 
 
 %% Place field vars
@@ -43,8 +46,11 @@ Trial.maze.boundaries(end) = 450;
 
 % Label periods of hippocampal theta activity 
 
-Trial.load('stc','NN0317_PP');
-if isempty(Trial.stc.gsi('t')),Trial = labelTheta(Trial);end
+Trial.stc = Stc;
+Trial.load('stc');
+% $$$ Trial.load('stc','NN0317_PP');
+%Trial.load('stc','default');
+% $$$ if isempty(Trial.stc.gsi('t')),Trial = labelTheta(Trial);end
 %Trial = labelTheta(Trial,[],73)
 
 
@@ -65,9 +71,20 @@ pfs{1} = MTAApfs(Trial,units,'theta',...
 % Load Flight Trial
 Trial = MTATrial.validate('ER06-20130614.cof.fly');
 Trial.maze.boundaries(end) = 450;
-if isempty(Trial.stc.gsi('t')),Trial = labelTheta(Trial);end
+%if isempty(Trial.stc.gsi('t')),Trial = labelTheta(Trial);end
 %Trial = labelFlight(Trial,[],1,'set');
+Trial.stc = Stc.copy;
+Trial.load('stc');
+
+
+
 if isempty(Trial.stc.gsi('f')),Trial = labelFlight(Trial);end
+fstc = Trial.load('stc','flight');
+
+pZ(Trial)
+xyz = Trial.load('xyz');
+hold on,plot(xyz(:,1,3));
+Lines(fstc{'f'}(:),[],'r');
 
 
 
@@ -98,7 +115,7 @@ mkdir(fullfile(OwnDir,FigDir));
 
 
 %% Plot placefields across height
-slices = 1:2:17;
+slices = 1:2:min(cellfun(@(x) x.adata.binSizes(end),pfs));
 
 spOpts.width  = 2;
 spOpts.height = 2;
@@ -109,8 +126,8 @@ spOpts.units = 'centimeters';
 figOpts.units = 'centimeters';
 figOpts.headerPadding = 2;
 figOpts.footerPadding = 0;
-figOpts.position = [1,1,(spOpts.height+round(spOpts.padding/2))*spOpts.ny+figOpts.headerPadding+figOpts.footerPadding,...
-                     (spOpts.width+round(spOpts.padding/2)) *spOpts.nx+round(spOpts.padding/2)];
+figOpts.position = [1,1,(spOpts.height+round(spOpts.padding/2))*spOpts.ny+round(spOpts.padding/2),...
+                     (spOpts.width+round(spOpts.padding/2)) *spOpts.nx+figOpts.headerPadding+figOpts.footerPadding];
 
 width = pfs{1}.adata.binSizes(1);
 height = pfs{1}.adata.binSizes(2);
@@ -150,9 +167,10 @@ while unit~=-1,
             axis xy
             colormap([0,0,0;parula]);
             caxis([-1,max(ratemap(:).*reshape(repmat(mask,[1,1,size(ratemap,3)]),[],1))]);
-            title(num2str(round(pf.adata.bins{3}(slices(s)))))
+            title(num2str(round(pf.adata.bins{3}(slices(s))))) 
             text(pf.adata.bins{1}(end)-350,pf.adata.bins{2}(end)-50,...
                  sprintf('%2.1f',max(max(ratemap(:,:,slices(s))))),'Color','w','FontWeight','bold','FontSize',10)
+        if s==1, ylabel({pf.session.trialName,pf.parameters.states,['unit: ',num2str(unit)]});end
         end
     end
 

@@ -348,7 +348,7 @@ for iter = 1:nIter,
 
         % if an stc was provided get comparison stats
             ysm = MTADxyz('data',double(0<stc2mat(Stc,xyz)),'sampleRate',xyz.sampleRate); 
-            d_state = ysm.data+d_state;
+            d_state = nansum(cat(3,ysm.data,d_state),3);
             p_state = p_state +ns;
         if ~isempty(stcMode)            
             if nargout>=4,
@@ -378,7 +378,7 @@ end
 
 
 % $$$ 
-d_state = MTADxyz('data',d_state,'sampleRate',xyz.sampleRate);
+d_state = MTADxyz('data',p_state,'sampleRate',xyz.sampleRate);
 % $$$ 
 % $$$ 
 % $$$ figure,
@@ -390,8 +390,8 @@ d_state = MTADxyz('data',d_state,'sampleRate',xyz.sampleRate);
 % Determine winning states based on the the labels of nurmerous
 % neural networks.
 [~,maxState] = max(d_state.data,[],2);
-maxState(~nniz(xyz),:) = 0;
-
+maxState(~nniz(xyz)) = 0;
+maxState(~any(d_state.data,2)) = 0;
 % Smooth decision boundaries - 200 ms state minimum
 % $$$ bwin = round(.2*xyz.sampleRate)+double(mod(round(.2*xyz.sampleRate),2)==0);
 % $$$ mss = GetSegs(maxState,1:size(maxState,1),bwin,nan);

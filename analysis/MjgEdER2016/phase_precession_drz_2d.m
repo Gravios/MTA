@@ -1,6 +1,7 @@
 %%%%%%% phase2dDRZ %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%    
 
 %% Figure 4 - Classical 2-D phase precession
+%Trial = 'jg05-20120310.cof.all';
 
 Trial = MTATrial.validate(Trial);
 OwnDir = '/storage/gravio/ownCloud/MjgEdER2016/';

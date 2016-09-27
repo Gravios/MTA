@@ -1,6 +1,6 @@
 
 %% Model Parameters
-rlist = SessionList('training_hand_labeled');
+rlist = get_session_list('training_hand_labeled');
 slist = {'hand_labeled_jg';'hand_labeled_Ed'};
 fetSet  = 'fet_tsne_rev13';
 sampleRate = 12;
@@ -43,7 +43,7 @@ for rti = 1:numel(rlist),
 
     for sli = 1:numel(slist),
 
-        SesList = SessionList(slist{sli});
+        SesList = get_session_list(slist{sli});
 
         model = ['MTAC_'  featureSet ...
                  '_SR_'   num2str(sampleRate) ...
@@ -94,7 +94,7 @@ end
 
 sli = 2;
 rti = 2;
-SesList = SessionList(slist{sli});
+SesList = get_session_list(slist{sli});
 SesList = {SesList(:).sessionName};
 
 model = ['MTAC_'  featureSet ...

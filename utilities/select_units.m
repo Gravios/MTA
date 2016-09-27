@@ -1,32 +1,33 @@
 function units = select_units(varargin)
-% $$$ function units = select_units(varargin)
-% $$$ [SessionList,eDistThreshold,type,mode,nqFields] 
-% $$$ {{{'jg05-20120309','cof','all'},{'jg05-20120310','cof','all'},{'jg05-20120317','cof','all'}},...
-% $$$ 15,'pyr','get',{'SpkWidthR','AmpSym'}});
+% function units = select_units(varargin)
+% [sessionList,eDistThreshold,type,mode,nqFields] 
+% {{{'jg05-20120309','cof','all'},{'jg05-20120310','cof','all'},{'jg05-20120317','cof','all'}},...
+% 15,'pyr','get',{'SpkWidthR','AmpSym'}});
 
-[SessionList,eDistThreshold,type,mode,nqFields] = DefaultArgs(varargin,...
+[sessionList,eDistThreshold,type,mode,nqFields] = DefaultArgs(varargin,...
 {{{'jg05-20120309','cof','all'},{'jg05-20120310','cof','all'},{'jg05-20120317','cof','all'}},...
 15,'pyr','get',{'SpkWidthR','AmpSym'}});
 
-if iscell(SessionList),
-    for ses = 1:numel(SessionList),
-        Trial = MTATrial(SessionList{ses}{1},SessionList{ses}{3},SessionList{ses}{2});
+if iscell(sessionList),
+    for ses = 1:numel(sessionList),
+        Trial = MTATrial(sessionList{ses}{1},sessionList{ses}{3},sessionList{ses}{2});
         Trial.load('nq');
         nq{ses} = Trial.nq;
     end
     nq = cat(1,nq{:});
     anq = CatStruct(nq);
-elseif ischar(SessionList)
-    Trial = MTATrial(SessionList);
+elseif ischar(sessionList)
+    Trial = MTATrial(sessionList);
     Trial.load('nq');
     anq = Trial.nq;
-elseif isa(SessionList,'MTASession'),
-    Trial = SessionList;
+elseif isa(sessionList,'MTASession'),
+    Trial = sessionList;
     Trial.load('nq');
     anq = Trial.nq;
 else
     error('select_units:unknown input type')
 end
+
 
 switch mode
   case 'get'

@@ -1,5 +1,5 @@
 function pf = pfs_3d_theta(Trial,varargin)
-[numIter,reportFig] = DefaultArgs(varargin,{1,0},1);
+[numIter,reportFig] = DefaultArgs(varargin,{1,1},1);
 
 Trial= MTATrial.validate(Trial);    
 units = Trial.spk.map(:,1);
@@ -16,23 +16,27 @@ mkdir(fullfile(OwnDir,FigDir));
 
 %% compute 3d place fields for the theta state
 pf = MTAApfs(Trial,[],'theta',...
-             true,...
-             'numIter',numIter,...
+             false,...
+             'numIter',1,...
              'binDims',[20,20,20],...
              'type','xyz',...
              'SmoothingWeights',[2.2,2.2,2.2]);
 
+
+
 if reportFig
 
     %% setup figure
-    slices = 1:2:17;
+    slices = 1:2:pf.adata.binSizes(end);%min(cellfun(@(x) x.binSizes(end),pfs));
 
+    
+    
     spOpts.width  = 2;
     spOpts.height = 2;
     spOpts.ny = 3;
     spOpts.nx = numel(slices);
     spOpts.padding = 2;
-
+    spOpts.units = 'centimeters';
 
 
     figOpts.headerPadding = 2;
@@ -81,6 +85,7 @@ if reportFig
             title(num2str(round(pf.adata.bins{3}(slices(s)))))
             text(pf.adata.bins{1}(end)-350,pf.adata.bins{2}(end)-50,...
                  sprintf('%2.1f',max(max(ratemap(:,:,slices(s))))),'Color','w','FontWeight','bold','FontSize',10)
+            if s==1, ylabel({Trial.filebase,['unit: ',num2str(unit)]});end
         end
 
         FigName = ['pfs_3d_theta_unit-',num2str(unit)];

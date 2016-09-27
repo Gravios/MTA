@@ -22,7 +22,7 @@ if isempty(featureName)
 end
 
 
-sesList = SessionList(sList);
+sesList = get_session_list(sList);
 
 snames = cell([1,numel(sesList)]);
 

@@ -26,9 +26,7 @@ end
 for tper = sts
     tper = tper{1};
     tper.cast('TimeSeries');
-    if tper.sampleRate~=Data.sampleRate,
-        tper = resample(tper,Data);
-    end
+    tper = resample(tper,Data);
     smat(tper==1,g) = g;
     if nargout>1,
         keys(g) = {tper.key};

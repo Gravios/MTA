@@ -1,4 +1,4 @@
-slist = SessionList('hand_labeled');
+slist = get_session_list('hand_labeled');
 
 states = {'walk','rear','turn','pause','groom','sit'};
 socc = zeros([numel(slist),numel(states)]);

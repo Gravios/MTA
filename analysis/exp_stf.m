@@ -4,7 +4,7 @@ overwriteTrials  = false;
 overwriteStc     = false;
 trialList = 'Ed10VR_teleport';
 
-T = SessionList(trialList);
+T = get_session_list(trialList);
 
 if overwriteSession,
     Session = MTASession(T(1).sessionName,  ...

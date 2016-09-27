@@ -5,7 +5,7 @@ overwriteStc     = false;
 trialList = 'Ed10VR_teleport';
 OwnDir = '/storage/gravio/ownCloud/Shared/VR_Methods/matlab/';
 
-T = SessionList(trialList,...
+T = get_session_list(trialList,...
                 '/storage/gravio/data/processed/xyz/Ed10/',...
                 '/storage/eduardo/data/processed/nlx/Ed10/');
 T(3).offsets = [15,-90];
@@ -685,7 +685,7 @@ units = units(ind);
 MTAstartup('vr_exp');
 triallist = 'Ed10VR_teleport';
 OwnDir = '/storage/gravio/ownCloud/Shared/VR_Methods/matlab/';
-T = SessionList(triallist,...
+T = get_session_list(triallist,...
                 '/storage/gravio/data/processed/xyz/Ed10/',...
                 '/storage/eduardo/data/processed/nlx/Ed10/');
 T(3).offsets = [15,-90];
@@ -713,6 +713,7 @@ sampleRate = 30;
 pfk = {};
 overwrite = false;
 i = 3;
+
 
 for t = 2:nt-1
     Trial = MTATrial(T(t).sessionName,T(t).mazeName,T(t).trialName);    

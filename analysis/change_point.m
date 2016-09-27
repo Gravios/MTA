@@ -342,7 +342,7 @@ Trial = MTATrial('Ed05-20140529','all','ont');
 Trial = MTATrial('Ed01-20140707');
 
 
-Trials = SessionList('mypc_test_grp');
+Trials = get_session_list('mypc_test_grp');
 nstuff = {};
 tc = 1;
 for t = Trials,

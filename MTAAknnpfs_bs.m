@@ -18,8 +18,8 @@ classdef MTAAknnpfs_bs < hgsetget %< MTAAnalysis
         %             type,ufrShufBlockSize,numIter]=...
 
             [units,states,overwrite,tag,ufr,binDims,nNearestNeighbors,distThreshold,...
-                type,ufrShufBlockSize,numIter,pos]=...
-            DefaultArgs(varargin,{[],'walk',false,[],[],[20,20],80,70,'xy',0,1,[]});
+                type,ufrShufBlockSize,numIter,pos,sampleRate]=...
+            DefaultArgs(varargin,{[],'walk',false,[],[],[20,20],80,70,'xy',0,1,[],30});
              
             units = units(:)';
         
@@ -49,7 +49,7 @@ classdef MTAAknnpfs_bs < hgsetget %< MTAAnalysis
                     Pfs.parameters.nNearestNeighbors   = nNearestNeighbors;
                     Pfs.parameters.distThreshold = distThreshold;
                     Pfs.parameters.binDims = binDims;
-
+                    Pfs.parameters.sampleRate = sampleRate;
                     
                     Pfs.adata.trackingMarker = Session.trackingMarker;
                     Pfs.adata.bins = [];
@@ -169,6 +169,7 @@ classdef MTAAknnpfs_bs < hgsetget %< MTAAnalysis
             if isempty(pos), 
                 pos = Session.load('xyz');
             end
+            pos.resample(sampleRate);
                 
             sstpos = sq(pos(pfsState,Session.trackingMarker,1:numel(binDims))); 
             
@@ -275,7 +276,7 @@ classdef MTAAknnpfs_bs < hgsetget %< MTAAnalysis
         function rateMap = plot(Pfs,varargin)
         % rateMap = plot(Pfs,unit,varargin)
         % [nMode,ifColorbar,colorLimits,sigDistr] = DefaultArgs(varargin,{'',0,[],[]});
-            [unit,mode,ifColorbar,colorLimits,sigDistr,isCircular] = DefaultArgs(varargin,{[],'slice',false,[],[],true});
+            [unit,mode,ifColorbar,maxRate,sigDistr,isCircular] = DefaultArgs(varargin,{[],'slice',false,[],[],true});
             if isempty(unit),unit=Pfs.data.clu(1);end
             switch Pfs.parameters.type
                 case 'xy'
@@ -321,8 +322,19 @@ classdef MTAAknnpfs_bs < hgsetget %< MTAAnalysis
                   rateMap = reshape(rateMap',numel(bin1),numel(bin2))'.*mask;
                   
                   if nargout==0,                    
-                      imagescnan({bin1,bin2,rateMap'},colorLimits,[],ifColorbar,[0,0,0]);
 
+                      if isempty(maxRate),
+                          maxRate = max(rateMap(:));
+                      end
+                      
+
+                      ratemap(isnan(ratemap)) = -1;
+                      imagesc(pf.adata.bins{1},pf.adata.bins{2},ratemap);
+
+                      text(pf.adata.bins{1}(end)-250,pf.adata.bins{2}(end)-50,...
+                           sprintf('%2.1f',max(ratemap(:))),'Color','w','FontWeight','bold','FontSize',10)
+                      colormap([0,0,0;parula]);
+                      caxis([-1,maxRate]);        
 
                       if ~isempty(rateMap)&&~isempty(bin1)&&~isempty(bin2),
                           text(bin1(1)+30,bin2(end)-50,sprintf('%2.1f',max(rateMap(:))),'Color','w','FontWeight','bold','FontSize',18)
@@ -385,6 +397,7 @@ classdef MTAAknnpfs_bs < hgsetget %< MTAAnalysis
                 nnnTag = num2str(Pfs.parameters.nNearestNeighbors);
                 Pfs.filename = [Session.filebase ...
                     '.pfknn.' Pfs.parameters.type '.' Session.trackingMarker '.' pfsState.label '.' ...
+                    'sr' num2str(Pfs.parameters.sampleRate) ...
                     'us' num2str(Pfs.parameters.ufrShufBlockSize) ...
                     'bs' num2str(Pfs.parameters.numIter) ...
                     'nnn' nnnTag ...

@@ -1,37 +1,48 @@
 function optimize_stc_transition_mis(varargin)
 
+
 % DEFARGS ----------------------------------------------------------------------
 defargs = struct('rlist',  'hand_labeled_jg',                                ...
                  'slist',  {{'hand_labeled_jg';'hand_labeled_Ed'}},          ...
                  'fetSet', 'fet_mis',                                        ...
                  'tag_preprocessing', '+seh+',                               ...
-                 'tag_postprocessing','_PP',                                 ...
+                 'tag_postprocessing','_PPV2',                               ...
                  'sampleRate', 12,                                           ...
                  'nNeurons',   100,                                          ...
                  'nIter',      100,                                          ...
                  'states',    {{'walk','rear','turn','pause','groom','sit'}},...
                  'rndMethod', 'WSBNT',                                       ...
                  'norm',       true,                                         ...
-                 'mref',       true                                          ...
+                 'mref',       true,                                         ...
+                 'prctTrain', []                                             ...                 
 );%-----------------------------------------------------------------------------
 
+
 [rlist,slist,fetSet,tag_preprocessing,tag_postprocessing,sampleRate,...
- nNeurons,nIter,states,rndMethod,norm,mref] = DefaultArgs(varargin,defargs,'--struct');
+ nNeurons,nIter,states,rndMethod,norm,mref,prctTrain] = DefaultArgs(varargin,defargs,'--struct');
+
+if ~isempty(prctTrain), 
+    prctTrainTag = ['_PRT_',prctTrain]; 
+else, 
+    prctTrainTag = ''; 
+end                    
 
 rlist = SessionList(rlist);
 
-% MAIN -------------------------------------------------------------------------
 
+
+% MAIN -------------------------------------------------------------------------
 
 for rli = 1:numel(rlist),
 
-    model = ['MTAC_BATCH-' tag_preprocessing fetSet ...
-             '_SR_' num2str(sampleRate) ...
-             '_NORM_' num2str(norm) ...         
+    model = ['MTAC_BATCH-' tag_preprocessing fetSet                                           ...
+             '_SR_' num2str(sampleRate)                                                       ...
+             '_NORM_' num2str(norm)                                                           ...         
              '_REF_' rlist(rli).sessionName, '.' rlist(rli).mazeName '.' rlist(rli).trialName ...
-             '_STC_' rlist(rli).stcMode ...
-             '_NN_' num2str(nNeurons) ...
-             '_NI_' num2str(nIter) ...         
+             '_STC_' rlist(rli).stcMode                                                       ...
+             '_NN_' num2str(nNeurons)                                                         ...
+             '_NI_' num2str(nIter)                                                            ...
+             prctTrainTag                                                                     ...
              '_NN_multiPN_RAND_' rndMethod];
     
     refSession = MTATrial.validate(rlist(rli));
@@ -48,9 +59,9 @@ for rli = 1:numel(rlist),
         for s = 1:numel(SesList);
             Trial = MTATrial.validate(SesList(s));
 
-            features = feval(fetSet,Trial,sampleRate,false);
-            features.map_to_reference_session(Trial,refSession);
-            features.unity([],refMean,refStd);
+% $$$             features = feval(fetSet,Trial,sampleRate,false);
+% $$$             features.map_to_reference_session(Trial,refSession);
+% $$$             features.unity([],refMean,refStd);
 
             if isempty(Trial.fet),
                 Trial.fet = MTADfet(Trial.spath,...
@@ -88,238 +99,198 @@ for rli = 1:numel(rlist),
 
             %% COMPOSITE: rear
             StcCor = ds.stc{s}.copy;
+            key = 'r';
             rhh = [];
             rthresh = 20;
             tds = ds.d_state{s};
             [tpv,tps] = sort(ds.p_state{s},2,'descend');
             try
-            for rp = ds.stc{s}{'r'}.data',
-                %for rp = StcHL{'r'}.data',
-                rhh(end+1) = max(xyz(rp',10,3).*ang(rp',3,4,2));
-                %rhh(end+1) = min(((xyz(rp',10,3)-refMean(4))./refStd(4)).*((ang(rp',3,4,2)-refMean(9))./refStd(9)));
-                if rhh(end)<rthresh,
-                    pind = rp(1):rp(2);
-                    tds(pind,2) = 0;
-                    tps(pind,:) = circshift(tps(pind,:),-1,2);
-                    % maybe make a cat function for MTADepoch 
-                    StcCor.states{StcCor.gsi(states{mode(tps(pind,1))})}.data = ...
-                        [StcCor.states{StcCor.gsi(states{mode(tps(pind,1))})}.data;pind([1,end])];
+                for rp = ds.stc{s}{key}.data',
+                    rhh(end+1) = max(xyz(rp',10,3).*ang(rp',3,4,2));
+                    if rhh(end)<rthresh,
+                        pind = rp(1):rp(2);
+                        tds(pind,2) = 0;
+                        tps(pind,:) = circshift(tps(pind,:),-1,2);
+                        % maybe make a cat function for MTADepoch 
+                        StcCor.states{StcCor.gsi(states{mode(tps(pind,1))})}.data = ...
+                            [StcCor.states{StcCor.gsi(states{mode(tps(pind,1))})}.data;pind([1,end])];
+                    end
                 end
+                StcCor.states{StcCor.gsi(key)}.data(rhh<rthresh,:) = [];                
+
+                StcCor.states{StcCor.gsi(key)} = StcCor{key}+[-0.2,0.1];                
+
+                for sts = StcCor.states,
+                    if strcmp(sts{1}.key,key),continue,end
+                    StcCor.states{StcCor.gsi(sts{1}.key)} = sts{1}-StcCor{key}.data; 
+                end
+
+                
             end
-            for sts = StcCor.states, sts{1}.clean; end
-            StcCor.states{StcCor.gsi('r')}.data(rhh<rthresh,:) = [];
-            end
+
 
             %% DISTANCE: Walk
             try
-            wd = [];
-            wthresh = 1.5;
-            for rp = StcCor{'w'}.data',
-                wd(end+1) = log10(sqrt(sum([xyz(rp(2),1,[1,2])-xyz(rp(1),1,[1,2])].^2,3)));
-                if wd(end)<wthresh,
-                    pind = rp(1):rp(2);
-                    tds(pind,2) = 0;
-                    tps(pind,:) = circshift(tps(pind,:),-1,2);
-                    % maybe make a cat function for MTADepoch 
-                    msts = mode(tps(pind,1));
-                    if msts == 2; msts = 4; end
-                    StcCor.states{StcCor.gsi(states{msts})}.data = ...
-                        [StcCor.states{StcCor.gsi(states{msts})}.data;pind([1,end])];
-                end
-            end
-            for sts = StcCor.states, sts{1}.clean; end
-            StcCor.states{StcCor.gsi('w')}.data(wd<wthresh,:) = [];
-            end
-
-
-            %% Correct sit Duration
-            %% DURATION
-            try
-            pd = [];
-            pthresh = 2.4;
-            for rp = StcCor{'s'}.data',
-                %for rp = StcHL{'s'}.data',    
-                pd(end+1) = log10(abs(diff(rp)));
-                if pd(end)<pthresh,
-                    pind = rp(1):rp(2);
-                    tds(pind,2) = 0;
-                    tps(pind,:) = circshift(tps(pind,:),-1,2);
-                    % maybe make a cat function for MTADepoch 
-                    msts = 4;%mode(tps(pind,1));
-                    
-                    StcCor.states{StcCor.gsi(states{msts})}.data = ...
-                        [StcCor.states{StcCor.gsi(states{msts})}.data;pind([1,end])];
-                end
-            end
-            for sts = StcCor.states, sts{1}.clean; end
-            StcCor.states{StcCor.gsi('s')}.data(pd<pthresh,:) = [];
-            end
-
-            
-            %% Correct Groom Duration
-            %% DURATION
-            try
-            pd = [];
-            pthresh = 2;
-            for rp = StcCor{'m'}.data',
-                pd(end+1) = log10(abs(diff(rp)));
-                if pd(end)<pthresh,
-                    pind = rp(1):rp(2);
-                    tds(pind,2) = 0;
-                    tps(pind,:) = circshift(tps(pind,:),-1,2);
-                    % maybe make a cat function for MTADepoch 
-                    msts = 4;%mode(tps(pind,1));
-                    
-                    StcCor.states{StcCor.gsi(states{msts})}.data = ...
-                        [StcCor.states{StcCor.gsi(states{msts})}.data;pind([1,end])];
-                end
-            end
-            for sts = StcCor.states, sts{1}.clean; end
-            StcCor.states{StcCor.gsi('m')}.data(pd<pthresh,:) = [];
-            end
-
-            
-
-            %% DURATION: Pause
-            try
-            pd = [];
-            pthresh = 1.3;
-            key = 'p';
-            for rp = StcCor{key}.data',
-                pd(end+1) = log10(abs(diff(rp)));
-                if pd(end)<pthresh,
-                    pind = rp(1):rp(2);
-                    tds(pind,2) = 0;
-                    tps(pind,:) = circshift(tps(pind,:),-1,2);
-                    % maybe make a cat function for MTADepoch 
-                    msts = mode(tps(pind,1));
-                    if msts == 2; 
+                key = 'w';
+                wd = [];
+                wthresh = 1.5;
+                for rp = StcCor{key}.data',
+                    wd(end+1) = log10(sqrt(sum([xyz(rp(2),1,[1,2])-xyz(rp(1),1,[1,2])].^2,3)));
+                    if wd(end)<wthresh,
+                        pind = rp(1):rp(2);
+                        tds(pind,2) = 0;
                         tps(pind,:) = circshift(tps(pind,:),-1,2);
+                        % maybe make a cat function for MTADepoch 
                         msts = mode(tps(pind,1));
-                    end                    
-                    
-                    StcCor.states{StcCor.gsi(states{msts})}.data = ...
-                        [StcCor.states{StcCor.gsi(states{msts})}.data;pind([1,end])];
+                        if msts == 2; msts = 4; end
+                        StcCor.states{StcCor.gsi(states{msts})}.data = ...
+                            [StcCor.states{StcCor.gsi(states{msts})}.data;pind([1,end])];
+                    end
                 end
-            end
-            for sts = StcCor.states, sts{1}.clean; end
-            StcCor.states{StcCor.gsi(key)}.data(pd<pthresh,:) = [];
-            end
-            
+                
+                StcCor.states{StcCor.gsi(key)}.data(wd<wthresh,:) = [];
+                
+                StcCor.states{StcCor.gsi(key)} = StcCor{key}+[-0.1,0.1];
 
+                for sts = StcCor.states, sts{1}.clean; end
 
-            %% Correct sit Duration
-            %% DURATION
-            try
-            pd = [];
-            pthresh = 2.4;
-            for rp = StcCor{'s'}.data',
-                %for rp = StcHL{'s'}.data',    
-                pd(end+1) = log10(abs(diff(rp)));
-                if pd(end)<pthresh,
-                    pind = rp(1):rp(2);
-                    tds(pind,2) = 0;
-                    tps(pind,:) = circshift(tps(pind,:),-1,2);
-                    % maybe make a cat function for MTADepoch 
-                    msts = 4;%mode(tps(pind,1));
-                    
-                    StcCor.states{StcCor.gsi(states{msts})}.data = ...
-                        [StcCor.states{StcCor.gsi(states{msts})}.data;pind([1,end])];
+                for sts = StcCor.states,
+                    if strcmp(sts{1}.key,key),continue,end
+                    StcCor.states{StcCor.gsi(sts{1}.key)} = sts{1}-StcCor{key}.data; 
                 end
-            end
-            for sts = StcCor.states, sts{1}.clean; end
-            StcCor.states{StcCor.gsi('s')}.data(pd<pthresh,:) = [];
-            end
-            
-
-
-
-            %% DURATION: Turn
-            try
-            pd = [];
-            ad = [];
-            pthresh = 1.8;
-            athresh = 0.3;
-            key = 'n';
-            for rp = StcCor{key}.data',
-                pd(end+1) = log10(abs(diff(rp)));
-                ad(end+1) = abs(circ_dist(ang(rp(2),1,4,1),ang(rp(1),1,4,1)));
-                if pd(end)<pthresh&ad(end)<athresh,
-                    pind = rp(1):rp(2);
-                    tds(pind,2) = 0;
-                    tps(pind,:) = circshift(tps(pind,:),-1,2);
-                    % maybe make a cat function for MTADepoch 
-                    msts = mode(tps(pind,1));
-                    if msts == 2; 
-                        tps(pind,:) = circshift(tps(pind,:),-1,2);
-                        msts = mode(tps(pind,1));
-                    end                    
-                    
-                    StcCor.states{StcCor.gsi(states{msts})}.data = ...
-                        [StcCor.states{StcCor.gsi(states{msts})}.data;pind([1,end])];
-                end
-            end
-            for sts = StcCor.states, sts{1}.clean; end
-            StcCor.states{StcCor.gsi(key)}.data(pd<pthresh&ad<athresh,:) = [];
+                
             end
 
 
-            
-                         
-            %walk 
-            try
-            pd = [];
-            ad = [];
-            pthresh = 1.6;
-            athresh = 0.3;
-            key = 'w';
-            for rp = StcCor{key}.data',
-                %for rp = StcHL{key}.data',
-                pd(end+1) = log10(abs(diff(rp)));
-                ad(end+1) = abs(circ_dist(ang(rp(2),1,4,1),ang(rp(1),1,4,1)));
-                if pd(end)<pthresh&ad(end)>athresh,
-                    pind = rp(1):rp(2);
-                    tds(pind,2) = 0;
-                    tps(pind,:) = circshift(tps(pind,:),-1,2);
-                    % maybe make a cat function for MTADepoch 
-                    msts = mode(tps(pind,1));
-                    if msts == 2; 
-                        tps(pind,:) = circshift(tps(pind,:),-1,2);
-                        msts = mode(tps(pind,1));
-                    end                    
-                    
-                    StcCor.states{StcCor.gsi(states{msts})}.data = ...
-                        [StcCor.states{StcCor.gsi(states{msts})}.data;pind([1,end])];
-                end
-            end
-            for sts = StcCor.states, sts{1}.clean; end
-            StcCor.states{StcCor.gsi(key)}.data(pd<pthresh&ad>athresh,:) = [];
-            end
-            
-            
+
+            % %% DURATION: Sit
+            % try, StcCor = reassign_state_by_duration(StcCor,'s','p',5,tds,tps); end
+            % %% DURATION: Groom
+            % try, StcCor = reassign_state_by_duration(StcCor,'m','p',3,tds,tps); end
+            % %% DURATION: Pause
+            %try, StcCor = reassign_state_by_duration(StcCor,'p', [],.1,tds,tps); end
+            %% DURATION: Groom
+            try, StcCor = reassign_state_by_duration(StcCor,'m','p',2,tds,tps); end
             %% DURATION: Sit
-            try
-            pd = [];
-            pthresh = 2.5;
-            for rp = StcCor{'s'}.data',
-                %for rp = StcHL{'s'}.data',    
-                pd(end+1) = log10(abs(diff(rp)));
-                if pd(end)<pthresh,
-                    pind = rp(1):rp(2);
-                    tds(pind,2) = 0;
-                    tps(pind,:) = circshift(tps(pind,:),-1,2);
-                    % maybe make a cat function for MTADepoch 
-                    msts = 4;%mode(tps(pind,1));
-                    
-                    StcCor.states{StcCor.gsi(states{msts})}.data = ...
-                        [StcCor.states{StcCor.gsi(states{msts})}.data;pind([1,end])];
-                end
-            end
-            for sts = StcCor.states, sts{1}.clean; end
-            StcCor.states{StcCor.gsi('s')}.data(pd<pthresh,:) = [];
-            end
+            try, StcCor = reassign_state_by_duration(StcCor,'s','p',3,tds,tps); end
 
             
+
+
+% $$$             %% DURATION: Turn
+% $$$             try
+% $$$                 pd = [];
+% $$$                 ad = [];    
+% $$$                 key = 'n';
+% $$$                 pthresh = log10(0.1.*StcCor{key}.sampleRate);
+% $$$                 athresh = 0.2;
+% $$$                 for rp = StcCor{key}.data',
+% $$$                     pd(end+1) = log10(abs(diff(rp)));
+% $$$                     ad(end+1) = abs(circ_dist(ang(rp(2),'spine_lower','spine_upper',1),...
+% $$$                                               ang(rp(1),'spine_lower','spine_upper',1)));
+% $$$                     if pd(end)<pthresh&ad(end)<athresh,
+% $$$                         pind = rp(1):rp(2);
+% $$$                         tds(pind,2) = 0;
+% $$$                         tps(pind,:) = circshift(tps(pind,:),-1,2);
+% $$$                         % maybe make a cat function for MTADepoch 
+% $$$                         msts = mode(tps(pind,1));
+% $$$                         if msts == 2; 
+% $$$                             tps(pind,:) = circshift(tps(pind,:),-1,2);
+% $$$                             msts = mode(tps(pind,1));
+% $$$                         end                    
+% $$$                         
+% $$$                         StcCor.states{StcCor.gsi(states{msts})}.data = ...
+% $$$                             [StcCor.states{StcCor.gsi(states{msts})}.data;pind([1,end])];
+% $$$                     end
+% $$$                 end
+% $$$                 
+% $$$                 tind = pd<pthresh&ad<athresh;
+% $$$                 if any(tind),StcCor.states{StcCor.gsi(key)}.data(tind,:) = [];end
+% $$$                 
+% $$$                 StcCor.states{StcCor.gsi(key)} = StcCor{key}+[-0.1,0.1];
+% $$$ 
+% $$$                 for sts = StcCor.states, sts{1}.clean; end
+% $$$ 
+% $$$                 for sts = StcCor.states,
+% $$$                     if strcmp(sts{1}.key,key),continue,end
+% $$$                     StcCor.states{StcCor.gsi(sts{1}.key)} = sts{1}-StcCor{key}.data; 
+% $$$                 end
+% $$$             end
+% $$$             
+% $$$             
+% $$$ 
+% $$$             %% Speed: Walk 
+% $$$             try
+% $$$                 key = 'w';
+% $$$                 pd = [];
+% $$$                 ad = [];
+% $$$                 pthresh = log10(0.15.*StcCor{key}.sampleRate);
+% $$$                 athresh = 0.2;
+% $$$ 
+% $$$                 for rp = StcCor{key}.data',
+% $$$                     rp(rp>size(ang,1))=size(ang,1);
+% $$$                     pd(end+1) = log10(abs(diff(rp)));
+% $$$                     ad(end+1) = abs(circ_dist(ang(rp(2),'spine_lower','spine_upper',1),ang(rp(1),'spine_lower','spine_upper',1)));
+% $$$                     if pd(end)<pthresh&ad(end)>athresh,
+% $$$                         pind = rp(1):rp(2);
+% $$$                         tds(pind,2) = 0;
+% $$$                         tps(pind,:) = circshift(tps(pind,:),-1,2);
+% $$$                         % maybe make a cat function for MTADepoch 
+% $$$                         msts = mode(tps(pind,1));
+% $$$                         if msts == 2; 
+% $$$                             tps(pind,:) = circshift(tps(pind,:),-1,2);
+% $$$                             msts = mode(tps(pind,1));
+% $$$                         end                    
+% $$$                         
+% $$$                         StcCor.states{StcCor.gsi(states{msts})}.data = ...
+% $$$                             [StcCor.states{StcCor.gsi(states{msts})}.data;pind([1,end])];
+% $$$                     end
+% $$$                 end
+% $$$                 StcCor.states{StcCor.gsi(key)}.data(pd<pthresh&ad>athresh,:) = [];                
+% $$$                 for sts = StcCor.states, sts{1}.clean; end
+% $$$ 
+% $$$             end
+% $$$ 
+% $$$ 
+% $$$ 
+% $$$             %% Duration&angle: pause
+% $$$             try
+% $$$                 key = 'p';
+% $$$                 pd = [];
+% $$$                 ad = [];
+% $$$                 pthresh = log10(0.2.*StcCor{key}.sampleRate);
+% $$$                 athresh = 0.2;
+% $$$ 
+% $$$                 for rp = StcCor{key}.data',
+% $$$                     rp(rp>size(ang,1))=size(ang,1);
+% $$$                     pd(end+1) = log10(abs(diff(rp)));
+% $$$                     ad(end+1) = abs(circ_dist(ang(rp(2),'spine_lower','spine_upper',1),ang(rp(1),'spine_lower','spine_upper',1)));
+% $$$                     if pd(end)<pthresh&ad(end)>athresh,
+% $$$                         pind = rp(1):rp(2);
+% $$$                         tds(pind,2) = 0;
+% $$$                         tps(pind,:) = circshift(tps(pind,:),-1,2);
+% $$$                         % maybe make a cat function for MTADepoch 
+% $$$                         msts = 3;
+% $$$ % $$$                         msts = mode(tps(pind,1));
+% $$$ % $$$                         if msts == 2; 
+% $$$ % $$$                             tps(pind,:) = circshift(tps(pind,:),-1,2);
+% $$$ % $$$                             msts = mode(tps(pind,1));
+% $$$ % $$$                         end                    
+% $$$                         
+% $$$                         StcCor.states{StcCor.gsi(states{msts})}.data = ...
+% $$$                             [StcCor.states{StcCor.gsi(states{msts})}.data;pind([1,end])];
+% $$$                     end
+% $$$                 end
+% $$$                 StcCor.states{StcCor.gsi(key)}.data(pd<pthresh&ad>athresh,:) = [];                
+% $$$                 for sts = StcCor.states, sts{1}.clean; end
+% $$$ 
+% $$$             end
+% $$$ 
+% $$$ 
+% $$$             %% DURATION: Sit
+% $$$             try, StcCor = reassign_state_by_duration(StcCor,'s','p',5,tds,tps); end
+% $$$             %% DURATION: Groom 
+% $$$             try, StcCor = reassign_state_by_duration(StcCor,'m','p',5,tds,tps); end
             
             
             csm = [];
@@ -346,10 +317,9 @@ for rli = 1:numel(rlist),
             ls{s}.sensitivity = round(diag(tcm)'./sum(tcm),4).*100;
             ls{s}.accuracy = sum(diag(tcm))/sum(tcm(:));
 
-            StcCor.updateMode([StcCor.mode,'_PP']);
+            StcCor.updateMode([StcCor.mode,tag_postprocessing]);
             stc{s} = StcCor.copy;
         end
-
 
 
         mapped = '-map2ref';
@@ -364,10 +334,65 @@ for rli = 1:numel(rlist),
 end
 
 
-% $$$ 
-% $$$ 
-% $$$ 
-% $$$ 
+
+% END MAIN -------------------------------------------------------------------------
+
+
+
+
+% AUX METHODS ----------------------------------------------------------------------
+
+function [StcCor,tempDState,tempPState] = reassign_state_by_duration(StcCor,key,defaultState,durationThreshold,tempDState,tempPState)
+pd = [];
+states = StcCor.list_state_attrib;
+pthresh = log10(durationThreshold.*StcCor{key}.sampleRate);
+for rp = StcCor{key}.data',
+
+    % collect period durations
+    pd(end+1) = log10(abs(diff(rp)));
+
+    if pd(end)<pthresh,
+        pind = rp(1):rp(2);
+
+        %???
+        tempDState(pind,2) = 0;        
+        % promote next best state 
+        tempPState(pind,:) = circshift(tempPState(pind,:),-1,2);
+
+        if isempty(defaultState), 
+            % select next best state             
+            msts = mode(tempPState(pind,1));
+            if msts == 2; 
+                tps(pind,:) = circshift(tempPState(pind,:),-1,2);
+                msts = mode(tempPState(pind,1));
+            end                    
+        else % relabel state with a provided default state            
+            msts = StcCor.gsi(defaultState);
+        end
+        
+        
+        % reassign state
+        StcCor.states{StcCor.gsi(states{msts})}.data = ...
+            [StcCor.states{StcCor.gsi(states{msts})}.data;pind([1,end])];
+    end
+end
+
+% Resort and clean overlaps 
+for sts = StcCor.states,
+    sts{1}.clean; 
+end
+
+% Delete the reassigned periods within original state
+StcCor.states{StcCor.gsi(key)}.data(pd<pthresh,:) = [];
+
+
+% END AUX METHODS ----------------------------------------------------------------------
+
+
+
+
+
+
 % $$$ csm = [];
 % $$$ csm = MTADxyz('data',double(0<stc2mat(StcCor,xyz,states)),'sampleRate',xyz.sampleRate); 
 % $$$ figure,sp=[];

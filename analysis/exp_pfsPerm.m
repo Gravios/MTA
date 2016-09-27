@@ -44,7 +44,7 @@ units = [];
 aunits=repmat({[]},numel(states),1);;
 Pfs=repmat({[]},numel(states),1);
 pfs=repmat({[]},numel(states),2);
-Tlist = SessionList('pfs');
+Tlist = get_session_list('pfs');
 for i= 1:numel(Tlist),
     Trial = MTATrial(Tlist{i}{1},Tlist{i}{3},Tlist{i}{2});
     Trial.load('nq');

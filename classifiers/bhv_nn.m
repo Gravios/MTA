@@ -122,7 +122,7 @@ if trainModel||~exist(model_loc,'file'),
         ind = ind&logical(subset.data);
     end
         
-    % Train classifie
+    % Train classifier
     net = patternnet(nNeurons);
     %net.trainParam.showWindow = true;
     net.trainParam.showWindow = false;

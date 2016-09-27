@@ -35,7 +35,7 @@ fetSet  = 'fet_tsne_rev12';
 
 for sli = 1:numel(slist),
     for rti = 1:numel(refTrial),
-        SesList = SessionList(slist{sli});
+        SesList = get_session_list(slist{sli});
         states  = {'walk','rear','turn','pause','groom','sit'};
         model = ['MTAC_BATCH-' fetSet '_SR_12_REF_' refTrial{rti} ...
                  '.cof.all_STC_' trnStcMode{rti} '_NN_100_NN_multiPN_RAND_WSB'];
@@ -73,7 +73,7 @@ end
 sli = 2;
 rti = 2;
 fetSet  = 'fet_tsne_rev11';
-SesList = SessionList(slist{sli});
+SesList = get_session_list(slist{sli});
 SesList = {SesList(:).sessionName};
 model = ['MTAC_BATCH-' fetSet '_SR_12_REF_' refTrial{rti} '.cof.all_NN_100_NN_multiPN_RAND_WSB'];
 load(fullfile(MTASession().path.data,'analysis',[slist{sli},'-',model,'.mat']));
@@ -166,7 +166,7 @@ set(gca,'XTickLabelRotation',90);
 
 
 fetSet = 'fet_tsne_rev10';
-sli = 1;SesList = SessionList(slist{sli});
+sli = 1;SesList = get_session_list(slist{sli});
 states  = {'walk','rear','turn','pause','groom','sit'};
 stc = {}; d_state = {}; ls = {}; lsm = {};
 

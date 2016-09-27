@@ -2911,38 +2911,16 @@ caxis([prctile(reshape(10.*log10(yhd(:,:,24))',[],1),40),...
     Trial.load('stc','nn0317');
     states = Trial.stc.list_state_attrib;
     states(~cellfun(@isempty,regexp(states,'^spw$')))=[]; % drop the spw    
-
-    binDims = [20,20];    
-    units = [];
-    overwrite = false;
-    numIter = 1001;
+    units = Trial.spk.map(:,1);
     
-    smoothingWeights = [2.2,2.2];
+    myVarArgs = struct2varargin(MTAAknnpfs_bs_20160919_001());
     
-    nNearestNeighbors = 300;
-    distThreshold = 125;
-    ufrShufBlockSize = 1;
-    sampleRate = 30;
-
-
-    
-    pfk = {};
-    pfs = {};    
+    pfk = {};        
     for s = 1:numel(states)
-        pfk{s} = MTAAknnpfs_bs(Trial,units,states{s},overwrite, ...
-                             'binDims',binDims,...
-                             'nNearestNeighbors',nNearestNeighbors,...
-                             'ufrShufBlockSize',ufrShufBlockSize,...
-                             'distThreshold',distThreshold,...
-                             'numIter',numIter);
-% $$$         pfs{s} = MTAApfs(Trial,units,...
-% $$$                          states{s},...
-% $$$                          overwrite, ...
-% $$$                          'binDims',binDims,...
-% $$$                          'SmoothingWeights',smoothingWeights,...
-% $$$                          'numIter',numIter);
+        pfksr{s} = MTAAknnpfs_bs(Trial,units,states{s},myVarArgs{:});
         fprintf('pfk %s: complete\n',states{s});
     end
+
     units = pfk{1}.data.clu;    
     mRate = pfk{7}.maxRate(units);
     
@@ -2979,7 +2957,7 @@ caxis([prctile(reshape(10.*log10(yhd(:,:,24))',[],1),40),...
         for s = 1:numel(states)
             subplot(4,4,s)
             hold('on')            
-            pf = pfk{s};
+            pf = pfk{1};
             %pf = pfs{s};
 
             % Correct color of nans and plot place field
@@ -2991,9 +2969,11 @@ caxis([prctile(reshape(10.*log10(yhd(:,:,24))',[],1),40),...
             %ratemap = reshape(pf.data.rateMap(:,unit==pf.data.clu,1),fliplr(pf.adata.binSizes'));
             ratemap = reshape(pf.data.rateMap(:,unit==pf.data.clu,2:end),...
                               [fliplr(pf.adata.binSizes'),1000]);
+            ratemap = reshape(pf.data.rateMap(:,unit==pf.data.clu,1),...
+                              [fliplr(pf.adata.binSizes'),1]);
             
             if size(ratemap,3)>1
-                ratemap = mean(ratemap,3)'.*mask;
+                ratemap = nanmean(ratemap,3).*mask;
             else
                 ratemap = ratemap.*mask;
             end
