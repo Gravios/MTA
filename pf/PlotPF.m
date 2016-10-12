@@ -76,6 +76,8 @@ RateMap(~gtind) = NaN;
 %% Find the units overall mean rate given the 
 %% current state
 % $$$ MRate = sum(SCount(gtind))/TotOcc;
-% $$$ SI = nansum(POcc(gtind).*(RateMap(gtind)./MRate).*log2(RateMap(gtind)./MRate));
+% $$$ if nargout>3
+% $$$     varargout(1) = {nansum(POcc(gtind).*(RateMap(gtind)./MRate).*log2(RateMap(gtind)./MRate))};
+% $$$ end
 % $$$ Spar = 1/nansum(POcc(gtind).*RateMap(gtind).^2./MRate.^2);
 

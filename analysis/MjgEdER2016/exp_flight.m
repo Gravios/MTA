@@ -3,7 +3,6 @@
 
 Slist = get_session_list('ER06');
 
-
 i = 4;
 QuickSessionSetup(Slist(i)); 
 
@@ -234,3 +233,99 @@ pfs{s} = MTAApfs(Trial,units,'theta',...
                  'type','xyz',...
                  'SmoothingWeights',[2.2,2.2,2.2]);
 
+
+
+
+%% projecting the max rates along the x y and z axis 
+
+%% setup figure paths
+OwnDir = '/storage/gravio/ownCloud/MjgEdER2016';
+FigDir = ['pfs_flight_xz_yz_',Trial.filebase];
+mkdir(fullfile(OwnDir,FigDir));
+
+
+
+%% Plot placefields across height
+
+
+spOpts.width  = 2;
+spOpts.height = 2;
+spOpts.ny = 3;
+spOpts.nx = 3;
+spOpts.padding = 2;
+spOpts.units = 'centimeters';
+figOpts.units = 'centimeters';
+figOpts.headerPadding = 2;
+figOpts.footerPadding = 0;
+figOpts.position = [1,1,(spOpts.height+round(spOpts.padding/2))*spOpts.ny+round(spOpts.padding/2),...
+                     (spOpts.width+round(spOpts.padding/2)) *spOpts.nx+figOpts.headerPadding+figOpts.footerPadding];
+
+
+% rectangular mask
+width = pfs{1}.adata.binSizes(1);
+height = pfs{1}.adata.binSizes(2);
+radius = round(pfs{1}.adata.binSizes(1)/2)-find(pfs{1}.adata.bins{1}<-420,1,'last');
+centerW = width/2;
+centerH = height/2;
+[W,H] = meshgrid(1:width,1:height);           
+mask = double(sqrt((W-centerW-.5).^2 + (H-centerH-.5).^2) < radius);
+mask(mask==0)=nan;
+mask = repmat(mask,[1,1,pfs{1}.adata.binSizes(3)]);    
+
+    
+
+unit = units(1);
+hfig = figure(393929);
+autoincr = true;
+unit = units(1);
+set(hfig,'Units','centimeters');
+set(hfig,'Position',[1,1,20,10]);
+set(hfig,'PaperPositionMode','auto');
+i = 1;
+
+mdim = 'xyz';
+neye = 1:3;
+
+mRates = [];
+for p = 1:3
+    mRates(:,p) = pfs{p}.maxRate;
+end
+mRates = max(mRates,[],2);
+
+unit = units(1);
+i = 1;
+while unit~=-1,
+    clf
+    for i  = 1:3
+        pf = pfs{i};
+        ratemap = pf.plot(unit,'isCircular',false);
+        ratemap = ratemap.*mask;
+        ratemap(isnan(ratemap)) = -1; 
+        for s = 1:3
+            sp(i,s) = axes('Units',spOpts.units,...
+                           'Position',[(spOpts.width+round(spOpts.padding/2))*(s+1)+round(spOpts.padding/2),...
+                                       (spOpts.height+round(spOpts.padding/2))*(i-1)+round(spOpts.padding/2),...
+                                        spOpts.width,...
+                                        spOpts.height]...
+                           );
+            hold('on')
+            dd = neye~=s;
+            %mrm = sq(nanmean(ratemap,s));
+            mrm = sq(nanmax(ratemap,[],s));
+            imagesc(pf.adata.bins{find(dd,1,'first')},pf.adata.bins{find(dd,1,'last')},mrm');    
+            axis xy
+            colormap([0,0,0;parula]);
+            caxis([-1,mRates(unit==units)]);
+            title(mdim(dd))
+            text(pf.adata.bins{1}(end)-350,pf.adata.bins{2}(end)-900,...
+                 sprintf('%2.1f',max(mrm(:))),'Color','w','FontWeight','bold','FontSize',10)
+        if s==1, ylabel({pf.session.trialName,pf.parameters.states,['unit: ',num2str(unit)]});end
+        end
+    end
+
+    FigName = ['pfs_unit-',num2str(unit)];
+    %print(gcf,'-depsc2',fullfile(OwnDir,FigDir,[FigName,'.eps']));
+    print(gcf,'-dpng',  fullfile(OwnDir,FigDir,[FigName,'.png']));
+
+    unit = figure_controls(hfig,unit,units,autoincr);    
+end

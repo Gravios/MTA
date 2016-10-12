@@ -2,8 +2,8 @@ function [mz,vz] = mean_embeded_feature_vbvh(Data,Trial,varargin)
 
 [dims] = DefaultArgs(varargin,{[]});
 
-NBINS = 100;
-VEL_HISTOGRAM_BOUNDARIES = linspace(-3,2,NBINS);
+NBINS = 50;
+VEL_HISTOGRAM_BOUNDARIES = linspace(0.5,2,NBINS);
 
 xyz = Trial.load('xyz');
 xyz.resample(Data);
@@ -32,9 +32,11 @@ if ~isempty(regexpi(Trial.stc.mode,'^hand_labeled.*')),
 else
     ind = Trial.stc('a').cast('TimeSeries');
     ind.resample(Data);
+    ind.data(isnan(ind.data))=0;
     % Need some hard thresholds for subspace selection 
-    bang = ang(:,1,4,3).*cos(ang(:,1,4,2));
+    bang = ang(:,'spine_lower','spine_upper',3).*cos(ang(:,'spine_lower','spine_upper',2));
     bang = MTADxyz('data',bang/prctile(bang(nniz(bang)),95),'sampleRate',xyz.sampleRate);
+    bang.data(~nniz(bang.data))=0;
     ind.data = ind.data&bang>.8;
 end
 

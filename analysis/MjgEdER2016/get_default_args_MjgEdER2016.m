@@ -1,0 +1,49 @@
+function defargs = get_default_args_MjgEdER2016(fname,varargin)
+%function defargs = get_default_args_MjgEdER2016(fname,varargin)
+%
+% Store default arguments for functions within the MjgEdER2016 analysis
+%
+
+if isempty(varargin)
+    outType = 'cell';
+else
+    outType = varargin{1};    
+end
+    
+
+switch fname
+  case 'MTAAknnpfs_bs'
+    defargs = struct('units',              [],                                   ...
+                     'states',             {{'walk'}},                           ...
+                     'overwrite',          false,                                ...
+                     'tag',                [],                                   ...
+                     'ufr',                [],                                   ...
+                     'binDims',            [20,20],                              ...
+                     'nNearestNeighbors' , 30,                                   ...
+                     'distThreshold',      125,                                  ...
+                     'type',               'xy',                                 ...
+                     'ufrShufBlockSize',   1,                                    ... 
+                     'numIter',            1001,                                 ...
+                     'pos',                [],                                   ...
+                     'sampleRate',         4,                                    ...
+                     'absTimeSubSample',   300                                   ...
+                     );
+    
+  otherwise
+    error('MTA:analysis:MjgEdER2016:get_default_args_MjgEdER2016.m:NoFunctionNameProvided')
+end
+
+
+
+
+switch outType
+  case 'cell'
+    defargs = struct2varargin(defargs);    
+    
+  case 'struct'
+    
+  otherwise
+    error('MTA:analysis:MjgEdER2016:get_default_args_MjgEdER2016.m:OutTypeNotRecognized')
+end
+
+    

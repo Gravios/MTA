@@ -23,7 +23,7 @@ defargs = struct('name',               'NN0317',                 ...
                  'fetSet',             'fet_mis',                ...                 
                  'stcMode',            '',                       ...                 
                  'tag_preprocessing',  '+seh+',                  ...
-                 'tag_postprocessing', '_PP',                    ...
+                 'tag_postprocessing', '',                       ...
                  'sampleRate',         12,                       ...
                  'nNeurons',           100,                      ...
                  'nIter',              100,                      ...
@@ -82,17 +82,22 @@ stc.save(1);
 load(fullfile(Trial.spath,[Trial.filebase,'.',mfilename,'-',model,mapped,'.mat']));
 
 
-
-Stc = optimize_stc_transition_mis_single_session(Trial,stc,...
+if ~isempty(tag_postprocessing),
+    Stc = optimize_stc_transition_mis_single_session(Trial,stc,...
                    RefTrial, refStcMode, fetSet,stcMode, tag_preprocessing, tag_postprocessing, ...
                    sampleRate, nNeurons, nIter, states, rndMethod, norm, map2ref);
-for s = 1:numel(Stc.states)
-    Stc.states{s}.data = sort(Stc.states{s}.data);
+
+    for s = 1:numel(Stc.states)
+        Stc.states{s}.data = sort(Stc.states{s}.data);
+    end
+
+    Stc.save(1)
+
+
+    Stc.updateMode([name,tag_postprocessing]);
+    Stc.save(1);
 end
 
-Stc.save(1)
-
-
-Stc.updateMode([name,tag_postprocessing]);
-Stc.save(1);
 Trial.save;
+
+

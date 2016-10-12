@@ -17,9 +17,26 @@ classdef MTAAknnpfs_bs < hgsetget %< MTAAnalysis
         %            [units,states,overwrite,tag,binDims,nNearestNeighbors,distThreshold,...
         %             type,ufrShufBlockSize,numIter]=...
 
+            % DEFARGS ----------------------------------------------------------------------
+            defargs = struct('units',              [],                                   ...
+                             'states',             {{'walk'}},                           ...
+                             'overwrite',          false,                                ...
+                             'tag',                [],                                   ...
+                             'ufr',                [],                                   ...
+                             'binDims',            [20,20],                              ...
+                             'nNearestNeighbors' , 60,                                   ...
+                             'distThreshold',      125,                                  ...
+                             'type',               'xy',                                 ...
+                             'ufrShufBlockSize',   1,                                    ... 
+                             'numIter',            1,                                    ...
+                             'pos',                [],                                   ...
+                             'sampleRate',         10,                                   ...
+                             'absTimeSubSample',   300                                   ...
+            );%-----------------------------------------------------------------------------
+            
             [units,states,overwrite,tag,ufr,binDims,nNearestNeighbors,distThreshold,...
-                type,ufrShufBlockSize,numIter,pos,sampleRate]=...
-            DefaultArgs(varargin,{[],'walk',false,[],[],[20,20],80,70,'xy',0,1,[],30});
+             type,ufrShufBlockSize,numIter,pos,sampleRate,absTimeSubSample]=...
+                DefaultArgs(varargin,defargs,'--struct');
              
             units = units(:)';
         
@@ -302,12 +319,12 @@ classdef MTAAknnpfs_bs < hgsetget %< MTAAnalysis
                   
                   switch mode
                     case 'mean'
-                      rateMap = mean(Pfs.data.rateMap(:,Pfs.data.clu==unit,:),3);
+                      rateMap = nanmean(Pfs.data.rateMap(:,Pfs.data.clu==unit,:),3);
                     case 'std'
-                      rateMap = std(Pfs.data.rateMap(:,Pfs.data.clu==unit,:),[],3);
+                      rateMap = nanstd(Pfs.data.rateMap(:,Pfs.data.clu==unit,:),[],3);
                     case 'sig'
-                      rateMap = 1./sum((repmat(max(Pfs.data.rateMap(:,Pfs.data.clu==unit,:)),[size(Pfs.data.rateMap,1),1,1])...
-                                        -repmat(Pfs.data.rateMap(:,Pfs.data.clu==unit,1),[1,1,Pfs.parameters.numIter]))<0,3)';
+                      rateMap = 1./nansum((repmat(max(Pfs.data.rateMap(:,Pfs.data.clu==unit,:)),[size(Pfs.data.rateMap,1),1,1])...
+                                          -repmat(Pfs.data.rateMap(:,Pfs.data.clu==unit,1),[1,1,Pfs.parameters.numIter]))<0,3)';
                     otherwise
                       if isnumeric(mode)
                           rateMap = Pfs.data.rateMap(:,Pfs.data.clu==unit,mode);
@@ -319,7 +336,7 @@ classdef MTAAknnpfs_bs < hgsetget %< MTAAnalysis
                   
                   
                   %% Normal rateMap = reshape(rateMap',numel(bin1),numel(bin2))';
-                  rateMap = reshape(rateMap',numel(bin1),numel(bin2))'.*mask;
+                  rateMap = reshape(rateMap,numel(bin2),numel(bin1))'.*mask;
                   
                   if nargout==0,                    
 
@@ -328,17 +345,14 @@ classdef MTAAknnpfs_bs < hgsetget %< MTAAnalysis
                       end
                       
 
-                      ratemap(isnan(ratemap)) = -1;
-                      imagesc(pf.adata.bins{1},pf.adata.bins{2},ratemap);
+                      rateMap(isnan(rateMap)) = -1;
+                      imagesc(bin1,bin2,rateMap');
 
-                      text(pf.adata.bins{1}(end)-250,pf.adata.bins{2}(end)-50,...
-                           sprintf('%2.1f',max(ratemap(:))),'Color','w','FontWeight','bold','FontSize',10)
+                      %text(Pfs.adata.bins{1}(end)-250,Pfs.adata.bins{2}(end)-50,...
+                      %    sprintf('%2.1f',max(rateMap(:))),'Color','w','FontWeight','bold','FontSize',10)
                       colormap([0,0,0;parula]);
                       caxis([-1,maxRate]);        
 
-                      if ~isempty(rateMap)&&~isempty(bin1)&&~isempty(bin2),
-                          text(bin1(1)+30,bin2(end)-50,sprintf('%2.1f',max(rateMap(:))),'Color','w','FontWeight','bold','FontSize',18)
-                      end
                       axis xy
                   end
                   return
@@ -447,17 +461,47 @@ classdef MTAAknnpfs_bs < hgsetget %< MTAAnalysis
             end
         end
         
-        function [mxr,mxp] = maxRate(Pfs,units)
+        function [mxr,mxp] = maxRate(Pfs,units,varargin)
+            [mode,isCircular] = DefaultArgs(varargin,{'first',true},1);
+
+            % create mask to remove regions outside accessible area
+            if isCircular,
+                width = Pfs.adata.binSizes(1);
+                height = Pfs.adata.binSizes(2);
+                radius = round(Pfs.adata.binSizes(1)/2)-find(Pfs.adata.bins{1}<-420,1,'last');
+                centerW = width/2;
+                centerH = height/2;
+                [W,H] = meshgrid(1:width,1:height);           
+                mask = double(sqrt((W-centerW-.5).^2 + (H-centerH-.5).^2) < radius);
+                mask(mask==0)=nan;
+                if numel(Pfs.adata.binSizes)>2,
+                    mask = repmat(mask,[1,1,Pfs.adata.binSizes(3)]);
+                end
+                mask = repmat(mask(:),[1,1,Pfs.parameters.numIter]);                
+            else
+                mask = 1;
+            end
+            
+            
             if isempty(units),
                 units = Pfs.data.clu;
             end
             mxr = nan(numel(units),1);
             mxp = nan(numel(units),1);
+            switch mode
+              case 'first';
+                ind = 1;
+                mfunc = @(x,y) x;
+              case 'mean';
+                ind = ':';
+                mfunc = @nanmean;
+            end
+            
             for u = units,
-                [mxr(u==units),mxp(u==units)] = max(Pfs.data.rateMap(:,Pfs.data.clu==u,1));
+                [mxr(u==units),mxp(u==units)] = max(mfunc(Pfs.data.rateMap(:,Pfs.data.clu==u,ind).*mask,3));
             end
             mxp = Ind2Sub(Pfs.adata.binSizes',mxp);
-            mxp = [Pfs.adata.bins{1}(mxp(:,1)),Pfs.adata.bins{2}(mxp(:,2))];
+            mxp = [Pfs.adata.bins{2}(mxp(:,2)),Pfs.adata.bins{1}(mxp(:,1))];
         end
     end
     

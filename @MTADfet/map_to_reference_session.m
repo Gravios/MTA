@@ -131,7 +131,7 @@ for ind = inSync,
               & refStd{f}(:)<stdThresh{f==fetInds};
         mzd = diffFun{f==fetInds}(tarMean{f}(:),refMean{f}(:));
         
-        mshift = nanmean(mzd(nnz));
+        mshift = nanmedian(mzd(nnz));
 
         sind = ind(1):ind(2);
         zind = features.data(sind,f)==0;

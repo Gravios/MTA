@@ -1,7 +1,8 @@
-function [pfstats,pfbstats] = PlaceFieldStats(Trial,pf,unit)
+function [pfstats,pfbstats,pfmstats] = PlaceFieldStats(Trial,pf,unit,varargin)
 
-version = '0.1';
-verbose = true;
+[verbose] = DefaultArgs(varargin,{true});
+VERSION = '0.1';
+
 
 if verbose,
     fprintf('PlaceFieldStats v%s \n\n',version)
@@ -16,10 +17,10 @@ maxNumPatches =2;
 
 
 %%!!!! Discrepency between MTAApfs and MTAAknnpfs_bs
-%%!!!! Redo plot function for MTAAknpfs_bs to match MTAApfs
-ratemap = reshape(map(:,1)',fliplr(pf.adata.binSizes'))';
-%ratemap = pf.plot(unit,'isCircular',false);
-%%!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
+%ratemap = reshape(map(:,1)',fliplr(pf.adata.binSizes'))';
+
+
+ratemap = pf.plot(unit);
 
 
 % Maximum firing rate found within the normal place field
@@ -35,8 +36,8 @@ pfstats.patchPFR = nan([1,1,maxNumPatches]);
 pfstats.patchMFR = nan([1,1,maxNumPatches]);
 pfstats.patchCnt = nan([1,1,maxNumPatches]);
 pfstats.patchRateInd = nan([1,1,maxNumPatches,2,round(prod(pf.adata.binSizes)*0.1)]);
-pfstats.patchRateMap = nan([1,1,maxNumPatches,round(prod(pf.adata.binSizes)*0.1)]);
-
+pfstats.patchRateMap = nan([1,1,maxNumPatches,round(prod(pf.adata.binSizes)*0.1)]);  
+ 
 
 if verbose,
     fprintf('patch detection:\n')
@@ -46,6 +47,16 @@ end
 [B,L] = bwboundaries(ratemap>rateThreshold,'noholes');
 
 if ~isempty(B),
+ 
+    
+    patchArea = nan([1,1,maxNumPatches]);                                        
+    patchCOM  = nan([1,1,maxNumPatches,2]);                                      
+    patchPFR = nan([1,1,maxNumPatches]);                                         
+    patchMFR = nan([1,1,maxNumPatches]);                                         
+    patchCnt = nan([1,1,maxNumPatches]);                                         
+    patchRateInd = nan([1,1,maxNumPatches,2,round(prod(pf.adata.binSizes)*0.1)]);
+    patchRateMap = nan([1,1,maxNumPatches,round(prod(pf.adata.binSizes)*0.1)]);  
+    
     clear nB    
     if verbose,
         fprintf('%i patches detected\n')
@@ -60,27 +71,26 @@ if ~isempty(B),
 
         patchRateInd(1,1,i,:,1:npix) = nB{i}';
 
-        %MTAApfs        
-        %pxy = [pf.adata.bins{1}(nB{i}(:,1)),pf.adata.bins{2}(nB{i}(:,2))];
-
-        %MTAAknnpfs_bs
-        pxy = [pf.adata.bins{2}(nB{i}(:,2)),pf.adata.bins{1}(nB{i}(:,1))];
-
+        if isa(pf,'MTAApfs'),
+            pxy = [pf.adata.bins{1}(nB{i}(:,1)),pf.adata.bins{2}(nB{i}(:,2))];
+        elseif isa(pf,'MTAAknnpfs_bs')
+            pxy = [pf.adata.bins{2}(nB{i}(:,2)),pf.adata.bins{1}(nB{i}(:,1))];
+        end
+        
         patchCOM(1,1,i,:)  = [sq(patchRateMap(1,1,i,1:npix))'*pxy(:,1),sq(patchRateMap(1,1,i,1:npix))'*pxy(:,2)]/nansum(patchRateMap(1,1,i,1:npix));
         patchPFR(1,1,i)    = max    (patchRateMap(1,1,i,1:npix),[],4);
         patchMFR(1,1,i)    = nanmean(patchRateMap(1,1,i,1:npix),4);
 
     end
     
-    %keyboard
 
 
     [~,pind] = sort(sq(patchArea),'descend');
     if numel(nB)>=maxNumPatches,
         for i = 1:maxNumPatches,
             nNotNan = sum(~isnan(sq(patchRateMap(1,1,pind(i),:))));
-            pfstats.patchRateInd(1,1,i,:,1:nNotNan) = patchRateInd(1,1,pind(i),:,:);
-            pfstats.patchRateMap(1,1,i,1:nNotNan) = patchRateMap(1,1,pind(i),:);
+            pfstats.patchRateInd(1,1,i,:,1:nNotNan) = patchRateInd(1,1,pind(i),:,1:nNotNan);
+            pfstats.patchRateMap(1,1,i,1:nNotNan) = patchRateMap(1,1,pind(i),1:nNotNan);
         end
         pfstats.patchCOM(1,1,:,:)     = patchCOM(1,1,pind(1:maxNumPatches),:);
         pfstats.patchArea(1,1,:)    = patchArea(1,1,pind(1:maxNumPatches));
@@ -89,17 +99,22 @@ if ~isempty(B),
     else
         for i = 1:maxNumPatches,
             nNotNan = sum(~isnan(sq(patchRateMap(1,1,1,:))));
-            pfstats.patchRateInd(1,1,1,:,1:nNotNan) = patchRateInd(1,1,1,:,:);
-            pfstats.patchRateMap(1,1,1,1:nNotNan) = patchRateMap(1,1,1,:);
+            pfstats.patchRateInd(1,1,1,:,1:nNotNan) = patchRateInd(1,1,1,:,1:nNotNan);
+            pfstats.patchRateMap(1,1,1,1:nNotNan) = patchRateMap(1,1,1,1:nNotNan);
         end
         pfstats.patchCOM(1,1,1,:)   = patchCOM (1,1,1,:);
-        pfstats.patchArea(1,1,1)      = patchArea(1,1,:);
-        pfstats.patchPFR(1,1,1)       = patchPFR (1,1,:);
-        pfstats.patchMFR(1,1,1)       = patchMFR (1,1,:);
+        pfstats.patchArea(1,1,1)      = patchArea(1,1,1);
+        pfstats.patchPFR(1,1,1)       = patchPFR (1,1,1);
+        pfstats.patchMFR(1,1,1)       = patchMFR (1,1,1);
     end
 
     
 end
+
+
+
+
+
 
 if verbose,
     fprintf('Boundary detection on bootstraped placefields:\n')
@@ -107,6 +122,100 @@ end
 
 
 if nargout>1
+
+    
+    
+    % Maximum firing rate found within the normal place field
+    pfmstats.peakFR = pkfr;
+    pfmstats.rateThreshold = rateThreshold;
+    pfmstats.spatialCoherence = pf.spatialCoherence(unit);
+    %pfmstats.spatialInformation = nansum((map(~isnan(map))./nanmean(map(:))).*log2(map(~isnan(map))./nanmean(map(:))));
+
+
+    pfmstats.patchArea = nan([1,1,maxNumPatches]);
+    pfmstats.patchCOM  = nan([1,1,maxNumPatches,2]);
+    pfmstats.patchPFR = nan([1,1,maxNumPatches]);
+    pfmstats.patchMFR = nan([1,1,maxNumPatches]);
+    pfmstats.patchCnt = nan([1,1,maxNumPatches]);
+    pfmstats.patchRateInd = nan([1,1,maxNumPatches,2,round(prod(pf.adata.binSizes)*0.1)]);
+    pfmstats.patchRateMap = nan([1,1,maxNumPatches,round(prod(pf.adata.binSizes)*0.1)]);
+
+
+    if verbose,
+        fprintf('patch detection:\n')
+    end
+
+    ratemap = pf.plot(unit,'mean');
+        
+    [B,L] = bwboundaries(ratemap>rateThreshold,'noholes');
+
+    if ~isempty(B),        
+        clear nB    
+        if verbose,
+            fprintf('%i patches detected\n')
+        end
+
+        
+        patchArea = nan([1,1,maxNumPatches]);                                        
+        patchCOM  = nan([1,1,maxNumPatches,2]);                                      
+        patchPFR = nan([1,1,maxNumPatches]);                                         
+        patchMFR = nan([1,1,maxNumPatches]);                                         
+        patchCnt = nan([1,1,maxNumPatches]);                                         
+        patchRateInd = nan([1,1,maxNumPatches,2,round(prod(pf.adata.binSizes)*0.1)]);
+        patchRateMap = nan([1,1,maxNumPatches,round(prod(pf.adata.binSizes)*0.1)]);          
+        
+        for i = 1:numel(B)
+            [nB{i}(:,1),nB{i}(:,2)] = ind2sub(size(L),find(L==i));
+            npix = size(nB{i},1);
+
+            patchArea(1,1,i) = prod(pf.parameters.binDims)*npix;
+            patchRateMap(1,1,i,1:npix) = ratemap(sub2ind(pf.adata.binSizes',nB{i}(:,1),nB{i}(:,2)));
+
+            patchRateInd(1,1,i,:,1:npix) = nB{i}';
+
+            if isa(pf,'MTAApfs'),
+                pxy = [pf.adata.bins{1}(nB{i}(:,1)),pf.adata.bins{2}(nB{i}(:,2))];
+            elseif isa(pf,'MTAAknnpfs_bs')
+                pxy = [pf.adata.bins{2}(nB{i}(:,2)),pf.adata.bins{1}(nB{i}(:,1))];
+            end
+            
+            patchCOM(1,1,i,:)  = [sq(patchRateMap(1,1,i,1:npix))'*pxy(:,1),sq(patchRateMap(1,1,i,1:npix))'*pxy(:,2)]/nansum(patchRateMap(1,1,i,1:npix));
+            patchPFR(1,1,i)    = max    (patchRateMap(1,1,i,1:npix),[],4);
+            patchMFR(1,1,i)    = nanmean(patchRateMap(1,1,i,1:npix),4);
+
+        end
+        
+
+
+        [~,pind] = sort(sq(patchArea),'descend');
+        if numel(nB)>=maxNumPatches,
+            for i = 1:maxNumPatches,
+                nNotNan = sum(~isnan(sq(patchRateMap(1,1,pind(i),:))));
+                pfmstats.patchRateInd(1,1,i,:,1:nNotNan) = patchRateInd(1,1,pind(i),:,1:nNotNan);
+                pfmstats.patchRateMap(1,1,i,1:nNotNan) = patchRateMap(1,1,pind(i),1:nNotNan);
+            end
+            pfmstats.patchCOM(1,1,:,:)     = patchCOM(1,1,pind(1:maxNumPatches),:);
+            pfmstats.patchArea(1,1,:)    = patchArea(1,1,pind(1:maxNumPatches));
+            pfmstats.patchPFR(1,1,:)     = patchPFR(1,1,pind(1:maxNumPatches));
+            pfmstats.patchMFR(1,1,:)     = patchMFR(1,1,pind(1:maxNumPatches));
+        else
+            for i = 1:maxNumPatches,
+                nNotNan = sum(~isnan(sq(patchRateMap(1,1,1,:))));
+                pfmstats.patchRateInd(1,1,1,:,1:nNotNan) = patchRateInd(1,1,1,:,1:nNotNan);
+                pfmstats.patchRateMap(1,1,1,1:nNotNan) = patchRateMap(1,1,1,1:nNotNan);
+            end
+            pfmstats.patchCOM(1,1,1,:)   = patchCOM (1,1,1,:);
+            pfmstats.patchArea(1,1,1)      = patchArea(1,1,1);
+            pfmstats.patchPFR(1,1,1)       = patchPFR (1,1,1);
+            pfmstats.patchMFR(1,1,1)       = patchMFR (1,1,1);
+        end
+
+        
+    end
+
+    
+    
+    
     
     pfbstats.patchArea =    nan([1,pf.parameters.numIter,maxNumPatches]);
     pfbstats.patchCOM  =    nan([1,pf.parameters.numIter,maxNumPatches,2]);
@@ -127,12 +236,24 @@ if nargout>1
             end
         end        
         
+        
+        bsPatchArea =    nan([1,1,maxNumPatches]);                                     
+        bsPatchCOM  =    nan([1,1,maxNumPatches,2]);                                   
+        bsPatchPFR  =    nan([1,1,maxNumPatches]);                                     
+        bsPatchMFR  =    nan([1,1,maxNumPatches]);                                     
+        bsPatchCnt  =    nan([1,1,maxNumPatches]);                                     
+        bsPatchRateInd = nan([1,1,maxNumPatches,2,round(prod(pf.adata.binSizes)*0.1)]);
+        bsPatchRateMap = nan([1,1,maxNumPatches,round(prod(pf.adata.binSizes)*0.1)]);  
+        
+        
         % if k == 86,keyboard,end
         %MTAApfs
         %ratemap = reshape(map(:,k),numel(bin1),numel(bin2)).*mask;    
 
+        ratemap = pf.plot(unit,k);
+        
         %MTAAknnpfs_bs
-        ratemap = reshape(map(:,k)',fliplr(pf.adata.binSizes'))';
+        %ratemap = reshape(map(:,k)',fliplr(pf.adata.binSizes'))';
         clear nB B L npix bsPatchArea bsPatchRateMap bsPatchRateInd ...
               pxy bsPatchCOM bsPatchPFR bsPatchMFR pind 
         [B,L] = bwboundaries(ratemap>rateThreshold,'noholes');
@@ -161,8 +282,8 @@ if nargout>1
             if numel(nB)>=maxNumPatches,
                 for i = 1:maxNumPatches,
                     nNotNan = sum(~isnan(sq(bsPatchRateMap(1,1,pind(i),:))));
-                    pfbstats.patchRateInd(1,k,i,:,1:nNotNan) = bsPatchRateInd(1,1,pind(i),:,:);
-                    pfbstats.patchRateMap(1,k,i,1:nNotNan) = bsPatchRateMap(1,1,pind(i),:);
+                    pfbstats.patchRateInd(1,k,i,:,1:nNotNan) = bsPatchRateInd(1,1,pind(i),:,1:nNotNan);
+                    pfbstats.patchRateMap(1,k,i,1:nNotNan) = bsPatchRateMap(1,1,pind(i),1:nNotNan);
                 end
                 pfbstats.patchCOM(1,k,:,:)     = bsPatchCOM(1,1,pind(1:maxNumPatches),:);
                 pfbstats.patchArea(1,k,:)    = bsPatchArea(1,1,pind(1:maxNumPatches));

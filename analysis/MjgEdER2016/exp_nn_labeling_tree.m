@@ -1,6 +1,8 @@
 
-
+% Combined walk and turn into loc
 states = {'loc','rear','pause','groom','sit'};
+
+%% convert hand labeled to a reduced state set
 tlist = get_session_list('hand_labeled_Ed');
 tlist = get_session_list('hand_labeled_jg');
 for t = 1:numel(tlist),
@@ -30,7 +32,8 @@ defargs = struct('fetSet',   'fet_mis',                                      ...
                  'mode',     'train',                                        ...
                  'tag_preprocessing',   '+seh+',                             ...
                  'tag_postprocessing',  '',                                  ...
-                 'rlist',    'training_hand_labeled_reduced',                ...
+                 ... 'rlist',    'training_hand_labeled_reduced',                ...
+                 'rlist',        'hand_labeled_Ed_reduced',                ...                 
                  'slist',     {{'hand_labeled_jg_reduced';'hand_labeled_Ed_reduced'}},       ...
                  'sampleRate',12,                                            ...
                  'nNeurons',  100,                                           ...
@@ -124,4 +127,74 @@ req20160128(defargs{:});
 ds = load('/storage/gravio/data/project/general/analysis/hand_labeled_Ed_reduced-MTAC_BATCH-+seh+fet_mis_SR_12_NORM_1_REF_jg05-20120317.cof.all_STC_hl_3_jg_r_NN_100_NI_100_NN_multiPN_RAND_WSBNT_PPV2R-map2ref.mat');
 
 ds = load('/storage/gravio/data/project/general/analysis/hand_labeled_jg_reduced-MTAC_BATCH-+seh+fet_mis_SR_12_NORM_1_REF_Ed03-20140625.cof.all_STC_hl_1_Ed_r_NN_100_NI_100_NN_multiPN_RAND_WSBNT_PPV2R-map2ref.mat');
+
+ds = load('/storage/gravio/data/project/general/analysis/hand_labeled_jg-MTAC_BATCH-+seh+fet_mis_SR_12_NORM_1_REF_jg05-20120317.cof.all_STC_hand_labeled_rev3_jg_NN_100_NI_100_NN_multiPN_RAND_WSBNT-map2ref.mat');
+
+df = dir('/storage/gravio/data/project/general/analysis/hand_labeled_jg-MTAC_BATCH-+seh+fet_mis_SR_12_NORM_1_REF_jg05-20120317.cof.all_STC_hand_labeled_rev3_jg_NN_100_NI_100_NN_multiPN_RAND_WSBNT-map2ref.mat')
+
+
+df = dir('/storage/gravio/data/project/general/analysis/hand_labeled_jg-MTAC_BATCH-+seh+fet_mis_SR_12_NORM_1_REF_Ed03-20140625.cof.all_STC_hand_labeled_rev1_Ed_NN_100_NI_100_NN_multiPN_RAND_WSBNT-map2ref.mat')
+ds = load('/storage/gravio/data/project/general/analysis/hand_labeled_jg-MTAC_BATCH-+seh+fet_mis_SR_12_NORM_1_REF_Ed03-20140625.cof.all_STC_hand_labeled_rev1_Ed_NN_100_NI_100_NN_multiPN_RAND_WSBNT-map2ref.mat')
+
+fname = '/storage/gravio/data/project/general/analysis/hand_labeled_Ed-MTAC_BATCH-+seh+fet_mis_SR_12_NORM_1_REF_jg05-20120317.cof.all_STC_hand_labeled_rev3_jg_NN_100_NI_100_NN_multiPN_RAND_WSBNT-map2ref.mat';
+df = dir(fname);
+ds = load(fname);
+
+
+fname = '/storage/gravio/data/project/general/analysis/hand_labeled_Ed-MTAC_BATCH-+seh+fet_mis_SR_12_NORM_1_REF_Ed03-20140625.cof.all_STC_hand_labeled_rev1_Ed_NN_100_NI_100_NN_multiPN_RAND_WSBNT-map2ref.mat';
+df = dir(fname)
+ds = load(fname)
+
+
+fname = '/storage/gravio/data/project/general/analysis/hand_labeled_Ed-MTAC_BATCH-+seh+fet_mis_SR_12_NORM_1_REF_Ed03-20140625.cof.all_STC_hand_labeled_rev1_Ed_NN_100_NI_100_NN_multiPN_RAND_WSBNT_PPNM-map2ref.mat';
+df = dir(fname)
+ds = load(fname)
+
+
+
+
+fname = '/storage/gravio/data/project/general/analysis/hand_labeled_Ed-MTAC_BATCH-+seh+fet_mis_SR_12_NORM_1_REF_jg05-20120317.cof.all_STC_hand_labeled_rev3_jg_NN_100_NI_100_NN_multiPN_RAND_WSBNT_PPNM-map2ref.mat';
+df = dir(fname)
+ds = load(fname)
+
+fname = '/storage/gravio/data/project/general/analysis/hand_labeled_Ed-MTAC_BATCH-+seh+fet_mis_SR_12_NORM_1_REF_jg05-20120317.cof.all_STC_hand_labeled_rev3_jg_NN_100_NI_100_NN_multiPN_RAND_WSBNT-map2ref.mat';
+df = dir(fname)
+ds = load(fname)
+
+fname = '/storage/gravio/data/project/general/analysis/hand_labeled_Ed-MTAC_BATCH-+seh+fet_mis_SR_12_NORM_1_REF_jg05-20120317.cof.all_STC_hand_labeled_rev3_jg_NN_100_NI_100_NN_multiPN_RAND_WSBNT-map2ref.mat';
+df = dir(fname)
+ds = load(fname)
+
+
+fname = '/storage/gravio/data/project/general/analysis/hand_labeled_Ed-MTAC_BATCH-+seh+fet_mis_SR_12_NORM_1_REF_jg05-20120317.cof.all_STC_hand_labeled_rev3_jg_NN_100_NI_100_NN_multiPN_RAND_WSBNT-map2ref.mat';
+df = dir(fname)
+ds = load(fname)
+
+fname = '/storage/gravio/data/project/general/analysis/hand_labeled_Ed-MTAC_BATCH-+seh+fet_mis_SR_12_NORM_1_REF_Ed03-20140625.cof.all_STC_hand_labeled_rev1_Ed_NN_100_NI_100_NN_multiPN_RAND_WSBNT-map2ref.mat';
+df = dir(fname)
+ds = load(fname)
+
+
+
+fname = '/storage/gravio/data/project/general/analysis/hand_labeled_Ed-MTAC_BATCH-+seh+fet_mis_SR_12_NORM_1_REF_Ed03-20140625.cof.all_STC_hl_1_Ed_r_NN_100_NI_100_NN_multiPN_RAND_WSBNT-map2ref.mat';
+df = dir(fname)
+ds = load(fname)
+
+
+
+fname = '/storage/gravio/data/project/general/analysis/hand_labeled_Ed_reduced-MTAC_BATCH-+seh+fet_mis_SR_12_NORM_1_REF_Ed03-20140625.cof.all_STC_hl_1_Ed_r_NN_100_NI_100_NN_multiPN_RAND_WSBNT-map2ref.mat'
+df = dir(fname)
+ds = load(fname)
+
+
+
+
+fname = '/storage/gravio/data/project/general/analysis/hand_labeled_Ed_reduced-MTAC_BATCH-+seh+fet_mis_SR_12_NORM_1_REF_jg05-20120317.cof.all_STC_hl_3_jg_r_NN_100_NI_100_NN_multiPN_RAND_WSBNT-map2ref.mat'
+df = dir(fname)
+ds = load(fname)
+
+
+
+
+
 

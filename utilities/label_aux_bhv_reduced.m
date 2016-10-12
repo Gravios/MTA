@@ -1,8 +1,10 @@
 function Trial = label_aux_bhv_reduced(Trial,varargin)
-[Stc,angThresh,dthresh,overwrite] = DefaultArgs(varargin,{[],-.45,0.1,false});
+[Stc,angThresh,dthresh,overwrite] = DefaultArgs(varargin,{[],[],0.1,false});
 
 if isempty(Stc),
     Stc = Trial.stc.copy;
+elseif ischar(Stc),
+    Stc = Trial.load('stc',Stc);
 end
 
 % High and low walk
@@ -14,20 +16,27 @@ if sempty||overwrite,
     end
     
 
-    fpath = fullfile(Trial.spath,'figures','RHM_psd_distrib_height_hangle.fig');
+    if isempty(angThresh)
+        fpath = fullfile(Trial.spath,'figures','RHM_psd_distrib_height_hangle.fig');
 
-    if ~exist(fpath,'file'),  compute_session_rhm_distribution(Trial); end
+        if ~exist(fpath,'file')||overwrite,  
+            Trial.stc = Stc.copy;
+            compute_session_rhm_distribution(Trial,[],'loc','NN0317R'); 
+        end
 
-    afig = hgload(fpath);
-    rhm_distrb = get(findobj(findall(get(afig,'children')),'tag','compute_session_rhm_distribution-hangle'));
-    rhm_distrb = rhm_distrb(1);
-    figure,plot(rhm_distrb.XData,nanmean(rhm_distrb.CData(rhm_distrb.YData>6&rhm_distrb.YData<13,:,1)));   
-    mrhmp = nanmean(rhm_distrb.CData(rhm_distrb.YData>6&rhm_distrb.YData<13,:,1));
-    mrhmp(mrhmp==0) = nan;
-    rhmThresh = nanmean(nanmean(rhm_distrb.CData(rhm_distrb.YData>6&rhm_distrb.YData<13,:,1)))...
-        +0.5*nanstd(nanmean(rhm_distrb.CData(rhm_distrb.YData>6&rhm_distrb.YData<13,:,1)));
-    angThresh = rhm_distrb.XData(find(mrhmp<rhmThresh,1,'first'));
-    delete(afig);
+        afig = hgload(fpath);
+        rhm_distrb = get(findobj(findall(get(afig,'children')),'tag','compute_session_rhm_distribution-hangle'));
+        rhm_distrb = rhm_distrb(1);
+        figure,plot(rhm_distrb.XData,nanmean(rhm_distrb.CData(rhm_distrb.YData>6&rhm_distrb.YData<13,:,1)));   
+        mrhmp = nanmean(rhm_distrb.CData(rhm_distrb.YData>6&rhm_distrb.YData<13,:,1));
+        mrhmp(mrhmp==0) = nan;
+        rhmThresh = nanmean(nanmean(rhm_distrb.CData(rhm_distrb.YData>6&rhm_distrb.YData<13,:,1)))...
+            +0.5*nanstd(nanmean(rhm_distrb.CData(rhm_distrb.YData>6&rhm_distrb.YData<13,:,1)));
+        angThresh = rhm_distrb.XData(find(mrhmp<rhmThresh,1,'first'));
+        delete(afig);
+    end
+    
+    
     % Split walking state into low and high walk
     wind = Stc{'x'}.copy;
     lang = Stc{'x'}.copy;
@@ -59,21 +68,24 @@ if sempty||overwrite,
         Stc.states(Stc.gsi('q')) = [];
     end
     
-    fpath = fullfile(Trial.spath,'figures','RHM_psd_distrib_height_hangle.fig');
-    if ~exist(fpath,'file'),
-        bhv_rhm_distrb(Trial);
-    end
+    if isempty(angThresh)    
+        fpath = fullfile(Trial.spath,'figures','RHM_psd_distrib_height_hangle.fig');
+        if ~exist(fpath,'file'),
+            bhv_rhm_distrb(Trial);
+        end
 
-    afig = hgload(fpath);
-    rhm_distrb = get(findobj(findall(get(afig,'children')),'tag','bhv_rhm_distrb-hangle'));
-    rhm_distrb = rhm_distrb(1);
-    figure,plot(rhm_distrb.XData,nanmean(rhm_distrb.CData(rhm_distrb.YData>6&rhm_distrb.YData<13,:,1)));   
-    mrhmp = nanmean(rhm_distrb.CData(rhm_distrb.YData>6&rhm_distrb.YData<13,:,1));
-    mrhmp(mrhmp==0) = nan;
-    rhmThresh = nanmean(nanmean(rhm_distrb.CData(rhm_distrb.YData>6&rhm_distrb.YData<13,:,1)))...
-        +0.5*nanstd(nanmean(rhm_distrb.CData(rhm_distrb.YData>6&rhm_distrb.YData<13,:,1)));
-    angThresh = rhm_distrb.XData(find(mrhmp<rhmThresh,1,'first'));
-    delete(afig);
+        afig = hgload(fpath);
+        rhm_distrb = get(findobj(findall(get(afig,'children')),'tag','compute_session_rhm_distribution-hangle'));    
+        rhm_distrb = rhm_distrb(1);
+        figure,plot(rhm_distrb.XData,nanmean(rhm_distrb.CData(rhm_distrb.YData>6&rhm_distrb.YData<13,:,1)));   
+        mrhmp = nanmean(rhm_distrb.CData(rhm_distrb.YData>6&rhm_distrb.YData<13,:,1));
+        mrhmp(mrhmp==0) = nan;
+        rhmThresh = nanmean(nanmean(rhm_distrb.CData(rhm_distrb.YData>6&rhm_distrb.YData<13,:,1)))...
+            +0.5*nanstd(nanmean(rhm_distrb.CData(rhm_distrb.YData>6&rhm_distrb.YData<13,:,1)));
+        angThresh = rhm_distrb.XData(find(mrhmp<rhmThresh,1,'first'));
+        delete(afig);
+    end
+    
     % Split walking state into low and high walk
     wind = Stc{'p'}.copy;
     lang = Stc{'p'}.copy;

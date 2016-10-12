@@ -38,7 +38,7 @@ if size(distdw,1)>nnn,
     s = size(mywu);
     cm = reshape(repmat([0:s(1):prod(s)-1],s(1),1),s);     
     smywut = mywu(repmat(distIndw,[1,size(mywu,2)])+cm);
-    RateMap = permute(feval(stat_fun,smywut(1:nnn,:,:,:)),[3,2,1]);
+    RateMap = permute(stat_fun(smywut(1:nnn,:,:,:)),[3,2,1]);
     RateMap(repmat(pfknnmdw,[1,1,size(ufr,2)])>dthresh) = nan;
 else
     RateMap = nan([size(distw,3),size(ufr,2)]);
