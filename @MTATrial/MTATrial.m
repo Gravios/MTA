@@ -139,6 +139,39 @@ classdef MTATrial < MTASession
     
     methods (Static)
         function Trial = validate(Trial)
+        %function Trial = validate(Trial)
+        %
+        % Validate MTATrial object. If Trial exists as a
+        % non-MTATrial object attempt to load Trial from disk based
+        % on the class and contents of Trial.
+        %            
+        % acceptable input types: char, struct, cell
+        %
+        %  char:
+        %  
+        %    Session name
+        %    Trial = MTATrial.validate('jg05-20120317');
+        %
+        %    Trial filebase
+        %    Trial = MTATrial.validate('jg05-20120317.cof.all');
+        %
+        %  struct:
+        %    sessionList = get_session_list('jg05');
+        %    Trial = MTATrial.validate(sessionList(1));
+        %
+        %  cell:
+        %    Session name
+        %    Trial = {'jg05-20120317'};
+        %
+        %    Trial filebase elements
+        %    Trial = {'jg05-20120317','cof','all'};
+        %
+        %    Full Trial Constructor
+        %    Trial = {'jg05-20120309','crt1','rof',false,[1,1000;1100,2100]};
+        %
+        %
+        %    Trial = MTATrial.validate(Trial);
+        %
             
             if isa(Trial,'MTATrial'),
                 return;
@@ -164,10 +197,26 @@ classdef MTATrial < MTASession
                     stcMode = Trial.stcMode;
                 end
 
-                Trial = MTATrial(Trial.sessionName,...
-                                 Trial.mazeName,...
-                                 Trial.trialName);
+                try
+                    Trial = MTATrial(Trial.sessionName,...
+                                     Trial.mazeName,...
+                                     Trial.trialName);
+                catch err
+                    disp(err)
+                    disp('MTATrial:validate - Attempting to construct trial.')
+                    QuickTrialSetup(Trial);
+                    try
+                        Trial = MTATrial(Trial.sessionName,...
+                                         Trial.mazeName,...
+                                         Trial.trialName);
+                    catch err
+                        disp(err)
+                        disp('MTATrial:validate - Failed to construct trial.')
+                    end
+                    
 
+                end
+                
                 if ~isempty(stcMode),
                     try,
                         Trial.load('stc',stcMode);

@@ -1,10 +1,12 @@
 
 %% Figure 4 - Classical 2-D phase precession
 Trial = MTATrial.validate('Ed10-20140817.cof.all');
+Trial = MTATrial.validate('Ed10-20140817.cof.all');
 Stc = Trial.load('stc','NN0317R');
-
-
 Trial = 'Ed10-20140817.cof.gnd';
+Trial.stc = Stc;
+
+Trial = MTATrial.validate('jg05-20120310.cof.all');
 
 Trial = MTATrial.validate(Trial);
 OwnDir = '/storage/gravio/ownCloud/MjgEdER2016/';
@@ -20,14 +22,13 @@ mkdir(fullfile(OwnDir,FigDir))
 
 [chans,phase_chan,stcMode] = DefaultArgs(varargin,{72,1,'NN0317R'});
 
-Trial.stc = Stc;
 
 % Load Position
 xyz = Trial.load('xyz');
 xyz.filter('ButFilter',3,2.4,'low');
 
 % Load Units
-pft = pfs_2d_theta(Trial);
+pft = pfs_2d_theta(Trial,[],[],true);
 mrt = pft.maxRate;
 % Reduce clu list based on theta pfs max rate
 %units = pft.data.clu(mrt>1);
@@ -35,7 +36,7 @@ mrt = pft.maxRate;
 %unitt = select_units(Trial,18);
 Trial.load('nq');
 % $$$ units = units(Trial.nq.SNR(units)>.75);
-units = find(Trial.nq.AmpSym<0&Trial.nq.SNR>.75&mrt>1)';
+units = find(Trial.nq.AmpSym<0&mrt>1)';
 
 % Load LFP
 Trial.lfp.filename = [Trial.name,'.lfp'];
@@ -46,8 +47,9 @@ tbp_phase = lfp.phase;
 % Load Stc
 Trial.load('stc',stcMode);
 %states = Trial.stc.list_state_attrib;
-states = {'loc','rear','pause','lloc','hloc','lpause','hpause'};
+states = {'rear','loc','lloc','hloc','pause','lpause','hpause'};
 states = cellfun(@strcat,states,repmat({'&theta'},size(states)),'UniformOutput',false);
+states = cat(2,states,{'pause-theta'});
 nsts = numel(states);
 
 
@@ -71,6 +73,7 @@ for s = 1:nsts,
     defargs = get_default_args_MjgEdER2016('MTAAknnpfs_bs','struct');
     defargs.units = units;
     defargs.states = states{s};
+    defargs.numIter = 1001;
     defargs = struct2varargin(defargs);        
     pfs{s} = MTAAknnpfs_bs(Trial,defargs{:});      
 
@@ -155,7 +158,7 @@ mask(mask==0)=nan;
 set(0,'defaultAxesFontSize',8,...
       'defaultTextFontSize',8)
 
-aIncr = false;
+aIncr = true;
 hfig = figure(38384);
 hfig.Units = 'centimeters';
 hfig.Position = [1,1,40,24];    
@@ -163,7 +166,7 @@ hfig.PaperPositionMode = 'auto';
 
 unit = units(1);
 while unit~=-1,
-    
+
     clf
     for s = 1:nsts,
         res = spk{s}(unit);
@@ -181,10 +184,9 @@ while unit~=-1,
         title(states{s})
         
         subplot2(9,nsts,[4,5],s);
-        pfs{s}.plot(unit,'mean','isCircular',true);
+        pfs{s}.plot(unit,'mean',[],mrt(unit).*1.5,'isCircular',true);
         text(pfs{s}.adata.bins{1}(end)-250,pfs{s}.adata.bins{2}(end)-50,...
-             sprintf('%2.1f',max(ratemap(:))),'Color','w','FontWeight','bold','FontSize',10)
-
+             sprintf('%2.1f',pfs{s}.maxRate(unit)),'Color','w','FontWeight','bold','FontSize',10)
         hold on,plot(pmp{s}(unit==units,1),pmp{s}(unit==units,2),'w*')
         title(num2str(unit))
         
@@ -199,12 +201,17 @@ while unit~=-1,
         end
     end
     
-    
+
     FigName = [Trial.filebase,'_',FigDir,'_unit',num2str(unit)];
     print(gcf,'-dpng',  fullfile(OwnDir,FigDir,[FigName,'.png']));
-    print(gcf,'-depsc2',fullfile(OwnDir,FigDir,[FigName,'.eps']));
+    %print(gcf,'-depsc2',fullfile(OwnDir,FigDir,[FigName,'.eps']));
 
     unit = figure_controls(hfig,unit,units,aIncr);        
     
 end
 
+
+
+
+mrm = pfs{s}.plot(unit,'mean',[],mrt(unit).*1.5,'isCircular',true);
+srm = pfs{s}.plot(unit, 'std',[],mrt(unit).*1.5,'isCircular',true);

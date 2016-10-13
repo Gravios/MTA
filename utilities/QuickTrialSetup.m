@@ -1,9 +1,18 @@
 function varargout = QuickTrialSetup(Session,varargin)
 %function QuickTrialSetup(Session,varargin)
 %
+% Session:        MTASession,char,struct
+%                 Basis for trial setup. Either the MTASession
+%                 ojbect, a string containing the Session name or a
+%                 list of structs containing trial constructor
+%                 info. (see get_session_list)
+%
 % Variables:
 %   trialName:      string, defarg  - 'all' 
 %                   Name of the new Trial
+%
+%   mazelName:      string, defarg  - 'cof' 
+%                   Name of the maze
 %
 %   offsets:        matrix, defarg  - [0,0]  
 %                   number of seconds to skip/clip from begining/end of
@@ -24,7 +33,14 @@ function varargout = QuickTrialSetup(Session,varargin)
 %   debug:          Logical, defarg  - false
 %                   Display some diagnostic plots
 %
+%   host: ???
 %
+%   local: ???
+%
+%   overwrite:      Logical, defarg - false
+%                   Overwrite current version of Trial
+%
+
 
 % DEFARGS ----------------------------------------------------------------------
 HostConf = load('MTAConf');
@@ -94,7 +110,7 @@ end
 
 assert(offsets(:,1)>=0&offsets(:,2)<=0,'MTA:utilities:QuickTrialSetup:offsets, see help QuickTrialSetup for offsets specifications');
 
-%% Run labelBhv if all required markers are present
+% Run labelBhv if all required markers are present
 % labelBhv functions only on Sessions with the H5B4(H0B9) model
 rmarkers = {'spine_lower','pelvis_root', 'spine_middle', 'spine_upper',...
     'head_back',  'head_left',   'head_front',  'head_right'};

@@ -498,7 +498,7 @@ classdef MTAAknnpfs_bs < hgsetget %< MTAAnalysis
             end
             
             for u = units,
-                [mxr(u==units),mxp(u==units)] = max(mfunc(Pfs.data.rateMap(:,Pfs.data.clu==u,ind).*mask,3));
+                [mxr(u==units),mxp(u==units)] = max(mfunc(Pfs.data.rateMap(:,Pfs.data.clu==u,ind).*mask(:,1,ind),3));
             end
             mxp = Ind2Sub(Pfs.adata.binSizes',mxp);
             mxp = [Pfs.adata.bins{2}(mxp(:,2)),Pfs.adata.bins{1}(mxp(:,1))];
