@@ -77,7 +77,7 @@ model_path = fileparts(mfilename('fullpath'));
 model_loc = fullfile(model_path,modelName);
 
 
-%% Get or Train LGR Model
+%% Get or Train NN Model
 if trainModel||~exist(model_loc,'file'),
 
     keys = Stc.list_state_attrib('key');

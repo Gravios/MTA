@@ -22,11 +22,11 @@ lfp = Trial.load('lfp',chans);
 %stc = Trial.load('stc','nn0317_PP');
 %stc = Trial.load('stc','nn0317');    
 
-stc = Trial.load('stc','NN0317');
-states = {'walk','rear','turn','pause','groom','sit'};
+stc = Trial.load('stc','NN0317R');
+states = {'loc','rear','pause','groom','sit'};
 
 %wlfp = WhitenSignal(lfp.data,[],1);    
-wlfp = WhitenSignal(lfp.data,round(180*lfp.sampleRate),1);    
+wlfp = WhitenSignal(lfp.data,round(180*lfp.sampleRate),true);    
 %wlfp = lfp.data;
 
 
@@ -51,6 +51,8 @@ tindShift = round(spectral.window/2/lfp.sampleRate*1/diff(tl(1:2,1))-1);
 yld = MTADlfp('data',cat(1,zeros([tindShift,size(yl,2),size(yl,3)]),yl),...
               'sampleRate',1/diff(tl(1:2,1)));
 yld.data(yld.data==0)=nan;
+yld.data(yld.data==0)=1;
+yld.data(isnan(yld.data))=1;
 tpow = yld.copy;
 tpow.clear;    
 tpow.data = [nanmean(nanmean(yld(:,6<fl&fl<12,[6,7]),2)./nanmean(yld(:,fl<5,[6,7]),2),3),...
@@ -67,7 +69,7 @@ tl = [[0:tindShift-1]'./yld.sampleRate;tl+spectral.window/2/lfp.sampleRate];
 th=[];    fh=[];    yh=[];
 spectral.nfft = 2^8;
 spectral.window = 2^7;
-spectral.freq = [30,200];
+spectral.freq = [40,250];
 parfor i = 1:lfp.size(2),
     [yh(:,:,i),fh(:,i),th(:,i)] = mtchglong(wlfp(:,i),spectral.nfft,lfp.sampleRate,spectral.window,spectral.window*0.875,[],[],[],spectral.freq);
 end

@@ -364,7 +364,7 @@ classdef MTAApfs < hgsetget %< MTAAnalysis
         end
         
         function rateMap = plot(Pfs,varargin)
-            [unit,nMode,ifColorbar,colorLimits,isCircular] = DefaultArgs(varargin,{[],'mean',0,[],true});
+            [unit,nMode,ifColorbar,maxRate,isCircular] = DefaultArgs(varargin,{[],'mean',0,[],true});
 
             if isempty(unit),unit=Pfs.data.clu(1);end
             switch numel(Pfs.parameters.type)
@@ -405,20 +405,32 @@ classdef MTAApfs < hgsetget %< MTAAnalysis
                     
                     if nargout>0,return,end
                     
-                    imagescnan({bin1,bin2,rateMap'},colorLimits,[],ifColorbar,[0,0,0]);
-                    
-                    if ~isempty(rateMap)&&~isempty(bin1)&&~isempty(bin2),
-                        text(bin1(1)+30,bin2(end)-50,sprintf('%2.1f',max(rateMap(:))),'Color','w','FontWeight','bold','FontSize',10)
+                    if isempty(maxRate),
+                        maxRate = max(rateMap(:));
                     end
-                    axis xy
-                case 3
-                    c = eye(3);
-                    r = [1.2,3,6];
-                    rateMap = permute(reshape(Pfs.data.rateMap(:,Pfs.data.clu==unit,1),Pfs.adata.binSizes'),[1,2,3]);
-                    if nargout>0,return,end
-                    %var = cat(2,Pfs.adata.bins,{permute(reshape(Pfs.data.rateMap(:,Pfs.data.clu==unit,1),Pfs.adata.binSizes'),[2,1,3])},{[]});
-                    hrate = max(Pfs.data.rateMap(:,Pfs.data.clu==unit,1))/2;
-                    [mind] = LocalMinimaN(-rateMap,-hrate,9);
+
+                    rateMap(isnan(rateMap)) = -1;
+                    imagesc(bin1,bin2,rateMap');
+
+                    %text(Pfs.adata.bins{1}(end)-250,Pfs.adata.bins{2}(end)-50,...
+                    %    sprintf('%2.1f',max(rateMap(:))),'Color','w','FontWeight','bold','FontSize',10)
+                    colormap([0,0,0;parula]);
+                    caxis([-1,maxRate]);        
+                    
+        % $$$                     imagescnan({bin1,bin2,rateMap'},colorLimits,[],ifColorbar,[0,0,0]);
+        % $$$                     
+        % $$$                     if ~isempty(rateMap)&&~isempty(bin1)&&~isempty(bin2),
+        % $$$                         text(bin1(1)+30,bin2(end)-50,sprintf('%2.1f',max(rateMap(:))),'Color','w','FontWeight','bold','FontSize',10)
+        % $$$                     end
+                    ;                    axis xy
+              case 3
+                c = eye(3);
+                r = [1.2,3,6];
+                rateMap = permute(reshape(Pfs.data.rateMap(:,Pfs.data.clu==unit,1),Pfs.adata.binSizes'),[1,2,3]);
+                if nargout>0,return,end
+                %var = cat(2,Pfs.adata.bins,{permute(reshape(Pfs.data.rateMap(:,Pfs.data.clu==unit,1),Pfs.adata.binSizes'),[2,1,3])},{[]});
+                hrate = max(Pfs.data.rateMap(:,Pfs.data.clu==unit,1))/2;
+                [mind] = LocalMinimaN(-rateMap,-hrate,9);
 
                     
                     m = find(ismember('xyz',nMode));

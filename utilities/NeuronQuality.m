@@ -1,5 +1,9 @@
 function nq = NeuronQuality(Session, varargin)
 %function NeuronQuality(Session, Electrodes,Display,Batch,overwrite)
+%
+%  Compute statistics on the qualities of neuronal unit clusters for a session
+%  
+%
 
 Par = LoadXml(fullfile(Session.spath,[Session.name '.xml']));
 

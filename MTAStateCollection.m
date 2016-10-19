@@ -75,34 +75,45 @@ classdef MTAStateCollection < hgsetget
         function Stc = load(Stc,varargin)
         %function Stc = load(Stc,varargin)
         %[Session,nMode] = DefaultArgs(varargin,{[],[]});
+        %
+        %
             [Session,nMode] = DefaultArgs(varargin,{[],[]});
 
-            if isempty(nMode)&&exist(Stc.fpath,'file')
-                ds = load(Stc.fpath);
-                %Stc = ds.Stc.copy;
-                sprop = properties(Stc);
-                for s = 1:numel(sprop)
-                    Stc.(sprop{s}) = ds.Stc.(sprop{s});
+
+            try % to load current state collection if nMode is empty 
+                if isempty(nMode),
+                    ds = load(Stc.fpath);
+                    
+                % or update the filename and load a prexisting file
+                elseif exist(fullfile(Stc.path,nMode),'file')
+                    Stc.updateFilename(nMode);
+                    ds = load(Stc.fpath);
+                    
+                else,% update the state collection mode and load
+                    Stc.updateMode(nMode);
+                    ds = load(Stc.fpath);
                 end
-            else
-                Stc.updateMode(nMode);
+
                 Stc.states = {};
-                ds = load(Stc.fpath);
-                if exist(Stc.fpath,'file')
                 sprop = properties(Stc);
                 for s = 1:numel(sprop)
                     Stc.(sprop{s}) = ds.Stc.(sprop{s});
                 end
-                end
+                    
+            catch err, 
+                disp(err)
+                error('MTAStateCollection:load:ModeDoesNotExist');
             end
-            if ~isempty(Session)
+            
+            
+            if ~isempty(Session),% synchronize Stc to session
                 Stc.path = Session.spath;
                 Stc.sync = Session.sync;
                for s = 1:numel(Stc.states(:)),
                    Stc.states{s}.resync(Session);
                end
-
             end
+            
         end
 
         function out = save(Stc,varargin)

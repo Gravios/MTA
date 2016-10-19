@@ -4,14 +4,53 @@ function units = select_units(varargin)
 % {{{'jg05-20120309','cof','all'},{'jg05-20120310','cof','all'},{'jg05-20120317','cof','all'}},...
 % 15,'pyr','get',{'SpkWidthR','AmpSym'}});
 
-[sessionList,eDistThreshold,type,mode,nqFields] = DefaultArgs(varargin,...
-{{'jg05-20120309.cof.all','jg05-20120310.cof.all','jg05-20120317.cof.all'},...
-15,'pyr','get',{'SpkWidthR','AmpSym'}});
+% DEFARGS ----------------------------------------------------------------------
+defargs = struct('sessionList',        {{'jg05-20120309.cof.all',            ...
+                                         'jg05-20120310.cof.all',            ...
+                                         'jg05-20120317.cof.all',            ...
+                                         'Ed10-20140817.cof.all',            ...
+                                         'Ed10-20140820.cof.all',            ...
+                                         'ER06-20130613.cof.all',            ...
+                                         'ER06-20130614.cof.all'}},          ...
+                 'eDistThreshold',     15,                                   ...
+                 'type',               'pyr',                                ...
+                 'mode',               'get',                                ...
+                 'nqFields',           {{'SpkWidthR','AmpSym'}}              ...
+);%-----------------------------------------------------------------------------
+
+
+
+
+[sessionList,eDistThreshold,type,mode,nqFields] = DefaultArgs(varargin,defargs,'--struct');
+
+
+% MAIN -------------------------------------------------------------------------
+
 
 if iscell(sessionList),
     for ses = 1:numel(sessionList),
-        Trial = MTATrial(sessionList{ses}{1},sessionList{ses}{3},sessionList{ses}{2});
-        Trial.load('nq');
+        Trial = MTATrial.validate(sessionList{ses});
+        try,
+            Trial.load('nq');
+        catch err
+            disp(err)
+            Trial.nq = NeuronQuality(Trial);
+        end
+        
+        nq{ses} = Trial.nq;
+    end
+    nq = cat(1,nq{:});
+    anq = CatStruct(nq);
+elseif isstruct(sessionList),
+    for ses = 1:numel(sessionList),
+        Trial = MTATrial.validate(sessionList(ses));
+        try,
+            Trial.load('nq');
+        catch err
+            disp(err)
+            Trial.nq = NeuronQuality(Trial);
+        end
+        
         nq{ses} = Trial.nq;
     end
     nq = cat(1,nq{:});

@@ -1,17 +1,14 @@
 
 %% Figure 4 - Classical 2-D phase precession
-Trial = MTATrial.validate('Ed10-20140817.cof.all');
-Trial = MTATrial.validate('Ed10-20140817.cof.all');
+Trial = MTATrial.validate('Ed10-20140817.cof.gnd');
 Stc = Trial.load('stc','NN0317R');
-Trial = 'Ed10-20140817.cof.gnd';
-Trial.stc = Stc;
 
 Trial = MTATrial.validate('jg05-20120310.cof.all');
 Trial = MTATrial.validate('jg05-20120309.cof.all');
 
 Trial = MTATrial.validate(Trial);
 OwnDir = '/storage/gravio/ownCloud/MjgEdER2016/';
-FigDir = 'exp_phase_2d_drz';
+FigDir = 'exp_phase_2d_drz_theta';
 mkdir(fullfile(OwnDir,FigDir))
 
 % Testing Args
@@ -23,6 +20,13 @@ mkdir(fullfile(OwnDir,FigDir))
 
 [chans,phase_chan,stcMode] = DefaultArgs(varargin,{72,1,'NN0317R'});
 
+% Load Stc
+Trial.load('stc',stcMode);
+%states = Trial.stc.list_state_attrib;
+states = {'rear','loc','lloc','hloc','pause','lpause','hpause'};
+states = cellfun(@strcat,states,repmat({'&theta'},size(states)),'UniformOutput',false);
+states = cat(2,{'theta-sit-groom'},states,{'pause-theta'});
+nsts = numel(states);
 
 % Load Position
 xyz = Trial.load('xyz');
@@ -31,12 +35,9 @@ xyz.filter('ButFilter',3,2.4,'low');
 % Load Units
 pft = pfs_2d_theta(Trial,[],[],true);
 mrt = pft.maxRate;
-% Reduce clu list based on theta pfs max rate
-%units = pft.data.clu(mrt>1);
 
+% Reduce clu list based on theta pfs max rate
 units = select_units(Trial,18);
-%Trial.load('nq');
-% $$$ units = units(Trial.nq.SNR(units)>.75);
 units = units(mrt(units)>1);
 
 % Load LFP
@@ -45,17 +46,9 @@ lfp = Trial.load('lfp',chans);
 lfp.resample(xyz);
 tbp_phase = lfp.phase;
 
-% Load Stc
-Trial.load('stc',stcMode);
-%states = Trial.stc.list_state_attrib;
-states = {'rear','loc','lloc','hloc','pause','lpause','hpause'};
-states = cellfun(@strcat,states,repmat({'&theta'},size(states)),'UniformOutput',false);
-states = cat(2,states,{'pause-theta'});
-nsts = numel(states);
 
 
 spk = {};
-pfs = {};
 pfdist = {};
 pmr = {};
 pmp = {};
@@ -63,32 +56,10 @@ wpmr ={};
 pfd = {};
 DRZ = {};
 
-% $$$ overwrite = false;
-% $$$ tag = '';
-% $$$ binDims = [20,20];
-% $$$ smoothingWeights = [2.2,2.2];
-% $$$ type = 'xy';
 
 for s = 1:nsts,        
     % Load/Create place fields
 
-    defargs = get_default_args_MjgEdER2016('MTAAknnpfs_bs','struct');
-    defargs.units = units;
-    defargs.states = states{s};
-    defargs.numIter = 1001;
-    defargs = struct2varargin(defargs);        
-    pfs{s} = MTAAknnpfs_bs(Trial,defargs{:});      
-
-
-% $$$     pfs{s} = MTAApfs(Trial,...
-% $$$                      units,...
-% $$$                      states{s},...
-% $$$                      overwrite,...
-% $$$                      tag,...
-% $$$                      binDims,...
-% $$$                      smoothingWeights,...
-% $$$                      type);
-    
     % Load spikes 
     spk{s} = Trial.spk.copy;
     spk{s}.create(Trial,xyz.sampleRate,states{s},[],'deburst');
@@ -97,23 +68,23 @@ for s = 1:nsts,
     % Get the mean firing rate for each xy position along trajectory 
     wpmr{s} = zeros(xyz.size(1),numel(units));
 
-    [~,indx] = min(abs( repmat(pfs{s}.adata.bins{1}',xyz.size(1),1)...
-                        -repmat(xyz(:,Trial.trackingMarker,1),1,numel(pfs{s}.adata.bins{1}))),...
+    [~,indx] = min(abs( repmat(pft.adata.bins{1}',xyz.size(1),1)...
+                        -repmat(xyz(:,Trial.trackingMarker,1),1,numel(pft.adata.bins{1}))),...
                    [],2);
 
-    [~,indy] = min(abs( repmat(pfs{s}.adata.bins{2}',xyz.size(1),1)...
-                        -repmat(xyz(:,Trial.trackingMarker,2),1,numel(pfs{s}.adata.bins{2}))),...
+    [~,indy] = min(abs( repmat(pft.adata.bins{2}',xyz.size(1),1)...
+                        -repmat(xyz(:,Trial.trackingMarker,2),1,numel(pft.adata.bins{2}))),...
                    [],2);
 
-    rateMapIndex = sub2ind(pfs{s}.adata.binSizes',indx,indy);
+    rateMapIndex = sub2ind(pft.adata.binSizes',indx,indy);
     for unit = units,
-        rateMap = pfs{s}.plot(unit,'mean');      %  for MTAApfs
+        rateMap = pft.plot(unit,'mean');      %  for MTAApfs
                                           %rateMap = rot90(rot90(rateMap)'); % for MTAAknnpfs
         wpmr{s}(:,unit==units) = rateMap(rateMapIndex);
     end
 
     % Get the peak firing rate and position of each place field
-    [pmr{s},pmp{s}] = pfs{s}.maxRate(units,'mean');
+    [pmr{s},pmp{s}] = pft.maxRate(units,'mean');
     pmr{s} = repmat(pmr{s}(:)',xyz.size(1),1);
 
 
@@ -150,9 +121,9 @@ end
 
 [accg,tbins] = autoccg(MTASession.validate(Trial.filebase));
 
-width = pfs{1}.adata.binSizes(1);
-height = pfs{1}.adata.binSizes(2);
-radius = round(pfs{1}.adata.binSizes(1)/2)-find(pfs{1}.adata.bins{1}<-420,1,'last');
+width = pft.adata.binSizes(1);
+height = pft.adata.binSizes(2);
+radius = round(pft.adata.binSizes(1)/2)-find(pft.adata.bins{1}<-420,1,'last');
 centerW = width/2;
 centerH = height/2;
 [W,H] = meshgrid(1:width,1:height);           
@@ -167,7 +138,7 @@ set(0,'defaultAxesFontSize',8,...
 aIncr = true;
 hfig = figure(38384);
 hfig.Units = 'centimeters';
-hfig.Position = [1,1,40,24];    
+hfig.Position = [1,1,55,24];    
 hfig.PaperPositionMode = 'auto';
 
 unit = units(1);
@@ -201,9 +172,9 @@ while unit~=-1,
         title(states{s})
         
         subplot2(9,nsts,[4,5],s);
-        pfs{s}.plot(unit,'mean',[],mrt(unit).*1.5,'isCircular',true);
-        text(pfs{s}.adata.bins{1}(end)-250,pfs{s}.adata.bins{2}(end)-50,...
-             sprintf('%2.1f',pfs{s}.maxRate(unit)),'Color','w','FontWeight','bold','FontSize',10)
+        pft.plot(unit,'mean',[],mrt(unit).*1.5,'isCircular',true);
+        text(pft.adata.bins{1}(end)-250,pft.adata.bins{2}(end)-50,...
+             sprintf('%2.1f',pft.maxRate(unit)),'Color','w','FontWeight','bold','FontSize',10)
         hold on,plot(pmp{s}(unit==units,1),pmp{s}(unit==units,2),'w*')
         title(num2str(unit))
         
@@ -233,5 +204,5 @@ end
 
 
 
-mrm = pfs{s}.plot(unit,'mean',[],mrt(unit).*1.5,'isCircular',true);
-srm = pfs{s}.plot(unit, 'std',[],mrt(unit).*1.5,'isCircular',true);
+mrm = pft.plot(unit,'mean',[],mrt(unit).*1.5,'isCircular',true);
+srm = pft.plot(unit, 'std',[],mrt(unit).*1.5,'isCircular',true);

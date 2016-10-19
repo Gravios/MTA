@@ -7,20 +7,19 @@ units = Trial.spk.map(:,1);
 % load theta periods
 if isempty(Trial.stc.gsi('t')),Trial = labelTheta(Trial);end
 
-
 %% Setup figure paths
 OwnDir = '/storage/gravio/ownCloud/MjgEdER2016/';
-FigDir = ['pfs_3d_theta_',Trial.filebase];
+FigDir = ['pfs_2d_theta_',Trial.filebase];
 mkdir(fullfile(OwnDir,FigDir));
 
-
-%% compute 3d place fields for the theta state
-pf = MTAApfs(Trial,[],'theta',...
-             overwrite,...
-             'numIter',numIter,...
-             'binDims',[20,20],...
-             'type','xy',...
-             'SmoothingWeights',[2.2,2.2]);
+%% compute 2d place fields for the theta state
+defargs = get_default_args_MjgEdER2016('MTAApfs','struct');
+defargs.units = units;
+defargs.states = 'theta-sit-groom';
+defargs.overwrite = overwrite;
+defargs.tag = mfilename;
+defargs = struct2varargin(defargs);
+pf = MTAApfs(Trial,defargs{:});
 
 
 if reportFig

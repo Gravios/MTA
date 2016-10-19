@@ -1,16 +1,52 @@
-function pfs = pfs_2d_states(Trial,varargin)
-[tag,stcMode,states,numIter,reportFig,overwrite] = DefaultArgs(varargin,{'default','NN0317',{'theta','walk','rear','turn','pause','groom','sit'},1,1,0});
+bfunction pfs = pfs_2d_states(Trial,varargin)
+
+
+% DEFARGS ------------------------------------------------------------------------------------------
+defargs = struct('stcMode',       'NN0317R',                                                     ...
+                 'states',        {{'loc','lloc','hloc','rear','pause','lpause','hpause'}},      ...
+                 'reportFig',     true,                                                          ...
+                 'tag',           '',                                                            ...
+                 'overwrite',     false                                                          ...
+);%-------------------------------------------------------------------------------------------------
+
+[stcMode,states,reportFig,tag,overwrite] = DefaultArgs(varargin,defargs,'--struct');
+
+% modify states
+states = cellfun(@strcat,states,repmat({'&theta'},size(states)),'UniformOutput',false);
+states = cat(2,{'theta-sit-groom'},states);
+
+
+
+% TAG creation -------------------------------------------------------------------------------------
+% ID Vars - create hash tag
+%
+%    stcMode 
+%    states 
+if isempty(tag),
+    tag = DataHash(struct('stcMode',stcMode,'states',{states}));
+end
+%---------------------------------------------------------------------------------------------------
 
 
 
 
+% MAIN ---------------------------------------------------------------------------------------------
 
 Trial= MTATrial.validate(Trial);    
-Trial.stc.filename = [Trial.name,'.',Trial.maze.name,'.all.stc.',stcMode,'.mat'];
-Trial.load('stc');
-units = Trial.spk.map(:,1);
-% load theta periods
-%if isempty(Trial.stc.gsi('t')),Trial = labelTheta(Trial);end
+
+% load labeled behavior
+try,
+    Trial.load('stc',[Trial.name,'.',Trial.maze.name,'.gnd','.stc.',stcMode,'.mat']);
+catch err
+    disp(err)
+    Trial.load('stc',[Trial.name,'.',Trial.maze.name,'.all','.stc.',stcMode,'.mat']);            
+end
+
+
+% Reduce clu list based on theta pfs max rate
+units = select_units(Trial,18);
+units = units(mrt(pft.data.clu(units))>1);
+
 nsts = numel(states);
 
 
