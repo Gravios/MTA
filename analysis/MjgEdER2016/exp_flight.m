@@ -162,6 +162,7 @@ while unit~=-1,
                                         spOpts.height]...
                            );
             hold('on')
+            
             imagesc(pf.adata.bins{1},pf.adata.bins{2},ratemap(:,:,slices(s)).*mask');    
             axis xy
             colormap([0,0,0;parula]);

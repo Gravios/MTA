@@ -452,12 +452,17 @@ classdef MTAAknnpfs_bs < hgsetget %< MTAAnalysis
             end
             rho = nan(numel(units),1);
             for u = units,
-                rm = Pfs.plot(u);
+                rm = Pfs.plot(u,'mean');
                 cmat = [1,1,1;1,0,1;1,1,1];
                 c = conv2(rm,cmat,'valid')./8;
                 rmss = rm(2:end-1,2:end-1);
                 ind = ~isnan(c)&~isnan(rmss);
-                rho(u==units) = corr(c(ind),rmss(ind));
+                try
+                    rho(u==units) = corr(c(ind),rmss(ind));
+                catch err
+                    disp(err);
+                end
+                
             end
         end
         

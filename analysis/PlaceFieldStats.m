@@ -14,7 +14,8 @@ map = sq(pf.data.rateMap(:,unit==pf.data.clu,:));
 pkfr = max(map(:,1));
 rateThreshold = prctile(sq(map(:)),95);
 maxNumPatches =2;
-
+maxBinCount = round(prod(pf.adata.binSizes)*0.12);
+%maxBinCount = round(prod(pf.adata.binSizes)*0.1);
 
 %%!!!! Discrepency between MTAApfs and MTAAknnpfs_bs
 %ratemap = reshape(map(:,1)',fliplr(pf.adata.binSizes'))';
@@ -35,8 +36,8 @@ pfstats.patchCOM  = nan([1,1,maxNumPatches,2]);
 pfstats.patchPFR = nan([1,1,maxNumPatches]);
 pfstats.patchMFR = nan([1,1,maxNumPatches]);
 pfstats.patchCnt = nan([1,1,maxNumPatches]);
-pfstats.patchRateInd = nan([1,1,maxNumPatches,2,round(prod(pf.adata.binSizes)*0.1)]);
-pfstats.patchRateMap = nan([1,1,maxNumPatches,round(prod(pf.adata.binSizes)*0.1)]);  
+pfstats.patchRateInd = nan([1,1,maxNumPatches,2,maxBinCount]);
+pfstats.patchRateMap = nan([1,1,maxNumPatches,maxBinCount]);  
  
 
 if verbose,
@@ -54,8 +55,8 @@ if ~isempty(B),
     patchPFR = nan([1,1,maxNumPatches]);                                         
     patchMFR = nan([1,1,maxNumPatches]);                                         
     patchCnt = nan([1,1,maxNumPatches]);                                         
-    patchRateInd = nan([1,1,maxNumPatches,2,round(prod(pf.adata.binSizes)*0.1)]);
-    patchRateMap = nan([1,1,maxNumPatches,round(prod(pf.adata.binSizes)*0.1)]);  
+    patchRateInd = nan([1,1,maxNumPatches,2,maxBinCount]);
+    patchRateMap = nan([1,1,maxNumPatches,maxBinCount]);  
     
     clear nB    
     if verbose,
@@ -126,7 +127,7 @@ if nargout>1
     
     
     % Maximum firing rate found within the normal place field
-    pfmstats.peakFR = pkfr;
+    pfmstats.peakFR = max(nanmean(map,2));
     pfmstats.rateThreshold = rateThreshold;
     pfmstats.spatialCoherence = pf.spatialCoherence(unit);
     %pfmstats.spatialInformation = nansum((map(~isnan(map))./nanmean(map(:))).*log2(map(~isnan(map))./nanmean(map(:))));
@@ -137,8 +138,8 @@ if nargout>1
     pfmstats.patchPFR = nan([1,1,maxNumPatches]);
     pfmstats.patchMFR = nan([1,1,maxNumPatches]);
     pfmstats.patchCnt = nan([1,1,maxNumPatches]);
-    pfmstats.patchRateInd = nan([1,1,maxNumPatches,2,round(prod(pf.adata.binSizes)*0.1)]);
-    pfmstats.patchRateMap = nan([1,1,maxNumPatches,round(prod(pf.adata.binSizes)*0.1)]);
+    pfmstats.patchRateInd = nan([1,1,maxNumPatches,2,maxBinCount]);
+    pfmstats.patchRateMap = nan([1,1,maxNumPatches,maxBinCount]);
 
 
     if verbose,
@@ -161,8 +162,8 @@ if nargout>1
         patchPFR = nan([1,1,maxNumPatches]);                                         
         patchMFR = nan([1,1,maxNumPatches]);                                         
         patchCnt = nan([1,1,maxNumPatches]);                                         
-        patchRateInd = nan([1,1,maxNumPatches,2,round(prod(pf.adata.binSizes)*0.1)]);
-        patchRateMap = nan([1,1,maxNumPatches,round(prod(pf.adata.binSizes)*0.1)]);          
+        patchRateInd = nan([1,1,maxNumPatches,2,maxBinCount]);
+        patchRateMap = nan([1,1,maxNumPatches,maxBinCount]);          
         
         for i = 1:numel(B)
             [nB{i}(:,1),nB{i}(:,2)] = ind2sub(size(L),find(L==i));
@@ -222,8 +223,8 @@ if nargout>1
     pfbstats.patchPFR  =    nan([1,pf.parameters.numIter,maxNumPatches]);
     pfbstats.patchMFR  =    nan([1,pf.parameters.numIter,maxNumPatches]);
     pfbstats.patchCnt  =    nan([1,pf.parameters.numIter,maxNumPatches]);
-    pfbstats.patchRateInd = nan([1,pf.parameters.numIter,maxNumPatches,2,round(prod(pf.adata.binSizes)*0.1)]);
-    pfbstats.patchRateMap = nan([1,pf.parameters.numIter,maxNumPatches,round(prod(pf.adata.binSizes)*0.1)]);
+    pfbstats.patchRateInd = nan([1,pf.parameters.numIter,maxNumPatches,2,maxBinCount]);
+    pfbstats.patchRateMap = nan([1,pf.parameters.numIter,maxNumPatches,maxBinCount]);
 
     for k = 1:pf.parameters.numIter,    
         if verbose,
@@ -242,8 +243,8 @@ if nargout>1
         bsPatchPFR  =    nan([1,1,maxNumPatches]);                                     
         bsPatchMFR  =    nan([1,1,maxNumPatches]);                                     
         bsPatchCnt  =    nan([1,1,maxNumPatches]);                                     
-        bsPatchRateInd = nan([1,1,maxNumPatches,2,round(prod(pf.adata.binSizes)*0.1)]);
-        bsPatchRateMap = nan([1,1,maxNumPatches,round(prod(pf.adata.binSizes)*0.1)]);  
+        bsPatchRateInd = nan([1,1,maxNumPatches,2,maxBinCount]);
+        bsPatchRateMap = nan([1,1,maxNumPatches,maxBinCount]);  
         
         
         % if k == 86,keyboard,end

@@ -1,28 +1,42 @@
 
 %% Figure 4 - Classical 2-D phase precession
-Trial = MTATrial.validate('Ed10-20140817.cof.gnd');
-Stc = Trial.load('stc','NN0317R');
+
+Trial = MTATrial.validate('jg05-20120309.cof.all');
+chans = 63;
 
 Trial = MTATrial.validate('jg05-20120310.cof.all');
-Trial = MTATrial.validate('jg05-20120309.cof.all');
+chans = 63;
 
-Trial = MTATrial.validate(Trial);
+Trial = MTATrial.validate('jg05-20120311.cof.all');
+chans = 63;
+
+Trial = MTATrial.validate('jg05-20120317.cof.all');
+chans = 50;
+
+Trial = MTATrial.validate('ER06-20130613.cof.all');
+chans = 32;
+
+Trial = MTATrial.validate('ER06-20130614.cof.gnd');
+chans = 32;
+
+Trial = MTATrial.validate('Ed10-20140817.cof.gnd');
+chans = 16;
+
+%Trial = MTATrial.validate(Trial);
+stcMode = 'NN0317R';
+Stc = Trial.load('stc',stcMode);
 OwnDir = '/storage/gravio/ownCloud/MjgEdER2016/';
 FigDir = 'exp_phase_2d_drz_theta';
 mkdir(fullfile(OwnDir,FigDir))
+phase_chan = 1;
 
 % Testing Args
 %Trial = MTATrial.validate('jg05-20120310');
 %chans = 68;
-%phase_chan = 1;
-%stcMode = 'NN0317R';
 %varargin = {};
-
-[chans,phase_chan,stcMode] = DefaultArgs(varargin,{72,1,'NN0317R'});
+%[chans,phase_chan,stcMode] = DefaultArgs(varargin,{[66,72,78,84],1,'NN0317R'});
 
 % Load Stc
-Trial.load('stc',stcMode);
-%states = Trial.stc.list_state_attrib;
 states = {'rear','loc','lloc','hloc','pause','lpause','hpause'};
 states = cellfun(@strcat,states,repmat({'&theta'},size(states)),'UniformOutput',false);
 states = cat(2,{'theta-sit-groom'},states,{'pause-theta'});
@@ -33,7 +47,7 @@ xyz = Trial.load('xyz');
 xyz.filter('ButFilter',3,2.4,'low');
 
 % Load Units
-pft = pfs_2d_theta(Trial,[],[],true);
+pft = pfs_2d_theta(Trial);
 mrt = pft.maxRate;
 
 % Reduce clu list based on theta pfs max rate
@@ -44,94 +58,88 @@ units = units(mrt(units)>1);
 Trial.lfp.filename = [Trial.name,'.lfp'];
 lfp = Trial.load('lfp',chans);
 lfp.resample(xyz);
-tbp_phase = lfp.phase;
+tbp_phase = lfp.phase([6,12]);
 
 
 
 spk = {};
-pfdist = {};
-pmr = {};
-pmp = {};
-wpmr ={};
-pfd = {};
-DRZ = {};
+pfdist = [];
+pmr  = [];
+pmp  = [];
+wpmr = [];
+pfd  = [];
+DRZ  = [];
 
 
 for s = 1:nsts,        
-    % Load/Create place fields
-
     % Load spikes 
     spk{s} = Trial.spk.copy;
     spk{s}.create(Trial,xyz.sampleRate,states{s},[],'deburst');
-
-    
-    % Get the mean firing rate for each xy position along trajectory 
-    wpmr{s} = zeros(xyz.size(1),numel(units));
-
-    [~,indx] = min(abs( repmat(pft.adata.bins{1}',xyz.size(1),1)...
-                        -repmat(xyz(:,Trial.trackingMarker,1),1,numel(pft.adata.bins{1}))),...
-                   [],2);
-
-    [~,indy] = min(abs( repmat(pft.adata.bins{2}',xyz.size(1),1)...
-                        -repmat(xyz(:,Trial.trackingMarker,2),1,numel(pft.adata.bins{2}))),...
-                   [],2);
-
-    rateMapIndex = sub2ind(pft.adata.binSizes',indx,indy);
-    for unit = units,
-        rateMap = pft.plot(unit,'mean');      %  for MTAApfs
-                                          %rateMap = rot90(rot90(rateMap)'); % for MTAAknnpfs
-        wpmr{s}(:,unit==units) = rateMap(rateMapIndex);
-    end
-
-    % Get the peak firing rate and position of each place field
-    [pmr{s},pmp{s}] = pft.maxRate(units,'mean');
-    pmr{s} = repmat(pmr{s}(:)',xyz.size(1),1);
-
-
-    % Get the rat's heading 
-    pfds = [];
-    pfdd = [];
-    for unit = units
-        pfhxy = xyz(:,{'head_back','head_front'},:);
-        pfhxy = cat(2,pfhxy,permute(repmat([pmp{s}(unit==units,:),0],xyz.size(1),1),[1,3,2]));
-        pfhxy = MTADxyz([],[],pfhxy,xyz.sampleRate);
-        
-        cor = cell(1,3);
-        [cor{:}] = cart2sph(pfhxy(:,2,1)-pfhxy(:,1,1),pfhxy(:,2,2)-pfhxy(:,1,2),pfhxy(:,2,3)-pfhxy(:,1,3));
-        cor = cell2mat(cor);
-        
-        por = cell(1,3);
-        [por{:}] = cart2sph(pfhxy(:,3,1)-pfhxy(:,1,1),pfhxy(:,3,2)-pfhxy(:,1,2),pfhxy(:,3,3)-pfhxy(:,1,3));
-        por = cell2mat(por);
-        
-        pfds(:,unit==units) = circ_dist(cor(:,1),por(:,1));
-        pfdd(:,unit==units) = por(:,3);
-        
-    end
-
-    pfdist{s} = pfdd;
-    pfd{s} = zeros(size(pfds));
-    pfd{s}(abs(pfds)<=pi/2)=-1;
-    pfd{s}(abs(pfds)>pi/2)=1;
-
-    % Calculate DRZ 
-    DRZ{s} = pfd{s}.*(1-wpmr{s}./pmr{s});
-
 end
 
+
+    
+% Get the mean firing rate for each xy position along trajectory 
+wpmr = zeros(xyz.size(1),numel(units));
+
+[~,indx] = min(abs( repmat(pft.adata.bins{1}',xyz.size(1),1)...
+                    -repmat(xyz(:,Trial.trackingMarker,1),1,numel(pft.adata.bins{1}))),...
+               [],2);
+
+[~,indy] = min(abs( repmat(pft.adata.bins{2}',xyz.size(1),1)...
+                    -repmat(xyz(:,Trial.trackingMarker,2),1,numel(pft.adata.bins{2}))),...
+               [],2);
+
+rateMapIndex = sub2ind(pft.adata.binSizes',indx,indy);
+for unit = units,
+    rateMap = pft.plot(unit,'mean');      %  for MTAApfs
+                                          %rateMap = rot90(rot90(rateMap)'); % for MTAAknnpfs
+    wpmr(:,unit==units) = rateMap(rateMapIndex);
+end
+
+    % Get the peak firing rate and position of each place field
+[pmr,pmp] = pft.maxRate(units,'mean');
+pmr = repmat(pmr(:)',xyz.size(1),1);
+
+
+% Get the rat's 
+pfds = [];
+pfdd = [];
+for unit = units
+    pfhxy = xyz(:,{'head_back','head_front'},:);
+    pfhxy = cat(2,pfhxy,permute(repmat([pmp(unit==units,:),0],xyz.size(1),1),[1,3,2]));
+    pfhxy = MTADxyz([],[],pfhxy,xyz.sampleRate);
+    
+    cor = cell(1,3);
+    [cor{:}] = cart2sph(pfhxy(:,2,1)-pfhxy(:,1,1),pfhxy(:,2,2)-pfhxy(:,1,2),pfhxy(:,2,3)-pfhxy(:,1,3));
+    cor = cell2mat(cor);
+    
+    por = cell(1,3);
+    [por{:}] = cart2sph(pfhxy(:,3,1)-pfhxy(:,1,1),pfhxy(:,3,2)-pfhxy(:,1,2),pfhxy(:,3,3)-pfhxy(:,1,3));
+    por = cell2mat(por);
+    
+    pfds(:,unit==units) = circ_dist(cor(:,1),por(:,1));
+    pfdd(:,unit==units) = por(:,3);
+    
+end
+
+pfdist = pfdd;
+pfd = zeros(size(pfds));
+pfd(abs(pfds)<=pi/2)=-1;
+pfd(abs(pfds)>pi/2)=1;
+
+% Calculate DRZ 
+DRZ = pfd.*(1-wpmr./pmr);
+
+
+
+%spk,DRZ,pfdist
+
+% load autocorrelogram
 [accg,tbins] = autoccg(MTASession.validate(Trial.filebase));
 
-width = pft.adata.binSizes(1);
-height = pft.adata.binSizes(2);
-radius = round(pft.adata.binSizes(1)/2)-find(pft.adata.bins{1}<-420,1,'last');
-centerW = width/2;
-centerH = height/2;
-[W,H] = meshgrid(1:width,1:height);           
-mask = double(sqrt((W-centerW-.5).^2 + (H-centerH-.5).^2) < radius);
-mask(mask==0)=nan;
 
-
-% 2d DRZ figure
+% FIGURE 2d DRZ 
 set(0,'defaultAxesFontSize',8,...
       'defaultTextFontSize',8)
 
@@ -142,7 +150,7 @@ hfig.Position = [1,1,55,24];
 hfig.PaperPositionMode = 'auto';
 
 unit = units(1);
-distThresh = 200;
+distThresh = 350;
 while unit~=-1,
 
     clf
@@ -157,10 +165,10 @@ while unit~=-1,
         if numel(res) <50,continue,end
         res(res>xyz.size(1))=[];
         ares=res;
-        ares(pfdist{s}(ares,unit==units)<distThresh)=[];
-        res(pfdist{s}(res,unit==units)>=distThresh)=[];            
+        ares(pfdist(ares,unit==units)<distThresh)=[];
+        res(pfdist(res,unit==units)>=distThresh)=[];            
 
-        drzspk = DRZ{s}(res,unit==units);
+        drzspk = DRZ(res,unit==units);
         phzspk = tbp_phase(res,phase_chan);
         
         gind = ~isnan(drzspk)&~isnan(phzspk);
@@ -175,7 +183,7 @@ while unit~=-1,
         pft.plot(unit,'mean',[],mrt(unit).*1.5,'isCircular',true);
         text(pft.adata.bins{1}(end)-250,pft.adata.bins{2}(end)-50,...
              sprintf('%2.1f',pft.maxRate(unit)),'Color','w','FontWeight','bold','FontSize',10)
-        hold on,plot(pmp{s}(unit==units,1),pmp{s}(unit==units,2),'w*')
+        hold on,plot(pmp(unit==units,1),pmp(unit==units,2),'w*')
         title(num2str(unit))
         
         % Plot phase drz relationship
@@ -198,7 +206,7 @@ while unit~=-1,
     %print(gcf,'-depsc2',fullfile(OwnDir,FigDir,[FigName,'.eps']));
 
     unit = figure_controls(hfig,unit,units,aIncr);        
-    
+pause(0.2)    
 end
 
 
@@ -206,3 +214,43 @@ end
 
 mrm = pft.plot(unit,'mean',[],mrt(unit).*1.5,'isCircular',true);
 srm = pft.plot(unit, 'std',[],mrt(unit).*1.5,'isCircular',true);
+
+
+
+% use unit 33 from Ed10-20140817.cof.gnd
+
+lin = drzspk(gind);
+circ = phzspk(gind);
+
+% $$$ a=-pi:0.001:pi;
+% $$$ cosinepart=zeros(length(a),1);
+% $$$ sinepart=zeros(length(a),1);
+% $$$ R=zeros(length(a),1);
+% $$$ for i=1:length(a)
+% $$$     cosinepart(i)=sum(cos(circ-(2*pi*a(i)*lin)));
+% $$$     sinepart(i)=sum(sin(circ-(2*pi*a(i)*lin)));
+% $$$     firstterm=(cosinepart(i)/length(circ))^2;
+% $$$     secondterm=(sinepart(i)/length(circ))^2;
+% $$$     R(i)=sqrt(firstterm+secondterm);
+% $$$ end
+% $$$ figure
+% $$$ plot(a,R);
+% $$$ slope=a(R==max(R));
+% $$$ offset=atan2(sinepart(R==max(R)),cosinepart(R==max(R)));
+% $$$ x=min(lin):0.1:max(lin);
+
+
+figure,hold on
+plot(lin,circ,'.')
+plot(x,2*pi*slope*x+offset,'r-')
+
+
+[P] = polyval([2*pi*slope,offset],lin);
+residuals = circ-P;
+residuals(residuals>pi) = residuals(residuals>pi)-2*pi;
+residuals(residuals<-pi) = residuals(residuals<-pi)+2*pi;
+
+figure,hist(residuals,100)
+
+
+

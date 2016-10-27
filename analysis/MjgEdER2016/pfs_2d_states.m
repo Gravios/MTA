@@ -1,4 +1,4 @@
-bfunction pfs = pfs_2d_states(Trial,varargin)
+function pfs = pfs_2d_states(Trial,varargin)
 
 
 % DEFARGS ------------------------------------------------------------------------------------------
@@ -14,6 +14,7 @@ defargs = struct('stcMode',       'NN0317R',                                    
 % modify states
 states = cellfun(@strcat,states,repmat({'&theta'},size(states)),'UniformOutput',false);
 states = cat(2,{'theta-sit-groom'},states);
+
 
 
 
@@ -44,12 +45,12 @@ end
 
 
 % Reduce clu list based on theta pfs max rate
+pft = pfs_2d_theta(Trial);
+mrt = pft.maxRate;
 units = select_units(Trial,18);
 units = units(mrt(pft.data.clu(units))>1);
 
 nsts = numel(states);
-
-
 
 
 %% Setup figure paths
@@ -62,14 +63,13 @@ mkdir(fullfile(OwnDir,FigDir));
 %% compute 3d place fields for the theta state
 pfs = {};
 for s = 1:nsts
-    pfs{s} = MTAApfs(Trial,[],states{s},...
-                     overwrite,...
-                     'numIter',numIter,...
-                     'binDims',[20,20],...
-                     'type','xy',...
-                     'SmoothingWeights',[2.2,2.2]);
+    defargs = get_default_args_MjgEdER2016('MTAApfs','struct');
+    defargs.units = units;
+    defargs.states = states{s};
+    defargs.numIter = 1;
+    defargs = struct2varargin(defargs);        
+    pfs{s} = MTAApfs(Trial,defargs{:});      
 end
-
 
 
 if reportFig
@@ -132,9 +132,9 @@ if reportFig
             axis xy
             colormap([0,0,0;parula]);
             caxis([-1,max(maxPfsRate(:,unit==units))]);
-            title(states{s});
-            text(pf.adata.bins{1}(end)-300,pf.adata.bins{2}(end)-50,...
-                 sprintf('%2.1f',max(max(ratemap))),'Color','w','FontWeight','bold','FontSize',8)
+            title([states{s} ' ' num2str(maxPfsRate(s,unit==units))]);
+% $$$             text(pf.adata.bins{1}(end)-300,pf.adata.bins{2}(end)-50,...
+% $$$                  sprintf('%2.1f',max(max(ratemap))),'Color','w','FontWeight','bold','FontSize',8)
         end
         
         FigName = ['pfs_2d_states_unit-',num2str(unit)];

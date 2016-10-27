@@ -6,10 +6,11 @@ defargs = struct('sessionList',         'MjgEdER2016_bhv',                      
                  'stcMode',             'NN0317R',                                               ...
                  'states',              {{'loc','rear','pause','lloc','hloc','lpause','hpause'}},...
                  'tag',                 '',                                                      ...
-                 'overwrite',           false                                                    ...
+                 'overwrite',           false,                                                   ...
+                 'verbose',             true                                                     ...
 );%-------------------------------------------------------------------------------------------------
 
-[sessionList,stcMode,states,tag,overwrite] = DefaultArgs(varargin,defargs,'--struct');
+[sessionList,stcMode,states,tag,overwrite,verbose] = DefaultArgs(varargin,defargs,'--struct');
 
 % modify states
 states = cellfun(@strcat,states,repmat({'&theta'},size(states)),'UniformOutput',false);
@@ -23,7 +24,7 @@ states = cellfun(@strcat,states,repmat({'&theta'},size(states)),'UniformOutput',
 %stcMode 
 %states 
 if isempty(tag),
-    tag = DataHash(struct('sessionList',sesList,'stcMode',stcMode,'states',{states}));
+    tag = DataHash(struct('sessionList','MjgEdER2016_bhv','stcMode',stcMode,'states',{states}));
 end
 %---------------------------------------------------------------------------------------------------
 
@@ -37,12 +38,26 @@ parp = [];
 ds = {};
 for s = 1:numel(slist)
 
-    Trial = MTATrial.validate(slist(s));
-
+    % Load trial meta data
+    if isa(slist,'MTASession'),
+        Trial = slist;
+    else
+        Trial = MTATrial.validate(slist(s));
+    end
+    
+    % Build output file name 
     analysisFileName = fullfile(Trial.spath,[Trial.filebase,'_pfstatsBS_',tag,'.mat']);            
     
     if ~exist(analysisFileName,'file') || overwrite,    
 
+        % Display processing status
+        if verbose,
+            fprintf(['\nProcessing trial: %s\n',...
+                     'Output to: %s\n'],Trial.filebase,analysisFileName);
+        end
+        
+        
+        
         % load labeled behavior
         try,
             Trial.load('stc',[Trial.name,'.',Trial.maze.name,'.gnd','.stc.',stcMode,'.mat']);
@@ -51,15 +66,19 @@ for s = 1:numel(slist)
             Trial.load('stc',[Trial.name,'.',Trial.maze.name,'.all','.stc.',stcMode,'.mat']);            
         end
 
+
+
+        % Reduce clu list based on theta pfs max rate        
         pft = pfs_2d_theta(Trial,[],[],overwrite);
         mrt = pft.maxRate;
-
-        % Reduce clu list based on theta pfs max rate
         units = select_units(Trial,18);
         units = units(mrt(pft.data.clu(units))>1);
 
+
+        if verbose, fprintf('\nProcessing placefields...\n'); end
         % Compute place fields and subsampled estimate
         for sts = 1:numel(states),
+            if verbose, fprintf('process state: %s...\n',states{sts}); end            
             defargs = get_default_args_MjgEdER2016('MTAAknnpfs_bs','struct');
             defargs.units = units;
             defargs.states = states{sts};
@@ -67,8 +86,10 @@ for s = 1:numel(slist)
             pfkbs{sts} = MTAAknnpfs_bs(Trial,defargs{:});      
         end
 
-        % Parse place field features
         
+        
+        if verbose, fprintf('\nParse place field features...\n'); end
+        % Parse place field features
         try delete(gcp('nocreate')); end
         parp = parpool(7);
 
@@ -88,27 +109,24 @@ for s = 1:numel(slist)
         try,delete(gcp('nocreate'));end            
 
         
-        
+              
         % Fuck matlab ... seriously 
         pfkstats = [pfkstats{:}];
         pfkstats = [pfkstats{:}];
-
         pfmstats = [pfmstats{:}];
         pfmstats = [pfmstats{:}];
-
         pfkboots = [pfkboots{:}];
         pfkboots = [pfkboots{:}];
-
         pfkstats = reshape(pfkstats,numel(units),numel(states))';
         pfmstats = reshape(pfmstats,numel(units),numel(states))';
         pfkboots = reshape(pfkboots,numel(units),numel(states))';
+
         
-        
+        if verbose, fprintf('Extract greatest place feature...\n'); end
         % Select the biggest baddest place field patch for all units
         peakPatchArea = [];
         peakPatchCOM  = [];
         peakPatchRate = [];
-
         for t = 1:numel(states),
             for k = 1:pfkbs{1}.parameters.numIter,
                 % Retrieve the patch center of mass from patch with the highest firing rate
@@ -145,6 +163,8 @@ for s = 1:numel(slist)
         end
 
 
+        % Save pfstats
+        if verbose, fprintf('\nSaving pfstats.\n'); end
         session = Trial.filebase;
         save(analysisFileName,'-v7.3',...
              'session','stcMode','states','cluMap',...
@@ -152,6 +172,7 @@ for s = 1:numel(slist)
              'peakPatchArea','peakPatchCOM','peakPatchRate');
     end
 
+    if verbose, fprintf('\nLoading %s...\n\n',analysisFileName); end
     ds(s) = {load(analysisFileName)};
 
 end    
