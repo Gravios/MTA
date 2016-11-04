@@ -372,20 +372,34 @@ classdef MTAApfs < hgsetget %< MTAAnalysis
                    bin1 = Pfs.adata.bins{1};
                    bin2 = Pfs.adata.bins{2};
                    %MTATrial.validate(Pfs.session).maze.shape
-                   switch 'bob'
-                     case 'circle'
+% $$$                    switch 'bob'
+% $$$                      case 'circle'
+% $$$                        width = Pfs.adata.binSizes(1);
+% $$$                        height = Pfs.adata.binSizes(2);
+% $$$                        radius = round(Pfs.adata.binSizes(1)/2)-...
+% $$$                                      find(Pfs.adata.bins{1}<-420,1,'last');
+% $$$                        centerW = width/2;
+% $$$                        centerH = height/2;
+% $$$                        [W,H] = meshgrid(1:width,1:height);           
+% $$$                        mask = double(sqrt((W-centerW-.5).^2 + (H-centerH-.5).^2) < radius);
+% $$$                        mask(mask==0)=nan;
+% $$$                      otherwise
+% $$$                        mask = 1;
+% $$$                    end
+                   %% This is only valid for the circular maze
+                   if isCircular,
                        width = Pfs.adata.binSizes(1);
                        height = Pfs.adata.binSizes(2);
-                       radius = round(Pfs.adata.binSizes(1)/2)-...
-                                     find(Pfs.adata.bins{1}<-420,1,'last');
+                       radius = round(Pfs.adata.binSizes(1)/2)-find(Pfs.adata.bins{1}<-420,1,'last');
                        centerW = width/2;
                        centerH = height/2;
                        [W,H] = meshgrid(1:width,1:height);           
                        mask = double(sqrt((W-centerW-.5).^2 + (H-centerH-.5).^2) < radius);
                        mask(mask==0)=nan;
-                     otherwise
+                   else
                        mask = 1;
                    end
+
                   
 
                     switch nMode

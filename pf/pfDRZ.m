@@ -1,23 +1,25 @@
-function drz = pfDRZ(Trial,pfs,xyz,pfcenters,)
+function drz = pfDRZ(Trial,xyz,pfs,varargin)
+
+[dims] = DefaultArgs(varargin,{[1,2]},1);
+
+[pfMaxRates,pfCenters] = pfs.maxRate;
+pfMaxRates = repmat(pfMaxRates(:)',xyz.size(1),1);
+
+numPfs = size(pfCenters,1);
+
+pfrs = zeros([xyz.size(1),numPfs]);
+pfps = zeros([xyz.size(1),numPfs]);
+pfds = zeros([xyz.size(1),numPfs]);
 
 
-[pmr,pmp] = pfs.maxRate;
-pmr = repmat(pmr(:)',xyz.size(1),1);
-
-
-npc = size(pfcenters,1);
-
-pfrs = zeros([xyz.size(1),npc]);
-pfps = zeros([xyz.size(1),npc]);
-pfds = zeros([xyz.size(1),npc]);
-for i = 1:npc,
+for i = 1:numPfs,
     %head position
     pfhxy = xyz.copy;
-    if xyz.size(3)>2,
-        pfhxy.data= cat(2,xyz.data,permute(repmat(pfcenters(i,:),[xyz.size(1),1,1]),[1,3,2]));
+    if dims>2,
+        pfhxy.data= cat(2,xyz.data,permute(repmat(pfCenters(i,:),[xyz.size(1),1,1]),[1,3,2]));
     else
-        pfhxy.data = cat(2,cat(3,xyz.data(:,:,[1,2]),zeros([xyz.size([1,2]),1])),...
-                      permute(repmat([pfcenters(i,[1,2]),0],xyz.size(1),1),[1,3,2]));
+        pfhxy.data = cat(2,cat(3,xyz.data(:,:,dims),zeros([xyz.size([1,2]),1])),...
+                      permute(repmat([pfCenters(i,dims),0],xyz.size(1),1),[1,3,2]));
     end
     
     %head vector

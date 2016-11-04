@@ -55,7 +55,7 @@ nsts = numel(states);
 
 %% Setup figure paths
 OwnDir = '/storage/gravio/ownCloud/MjgEdER2016/';
-FigDir = ['pfs_2d_states_',tag,'_',Trial.filebase];
+FigDir = ['pfs_2d_states_',Trial.filebase,'_',tag];
 mkdir(fullfile(OwnDir,FigDir));
 
 
@@ -72,13 +72,19 @@ for s = 1:nsts
 end
 
 
+
+% FIGURE 
 if reportFig
+    
+    % Calculate auto correlogram of units
+    [accg,tbins] = autoccg(MTASession.validate(Trial.filebase));
+
 
     %% setup figure
     spOpts.width  = 2;
     spOpts.height = 2;
     spOpts.ny = 1;
-    spOpts.nx = nsts;
+    spOpts.nx = nsts+1;
     spOpts.padding = 2;
     spOpts.units = 'centimeters';
     figOpts.units = 'centimeters';
@@ -132,17 +138,29 @@ if reportFig
             axis xy
             colormap([0,0,0;parula]);
             caxis([-1,max(maxPfsRate(:,unit==units))]);
-            title([states{s} ' ' num2str(maxPfsRate(s,unit==units))]);
-% $$$             text(pf.adata.bins{1}(end)-300,pf.adata.bins{2}(end)-50,...
-% $$$                  sprintf('%2.1f',max(max(ratemap))),'Color','w','FontWeight','bold','FontSize',8)
+            xlabel(states{s})
+            title(num2str(round(maxPfsRate(s,unit==units),1)));
+            if s ~= 1,
+                set(gca,'XTickLabels',{});
+                set(gca,'YTickLabels',{});
+            else
+                axes('Units',spOpts.units,...
+                     'Position',[2+(spOpts.width+round(spOpts.padding/2))*(nsts+1)+round(spOpts.padding/2),...
+                                 (spOpts.height+round(spOpts.padding/2))*(i-1)+round(spOpts.padding/2),...
+                                 spOpts.width,...
+                                 spOpts.height]...
+                     );
+                 bar(tbins,accg(:,unit));axis tight;            
+            end
+            
         end
         
         FigName = ['pfs_2d_states_unit-',num2str(unit)];
         FigInfo = uicontrol('Parent',hfig,...
                             'Style','text',...
-                            'String',{FigName,Trial.filebase},...
+                            'String',{FigName,Trial.filebase,['stcMode: ',Trial.stc.mode]},...
                             'Units','centimeters',...
-                            'Position',[.5,(spOpts.height+round(spOpts.padding/2))*spOpts.ny-3,4,3]);
+                            'Position',[.2,(spOpts.height+round(spOpts.padding/2))*spOpts.ny-1,5,2]);
 
         print(gcf,'-depsc2',fullfile(OwnDir,FigDir,[FigName,'.eps']));
         print(gcf,'-dpng',  fullfile(OwnDir,FigDir,[FigName,'.png']));

@@ -75,6 +75,7 @@ states = pfstats{1}.states;
 s1 = 1;
 s2 = 2;
 uind = nq.eDist>25;
+uind = nq.Refrac<5e-4;
 figure, hold on
 plot(mpfs.patchMFR(s1,uind,1).*log10(mpfs.patchArea(s1,uind,1)),...
      mpfs.patchMFR(s2,uind,1).*log10(mpfs.patchArea(s2,uind,1)),...
@@ -90,13 +91,14 @@ daspect([1,1,1])
 s1 = 1;
 s2 = 2;
 uind = nq.eDist>25;
+uind = nq.Refrac<5e-4;
 figure, hold on
 plot(mpfs.patchMFR(s1,uind,1),...
      mpfs.patchMFR(s2,uind,1),...
      '.')
-plot(mpfs.patchPFR(s1,uind,1),...
-     mpfs.patchPFR(s2,uind,1),...
-     '.')
+% $$$ plot(mpfs.patchPFR(s1,uind,1),...
+% $$$      mpfs.patchPFR(s2,uind,1),...
+% $$$      '.')
 plot([0,40],[0,40],'-m')
 plot([0,20],[0,40],'-r')
 plot([0,40],[0,20],'-r')
@@ -152,46 +154,84 @@ figure,hist(log10(mpfs.peakFR(s1,uind,1)./mpfs.peakFR(s2,uind,1)),100)
 %   ufr - unit firing rate with 0.8 second box car average of spikes.
 %
 
+
+% TEST VARS ---------------------------------------------------------------------------
 Trial = MTATrial.validate('jg05-20120309.cof.all');
-pfstats = batch_compute_pfstats_bs(Trial);
-
-% helper function to find the patch index which contains the max firing rate
-mind = @(x,s,u) find(sq(x{1}.pfmstats(s,u).patchPFR)==max(x{1}.pfmstats(s,u).patchPFR));
-
-mind(pfstats,1,9)
-
-for i = 1:size(tpfs,1),
-    for j = 1:size(tpfs,2),
-        tpfs(i,j).peakFR = permute(tpfs(i,j).peakFR,[2,3,1]);
-        tpfs(i,j).rateThreshold = permute(tpfs(i,j).rateThreshold,[2,3,1]);        
-        tpfs(i,j).spatialCoherence = permute(tpfs(i,j).spatialCoherence,[2,3,1]);        
-    end
-end
-
-
-peakfr = [];
-for i = 1:size(tpfs,1)
-
-end
-
-
-fnames = fieldnames(tpfs)';
-clear('rpfstats')
-for f = fnames
-    f = f{1};
-    rpfstats.(f) = sq(reshape([tpfs(:,:).(f)],[size(tpfs),size(tpfs(1,1).(f),3),size(tpfs(1,1).(f),4),size(tpfs(1,1).(f),5)]));
-end
-
-mind = @(x,s) sum(bsxfun(@times,sq(bsxfun(@eq,rpfstats.patchPFR(s,:,:),max(rpfstats.patchPFR(s,:,:),[],3))),1:2),2);
-
-s1 = 1;
-s2 = 2;
-figure,plot(rpfstats.patchMFR(s1,:,1).*log10(rpfstats.patchArea(s1,:,1)),...
-            rpfstats.patchMFR(s2,:,1).*log10(rpfstats.patchArea(s2,:,1)),...
-            '.')
+unit = 27;
+unit = 85;
+state = 'pause&theta'
+state = 'loc&theta'
+%--------------------------------------------------------------------------------------
 
 
 
 
+% HELPER Functions --------------------------------------------------------------------
+
+% GET the trial index within the sesList struct array
+gti = @(sesList,Trial) find(arrayfun(@(s,t) strcmp([s.sessionName,'.',s.mazeName,'.',s.trialName],t{1}.filebase),...
+                                     sesList,...
+                                     repmat({Trial},size(sesList))));
+% GET the state index within the states cell array
+gsi = @(states,state) find(cellfun(@strcmp,states,repmat({state},size(states))),1);
+%--------------------------------------------------------------------------------------
 
 
+
+
+% MAIN --------------------------------------------------------------------------------
+
+tind = gti(sesList,Trial);
+suind = find(map(:,4)==tind);
+units = map(suind,1);
+
+sper = Trial.stc{state};
+sper.cast('TimeSeries');
+sper.resample(rhm);
+
+
+[~,mpind] = max(mpfs.patchMFR(sind,suind(units==unit),:));
+%mpfs.patchRateInd(sind,suind(units==unit),mpind,:,:)
+% $$$ figure,
+% $$$ plot(sq(mpfs.patchRateInd(sind,suind(units==unit),mpind,1,:)),...
+% $$$      sq(mpfs.patchRateInd(sind,suind(units==unit),mpind,2,:)),'.');
+
+
+% Trial specific stuff
+sind = gsi(states,state);                            % get state index
+Trial.load('stc',pfstats{tind}.stcMode);             % load (neural network/hand) labeled states
+[rhm,fs,ts] = fet_rhm(Trial,[],'mtchglong',true);    % compute rhythmic head motion power
+ufr = Trial.ufr.copy;                                % load unit firing rates
+ufr.create(Trial,rhm,'theta-groom-sit',units,0.8);
+xyz = Trial.load('xyz');                             % load xyz coordinates
+xyz.resample(rhm);                                   % resample xyz to rhm sampleRate
+%ufr.resample(rhm);                                   % resample ufr to rhm sampleRate
+pft = pfs_2d_theta(Trial);                           % load placefields during theta periods
+
+% xyz position mapped onto place field bins' indicies
+[~,indx] = min(abs( repmat(pft.adata.bins{1}',xyz.size(1),1)...
+                    -repmat(xyz(:,Trial.trackingMarker,1),1,numel(pft.adata.bins{1}))),...
+               [],2);
+[~,indy] = min(abs( repmat(pft.adata.bins{2}',xyz.size(1),1)...
+                    -repmat(xyz(:,Trial.trackingMarker,2),1,numel(pft.adata.bins{2}))),...
+               [],2);
+rpow = MTADxyz('data',log10(median(rhm(:,6<fs&fs<13),2)),'sampleRate',rhm.sampleRate);
+
+
+
+% select time indicies where xyz position is within a place field's best patch
+patchInd = and(ismember(indx,sq(mpfs.patchRateInd(sind,suind(units==unit),mpind,1,:))),...
+               ismember(indy,sq(mpfs.patchRateInd(sind,suind(units==unit),mpind,2,:))));
+
+ind = patchInd&sper.data==1;
+
+figure,plot(rpow(ind),log10(ufr(ind,units==unit)+abs(randn([sum(ind),1]))./10),'.')
+
+figure,plot(rpow(ind),ufr(ind,units==unit),'.')
+
+% rhm distribution
+eds = linspace(-8.5,-2,100);
+figure,bar(eds,histc(rpow(nniz(rpow)),eds),'histc');
+
+
+% NEXT bin mean ufr binned by rpow

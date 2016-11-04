@@ -17,12 +17,17 @@ function MTAstartup(varargin)
 %                    please ensure they point to the correct locations.
 %                    (These paths can be found at the end of the script)
 
-[host_server,data_server,add_basic_paths] = DefaultArgs(varargin,{'cin','cin',true});
+[project_name,host_server,data_server,add_basic_paths] = DefaultArgs(varargin,{'general','cin','cin',true});
+
+global MTA_CURRENT_PROJECT;
+global MTA_PROJECT_PATH;
+
 
 switch host_server % The severer where matlab is running. 
                    % Note: the addpath statement must point to 
                    % the "local" version of MTA.
     
+  
   case 'lmu'
     addpath('/storage/share/matlab/MTA/');
 
@@ -32,13 +37,25 @@ switch host_server % The severer where matlab is running.
         if ~exist(projPath),
             mkdir(projPath);
         end
-        
-        if ~isempty(project_name),            
-            MTAConfiguration(projPath,'absolute');
-        else
-            MTAConfiguration(fullfile(projPath,'general'),'absolute');
-        end
+        MTAConfiguration(projPath,'absolute');        
+        MTA_PROJECT_PATH = projPath;
     end
+% $$$   case 'lmu'
+% $$$     addpath('/storage/share/matlab/MTA/');
+% $$$ 
+% $$$     switch data_server % Where the data is located
+% $$$       case 'lmu'
+% $$$         projPath = fullfile('/storage/gravio/data/project/',project_name);
+% $$$         if ~exist(projPath),
+% $$$             mkdir(projPath);
+% $$$         end
+% $$$         
+% $$$         if ~isempty(project_name),            
+% $$$             MTAConfiguration(projPath,'absolute');
+% $$$         else
+% $$$             MTAConfiguration(fullfile(projPath,'general'),'absolute');
+% $$$         end
+% $$$     end
   
   case 'cin'
     addpath('/gpfs01/sirota/homes/share/matlab/MTA/');
