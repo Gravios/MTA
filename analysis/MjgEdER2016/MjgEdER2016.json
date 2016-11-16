@@ -1,0 +1,38 @@
+{"manuscript":[
+    
+    {"Author"   : {"firstName":"Justin", "middleName": "Joseph", "lastName":"Graboski"},
+     
+    {"title"   :"Quantitative Behavioral Correlates of Hippocampal Activity"},
+    
+    {"abstract":""},
+     
+    {"analyiticBreakDown":[
+	{"id"      :1,
+	 "title"   :"Motion tracking characterization",
+	 "tag"     :"mocap"
+	 "filebase":"MjgEdER2016_mocap"},
+	 
+	{"id"      :2,
+	 "title"   :"Behavior characterization and labeling"
+	 "tag"     :"bhv"
+	 "filebase":"MjgEdER2016_bhv"},
+	
+	{"title"   :"Rhythmic head motion"
+	 "tag"     :"rhm"
+	 "filebase":"MjgEdER2016_bhv"},
+	
+	{"title"   :"Place field characterization"
+	 "tag"     :"pfs"
+	 "filebase":"MjgEdER2016_pfs"},
+	
+	{"title"   :"Interaction of units and behavior"
+	 "tag"     :"iub"
+	 "filebase":"MjgEdER2016_iub"},
+	
+	{"title"   :"Unit phase precession"
+	 "tag"     :"upp"
+	 "filebase":"MjgEdER2016_upp"},
+	
+    ]}  
+]}
+ 

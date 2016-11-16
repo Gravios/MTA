@@ -3,8 +3,9 @@ addpath /storage/antsiro/data/lab/homes_of_alumni/marcel/scripts/tempScripts/
 addpath /storage/antsiro/data/lab/homes_of_alumni/marcel/scripts/aux/
 
 Trial = MTATrial('jg05-20120310');
-Trial.load('stc','nn0317_PP');
-states = Trial.stc.list_state_attrib;
+Trial.load('stc','NN0317R');
+%states = Trial.stc.list_state_attrib;
+states = {'loc&theta','rear&theta','pause&theta'};
 binDims = [20,20];
 smoothingWeights = [3,3];
 units = [];

@@ -1,6 +1,30 @@
 function pf = pfs_2d_theta(Trial,varargin)
-[numIter,reportFig,overwrite] = DefaultArgs(varargin,{1,0,0},1);
+%function pf = pfs_2d_theta(Trial,varargin)
+%
+%  varargin:
+%    numIter:    numeric, Number of subsampled iterations (NOTE: 1st sample is full)
+%
+%    reportFig:  logical, flag 1:{save figures as pngs of each place field in a predefined location
+%                              0:{do nothing}
+%
+%    overwrite:  logical, flag 1:{recompute place fields}
+%                              0:{load place fields from file}
+%
 
+
+% DEFARGS -------------------------------------------------------------------
+defargs = struct('numIter',      1,                                       ...
+                 'reportFig',    0,                                       ...
+                 'overwrite',    0                                        ...
+);
+
+[numIter,reportFig,overwrite] = DefaultArgs(varargin,defargs,'--struct');
+
+% END DEFARGS -----------------------------------------------------------------------------------
+
+
+
+% DEFVARS ----------------------------------------------------------------------
 Trial= MTATrial.validate(Trial);    
 units = Trial.spk.map(:,1);
 
@@ -11,7 +35,11 @@ if isempty(Trial.stc.gsi('t')),Trial = labelTheta(Trial);end
 OwnDir = '/storage/gravio/ownCloud/MjgEdER2016/';
 FigDir = ['pfs_2d_theta_',Trial.filebase];
 mkdir(fullfile(OwnDir,FigDir));
+% END DEFVARS ----------------------------------------------------------------------
 
+
+
+% MAIN -------------------------------------------------------------------------    
 %% compute 2d place fields for the theta state
 defargs = get_default_args_MjgEdER2016('MTAApfs','struct');
 defargs.units = units;
@@ -89,3 +117,5 @@ if reportFig
     end
 
 end
+
+% END MAIN -------------------------------------------------------------------------    

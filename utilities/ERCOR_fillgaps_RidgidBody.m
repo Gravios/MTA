@@ -4,8 +4,10 @@ function xyz = ERCOR_fillgaps_RidgidBody(Session,varargin)
 % Tries to correct marker swaps and markers which wander from
 % a ridgid body constrains
 %
-% Note: This function is interactive and depends on the function ClusterPP.
+% Caution: This function is quick and dirty ...
 %
+% Note: This function is interactive and depends on the function ClusterPP.
+% 
 % variables:
 %
 %    xyz: MTADxyz, motion capture "mocap" data 
@@ -29,32 +31,35 @@ function xyz = ERCOR_fillgaps_RidgidBody(Session,varargin)
 %        Make memory use automatic (will probably occur upon the rapture :() 
 %
 
-if ischar(Session),
+
+% DEFARGS ------------------------------------------------------------------------------------------
+defArgs = struct('good_index', [],                                                               ...
+                 'rb_model',   {{'head_back','head_left','head_right','head_front','head_top'}}, ...
+                 'MarkerSwapErrorThreshold',0.01,                                                ...
+                 'BufferSize',              2^16                                                 ...
+);
+
+[good_index,rb_model,MarkerSwapErrorThreshold,BufferSize] = DefaultArgs(varargin,defArgs,'--struct');
+
+% END DEFARGS ---------------------------------------------------------------------------------------
+
+
+
+% DEFVARS ----------------------------------------------------------------------
+if ischar(Session)||isa(Session,'MTATrial'),
     Session = MTASession(Session);
 end
-
-
 xyz = Session.load('xyz');
-
-defArgs = ...
-{... good_index
-     [],...
- ... rb_model
-     {'head_back','head_left','head_right','head_front','head_top'},...
- ... MarkerSwapErrorThreshold
-     0.01,...
- ... BufferSize
-     2^16 ...
-};
- 
-% Load Default Arguments
-[good_index,rb_model,MarkerSwapErrorThreshold,BufferSize] = ...
-    DefaultArgs(varargin,defArgs);
 
 NumChunks = floor(xyz.size(1)./BufferSize);
 LastPiece = (NumChunks*BufferSize+1):xyz.size(1);
 
-% Manual specify a good index with the aid of a gui
+% END DEFVARS ----------------------------------------------------------------------
+
+
+
+% MAIN -------------------------------------------------------------------------    
+% if no good index is specified select one with the aid of a gui
 if isempty(good_index),
     pfig = PlotSessionErrors(Session);
     dcm_obj = datacursormode(gcf);
@@ -78,9 +83,10 @@ assert(rb_model.N>3,['MTA:utilities:ERCOR_fillgaps_RidgidBody, ' ...
                       'number of markers in rb correction must be gt 3']);
 
 
+
+% Use gui to select error periods and attempt to correct
 hfig = figure(3848283);
 hfig.CurrentCharacter = ' ';
-
 while ~strcmp(get(hfig,'CurrentCharacter'),'q'),
     
     rb_xyz = xyz.copy;
@@ -95,8 +101,6 @@ while ~strcmp(get(hfig,'CurrentCharacter'),'q'),
     bperm = perms(bperm);
     fperms = bperm(:,1:4)';
 
-    
-    
     efet = zeros([rb_xyz.size(1),nperm]);
     for c = 0:NumChunks,
         if c~=NumChunks,
@@ -211,8 +215,10 @@ while ~strcmp(get(hfig,'CurrentCharacter'),'q'),
         
     end
     disp('Press <any key> to initiate another round of corrections')
-    disp('Press <q> to quit')
-    waitfor(hfig,'CurrentCharacter')
+    disp('Exiting...')
+    return
+    %disp('Press <q> to quit')
+    %waitfor(hfig,'CurrentCharacter')
     
 end
 
