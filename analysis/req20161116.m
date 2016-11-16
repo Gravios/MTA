@@ -51,13 +51,30 @@ sp(2)=subplot(212); imagesc(ts,fs,log10(ys(:,:,4,4))');axis xy;caxis([-9,-3.8])
 linkaxes(sp,'xy');
 
 
-hrb = mat2cell(xyz(
+
+% create surrogate markers before this step !!!
+hrb = xyz(:,{'chff','chrf','chtf'},:)-xyz(:,{'chcf'},:);
+hrb = mat2cell(hrb,ones([size(xyz,1),1]),ones([3,3]));
+U = cell(size(hrb));
+S = cell(size(hrb));
+V = cell(size(hrb));
+[U,S,V] = cellfun(@svd,hrb);
+V = cell2mat(V);
+
+hyz = sq(xyz(:,'head_back',:))*cell2mat(V)
+hyz = multiprod(sq(xyz(:,'chf',:)-xyz(:,'chcf',:)),V(:,[2,3],:)',[1,2],2);
+hfa = atan2(hyz(:,1),hyz(:,2));
+
+
+figure,plot(hfa)
+
 
 c = sqrt(sum(cross(xyz(:,6,:)-xyz(:,5,:),xyz(:,7,:)-xyz(:,5,:)).^2,3));
 figure,plot((c-mean(c(nniz(c(:)))))./std(c(nniz(c(:)))))
 
 
 b = sqrt(sum(cross(xyz(:,6,:)-xyz(:,8,:),xyz(:,7,:)-xyz(:,8,:)).^2,3));
+
 
 
 
