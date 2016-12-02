@@ -1,7 +1,7 @@
 
 Trial = MTATrial('jg05-20120310');
 xyz = Trial.xyz.copy;
-hang = Trial.transformOrigin;
+hang = Trial.transform_origin;
 %figure,plot(hang.roll);
 %figure,hist(hang.roll,1000);
 

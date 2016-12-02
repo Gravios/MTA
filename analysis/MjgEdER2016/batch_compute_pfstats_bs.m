@@ -79,7 +79,7 @@ for s = 1:numel(slist)
         % Compute place fields and subsampled estimate
         for sts = 1:numel(states),
             if verbose, fprintf('process state: %s...\n',states{sts}); end            
-            defargs = get_default_args_MjgEdER2016('MTAAknnpfs_bs','struct');
+            defargs = get_default_args('MjgEdER2016','MTAAknnpfs_bs','struct');
             defargs.units = units;
             defargs.states = states{sts};
             defargs = struct2varargin(defargs);        

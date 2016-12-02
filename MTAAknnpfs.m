@@ -331,18 +331,14 @@ classdef MTAAknnpfs < hgsetget %< MTAAnalysis
                   
                   if nargout==0,                    
 
-                      if isempty(maxRate),
-                          maxRate = max(rateMap(:));
+                      if isempty(colorLimits),
+                          colorLimits = [-1,max(rateMap(:))];
                       end
-                      
 
                       rateMap(isnan(rateMap)) = -1;
                       imagesc(bin1,bin2,rateMap');
-
-                      %text(Pfs.adata.bins{1}(end)-250,Pfs.adata.bins{2}(end)-50,...
-                      %    sprintf('%2.1f',max(rateMap(:))),'Color','w','FontWeight','bold','FontSize',10)
                       colormap([0,0,0;parula]);
-                      caxis([-1,maxRate]);        
+                      caxis(colorLimits);        
 
                       axis xy
                   end

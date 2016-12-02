@@ -45,8 +45,9 @@ load_pfs_unit_stats;
 Trial = MTATrial.validate('jg05-20120309.cof.all');
 unit = 27;
 unit = 85;
-state = 'pause&theta'
-state = 'loc&theta'
+state = 'pause&theta';
+state = 'loc&theta';
+%state = 'loc+pause&theta';
 %--------------------------------------------------------------------------------------
 
 
@@ -67,14 +68,27 @@ gsi = @(states,state) find(cellfun(@strcmp,states,repmat({state},size(states))),
 
 % MAIN --------------------------------------------------------------------------------
 
-tind = gti(sesList,Trial);
-suind = find(map(:,4)==tind);
+% RETRIVE trial units from unit map
+trialIndex = gti(sesList,Trial);
+suind = find(map(:,4)==trialIndex);
 units = map(suind,1);
+
+% LOAD Trial specific data
+sind = gsi(states,state);                            % GET state index
+Trial.load('stc',stcModes{trialIndex});              % LOAD (neural network/hand) labeled states
+[rhm,fs,ts] = fet_rhm(Trial,[],'mtchglong',true);    % COMPUTE rhythmic head motion power
+ufr = Trial.ufr.copy;                                % CREATE unit firing rate object
+ufr.create(Trial,rhm,'theta-groom-sit',units,0.8);   % COMPUTE unitfiring rate
+xyz = Trial.load('xyz');                             % LOAD xyz coordinates
+xyz.resample(rhm);                                   % RESAMPLE xyz to rhm sampleRate
+%ufr.resample(rhm);                                  % RESAMPLE ufr to rhm sampleRate
+pft = pfs_2d_theta(Trial);                           % LOAD placefields during theta periods
+
+
 
 sper = Trial.stc{state};
 sper.cast('TimeSeries');
 sper.resample(rhm);
-
 
 [~,mpind] = max(mpfs.patchMFR(sind,suind(units==unit),:));
 %mpfs.patchRateInd(sind,suind(units==unit),mpind,:,:)
@@ -82,17 +96,6 @@ sper.resample(rhm);
 % $$$ plot(sq(mpfs.patchRateInd(sind,suind(units==unit),mpind,1,:)),...
 % $$$      sq(mpfs.patchRateInd(sind,suind(units==unit),mpind,2,:)),'.');
 
-
-% Trial specific stuff
-sind = gsi(states,state);                            % get state index
-Trial.load('stc',pfstats{tind}.stcMode);             % load (neural network/hand) labeled states
-[rhm,fs,ts] = fet_rhm(Trial,[],'mtchglong',true);    % compute rhythmic head motion power
-ufr = Trial.ufr.copy;                                % load unit firing rates
-ufr.create(Trial,rhm,'theta-groom-sit',units,0.8);
-xyz = Trial.load('xyz');                             % load xyz coordinates
-xyz.resample(rhm);                                   % resample xyz to rhm sampleRate
-%ufr.resample(rhm);                                   % resample ufr to rhm sampleRate
-pft = pfs_2d_theta(Trial);                           % load placefields during theta periods
 
 % xyz position mapped onto place field bins' indicies
 [~,indx] = min(abs( repmat(pft.adata.bins{1}',xyz.size(1),1)...
@@ -104,14 +107,14 @@ pft = pfs_2d_theta(Trial);                           % load placefields during t
 rpow = MTADxyz('data',log10(median(rhm(:,6<fs&fs<13),2)),'sampleRate',rhm.sampleRate);
 
 
-
 % select time indicies where xyz position is within a place field's best patch
 patchInd = and(ismember(indx,sq(mpfs.patchRateInd(sind,suind(units==unit),mpind,1,:))),...
                ismember(indy,sq(mpfs.patchRateInd(sind,suind(units==unit),mpind,2,:))));
-
 ind = patchInd&sper.data==1;
-
 figure,plot(rpow(ind),log10(ufr(ind,units==unit)+abs(randn([sum(ind),1]))./10),'.')
+xlim([-6,-3])
+ylim([-2,2])
+
 
 figure,plot(rpow(ind),ufr(ind,units==unit),'.')
 

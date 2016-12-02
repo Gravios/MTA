@@ -17,11 +17,11 @@ varargout = cell([1,nargout-1]);
 fs = []; ts = [];
 
 % create a ridgid body model
-rb = Trial.xyz.model.rb({'head_back','head_left','head_front','head_right'});
+rb = xyz.model.rb({'head_back','head_left','head_front','head_right'});
 % find the center of mass of the model
 hcom = xyz.com(rb);
 % add coordinates of the model's center of mass to the xyz object
-xyz.addMarker('fhcom',[.7,1,.7],{{'head_back','head_front',[0,0,1]}},ButFilter(hcom,3,[2]./(Trial.xyz.sampleRate/2),'low'));
+xyz.addMarker('fhcom',[.7,1,.7],{{'head_back','head_front',[0,0,1]}},ButFilter(hcom,3,[2]./(xyz.sampleRate/2),'low'));
 
 
 % if xyz sampling rat e is greater than 120 Hz then resample it to 120 Hz
@@ -36,9 +36,9 @@ xyz.filter('ButFilter',3,55,'low');
 
 ang = create(MTADang,Trial,xyz);
 
-fet = Trial.xyz.copy;
+fet = xyz.copy;
 %fet.data = ButFilter(ang(:,'head_back','fhcom',3),3,[2,50]./(Trial.ang.sampleRate/2),'bandpass');
-bang = ButFilter(ang(:,'head_back','fhcom',3),3,[.5,50]./(Trial.ang.sampleRate/2),'bandpass');
+bang = ButFilter(ang(:,'head_back','fhcom',3),3,[.5,50]./(ang.sampleRate/2),'bandpass');
 %$$$ bang = [bang,ButFilter(ang(:,'head_right','fhcom',3),3,[2,30]./(Trial.ang.sampleRate/2),'bandpass')];
 % $$$ bang = [bang,ButFilter(ang(:,'head_top','fhcom',3),3,[2,30]./(Trial.ang.sampleRate/2),'bandpass')];
 fet.data = [0;ButFilter(diff(bang),3,[.5,50]/(ang.sampleRate/2),'bandpass')];

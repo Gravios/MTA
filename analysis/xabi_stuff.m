@@ -85,3 +85,43 @@ plot(rhm.data);
 sp(2) = subplot(212);
 plot(lfp.data);
 linkaxes(sp,'x');
+
+
+
+
+%% NEW Session JM11-20161126
+SessionName = 'JM11-20161126'; % what was once known as filebase
+xyz_path = '/storage/javier/data/processed/xyz';
+MazeName = 'cof';
+TrialName = 'all'; 
+overwrite = true;
+xyzSampleRate = 199.997752;
+
+linkSession(SessionName,xyz_path,[]);
+s = MTASession(SessionName,MazeName,overwrite,[],'vicon','box',xyzSampleRate);
+xyz = s.load('xyz');
+xyz.data(:,:,1) = xyz(:,:,1)-85;
+xyz.data(:,:,2) = xyz(:,:,2)-95;
+xyz.save;
+
+s = MTASession(SessionName);
+
+pZ(s);
+pXY(s);
+PlotSessionErrors(s);
+
+fxyz = xyz.copy;
+fxyz.filter('ButFilter',3,2.4,'low');
+vxy = fxyz.vel([1],[1,2]);
+
+[ys,fs,ts] = fet_rhm(s,xyz,'mtchglong',true);
+
+figure,
+sp =[];
+sp(1)=subplot(211);
+imagesc(ts,fs,log10(ys.data)');
+axis xy
+caxis([-6,-4])
+sp(2)=subplot(212)
+plot((1:size(vxy,1))./vxy.sampleRate,vxy.data)
+linkaxes(sp,'x')

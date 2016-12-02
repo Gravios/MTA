@@ -14,8 +14,8 @@ function xyz = ERCOR_fillgaps_RidgidBody(Session,varargin)
 %
 %  varargin:
 %
-%    good_index: double, the index which servers as a "good" template.
-%                        if good_index is empty a gui will help you out :)
+%    goodIndex: double, the index which servers as a "good" template.
+%                        if goodIndex is empty a gui will help you out :)
 %
 %    rb_model: MTAModel, model which contains the markers with a
 %                        ridgid body constraint.
@@ -23,23 +23,28 @@ function xyz = ERCOR_fillgaps_RidgidBody(Session,varargin)
 %    MarkerSwapErrorThreshold: double, Threshold for switching to auxilary
 %                                      Error correction methods.
 %
-%    BufferSize: double, For machines with low memory (e.g. <4gb)
+%    bufferSize: double, For machines with low memory (e.g. <4gb)
 %
 %  Note: the number of markers in rb_model must be <= 6.
 %  
 %  TODO: Make the assignment of MarkerSwapErrorThreshold automatic
 %        Make memory use automatic (will probably occur upon the rapture :() 
 %
+%      case 'BEST_SWAP_PERMUTATION'
+%      case 'RIGIDBODY_PARTIAL_RECONSTRUCTION'        
+
 
 
 % DEFARGS ------------------------------------------------------------------------------------------
-defArgs = struct('good_index', [],                                                               ...
-                 'rb_model',   {{'head_back','head_left','head_right','head_front','head_top'}}, ...
+defArgs = struct('mode',      'EMGM',                                                            ...
+                 'method',    'BEST_SWAP_PERMUTATION',                                           ...
+                 'goodIndex', [],                                                                ...
+                 'rb_model',  {{'head_back','head_left','head_right','head_front','head_top'}},  ...
                  'MarkerSwapErrorThreshold',0.01,                                                ...
-                 'BufferSize',              2^16                                                 ...
+                 'bufferSize',              2^16                                                 ...
 );
 
-[good_index,rb_model,MarkerSwapErrorThreshold,BufferSize] = DefaultArgs(varargin,defArgs,'--struct');
+[mode,goodIndex,rb_model,MarkerSwapErrorThreshold,bufferSize] = DefaultArgs(varargin,defArgs,'--struct');
 
 % END DEFARGS ---------------------------------------------------------------------------------------
 
@@ -51,8 +56,8 @@ if ischar(Session)||isa(Session,'MTATrial'),
 end
 xyz = Session.load('xyz');
 
-NumChunks = floor(xyz.size(1)./BufferSize);
-LastPiece = (NumChunks*BufferSize+1):xyz.size(1);
+numChunks = floor(xyz.size(1)./bufferSize);
+lastPiece = (numChunks*bufferSize+1):xyz.size(1);
 
 % END DEFVARS ----------------------------------------------------------------------
 
@@ -60,14 +65,14 @@ LastPiece = (NumChunks*BufferSize+1):xyz.size(1);
 
 % MAIN -------------------------------------------------------------------------    
 % if no good index is specified select one with the aid of a gui
-if isempty(good_index),
+if isempty(goodIndex),
     pfig = PlotSessionErrors(Session);
     dcm_obj = datacursormode(gcf);
     disp(['Please select a point on the x-axis with the data cursor ' ...
           'and then press enter']);
     waitfor(pfig,'CurrentCharacter',char(13));
-    good_index = dcm_obj.getCursorInfo.Position(1);
-    disp(['Index = ' num2str(good_index)])
+    goodIndex = dcm_obj.getCursorInfo.Position(1);
+    disp(['Index = ' num2str(goodIndex)])
     delete(pfig);
 end
 
@@ -75,51 +80,95 @@ end
 if iscell(rb_model)&&~isa(rb_model,'MTAModel'),
     rb_model = xyz.model.rb(rb_model);
 end
-
 assert(rb_model.N<=6,['MTA:utilities:ERCOR_fillgaps_RidgidBody, ' ...
                       'number of markers in rb correction must be eq or lt 6']);
-
 assert(rb_model.N>3,['MTA:utilities:ERCOR_fillgaps_RidgidBody, ' ...
                       'number of markers in rb correction must be gt 3']);
 
 
 
-% Use gui to select error periods and attempt to correct
-hfig = figure(3848283);
-hfig.CurrentCharacter = ' ';
-while ~strcmp(get(hfig,'CurrentCharacter'),'q'),
-    
-    rb_xyz = xyz.copy;
-    trb_xyz = rb_xyz.copy;
-    
-    rb_xyz.data = xyz(:,rb_model.ml,:);
-    rb_xyz.model = rb_model;
-        
-    nperm = factorial(rb_xyz.model.N);
+rb_xyz = xyz.copy;
+trb_xyz = rb_xyz.copy;
 
-    bperm = 1:rb_xyz.model.N;
-    bperm = perms(bperm);
-    fperms = bperm(:,1:4)';
+rb_xyz.data = xyz(:,rb_model.ml,:);
+rb_xyz.model = rb_model;
 
-    efet = zeros([rb_xyz.size(1),nperm]);
-    for c = 0:NumChunks,
-        if c~=NumChunks,
-            ind = (c*BufferSize+1):(c+1)*BufferSize;
-        else
-            ind = LastPiece;
-        end
-        trb_xyz.data = rb_xyz(ind,:,:);
-        imori = imo(trb_xyz);
+nperm = factorial(rb_xyz.model.N);
 
-        i = 1;
-        for p = fperms,
-            efet(ind,i) = imori(:,p(1),p(2),p(3),p(4),1);
-            i = i+1;
+% Get all permutations of 4 markers
+bperm = 1:rb_xyz.model.N;
+bperm = perms(bperm);
+fperms = bperm(:,1:4)';
+
+
+
+switch method
+  case 'RIGIDBODY_PARTIAL_RECONSTRUCTION'
+    headRigidBodyMarkers={'head_back','head_left','head_front','head_right'};
+    headRigidBody = xyz.model.rb(headRigidBodyMarkers);
+    hcom = xyz.com(headRigidBody);
+    hxyz = xyz.copy;
+    hxyz.model = headRigidBody;
+    hxyz.data = xyz(:,headRigidBodyMarkers,:);
+    markerIndNCK = nchoosek(1:size(hxyz,2),3);
+    markerTrioCOM = nan([size(hxyz,1),1,size(hxyz,3)]);
+    markerTrioCRS = nan([size(hxyz,1),size(markerIndNCK,1),size(hxyz,3),size(hxyz,3)]);
+    for nck = 1:size(markerIndNCK,1),        
+        markerTrioCOOR = bsxfun(@minus,hxyz(:,markerIndNCK(nck,[1,3]),:),hxyz(:,markerIndNCK(nck,2),:));
+        markerTrioCRS(:,nck,:,:) = permute(cat(2,markerTrioCOOR,cross(markerTrioCOOR(:,1,:),markerTrioCOOR(:,2,:))),[1,4,2,3]);
+        markerTrioCOM(:,nck,:) = mean(hxyz(:,markerIndNCK(nck,:),:),2);
+    end
+
+    markerTrioANG = nan([size(hxyz,1),size(markerIndNCK,1).^2-size(markerIndNCK,1)]);
+    k = 1;
+    for i = 1:size(markerIndNCK,1)-1,
+        for j = i+1:size(markerIndNCK,1),    
+            markerTrioANG(:,k) = acos(sq(dot(markerTrioCRS(:,i,3,:),markerTrioCRS(:,j,3,:),4))./...
+                                      sq(prod(sqrt(sum(markerTrioCRS(:,[i,j],3,:).^2,4)),2))).*...
+                                      sign(prod(markerTrioCRS(:,[i,j],3,3),2));
+            k = k+1;
         end
     end
-    dtgmori = var(bsxfun(@minus,efet,efet(good_index,:)),[],2);
     
-    %% Manually select error groups
+    
+    
+end
+
+
+% Calculate intermarker orientaions
+efet = zeros([rb_xyz.size(1),nperm]);
+for c = 0:numChunks,
+    if c~=numChunks,
+        ind = (c*bufferSize+1):(c+1)*bufferSize;
+    else
+        ind = lastPiece;
+    end
+    trb_xyz.data = rb_xyz(ind,:,:);
+    imori = imo(trb_xyz);
+
+    i = 1;
+    for p = fperms,
+        efet(ind,i) = imori(:,p(1),p(2),p(3),p(4),1);
+        i = i+1;
+    end
+end
+
+dtgmori = var(bsxfun(@minus,efet,efet(goodIndex,:)),[],2);
+
+switch mode
+  case 'EMGM'
+    % em-gaussian mixture model
+    nind = nniz(efet)&log10(dtgmori)>-0.5;
+    [teid,emgmModel,emgmLlh] = mixGaussEm(efet(nind,:)',30);
+    eid = zeros(size(nind));
+    eid(nind)=teid;
+  case 'MANUAL'
+    % Use gui to select error periods and attempt to correct
+    % Create 1-d distance metric for detecting errors
+    % Manually select error groups
+    hfig = figure(3848283);
+    hfig.CurrentCharacter = ' ';
+    
     clf(hfig)
     plot(dtgmori)
     disp('******************************');
@@ -130,24 +179,42 @@ while ~strcmp(get(hfig,'CurrentCharacter'),'q'),
     disp('******************************'); 
     
     eid = ClusterPP(hfig);
-    
-    
-    %% given errors find best marker swap solution
-    % test on subset
-    nSamp = 100;
-    
-    errors = unique(eid);
-    ectry = zeros([nSamp,nperm]);
-    tectry = zeros([nSamp,nperm]);
-   
-    disp('')
-    disp(['Number of error groups: ' num2str(numel(errors)-1)]);
-    disp('')
-    
-    for i = errors(2:end),
         
-        bids = find(eid==i,nSamp,'first');
-        
+  otherwise
+    error('MTA:utilities:ERCOR_fillgaps_RidgidBody:ModeNotFound');
+end
+
+
+
+
+
+
+%% For each error group find best marker swap solution
+% test on subset
+
+
+errorIds = unique(eid)';
+errorIds(errorIds==0)=[];
+
+figure,hold on
+c = jet(numel(errorIds));
+for u = errorIds
+    scatter(efet(eid==u,1),efet(eid==u,5),4,c(u,:));
+    eidCount(u) = sum(eid==u);
+end
+
+disp('')
+disp(['Number of error groups: ' num2str(numel(errorIds))]);
+disp('')
+
+for i = errorIds,
+    switch method
+      case 'BEST_SWAP_PERMUTATION'
+        % marker swap - all permutations 
+        ectry = zeros([eidCount(i),nperm]);
+        tectry = zeros([eidCount(i),nperm]);
+        bids = eid==i;    
+        % Compute residual for each marker swap permutation
         k = 1;
         for c = bperm',
             trb_xyz.data = rb_xyz(bids,c,:);
@@ -157,10 +224,11 @@ while ~strcmp(get(hfig,'CurrentCharacter'),'q'),
             for p = fperms,
                 tectry(bids,j) = imori(:,p(1),p(2),p(3),p(4),1);
                 j = j+1;
-            end
-            ectry(bids,k) = var(bsxfun(@minus,tectry(bids,:),efet(good_index,:)),[],2);
+            end           
+            ectry(bids,k) = var(bsxfun(@minus,tectry(bids,:),efet(goodIndex,:)),[],2);
             k = k+1;
         end
+
         
         % Best permutation
         [bpVal,bpInd] =min(mean(ectry));
@@ -181,44 +249,22 @@ while ~strcmp(get(hfig,'CurrentCharacter'),'q'),
             disp(['Error Group: ' num2str(i) ' , bpVal = ' num2str(bpVal)])
             %disp('No options, ignoring error')
             disp(['Ridgid body intermarker distance optimization'])
-            
-            %warning(['ERCOR_fillgaps_RidgidBody:MarkerSwapFailed, ' ...
-            %         'procceding to attemtep marker reconstruction from rigid body']);
-            
-            
-            % $$$         drb_xyz = imd(rb_xyz);
-            % $$$         ndrb_xyz = bsxfun(@minus,drb_xyz,drb_xyz(good_index,:,:));
-            % $$$
-            % $$$         log10(abs(mean(drb_xyz(eid==2,:,:))))
-            % $$$         gperms = find(abs(mean(efet(bids,:))-gpat)<.2);
-            
-            % Try some other correction method
-            % probably by reconstructing the bad
-            % markers position using the other markers
-
-% $$$             dectry = sum(abs(bsxfun(@minus,reshape(im,size(im,1),[]),reshape(im(68000,:,:),1,[]))),2);
-% $$$             
-% $$$             im =imd(rb_xyz);
-% $$$             imm = bsxfun(@minus,im,im(good_index,:,:));
-% $$$             gm = {};
-% $$$             erind = find(eid==i);
-% $$$             min_dist_thresh = 1;
-% $$$             for c = erind,
-% $$$             for m= 1:5,
-% $$$                 gm{m} = find(abs(imm(erind,m,[1:m-1,m+1:5]))<min_dist_thresh);
-% $$$             end
-% $$$             gm = unique(cell2mat(gm(~cellfun(@isempty,gm))'))
-% $$$             % gm 
-% $$$             end
-            
         end
         
-    end
-    disp('Press <any key> to initiate another round of corrections')
-    disp('Exiting...')
-    return
-    %disp('Press <q> to quit')
-    %waitfor(hfig,'CurrentCharacter')
+      case 'RIGIDBODY_PARTIAL_RECONSTRUCTION'
     
-end
+
+        
+    end
+
+    
+end    
+
+disp('Press <any key> to initiate another round of corrections')
+disp('Exiting...')
+return
+%disp('Press <q> to quit')
+%waitfor(hfig,'CurrentCharacter')
+    
+
 
