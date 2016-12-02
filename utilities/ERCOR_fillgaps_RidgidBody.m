@@ -112,20 +112,33 @@ switch method
     hxyz.data = xyz(:,headRigidBodyMarkers,:);
     markerIndNCK = nchoosek(1:size(hxyz,2),3);
     markerTrioCOM = nan([size(hxyz,1),1,size(hxyz,3)]);
-    markerTrioCRS = nan([size(hxyz,1),size(markerIndNCK,1),size(hxyz,3),size(hxyz,3)]);
+    markerTrioCOOR = nan([size(hxyz,1),size(markerIndNCK,1),size(hxyz,3),size(hxyz,3)]);
     for nck = 1:size(markerIndNCK,1),        
-        markerTrioCOOR = bsxfun(@minus,hxyz(:,markerIndNCK(nck,[1,3]),:),hxyz(:,markerIndNCK(nck,2),:));
-        markerTrioCRS(:,nck,:,:) = permute(cat(2,markerTrioCOOR,cross(markerTrioCOOR(:,1,:),markerTrioCOOR(:,2,:))),[1,4,2,3]);
+        markerTrioCOOR(:,nck,[1,2],:) = permute(bsxfun(@minus,hxyz(:,markerIndNCK(nck,[1,3]),:),hxyz(:,markerIndNCK(nck,2),:)),[1,4,2,3])
+        markerTrioCOOR(:,nck,3,:) = cross(markerTrioCOOR(:,nck,1,:),markerTrioCOOR(:,nck,2,:));
         markerTrioCOM(:,nck,:) = mean(hxyz(:,markerIndNCK(nck,:),:),2);
     end
 
+    cellfun(@eig,mat2cell(markerTrioCOOR,ones([size(markerTrioCOOR,1),1]),ones([size(markerTrioCOOR,2),1]),3,3));
+    
+    %markerTrioCOOR(time,nck,xyz,xyz)
+    reconstructionSolutions  = nan([size(markerIndNCK,1),3]);
+    for nck = 1:size(markerIndNCK,1),
+        goodIndexEigenVector = eig(sq(markerTrioCOOR(goodIndex,nck,:,:)));
+        
+        reconstructionSolutions(nck,:) = goodIndex;
+    end
+    
+    
+    
+    
     markerTrioANG = nan([size(hxyz,1),size(markerIndNCK,1).^2-size(markerIndNCK,1)]);
     k = 1;
     for i = 1:size(markerIndNCK,1)-1,
         for j = i+1:size(markerIndNCK,1),    
-            markerTrioANG(:,k) = acos(sq(dot(markerTrioCRS(:,i,3,:),markerTrioCRS(:,j,3,:),4))./...
-                                      sq(prod(sqrt(sum(markerTrioCRS(:,[i,j],3,:).^2,4)),2))).*...
-                                      sign(prod(markerTrioCRS(:,[i,j],3,3),2));
+            markerTrioANG(:,k) = acos(sq(dot(markerTrioCOOR(:,i,3,:),markerTrioCOOR(:,j,3,:),4))./...
+                                      sq(prod(sqrt(sum(markerTrioCOOR(:,[i,j],3,:).^2,4)),2))).*...
+                                      sign(prod(markerTrioCOOR(:,[i,j],3,3),2));
             k = k+1;
         end
     end
