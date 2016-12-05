@@ -126,36 +126,58 @@ switch method
     hxyz = xyz.copy;
     hxyz.model = headRigidBody;
     hxyz.data = xyz(:,headRigidBodyMarkers,:);
-    markerIndNCK = nchoosek(1:size(hxyz,2),3);
-    markerTrioCOM = nan([size(hxyz,1),1,size(hxyz,3)]);
-    markerTrioCOOR = nan([size(hxyz,1),size(markerIndNCK,1),size(hxyz,3),size(hxyz,3)]);
-    for nck = 1:size(markerIndNCK,1),        
-        markerTrioCOOR(:,nck,[1,2],:) = permute(bsxfun(@minus,hxyz(:,markerIndNCK(nck,[1,3]),:),hxyz(:,markerIndNCK(nck,2),:)),[1,4,2,3]);
-        markerTrioCOOR(:,nck,3,:) = cross(markerTrioCOOR(:,nck,1,:),markerTrioCOOR(:,nck,2,:));
-        markerTrioCOOR(:,nck,2,:) = cross(markerTrioCOOR(:,nck,1,:),markerTrioCOOR(:,nck,3,:));
-        markerTrioCOM(:,nck,:) = mean(hxyz(:,markerIndNCK(nck,:),:),2);
+    markerTriad.nck  = nchoosek(1:size(hxyz,2),3);
+    markerTriad.com  = nan([size(hxyz,1),1,size(hxyz,3)]);
+    markerTriad.coor = nan([size(hxyz,1),size(markerTriad.nck,1),size(hxyz,3),size(hxyz,3)]);
+    for nck = 1:size(markerTriad.nck,1),        
+        markerTriad.coor(:,nck,[1,2],:) = permute(bsxfun(@minus,hxyz(:,markerTriad.nck(nck,[1,3]),:),hxyz(:,markerTriad.nck(nck,2),:)),[1,4,2,3]);
+        markerTriad.coor(:,nck,3,:) = cross(markerTriad.coor(:,nck,1,:),markerTriad.coor(:,nck,2,:));
+        markerTriad.coor(:,nck,2,:) = cross(markerTriad.coor(:,nck,1,:),markerTriad.coor(:,nck,3,:));
+        markerTriad.com(:,nck,:) = mean(hxyz(:,markerTriad.nck(nck,:),:),2);
+        markerTriad.imd=[];
+        markerTriad.imo=[];
     end
     
-    [~,~,mtEigenVector] = cellfun(@svd,cellfun(@squeeze,mat2cell(markerTrioCOOR,ones([size(markerTrioCOOR,1),1]),ones([size(markerTrioCOOR,2),1]),3,3),'UniformOutput',false),'UniformOutput',false);
+    [~,~,mtEigenVector] = cellfun(@svd,cellfun(@squeeze,mat2cell(markerTriad.coor,ones([size(markerTriad.coor,1),1]),ones([size(markerTriad.coor,2),1]),3,3),'UniformOutput',false),'UniformOutput',false);
 
-    reconstructedSolutions  = nan([size(markerIndNCK,1),3,headRigidBody.N-3,numel(goodIndicies)]);
-    reconstructedSolutionsMarkerInds  = nan([size(markerIndNCK,1),headRigidBody.N-3]);
+    reconstructedSolutions  = nan([size(markerTriad.nck,1),headRigidBody.N-3,xyz.size(3),numel(goodIndicies)]);
+    reconstructedSolutionsMarkerInds  = nan([size(markerTriad.nck,1),headRigidBody.N-3]);
     gcount = 1;
     for goodIndex = goodIndicies(:)'
-        for nck = 1:size(markerIndNCK,1),            
-            markerToReconstruct = find(~ismember(1:numel(headRigidBodyMarkers),markerIndNCK(nck,:)));
+        for nck = 1:size(markerTriad.nck,1),            
+            markerToReconstruct = find(~ismember(1:numel(headRigidBodyMarkers),markerTriad.nck(nck,:)));
             reconstructedSolutionsMarkerInds(nck,:) = markerToReconstruct;
             for marker = 1:numel(markerToReconstruct)
                 goodTargetVector = sq(hxyz(goodIndex,markerToReconstruct(marker),:)...
-                                      -hxyz(goodIndex,markerIndNCK(nck,2),:));
+                                     -hxyz(goodIndex,markerTriad.nck(nck,2),:));
                 solutionBasisCoordinates = rref(cat(2,mtEigenVector{goodIndex,1},goodTargetVector));
-                reconstructedSolutions(nck,:,marker,gcount) = solutionBasisCoordinates(:,4);
+                reconstructedSolutions(nck,marker,:,gcount) = solutionBasisCoordinates(:,4);
             end
         end
         gcount = gcount+1;
     end
     
+    reconstructedSolution.mean = {cellfun(@(x) mean(x')',... Compute xyz mean matrix of each nchoosek subset and solution target
+                                           mat2cell(reconstructedSolutions,...
+                                                    ones([size(markerTriad.nck,1),1]),...
+                                                    ones([numel(markerToReconstruct),1]),...
+                                                    [size(xyz,3),numel(goodIndicies)])...
+                                           'UniformOutput',false,...
+    )};
+    reconstructedSolution.covmat = {cellfun(@cov,... Compute xyz covariance matrix of each nchoosek subset and solution target
+                                           mat2cell(reconstructedSolutions,...
+                                                    ones([size(markerTriad.nck,1),1]),...
+                                                    ones([numel(markerToReconstruct),1]),...
+                                                    [size(xyz,3),numel(goodIndicies)])...
+                                           'UniformOutput',false,...
+    )};
     
+    % if (the inter marker angles and distances of an marker Triplet are within error tolerance)
+    %   | check The distance between each other marker and their
+    %   | respective solution
+    % else (Triplet member is out of alignment)
+    %   | mark that current nchoosek subset contains an error    
+    nckError=true([size(markerTriad.nck,1),1]);
     
     
     
