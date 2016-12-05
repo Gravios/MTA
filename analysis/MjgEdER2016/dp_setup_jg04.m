@@ -5,7 +5,7 @@ S = get_session_list('jg04_CA3');
 
 %% Setup jg05-20120311
 
-i=2;
+i=4;
 % setup sessions
 %for i = 1:numel(S),
 
@@ -33,7 +33,7 @@ PlotSessionErrors(s);
 %ERCOR_fillgaps_RidgidBody(s,'EMGM',55150);
 %ERCOR_fillgaps_RidgidBody(s,'EMGM',805000);
 %ERCOR_fillgaps_RidgidBody(s,'MANUAL',702000);
-ERCOR_fillgaps_RidgidBody(s,'EMGM',166250);
+ERCOR_fillgaps_RidgidBody(s,'EMGM','RIGIDBODY_PARTIAL_RECONSTRUCTION',166250);
 PlotSessionErrors(s)
 
 % create trial wrapper for full session

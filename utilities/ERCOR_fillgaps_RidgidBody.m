@@ -38,13 +38,13 @@ function xyz = ERCOR_fillgaps_RidgidBody(Session,varargin)
 % DEFARGS ------------------------------------------------------------------------------------------
 defArgs = struct('mode',      'EMGM',                                                            ...
                  'method',    'BEST_SWAP_PERMUTATION',                                           ...
-                 'goodIndex', [],                                                                ...
+                 'goodIndicies', [],                                                             ...
                  'rb_model',  {{'head_back','head_left','head_right','head_front','head_top'}},  ...
                  'MarkerSwapErrorThreshold',0.01,                                                ...
                  'bufferSize',              2^16                                                 ...
 );
 
-[mode,goodIndex,rb_model,MarkerSwapErrorThreshold,bufferSize] = DefaultArgs(varargin,defArgs,'--struct');
+[mode,method,goodIndex,rb_model,MarkerSwapErrorThreshold,bufferSize] = DefaultArgs(varargin,defArgs,'--struct');
 
 % END DEFARGS ---------------------------------------------------------------------------------------
 
@@ -65,14 +65,30 @@ lastPiece = (numChunks*bufferSize+1):xyz.size(1);
 
 % MAIN -------------------------------------------------------------------------    
 % if no good index is specified select one with the aid of a gui
-if isempty(goodIndex),
+if isempty(goodIndicies),
     pfig = PlotSessionErrors(Session);
-    dcm_obj = datacursormode(gcf);
     disp(['Please select a point on the x-axis with the data cursor ' ...
           'and then press enter']);
-    waitfor(pfig,'CurrentCharacter',char(13));
-    goodIndex = dcm_obj.getCursorInfo.Position(1);
-    disp(['Index = ' num2str(goodIndex)])
+    ylm = ylim;
+    while ~strcmp(get(pfig,'CurrentCharacter'),char(27));
+        set(pfig,'CurrentCharacter',char(32));        
+        while ~strcmp(get(pfig,'CurrentCharacter'),char(13))
+            waitforbuttonpress
+            if strcmp(get(pfig,'CurrentCharacter'),char(27))
+                bflag = 1;
+                break
+            end
+        end
+        if bflag, break,end
+        rect = getrect(pfig);
+        patch([rect(1),rect(1),rect(1)+rect(3),rect(1)+rect(3)],...
+              [ylm(1),ylm(2),ylm(2),ylm(1)],...
+              [-1,-1,-1,-1],[.9,.9,.9]);
+        goodIndicies = cat(1,goodIndicies,[round(rect(1)):round(rect(1)+rect(3))]');
+    end
+    goodIndicies = unique(goodIndicies);
+    
+    disp(['Number of indicies selected: = ' num2str(numel(goodIndicies))])
     delete(pfig);
 end
 
@@ -114,34 +130,32 @@ switch method
     markerTrioCOM = nan([size(hxyz,1),1,size(hxyz,3)]);
     markerTrioCOOR = nan([size(hxyz,1),size(markerIndNCK,1),size(hxyz,3),size(hxyz,3)]);
     for nck = 1:size(markerIndNCK,1),        
-        markerTrioCOOR(:,nck,[1,2],:) = permute(bsxfun(@minus,hxyz(:,markerIndNCK(nck,[1,3]),:),hxyz(:,markerIndNCK(nck,2),:)),[1,4,2,3])
+        markerTrioCOOR(:,nck,[1,2],:) = permute(bsxfun(@minus,hxyz(:,markerIndNCK(nck,[1,3]),:),hxyz(:,markerIndNCK(nck,2),:)),[1,4,2,3]);
         markerTrioCOOR(:,nck,3,:) = cross(markerTrioCOOR(:,nck,1,:),markerTrioCOOR(:,nck,2,:));
+        markerTrioCOOR(:,nck,2,:) = cross(markerTrioCOOR(:,nck,1,:),markerTrioCOOR(:,nck,3,:));
         markerTrioCOM(:,nck,:) = mean(hxyz(:,markerIndNCK(nck,:),:),2);
     end
+    
+    [~,~,mtEigenVector] = cellfun(@svd,cellfun(@squeeze,mat2cell(markerTrioCOOR,ones([size(markerTrioCOOR,1),1]),ones([size(markerTrioCOOR,2),1]),3,3),'UniformOutput',false),'UniformOutput',false);
 
-    cellfun(@eig,mat2cell(markerTrioCOOR,ones([size(markerTrioCOOR,1),1]),ones([size(markerTrioCOOR,2),1]),3,3));
-    
-    %markerTrioCOOR(time,nck,xyz,xyz)
-    reconstructionSolutions  = nan([size(markerIndNCK,1),3]);
-    for nck = 1:size(markerIndNCK,1),
-        goodIndexEigenVector = eig(sq(markerTrioCOOR(goodIndex,nck,:,:)));
-        
-        reconstructionSolutions(nck,:) = goodIndex;
-    end
-    
-    
-    
-    
-    markerTrioANG = nan([size(hxyz,1),size(markerIndNCK,1).^2-size(markerIndNCK,1)]);
-    k = 1;
-    for i = 1:size(markerIndNCK,1)-1,
-        for j = i+1:size(markerIndNCK,1),    
-            markerTrioANG(:,k) = acos(sq(dot(markerTrioCOOR(:,i,3,:),markerTrioCOOR(:,j,3,:),4))./...
-                                      sq(prod(sqrt(sum(markerTrioCOOR(:,[i,j],3,:).^2,4)),2))).*...
-                                      sign(prod(markerTrioCOOR(:,[i,j],3,3),2));
-            k = k+1;
+    reconstructedSolutions  = nan([size(markerIndNCK,1),3,headRigidBody.N-3,numel(goodIndicies)]);
+    reconstructedSolutionsMarkerInds  = nan([size(markerIndNCK,1),headRigidBody.N-3]);
+    gcount = 1;
+    for goodIndex = goodIndicies(:)'
+        for nck = 1:size(markerIndNCK,1),            
+            markerToReconstruct = find(~ismember(1:numel(headRigidBodyMarkers),markerIndNCK(nck,:)));
+            reconstructedSolutionsMarkerInds(nck,:) = markerToReconstruct;
+            for marker = 1:numel(markerToReconstruct)
+                goodTargetVector = sq(hxyz(goodIndex,markerToReconstruct(marker),:)...
+                                      -hxyz(goodIndex,markerIndNCK(nck,2),:));
+                solutionBasisCoordinates = rref(cat(2,mtEigenVector{goodIndex,1},goodTargetVector));
+                reconstructedSolutions(nck,:,marker,gcount) = solutionBasisCoordinates(:,4);
+            end
         end
+        gcount = gcount+1;
     end
+    
+    
     
     
     
@@ -281,3 +295,22 @@ return
     
 
 
+
+
+
+% $$$     lhxyz = hxyz.copy;
+% $$$     lhxyz.data = bsxfun(@minus,lhxyz.data,lhxyz(:,2,:));    
+% $$$     figure,hold on
+% $$$     plotSkeleton(Session,lhxyz,goodIndex);    
+% $$$     plot3([0,goodTargetVector(1)],...
+% $$$           [0,goodTargetVector(2)],...
+% $$$           [0,goodTargetVector(3)])
+% $$$     
+% $$$     for c = 1:3,
+% $$$         ln = plot3(mtEigenVector{goodIndex,1}(1,c).*5,...
+% $$$               mtEigenVector{goodIndex,1}(2,c).*5,...
+% $$$               mtEigenVector{goodIndex,1}(3,c).*5,...
+% $$$               ['.',clrs(c)]);
+% $$$         ln.MarkerSize=20;
+% $$$     end    
+    
