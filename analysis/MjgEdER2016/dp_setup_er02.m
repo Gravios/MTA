@@ -1,19 +1,18 @@
-%% MTASession Setup - jg04 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+%% MTASession Setup - er02 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 overwrite = false;
 nlx = true;
-%S = get_session_list('jg04');
-S = get_session_list('jg04_CA3');
+S = get_session_list('er02');
 i=4;
+thetaChan = [71,71,69,72,73,74,71];
 
 
 if overwrite, QuickSessionSetup(S(i)); end
 s = MTASession.validate([S(i).sessionName,'.',S(i).mazeName,'.',S(i).trialName]); 
 
 % IF you forgot to include a vsk upon construction
-% s.xyz.model =  MTAModel(fullfile(s.spath, [s.name '-' s.maze.name '.vsk']),'-vsk');
-% s.xyz.save
-
-
+s.load('xyz');
+s.xyz.model =  MTAModel(fullfile(s.spath, [s.name '-' s.maze.name '.vsk']),'-vsk');
+s.xyz.save
 
 % PLOT Session creation report
 hfig = figure(gen_figure_id),
@@ -27,7 +26,7 @@ headMarkers = cellfun(@(x) cellstr(x),headMarkers(~cellfun('isempty',headMarkers
 % automatic
 ERCOR_fillgaps_RidgidBody(s,'EMGM','BEST_SWAP_PERMUTATION',[],headMarkers);
 % manual
-ERCOR_fillgaps_RidgidBody(s,'MANUAL','BEST_SWAP_PERMUTATION',[],headMarkers);
+%ERCOR_fillgaps_RidgidBody(s,'MANUAL','BEST_SWAP_PERMUTATION',[],headMarkers);
 
 % RECONSTRUCT markers from marker triads with acceptable error
 %ERCOR_fillgaps_RidgidBody(s,'EMGM','RIGIDBODY_PARTIAL_RECONSTRUCTION');
@@ -42,9 +41,10 @@ linkaxes(sp(3:4),'xy');
 % ESTIMATE anatomical head position
 transform_rigidBody(s,false,true);
 
-% COMPUTE spine interpolated spine
+% COMPUTE anatomical head position
 xyz = s.load('xyz');
 ss = fet_spline_spine(s,'3dssh',xyz,[],true);
+
 
 %% Create All Trial %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 
@@ -78,8 +78,7 @@ if nlx,
 % COMPUTE neuron quality
     NeuronQuality(s,[],[],[],true); 
 % LABEL Theta periods    
-    thetaChan = 16;
-    Trial = labelTheta(Trial,[],thetaChan,true);
+    Trial = labelTheta(Trial,[],thetaChan(i),true);
 % COMPUTE 3d place fields for the theta state
     pfs_3d_theta(Trial,1,1);
 % COMPUTE 2d state place fields with half sampling bootstrap
@@ -88,3 +87,4 @@ if nlx,
                              {'walk','rear','turn','pause',...
                               'lwalk','hwalk','lpause','hpause'});
 end
+

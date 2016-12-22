@@ -85,7 +85,7 @@ for m = 1:numel(mode),
     for f =1:rhm.size(2),
         mrv(:,f) = accumarray(vbs(nniz(vbs)),srhm(nniz(vbs),f),[vbins,1],@nanmean);
     end
-    mrv(N<20,:) = nan;
+    mrv(N<10,:) = nan;
 
 
     axes('Units','centimeters',...
@@ -128,7 +128,7 @@ tbox.Position([3,4]) = tbox.Extent([3,4]);
 figPath = fullfile(Trial.spath,'figures');
 if ~exist(figPath), mkdir(figPath),end
 savefig(hfig,fullfile(figPath,['RHM_psd_distrib_',strjoin(mode,'_'),'.fig']));
-print(gcf,'-depsc2',fullfile(figpath,['RHM_psd_distrib_',strjoin(mode,'_'),'.eps']));
+print(gcf,'-depsc2',fullfile(figPath,['RHM_psd_distrib_',strjoin(mode,'_'),'.eps']));
 
 
 %reportfig(Trial,figH,['RHM_psd_distrib_' strjoin(mode,'_')],[],[Trial.filebase ' :' state.label],200,true);

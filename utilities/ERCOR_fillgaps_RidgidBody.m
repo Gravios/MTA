@@ -39,12 +39,12 @@ function xyz = ERCOR_fillgaps_RidgidBody(Session,varargin)
 defArgs = struct('mode',      'EMGM',                                                            ...
                  'method',    'BEST_SWAP_PERMUTATION',                                           ...
                  'goodIndicies', [],                                                             ...
-                 'rb_model',  {{'head_back','head_left','head_right','head_front','head_top'}},  ...
+                 'rigidBodyMarkers',  {{'head_back','head_left','head_right','head_front','head_top'}},  ...
                  'MarkerSwapErrorThreshold',0.01,                                                ...
                  'bufferSize',              2^16                                                 ...
 );
 
-[mode,method,goodIndex,rb_model,MarkerSwapErrorThreshold,bufferSize] = DefaultArgs(varargin,defArgs,'--struct');
+[mode,method,goodIndicies,rigidBodyMarkers,MarkerSwapErrorThreshold,bufferSize] = DefaultArgs(varargin,defArgs,'--struct');
 
 % END DEFARGS ---------------------------------------------------------------------------------------
 
@@ -66,16 +66,18 @@ lastPiece = (numChunks*bufferSize+1):xyz.size(1);
 % MAIN -------------------------------------------------------------------------    
 % if no good index is specified select one with the aid of a gui
 if isempty(goodIndicies),
+    % Manually select periods where rigid body is correct
     pfig = PlotSessionErrors(Session);
     disp(['Please select a point on the x-axis with the data cursor ' ...
           'and then press enter']);
     ylm = ylim;
+    bflag = false;
     while ~strcmp(get(pfig,'CurrentCharacter'),char(27));
         set(pfig,'CurrentCharacter',char(32));        
         while ~strcmp(get(pfig,'CurrentCharacter'),char(13))
             waitforbuttonpress
             if strcmp(get(pfig,'CurrentCharacter'),char(27))
-                bflag = 1;
+                bflag = true;
                 break
             end
         end
@@ -92,108 +94,43 @@ if isempty(goodIndicies),
     delete(pfig);
 end
 
-% Check and sanitize rb_model input type
-if iscell(rb_model)&&~isa(rb_model,'MTAModel'),
-    rb_model = xyz.model.rb(rb_model);
+
+
+% Check and sanitize rigidBodyMarkers input type
+if iscell(rigidBodyMarkers)&&~isa(rigidBodyMarkers,'MTAModel'),
+    rigidBody = xyz.model.rb(rigidBodyMarkers);
 end
-assert(rb_model.N<=6,['MTA:utilities:ERCOR_fillgaps_RidgidBody, ' ...
+assert(rigidBody.N<=6,['MTA:utilities:ERCOR_fillgaps_RidgidBody, ' ...
                       'number of markers in rb correction must be eq or lt 6']);
-assert(rb_model.N>3,['MTA:utilities:ERCOR_fillgaps_RidgidBody, ' ...
+assert(rigidBody.N>3,['MTA:utilities:ERCOR_fillgaps_RidgidBody, ' ...
                       'number of markers in rb correction must be gt 3']);
 
 
+rxyz = xyz.copy;
+trxyz = rxyz.copy;
 
-rb_xyz = xyz.copy;
-trb_xyz = rb_xyz.copy;
+rxyz.data = xyz(:,rigidBody.ml,:);
+rxyz.model = rigidBody;
 
-rb_xyz.data = xyz(:,rb_model.ml,:);
-rb_xyz.model = rb_model;
-
-nperm = factorial(rb_xyz.model.N);
+nperm = factorial(rxyz.model.N);
 
 % Get all permutations of 4 markers
-bperm = 1:rb_xyz.model.N;
+bperm = 1:rxyz.model.N;
 bperm = perms(bperm);
 fperms = bperm(:,1:4)';
 
 
 
-switch method
-  case 'RIGIDBODY_PARTIAL_RECONSTRUCTION'
-    headRigidBodyMarkers={'head_back','head_left','head_front','head_right'};
-    headRigidBody = xyz.model.rb(headRigidBodyMarkers);
-    hcom = xyz.com(headRigidBody);
-    hxyz = xyz.copy;
-    hxyz.model = headRigidBody;
-    hxyz.data = xyz(:,headRigidBodyMarkers,:);
-    markerTriad.nck  = nchoosek(1:size(hxyz,2),3);
-    markerTriad.com  = nan([size(hxyz,1),1,size(hxyz,3)]);
-    markerTriad.coor = nan([size(hxyz,1),size(markerTriad.nck,1),size(hxyz,3),size(hxyz,3)]);
-    for nck = 1:size(markerTriad.nck,1),        
-        markerTriad.coor(:,nck,[1,2],:) = permute(bsxfun(@minus,hxyz(:,markerTriad.nck(nck,[1,3]),:),hxyz(:,markerTriad.nck(nck,2),:)),[1,4,2,3]);
-        markerTriad.coor(:,nck,3,:) = cross(markerTriad.coor(:,nck,1,:),markerTriad.coor(:,nck,2,:));
-        markerTriad.coor(:,nck,2,:) = cross(markerTriad.coor(:,nck,1,:),markerTriad.coor(:,nck,3,:));
-        markerTriad.com(:,nck,:) = mean(hxyz(:,markerTriad.nck(nck,:),:),2);
-        markerTriad.imd=[];
-        markerTriad.imo=[];
-    end
-    
-    [~,~,mtEigenVector] = cellfun(@svd,cellfun(@squeeze,mat2cell(markerTriad.coor,ones([size(markerTriad.coor,1),1]),ones([size(markerTriad.coor,2),1]),3,3),'UniformOutput',false),'UniformOutput',false);
-
-    reconstructedSolutions  = nan([size(markerTriad.nck,1),headRigidBody.N-3,xyz.size(3),numel(goodIndicies)]);
-    reconstructedSolutionsMarkerInds  = nan([size(markerTriad.nck,1),headRigidBody.N-3]);
-    gcount = 1;
-    for goodIndex = goodIndicies(:)'
-        for nck = 1:size(markerTriad.nck,1),            
-            markerToReconstruct = find(~ismember(1:numel(headRigidBodyMarkers),markerTriad.nck(nck,:)));
-            reconstructedSolutionsMarkerInds(nck,:) = markerToReconstruct;
-            for marker = 1:numel(markerToReconstruct)
-                goodTargetVector = sq(hxyz(goodIndex,markerToReconstruct(marker),:)...
-                                     -hxyz(goodIndex,markerTriad.nck(nck,2),:));
-                solutionBasisCoordinates = rref(cat(2,mtEigenVector{goodIndex,1},goodTargetVector));
-                reconstructedSolutions(nck,marker,:,gcount) = solutionBasisCoordinates(:,4);
-            end
-        end
-        gcount = gcount+1;
-    end
-    
-    reconstructedSolution.mean = {cellfun(@(x) mean(x')',... Compute xyz mean matrix of each nchoosek subset and solution target
-                                           mat2cell(reconstructedSolutions,...
-                                                    ones([size(markerTriad.nck,1),1]),...
-                                                    ones([numel(markerToReconstruct),1]),...
-                                                    [size(xyz,3),numel(goodIndicies)])...
-                                           'UniformOutput',false,...
-    )};
-    reconstructedSolution.covmat = {cellfun(@cov,... Compute xyz covariance matrix of each nchoosek subset and solution target
-                                           mat2cell(reconstructedSolutions,...
-                                                    ones([size(markerTriad.nck,1),1]),...
-                                                    ones([numel(markerToReconstruct),1]),...
-                                                    [size(xyz,3),numel(goodIndicies)])...
-                                           'UniformOutput',false,...
-    )};
-    
-    % if (the inter marker angles and distances of an marker Triplet are within error tolerance)
-    %   | check The distance between each other marker and their
-    %   | respective solution
-    % else (Triplet member is out of alignment)
-    %   | mark that current nchoosek subset contains an error    
-    nckError=true([size(markerTriad.nck,1),1]);
-    
-    
-    
-end
-
-
-% Calculate intermarker orientaions
-efet = zeros([rb_xyz.size(1),nperm]);
+% CREATE 1d error feature based on intermarker orientaions
+efet = zeros([rxyz.size(1),nperm]);
 for c = 0:numChunks,
     if c~=numChunks,
         ind = (c*bufferSize+1):(c+1)*bufferSize;
     else
         ind = lastPiece;
     end
-    trb_xyz.data = rb_xyz(ind,:,:);
-    imori = imo(trb_xyz);
+    trxyz.data = rxyz(ind,:,:);
+    imori = imo(trxyz);
 
     i = 1;
     for p = fperms,
@@ -201,15 +138,18 @@ for c = 0:numChunks,
         i = i+1;
     end
 end
+mefet = mean(efet(goodIndicies,:));
+vefet = var(efet(goodIndicies,:));
+dtgmori = var(bsxfun(@minus,efet,mefet),[],2);
+%dtgmori = log10(sum(abs(bsxfun(@ldivide,bsxfun(@minus,efet,mefet),vefet)),2));
 
-dtgmori = var(bsxfun(@minus,efet,efet(goodIndex,:)),[],2);
-
+% SELECT Good periods if none are provided
 switch mode
   case 'EMGM'
     % em-gaussian mixture model
     nind = nniz(efet)&log10(dtgmori)>-0.5;
-    [teid,emgmModel,emgmLlh] = mixGaussEm(efet(nind,:)',30);
-    eid = zeros(size(nind));
+    [teid,emgmModel,emgmLlh] = mixGaussEm(efet(nind,:)',40);
+    eid = zeros(size(nind))';
     eid(nind)=teid;
   case 'MANUAL'
     % Use gui to select error periods and attempt to correct
@@ -236,8 +176,6 @@ end
 
 
 
-
-
 %% For each error group find best marker swap solution
 % test on subset
 
@@ -247,7 +185,7 @@ errorIds(errorIds==0)=[];
 
 figure,hold on
 c = jet(numel(errorIds));
-for u = errorIds
+for u = errorIds'
     scatter(efet(eid==u,1),efet(eid==u,5),4,c(u,:));
     eidCount(u) = sum(eid==u);
 end
@@ -256,7 +194,7 @@ disp('')
 disp(['Number of error groups: ' num2str(numel(errorIds))]);
 disp('')
 
-for i = errorIds,
+for i = errorIds',
     switch method
       case 'BEST_SWAP_PERMUTATION'
         % marker swap - all permutations 
@@ -266,15 +204,15 @@ for i = errorIds,
         % Compute residual for each marker swap permutation
         k = 1;
         for c = bperm',
-            trb_xyz.data = rb_xyz(bids,c,:);
-            imori = imo(trb_xyz);
+            trxyz.data = rxyz(bids,c,:);
+            imori = imo(trxyz);
             
             j = 1;
             for p = fperms,
                 tectry(bids,j) = imori(:,p(1),p(2),p(3),p(4),1);
                 j = j+1;
             end           
-            ectry(bids,k) = var(bsxfun(@minus,tectry(bids,:),efet(goodIndex,:)),[],2);
+            ectry(bids,k) = var(bsxfun(@minus,tectry(bids,:),mefet),[],2);
             k = k+1;
         end
 
@@ -287,8 +225,8 @@ for i = errorIds,
         if bpVal < MarkerSwapErrorThreshold,
             disp('')
             disp(['Error Group: ' num2str(i) ' , bpVal = ' num2str(bpVal)])
-            smar = subsref(rb_model.ml,substruct('()',{bperm(bpInd,:)}));
-            [~,rind] = sort(xyz.model.gmi(rb_model.ml));
+            smar = subsref(rigidBody.ml,substruct('()',{bperm(bpInd,:)}));
+            [~,rind] = sort(xyz.model.gmi(rigidBody.ml));
             marInd = xyz.model.gmi(smar(rind));
             corInd = sort(marInd);
             xyz.data(eid==i,corInd,:) = xyz(eid==i,marInd,:);

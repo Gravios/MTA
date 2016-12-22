@@ -84,10 +84,13 @@ if ~exist(FileName_coarse,'file')||overwrite,
     j = [-100:10:100];
     k = [-100:10:0];
 
-
-    ind = Session.stc{'a'};
-    if isempty(ind),
-        ind=':';
+    vxy = xyz.vel('head_front',[1,2]);
+    ind = vxy.data>2;
+    aind = Session.stc{'a'};
+    if ~isempty(aind),
+        %aind.resample(xyz);
+        aind.cast('TimeSeries',xyz);
+        ind = aind.data&ind;
     end
     
 
@@ -186,11 +189,14 @@ if ~exist(FileName_fine,'file')||overwrite,
     ni = [ni(1):2:ni(2)];
     nj = [nj(1):2:nj(2)];
     nk = [nk(1):2:nk(2)];
-    ind = Session.stc{'a'}.cast('TimeSeries').resample(xyz);
-    if isempty(ind),
-        ind = ':';
-    else
-        ind.data = logical(ind.data);
+
+    vxy = xyz.vel('head_front',[1,2]);
+    ind = vxy.data>2;
+    aind = Session.stc{'a'};
+    if ~isempty(aind),
+        %aind.resample(xyz);
+        aind.cast('TimeSeries',xyz);
+        ind = aind.data&ind;
     end
     
     nvxyz = zeros([7,numel(ni),numel(nj),numel(nk)]);

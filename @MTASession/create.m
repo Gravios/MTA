@@ -4,24 +4,23 @@ function Session = create(Session,varargin)
 % data. The choice of function is dependent upon the combination of
 % recording systems used in the session.
 %  
-[TTLValue,xyzSystem,ephySystem,xyzSampleRate] = DefaultArgs(varargin,{'0x8000','vicon','nlx',[]});
-switch ephySystem,
+[TTLValue,dataLoggers,xyzSampleRate] = DefaultArgs(varargin,{'',{},[]});
 
-  case 'nlx',
-    switch xyzSystem,
-      case 'vicon',
-        Session = syncViconNlx(Session,TTLValue,xyzSampleRate);
-    end
+if     all(~cellfun(@isempty,regexpi(dataLoggers,{'nlx','vicon'})))
+    Session = syncViconNlx(Session,TTLValue,xyzSampleRate);
 
-  case 'blackrock'
+elseif all(~cellfun(@isempty,regexpi(dataLoggers,{'blackrock','vicon'})))
     warning(['Session creation routine does not exist ' ...
              'for Blackrock, thank you and have a nice day'])
 
-  otherwise
-    switch xyzSystem,
-      case 'vicon'
-        Session = loadVicon(Session,xyzSampleRate);
-    end
-end
+elseif all(~cellfun(@isempty,regexpi(dataLoggers,{'openephys','vicon'})))
+    warning(['Session creation routine does not exist ' ...
+             'for openephys, thank you and have a nice day'])
+
+elseif all(~cellfun(@isempty,regexpi(dataLoggers,{'vicon'})))
+    Session = loadVicon(Session,xyzSampleRate);
+
+else
+    warning(['MTASession:create:PatternNotFound: {', strjoin(dataLoggers,','),'}']);
 end
 

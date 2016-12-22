@@ -1,12 +1,16 @@
-function [errorPeriods,hbflr,hrlbf,etrig] = FindErrorPeriods(Trial)
-%function [errorPeriods,hbflr,hrlbf,etrig] = FindErrorPeriods(Trial)
+function [errorPeriods,hfcl,etrig] = FindErrorPeriods(Trial,varargin)
+%function [errorPeriods,hbflr,hrlbf,etrig] = FindErrorPeriods(Trial,varargin)
+[markers] = DefaultArgs(varargin,{{'head_back','head_left','head_front','head_right'}},1);
 
 xyz =Trial.load('xyz');
 
-hbflr = transform_origin(Trial,xyz,'head_back','head_front',{'head_left','head_right'});
-hrlbf = transform_origin(Trial,xyz,'head_right','head_left',{'head_back','head_front'});
 
-efet = [hbflr.transVec(:,:,2),hrlbf.transVec(:,:,2)];
+hfcl{1} = transform_origin(Trial,xyz,markers{1},markers{3},{markers{2},markers{4}});
+hfcl{2} = transform_origin(Trial,xyz,markers{3},markers{1},{markers{4},markers{2}});
+hfcl{3} = transform_origin(Trial,xyz,markers{4},markers{2},{markers{1},markers{3}});
+hfcl{4} = transform_origin(Trial,xyz,markers{2},markers{4},{markers{3},markers{1}});
+
+efet = [hfcl{1}.transVec(:,1,2),hfcl{2}.transVec(:,1,2)];
 efmean = zeros(size(efet,2),1);
 for i = 1:size(efet,2),
     efmean(i) = mean(efet(~isnan(efet(:,i)),i));

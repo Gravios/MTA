@@ -1,4 +1,8 @@
 function listSessions(pattern)
+if ~exist('pattern','var'),
+    pattern = '.*ses.*';
+end
+
 ses = MTASession([]);
 ds = dir(fullfile(ses.path.data,pattern));
 fname = {ds(cellfun(@numel,{ds.name})==13).name}

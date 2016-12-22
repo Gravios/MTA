@@ -14,9 +14,7 @@ classdef MTASession < hgsetget
 %
 %     TTLValue:        string, used to synchronize position and electrophysiological data
 %
-%     xyzSystem:       string, name/id of the system to record position
-%    
-%     ephySystem:      string, name/id of the system to record neural activity
+%     dataLogger:       string, name/id of the system(s) to record subject
 %
 %     xyzSampleRate:   numeric, samples per second for xyz tracking
 %
@@ -35,7 +33,7 @@ classdef MTASession < hgsetget
 %         Session = MTASession('jg05-20120309','rof');
 %
 %       Create New Session
-%         Session = MTASession('jg05-20120309','rof',1,'0x0040','vicon','nlx',119.881035);
+%         Session = MTASession('jg05-20120309','rof',1,'0x0040',{'nlx','vicon'},119.881035);
 %   
 %---------------------------------------------------------------------------------------------------------
 
@@ -100,8 +98,8 @@ classdef MTASession < hgsetget
     methods
 
         function Session = MTASession(varargin)
-            [name,mazeName,overwrite,TTLValue,xyzSystem,ephySystem,xyzSampleRate] = ...
-             DefaultArgs(varargin,{[],'cof',0,'0x0040','vicon','nlx',[]});
+            [name,mazeName,overwrite,TTLValue,dataLoggers,xyzSampleRate] = ...
+             DefaultArgs(varargin,{[],'cof',0,'0x0040',{'nlx','vicon'},[]});
             Session.path = load('MTAPaths.mat');
 
             if isempty(name),
@@ -128,10 +126,10 @@ classdef MTASession < hgsetget
                     %Session.xyz.load(Session.sync);
                 elseif overwrite
                     warning(['Overwriting Session: ' fullfile(Session.spath, [Session.filebase, '.ses.mat'])])
-                    Session.create(TTLValue,xyzSystem,ephySystem,xyzSampleRate);
+                    Session.create(TTLValue,dataLoggers,xyzSampleRate);
                 else
                     warning(['Subsession with maze, ' Session.maze.name ', does not exist: creating session']);
-                    Session.create(TTLValue,xyzSystem,ephySystem,xyzSampleRate);
+                    Session.create(TTLValue,dataLoggers,xyzSampleRate);
                 end  
             end
         end

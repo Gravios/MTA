@@ -17,6 +17,7 @@ if sempty||overwrite,
     cd(Trial.spath);
     if ~exist(fullfile(Trial.spath,[Trial.name '.sts.theta']),'file')||overwrite,
         CheckEegStates(Trial.name,[],[],[],thetaChan,[],'display',overwrite);
+        uiwait(gcf);
     end
 end
 

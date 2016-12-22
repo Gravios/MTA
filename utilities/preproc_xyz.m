@@ -23,7 +23,8 @@ end
 
 % XYZ Positions of Markers
 xyz = Trial.load('xyz');
-ss = fet_spline_spine(Trial,'3dss',xyz);
+ss = [];
+%ss = fet_spline_spine(Trial,'3dss',xyz);
 
 if ~iscell(procOpts), procOpts = {procOpts}; end
     

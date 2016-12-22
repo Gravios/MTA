@@ -7,30 +7,28 @@ function linkSession(session_name,xyz_path,nlx_path)
 % 
 % TODO make linkSession windows compatible 
 
-    
-    Session = MTASession([]);
-    datDir = fullfile(Session.path.data,session_name);
-    try,mkdir(datDir);end
+Session = MTASession([]);
+datDir = fullfile(Session.path.data,session_name);
+try,mkdir(datDir);end
 
-    if ~isempty(xyz_path),
-        xyz_maze_dirs = dir(fullfile(xyz_path,session_name));xyz_maze_dirs(1:2)=[];
-        
-        if ~strcmp(xyz_path,fullfile(Session.path.data,'xyz')),
-            xyzDir = fullfile(Session.path.data,'xyz',session_name);
-            try,mkdir(xyzDir);end
-            
-            for maze = 1:numel(xyz_maze_dirs),
-                try,mkdir(fullfile(xyzDir,xyz_maze_dirs(maze).name));end
-                system(['ln -sf ' fullfile(xyz_path,session_name,xyz_maze_dirs(maze).name) '/* ' fullfile(xyzDir,xyz_maze_dirs(maze).name)]);
-            end
-        else
-            
-            xyzDir = fullfile(xyz_path,session_name);
+if ~isempty(xyz_path),
+    % get list of directories along the path xyz_path
+    xyz_maze_dirs = dir(fullfile(xyz_path,session_name));xyz_maze_dirs(1:2)=[];
+    if ~strcmp(xyz_path,fullfile(Session.path.data,'xyz')),
+        xyzDir = fullfile(Session.path.data,'xyz',session_name);
+        try,mkdir(xyzDir);end
+        for maze = 1:numel(xyz_maze_dirs),
+            try,mkdir(fullfile(xyzDir,xyz_maze_dirs(maze).name));end
+            system(['ln -sf ' fullfile(xyz_path,session_name,xyz_maze_dirs(maze).name) '/* ' fullfile(xyzDir,xyz_maze_dirs(maze).name)]);
         end
+    else
+        xyzDir = fullfile(xyz_path,session_name);
     end
+end
 
-    
-    % Link Nlx data to nlx folder
+
+% Link Nlx data to nlx folder
+if exist('nlx_path','var')
     if ~isempty(nlx_path),
         if ~strcmp(nlx_path,fullfile(Session.path.data,'nlx')),
             nlxDir = fullfile(Session.path.data,'nlx',session_name);
@@ -46,9 +44,11 @@ function linkSession(session_name,xyz_path,nlx_path)
         system(['ln -sf ../nlx/' session_name '/* ' datDir ])
         
     end
-    
-    
-    % For each maze in the xyz data link directory 
+end
+
+
+% For each maze in the xyz data link directory 
+if exist('xyz_path','var')    
     if ~isempty(xyz_path),
         for maze = 1:numel(xyz_maze_dirs),
             cd(datDir);
@@ -68,5 +68,6 @@ function linkSession(session_name,xyz_path,nlx_path)
             
         end
     end
+end
 
-    
+
