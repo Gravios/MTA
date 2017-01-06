@@ -10,11 +10,23 @@
 #
 # Version: 0.01 (alpha)
 # 
-# Dependencies: matlab_sumbit_lrz.c
-#
+# Dependencies:
+#    matlab_sumbit_lrz.c (never again)
+#    tart
+#    MatSubmitLRZ
 
 function print_help(){
-    echo "help - I don't know what I do"
+    echo "LRZ Cluster Interface"
+    echo "usage: lrzc [--version] [--help]"
+    echo ""
+    echo " Command List:"
+    echo ""    
+    echo "    sbatch        Submit matlab script to LRZ cluster"
+    echo "    squeue        Query the LRZ SLURM for user related jobs on LRZ cluster"
+    echo "    scancel       Cancel all or specific jobs on the LRZ cluster"
+    echo "    matlab        Start an interactive matlab session on an LRZ cluster"
+    echo "    sync          Synchronize a selection of folders to an LRZ partition"
+    echo "    help          Display this message"
 }
 
 

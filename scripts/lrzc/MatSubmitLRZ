@@ -33,6 +33,18 @@ declare -a INPUT_ARGS
 declare -a FINAL_COMMAND
 declare -a job_id
 
+function print_help() {
+    echo "MatSubmitLRZ opts matlab_script"
+    echo " -c|--config      specify a set of slurm parameters"
+    echo " -d|--dependency  specify a prerequisite job"
+    echo " -y|--dir_data    specify your data’s location"
+    echo " -h|--help        admit defeat"
+    echo " -l|--dir_list    provide a list of sessions"
+    echo " -s|--host        send the job somewhere else"
+    echo " -v|--verbose     peek under the hood"
+    echo " "
+}    
+
 # Parse optional flags
 while [[ $# > 0 ]]
 do
@@ -51,16 +63,8 @@ do
 	    dir_data="$2"
 	    shift
 	    ;;    
-        -h|--help)     
-	    echo "MatSubmitLRZ opts matlab_script"
-            echo " -c|--config      specify a set of slurm parameters"
-            echo " -d|--dependency  specify a prerequisite job"
-            echo " -y|--dir_data    specify your data’s location"
-            echo " -h|--help        admit defeat"
-            echo " -l|--dir_list    provide a list of sessions"
-            echo " -s|--host        send the job somewhere else"
-            echo " -v|--verbose     peek under the hood"
-	    echo " "
+        -h|--help)
+	    print_help
 	    exit 1
             ;;
 	-l|--dir_list) 

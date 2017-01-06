@@ -1,6 +1,7 @@
 #!/bin/bash
 
+# copy necessary scripts into the project bin folder
 echo cp ./MatSubmitLRZ $PROJECT/bin/MatSubmitLRZ
 cp ./MatSubmitLRZ $PROJECT/bin/MatSubmitLRZ
-echo
+echo cp ./tart $PROJECT/bin/tart
 cp ./tart $PROJECT/bin/tart

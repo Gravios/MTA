@@ -3,6 +3,15 @@
 # advantage over scp: copies relative links rather
 # than following to hard copy
 #
+#
+# Dependencies:
+#   ls_md5sum
+#
+# TODO:
+#  
+#   1. Make Verbose output more legible
+#
+#   2. Extend comments for better operational clarity
 
 cwd=$(pwd)
 

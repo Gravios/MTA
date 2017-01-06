@@ -11,7 +11,7 @@ Trial = MTATrial.validate(Trial);
 local = true;
 overwrite = true;
 
-% $$$ % 1. Preproccess features and save to relevant files for subsequent analysis
+% PREPROCCESS (1) features and save to relevant files for subsequent analysis
 % $$$ file_preproc = fullfile(Trial.path.data,'analysis','req20160310_1_preproc.mat');
 % $$$ if ~exist(file_preproc,'file')||overwrite
 % $$$     if ~local,
@@ -25,7 +25,7 @@ overwrite = true;
 % $$$     end
 % $$$ end
 % $$$ 
-% $$$ %2. t-SNE
+% TSNE (2) t-SNE
 % $$$ r1jid='';
 % $$$ for s = 1:5,
 % $$$     file_preproc = fullfile(Trial.spath,'req20160310_2_tsne',num2str(s),'.mat');
@@ -41,7 +41,7 @@ overwrite = true;
 % $$$ end
 
 
-% 3. Train neural networks on the target state vs all others
+% TRAIN (3) neural networks on the target state vs all others
 % $$$ r1jid='';
 % $$$ for s = 1:5,
 % $$$     file_preproc = fullfile(Trial.spath,'req20160310_3_trainNN',num2str(s),'.mat');
@@ -60,7 +60,7 @@ overwrite = true;
 % $$$ end
 
 
-% 4. Accumulate stats of network output
+% ACCUMULATE (4) stats of network output
 r3jid='';
 for s = 1:5,
     file_preproc = fullfile(Trial.spath,'req20160310_4_accumStats',num2str(s),'.mat');
@@ -74,7 +74,7 @@ for s = 1:5,
 end
 
 
-% 5. genfigs
+% GENERATE (5) NN figures
 %    a. sort feature order to maximize accuracy gain from incremental
 %       addition of features to neural network model. 
 %    b. generate figures for suplementary plots
@@ -85,7 +85,7 @@ if ~exist(file_preproc,'file')||overwrite,
 end
 
 
-% 6. trainOptNN
+% TRAIN (6) NN with optimized feature order
 %    train nn's with incremental addition of features selected
 %    during req20160310_5_genfigs
 
@@ -106,8 +106,8 @@ for s = 1:5,
     end
 end
 
-% 7. accumOptStats
 
+% ACCUMULATE (7) stats of optimized network output
 for s = 1:5,
     file_preproc = fullfile(Trial.spath,'req20160310_7_accumOptStats',num2str(s),'.mat');
     if (~exist(file_preproc,'file')||overwrite)
@@ -124,7 +124,7 @@ for s = 1:5,
 end
 
 
-% 8. genOptfigs
+% GENERATE (8) Optimized NN figures
 file_preproc = fullfile(Trial.spath,'req20160310_8_genfigs.mat');
 if ~exist(file_preproc,'file')||overwrite,
     req20160310_5_genfigs(Trial);
