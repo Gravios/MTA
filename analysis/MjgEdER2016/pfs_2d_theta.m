@@ -32,9 +32,11 @@ units = Trial.spk.map(:,1);
 if isempty(Trial.stc.gsi('t')),Trial = labelTheta(Trial);end
 
 %% Setup figure paths
-OwnDir = '/storage/gravio/ownCloud/MjgEdER2016/';
-FigDir = ['pfs_2d_theta_',Trial.filebase];
-mkdir(fullfile(OwnDir,FigDir));
+if reportFig
+    OwnDir = '/storage/gravio/ownCloud/MjgEdER2016/';
+    FigDir = ['pfs_2d_theta_',Trial.filebase];
+    mkdir(fullfile(OwnDir,FigDir));
+end
 % END DEFVARS ----------------------------------------------------------------------
 
 

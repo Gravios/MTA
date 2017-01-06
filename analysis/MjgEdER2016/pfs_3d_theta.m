@@ -30,9 +30,18 @@ if reportFig
     slices = 1:2:pf.adata.binSizes(end);%min(cellfun(@(x) x.binSizes(end),pfs));
 
     
+% $$$     if strcmp(Trial.maze.shape,'rectangle'),
+% $$$         spOpts.width  = 4;
+% $$$     else
+        spOpts.width  = 2;
+% $$$     end
     
-    spOpts.width  = 2;
-    spOpts.height = 2;
+    if strcmp(Trial.maze.shape,'rectangle'),
+        spOpts.height  = 1;
+    else
+        spOpts.height  = 2;
+    end
+    %spOpts.height = 2;
     spOpts.ny = 3;
     spOpts.nx = numel(slices);
     spOpts.padding = 2;
@@ -52,7 +61,9 @@ if reportFig
     [W,H] = meshgrid(1:width,1:height);           
     mask = double(sqrt((W-centerW-.5).^2 + (H-centerH-.5).^2) < radius);
     mask(mask==0)=nan;
-    
+    if strcmp(Trial.maze.shape,'rectangle'),
+        mask(:) = 1;
+    end    
 
 
 
@@ -83,10 +94,16 @@ if reportFig
             colormap([0,0,0;parula]);
             caxis([-1,max(ratemap(:).*reshape(repmat(mask,[1,1,size(ratemap,3)]),[],1))]);
             title(num2str(round(pf.adata.bins{3}(slices(s)))))
-            text(pf.adata.bins{1}(end)-350,pf.adata.bins{2}(end)-50,...
-                 sprintf('%2.1f',max(max(ratemap(:,:,slices(s))))),'Color','w','FontWeight','bold','FontSize',10)
+            axis tight            
+            text(pf.adata.bins{1}(round(numel(pf.adata.bins{1}).*0.7)),...
+                 pf.adata.bins{2}(round(numel(pf.adata.bins{2}).*0.9)),...
+                 sprintf('%2.1f',max(max(ratemap(:,:,slices(s))))),...
+                 'Color','w',...
+                 'FontWeight','bold',...
+                 'FontSize',10)
             if s==1, ylabel({Trial.filebase,['unit: ',num2str(unit)]});end
         end
+
 
         FigName = ['pfs_3d_theta_unit-',num2str(unit)];
         %print(gcf,'-depsc2',fullfile(OwnDir,FigDir,[FigName,'.eps']));

@@ -89,7 +89,8 @@ if ~exist(FileName_coarse,'file')||overwrite,
     aind = Session.stc{'a'};
     if ~isempty(aind),
         %aind.resample(xyz);
-        aind.cast('TimeSeries',xyz);
+        aind.cast('TimeSeries');
+        aind.resample(xyz);
         ind = aind.data&ind;
     end
     
@@ -195,7 +196,8 @@ if ~exist(FileName_fine,'file')||overwrite,
     aind = Session.stc{'a'};
     if ~isempty(aind),
         %aind.resample(xyz);
-        aind.cast('TimeSeries',xyz);
+        aind.cast('TimeSeries');
+        aind.resample(xyz);
         ind = aind.data&ind;
     end
     

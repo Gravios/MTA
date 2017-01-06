@@ -1,10 +1,12 @@
 %% MTASession Setup - jg04 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 overwrite = false;
 nlx = true;
-%S = get_session_list('jg04');
-S = get_session_list('jg04_CA3');
-i=4;
-
+report = false;
+trb = false;
+S = get_session_list('jg04_CA1');
+%S = get_session_list('jg04_CA3');
+S = get_session_list('Ed10');
+i = 16;
 
 if overwrite, QuickSessionSetup(S(i)); end
 s = MTASession.validate([S(i).sessionName,'.',S(i).mazeName,'.',S(i).trialName]); 
@@ -35,30 +37,44 @@ ERCOR_fillgaps_RidgidBody(s,'MANUAL','BEST_SWAP_PERMUTATION',[],headMarkers);
 
 % PLOT simple check for rigidbody errors
 figure(hfig); 
-sp(4) = subplot2(6,4,5:6,1:4);  pSE(s,hfig);  % PLOT simple check for rigidbody errors
+sp(4) = subplot2(6,4,5:6,1:4); 
+pSE(s,hfig);  % PLOT simple check for rigidbody errors
 linkaxes(sp(3:4),'xy');
 
 
-% ESTIMATE anatomical head position
-transform_rigidBody(s,false,true);
-
-% COMPUTE spine interpolated spine
-xyz = s.load('xyz');
-ss = fet_spline_spine(s,'3dssh',xyz,[],true);
-
-%% Create All Trial %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 
 % CREATE MTATrial object for full session
-QuickTrialSetup(s,'overwrite',true); 
+QuickTrialSetup(S(i),'overwrite',true); 
+%QuickTrialSetup(s,'overwrite',true); 
 Trial = MTATrial.validate(s.filebase);
 
 
-% PLOT Session creation report
-hfig = figure(gen_figure_id),
-sp(1) = subplot2(6,4,1:2,1:2);  pZ(Trial);        % PLOT timeseries for z axis
-sp(2) = subplot2(6,4,1:2,3:4);  pXY(Trial);       % PLOT position within xy plane
-sp(3) = subplot2(6,4,3:4,1:4);  pSE(Trial,hfig);  % PLOT simple check for rigidbody errors
 
+if trb,
+% ESTIMATE anatomical head position    
+    transform_rigidBody(s,false,true);    
+    xyz = s.load('xyz','trb');
+else
+    xyz = s.load('xyz');
+    xyz.label = 'trb';
+    xyz.key  = 't';
+    xyz.name = 'tr_corrected_head';
+    xyz.updateFilename(s);    
+    xyz.save;
+end
+
+% COMPUTE spine interpolated spine
+ss = fet_spline_spine(s,'3dssh',xyz,[],true);
+
+
+
+% PLOT Session creation report
+if report
+    hfig = figure(gen_figure_id),
+    sp(1) = subplot2(6,4,1:2,1:2);  pZ(Trial);        % PLOT timeseries for z axis
+    sp(2) = subplot2(6,4,1:2,3:4);  pXY(Trial);       % PLOT position within xy plane
+    sp(3) = subplot2(6,4,3:4,1:4);  pSE(Trial,hfig);  % PLOT simple check for rigidbody errors
+end
 
 % LABEL bhv and auxilery behaviors
 labelBhv_NN(Trial,'NN0317','jg05-20120317.cof.all','hand_labeled_rev3_jg',...

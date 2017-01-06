@@ -1,7 +1,8 @@
 function  Bccg = gen_bhv_ccg(Trial,varargin)
-[state,dur_thresh] = DefaultArgs(varargin,{'rear',1.5});
+[state,durThresh] = DefaultArgs(varargin,{'rear',1.5});
 
-sper = Trial.stc.filter(Trial.lfp.sampleRate,{state,{'exclusion',{state},2},{'duration',dur_thresh}});
+
+sper = Trial.stc.filter(Trial.lfp.sampleRate,{state,{'exclusion',{state},2},{'duration',durThresh}});
 
 if ~iscell(sper), sper = mat2cell(sper,size(sper,1),[1,1]);end
 

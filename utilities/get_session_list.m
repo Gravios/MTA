@@ -367,45 +367,7 @@ switch varargin{1}
                 {'jg05-20120311',     'cof',     'all',   'lmu',  '0x0040',      119.881035},...
                 {'jg05-20120324',     'cof',     'all',   'lmu',  '0x0040',      119.881035},...
                 {'jg05-20120325',     'cof',     'all',   'lmu',  '0x0040',      119.881035}}; % 
-
-  case 'Ed10'
-    Sessions = {{'Ed10-20140812',     'cof',     'all',   'lmu',  '0x0002',      119.881035},...  CA1
-                {'Ed10-20140813',     'cof',     'all',   'lmu',  '0x0002',      119.881035},...  CA1
-                {'Ed10-20140814',     'cof',     'all',   'lmu',  '0x0002',      119.881035},...  CA1
-                {'Ed10-20140815',     'cof',     'all',   'lmu',  '0x0002',      119.881035},...  CA1
-                {'Ed10-20140816',     'cof',     'all',   'lmu',  '0x0002',      119.881035},...  CA1
-                {'Ed10-20140817',     'cof',     'all',   'lmu',  '0x0002',      119.881035},...  CA1
-                {'Ed10-20140818',     'cof',     'all',   'lmu',  '0x0002',      119.881035},...  CA1
-                {'Ed10-20140819',     'cof',     'all',   'lmu',  '0x0002',      119.881035},...  CA1 
-                ...
-                {'Ed10-20140820',     'cof',     'all',   'lmu',  '0x0002',      119.881035},...  CA1              
-                {'Ed10-20140820',     'shr',     'all',   'lmu',  '0x0002',      119.881035},...  CA1            
-                {'Ed10-20140820',     'rov',     'all',   'lmu',  '0x0002',      149.9974321},... CA1
-                ...
-                {'Ed10-20140821',     'cof',     'all',   'lmu',  '0x0002',      119.881035},...  CA1              
-                {'Ed10-20140821',     'shr',     'all',   'lmu',  '0x0002',      119.881035},...  CA1
-                {'Ed10-20140821',     'shv',     'all',   'lmu',  '0x0002',      149.9974321},... CA1              
-                {'Ed10-20140821',     'rov',     'all',   'lmu',  '0x0002',      149.9974321},... CA1              
-                ...
-                {'Ed10-20140822',     'cof',     'all',   'lmu',  '0x0002',      119.881035},...  CA1             
-                {'Ed10-20140822',     'shr',     'all',   'lmu',  '0x0002',      119.881035},...  CA1
-                {'Ed10-20140822',     'shv',     'all',   'lmu',  '0x0002',      149.9974321},... CA1              
-                {'Ed10-20140822',     'rov',     'all',   'lmu',  '0x0002',      149.9974321},... CA1             
-                ...
-                {'Ed10-20140823',     'cof',     'all',   'lmu',  '0x0002',      119.881035},...  CA1             
-                {'Ed10-20140823',     'shr',     'all',   'lmu',  '0x0002',      119.881035},...  CA1
-                {'Ed10-20140823',     'rov',     'all',   'lmu',  '0x0002',      149.9974321},... CA1              
-                ...
-                {'Ed10-20140824',     'cof',     'all',   'lmu',  '0x0002',      119.881035},...  CA1             
-                {'Ed10-20140824',     'shr',     'all',   'lmu',  '0x0002',      119.881035},...  CA1
-                ...
-                {'Ed10-20140825',     'cof',     'all',   'lmu',  '0x0002',      119.881035},...  CA1              
-                {'Ed10-20140825',     'mem',     'all',   'lmu',  '0x0002',      119.881035},...  CA1
-                {'Ed10-20140825',     'shr',     'all',   'lmu',  '0x0002',      119.881035},...  CA1
-                {'Ed10-20140825',     'shv',     'all',   'lmu',  '0x0002',      149.9974321},... CA1              
-                {'Ed10-20140825',     'rov',     'all',   'lmu',  '0x0002',      149.9974321}}%   CA1
     
-
     
     
   case 'ER06'
@@ -544,7 +506,7 @@ switch varargin{1}
 
       
       
-  case 'Ed10_cof'
+  case 'Ed10'
 
     my_xyz = fullfile(my_xyz,'Ed10');
     my_nlx = '/storage/eduardo/data/processed/nlx/Ed10';
@@ -563,44 +525,55 @@ switch varargin{1}
         'xOffSet',       0,              ...
         'yOffSet',       0,              ...
         'stcMode',      'default'        ...
-        );
-
+    );
     Sessions(end+1) = Sessions(1);
     Sessions(end).sessionName = 'Ed10-20140813';
-
     Sessions(end+1) = Sessions(1);
     Sessions(end).sessionName = 'Ed10-20140814';
-
     Sessions(end+1) = Sessions(1);    
     Sessions(end).sessionName = 'Ed10-20140815';
-
     Sessions(end+1) = Sessions(1);    
     Sessions(end).sessionName = 'Ed10-20140816';
-
     Sessions(end+1) = Sessions(1);    
     Sessions(end).sessionName = 'Ed10-20140817';
-    
     Sessions(end+1) = Sessions(1);    
     Sessions(end).sessionName = 'Ed10-20140819';
-
     Sessions(end+1) = Sessions(1);    
     Sessions(end).sessionName = 'Ed10-20140820';
-
     Sessions(end+1) = Sessions(1);    
     Sessions(end).sessionName = 'Ed10-20140821';
-    
     Sessions(end+1) = Sessions(1);    
-    Sessions(end).sessionName = 'Ed10-20140822';
-    
+    Sessions(end).sessionName = 'Ed10-20140822';    
     Sessions(end+1) = Sessions(1);    
     Sessions(end).sessionName = 'Ed10-20140823';
-    
     Sessions(end+1) = Sessions(1);    
     Sessions(end).sessionName = 'Ed10-20140824';
-    
     Sessions(end+1) = Sessions(1);    
     Sessions(end).sessionName = 'Ed10-20140825';
-
+    Sessions(end+1) = Sessions(1);    
+    Sessions(end).sessionName = 'Ed10-20140828';
+    Sessions(end).mazeName = 'nor';
+    Sessions(end).offsets  = [15,0];
+    Sessions(end+1) = Sessions(1);    
+    Sessions(end).sessionName = 'Ed10-20140829';
+    Sessions(end).mazeName = 'nor'; 
+    Sessions(end).offsets  = [15,0];    
+    Sessions(end+1) = Sessions(1);    
+    Sessions(end).sessionName = 'Ed10-20140831';
+    Sessions(end).mazeName = 'nor'; 
+    Sessions(end).offsets  = [15,0];    
+    Sessions(end+1) = Sessions(1);    
+    Sessions(end).sessionName = 'Ed10-20140901';
+    Sessions(end).mazeName = 'nor'; 
+    Sessions(end).offsets  = [15,0];    
+    Sessions(end+1) = Sessions(1);    
+    Sessions(end).sessionName = 'Ed10-20140903';
+    Sessions(end).mazeName = 'cot'; 
+    Sessions(end).offsets  = [15,0];
+    Sessions(end+1) = Sessions(1);    
+    Sessions(end).sessionName = 'Ed10-20140905';
+    Sessions(end).offsets  = [15,0];    
+    
   case 'Ed10_BHV'
 
     my_xyz = fullfile(my_xyz,'Ed10');
@@ -1039,7 +1012,7 @@ switch varargin{1}
     
   case 'mypc_test_grp'
       
-    Sessions(1)     = struct('sessionName',      'Ed01-20140707',...
+    Sessions(1) = struct('sessionName',   'Ed01-20140707',...
                          'mazeName',      'cof',...
                          'trialName',     'all',...
                          'xyz_host',      my_xyz,...
@@ -1047,41 +1020,32 @@ switch varargin{1}
                          'xyzSampleRate', 119.881035,...
                          'host',          data_host,...
                          'TTLValue',      '0x0002'...
-                         );
-
+    );
     Sessions(end+1) =    Sessions(1);
     Session(end).sessionName = 'Ed01-20140709';
-
     Sessions(end+1) =    Sessions(1);
     Session(end).sessionName = 'Ed03-20140624';
-
     Sessions(end+1) =    Sessions(1);
     Session(end).sessionName = 'Ed03-20140624';
-
     Sessions(end+1) =    Sessions(1);
     Session(end).sessionName = 'Ed03-20140625';
-
     Sessions(end+1) =    Sessions(1);
     Session(end).sessionName = 'Ed05-20140528'
     Session(end).TTLValue    = '0x0010';
-
     Sessions(end+1) =    Sessions(end);
     Session(end).sessionName = 'Ed05-20140529';
     Session(end).mazeName    = 'ont';
-
     Sessions(end+1) =    Sessions(1);
     Session(end).sessionName = 'jg05-20120309';
     Session(end).TTLValue    = '0x0040';
-
     Sessions(end+1) =    Sessions(end);
     Session(end).sessionName = 'jg05-20120310';
-
     Sessions(end+1) =    Sessions(end);
     Session(end).sessionName = 'jg05-20120317';
 
-  case 'jg04'
+  case 'jg04_CA1'
     my_xyz = fullfile(my_xyz,'jg04');
-    Sessions(1) = struct('sessionName',   'jg04-20120128',...
+    Sessions(1) = struct('sessionName',   'jg04-20120127',...
                          'mazeName',      'cof',...
                          'trialName',     'all',...
                          'xyz_host',      my_xyz,...
@@ -1091,14 +1055,13 @@ switch varargin{1}
                          'TTLValue',      '0x4000'...
                          );
     Sessions(end+1) = Sessions(1);
+    Sessions(end).sessionName = 'jg04-20120128';
+    Sessions(end+1) = Sessions(1);
     Sessions(end).sessionName = 'jg04-20120129';
-
     Sessions(end+1) = Sessions(1);
     Sessions(end).sessionName = 'jg04-20120130';
-
     Sessions(end+1) = Sessions(1);
     Sessions(end).sessionName = 'jg04-20120201';
-
     Sessions(end+1) = Sessions(1);
     Sessions(end).sessionName = 'jg04-20120203';
     
@@ -1115,10 +1078,8 @@ switch varargin{1}
                          );
     Sessions(end+1) = Sessions(1);
     Sessions(end).sessionName = 'jg04-20120211';
-
     Sessions(end+1) = Sessions(1);
     Sessions(end).sessionName = 'jg04-20120212';
-
     Sessions(end+1) = Sessions(1);
     Sessions(end).sessionName = 'jg04-20120213';
 
@@ -1536,79 +1497,20 @@ switch varargin{1}
            'stcMode',       'default',...
            'TTLValue',      '0x4000'...             
      );
-    Sessions(end+1) = ...
-    struct('sessionName',   'er02-20110902',...
-           'mazeName',      'cof',...     
-           'trialName',     'all',...               
-           'xyz_host',      '/storage/gravio/data/processed/xyz/er02',...                    
-           'nlx_host',      '/storage/gravio/data/processed/nlx',...               
-           'xyzSampleRate', 119.881035,...          
-           'host',          data_host,...    
-           'project',       'general',...        
-           'stcMode',       'default',...
-           'TTLValue',      '0x4000'...             
-     );
-    Sessions(end+1) = ...
-    struct('sessionName',   'er02-20110905',...
-           'mazeName',      'cof',...     
-           'trialName',     'all',...               
-           'xyz_host',      '/storage/gravio/data/processed/xyz/er02',...                    
-           'nlx_host',      '/storage/gravio/data/processed/nlx',...               
-           'xyzSampleRate', 119.881035,...          
-           'host',          data_host,...    
-           'project',       'general',...        
-           'stcMode',       'default',...
-           'TTLValue',      '0x4000'...             
-     );
-    Sessions(end+1) = ...
-    struct('sessionName',   'er02-20110906',...
-           'mazeName',      'cof',...     
-           'trialName',     'all',...               
-           'xyz_host',      '/storage/gravio/data/processed/xyz/er02',...                    
-           'nlx_host',      '/storage/gravio/data/processed/nlx',...               
-           'xyzSampleRate', 119.881035,...          
-           'host',          data_host,...    
-           'project',       'general',...        
-           'stcMode',       'default',...
-           'TTLValue',      '0x4000'...             
-     );
-    Sessions(end+1) = ...
-    struct('sessionName',   'er02-20110907',...
-           'mazeName',      'cof',...     
-           'trialName',     'all',...               
-           'xyz_host',      '/storage/gravio/data/processed/xyz/er02',...                    
-           'nlx_host',      '/storage/gravio/data/processed/nlx',...               
-           'xyzSampleRate', 119.881035,...          
-           'host',          data_host,...    
-           'project',       'general',...        
-           'stcMode',       'default',...
-           'TTLValue',      '0x4000'...             
-     );
-    Sessions(end+1) = ...
-    struct('sessionName',   'er02-20110908',...
-           'mazeName',      'cof',...     
-           'trialName',     'all',...               
-           'xyz_host',      '/storage/gravio/data/processed/xyz/er02',...                    
-           'nlx_host',      '/storage/gravio/data/processed/nlx',...               
-           'xyzSampleRate', 119.881035,...          
-           'host',          data_host,...    
-           'project',       'general',...        
-           'stcMode',       'default',...
-           'TTLValue',      '0x4000'...             
-     );
-    Sessions(end+1) = ...
-    struct('sessionName',   'er02-20110913',...
-           'mazeName',      'cof',...     
-           'trialName',     'all',...               
-           'xyz_host',      '/storage/gravio/data/processed/xyz/er02',...                    
-           'nlx_host',      '/storage/gravio/data/processed/nlx',...               
-           'xyzSampleRate', 119.881035,...          
-           'host',          data_host,...           
-           'project',       'general',...    
-           'stcMode',       'default',...
-           'TTLValue',      '0x4000'...             
-     );
-
+    Sessions(end+1) = Sessions(1);
+    Sessions(end).sessionName = 'er02-20110901';
+    Sessions(end+1) = Sessions(1);
+    Sessions(end).sessionName = 'er02-20110902';
+    Sessions(end+1) = Sessions(1);
+    Sessions(end).sessionName = 'er02-20110905';
+    Sessions(end+1) = Sessions(1);
+    Sessions(end).sessionName = 'er02-20110906';
+    Sessions(end+1) = Sessions(1);
+    Sessions(end).sessionName = 'er02-20110907';
+    Sessions(end+1) = Sessions(1);
+    Sessions(end).sessionName = 'er02-20110908';
+    Sessions(end+1) = Sessions(1);
+    Sessions(end).sessionName = 'er02-20110913';
 
   case 'lists'
     disp(['setup'    ,'  ',...
@@ -1700,3 +1602,39 @@ end
 % $$$                          'host',          'lmu',...
 % $$$                          'TTLValue',      '0x0001'...
 % $$$                          );
+% $$$   case 'Ed10'
+% $$$     Sessions = {{'Ed10-20140812', 'cof', 'all',   'lmu',  '0x0002', 119.881035},...  CA1
+% $$$                 {'Ed10-20140813', 'cof', 'all',   'lmu',  '0x0002', 119.881035},...  CA1
+% $$$                 {'Ed10-20140814', 'cof', 'all',   'lmu',  '0x0002', 119.881035},...  CA1
+% $$$                 {'Ed10-20140815', 'cof', 'all',   'lmu',  '0x0002', 119.881035},...  CA1
+% $$$                 {'Ed10-20140816', 'cof', 'all',   'lmu',  '0x0002', 119.881035},...  CA1
+% $$$                 {'Ed10-20140817', 'cof', 'all',   'lmu',  '0x0002', 119.881035},...  CA1
+% $$$                 {'Ed10-20140818', 'cof', 'all',   'lmu',  '0x0002', 119.881035},...  CA1
+% $$$                 {'Ed10-20140819', 'cof', 'all',   'lmu',  '0x0002', 119.881035},...  CA1 
+% $$$                 ...
+% $$$                 {'Ed10-20140820', 'cof', 'all',   'lmu',  '0x0002', 119.881035},...  CA1              
+% $$$                 {'Ed10-20140820', 'shr', 'all',   'lmu',  '0x0002', 119.881035},...  CA1            
+% $$$                 {'Ed10-20140820', 'rov', 'all',   'lmu',  '0x0002', 149.9974321},... CA1
+% $$$                 ...
+% $$$                 {'Ed10-20140821', 'cof', 'all',   'lmu',  '0x0002', 119.881035},...  CA1              
+% $$$                 {'Ed10-20140821', 'shr', 'all',   'lmu',  '0x0002', 119.881035},...  CA1
+% $$$                 {'Ed10-20140821', 'shv', 'all',   'lmu',  '0x0002', 149.9974321},... CA1              
+% $$$                 {'Ed10-20140821', 'rov', 'all',   'lmu',  '0x0002', 149.9974321},... CA1              
+% $$$                 ...
+% $$$                 {'Ed10-20140822', 'cof', 'all',   'lmu',  '0x0002', 119.881035},...  CA1             
+% $$$                 {'Ed10-20140822', 'shr', 'all',   'lmu',  '0x0002', 119.881035},...  CA1
+% $$$                 {'Ed10-20140822', 'shv', 'all',   'lmu',  '0x0002', 149.9974321},... CA1              
+% $$$                 {'Ed10-20140822', 'rov', 'all',   'lmu',  '0x0002', 149.9974321},... CA1             
+% $$$                 ...
+% $$$                 {'Ed10-20140823', 'cof', 'all',   'lmu',  '0x0002', 119.881035},...  CA1             
+% $$$                 {'Ed10-20140823', 'shr', 'all',   'lmu',  '0x0002', 119.881035},...  CA1
+% $$$                 {'Ed10-20140823', 'rov', 'all',   'lmu',  '0x0002', 149.9974321},... CA1              
+% $$$                 ...
+% $$$                 {'Ed10-20140824', 'cof', 'all',   'lmu',  '0x0002', 119.881035},...  CA1             
+% $$$                 {'Ed10-20140824', 'shr', 'all',   'lmu',  '0x0002', 119.881035},...  CA1
+% $$$                 ...
+% $$$                 {'Ed10-20140825', 'cof', 'all',   'lmu',  '0x0002', 119.881035},...  CA1              
+% $$$                 {'Ed10-20140825', 'mem', 'all',   'lmu',  '0x0002', 119.881035},...  CA1
+% $$$                 {'Ed10-20140825', 'shr', 'all',   'lmu',  '0x0002', 119.881035},...  CA1
+% $$$                 {'Ed10-20140825', 'shv', 'all',   'lmu',  '0x0002', 149.9974321},... CA1              
+% $$$                 {'Ed10-20140825', 'rov', 'all',   'lmu',  '0x0002', 149.9974321}}%   CA1
