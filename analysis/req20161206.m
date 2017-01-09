@@ -9,10 +9,12 @@ s = MTASession('jg03-20110430');
 s = MTASession('jg03-20110501');
 s = MTASession('gs04-20110921');
 s = MTASession('jg05-20120317');
+%s = MTASession('Ed03-20140624');
 
 Trial = MTATrial(s);
 Trial.load('stc','NN0317');
 Trial.load('stc','hand_labeled_rev3_jg');
+%Trial.load('stc','hand_labeled_rev1_Ed');
 
 % Select Walking periods
 wper = Trial.stc{'w'};
@@ -67,7 +69,8 @@ hfxyz.filter('ButFilter',3,1,'high');
 % traj NORM body vector projection
 shft = 3;
 tmar = {'spine_lower','pelvis_root','bcom','spine_middle','spine_upper', ...
-        'head_back','head_front'};
+        'hcom'};
+tvec = [];cvec = [];
 for m = 1:numel(tmar),
     tvec(:,m,:) = circshift(xyz(:,tmar{m},[1,2]),-shft)-circshift(xyz(:,tmar{m},[1,2]),shft);
     cvec(:,m,:) = circshift(xyz(:,tmar{m},[1,2]),-shft)-circshift(xyz(:,tmar{m},[1,2]),shft);
@@ -90,7 +93,7 @@ fumvec = bsxfun(@rdivide,bsxfun(@times,permute([1,-1],[1,3,2]),mvec(:,1,[2,1])),
 
 nind = nniz(tvec);
 for m = 1:numel(tmar),
-    walkFetFilt(nind,m) = ButFilter(nunity(dot(tvec(nind,m,:),umvec(nind,:,:),3)),3,1/(xyz.sampleRate/2),'high');
+    walkFetFilt(nind,m) = ButFilter(nunity(dot(tvec(nind,m,:),umvec(nind,:,:),3)),5,[1,6]/(xyz.sampleRate/2),'bandpass');
     walkFet(nind,m) = nunity(dot(tvec(nind,m,:),umvec(nind,:,:),3));
     walkFetBody(nind,m) = nunity(dot(cvec(nind,m,:),ubvec(nind,:,:),3));
     walkFetComp(nind,m) = nunity(dot(cvec(nind,m,:),umvec(nind,:,:),3));
@@ -139,7 +142,8 @@ Lines(Trial.stc{'n'}(:),[],'g');
 
 
 Data = xyz.copy;
-Data.data = walkFet;
+Data.data = walkFetFilt;
+%Data.data = walkFet;
 Data.label = 'wfet';
 Data.key = 'w';
 Data.name = 'Walk Feature';
@@ -153,6 +157,32 @@ parspec = struct('nFFT',2^8,...
                  'nTapers',[],...
                  'FreqRange',[1,20]);
 [ys,fs,ts,phi,fst] = fet_spec(Trial,Data,'mtchglong',true,[],parspec,true);
+
+
+% POWER stuff
+
+td = [1:size(Data,1)]/Data.sampleRate;
+
+sp = [];
+figure,whitebg(gcf,'k')
+sp(1) = subplot(211);
+title('Power Spectrum of body sway')
+imagesc(ts,fs,log10(ys(:,:,2,2))')
+Lines(Trial.stc{'w',1}(:),[],'m');
+axis xy
+caxis([-6,-1])
+colormap jet;
+sp(end+1) = subplot(212);
+title('Normalized body sway during turn and walk');
+hold on;
+plot(td,Data.data,'m')
+%plot(td,envelope(Data.data,30,'rms'))
+Lines(Trial.stc{'w',1}(:),[],'m');
+Lines(Trial.stc{'n',1}(:),[],'g');
+linkaxes(sp,'x');
+legend(tmar)
+
+
 
 % PHASE stuff
 sp = [];
@@ -233,7 +263,8 @@ DataEnv.key = 'e';
 wfb = xyz.copy;
 wfb.data = log10(walkFetBody(:,2)+min(abs(walkFetBody(:,2)))+1e-3);
 
-winds = LocalMinima(-abs(Data.data(:,2)),15,-.5);
+winds = LocalMinima(-abs(Data.data(:,2)),15,-1);
+
 windur = diff(winds)+1;
 windur(end+1) = size(xyz,1)-winds(end)+1;
 
@@ -303,3 +334,58 @@ h.FaceColor = 'r';h.EdgeColor = 'r';h.FaceAlpha = 0.4;h.EdgeAlpha = 0.4;
 
 
 
+% Can I use the peaks of 
+WData = Data.copy;
+WData.data = zeros(size(Data));
+winds = {};
+for i = 1:numel(tmar)
+    winds{i} = LocalMinima(-abs(Data.data(:,i)),15,-1);
+    for j = winds{i}',
+        try
+            WData.data(j-5:j+5,i) = 1;
+        end
+    end
+end
+
+figure,imagesc(td,1:4,WData.data(:,1:4)')
+Lines(Trial.stc{'w',1}(:),[],'m');
+Lines(Trial.stc{'n',1}(:),[],'g');
+Lines(Trial.stc{'r',1}(:),[],'c');
+
+
+figure,hold on,
+plot(nunity(ang(:,'spine_lower','fbcom',2))*5)
+plot(walkFet(:,2))
+Lines(Trial.stc{'w'}(:),[],'m');
+Lines(Trial.stc{'n'}(:),[],'g');
+
+
+
+states = {'a-r-m-n-s','r','m','p','n','w'};
+edx = linspace(-0.2,1,150);
+figure,hold on
+ind =  Trial.stc{states{end-2}};
+h = bar(edx,histc(ang(ind,'spine_lower','fbcom',2),edx),'histc');
+h.FaceColor = 'c';h.EdgeColor = 'c';h.FaceAlpha = 0.4;h.EdgeAlpha = 0.4;
+ind =  Trial.stc{states{end}};
+h = bar(edx,histc(ang(ind,'spine_lower','fbcom',2),edx),'histc');
+h.FaceColor = 'r';h.EdgeColor = 'r';h.FaceAlpha = 0.4;h.EdgeAlpha = 0.4;
+
+
+
+
+edx = linspace(-0.2,1.5,150);
+edy = linspace(-3,2,150);
+figure
+states = {'a-r-m-n-s','r','m','p','n','w'};
+for i = 1:numel(states),
+    subplot(2,3,i)
+    ind =  Trial.stc{states{i}};
+    %hist2([wfb(ind,1),log10(DataEnv(ind))],edx,edy)
+    %hist2([wdf(ind,1),wfb(ind)],edx,edy)
+    %hist2([wdf(ind,1),ffvxy(ind)],edx,edy)    
+    hist2([flang(ind,'spine_lower','bcom',2),ffvxy(ind)],edx,edy)    
+    caxis([0,50])
+    title(ind.label);
+    grid on
+end

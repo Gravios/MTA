@@ -193,36 +193,34 @@
 % req20160719 ----------------------------------------------------
 %
 %  Status: retired
-%
-%  Final_Forms: analysis/exp_teleport.m
-%               analysis/exp_teleport_0823.m
-%
+%  Type: Analysis
+%  Final_Forms: 
+%    analysis/exp_teleport.m
+%    analysis/exp_teleport_0823.m
 %  Description:
 %    Initial script for the shift teleportation experiment of the
 %    VR system. 
-%
+%  Bugs: NA
 
 
 
 % req20160721 ----------------------------------------------------
 %
 %  Status: Active
-%
+%  Type: Analysis
 %  Final_Forms: NA
-%
 %  Description: 
 %    Exploration of head features for the segmentation of states
 %    which have previously required body features (postures/kinematics)
-%
+%  Bugs: NA
 
 
 
 % req20160730 ----------------------------------------------------
 %
 %  Status: retired
-%
+%  Type: Utility
 %  Final_Forms: utilities/orient_head_to_rhm.m
-%
 %  Description:
 %    Create script which from a rigid body, will find a vector in
 %    the direction of locomotion which best represents the
@@ -230,5 +228,77 @@
 %    classification feature. Assumes the front to back to front
 %    motion of the head during respiration is relatively contstant
 %    between animals.
+%  Bugs: only works for Nick's data structure
+
+
+
+%% 2016 08 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+% format: v0.2
+
+
+% req20160815 ----------------------------------------------------
 %
+%  Title: Organization of rhythmic head motion and gait 
+%  Type: Analysis
+%  Status: retired
+%  Final_Forms: NA
+%  Description:
+%    Script for subjective evaluation of MTAAknnpfs_bs parameters
+%  Bugs: NA
+
+% req20160822 ----------------------------------------------------
+%
+%  Title: Data processing for session ER06-20130612
+%  Type: Utility
+%  Status: retired
+%  Final_Forms: NA
+%  Description:
+%    Abandoned code for processing a session.
+%  Bugs: NA
+
+% req20160822 ----------------------------------------------------
+%
+%  Title: Train neural networks with alternate marker models
+%  Type: Utility
+%  Status: active
+%  Final_Forms: NA
+%  Description:
+%    Train neural networks with non-standard marker models. B4H5
+%    has been the standard model for all previous work.
+%  Bugs:
+%    Requires a feature script which generates all features
+%    available for the given model
+
+
+
+
+%% 2016 09 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+% format: v0.2
+
+
+% req20160929 ----------------------------------------------------
+%
+%  Status: retired
+%  Type: Utility
+%  Final_Forms: NA
+%  Description:
+%    Script for subjective evaluation of MTAAknnpfs_bs parameters
+%  Bugs: NA
+
+
+
+
+%% 2016 12 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+% format: v0.2
+
+
+% req20161230 ----------------------------------------------------
+%
+%  Status: active
+%  Type: Utility 
+%  Final_Forms: NA
+%  Description:
+%    Experimentation with visualization of 3d place fields. Using
+%    surf to display xy slices along the z-axis.
+%  Bugs: NA
 

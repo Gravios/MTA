@@ -6,58 +6,60 @@ function req20160310(Trial)
 % 4. Accumulate stats of network output
 
 %Trial = 'jg05-20120317.cof.all';
+Trial = 'Ed03-20140624.cof.all';
 Trial = MTATrial.validate(Trial);
 %cd(Trial.path.data);
 local = true;
 overwrite = true;
+sampleRate = 12;
+states = {'walk','rear','turn','pause','groom','sit'};
 
 % PREPROCCESS (1) features and save to relevant files for subsequent analysis
-% $$$ file_preproc = fullfile(Trial.path.data,'analysis','req20160310_1_preproc.mat');
-% $$$ if ~exist(file_preproc,'file')||overwrite
-% $$$     if ~local,
-% $$$         jid = popen(['MatSubmitLRZ --config lrzc_hugemem.conf'...
-% $$$                                   ' -l ' Trial.name  ...
-% $$$                                   ' req20160310_1_preproc']);
-% $$$         r1jid = [' -d afterok:' char(jid.readLine)];
-% $$$     else
-% $$$         req20160310_1_preproc(Trial,'stcMode',Trial.stc.mode);
-% $$$         
-% $$$     end
-% $$$ end
-% $$$ 
+file_preproc = fullfile(Trial.path.data,'analysis','req20160310_1_preproc.mat');
+if ~exist(file_preproc,'file')||overwrite
+    if ~local,
+        jid = popen(['MatSubmitLRZ --config lrzc_hugemem.conf'...
+                                  ' -l ' Trial.name  ...
+                                  ' req20160310_1_preproc']);
+        r1jid = [' -d afterok:' char(jid.readLine)];
+    else
+        req20160310_1_preproc(Trial,sampleRate,states,true,refTrial,refStcMode);
+    end
+end
+
 % TSNE (2) t-SNE
-% $$$ r1jid='';
-% $$$ for s = 1:5,
-% $$$     file_preproc = fullfile(Trial.spath,'req20160310_2_tsne',num2str(s),'.mat');
-% $$$     if ~exist(file_preproc,'file')||overwrite,
-% $$$         if ~local,
-% $$$             system(['MatSubmitLRZ --config lrzc_hugemem.conf '...
-% $$$                     r1jid ' -l ' Trial.name ...
-% $$$                     ' req20160310_2_tsne ',num2str(s)]);
-% $$$         else
-% $$$             req20160310_2_tsne(Trial,s);
-% $$$         end
-% $$$     end
-% $$$ end
+r1jid='';
+for s = 1:5,
+    file_preproc = fullfile(Trial.spath,'req20160310_2_tsne',num2str(s),'.mat');
+    if ~exist(file_preproc,'file')||overwrite,
+        if ~local,
+            system(['MatSubmitLRZ --config lrzc_hugemem.conf '...
+                    r1jid ' -l ' Trial.name ...
+                    ' req20160310_2_tsne ',num2str(s)]);
+        else
+            req20160310_2_tsne(Trial,s);
+        end
+    end
+end
 
 
 % TRAIN (3) neural networks on the target state vs all others
-% $$$ r1jid='';
-% $$$ for s = 1:5,
-% $$$     file_preproc = fullfile(Trial.spath,'req20160310_3_trainNN',num2str(s),'.mat');
-% $$$     if ~exist(file_preproc,'file')||overwrite,
-% $$$         if ~local,
-% $$$             jid = popen(['MatSubmitLRZ --config lrzc_serial.conf ' ...
-% $$$                          r1jid ...
-% $$$                          ' -l ' Trial.name ...
-% $$$                          ' req20160310_3_trainNN '...
-% $$$                          num2str(s)]);
-% $$$             r3jid = [' -d afterok:' char(jid.readLine)];
-% $$$         else
-% $$$             req20160310_3_trainNN(Trial,s);
-% $$$         end
-% $$$     end
-% $$$ end
+r1jid='';
+for s = 1:5,
+    file_preproc = fullfile(Trial.spath,'req20160310_3_trainNN',num2str(s),'.mat');
+    if ~exist(file_preproc,'file')||overwrite,
+        if ~local,
+            jid = popen(['MatSubmitLRZ --config lrzc_serial.conf ' ...
+                         r1jid ...
+                         ' -l ' Trial.name ...
+                         ' req20160310_3_trainNN '...
+                         num2str(s)]);
+            r3jid = [' -d afterok:' char(jid.readLine)];
+        else
+            req20160310_3_trainNN(Trial,s);
+        end
+    end
+end
 
 
 % ACCUMULATE (4) stats of network output

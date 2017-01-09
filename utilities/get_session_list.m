@@ -510,8 +510,9 @@ switch varargin{1}
 
     my_xyz = fullfile(my_xyz,'Ed10');
     my_nlx = '/storage/eduardo/data/processed/nlx/Ed10';
-
-    Sessions(1) = struct('sessionName',  'Ed10-20140812', ...
+    
+    %CTX
+    Sessions(1) = struct('sessionName',  'Ed10-20140806', ...
         'mazeName',     'cof',           ...
         'trialName',    'all',           ...
         'xyz_host',      my_xyz,         ...
@@ -526,6 +527,13 @@ switch varargin{1}
         'yOffSet',       0,              ...
         'stcMode',      'default'        ...
     );
+    Sessions(end+1) = Sessions(1);
+    Sessions(end).sessionName = 'Ed10-20140807';
+    Sessions(end+1) = Sessions(1);
+    Sessions(end).sessionName = 'Ed10-20140808';
+    %CA1
+    Sessions(end+1) = Sessions(1);
+    Sessions(end).sessionName = 'Ed10-20140812';
     Sessions(end+1) = Sessions(1);
     Sessions(end).sessionName = 'Ed10-20140813';
     Sessions(end+1) = Sessions(1);
