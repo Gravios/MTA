@@ -288,8 +288,97 @@
 
 
 
+%% 2016 11 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+% format: v0.2
+
+
+% req20161103 ----------------------------------------------------
+%
+%  Status: active
+%  Type: Analysis 
+%  Final_Forms: NA
+%  Description:
+%    checking MTAAknnpfs shuffle feature for thresholding during
+%    place field statistics calculated from threshholded patches
+%  Bugs: NA
+
+% req20161116 ----------------------------------------------------
+%
+%  Status: active
+%  Type: Utility
+%  Final_Forms: NA
+%  Description:
+%    optimize points in head rigidbody based on other markers
+%  Bugs: NA
+
+% req20161124 ----------------------------------------------------
+%
+%  Status: active
+%  Type: Utility
+%  Final_Forms: NA
+%  Description:
+%    some sort of spike sorting probe
+%  Bugs: NA
+
+% req20161125 ----------------------------------------------------
+%
+%  Status: active
+%  Type: Analysis
+%  Final_Forms: NA
+%  Description:
+%    playing with some spectral features 
+%  Bugs: NA
+
+
+
 %% 2016 12 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 % format: v0.2
+
+% req20161206 ----------------------------------------------------
+%
+%  Status: active
+%  Type: analysis
+%  Final_Forms: NA
+%  Description:
+%    Examining data sets with hip markers, and walking features.
+%  Bugs: NA
+
+% req20161212 ----------------------------------------------------
+%
+%  Status: retired
+%  Type: Utility 
+%  Final_Forms: convert_stc2sts.m
+%  Description:
+%    convert Stc states into 1250Hz sts files for general lab 
+%    analysis
+%  Bugs: NA
+
+% req20161230 ----------------------------------------------------
+%
+%  Status: active
+%  Type: Utility 
+%  Final_Forms: NA
+%  Description:
+%    Experimentation with visualization of 3d place fields. Using
+%    surf to display xy slices along the z-axis.
+%  Bugs: NA
+
+% req20161231 ----------------------------------------------------
+%
+%  Status: active
+%  Type: Utility 
+%  Final_Forms: NA
+%  Description:
+%    Experimentation with visualization of 3d place fields. Using
+%    surf to display xy slices along the z-axis.
+%  Bugs: NA
+
+
+
+
+%% 2017 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+
+%% 2017 01 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 
 
 % req20161230 ----------------------------------------------------

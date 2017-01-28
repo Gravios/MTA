@@ -1,56 +1,113 @@
-%function req20160411(Trial,varargin)
+function req20160411(stateIndex)
 %function req20160411(Trial,varargin)
 % tSNE over all jg05 sessions excluding jg05-20120317
 % jg05-20120317 features are then mapped onto tsne space
 
-%mkdir('/storage/gravio/figures/req/req20151203');
+% Figure Settings ----------------------------------------------------------------------
+OwnDir = '/storage/gravio/ownCloud/';
+FigDir = 'MjgEdER2016/manuscript/Figures/Figure_2';
+set(0,'defaultAxesFontSize',8,...
+      'defaultTextFontSize',8)
+% --------------------------------------------------------------------------------------
 
-
-initial_dims = 3;       % number of dimensions of the feature matrix used
-                        % in preliminary rounds of t-SNE
-perplexity = 80;       % arbitrary scale use to control the malability
-                        % of the distributions during dimension reduction
-SAVEFIG = true;         % boolean flag, Save figures along with png's 
-NEW_SAMPLE_RATE = 12;   % Reduce the sample rate of the feature matrix
-HOST_PATH = fullfile(getenv('PROJECT'),'figures'); % Where reportfig should
-                                       % save stuff
-states = {'walk','rear','turn','pause','groom','sit'};
+% PARAMETERS ---------------------------------------------------------------------------
+%stateIndex = 5;
+Trial = MTATrial.validate('jg05-20120317.cof.all');
+% jg05-20120317
+% rear  opt 5
+% sit   ori 5
+% groom opt 6
+% pause opt 5
+% walk  opt 3
 featureSet = 'fet_all';
-%featureSet = 'fet_tsne_rev15';
 featureSet = 'fet_mis';
-normalize = true;
-map2reference = true;
-sessionSet = 'hand_labeled';
+
 mfilename = 'req20160411';
+SAVEFIG = true;         % boolean flag, Save figures along with png's 
+HOST_PATH = fullfile(getenv('PROJECT'),'figures'); % Where reportfig should
 overwrite = false;
-nSamples = 4000;
+
+
+dsd = load(fullfile(Trial.spath,'req20160310_1_preproc-afet.mat'));
+bs = load(fullfile(Trial.spath,'req20160310_5_genfigs.mat'));
+
+sortedFeatureMaxIndex   = [5,5,6,5,3];
+useOriginalFeatureOrder = [0,1,0,0,0];
+
+
+ori = load(fullfile(Trial.spath,['req20160310_4_accumStats',num2str(stateIndex),'.mat']));    
+opt = load(fullfile(Trial.spath,['req20160310_7_accumOptStats',num2str(stateIndex),'.mat']));
+states = dsd.stateOrd(stateIndex:end);
+
+
+if useOriginalFeatureOrder(stateIndex),
+    featureSubsetInds = ori.sbind(1:sortedFeatureMaxIndex(stateIndex));
+else
+    featureSubsetInds = opt.sbind(1:sortedFeatureMaxIndex(stateIndex));
+end
+
+switch stateIndex
+  case 1,
+    featureSubsetInds = [3,5,14,10,16];
+  case 2,
+    featureSubsetInds = [7,8,9,10,4];
+  case 3,
+    featureSubsetInds = [7,10,4,1,2,18];
+  case 4,
+    featureSubsetInds = [7,11,12,14,6];
+  case 5,
+    featureSubsetInds = [17,13,6];
+end
+
+
+clear parameters
+parameters.featureSet = featureSet; % set of features 
+parameters.featureSubsetInds = featureSubsetInds; %rear
+parameters.initial_dims = 3;       % number of dimensions of the feature matrix used
+                                   % in preliminary rounds of t-SNE
+parameters.perplexity = 80;        % arbitrary scale use to control the malability
+                                   % of the distributions during dimension
+                                   % reduction
+parameters.newSampleRate = 12;     % Reduce the sample rate of the feature matrix
+parameters.states = states;
+parameters.normalize = true;       % Normalize features 
+parameters.map2reference = true;   % Adjust features to "fit" the data between subjects
+parameters.sessionSet = 'hand_labeled'; % List of sessions to include 
+parameters.nSamples = 4000;        % Number of samples per state to pass to t-SNE
+parameters.refTrial = 'jg05-20120317.cof.all';
+
+% --------------------------------------------------------------------------------------
+
+tag = DataHash(parameters);
+
+% SET file name
+fileLoc = fullfile(MTASession([]).path.data,'analysis',[mfilename,'-',tag,'.mat']);
+
+% POPULATE variable from parameter struct
+[featureSet,featureSubsetInds,initial_dims,perplexity,newSampleRate,states,...
+normalize,map2reference,sessionSet,nSamples,refTrial] = DefaultArgs({},parameters,'--struct');
+
 
 
 %Reference Trial Stuff
-RefTrial = MTATrial.validate('jg05-20120317.cof.all');
+RefTrial = MTATrial.validate(refTrial);
 
-
-if map2reference, mapping =    ['-map2_' RefTrial.filebase];else mapping    = '';end
-if normalize,     normStatus = '-norm';                     else normStatus = '';end
-
-fileLoc = fullfile(MTASession([]).path.data,'analysis',...
-                   [mfilename,'-',sessionSet,'-',featureSet,mapping,normStatus,'.mat']);
 
 if ~exist(fileLoc,'file')||overwrite,
 
-    slist = get_session_list(sessionSet);
+    sessionList = get_session_list(sessionSet);
 
     cfet = [];
     Stc = {};
     sts = [];
-    for s = 1:numel(slist),
-        Trial = MTATrial.validate(slist(s));
+    for s = 1:numel(sessionList),
+        Trial = MTATrial.validate(sessionList(s));
         Stc = Trial.stc.copy;
         % Load Feature matrix of the session    
         
         % Load features
         if strcmp(Trial.filebase,RefTrial.filebase)&&map2reference,
-            [tfet] = feval(featureSet,Trial,NEW_SAMPLE_RATE); ...
+            [tfet] = feval(featureSet,Trial,newSampleRate); ...
             [~,rMean,rStd] = unity(tfet);                
         else
             if strcmp('fet_all',featureSet)
@@ -58,7 +115,7 @@ if ~exist(fileLoc,'file')||overwrite,
             else
                 rt = [];
             end
-            [tfet] = feval(featureSet,Trial,NEW_SAMPLE_RATE,rt);
+            [tfet] = feval(featureSet,Trial,newSampleRate,rt);
             tfet.map_to_reference_session(Trial,RefTrial);
         end
 
@@ -99,12 +156,13 @@ if ~exist(fileLoc,'file')||overwrite,
     asmat = MTADfet('data',sts,'sampleRate',fet.sampleRate);
     [~,asmat.data] = max(asmat.data,[],2);
     c = jet(numel(states));
-    c = [0,0,1;...
-         1,0,0;...
-         0,1,0;...
-         0,1,1;...
+    c = [1,0,0;...
+         1,1,0;...
          1,0,1;...
-         1,1,0;];
+         0,1,1;...
+         0,0,1;...
+         0,1,0];
+    c = c(stateIndex:end,:);
     csmat = asmat.copy; 
     csmat.data = c(csmat.data,:);
 
@@ -118,7 +176,7 @@ if ~exist(fileLoc,'file')||overwrite,
     ind = rind(1:skip:end);
     
 
-    mappedX = tsne(fet(ind,:), csmat(ind,:), no_dims, initial_dims, perplexity); 
+    mappedX = tsne(fet(ind,featureSubsetInds), csmat(ind,:), no_dims, initial_dims, perplexity); 
 
     
     save(fileLoc);
@@ -128,38 +186,66 @@ end
 
 
 
-%% For when all points have state labels
+%% Figures (t-SNE) ----------------------------------------------------------------------------------
 
+% PLOT t-SNE for given states
 
-osts = numel(states);
+FigName = ['mis_tsne_' num2str(stateIndex) '_' states{1} '-' tag];
+
+% figure properties
 hfig = figure(3923924);clf;
-hfig.Position = [10,10,1200,800];
-hold on;
+hfig.PaperPositionMode = 'auto';
+hfig.Units = 'centimeters';
+hfig.Position = [0,0,8,8];
+hold('on');
+
+% loop over states and plot each with desiganated color
+osts = numel(states);
 mc = csmat(ind,:);
 for nc = 1:osts,
     nind = all(bsxfun(@eq,c(nc,:),mc),2);
     h = scatter(mappedX(nind,1),mappedX(nind,2),2,mc(nind,:));
     try,h.MarkerFaceColor = h.CData(1,:);end
 end
-legend(states,'location','south','Orientation','horizontal');
-reportfig(HOST_PATH,           ...
-          'FigHandle',hfig,    ...
-          'FileName','tsne-stateXsession',   ...
-          'FigDir','req',      ...
-          'Preview',false,     ...
-          'Tag',[sessionSet,'-',featureSet],...
-          'Comment',['tsne-all'],    ...
-          'Resolution',100,    ...
-          'SaveFig', SAVEFIG,  ...
-          'format','png',      ...
-          'width',12,           ...
-          'height',8);
+
+% axis properties
+xlim([-110,110]),ylim([-110,110])
+daspect([1,1,1])
+
+legend(states,'location','SouthOutside','Orientation','horizontal');
+
+% REPORT figure to analysis folder
+print(hfig,'-depsc2',fullfile(OwnDir,FigDir,[FigName,'.eps']));
+print(hfig,'-dpng',  fullfile(OwnDir,FigDir,[FigName,'.png']));
+
+% REPORT figure to standard analysis folder
+% $$$ reportfig(HOST_PATH,           ...
+% $$$           'FigHandle',hfig,    ...
+% $$$           'FileName','tsne-stateXsession',   ...
+% $$$           'FigDir','req',      ...
+% $$$           'Preview',false,     ...
+% $$$           'Tag',[sessionSet,'-',featureSet],...
+% $$$           'Comment',['tsne-all'],    ...
+% $$$           'Resolution',100,    ...
+% $$$           'SaveFig', SAVEFIG,  ...
+% $$$           'format','png',      ...
+% $$$           'width',12,           ...
+% $$$           'height',8);
 
 
-
-
+%% Figures (t-SNE State vs Session) ------------------------------------------------------
+FigName = ['mis_tsne_' num2str(stateIndex) '_' states{1} '_SessionMapping' '-' tag];
 nsts = numel(states);
-nses = numel(slist);
+nses = numel(sessionList);
+
+hfig = figure(3923925);clf;
+hfig.PaperPositionMode = 'auto';
+hfig.Units = 'centimeters';
+hfig.Position = [0,0,10*nsts,8];
+hold('on');
+
+
+
 cses = [0,0,1;...
         1,0,0;...
         0,1,0;...
@@ -167,7 +253,6 @@ cses = [0,0,1;...
         0,1,1;...
         1,1,0;];
         
-
 sesIdMat = MTADfet('data',reshape(bsxfun(@times,ones([nSamples*nsts,nses]),1:nses),[],1),...
                    'sampleRate',fet.sampleRate);
 
@@ -175,35 +260,42 @@ cSesMat = sesIdMat.copy;
 cSesMat.data = cses(cSesMat.data,:);
 mSesC = cSesMat(ind,:);
 mc = csmat(ind,:);
-
 for stsId = 1:nsts;
-    hfig = figure(3923925);clf
-    hfig.Position = [10,10,1200,800];
-    hold on;
-    
+    subplot(1,nsts,stsId);
+    hold on;    
     for nc = 1:nses,
         nind = all(bsxfun(@eq,cses(nc,:),mSesC),2)&all(bsxfun(@eq,c(stsId,:),mc),2);    
         h = scatter(mappedX(nind,1),mappedX(nind,2),2,mSesC(nind,:));
         h.MarkerFaceColor = h.CData(1,:);
     end
-    
+    title(states(stsId))
+    daspect([1,1,1]);
     xlim([-150,150])
     ylim([-125,125])
-    
-    legend({slist.sessionName},'location','south','Orientation','horizontal');
-    reportfig(HOST_PATH,           ...
-              'FigHandle',hfig,    ...
-              'FileName','tsne-stateXsession',   ...
-              'FigDir','req',      ...
-              'Preview',false,     ...
-              'Tag',[sessionSet,'-',featureSet],...
-              'Comment',['tsne-',states{stsId}],    ...
-              'Resolution',100,    ...
-              'SaveFig', SAVEFIG,  ...
-              'format','png',      ...
-              'width',12,           ...
-              'height',8);
 end
+
+hl = legend({sessionList.sessionName},'location','SouthOutside','Orientation','horizontal');
+hl.Position(2) = 0.01;
+
+% REPORT figure to project folder
+print(hfig,'-depsc2',fullfile(OwnDir,FigDir,[FigName,'.eps']));
+print(hfig,'-dpng',  fullfile(OwnDir,FigDir,[FigName,'.png']));
+
+
+
+% $$$ reportfig(HOST_PATH,           ...
+% $$$               'FigHandle',hfig,    ...
+% $$$               'FileName','tsne-stateXsession',   ...
+% $$$               'FigDir','req',      ...
+% $$$               'Preview',false,     ...
+% $$$               'Tag',[sessionSet,'-',featureSet],...
+% $$$               'Comment',['tsne-',states{stsId}],    ...
+% $$$               'Resolution',100,    ...
+% $$$               'SaveFig', SAVEFIG,  ...
+% $$$               'format','png',      ...
+% $$$               'width',12,           ...
+% $$$               'height',8);
+
 
 
 % $$$ osts = numel(states);
@@ -230,3 +322,5 @@ end
 % $$$           'height',8);
 % $$$ 
 % $$$ 
+
+%mkdir('/storage/gravio/figures/req/req20151203');

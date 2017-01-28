@@ -4,7 +4,7 @@ function [fet,featureTitles,featureDesc] = fet_all(Trial,varargin)
 % exhaustive set of features derived from the raw data
 %
 %
-[newSampleRate,RefTrial,procOpts] = DefaultArgs(varargin,{20,[],'spline_spine'},1);
+[newSampleRate,RefTrial,procOpts] = DefaultArgs(varargin,{20,[],'SPLINE_SPINE_HEAD_EQD'},1);
 
 fet = MTADfet(Trial.spath,...
               [],...
@@ -69,37 +69,35 @@ fang = create(MTADang,Trial,fxyz);
 % ANG (theta) between segments 
 d = 2;
 cang = ang.copy;
-cang.data = [fang(:,1,2,d),...         1
-             fang(:,1,3,d),...         2
-             fang(:,1,nm+1,d),...      3
-             fang(:,1,nm+2,d),...      4
-             fang(:,2,3,d),...         5
-             fang(:,2,4,d),...         6
-             fang(:,3,4,d),...         7
-             fang(:,3,nm+2,d),...      8
-             fang(:,4,nm+2,d),...      9
-             fang(:,4,nm+2,d),...     10
-             fang(:,nm+1,nm+2,d),...  11
-             fang(:,nm+1,nm+3,d)];   %12
-% Add to feature matrix
+cang.data = [fang(:,'spine_lower','pelvis_root',2),...          1
+             fang(:,'spine_lower','spine_middle',2),...         2
+             fang(:,'spine_lower','bcom',2),...                 3
+             fang(:,'spine_lower','hcom',2),...                 4
+             fang(:,'pelvis_root','spine_middle',2),...         5
+             fang(:,'pelvis_root','spine_upper',2),...          6
+             fang(:,'spine_middle','spine_upper',2),...         7
+             fang(:,'spine_middle','hcom',2),...                8
+             fang(:,'spine_upper','hcom',2),...                 9
+             fang(:,'spine_upper','hcom',2),...                 10
+             fang(:,'bcom','hcom',2),...                        11
+             fang(:,'bcom','acom',2)];                         %12
 fet.data =  [fet.data,cang.data];
 
 
 % DRV of pitch
-d = 2;
 cang = fang.copy;
-cang.data = [ang(:,1,2,d),...         13
-             ang(:,1,3,d),...         14
-             ang(:,1,nm+1,d),...      15
-             ang(:,1,nm+2,d),...      16
-             ang(:,2,3,d),...         17
-             ang(:,2,4,d),...         18
-             ang(:,3,4,d),...         19
-             ang(:,3,nm+2,d),...      20
-             ang(:,4,nm+2,d),...      21
-             ang(:,nm+1,nm+2,d),...   22
-             ang(:,nm+1,nm+3,d),...   23
-             ang(:,nm+2,nm+3,d)];    %24
+cang.data = [ang(:,'spine_lower','pelvis_root',2),...          13
+             ang(:,'spine_lower','spine_middle',2),...         14
+             ang(:,'spine_lower','bcom',2),...                 15
+             ang(:,'spine_lower','hcom',2),...                 16
+             ang(:,'pelvis_root','spine_middle',2),...         17
+             ang(:,'pelvis_root','spine_upper',2),...          18
+             ang(:,'spine_middle','spine_upper',2),...         19
+             ang(:,'spine_middle','hcom',2),...                20
+             ang(:,'spine_upper','hcom',2),...                 21
+             ang(:,'bcom','hcom',2),...                        22
+             ang(:,'bcom','acom',2),...                        23
+             ang(:,'hcom','acom',2)];                         %24
 cang.filter('ButFilter',3,5,'low');
 cang.data = diff(cang.data);
 % Add to feature matrix
@@ -109,22 +107,21 @@ fet.data =  [fet.data,cang.data];
 
 
 %% DRV of Yaw
-d = 1;
 cang = ang.copy;
-cang.data = [ang(:,1,2,d),...         25
-             ang(:,1,3,d),...         26
-             ang(:,1,nm+1,d),...      27
-             ang(:,1,nm+2,d),...      28
-             ang(:,2,3,d),...         29
-             ang(:,2,4,d),...         30
-             ang(:,3,4,d),...         31
-             ang(:,3,nm+2,d),...      32
-             ang(:,4,nm+2,d),...      33
-             ang(:,4,nm+2,d),...      34
-             ang(:,5,nm+2,d),...      35
-             ang(:,nm+1,nm+2,d),...   36
-             ang(:,nm+1,nm+3,d),...   37
-             ang(:,nm+2,nm+3,d)];    %38
+cang.data = [ang(:,'spine_lower','pelvis_root',1),...          25
+             ang(:,'spine_lower','spine_middle',1),...         26
+             ang(:,'spine_lower','bcom',1),...                 27
+             ang(:,'spine_lower','hcom',1),...                 28
+             ang(:,'pelvis_root','spine_middle',1),...         29
+             ang(:,'pelvis_root','spine_upper',1),...          30
+             ang(:,'spine_middle','spine_upper',1),...         31
+             ang(:,'spine_middle','hcom',1),...                32
+             ang(:,'spine_upper','hcom',1),...                 33
+             ang(:,'spine_upper','hcom',1),...                 34
+             ang(:,'head_back','hcom',1),...                   35
+             ang(:,'bcom','hcom',1),...                        36
+             ang(:,'bcom','acom',1),...                        37
+             ang(:,'hcom','acom',1)];                         %38
 cang.filter('ButFilter',3,5,'low');
 cang.data = circ_dist(cang.data,circshift(cang.data,1)).*cang.sampleRate;
 cang.data = circshift(permute(sum(cang.segs(1:cang.size(1),newSampleRate,0).^2),...
@@ -153,7 +150,7 @@ tsh = round(.15*mxyz.sampleRate);
 afet = mxyz.copy;
 afet.data = circshift(mxyz.data,-tsh)-circshift(mxyz.data,tsh);
 afet.data = reshape(afet.data,[],3);
-afet.data = permute(bsxfun(@dot,permute(reshape(repmat(mxyz(:,4,:)-mxyz(:,1,:),[1,mxyz.size(2),1]),[],3),[2,1]),permute(afet.data,[2,1])),[2,1]);
+afet.data = permute(bsxfun(@dot,permute(reshape(repmat(mxyz(:,'spine_upper',:)-mxyz(:,'spine_lower',:),[1,mxyz.size(2),1]),[],3),[2,1]),permute(afet.data,[2,1])),[2,1]);
 afet.data = reshape(afet.data,[],mxyz.size(2));
 afet.resample(fxyz);
 zv = afet.copy;
@@ -168,9 +165,9 @@ sv.resample(fxyz);
 
 
 %% AV
-sang = [circ_dist(fang(:,1,2,1),fang(:,2,3,1)),...
-        circ_dist(fang(:,2,3,1),fang(:,3,4,1)),...
-        circ_dist(fang(:,3,4,1),fang(:,4,'hcom',1))];
+sang = [circ_dist(fang(:,'spine_lower','pelvis_root',1),fang(:,'pelvis_root','spine_middle',1)),...
+        circ_dist(fang(:,'pelvis_root','spine_middle',1),fang(:,'spine_middle','spine_upper',1)),...
+        circ_dist(fang(:,'spine_middle','spine_upper',1),fang(:,'spine_upper','hcom',1))];
 av = fang.copy;
 av.data = abs(sum(sang,2)-circ_mean(sum(sang,2)));
 

@@ -23,7 +23,7 @@ switch features.label
     
   case 'fet_mis'
     fetInds =      [   1:5                      , 7:10                ];
-    stdThresh = cat(2, repmat({.1},    1,5)     , repmat({15},    1,4));
+    stdThresh = cat(2, repmat({.2},    1,5)     , repmat({15},    1,4));
     diffFun =   cat(2, repmat({@circ_dist},1,5) , repmat({@minus},1,4));
 
   case 'fet_all'
@@ -111,8 +111,17 @@ switch features.label
     fets = [];
 end  
 
+% This section was a waste of time
+% $$$ targetFeatureDomainBoundaries = prctile(features.data(nniz(features.data),fetInds'),[5,95]);
+% $$$ referencFeatureDomainBoundaries = prctile(rfet.data(nniz(rfet.data),fetInds'),[5,95]);
+% $$$ featureDomainBoundaries = [min([targetFeatureDomainBoundaries(1,:);referencFeatureDomainBoundaries(1,:)]);...
+% $$$                            max([targetFeatureDomainBoundaries(2,:);referencFeatureDomainBoundaries(2,:)])]';
+% $$$ [tarMean,tarStd,tarCnt,tarDom] = mean_embeded_feature_vbvh(features,   Trial,fetInds,featureDomainBoundaries);
+% $$$ [refMean,refStd,refCnt,refDom] = mean_embeded_feature_vbvh(rfet,    RefTrial,fetInds,featureDomainBoundaries);
+% -----
 [tarMean,tarStd] = mean_embeded_feature_vbvh(features,   Trial,fetInds);
 [refMean,refStd] = mean_embeded_feature_vbvh(rfet,    RefTrial,fetInds);
+
 
 if normEachSyncEpoch,
     inSync = features.sync&features.sync.sync;
@@ -143,3 +152,5 @@ for ind = inSync,
     end
 end
 features.resample(tempFet);
+
+

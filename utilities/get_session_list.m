@@ -191,8 +191,8 @@ switch varargin{1}
     Sessions(end).sessionName = 'jg05-20120310';
     Sessions(end+1) = Sessions(1);
     Sessions(end).sessionName = 'jg05-20120311';
-% $$$     Sessions(end+1) = Sessions(1);
-% $$$     Sessions(end).sessionName = 'jg05-20120315';
+    Sessions(end+1) = Sessions(1);
+    Sessions(end).sessionName = 'jg05-20120312';
     Sessions(end+1) = Sessions(1);
     Sessions(end).sessionName = 'jg05-20120317';
 
@@ -222,8 +222,8 @@ switch varargin{1}
     Sessions(end).sessionName = 'jg05-20120310';
     Sessions(end+1) = Sessions(1);
     Sessions(end).sessionName = 'jg05-20120311';
-% $$$     Sessions(end+1) = Sessions(1);
-% $$$     Sessions(end).sessionName = 'jg05-20120315';
+    Sessions(end+1) = Sessions(1);
+    Sessions(end).sessionName = 'jg05-20120312';
     Sessions(end+1) = Sessions(1);
     Sessions(end).sessionName = 'jg05-20120317';
 
@@ -1060,7 +1060,12 @@ switch varargin{1}
                          'nlx_host',      my_nlx,...
                          'xyzSampleRate', 119.881035,...
                          'host',          'lmu',...
-                         'TTLValue',      '0x4000'...
+                         'TTLValue',      '0x4000',...
+                         'project',      'general',       ...
+                         'offsets',       [0,0],       ...
+                         'xOffSet',       0,              ...
+                         'yOffSet',       0,              ...
+                         'stcMode',      'default'        ...
                          );
     Sessions(end+1) = Sessions(1);
     Sessions(end).sessionName = 'jg04-20120128';
@@ -1069,10 +1074,14 @@ switch varargin{1}
     Sessions(end+1) = Sessions(1);
     Sessions(end).sessionName = 'jg04-20120130';
     Sessions(end+1) = Sessions(1);
+    Sessions(end).sessionName = 'jg04-20120131';
+    Sessions(end+1) = Sessions(1);
     Sessions(end).sessionName = 'jg04-20120201';
     Sessions(end+1) = Sessions(1);
     Sessions(end).sessionName = 'jg04-20120203';
     
+    
+
   case 'jg04_CA3'
     my_xyz = fullfile(my_xyz,'jg04');
     Sessions(1) = struct('sessionName',   'jg04-20120210',...

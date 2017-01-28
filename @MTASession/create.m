@@ -20,6 +20,9 @@ elseif all(~cellfun(@isempty,regexpi(dataLoggers,{'openephys','vicon'})))
 elseif all(~cellfun(@isempty,regexpi(dataLoggers,{'vicon'})))
     Session = loadVicon(Session,xyzSampleRate);
 
+elseif all(~cellfun(@isempty,regexpi(dataLoggers,{'optitrack'})))
+    Session = load_optitrack(Session,xyzSampleRate);
+    
 else
     warning(['MTASession:create:PatternNotFound: {', strjoin(dataLoggers,','),'}']);
 end

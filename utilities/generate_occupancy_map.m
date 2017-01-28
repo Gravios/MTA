@@ -1,29 +1,24 @@
-function [occMap,Bins] = xyocc(Trial,varargin)
+function [occMap,Bins] = generate_occupancy_map(Trial,varargin)
 % function occ = xyocc(Trial,pos,type,binDims)
 % [pos,type,binDims] = DefaultArgs(varargin,{Trial.stc{'w'},'xy',[20,20]
 % Always us xy for now
-[tpos,type,binDims,SmoothingWeights,bound_lims,display,report] = DefaultArgs(varargin,{Trial.stc.states,'xy',[20,20],[2.2,2.2],[],false,false});
+[pos,state,type,binDims,SmoothingWeights,bound_lims,display,report] = DefaultArgs(varargin,{Trial.load('xyz'),[],'xy',[20,20],[2.2,2.2],[],false,false});
 
 
-if isempty(tpos),
+if isempty(state),
     Trial = labelAllBhv(Trial);
-    tpos = Trial.stc.states;
+    state = Trial.stc.states;
 end
 
 
-if ~iscell(tpos)
-    tpos = {tpos};
+if ~iscell(state)
+    state = {state};
 end
 
-for t = 1:numel(tpos),
+for t = 1:numel(state),
     
-    if isa(tpos{t},'MTADepoch');       
-        xyz = Trial.load('xyz');
-        posSampleRate = xyz.sampleRate;
-        pos = sq(xyz(tpos{t},Trial.trackingMarker,ismember('xyz',type)));
-    else
-        pos = tpos{t};
-    end
+    posSampleRate = pos.sampleRate;
+    pos = sq(pos(state{t},Trial.trackingMarker,ismember('xyz',type)));
 
     ndims = length(type);
 
@@ -75,19 +70,19 @@ end
 if display
     
     hfig = figure(48482),clf
-    y = ceil(numel(tpos)/4);
-    if numel(tpos)>=4, 
+    y = ceil(numel(state)/4);
+    if numel(state)>=4, 
         x = 4;
     else
-        x = numel(tpos);
+        x = numel(state);
     end
     
-    for t = 1:numel(tpos),
+    for t = 1:numel(state),
         subplot(y,x,t);
 
         imagescnan(cat(2,Bins,occMap{t}'),[],[],true,[0,0,0]);
-        if isa(tpos{t},'MTADepoch'),
-        title([Trial.filebase,':',tpos{t}.label])
+        if isa(state{t},'MTADepoch'),
+        title([Trial.filebase,':',state{t}.label])
         else
             title([Trial.filebase])
         end

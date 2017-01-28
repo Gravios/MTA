@@ -1591,18 +1591,26 @@ for l=selected_features,
     ssl = ssl+1;
 end
 unselected_features = setdiff(1:length(MLData.feature_display_axes),selected_features);
-set(cell2mat(MLData.feature_display_panels(unselected_features)),'Visible','off');
-set(cell2mat(MLData.feature_display_panels(selected_features)),'Visible','on');
-set(cell2mat(MLData.feature_display_slider(unselected_features)),'Visible','off');
-set(cell2mat(MLData.feature_display_slider(selected_features)),'Visible','on');
-set(cell2mat(MLData.feature_display_axes(unselected_features)),'Visible','off');
-set(cell2mat(MLData.feature_display_axes(selected_features)),'Visible','on');
-set(cell2mat(MLData.feature_display_handles(selected_features)),'Visible','on');
-set(cell2mat(MLData.feature_display_handles(unselected_features)),'Visible','off');
-set(cell2mat(MLData.feature_display_centerlines(unselected_features)),'Visible','off');
-set(cell2mat(MLData.feature_display_centerlines(selected_features)),'Visible','on');
-set(cell2mat(MLData.feature_display_YLimCB(unselected_features)),'Visible','off');
-set(cell2mat(MLData.feature_display_YLimCB(selected_features)),'Visible','on');
+
+unselected_features = unselected_features(~cellfun(@eq,MLData.feature_display_handles(unselected_features),repmat({0},1,numel(unselected_features))));
+
+if ~isempty(unselected_features),
+    set_property_of_object_array(MLData.feature_display_panels     (unselected_features), 'Visible','off');
+    set_property_of_object_array(MLData.feature_display_slider     (unselected_features), 'Visible','off');
+    set_property_of_object_array(MLData.feature_display_axes       (unselected_features), 'Visible','off');
+    set_property_of_object_array(MLData.feature_display_handles    (unselected_features), 'Visible','off');
+    set_property_of_object_array(MLData.feature_display_centerlines(unselected_features), 'Visible','off');
+    set_property_of_object_array(MLData.feature_display_YLimCB     (unselected_features), 'Visible','off');
+end
+
+if ~isempty(selected_features),
+    set_property_of_object_array(MLData.feature_display_panels     (selected_features), 'Visible','on');
+    set_property_of_object_array(MLData.feature_display_slider     (selected_features), 'Visible','on');
+    set_property_of_object_array(MLData.feature_display_axes       (selected_features), 'Visible','on');
+    set_property_of_object_array(MLData.feature_display_handles    (selected_features), 'Visible','on');
+    set_property_of_object_array(MLData.feature_display_centerlines(selected_features), 'Visible','on');
+    set_property_of_object_array(MLData.feature_display_YLimCB     (selected_features), 'Visible','on');
+end
 
 setappdata(handles.MTABrowser,'MLData',MLData);
 guidata(hObject, handles);
@@ -2297,7 +2305,9 @@ if ~getappdata(handles.MLapp,'paused'),
         end
     end
     
-    set(cell2mat(MLData.feature_display_axes(MLData.selected_features)),'XLim',[MLData.idx-MLData.windowSize, MLData.idx+MLData.windowSize])
+    if any(MLData.selected_features),
+        set_property_of_object_array(MLData.feature_display_axes(MLData.selected_features),'XLim',[MLData.idx-MLData.windowSize, MLData.idx+MLData.windowSize])
+    end
     set(handles.MLstateView,'XLim',[MLData.idx-MLData.windowSize, MLData.idx+MLData.windowSize],'YLim',[MLData.statesRange(1) MLData.statesRange(2)])
     [~,y] = MLData.state_centerline.getpoints;
     MLData.state_centerline.clearpoints;
@@ -2522,4 +2532,9 @@ props = {
 values = get(original,props);
 set(dest,props,values);
 
-
+function set_property_of_object_array(objectArray,propertyName,propertyValue);
+cellfun(@set,...
+        objectArray,...
+        repmat({propertyName},1,numel(objectArray)),...
+        repmat({propertyValue},1,numel(objectArray))...
+);

@@ -36,11 +36,13 @@ end
 Trial= MTATrial.validate(Trial);    
 
 % load labeled behavior
-try,
-    Trial.load('stc',[Trial.name,'.',Trial.maze.name,'.gnd','.stc.',stcMode,'.mat']);
-catch err
-    disp(err)
-    Trial.load('stc',[Trial.name,'.',Trial.maze.name,'.all','.stc.',stcMode,'.mat']);            
+if ~strcmp(Trial.stc.mode,stcMode),
+    try,
+        Trial.load('stc',[Trial.name,'.',Trial.maze.name,'.gnd','.stc.',stcMode,'.mat']);
+    catch err
+        disp(err)
+        Trial.load('stc',[Trial.name,'.',Trial.maze.name,'.all','.stc.',stcMode,'.mat']);            
+    end
 end
 
 

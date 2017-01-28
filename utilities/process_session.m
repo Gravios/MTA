@@ -1,8 +1,9 @@
-%% MTASession Setup - jg04 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+%% MTASession Setup %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 overwrite = false;
 nlx = true;
 report = false;
-trb = false;
+trb = true;
+rigidBodyCorrectionMode = 'MANUAL'; % ['EMGM'];
 S = get_session_list('jg04_CA1');
 S = get_session_list('jg04_CA3');
 S = get_session_list('Ed10');
@@ -26,10 +27,8 @@ sp(3) = subplot2(6,4,3:4,1:4);  pSE(s,hfig);  % PLOT simple check for rigidbody 
 % CORRECT marker swaps 
 headMarkers = regexpi(s.xyz.model.ml,'^head_[A-Za-z]*','match');
 headMarkers = cellfun(@(x) cellstr(x),headMarkers(~cellfun('isempty',headMarkers)));
-% automatic
-ERCOR_fillgaps_RidgidBody(s,'EMGM','BEST_SWAP_PERMUTATION',[],headMarkers);
-% manual
-ERCOR_fillgaps_RidgidBody(s,'MANUAL','BEST_SWAP_PERMUTATION',[],headMarkers);
+ERCOR_fillgaps_RidgidBody(s,rigidBodyCorrectionMode,'BEST_SWAP_PERMUTATION',[],headMarkers);
+
 
 % RECONSTRUCT markers from marker triads with acceptable error
 %ERCOR_fillgaps_RidgidBody(s,'EMGM','RIGIDBODY_PARTIAL_RECONSTRUCTION');

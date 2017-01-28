@@ -143,7 +143,7 @@ Lines(Trial.stc{'n'}(:),[],'g');
 
 Data = xyz.copy;
 Data.data = walkFetFilt;
-%Data.data = walkFet;
+Data.data = walkFet;
 Data.label = 'wfet';
 Data.key = 'w';
 Data.name = 'Walk Feature';
@@ -175,7 +175,7 @@ colormap jet;
 sp(end+1) = subplot(212);
 title('Normalized body sway during turn and walk');
 hold on;
-plot(td,Data.data,'m')
+plot(td,Data.data)
 %plot(td,envelope(Data.data,30,'rms'))
 Lines(Trial.stc{'w',1}(:),[],'m');
 Lines(Trial.stc{'n',1}(:),[],'g');
@@ -339,7 +339,7 @@ WData = Data.copy;
 WData.data = zeros(size(Data));
 winds = {};
 for i = 1:numel(tmar)
-    winds{i} = LocalMinima(-abs(Data.data(:,i)),15,-1);
+    winds{i} = LocalMinima(-abs(Data.data(:,i)),15,-.5);
     for j = winds{i}',
         try
             WData.data(j-5:j+5,i) = 1;
@@ -351,6 +351,7 @@ figure,imagesc(td,1:4,WData.data(:,1:4)')
 Lines(Trial.stc{'w',1}(:),[],'m');
 Lines(Trial.stc{'n',1}(:),[],'g');
 Lines(Trial.stc{'r',1}(:),[],'c');
+xlim([940,970]);
 
 
 figure,hold on,
@@ -389,3 +390,89 @@ for i = 1:numel(states),
     title(ind.label);
     grid on
 end
+
+
+segLength = 20;
+dp = Data.phase([1,3]);
+
+ddp = dp.copy;
+ddp.data = bsxfun(@circ_dist,dp.data,permute(dp.data,[1,3,2]));
+
+figure,hold on
+plot(ddp.data(:,1,2))
+plot(ddp.data(:,1,4))
+plot(ddp.data(:,1,5))
+plot(ddp.data(:,2,4))
+plot(ddp.data(:,2,5))
+plot(ddp.data(:,4,5))
+
+plot(Data.data(:,[1,2]))
+plot(Data.data(:,[2,3]))
+Lines(Trial.stc{'w'}(:),[],'m');
+Lines(Trial.stc{'n'}(:),[],'g');
+
+figure,hold on
+plot(circ_dist(circshift(ddp.data(:,1,2),1),circshift(ddp.data(:,1,2),-1)))
+plot(Data.data(:,[1,2]))
+Lines(Trial.stc{'w'}(:),[],'m');
+Lines(Trial.stc{'n'}(:),[],'g');
+
+
+figure,hold on
+dpps = [ddp.data(:,1,2),ddp.data(:,1,4),ddp.data(:,1,5),ddp.data(:,2,4),ddp.data(:,2,5),ddp.data(:,4,5)];
+
+dppcv = circ_var(dpps,[],[],2);
+
+
+figure,hold on
+plot(dppcv)
+Lines(Trial.stc{'w'}(:),[],'m');
+Lines(Trial.stc{'n'}(:),[],'g');
+
+
+ddps = ddp.segs([],segLength);
+
+rinds = reshape(triu(reshape([1:size(dp,2)^2]',[size(dp,2),size(dp,2)]),1),[],1);
+rinds(rinds==0)=[];
+
+ddps = reshape(ddps,segLength,[],size(dp,2)^2);
+ddps = ddps(:,:,rinds);
+
+ddpsppc = zeros([size(ddps,2),size(ddps,3)]);
+for j = 10:numel(rinds),
+for i = 1:size(dp,1),
+    ddpsppc(i,j) = PPC(ddps(:,i,j));
+end
+end
+
+
+
+dp = Data.phase([1,3]);
+ddp = dp.copy;
+ddp.data = bsxfun(@circ_dist,dp.data,permute(dp.data,[1,3,2]));
+ddp.data = ddp(:,1:4,1:4);
+
+rinds = reshape(triu(reshape([1:16]',[4,4]),1),[],1);
+rinds(rinds==0)=[];
+
+ddps = reshape(ddps,segLength,[],16);
+ddps = ddps(:,:,rinds);
+
+
+ddprppc = zeros([size(ddps,2),1]);
+for i = 1:size(dp,1),
+    ddprppc(i) = PPC(reshape(ddps(:,i,:),[],1));
+end
+
+
+figure,plot(ddprppc)
+Lines(Trial.stc{'w'}(:),[],'m');
+Lines(Trial.stc{'n'}(:),[],'g');
+
+figure,hold on,
+ind = Trial.stc{'a-w'};
+plot(Data(ind,1),Data(ind,2))
+ind = Trial.stc{'w'};
+plot(Data(ind(1:10,:),1),Data(ind(1:10,:),2),'r')
+
+

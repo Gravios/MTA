@@ -1,6 +1,6 @@
 function [xyz,ss] = preproc_xyz(Trial,varargin)
 %function [xyz,ss] = preproc_xyz(Trial,varargin)
-%[procOpt] = DefaultArgs(varargin,{{}},true);
+%[procOpts,overwrite] = DefaultArgs(varargin,{{},false},true);
 %
 % An attempt to normalize marker positions along the spine
 % between subjects using a 
