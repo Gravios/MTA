@@ -12,11 +12,11 @@ Par = LoadPar(fullfile(Session.spath, [Session.name,'.xml']));
 
 
 %for i = 1:numel(Par.SpkGrps)
-i = 1
+i = 8;
 Clu = LoadClu(fullfile(Session.spath, [Session.name,'.clu.',num2str(i)]));
 cind = ~ismember(Clu,[0,1]);
 Res = LoadRes(fullfile(Session.spath, [Session.name,'.clu.',num2str(i)]));
-Spk = permute(LoadSpk(fullfile(Session.spath, [Session.name,'.spk.1']),numel(Par.SpkGrps(i).Channels),Par.SpkGrps(i).nSamples),...
+Spk = permute(LoadSpk(fullfile(Session.spath, [Session.name,'.spk.' num2str(i)]),numel(Par.SpkGrps(i).Channels),Par.SpkGrps(i).nSamples),...
               [3,1,2]);
 
 Clu = Clu(cind);

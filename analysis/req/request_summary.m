@@ -366,11 +366,10 @@
 % req20161231 ----------------------------------------------------
 %
 %  Status: active
-%  Type: Utility 
+%  Type: Analysis
 %  Final_Forms: NA
 %  Description:
-%    Experimentation with visualization of 3d place fields. Using
-%    surf to display xy slices along the z-axis.
+%    state transition unit ccgs
 %  Bugs: NA
 
 
@@ -381,13 +380,23 @@
 %% 2017 01 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 
 
-% req20161230 ----------------------------------------------------
+% req20170127 ----------------------------------------------------
 %
 %  Status: active
 %  Type: Utility 
 %  Final_Forms: NA
 %  Description:
-%    Experimentation with visualization of 3d place fields. Using
-%    surf to display xy slices along the z-axis.
+%  Bugs: NA
+
+
+%% 2017 01 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+
+
+% req20170201 ----------------------------------------------------
+%
+%  Status: active
+%  Type: Utility 
+%  Final_Forms: NA
+%  Description: Convert MTA objects to 2d mat for vassia colaboration
 %  Bugs: NA
 

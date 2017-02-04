@@ -476,3 +476,121 @@ ind = Trial.stc{'w'};
 plot(Data(ind(1:10,:),1),Data(ind(1:10,:),2),'r')
 
 
+
+
+
+s = MTASession.validate('JM11-20170112.sof.all');
+Trial = s;
+xyz = s.load('xyz');
+
+rb = xyz.model.rb({'spine_lower','pelvis_root','spine_middle','spine_upper'});
+hcom = xyz.com(rb);
+xyz.addMarker('fbcom',[.7,1,.7],{{'head_back','head_front',[0,0,1]}},...
+              ButFilter(hcom,4,[1.5]./(xyz.sampleRate/2),'low'));
+xyz.addMarker('bcom',[.7,1,.7],{{'head_back','head_front',[0,0,1]}},hcom);
+xyz.addMarker('fsl',[.7,1,.7],{{'head_back','head_front',[0,0,1]}},flxyz(:,'spine_lower',:));
+rb = xyz.model.rb({'head_back','head_left','head_front','head_right'});
+hcom = xyz.com(rb);
+xyz.addMarker('hcom',[.7,1,.7],{{'head_back','head_front',[0,0,1]}},hcom);
+xyz.addMarker('fhcom',[.7,1,.7],{{'head_back','head_front',[0,0,1]}},...
+              ButFilter(hcom,4,[1.5]./(xyz.sampleRate/2),'low'));
+clear('hcom');
+
+ang = create(MTADang,Trial,xyz);
+
+
+figure,hold on,
+plot(ang(:,'spine_lower','knee_right',3))
+plot(ang(:,'spine_lower','knee_left',3))
+plot(walkFet(:,[1,2,3]).*10+35)
+plot(xyz(:,'spine_lower',3)-30)
+
+
+%plot(ang(:,'spine_lower','knee_left',2)*10)
+
+videofile = ['/storage/share/exchange/gravio/optitrack/Session\ 2017-01-12/Take\ 2017-01-12\ 02.52.14\ PM-Camera\ 13029.avi'];
+videofile = '/storage/gravio/data/project/general/JM11-20170112/Trial001_C13029.avi';
+videofile_side = '/storage/gravio/data/project/general/JM11-20170112/Trial001_C12881.avi';
+vdr = VideoReader(videofile);
+vdr_side = VideoReader(videofile_side);
+
+
+
+% Figure Settings ----------------------------------------------------------------------
+OwnDir = '/storage/gravio/ownCloud/';
+FigDir = 'MjgEdER2016/manuscript/Figures/Figure_3';
+set(0,'defaultAxesFontSize',8,...
+      'defaultTextFontSize',8)
+% --------------------------------------------------------------------------------------
+
+
+hfig = figure(20170131);
+set(hfig,'Units','centimeters',...
+         'PaperPositionMode', 'auto',...
+         'Position',[0,0,21,30])
+clf
+index = 66600;
+timePoints = [0,15,45,75,85];
+imageCloseUpBox = [195,600;170,340]
+for i = 1:5;
+    vdr_side.CurrentTime = (index+timePoints(i))/vdr_side.FrameRate;
+    vs = readFrame(vdr_side);
+    hax = axes('Units','centimeters',...
+               'Position',[2+3*(i-1)+i/5,25,3,1.515]);
+    imagesc(rot90(vs(imageCloseUpBox(2,1):imageCloseUpBox(2,2),...
+                     imageCloseUpBox(1,1):imageCloseUpBox(1,2),1))');
+    hax.XTickLabel = {};
+    hax.YTickLabel = {};
+end
+
+
+vsTimeStamps = (1:size(ang,1))./vdr_side.FrameRate;
+
+
+hax = axes('Units','centimeters',...
+           'Position',[2,21.5,16,2.5]);
+hold on,
+plot(vsTimeStamps,ang(:,'spine_lower','knee_right',3))
+plot(vsTimeStamps,ang(:,'spine_lower','knee_left',3))
+xlim([index-50,index+450]./vdr_side.FrameRate);
+ylim([45,90])
+Lines((index+timePoints)./vdr_side.FrameRate,[],'k');
+hax.XTickLabel = {};
+ylabel('Distance');
+
+hax = axes('Units','centimeters',...
+           'Position',[2,18.9,16,2.5]);
+hold on,
+plot(vsTimeStamps,walkFet(:,[1,2,3]))
+xlim([index-50,index+450]./vdr_side.FrameRate);
+ylim([-1.5,1.5])
+hax.XTickLabel = {};
+ylabel('Spine Sway (AU)');
+
+hax = axes('Units','centimeters',...
+           'Position',[2,16.3,16,2.5]);
+plot(vsTimeStamps,nunity(xyz(:,{'spine_lower','pelvis_root','spine_middle'},3)))
+xlim([index-50,index+450]./vdr_side.FrameRate);
+ylim([-0.5,1.75])
+ylabel('Height (AU)');
+hl = legend({'Body Lower','Body Pelvis','Body Middle'},'location','SouthOutside')
+hl.Units = 'Centimeters';
+hl.Position(2)=13;
+
+xlabel('Time (s)');
+FigName = 'walk_feature_demo';
+
+print(gcf,'-depsc2',fullfile(OwnDir,FigDir,[FigName,'.eps']));
+print(gcf,'-dpng',  fullfile(OwnDir,FigDir,[FigName,'.png']));
+
+
+% $$$ figure,
+% $$$ plot(circ_dist(ang(:,'bcom','hip_right',1),ang(:,'bcom','knee_right',1)))
+% $$$ hold on,
+% $$$ plot(circ_dist(ang(:,'bcom','hip_left',1),ang(:,'bcom','knee_left',1)))
+
+
+
+
+
+

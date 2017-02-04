@@ -10,9 +10,14 @@ tempFet = features.copy;
 features.resample(Trial.xyz.sampleRate);
 
 RefTrial = MTATrial.validate(RefTrial);
+if strcmp(Trial.filebase,RefTrial.filebase),
+    return
+end
+
 if ~strcmp(features.label,'fet_all'), % Sorry this exists ...
     rfet = feval(features.label,RefTrial,features.sampleRate);
 end
+
 
 switch features.label
   

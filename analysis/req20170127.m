@@ -20,7 +20,7 @@ xyz.addMarker('homebase',...     Name
 
 ang = create(MTADang,Trial,xyz);
 
-angularOffsetHeadxHombase = circ_dist(ang(:,'acom','bcom',1),ang(:,'acom','homebase',1));
+angularOffsetHeadxHombase = MTADxyz('data',circ_dist(ang(:,'acom','bcom',1),ang(:,'acom','homebase',1)),'sampleRate',xyz.sampleRate);
 
 
 % $$$ figure,plot(angularOffsetHeadxHombase)
@@ -57,6 +57,8 @@ for period = state.data',
 end
 
 
+Trial.stc.states{end+1} = homebase;
+Trial.stc.states{end+1} = explore;
 
 figure,
 eds = linspace(-pi,pi,100);
@@ -72,5 +74,57 @@ hb.FaceAlpha = 0.4;
 hb.EdgeColor = 'r';
 hb.EdgeAlpha = 0.4;
 
+pfs_2d_states(Trial,[],{'loc','lloc','locToHome','hloc','locFromHome','rear','pause'});
 
-pfs_2d_states(Trial,[],{'loc','locToHome','locFromHome','rear','pause'}
+states = {'loc','rear','pause'};
+Spk = {};
+Bccg = {};
+for s = 1:numel(states),
+    Spk{s} = Trial.spk.copy;
+    Spk{s}.create(Trial,xyz.sampleRate,[states{s},'&theta'],[],'deburst');
+    Bccg{s} = gen_bhv_ccg(Trial,states{s},1);
+end
+
+
+eds = -pi:0.1:pi;
+figure,
+for unit = 1:110    
+    for s = 1:numel(states)
+        subplot2(4,3,1,s);cla;
+        bar(eds,histc(angularOffsetHeadxHombase(Spk{s}(unit)),eds),'histc');
+        subplot2(4,3,2,s);cla;
+        bar(eds,histc(angularOffsetHeadxHombase(Trial.stc{states{s}}),eds),'histc');
+        subplot2(4,3,3,s);cla;
+        Bccg{s}.plot(unit,1);
+        subplot2(4,3,4,s);cla;
+        Bccg{s}.plot(unit,1);        
+    end
+    pause(0.4)
+end
+
+
+
+% First Column: 
+%               meanSpikeWaveform, 
+%               FullAutoCCG, 
+%               text(unit neuronquality stuff),
+%               plot(SpkWidthR,AmpSym) 
+% First Row  StateAutoCCG
+%
+
+
+set(0,'defaultAxesFontSize',8,...
+      'defaultTextFontSize',8)
+
+
+gUnits = 'centimeters';
+hfig = figure(20170129)
+hfig.PaperPositionMode = 'auto';
+hfig.Units = gUnits;
+hfig.Position = [0,0,10,10];
+
+tb = annotation('textbox','Units',gUnits,'Position',[2,6,3,3]);
+tb.String = {'This is a line','This is the second line'};
+
+hax = axes('Units','centimeters','Position',[6,1,3,3]);
+

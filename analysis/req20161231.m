@@ -1,4 +1,7 @@
 
+
+
+
 durThresh = 1;
 Bccg{s} = gen_bhv_ccg(Trial,'walk',durThresh);
 
