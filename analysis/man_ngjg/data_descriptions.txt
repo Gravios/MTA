@@ -1,0 +1,17 @@
+
+
+%data(:,1): time
+% rigidbody center of mass
+%data(:,2): Y    Nick's X
+%data(:,3): Z    Nick's Y
+%data(:,4): X    Nick's Z
+% euler angles of rigid body relative to room cooridate system
+%data(:,5): Roll
+%data(:,6): Pitch
+%data(:,7): Yaw
+% Some orientation vector nick made
+%data(:,8): Y
+%data(:,9): Z
+%data(:,10): X
+% Session Id
+%data(:,11): session id

@@ -6,13 +6,14 @@ function features = map_to_reference_session(features,Trial,RefTrial,varargin)
 % If Trial is not a MTASession try loading it.
 Trial = MTATrial.validate(Trial);
 
-tempFet = features.copy;
-features.resample(Trial.xyz.sampleRate);
-
 RefTrial = MTATrial.validate(RefTrial);
 if strcmp(Trial.filebase,RefTrial.filebase),
     return
 end
+
+tempFet = features.copy;
+features.resample(Trial.xyz.sampleRate);
+
 
 if ~strcmp(features.label,'fet_all'), % Sorry this exists ...
     rfet = feval(features.label,RefTrial,features.sampleRate);
@@ -20,7 +21,16 @@ end
 
 
 switch features.label
-  
+
+  case 'fet_raw'
+    fetInds =      [1:12,13:24,52:56];
+    stdThresh = cat(2,repmat({15},1,12),repmat({.2},1,12),repmat({15},1,5));
+    diffFun = cat(2, ...
+              repmat({@minus},1,12),...      % 1:12
+              repmat({@circ_dist},1,12),...  %13:24
+              repmat({@minus},1,5)...       %52:56
+    );
+    
   case 'fet_head_pitch'
     fetInds   = [1];
     stdThresh = {0.1};

@@ -296,6 +296,7 @@
 %
 %  Status: active
 %  Type: Analysis 
+%  Project: MjgER2016
 %  Final_Forms: NA
 %  Description:
 %    checking MTAAknnpfs shuffle feature for thresholding during
@@ -306,6 +307,7 @@
 %
 %  Status: active
 %  Type: Utility
+%  Project: MTA
 %  Final_Forms: NA
 %  Description:
 %    optimize points in head rigidbody based on other markers
@@ -315,6 +317,7 @@
 %
 %  Status: active
 %  Type: Utility
+%  Project: MTA
 %  Final_Forms: NA
 %  Description:
 %    some sort of spike sorting probe
@@ -324,6 +327,7 @@
 %
 %  Status: active
 %  Type: Analysis
+%  Project: MjgEd2016
 %  Final_Forms: NA
 %  Description:
 %    playing with some spectral features 
@@ -389,7 +393,7 @@
 %  Bugs: NA
 
 
-%% 2017 01 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+%% 2017 02 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 
 
 % req20170201 ----------------------------------------------------
@@ -399,4 +403,25 @@
 %  Final_Forms: NA
 %  Description: Convert MTA objects to 2d mat for vassia colaboration
 %  Bugs: NA
+
+% req20170211 ----------------------------------------------------
+%
+%  Status: active
+%  Type: Analysis 
+%  Final_Forms: NA
+%  Description: Check out neural network reconstruction of timeseries
+%  Bugs: NA
+
+% req20170217 ----------------------------------------------------
+%
+%  Status: active
+%  Type: Analysis 
+%  Final_Forms: NA
+%  Description: Labeling statistics 
+%               Req 1.0: stats between neural network classifier (NNC) labels
+%               Req 1.1: stats between expert labeler classifier (ELC) labels 
+%               Req 1.2: stats between expert labeler classifier (ELC) labels 
+%                        and neural network classifier (NNC) labels 
+%  Bugs: NA
+ 
 

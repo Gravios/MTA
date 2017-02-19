@@ -5,13 +5,13 @@ function req20160411(stateIndex)
 
 % Figure Settings ----------------------------------------------------------------------
 OwnDir = '/storage/gravio/ownCloud/';
-FigDir = 'MjgEdER2016/manuscript/Figures/Figure_2';
+FigDir = 'MjgEd2016/manuscript/Figures/Figure_2';
 set(0,'defaultAxesFontSize',8,...
       'defaultTextFontSize',8)
 % --------------------------------------------------------------------------------------
 
 % PARAMETERS ---------------------------------------------------------------------------
-%stateIndex = 5;
+% stateIndex = 1;
 Trial = MTATrial.validate('jg05-20120317.cof.all');
 % jg05-20120317
 % rear  opt 5
@@ -280,6 +280,94 @@ hl.Position(2) = 0.01;
 % REPORT figure to project folder
 print(hfig,'-depsc2',fullfile(OwnDir,FigDir,[FigName,'.eps']));
 print(hfig,'-dpng',  fullfile(OwnDir,FigDir,[FigName,'.png']));
+
+
+
+%% Figures (t-SNE feature map) ------------------------------------------------------.
+FigName = ['mis_tsne_' num2str(stateIndex) '_' states{1} '_FeatureMapping' '-' tag];
+
+mtfet =  MTADxyz('data',fet(ind,:),'sampleRate',fet.sampleRate);
+mtpos =  MTADxyz('data',mappedX,'sampleRate',fet.sampleRate);
+
+
+[~,fett,fetd] = fet_mis(Trial);
+
+hfig = figure(38381);
+hfig.Units = 'centimeters';
+hfig.Position = [1,1,14,8];
+for i = featureSubsetInds,
+    mtfet = MTADxyz('data',fet(ind,i),'sampleRate',fet.sampleRate);
+[meanMap,Bins,distdw,distIndw]= PlotKNNPF(Trial,mtfet,mtpos,[5,5],20,5,'xy',[],[],[-110,125;-125,110],@nanmean);
+mmap = reshape(meanMap,numel(Bins{1}),numel(Bins{2}),[]);
+[stdMap,Bins,distdw,distIndw]= PlotKNNPF(Trial,mtfet,mtpos,[5,5],20,5,'xy',[],[],[-110,125;-125,110],@nanstd);
+smap = reshape(stdMap,numel(Bins{1}),numel(Bins{2}),[]);
+    
+    clf
+    hax = axes;
+    hax.Units = 'centimeters';
+    hax.Position = [2,2,4,4];
+    [ha,hc] = imagescnan({Bins{1},Bins{2},mmap(:,:)},[],false, ...
+                        true,[0,0,0]);
+    ylabel(hc,'mean z-score');
+    axis xy
+    title(fett{i})
+    daspect([1,1,1])
+    
+    hax = axes;
+    hax.Units = 'centimeters';
+    hax.Position = [8,2,4,4];    
+    [ha,hc] = imagescnan({Bins{1},Bins{2},smap(:,:)},[],false, ...
+                        true,[0,0,0]);
+    ylabel(hc,'std z-score');
+    axis xy
+    title(fett{i})
+    daspect([1,1,1])
+
+    
+% REPORT figure to project folder
+print(hfig,'-depsc2',fullfile(OwnDir,FigDir,[FigName,'_',num2str(i),'.eps']));
+print(hfig,'-dpng',  fullfile(OwnDir,FigDir,[FigName,'_',num2str(i),'.png']));
+   
+%reportfig([], hfig, 'tsne', 'req',false,fett{i},fetd{i},[],SAVEFIG,'png',8,8);
+end
+
+
+
+%% PART 2
+
+% compute t-SNE mapping on full feature space
+pind = all(bsxfun(@eq,csmat.data,[1,0,1]),2);
+subMappedX = tsne(fet(pind,:), csmat(pind,:), no_dims, initial_dims, perplexity); 
+
+
+% Load features of a target session
+Trial = MTATrial.validate('jg05-20120317.cof.all');
+xyz = Trial.load('xyz');
+rt = []; %if strcmp('fet_all',featureSet), rt = RefTrial; else, rt = []; end
+
+[pfet] = feval(featureSet,Trial,newSampleRate,rt);
+if map2reference, pfet.map_to_reference_session(Trial,RefTrial); end
+if normalize,     pfet.unity([],rMean,rStd); end
+
+
+gind = Trial.stc{'m'};
+%gInd.cast('TimeSeries',pfet);
+
+hfig = figure(gen_figure_id);
+plot(subMappedX(:,1),subMappedX(:,2),'.');
+cIds = ClusterPP(hfig);
+
+
+distMat = sqrt(sum(bsxfun(@minus,...
+                          permute(pfet(gind,:),[1,3,2]),...
+                          permute(fet(pind,:),[3,1,2])).^2,3));
+[~,closestDistInd] = sort(distMat,2);
+
+groomCluId = gind.copy;
+groomCluId.cast('TimeSeries',pfet);
+groomCluId.data = double(groomCluId.data);
+groomCluId.data(groomCluId.data==1) = mode(cIds(closestDistInd(:,1:100)),2);
+groomCluId.resample(xyz);
 
 
 

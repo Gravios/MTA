@@ -24,11 +24,14 @@ end
 RefTrial = MTATrial.validate('jg05-20120317.cof.all');
 frameRate = 12;
 for s = sessionList
+    Trial = MTATrial.validate(s);    
     [features,featureLabels,featureDescriptions] = fet_mis(Trial,frameRate);
+    behaviorState = stc2mat(Trial.stc,features);
+    behaviorLabels = Trial.stc.list_state_attrib;
     featuresRaw = features.data;
     features.map_to_reference_session(Trial,RefTrial);
     featuresMapped = features.data;
     referenceTrial = RefTrial.filebase;
     save(fullfile(outputPath,[Trial.filebase '-features-fet_mis.mat']), ...
-         'featuresRaw','featuresMapped','featureLabels','featureDescriptions','frameRate','referenceTrial');
+         'featuresRaw','featuresMapped','featureLabels','featureDescriptions','behaviorState','behaviorLabels','frameRate','referenceTrial');
 end

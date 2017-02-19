@@ -45,11 +45,16 @@ ysm = MTADxyz('data',double(0<stc2mat(Stc2,xyz,states)),'sampleRate',xyz.sampleR
 aper = Trial.stc{'a'};
 aper.cast('TimeSeries');
 aper.resample(xyz);
-ind = any(shl.data,2)&any(ysm.data,2)&logical(aper.data);
+
+eper = Trial.stc{'e'};
+eper.cast('TimeSeries');
+eper.resample(xyz);
+
+ind = any(shl.data,2)&any(ysm.data,2)&logical(aper.data)&~logical(eper.data);
 
 tcm = confmat(shl(ind,:),ysm(ind,:)); % #DEP: netlab
 labelStats.confusionMatrix = round(tcm./xyz.sampleRate,2);
-labelStats.precision = round(diag(tcm)./sum(tcm,2),4).*100;
+labelStats.precision = [round(diag(tcm)./sum(tcm,2),4).*100]';
 labelStats.sensitivity = round(diag(tcm)'./sum(tcm),4).*100;
 labelStats.accuracy = sum(diag(tcm))/sum(tcm(:));
 

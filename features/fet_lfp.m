@@ -47,7 +47,7 @@ elseif isa(sampleRate,'MTAData')
     sampleRate = sampleRate.sampleRate;
     flfp.resample(sampleRate);
 else
-    sampleSize = round(flpf.size(1)/flpf.sampleRate*sampleRate);
+    sampleSize = round(flfp.size(1)/flfp.sampleRate*sampleRate);
     flfp.resample(sampleRate);
 end
 

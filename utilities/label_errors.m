@@ -5,9 +5,9 @@ function [Errors2]=label_errors(Trial,period)
 
 
 %% Head errors
-    if (nargin<2 || isempty(period)), period = 2; end
+    if (nargin<2 || isempty(period)), period = 0.5; end
 
-    errors= FindErrorPeriods(Trial);
+    errors= [];%FindErrorPeriods(Trial);
 
 
     if isempty(Trial.xyz.data)
