@@ -17,6 +17,7 @@ defargs.overwrite = false;
 defargs = struct2varargin(defargs);        
 pfs = MTAAknnpfs(Trial,defargs{:});      
 
+
 figure
 unit = 4;
 clf
@@ -33,4 +34,4 @@ colorbar;
 
 mmap = pfs.plot(unit,'mean');
 smap = pfs.plot(unit,'std');
-nanmean(mmap(:))+nanstd(smap(:))*5;
+nanmean(mmap(:))+nanmean(smap(:))*5

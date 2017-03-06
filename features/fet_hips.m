@@ -1,4 +1,4 @@
-function [rhm,varargout] = fet_walk(Trial,varargin)
+function [rhm,varargout] = fet_hips(Trial,varargin)
 % [rhm,fs,ts] = fet_rhm(Trial,varargin)
 % [sampleRate,mode,windowSize] = DefaultArgs(varargin,{Trial.xyz.sampleRate,'spectral',1});
 % Need to update the spectral window size to adapt to the xyz.sampleRate
@@ -17,7 +17,7 @@ defargs = struct(...
     'sampleRate',     'xyz',             ...
     'mode',           'mta',             ...
     'whitenSignal',   false,             ...
-    'deftspec',       def_spec_parm(xyz),...
+    'defspec',        def_spec_parm(xyz),...
     'overwrite',      false,             ...
     'newSR',          [],                ...
     'type',           'mta');
@@ -25,6 +25,7 @@ defargs = struct(...
 [sampleRate,mode,whitenSignal,defspec,overwrite,newSR,type] = DefaultArgs(varargin,defargs,'--struct');
 fs = []; ts = [];
 %-------------------------------------------------------------------------------------------------
+
 
 xyz = Trial.load('xyz');
 % create a ridgid body model
@@ -50,13 +51,14 @@ tmar = {'pelvis_root'};
 tvec = [];cvec = [];
 for m = 1:numel(tmar),
     tvec(:,m,:) = circshift(xyz(:,tmar{m},[1,2]),-shft)-circshift(xyz(:,tmar{m},[1,2]),shft);
+    cvec(:,m,:) = circshift(xyz(:,tmar{m},[1,2]),-shft)-circshift(xyz(:,tmar{m},[1,2]),shft);
 end
-bvec = xyz(:,'fbcom',[1,2])-xyz(:,'fsl',[1,2]);
-ubvec = bsxfun(@rdivide,bvec,sqrt(sum(bvec.^2,3)));
+mvec = xyz(:,'fbcom',[1,2])-xyz(:,'fsl',[1,2]);
+umvec = bsxfun(@rdivide,bsxfun(@times,permute([1,-1],[1,3,2]),mvec(:,1,[2,1])),sqrt(sum(mvec.^2,3)));
 
 nind = nniz(tvec);
 for m = 1:numel(tmar),
-    walkFetBody(nind,m) = nunity(dot(tvec(nind,m,:),ubvec(nind,:,:),3));    
+    walkFet(nind,m) = nunity(dot(tvec(nind,m,:),umvec(nind,:,:),3));
 end
 
 
@@ -69,18 +71,19 @@ elseif sampleRate > 120,
 end
 xyz.filter('ButFilter',3,55,'low');
 
+%ang = create(MTADang,Trial,xyz);
 
 fet = xyz.copy;
-fet.data = walkFetBody;
+fet.data = walkFet;
 
 switch mode
   case 'mta'
     rhm = MTADfet.encapsulate(Trial,...
                               fet.data,...
                               fet.sampleRate,...
-                              'rhythmic head motion feature',...
-                              'rhm',...
-                              'r');
+                              'lateral sway of the pelvis',...
+                              'HipSway',...
+                              'h');
   case 'raw'
     rhm = fet.data;
   otherwise
@@ -88,7 +91,7 @@ switch mode
     for i = 1:length(dsf),parspec.(dsf{i}) = defspec.(dsf{i});end
     data = zeros(fet.size);
     
-    if wsig,
+    if whitenSignal,
         try,load(fullfile(Trial.path.arm,[mfilename,'.arm.mat']));end
 
         if exist('ARmodel','var')||overwrite,
@@ -138,7 +141,8 @@ switch mode
     if strcmp(type,'raw'),
         rhm = rhm.data;
     end
-    
+    rhm.label = 'HipSwaySpec';
+    rhm.key = 'h';    
     
     tvout = cat(2,fs,ts,svout);
     varargout = tvout(1:length(varargout));

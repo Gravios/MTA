@@ -6,7 +6,9 @@ MTAstartup('cin','cin');Trial = MTATrial('Ed10-20140812');
 Trial.stc.updateMode('auto_wbhr');
 Trial.stc.load;
 
-linkSession(Trial.name,'/gpfs01/sirota/homes/eduardo/data/xyz','/gpfs01/sirota/homes/eduardo/data/rawnlx')
+link_session_to_project(Trial.name,...
+                        '/gpfs01/sirota/homes/eduardo/data/xyz',...
+                        '/gpfs01/sirota/homes/eduardo/data/rawnlx')
 
 if isempty(Trial.stc{'t'}),
     Trial = labelAuxBhv(Trial,Trial.stc,'overwrite',true);

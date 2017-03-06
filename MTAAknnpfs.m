@@ -183,10 +183,13 @@ classdef MTAAknnpfs < hgsetget %< MTAAnalysis
             %% Get State Positions
             if isempty(pos), 
                 pos = Session.load('xyz');
+                pos.resample(sampleRate);                
+                sstpos = sq(pos(pfsState,Session.trackingMarker,1:numel(binDims)));                 
+            elseif size(pos,2)==1,
+                pos.resample(sampleRate);
+                sstpos = sq(pos(pfsState,1,1:numel(binDims)));
             end
-            pos.resample(sampleRate);
-                
-            sstpos = sq(pos(pfsState,Session.trackingMarker,1:numel(binDims))); 
+
 
             %% load unit firing rate
 

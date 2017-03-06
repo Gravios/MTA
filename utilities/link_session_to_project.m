@@ -1,4 +1,4 @@
-function linkSession(session_name,xyz_path,nlx_path)
+function link_session_to_project(session_name,xyz_path,nlx_path)
 %function linkSession(session_name,xyz_path,nlx_path)
 %
 %  Creates Session folder in the current MTA project

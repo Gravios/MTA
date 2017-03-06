@@ -73,7 +73,8 @@ classdef MTAApfs < hgsetget %< MTAAnalysis
     methods
 
         function Pfs = MTAApfs(Obj, varargin)     
-            [units,states,overwrite,tag,binDims,SmoothingWeights,type,spkShuffle,posShuffle,numIter,xyzp,bound_lims,bootstrap]=...
+            [units,states,overwrite,tag,binDims,SmoothingWeights,type,...
+             spkShuffle,posShuffle,numIter,xyzp,bound_lims,bootstrap]=...
             DefaultArgs(varargin,{[],'walk',0,[],[30,30],[1.2,1.2],'xy',0,0,1,MTADxyz([]),[],0});
 
             units = units(:)';            
@@ -94,6 +95,8 @@ classdef MTAApfs < hgsetget %< MTAAnalysis
                         xyz = Session.xyz.copy;
                         xyz.load(Session);
                         xyz.data = sq(xyz(:,Session.trackingMarker,1:numel(binDims)));
+                    else
+                        xyz = xyzp;
                     end
 
                     
@@ -326,9 +329,11 @@ classdef MTAApfs < hgsetget %< MTAAnalysis
                     end
 
                     %% Caluculate Place Fields
+                    tic
                     [Pfs.data.rateMap(:,dind(i),1), Pfs.adata.bins] =  ...
                         PlotPF(Session,sstpos(sresind(:,1),:),sstpos,binDims,SmoothingWeights,type,bound_lims,xyz.sampleRate);
-                     if numIter>1,
+                    toc
+                    if numIter>1,
                          for bsi = 2:numIter
                              Pfs.data.rateMap(:,dind(i),bsi) = PlotPF(Session,sstpos(sresind(:,bsi),:),sstpos,binDims,SmoothingWeights,type,bound_lims);
                          end

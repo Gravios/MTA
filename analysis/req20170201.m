@@ -35,3 +35,20 @@ for s = sessionList
     save(fullfile(outputPath,[Trial.filebase '-features-fet_mis.mat']), ...
          'featuresRaw','featuresMapped','featureLabels','featureDescriptions','behaviorState','behaviorLabels','frameRate','referenceTrial');
 end
+
+
+RefTrial = MTATrial.validate('jg05-20120317.cof.all');
+frameRate = RefTrial.xyz.sampleRate;
+for s = sessionList
+    Trial = MTATrial.validate(s);    
+    [xyz,ss] = preproc_xyz(Trial,'SPLINE_SPINE_HEAD_EQD');    
+    [features] = fet_raw(Trial);
+    behaviorState = stc2mat(Trial.stc,features);
+    behaviorLabels = Trial.stc.list_state_attrib;
+    featuresRaw = features.data;
+    features.map_to_reference_session(Trial,RefTrial);
+    featuresMapped = features.data;
+    referenceTrial = RefTrial.filebase;
+    save(fullfile(outputPath,[Trial.filebase '-features-fet_raw.mat']), ...
+         'featuresRaw','featuresMapped','behaviorState','behaviorLabels','frameRate','referenceTrial','ss');
+end

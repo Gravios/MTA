@@ -1,4 +1,4 @@
-function [fet,featureTitles,featureDesc] = fet_raw(Trial,varargin)
+function [fet,featureTitles,featureDesc] = fet_all2(Trial,varargin)
 %function fet = fet_all(Trial)
 %
 % exhaustive set of features derived from the raw data
@@ -12,11 +12,11 @@ fet = MTADfet(Trial.spath,...
               newSampleRate,...
               Trial.sync.copy,...
               Trial.sync.data(1),...
-              [],'TimeSeries',[],'Raw Features','fet_raw','r');                  
+              [],'TimeSeries',[],'all_Features','fet_all','a');                  
 
 % Loads preprocessed version of xyz
 nm = Trial.xyz.model.N;
-[xyz,ss] = preproc_xyz(Trial,procOpts);
+[xyz,ss] = preproc_xyz(Trial,procOpts);              
 xyz.resample(newSampleRate);
 ss.resample(xyz);
 
@@ -37,56 +37,41 @@ fvelz.data = log10(fvelz.data);
 % FANG Filtered Intermarker angles 
 fang = create(MTADang,Trial,fxyz);
 
+
 %% Derivatives of features
 
-% DISTANCE between segments 
-d = 3;
-cang = fang.copy;
-cang.data = [fang(:,'spine_lower','pelvis_root',d),...          1
-             fang(:,'spine_lower','spine_middle',d),...         2
-             fang(:,'spine_lower','bcom',d),...                 3
-             fang(:,'spine_lower','hcom',d),...                 4
-             fang(:,'pelvis_root','spine_middle',d),...         5
-             fang(:,'pelvis_root','spine_upper',d),...          6
-             fang(:,'spine_middle','spine_upper',d),...         7
-             fang(:,'spine_middle','hcom',d),...                8
-             fang(:,'spine_upper','hcom',d),...                 9
-             fang(:,'spine_upper','hcom',d),...                 10
-             fang(:,'bcom','hcom',d),...                        11
-             fang(:,'bcom','acom',d)];                         %12
-fet.data =  [fet.data,cang.data]; % Add to feature matrix
-
-% PITCH between segments 
+% ANG (theta) between segments 
 d = 2;
 cang = fang.copy;
-cang.data = [fang(:,'spine_lower', 'pelvis_root', d),... 13
-             fang(:,'spine_lower', 'spine_middle',d),... 14
-             fang(:,'spine_lower', 'bcom',        d),... 15
-             fang(:,'spine_lower', 'hcom',        d),... 16
-             fang(:,'pelvis_root', 'spine_middle',d),... 17
-             fang(:,'pelvis_root', 'spine_upper', d),... 18
-             fang(:,'spine_middle','spine_upper', d),... 19
-             fang(:,'spine_middle','hcom',        d),... 20
-             fang(:,'spine_upper', 'hcom',        d),... 21
-             fang(:,'spine_upper', 'hcom',        d),... 22
-             fang(:,'bcom',        'hcom',        d),... 23
-             fang(:,'bcom',        'acom',        d)]; % 24
-fet.data =  [fet.data,cang.data]; % Add to feature matrix
+cang.data = [fang(:,'spine_lower','pelvis_root',2),...          1
+             fang(:,'spine_lower','spine_middle',2),...         2
+             fang(:,'spine_lower','bcom',2),...                 3
+             fang(:,'spine_lower','hcom',2),...                 4
+             fang(:,'pelvis_root','spine_middle',2),...         5
+             fang(:,'pelvis_root','spine_upper',2),...          6
+             fang(:,'spine_middle','spine_upper',2),...         7
+             fang(:,'spine_middle','hcom',2),...                8
+             fang(:,'spine_upper','hcom',2),...                 9
+             fang(:,'spine_upper','hcom',2),...                 10
+             fang(:,'bcom','hcom',2),...                        11
+             fang(:,'bcom','acom',2)];                         %12
+fet.data =  [fet.data,cang.data];
+
 
 % DRV of pitch
 cang = fang.copy;
-cang.data = [fang(:,'spine_lower', 'pelvis_root', 2),... 25
-             fang(:,'spine_lower', 'spine_middle',2),... 26
-             fang(:,'spine_lower', 'bcom',        2),... 27
-             fang(:,'spine_lower', 'hcom',        2),... 28
-             fang(:,'pelvis_root', 'spine_middle',2),... 29
-             fang(:,'pelvis_root', 'spine_upper', 2),... 30
-             fang(:,'spine_middle','spine_upper', 2),... 31
-             fang(:,'spine_middle','hcom',        2),... 32
-             fang(:,'spine_upper', 'hcom',        2),... 33
-             fang(:,'bcom',        'hcom',        2),... 34
-             fang(:,'bcom',        'acom',        2),... 35
-             fang(:,'hcom',        'acom',        2)]; % 36
+cang.data = [ang(:,'spine_lower','pelvis_root',2),...          13
+             ang(:,'spine_lower','spine_middle',2),...         14
+             ang(:,'spine_lower','bcom',2),...                 15
+             ang(:,'spine_lower','hcom',2),...                 16
+             ang(:,'pelvis_root','spine_middle',2),...         17
+             ang(:,'pelvis_root','spine_upper',2),...          18
+             ang(:,'spine_middle','spine_upper',2),...         19
+             ang(:,'spine_middle','hcom',2),...                20
+             ang(:,'spine_upper','hcom',2),...                 21
+             ang(:,'bcom','hcom',2),...                        22
+             ang(:,'bcom','acom',2),...                        23
+             ang(:,'hcom','acom',2)];                         %24
 cang.data = [zeros([1,size(cang,2)]);diff(cang.data)];
 cang.data = circ_dist(circshift(cang.data,-1),circshift(cang.data,1)).*cang.sampleRate;
 cang.data = circshift(permute(sum(cang.segs(1:cang.size(1),round(newSampleRate/2),0).^2),...
@@ -96,22 +81,23 @@ cang.data(cang.data<1e-8) = 1e-8;
 cang.data = log10(cang.data);
 fet.data =  [fet.data,cang.data]; % Add to feature matrix
 
+
 %% DRV of Yaw
 cang = fang.copy;
-cang.data = [fang(:,'spine_lower', 'pelvis_root', 1),... 37
-             fang(:,'spine_lower', 'spine_middle',1),... 38
-             fang(:,'spine_lower', 'bcom',        1),... 39
-             fang(:,'spine_lower', 'hcom',        1),... 40
-             fang(:,'pelvis_root', 'spine_middle',1),... 41
-             fang(:,'pelvis_root', 'spine_upper', 1),... 42
-             fang(:,'spine_middle','spine_upper', 1),... 43
-             fang(:,'spine_middle','hcom',        1),... 44
-             fang(:,'spine_upper', 'hcom',        1),... 45
-             fang(:,'spine_upper', 'hcom',        1),... 46
-             fang(:,'head_back',   'hcom',        1),... 47
-             fang(:,'bcom',        'hcom',        1),... 48
-             fang(:,'bcom',        'acom',        1),... 49
-             fang(:,'hcom',        'acom',        1)]; % 50
+cang.data = [ang(:,'spine_lower','pelvis_root',1),...          25
+             ang(:,'spine_lower','spine_middle',1),...         26
+             ang(:,'spine_lower','bcom',1),...                 27
+             ang(:,'spine_lower','hcom',1),...                 28
+             ang(:,'pelvis_root','spine_middle',1),...         29
+             ang(:,'pelvis_root','spine_upper',1),...          30
+             ang(:,'spine_middle','spine_upper',1),...         31
+             ang(:,'spine_middle','hcom',1),...                32
+             ang(:,'spine_upper','hcom',1),...                 33
+             ang(:,'spine_upper','hcom',1),...                 34
+             ang(:,'head_back','hcom',1),...                   35
+             ang(:,'bcom','hcom',1),...                        36
+             ang(:,'bcom','acom',1),...                        37
+             ang(:,'hcom','acom',1)];                         %38
 cang.data = circ_dist(circshift(cang.data,-1),circshift(cang.data,1)).*cang.sampleRate;
 cang.data = circshift(permute(sum(cang.segs(1:cang.size(1),round(newSampleRate/2),0).^2),...
                               [2,3,1]),...
@@ -203,39 +189,29 @@ sang = [circ_dist(fang(:,'spine_lower','pelvis_root',1),fang(:,'pelvis_root','sp
 av = fang.copy;
 av.data = abs(sum(sang,2)-circ_mean(sum(sang,2)));
 
-%%%%%% start here %%%%%%
-%hang = transform_origin(Trial, mxyz, 'head_back', 'head_front',{'head_left','head_right'})   ;
 
 fet.data =  [fet.data,...
-             man.data,...                51
-             fxyz(:,{'spine_lower',  ... 52 Height
-                     'pelvis_root',  ... 53
-                     'spine_middle', ... 54
-                     'spine_upper',  ... 55
-                     'hcom'},3),     ... 56
-             ...
-             fvelxy(:,{'spine_lower',... 57 xy speed
-                       'spine_upper',... 58
-                       'head_front', ... 59 
-                       'bcom',       ... 60 
-                       'hcom',       ... 61 
-                       'acom'}),     ... 62
-             ...
-             fvelz(:,{'spine_lower', ... 63 z speed
-                      'spine_upper', ... 64
-                      'head_front',  ... 65
-                      'bcom',        ... 66
-                      'hcom',        ... 67
-                      'acom'}),      ... 68
-             fvelz(:,{'spine_lower', ... 69 z vel
-                      'spine_upper', ... 70
-                      'head_front',  ... 71
-                      'bcom',        ... 72
-                      'hcom',        ... 73
-                      'acom'}),      ... 74
-             wfs.data,...                75 76 77 78 79 80 81 82 83 84
-             sv.data,...                 85
-             av.data...                  86
+             man.data,...                39
+             fxyz(:,{'spine_lower',  ... 40
+                    'pelvis_root',   ... 41
+                    'spine_middle',  ... 42
+                    'spine_upper',   ... 43
+                    'hcom'},3),      ... 44
+             fvelxy(:,{'spine_lower',... 45
+                      'spine_upper', ... 46
+                      'head_front',  ... 47
+                      'bcom',        ... 48
+                      'hcom',        ... 49
+                      'acom'}),      ... 50 
+             fvelz(:,{'spine_lower', ... 51
+                     'spine_upper',  ... 52
+                     'head_front',   ... 53
+                     'bcom',         ... 54
+                     'hcom',         ... 55
+                     'acom'}),       ... 56
+             zv.data,... 57 58 59 60 61 62 63 64 65 66
+             sv.data,... 67
+             av.data...  68
             ];
 
 

@@ -14,9 +14,7 @@ elseif all(~cellfun(@isempty,regexpi(dataLoggers,{'blackrock','vicon'})))
              'for Blackrock, thank you and have a nice day'])
 
 elseif all(~cellfun(@isempty,regexpi(dataLoggers,{'openephys','vicon'})))
-    warning(['Session creation routine does not exist ' ...
-             'for openephys, thank you and have a nice day'])
-
+    Session = sync_openephys_vicon(Session,xyzSampleRate);
 elseif all(~cellfun(@isempty,regexpi(dataLoggers,{'vicon'})))
     Session = loadVicon(Session,xyzSampleRate);
 

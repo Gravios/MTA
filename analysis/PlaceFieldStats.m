@@ -2,7 +2,8 @@ function [pfstats,pfbstats,pfmstats] = PlaceFieldStats(Trial,pf,unit,varargin)
 
 [verbose] = DefaultArgs(varargin,{true});
 VERSION = '0.1';
-
+thresholdMethod = 'shuffle';
+%thresholdMethod = 'percentile';
 
 if verbose,
     fprintf('PlaceFieldStats v%s \n\n',version)
@@ -12,7 +13,9 @@ end
     
 map = sq(pf.data.rateMap(:,unit==pf.data.clu,:));
 pkfr = max(map(:,1));
-rateThreshold = prctile(sq(map(:)),95);
+
+rateThreshold = select_rate_threshold(pf,unit,thresholdMethod); %helper function (see end)
+
 maxNumPatches =2;
 maxBinCount = round(prod(pf.adata.binSizes)*0.12);
 %maxBinCount = round(prod(pf.adata.binSizes)*0.1);
@@ -341,3 +344,21 @@ end
 % $$$ 
 
 % $$$ if nargout>1,        
+
+function threshold = select_rate_threshold(pf,unit,method)
+switch method
+  case 'shuffle'
+    defargs = get_default_args('MjgEdER2016','MTAAknnpfs','struct');
+    defargs.units = unit;
+    defargs.states = 'theta';
+    defargs.overwrite = false;
+    defargs = struct2varargin(defargs);        
+    pf = MTAAknnpfs(Trial,defargs{:});      
+    
+    mmap = pf.plot(unit,'mean');
+    smap = pf.plot(unit,'std');
+    threshold = nanmean(mmap(:))+nanmean(smap(:))*5;
+  case 'percentile'    
+    map = sq(pf.data.rateMap(:,unit==pf.data.clu,:));    
+    threshold = prctile(sq(map(:)),95);
+end

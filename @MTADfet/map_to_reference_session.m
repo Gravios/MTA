@@ -22,9 +22,18 @@ end
 
 switch features.label
 
+  case 'fet_all2'
+    fetInds =      [1:12,[40:44]];
+    stdThresh = cat(2,repmat({35},1,12),repmat({.2},1,12),repmat({15},1,5));
+    diffFun = cat(2, ...
+              repmat({@minus},1,12),...      % 1:12
+              repmat({@circ_dist},1,12),...  %13:24
+              repmat({@minus},1,5)...       %52:56
+    );    
+    
   case 'fet_raw'
     fetInds =      [1:12,13:24,52:56];
-    stdThresh = cat(2,repmat({15},1,12),repmat({.2},1,12),repmat({15},1,5));
+    stdThresh = cat(2,repmat({35},1,12),repmat({.2},1,12),repmat({15},1,5));
     diffFun = cat(2, ...
               repmat({@minus},1,12),...      % 1:12
               repmat({@circ_dist},1,12),...  %13:24

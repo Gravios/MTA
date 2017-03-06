@@ -675,7 +675,7 @@ hfig
 SessionName = 'Ed12-20150811'; % what was once known as filebase
 xyz_path = '/storage/eduardo/data/processed/xyz/';
 nlx_path = '/storage/eduardo/data/processed/nlx/Ed12';
-linkSession(SessionName,xyz_path,nlx_path);
+link_session_to_project(SessionName,xyz_path,nlx_path);
 MazeName = 'nor';
 TrialName = 'all'; 
 TTLValue = '0x0100'; % can be found in "SessionName".all.evt
@@ -693,7 +693,7 @@ Session = MTASession(SessionName,MazeName,overwrite,TTLValue, ...
 SessionName = 'Ed12-20150807';
 xyz_path = '/storage/eduardo/data/processed/xyz/';
 nlx_path = '/storage/eduardo/data/processed/nlx/Ed12';
-linkSession(SessionName,xyz_path,nlx_path);
+link_session_to_project(SessionName,xyz_path,nlx_path);
 MazeName = 'nor';
 TrialName = 'all'; 
 TTLValue = '0x0100';

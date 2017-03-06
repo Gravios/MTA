@@ -18,7 +18,7 @@ switch flag
   case 'link_to_gravio'
     session_list = '/data/homes/gravio/data/analysis/session_list';
     paths_to_gravio = load('/data/homes/gravio/data/config/MTA/MTAPaths.mat');
-    gtdb('linkSession',session_list,[],[],[],paths_to_gravio,paths);
+    gtdb('link_session_to_project',session_list,[],[],[],paths_to_gravio,paths);
   otherwise
     error(['Flag: ' flag ', not recognized']);
 end

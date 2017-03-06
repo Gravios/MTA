@@ -5,12 +5,18 @@ function [fet,featureTitles,featureDesc,Nmean,Nstd] = fet_mis(Trial,varargin)
 % $$$                  'procOpts'     , {'SPLINE_SPINE_HEAD_EQD'});
 
 
+
+% DEFARGS ------------------------------------------------------------------------------------------
 defargs = struct('newSampleRate', 12,                       ...
                  'normalize'    , false,                    ...
                  'procOpts'     , {'SPLINE_SPINE_HEAD_EQD'});
 
 [newSampleRate,normalize,procOpts] = DefaultArgs(varargin,defargs,'--struct');
+%--------------------------------------------------------------------------------------------------
 
+
+
+% MAIN ---------------------------------------------------------------------------------------------
 
 % INIT Feature
 fet = MTADfet(Trial.spath,...
@@ -32,9 +38,7 @@ fxyz.filter('ButFilter',3,2.4,'low');
 
 % FVELXY Filtered marker speeds in XY plane
 fvelxy = fxyz.vel({'spine_lower','spine_upper','hcom','acom'},[1,2]);
-%fvelxy = xyz.vel({'spine_lower','spine_upper','hcom','acom'},[1,2]);
-%fvelxy.filter('ButFilter',3,2.5,'low');
-fvelxy.data(fvelxy.data<0)=.1;
+fvelxy.data(fvelxy.data<1e-4)=1e-4;
 fvelxy.data = log10(fvelxy.data);
 
 % FVELZ Filtered marker speeds in Z axis
@@ -192,3 +196,6 @@ if nargout>1,
     featureDesc(end+1) = {['Mean Yaw speed of the vector from ' ...
                         'the lower body to the head''s center of mass']};
 end
+
+
+%---------------------------------------------------------------------------------------------------

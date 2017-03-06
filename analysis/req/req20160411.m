@@ -7,11 +7,18 @@ function req20160411(stateIndex)
 OwnDir = '/storage/gravio/ownCloud/';
 FigDir = 'MjgEd2016/manuscript/Figures/Figure_2';
 set(0,'defaultAxesFontSize',8,...
-      'defaultTextFontSize',8)
+      'defaultTextFontSize',8);
+% $$$       'defaultuicontrolunits','centimeters',...
+% $$$       'defaultfigureunits','centimeters',...
+% $$$       'defaultaxesunits','centimeters');
+
 % --------------------------------------------------------------------------------------
 
 % PARAMETERS ---------------------------------------------------------------------------
 % stateIndex = 1;
+iteration = '';
+iteration = '_1';
+states = {'rear','sit','groom','pause','walk','turn'};
 Trial = MTATrial.validate('jg05-20120317.cof.all');
 % jg05-20120317
 % rear  opt 5
@@ -46,7 +53,10 @@ else
     featureSubsetInds = opt.sbind(1:sortedFeatureMaxIndex(stateIndex));
 end
 
+%stateIndex = 0;
 switch stateIndex
+  case 0, 
+    featureSubsetInds = 1:18;
   case 1,
     featureSubsetInds = [3,5,14,10,16];
   case 2,
@@ -81,7 +91,7 @@ parameters.refTrial = 'jg05-20120317.cof.all';
 tag = DataHash(parameters);
 
 % SET file name
-fileLoc = fullfile(MTASession([]).path.data,'analysis',[mfilename,'-',tag,'.mat']);
+fileLoc = fullfile(MTASession([]).path.data,'analysis',[mfilename,'-',tag,iteration,'.mat']);
 
 % POPULATE variable from parameter struct
 [featureSet,featureSubsetInds,initial_dims,perplexity,newSampleRate,states,...
@@ -330,6 +340,127 @@ print(hfig,'-dpng',  fullfile(OwnDir,FigDir,[FigName,'_',num2str(i),'.png']));
    
 %reportfig([], hfig, 'tsne', 'req',false,fett{i},fetd{i},[],SAVEFIG,'png',8,8);
 end
+
+
+
+%% JPDF with contours
+
+
+[~,featureTitles] = fet_mis(RefTrial);
+
+csmat.data(round(linspace(nSamples+1,size(csmat,1),numel(states)))',:) = [];
+targetState = sStc.states{1};
+targetState.data = ThreshCross(all(bsxfun(@eq,csmat.data,c(1,:)),2),0.5,10);
+
+remainingStates = sStc.states{end};                      
+remainingStates.data =  ThreshCross(~all(bsxfun(@eq,csmat.data,c(1,:)),2),0.5,10);
+remainingStates.data(end,2) = size(fet,1);
+nbin = 50;                                        % number of bins per axis in JPDF
+
+
+for f = 1:numel(featureSubsetInds),
+    for k = f+1:numel(featureSubsetInds),
+        x = featureSubsetInds(f);                         % fet_mis feature index
+        y = featureSubsetInds(k);                         % fet_mis feature index
+        stateThreshold = 10e-4;
+        astateThreshold = 10e-4;
+        patchPercentState = 0;
+        patchPercentAState = 0;
+        display = [true,true];
+        FigName = ['mis_jpdf_' num2str(stateIndex) '_' states{1} '_FeatureJPDF_'...
+                   num2str(x) '-' num2str(y) '-' tag];
+
+
+
+        for i = 1:2
+            display = ~display;
+            hfig = figure(383812);clf;hold on;delete(gca);    % Create and clear the figure
+            set(hfig,'Units','centimeters',...
+                     'PaperPositionMode', 'auto')
+            hfig.Position(3:4) = [6,6];
+            hind = nniz(fet);                                % Index for not zero, inf or nan           
+
+            % SET bins: try refined edgs See (featureAxLim) Definitions below or percentile
+            edgs    = {linspace([prctile(fet(hind,x),[2,98])+[-1,1],nbin])};    
+            edgs(2) = {linspace([prctile(fet(hind,y),[2,98])+[-1,1],nbin])};    
+            edc = cell(size(edgs));
+            [edc{:}] = get_histBinCenters(edgs);               
+
+
+            % PLOT JPDF of features
+            hax = axes('Units','centimeters','Position',[2,2,2,2]); hold on;
+            [histMat,~,~,histBinsX,histBinsY] = ...
+                histcounts2(fet(hind,x),fet(hind,y),...
+                            edgs{1},edgs{2},...
+                            'Normalization','probability');
+            imagesc(edgs{1},edgs{2},histMat');                     % Plot JPDF of hand labeled data
+            axis xy;
+            axis tight;
+
+            % COMPUTE JPDF for target state
+            while patchPercentState < 0.95 || display(1),
+                [stateOverlay,~,~,stateOverlayBinsX,stateOverlayBinsY] = ...
+                    histcounts2(fet(targetState,x),fet(targetState,y),...
+                                edgs{1},edgs{2},...
+                                'Normalization','probability');
+                stateOverlay = imgaussfilt(stateOverlay,2);
+                stateOverlayThresholdMatrix = stateOverlay>stateThreshold;
+                [stateOverlayBoundaries,statePatchMatrix] = bwboundaries(stateOverlayThresholdMatrix);
+                for b = stateOverlayBoundaries'
+                    plot(edc{1}(stateOverlayBoundaries{1}(:,1)),edc{2}(stateOverlayBoundaries{1}(:,2)),'-r');
+                end    
+                nzb = stateOverlayBinsX&stateOverlayBinsY;
+                patchPercentState = sum(statePatchMatrix(...
+                    sub2ind(size(statePatchMatrix),...
+                            stateOverlayBinsX(nzb),...
+                            stateOverlayBinsY(nzb)))...
+                                        ==1)/sum(nzb);
+                if patchPercentState < 0.95,
+                    stateThreshold = stateThreshold - 0.5e-4;
+                else
+                    display(1) = false;
+                end
+            end
+
+
+            % COMPUTE JPDF for all states excluding target state
+            while patchPercentAState < 0.95 || display(2),
+                [astateOverlay,~,~,astateOverlayBinsX,astateOverlayBinsY] = ...
+                    histcounts2(fet(remainingStates,x),fet(remainingStates,y),...
+                                edgs{1},edgs{2},...
+                                'Normalization','probability');
+                astateOverlay = imgaussfilt(astateOverlay,2);
+                astateOverlayThresholdMatrix = astateOverlay>astateThreshold;
+                [astateOverlayBoundaries,astatePatchMatrix] = bwboundaries(astateOverlayThresholdMatrix);
+                for b = astateOverlayBoundaries'
+                    plot(edc{1}(astateOverlayBoundaries{1}(:,1)),edc{2}(astateOverlayBoundaries{1}(:,2)),'-c');
+                end    
+                nzb = astateOverlayBinsX&astateOverlayBinsY;
+                patchPercentAState = sum(astatePatchMatrix(...
+                    sub2ind(size(astatePatchMatrix),...
+                            astateOverlayBinsX(nzb),...
+                            astateOverlayBinsY(nzb)))...
+                                         ==1)/sum(nzb);
+                if patchPercentAState < 0.95,
+                    astateThreshold = astateThreshold - 0.5e-4;
+                else
+                    display(2) = false;
+                end
+            end
+
+            caxis([0,0.003])
+            xlabel(featureTitles{x});
+            ylabel(featureTitles{y});
+        end
+
+        print(hfig,'-depsc2',fullfile(OwnDir,FigDir,[FigName,'.eps']));
+        print(hfig,'-dpng',  fullfile(OwnDir,FigDir,[FigName,'.png']));
+    end
+end
+
+
+
+
 
 
 

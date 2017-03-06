@@ -97,7 +97,7 @@ TrialName = 'all';
 overwrite = true;
 xyzSampleRate = 199.997752;
 
-linkSession(SessionName,xyz_path,[]);
+link_session_to_project(SessionName,xyz_path,[]);
 s = MTASession(SessionName,MazeName,overwrite,[],'vicon','box',xyzSampleRate);
 xyz = s.load('xyz');
 xyz.data(:,:,1) = xyz(:,:,1)-85;
