@@ -2,12 +2,13 @@
 Trial = MTATrial('jg05-20120310');
 xyz = Trial.load('xyz');
 lfp = Trial.lfp.copy;
+lfp.filename = 'jg05-20120310.lfp';
 lfp.create(Trial,61);
 lfp.resample(xyz);
 phs = lfp.phase;
 
 
-states = {'theta','rear&theta','walk&theta'};
+states = {'theta','rear&theta','loc&theta'};
 nsts = numel(states);
 ow = 0;
 
@@ -22,10 +23,11 @@ for i = 1:nsts,
 end
 
 
-
-
-tpow = fet_lfp(Trial,[],'wcsd','chans',70,'nFFT',2^8,'WinLength',2^7,'nOverlap',2^7-1);
-
+lfp = Trial.lfp.copy;
+lfp.filename = 'jg05-20120310.lfp';
+lfp.create(Trial,61);
+tpow = fet_spec(Trial,lfp,'mtcsdglong');
+tpow.resample(xyz);
 
 
 aIncr = false;
@@ -39,7 +41,7 @@ while unit~=-1;
             subplot2(nsts,4,i,1) ;cla; pfs{i}.plot(unit);  title(pfs{i}.parameters.states)
             subplot2(nsts,4,i,2) ;cla; circ_plot(phs(spk{i}(unit)),'hist',[],30,true,true),title(num2str(unit))
             subplot2(nsts,4,i,3) ;cla; bar(tibn,accg{i}(:,unit)),axis tight,title('accg')
-            subplot2(nsts,4,i,4) ;cla; hist(log10(tpow(spk{i}(unit),15)./tpow(spk{i}(unit),1)),0:.03:3),title('dratio'),xlim([0,3])
+            subplot2(nsts,4,i,4) ;cla; %hist(log10(tpow(spk{i}(unit),15)./tpow(spk{i}(unit),1)),0:.03:3),title('dratio'),xlim([0,3])
         catch
             subplot2(nsts,4,i,1);cla
             subplot2(nsts,4,i,2);cla
@@ -50,7 +52,7 @@ while unit~=-1;
     
     set(hfig,'papertype','A1');
     set(hfig,'paperposition',get(hfig,'paperposition').*[0,0,0,0]+[0,0,10,7]);
-    saveas(hfig,['C:\Users\justi_000\Documents\figures\pfs_state_spkphs\' Trial.filebase '.pssp-' num2str(unit) '.png'],'png');
+    %    saveas(hfig,['C:\Users\justi_000\Documents\figures\pfs_state_spkphs\' Trial.filebase '.pssp-' num2str(unit) '.png'],'png');
     unit = figure_controls(hfig,unit,units,aIncr);
     %saveas(f,['/gpfs01/sirota/bach/homes/gravio/figures/pfs_state_spkphs/' Trial.filebase '.pssp-' num2str(unit) '.png']);
     
