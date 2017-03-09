@@ -1,15 +1,42 @@
 
+
+%function transition(Stc,varargin)
+
+% DEFARGS ------------------------------------------------------------------------------------------
+defargs = struct('transitionWindow',0.2,...
+                 'ReferenceData',   Trial.load('xyz'));
+
+[transitionWindow, ReferenceData] = DefaultArgs(varargin,defargs,'--struct')
+Trial = MTATrial.validate('jg05-20120317.cof.all');
+xyz = Trial.load('xyz');
+smat = stc2mat(Stc,xyz,{'walk','rear'});
+ = 0.2;%seconds 
+indexShift = round(transitionWindow * xyz.sampleRate / 2);
+
+stsTransitionMat = reshape(permute(cat(3,...
+                                       circshift(smat,indexShift),...
+                                       circshift(smat,-indexShift)),...
+                                   [1,2,3]),...
+                           size(smat,1),[]);
+
+stsTargetMat     = repmat([1,0,0,1],size(smat,1),1);
+
+stsTransitionPeriods = ThreshCross(all(stsTransitionMat==stsTargetMat,2),0.5,0);
+
+figure,hold on;
+plot(all(stsTransitionMat==stsTargetMat,2),'b')
+
+Lines(Trial.stc{'r'}(:),[],'r');
+
+cat(3,repmat(reshape[1,0,0,0,0,0;0,1,0,0,0,0],size(smat,1),1)
 % $$$ s = MTASession('jg03-20110428');
 % $$$ s = MTASession('jg03-20110429');
 % $$$ s = MTASession('jg03-20110430');
 % $$$ s = MTASession('jg03-20110501');
 % $$$ s = MTASession('gs04-20110921');
+%Trial = MTATrial(s);
 
-s = MTASession('jg05-20120317');
-%s = MTASession('Ed03-20140625');
-
-Trial = MTATrial(s);
-Trial.load('stc','NN0317');
+Trial = MTATrial.validate('jg05-20120317.cof.all');
 Trial.load('stc','hand_labeled_rev3_jg');
 %Trial.load('stc','hand_labeled_rev1_Ed');
 
@@ -69,6 +96,7 @@ end
 
 % DISPLAY spine sway along spine
 figure,hold on,
+%plot(sqrt(sum((xyz(:,'fsl',[1,2])-xyz(:,'hip_right',[1,2])).^2,3))-40)
 plot(walkFetRot(:,3,1).*5+40),
 plot(walkFetRot(:,3,2).*5+50),
 plot(walkFetRot(:,3,3).*5+60),
@@ -96,38 +124,96 @@ wfs = circshift(wfs,embeddingWindow/2,2);
 wfs = MTADxyz('data',reshape(permute(wfs,[2,1,3]),size(wfs,2),[]),'sampleRate',xyz.sampleRate);
 wfs.data(isnan(wfs.data(:)))=0;
 [Uw,Sw,Vw] = svd(wfs(bhvPeriods,:),0);
+[LU,LR,FSr,VT] = erpPCA(wfs(bhvPeriods,:),10);
+
+
 
 % DISPLAY eigen vectors
 figure,
-for i = 1:25,
-    subplot(5,5,i);imagesc(reshape(Vw(:,i),[],size(wfet,2))'),
+for i = 1:10,
+    subplot(2,5,i);imagesc(reshape(LR(:,i),[],size(wfet,2))'),
     axis xy;
+    colorbar
 end
+% DISPLAY eigen vectors
+figure,
+for i = 1:4,
+    subplot(6,6,i*6-);imagesc(reshape(Vw(:,i),[],size(wfet,2))'),
+    axis xy;
+    colorbar
+end
+
+fetWlr = MTADxyz('data',wfs.data*LR(:,1),'sampleRate',xyz.sampleRate);
+for i = 1:10,fetWlr.data(:,i) = wfs.data*LR(:,i);end
 
 fetW = MTADxyz('data',wfs.data*Vw(:,1),'sampleRate',xyz.sampleRate);
 for i = 1:10,fetW.data(:,i) = wfs.data*Vw(:,i);end
 
 
-figure,
-subplot2(8,1,[1,7]
-plot(walkFetRot(:,3,1).*5+40), % spine sway 'spine_lower'
-plot(walkFetRot(:,3,2).*5+50), % spine sway 'pelvis_root'
-plot(walkFetRot(:,3,3).*5+60), % spine sway 'spine_middle'
-plot(walkFetRot(:,3,4).*5+70), % spine sway 'spine_upper'
-plot(fetW(:,2),'g')            % Walk comp
-plot(fetW(:,3),'b')            % Turn comp
-plot(ButFilter(fetW(:,3),3,[1,6]./(xyz.sampleRate/2),'bandpass'),'m');
+sclr = [0,0,1;...
+        0,1,0;...
+        1,0,0;...
+        1,0,1];
+sclr = 'bgcr';
+
+ts = [1:size(xyz,1)]./xyz.sampleRate;
+
+figure,sp = [];
+sp(end+1)=subplot2(10,4,[1:8],[2:4]);
+hold on;
+plot(ts,walkFetRot(:,3,1).*5+60), % spine sway 'spine_lower'
+plot(ts,walkFetRot(:,3,2).*5+70), % spine sway 'pelvis_root'
+plot(ts,walkFetRot(:,3,3).*5+80), % spine sway 'spine_middle'
+plot(ts,walkFetRot(:,3,4).*5+90), % spine sway 'spine_upper'
+% $$$ plot(ts,-fetWRot(:,1)*10,'b')            % Walk comp
+% $$$ plot(ts,fetWRot(:,2)*10,'r')            % Walk comp
+% $$$ plot(ts,fetWRot(:,3)*10,'g')            % Turn comp
+% $$$ plot(ts,-fetWlr(:,1)/0.5e2,'b')            % Walk comp
+% $$$ plot(ts,fetWlr(:,2)/0.5e2,'r')            % Walk comp
+% $$$ plot(ts,fetWlr(:,4)/0.5e2,'g')            % Turn comp
+plot(ts,fetW(:,1),'b')            % Walk comp
+plot(ts,fetW(:,2),'r')            % Walk comp
+plot(ts,fetW(:,3),'g')            % Turn comp
+plot(ts,fetW(:,5),'m')            % Turn comp
 Lines([],0,'k');
-Lines([],10,'r');L
-ines([],-10,'r');
+Lines([],5,'r');
+Lines([],5,'r');
+sp(end+1)=subplot2(10,4,[9,10],[2:4]);
+plotSTC(Trial.stc,1,'text',{'walk','turn','pause','rear'},sclr,[],false);
+linkaxes(sp,'x');
+for i = 2:2:10,
+sp(end+1)=subplot2(10,4,i-1:i,1);
+imagesc(reshape(Vw(:,i/2),[],size(wfet,2))'),
+    axis xy;
+    colorbar
+end
+
+walkOn = fetW.segs(Trial.sts{'w'}(:,1),100);
+
+B = rotatefactors(V, 'Method','varimax');
+
+fetWRot = MTADxyz('data',wfs.data*B(:,1),'sampleRate',xyz.sampleRate);
+for i = 1:10,fetWRot.data(:,i) = wfs.data*B(:,i);end
+
+
+% DISPLAY eigen vectors
+figure,
+for i = 1:4,
+    subplot(1,4,i);imagesc(reshape(B(:,end-i),[],size(wfet,2))'),
+    axis xy;
+    colorbar
+end
+
+
 
 
 for s = 1:numel(steps),
-    line(repmat(steps(s),1,2),repmat(swayMagnitude(s),1,2)+[-2,2],'Color','m');
+    line(ts(repmat(steps(s),1,2)),repmat(swayMagnitude(s),1,2)+[-2,2],'Color','m');
 end
 
-[steps,swayMagnitude] = LocalMinima(-abs(ButFilter(fetW(:,3),3,[1,6]./(xyz.sampleRate/2),'bandpass')),10,0);
-[steps,swayMagnitude] = LocalMinima(-abs(wfs.data*Vw(:,3)),10,0);
+[steps,swayMagnitude] = LocalMinima(-abs(ButFilter(fetW(:,3),3,[1,6]./(xyz.sampleRate/2),'bandpass')),0,-8);
+%[steps,swayMagnitude] = LocalMinima(-abs(wfs.data*Vw(:,3)),10,0);
+
 
 stepsWalk = SelectPeriods(steps,[Trial.stc{'w'}.data],'d',1,0);
 stepsNotWalk = SelectPeriods(steps,[Trial.stc{'w'}.data],'d',0,0);
@@ -139,6 +225,8 @@ hold on
 h = bar(edx,histc(fetW(stepsNotWalk,3),edx),'histc');
 h.FaceColor = 'c';h.EdgeColor = 'c';h.FaceAlpha = 0.4;h.EdgeAlpha = 0.4;
 
+
+
 figure,hold on
 stepsW = swayMagnitude<-8;
 plot(stepsW)
@@ -148,6 +236,8 @@ stepsW = stepsW...
 plot(stepsW+.1,'r')
 
 stepsW = [1;steps(find(stepsW));size(xyz,1)];
+
+
 
 dstep = zeros([size(xyz,1),1]);
 wstep = zeros([size(xyz,1),1]);
@@ -160,21 +250,24 @@ for i = 1:numel(stepsW)-2,
     xstep(stepsW(i)+1:stepsW(i+2))  = abs(circ_dist(ang(stepsW(i+1),'fsl','hcom',1),ang(stepsW(i),'fsl','hcom',1)));
 end
 
-figure,
-hold on,
-plot(dstep)
-plot(wstep)
-plot(tstep)
-Lines(Trial.stc{'w'}(:)-.5,[],'b');
-Lines(Trial.stc{'n'}(:),[],'g');
-Lines(Trial.stc{'m'}(:),[],'m');
-Lines(Trial.stc{'r'}(:)-.5,[],'r');
 
 dstep = MTADxyz('data',dstep,'sampleRate',xyz.sampleRate);
 wstep = MTADxyz('data',wstep,'sampleRate',xyz.sampleRate);
 tstep = MTADxyz('data',tstep,'sampleRate',xyz.sampleRate);
 xstep = MTADxyz('data',xstep,'sampleRate',xyz.sampleRate);
 
+figure,
+hold on,
+plot(dstep.data)
+plot(wstep.data)
+plot(tstep.data)
+Lines(Trial.stc{'w'}(:)-.5,[],'b');
+Lines(Trial.stc{'n'}(:),[],'g');
+Lines(Trial.stc{'m'}(:),[],'m');
+Lines(Trial.stc{'r'}(:)-.5,[],'r');
+
+
+bfet = MTADxyz('data',wfs.data(:,32:64:size(wfs,2))*Vw(32:64:size(wfs,2),1),'sampleRate',xyz.sampleRate);
 tfet = MTADxyz('data',var(walkFetRot(:,3,:),[],3),'sampleRate',xyz.sampleRate);
 lfet = MTADxyz('data',abs(prod(walkFetRot(:,1,:),3)),'sampleRate',xyz.sampleRate);
 lfet.data(lfet.data<1e-5) = 1e-6;
@@ -219,29 +312,34 @@ h.FaceColor = 'm';h.EdgeColor = 'm';h.FaceAlpha = 0.4;h.EdgeAlpha = 0.4;
 
 
 
-lfet = MTADxyz('data',abs(prod(walkFetRot(:,1,:),3)),'sampleRate',xyz.sampleRate);
+lfet = MTADxyz('data',abs(prod(walkFetRot(:,1,:),3)./var(walkFetRot(:,1,:),[],3)),'sampleRate',xyz.sampleRate);
 lfet.data(lfet.data<1e-10) = 1e-10;
+vfet = MTADxyz('data',abs(prod(walkFetRot(:,1,:),3)),'sampleRate',xyz.sampleRate);
+vfet.data(vfet.data<1e-10) = 1e-10;
 
 figure
 states = {'a','s','m','p','n','w','r'};
 for s = 1:numel(states)
 subplot(3,3,s)
 ind = Trial.stc{states{s}};
+%hist2([log10(abs(fetWlr(ind,2))),log10(abs(fetWlr(ind,4)+200))],linspace(0,4,100),linspace(0,4,100));
+%hist2([log10(tstep(ind)),log10(abs(fetWlr(ind,4)+200))],linspace(-6,-1,100),linspace(0,4,100));
+%hist2([log10(dstep(ind)),log10(tstep(ind))],linspace(-4,1,100),linspace(-6,-1,100))
 %hist2([log10(dstep(ind)),log10(tstep(ind))],linspace(-4,1,50),linspace(-6,-1,50))
-%hist2([log10(dstep(ind)),log10(tstep(ind))],linspace(-4,1,50),linspace(-6,-1,50))
-%hist2([log10(dstep(ind)),log10(lfet(ind))],linspace(-4,1,100),linspace(-7,4,100))
+%hist2([log10(bfet(ind)),log10(wstep(ind))],linspace(-4,1,100),linspace(-4,1,100))
 %hist2([log10(vxy(ind,1)),log10(lfet(ind))],linspace(-3,2,100),linspace(-9,4,100))
 %hist2([log10(dstep(ind,1)),log10(lfet(ind))],linspace(-4,1,100),linspace(-9,4,100))
-%hist2([log10(wstep(ind,1)),log10(lfet(ind))],linspace(-6,0,100),linspace(-9,4,100))
+%hist2([log10(wstep(ind,1)),log10(vxy(ind,1))],linspace(-6,0,100),linspace(-2.9,2,100))
+%hist2([log10(wstep(ind,1)),log10(tfet(ind,1))],linspace(-6,0,100),linspace(-4,2,100))
 %hist2([log10(tstep(ind,1)),log10(lfet(ind))],linspace(-6,-1,100),linspace(-9,4,100))
 %hist2([log10(tfet(ind)),log10(lfet(ind))],linspace(-4,2,100),linspace(-9,4,100))
 %hist2([log10(vxy(ind,1)),log10(lfet(ind))],linspace(-3,2,100),linspace(-9,4,100))
 %hist2([log10(dstep(ind,1)),log10(lfet(ind))],linspace(-4,1,100),linspace(-9,4,100))
 %hist2([log10(dstep(ind)),log10(tfet(ind))],linspace(-4,1,100),linspace(-4,2,100))
-%hist2([log10(vxy(ind,'spine_lower')),log10(tfet(ind))],linspace(-2.9,2,100),linspace(-4,2,100))
+hist2([log10(vxy(ind,'spine_lower')),log10(tfet(ind))],linspace(-2.9,2,100),linspace(-4,2,100))
 %hist2([log10(vxy(ind,'spine_lower')),log10(tstep(ind))],linspace(-2.9,2,100),linspace(-6,-1,100))
 %hist2([log10(vxy(ind,1)),log10(tstep(ind))],linspace(-2.9,2,100),linspace(-6,-1,100))
-hist2([log10(xfet(ind)),log10(wstep(ind))],linspace(.3,.8,100),linspace(-6,0,100))
+%hist2([log10(xfet(ind)),log10(wstep(ind))],linspace(.3,.8,100),linspace(-6,0,100))
 %hist2([log10(vxy(ind)),log10(wstep(ind))],linspace(-2.9,2,50),linspace(-6,0,50))
 title(ind.label)
 caxis([0,150])

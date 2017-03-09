@@ -13,30 +13,29 @@ ixy = zeros(numel(sbound),size(v,2),size(v,2),filtn);
 
 for f = 1:filtn;
 
-v = Trial.vel;
-v = Filter0(gausswin(1+f*filts)./sum(gausswin(1+f*filts)),v);
+    v = Trial.vel;
+    v = Filter0(gausswin(1+f*filts)./sum(gausswin(1+f*filts)),v);
 
-vind = v(:,1)~=0;
-nind = numel(vind);
+    vind = v(:,1)~=0;
+    nind = numel(vind);
 
-s = 1;
+    s = 1;
 
-
-for m = 1:size(v,2)
-for o = 1:size(v,2)
-for shift = sbound
-[out,xb,yb,p]=hist2([log10(v(vind,m)),circshift(log10(v(vind,o)),shift)],edges,edges);
-pxy = out./nind;
-px = histc(log10(v(vind,m)),xb);
-px = px(1:end-1)/nind;
-py = histc(circshift(log10(v(vind,o)),shift),yb);
-py = py(1:end-1)/nind;
-ixy(s,m,o,f) = nansum(nansum(pxy.*log2(pxy./(px*py'))));
-s = s+1;
-end
-s = 1;
-end
-end
+    for m = 1:size(v,2)
+        for o = 1:size(v,2)
+            for shift = sbound
+                [out,xb,yb,p]=hist2([log10(v(vind,m)),circshift(log10(v(vind,o)),shift)],edges,edges);
+                pxy = out./nind;
+                px = histc(log10(v(vind,m)),xb);
+                px = px(1:end-1)/nind;
+                py = histc(circshift(log10(v(vind,o)),shift),yb);
+                py = py(1:end-1)/nind;
+                ixy(s,m,o,f) = nansum(nansum(pxy.*log2(pxy./(px*py'))));
+                s = s+1;
+            end
+            s = 1;
+        end
+    end
 end
 
 [mixy,sixy] = max(ixy);

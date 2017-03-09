@@ -1,11 +1,12 @@
 
-%% FIG2 Features and Segmentation of behaviors-------------------|
-%  A: Trajectories of behaving rat                               |
-%  B: Feature matrix demonstrating the features we used          |
-%  C: Labels corresponding to the hand labeled data              |
-%  D: Labels corresponding to the neural network labeled data    |
-%  E: t-sne dimensionality reduction method                      |
-%  F: Tabel of labeling stats between and animals and between    |
+%% FIG1 Features and Segmentation of behaviors-------------------|
+%  A: System configuration                                       |
+%  B: Data processing pipeline                                   |
+%  C: Trajectories of behaving rat                               |
+%  D: Feature matrix demonstrating the features we used          |
+%  E: Labels corresponding to the hand labeled data              |
+%  F: Labels corresponding to the neural network labeled data    |
+%  G: Tabel of labeling stats between and animals and between    |
 %     labelers                                                   |
 %________________________________________________________________|
 
@@ -34,7 +35,7 @@ set(hfig,'position',[1016,111,775,840]);
 set(hfig,'paperposition',[0,0,775/100,840/100])
 
 
-%% Fig:3:A Skeleton examples
+%% Fig:1:A Skeleton examples
 
 
 axes('Position', [0.1300,0.6569,0.7750,0.350]);hold on;

@@ -1,6 +1,11 @@
 function hax = plotSTC(Stc,varargin)
 %function hax = plotSTC(Stc,varargin)
-%[sampleRate,label_method,states,stateColors,staggeredStates] = DefaultArgs(varargin,{Stc.states{1}.sampleRate,'',{},'',true},true);
+%[sampleRate,label_method,states,stateColors,staggeredStates] =
+%DefaultArgs(varargin,{Stc.states{1}.sampleRate,'',{},'',true},true);
+
+
+hax = gca;
+
 [sampleRate,label_method,states,stateColors,staggeredStates] = DefaultArgs(varargin,{Stc.states{1}.sampleRate,'',{},'',true},true);
 
 
@@ -18,7 +23,7 @@ else
     c = stateColors(:);
 end
 
-hax = cell([1,nsts]);
+patchHandle = cell([1,nsts]);
 for i = 1:nsts;
     tper = states{i}.copy;
     if staggeredStates,
@@ -31,15 +36,20 @@ for i = 1:nsts;
     if tper.size(1)>0,
         tper.resample(sampleRate);
         xind = [tper(:,1),tper(:,1),tper(:,2),tper(:,2)]';
-        hax{i} = patch(xind,repmat([j;j+1;j+1;j],[1,size(xind,2)]),c(i,:));
-        hax{i}.EdgeColor = c(i,:);
-        hax{i}.FaceAlpha = 1;
-        if strcmp(label_method,'text'),
-        end
-        
+        patchHandle{i} = patch(xind,repmat([j;j+1;j+1;j],[1,size(xind,2)]),c(i,:),'parent',hax);
+        patchHandle{i}.EdgeColor = c(i,:);
+        patchHandle{i}.FaceAlpha = 1;        
     end
 end
 
+hax.YTickMode = 'manual'
+hax.YTick = 1.5:numel(states)+0.5;
+
+if strcmp(label_method,'text'),
+    if staggeredStates,
+        set(hax,'YTickLabelMode','manual');
+        set(hax,'YTickLabel',cellfun(@(x) x.label,states,'UniformOutput',false));
+    end
 end
 
     
