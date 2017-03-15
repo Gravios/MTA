@@ -12,6 +12,22 @@
 
 
 
+
+
+
+%% Fig.1.A System Configuration
+% Completed by Eduardo Blanco Hernandez
+
+
+%% Fig.1.B Data Processing Pipeline
+% Completed by Eduardo Blanco Hernandez
+
+
+%% Fig.1.C Skeleton examples
+
+
+
+
 Trial = MTATrial('jg05-20120317');
 Stc = Trial.load('stc','hand_labeled_rev2_jg'); 
 figPath = '/storage/gravio/manuscripts/man2015-jgEd-MoCap/Figures/Figure_2';
@@ -24,18 +40,14 @@ pPad = [0,0];
 exPer = [51549, 55145];
 %exPer = [129470,139470];
 
-
 xyz = Trial.load('xyz').filter('ButFilter',3,50);
 ang = create(MTADang,Trial,xyz);
 %stateColors = 'brcgym';
-
 
 hfig = figure(38239385);clf
 set(hfig,'position',[1016,111,775,840]);
 set(hfig,'paperposition',[0,0,775/100,840/100])
 
-
-%% Fig:1:A Skeleton examples
 
 
 axes('Position', [0.1300,0.6569,0.7750,0.350]);hold on;
@@ -78,7 +90,7 @@ zlim([0,300]);
 saveas(hfig,fullfile(figPath,'Fig2B_NEW_Skeleton.eps'),'epsc');
 
 
-% Fig:2:B - feature matrix
+% Fig.1.D - feature matrix
 [fet,flabels,fdisc] = fet_mis(Trial);
 axes('Position',[ 0.1300,0.4,0.7750,0.2000])
 ts = (1:fet.size(1))./fet.sampleRate;
@@ -104,7 +116,7 @@ print(gcf,'-depsc2',fullfile(getenv('PROJECT'),'manuscripts/man2015-jgEd-MoCap/F
 
 
 
-% Fig:2:C - Expert Labels
+% Fig.1.E - Expert Labels
 stateLabels = {'walk','rear','turn','pause','groom','sit'};
 stateColors = 'brgymc';
 Stc = Trial.load('stc','hand_labeled_rev2_jg');
@@ -123,7 +135,7 @@ set(gca,'TickDir','out');
 
 
 
-% Fig:2:D - NN Model Labels
+% Fig.2.F - NN Model Labels
 stateLabels = {'walk','rear','turn','pause','groom','sit'};
 stateColors = 'brgymc';
 Stc = Trial.load('stc',['MTAC_BATCH-fet_tsne_rev15_SR_12_'...

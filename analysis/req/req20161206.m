@@ -16,12 +16,6 @@ Trial.load('stc','NN0317');
 Trial.load('stc','hand_labeled_rev3_jg');
 %Trial.load('stc','hand_labeled_rev1_Ed');
 
-% Select Walking periods
-wper = Trial.stc{'w'};
-% Compute the duration of each walk period
-wdur = diff(wper.data,1,2);
-% remove periods which are shorter than 1 second
-wper.data(wdur<120,:)=[];
 
 
 xyz = Trial.load('xyz');

@@ -56,6 +56,7 @@ xyz.resample(ys);
 nys = ys.copy;
 nys.data = log10(nys.data);
 nys.data(nys<-9) = nan;
+%nys.data(nys>5) = nan;
 nys.data(~nniz(nys.data))=nan;
 nys.data = (nys.data-repmat(nanmedian(nys(nniz(nys),:,:,:)),[nys.size(1),1,1]))./repmat(nanstd(nys(nniz(nys),:,:,:)),[nys.size(1),1,1]);
 
@@ -65,7 +66,7 @@ ncp_maxpow = MTADlfp('data',max(nys(:,fs>13&fs>5,2,2),[],2),'sampleRate',ys.samp
     
 chan_labels = {'Rhythmic Head Motion','Nasal Cavity Pressure'};
 
-figH = figure(238482);
+figH = figure(gen_figure_id);
 %set(figH,'Position',[268    80   985   692]);
 pos =[67,441,1607,482];
 %pos =[20, 452, 1642, 471];
@@ -74,7 +75,7 @@ for s = 1;%:numel(Trial.stc.states)
 
     clf;
     %sind = Trial.stc.states{s}.copy;
-    sind = Trial.stc{'w+q'};%+[1,-1];
+    sind = Trial.stc{'a'};%+[1,-1];
     %sind = Trial.stc{'w+q'}+[1,-1];
     %sind.resample(ys);
 
@@ -83,7 +84,7 @@ for s = 1;%:numel(Trial.stc.states)
           case 'height'
             ind = nniz(xyz(sind,'head_front',3));
             %ind = ncp_maxpow(sind)>ncp_thresh&ind;
-            vhs = log10(xyz(sind,'head_front',3));        
+            vhs = log10(xyz(sind,'head_front',3));
             vhs = vhs(ind);
             vhlim = [1, 2.2];
             vh_label = 'Head Height';
@@ -139,17 +140,22 @@ for s = 1;%:numel(Trial.stc.states)
 
 
         vbins = 30;
-        vedgs = linspace(vhlim(1),vhlim(2),vbins);
+        %vedgs = linspace(vhlim(1),vhlim(2),vbins);
+        vedgs = prctile(vhs,linspace(1,99,vbins));
         [N,vbs] = histc(vhs,vedgs);
         mrv = nan(numel(N),nys.size(2),nys.size(3));
         for c = 1:nys.size(3),
-        for f =1:nys.size(2),
-            mrv(:,f,c) = accumarray(vbs(nniz(vbs)&nniz(vys)),vys(nniz(vbs)&nniz(vys),f,c,c),[vbins,1],@nanmean);
-        end
+            for f =1:nys.size(2),
+                mrv(:,f,c) = accumarray(vbs(nniz(vbs)&nniz(vys)),...
+                                        vys(nniz(vbs)&nniz(vys),f,c,c),...
+                                        [vbins,1],...
+                                        @nanmean);
+            end
         end
 
         
-        edges = linspace(vhlim(1),vhlim(2),30);
+        edges = prctile(vhs,linspace(1,99,vbins));        
+        %edges = linspace(vhlim(1),vhlim(2),30);
         edges = [edges(1:end-1);edges(2:end)];
         edges_labels = mat2cell(10.^mean(edges),1,ones(1,size(edges,2)))';
         yss = ys(sind,:,:,:);
@@ -159,6 +165,7 @@ for s = 1;%:numel(Trial.stc.states)
         vsc = [];
         for i = edges,
             ind = i(1)>=vhs&vhs<i(2);
+            if sum(ind)<10, continue,end
             for j = 1:size(yss,3),
                 for k = 1:size(yss,3),
                     if sum(ind)~=0,
@@ -179,19 +186,21 @@ for s = 1;%:numel(Trial.stc.states)
         
         %% RHM psd
         subplot2(numel(mode),4,m,1);
-        imagesc(vedgs,fs,mrv(:,:,1)',[.1,max(prctile(mrv(nniz(mrv),:,1),[95]),[],2)]),axis xy
+        imagesc(vedgs,fs,mrv(:,:,1)',[0,max(prctile(mrv(nniz(mrv),:,1),[95]),[],2)]),axis xy
         title([chan_labels{1} ' mean PSD Binned by ' vh_label])
         xlabel(['Binned ' vh_label ' (' vh_units ')']);
         ylabel('Frequency Hz')
         colorbar
+        caxis([-2,2])
 
         %% NCP psd
         subplot2(numel(mode),4,m,2);
-        imagesc(vedgs,fs,mrv(:,:,2)',[.1,max(prctile(mrv(nniz(mrv),:,2),[95]),[],2)]),axis xy
+        imagesc(vedgs,fs,mrv(:,:,2)',[0,max(prctile(mrv(nniz(mrv),:,2),[95]),[],2)]),axis xy
         title([chan_labels{2} ' mean PSD Binned by ' vh_label])
         xlabel(['Binned ' vh_label ' (' vh_units ')']);
         ylabel('Frequency Hz')
         colorbar
+        caxis([-2,2])
 
         %% RHM NCP coherence
         subplot2(numel(mode),4,m,3);
@@ -200,6 +209,7 @@ for s = 1;%:numel(Trial.stc.states)
         xlabel(['Binned ' vh_label ' (' vh_units ')']);
         ylabel('Frequency Hz')
         colorbar
+        caxis([0.5,1]);
 
         
         subplot2(numel(mode),4,m,4);
@@ -208,10 +218,11 @@ for s = 1;%:numel(Trial.stc.states)
         xlabel(['Binned ' vh_label ' (' vh_units ')']);
 
     end
+    colormap jet;
 
-    reportfig(fullfile(Trial.path.data,'figures'),figH, ...
-              'FileName',['mean_Coherence_RHM_NCP_X_' strjoin(mode,'_')],...
-              'Comment',[Trial.filebase ':BhvState: ' Trial.stc.states{s}.label],...
-              'Resolution',200,...
-              'SaveFig',true)
+% $$$     reportfig(fullfile(Trial.path.data,'figures'),figH, ...
+% $$$               'FileName',['mean_Coherence_RHM_NCP_X_' strjoin(mode,'_')],...
+% $$$               'Comment',[Trial.filebase ':BhvState: ' Trial.stc.states{s}.label],...
+% $$$               'Resolution',200,...
+% $$$               'SaveFig',true)
 end

@@ -11,7 +11,7 @@ Trial.stc.load;
 rhm = fet_rhm(Trial);
 
 %% Load Nasal Cavity Pressure(NCP) feature
-ncp = fet_ncp(Trial,[],ncp_chan);
+ncp = fet_ncp(Trial,[],[],ncp_chan);
 
 %% Whiten RHM and NCP for spectral comparison (PSD&CSD)
 wang = [rhm,ncp];

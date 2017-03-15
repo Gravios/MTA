@@ -1,34 +1,6 @@
 
 
-%function transition(Stc,varargin)
 
-% DEFARGS ------------------------------------------------------------------------------------------
-defargs = struct('transitionWindow',0.2,...
-                 'ReferenceData',   Trial.load('xyz'));
-
-[transitionWindow, ReferenceData] = DefaultArgs(varargin,defargs,'--struct')
-Trial = MTATrial.validate('jg05-20120317.cof.all');
-xyz = Trial.load('xyz');
-smat = stc2mat(Stc,xyz,{'walk','rear'});
- = 0.2;%seconds 
-indexShift = round(transitionWindow * xyz.sampleRate / 2);
-
-stsTransitionMat = reshape(permute(cat(3,...
-                                       circshift(smat,indexShift),...
-                                       circshift(smat,-indexShift)),...
-                                   [1,2,3]),...
-                           size(smat,1),[]);
-
-stsTargetMat     = repmat([1,0,0,1],size(smat,1),1);
-
-stsTransitionPeriods = ThreshCross(all(stsTransitionMat==stsTargetMat,2),0.5,0);
-
-figure,hold on;
-plot(all(stsTransitionMat==stsTargetMat,2),'b')
-
-Lines(Trial.stc{'r'}(:),[],'r');
-
-cat(3,repmat(reshape[1,0,0,0,0,0;0,1,0,0,0,0],size(smat,1),1)
 % $$$ s = MTASession('jg03-20110428');
 % $$$ s = MTASession('jg03-20110429');
 % $$$ s = MTASession('jg03-20110430');
@@ -68,7 +40,7 @@ vxy = fxyz.vel([],[1,2]);
 vxy.data(vxy.data<=1e-3)=1e-3;
 
 % traj NORM body vector projection
-shft = 3;
+shft = 10;
 tmar = {'spine_lower','pelvis_root','spine_middle','spine_upper','hcom'};
 tvec = [];
 for m = 1:numel(tmar),
@@ -124,40 +96,36 @@ wfs = circshift(wfs,embeddingWindow/2,2);
 wfs = MTADxyz('data',reshape(permute(wfs,[2,1,3]),size(wfs,2),[]),'sampleRate',xyz.sampleRate);
 wfs.data(isnan(wfs.data(:)))=0;
 [Uw,Sw,Vw] = svd(wfs(bhvPeriods,:),0);
-[LU,LR,FSr,VT] = erpPCA(wfs(bhvPeriods,:),10);
+
+
+%[LU,LR,FSr,VT] = erpPCA(wfs(bhvPeriods,:),10);
 
 
 
 % DISPLAY eigen vectors
-figure,
-for i = 1:10,
-    subplot(2,5,i);imagesc(reshape(LR(:,i),[],size(wfet,2))'),
-    axis xy;
-    colorbar
-end
+% $$$ figure,
+% $$$ for i = 1:10,
+% $$$     subplot(2,5,i);imagesc(reshape(LR(:,i),[],size(wfet,2))'),
+% $$$     axis xy;
+% $$$     colorbar
+% $$$ end
 % DISPLAY eigen vectors
 figure,
-for i = 1:4,
-    subplot(6,6,i*6-);imagesc(reshape(Vw(:,i),[],size(wfet,2))'),
+for i = 1:36,
+    subplot(6,6,i);imagesc(reshape(Vw(:,i),[],size(wfet,2))'),
     axis xy;
     colorbar
 end
 
-fetWlr = MTADxyz('data',wfs.data*LR(:,1),'sampleRate',xyz.sampleRate);
-for i = 1:10,fetWlr.data(:,i) = wfs.data*LR(:,i);end
+% $$$ fetWlr = MTADxyz('data',wfs.data*LR(:,1),'sampleRate',xyz.sampleRate);
+% $$$ for i = 1:10,fetWlr.data(:,i) = wfs.data*LR(:,i);end
 
 fetW = MTADxyz('data',wfs.data*Vw(:,1),'sampleRate',xyz.sampleRate);
 for i = 1:10,fetW.data(:,i) = wfs.data*Vw(:,i);end
 
 
-sclr = [0,0,1;...
-        0,1,0;...
-        1,0,0;...
-        1,0,1];
 sclr = 'bgcr';
-
 ts = [1:size(xyz,1)]./xyz.sampleRate;
-
 figure,sp = [];
 sp(end+1)=subplot2(10,4,[1:8],[2:4]);
 hold on;
@@ -177,7 +145,7 @@ plot(ts,fetW(:,3),'g')            % Turn comp
 plot(ts,fetW(:,5),'m')            % Turn comp
 Lines([],0,'k');
 Lines([],5,'r');
-Lines([],5,'r');
+Lines([],-5,'r');
 sp(end+1)=subplot2(10,4,[9,10],[2:4]);
 plotSTC(Trial.stc,1,'text',{'walk','turn','pause','rear'},sclr,[],false);
 linkaxes(sp,'x');
@@ -188,9 +156,11 @@ imagesc(reshape(Vw(:,i/2),[],size(wfet,2))'),
     colorbar
 end
 
-walkOn = fetW.segs(Trial.sts{'w'}(:,1),100);
 
-B = rotatefactors(V, 'Method','varimax');
+
+
+%walkOn = fetW.segs(Trial.sts{'w'}(:,1),100);
+%B = rotatefactors(V, 'Method','varimax');
 
 fetWRot = MTADxyz('data',wfs.data*B(:,1),'sampleRate',xyz.sampleRate);
 for i = 1:10,fetWRot.data(:,i) = wfs.data*B(:,i);end
@@ -238,16 +208,47 @@ plot(stepsW+.1,'r')
 stepsW = [1;steps(find(stepsW));size(xyz,1)];
 
 
+wxyzs = xyz.segs(stepsW',40);
+
+wxyzs = GetSegs(xyz.data(:,1,3),stepsW',40);
+
+mwxyzs = nanmean(wxyzs,2);
+figure,hold on
+plot(mwxyzs)
+plot(mwxyzs+nanstd(wxyzs,[],2))
+plot(mwxyzs-nanstd(wxyzs,[],2))
+
+figure,hold on
+for i = 1:10:400
+    plot(wxyzs(:,i))
+end
+
+figure,
+eds = linspace(0,240,100);
+bar(eds,histc(diff(stepsW),eds),'histc');
+
+dwstep = [];
+for i = 1:numel(stepsW)-1,
+    dwstep(i,1) = sqrt(sum((xyz(stepsW(i+1),1,[1,2])-xyz(stepsW(i),1,[1,2])).^2,3))./(stepsW(i+1)-stepsW(i));
+end
+isi = diff(stepsW)./xyz.sampleRate;
+
+edx = linspace(-1,-0.25,30);
+edy = linspace(-1,1,30);
+figure,hist2([log10(isi),log10(dwstep)],edx,edy);
+
+
 
 dstep = zeros([size(xyz,1),1]);
 wstep = zeros([size(xyz,1),1]);
 tstep = zeros([size(xyz,1),1]);
 xstep = zeros([size(xyz,1),1]);
 for i = 1:numel(stepsW)-2,
-    dstep(stepsW(i)+1:stepsW(i+1)) = sqrt(sum((xyz(stepsW(i+1),1,[1,2])-xyz(stepsW(i),1,[1,2])).^2,3))./(stepsW(i+1)-stepsW(i));
-    wstep(stepsW(i)+1:stepsW(i+1))  = sum(walkFetRot(stepsW(i:i+1),1,1))./(stepsW(i+1)-stepsW(i));
-    tstep(stepsW(i)+1:stepsW(i+2))  = abs(circ_dist(ang(stepsW(i+1),'fsl','hcom',1),ang(stepsW(i),'fsl','hcom',1)))./(stepsW(i+1)-stepsW(i));
-    xstep(stepsW(i)+1:stepsW(i+2))  = abs(circ_dist(ang(stepsW(i+1),'fsl','hcom',1),ang(stepsW(i),'fsl','hcom',1)));
+    dwstep(i) = sqrt(sum((xyz(stepsW(i+1),1,[1,2])-xyz(stepsW(i),1,[1,2])).^2,3))./(stepsW(i+1)-stepsW(i));
+% $$$     dstep(stepsW(i)+1:stepsW(i+1)) = sqrt(sum((xyz(stepsW(i+1),1,[1,2])-xyz(stepsW(i),1,[1,2])).^2,3))./(stepsW(i+1)-stepsW(i));
+% $$$     wstep(stepsW(i)+1:stepsW(i+1))  = sum(walkFetRot(stepsW(i:i+1),1,1))./(stepsW(i+1)-stepsW(i));
+% $$$     tstep(stepsW(i)+1:stepsW(i+2))  = abs(circ_dist(ang(stepsW(i+1),'fsl','hcom',1),ang(stepsW(i),'fsl','hcom',1)))./(stepsW(i+1)-stepsW(i));
+% $$$     xstep(stepsW(i)+1:stepsW(i+2))  = abs(circ_dist(ang(stepsW(i+1),'fsl','hcom',1),ang(stepsW(i),'fsl','hcom',1)));
 end
 
 
@@ -761,3 +762,21 @@ plot(fetR2.data);
 plot(fetR3.data);
 Lines(Trial.stc{'r'}(:),[],'r');
 Lines(Trial.stc{'w'}(:),[],'b');
+
+
+
+
+xyz = Session.load('xyz');
+rb = Session.xyz.model.rb({'head_back','head_left','head_front','head_right'});
+hcom = xyz.com(rb);
+
+xyz.addMarker('fhcom',[128,255,128],{{'head_back','head_front',[0,0,1]}},...
+               ButFilter(hcom,3,[2]./(Session.xyz.sampleRate/2),'low'));
+xyz.addMarker('hcom',[128,255,128],{{'head_back','head_front',[0,0,1]}},hcom);
+
+xyz.addMarker('hbt',[128,255,128],{{'head_back','head_front',[0,0,1]}},...
+                  genRotatedMarker(xyz,'hbx',45,{'hbx','htx'}));
+
+xyz.addMarker('fhbt',[128,255,128],{{'head_back','head_front',[0,0,1]}},...
+               ButFilter(xyz(:,'hbt',:),3,[2]./(xyz.sampleRate/2),'low'));
+xyz.data(nniz(xyz(:,'hbt',:)),end,:) = ButFilter(xyz(nniz(xyz(:,'hbt',:)),'hbt',:),3,[2]./(xyz.sampleRate/2),'low');

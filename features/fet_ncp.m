@@ -17,6 +17,7 @@ fs = []; ts = [];
 % load NCP channel from lfp file
 fet = Trial.lfp.copy;
 if ~isempty(chans),
+    fet.filename = [Trial.name,'.lfp'];
     fet.load(Trial,chans);
 end
 

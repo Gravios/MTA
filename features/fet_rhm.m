@@ -22,6 +22,41 @@ rb = xyz.model.rb({'head_back','head_left','head_front','head_right'});
 hcom = xyz.com(rb);
 % add coordinates of the model's center of mass to the xyz object
 xyz.addMarker('fhcom',[.7,1,.7],{{'head_back','head_front',[0,0,1]}},ButFilter(hcom,3,[2]./(xyz.sampleRate/2),'low'));
+xyz.addMarker('hcom',[128,255,128],{{'head_back','head_front',[0,0,1]}},hcom);
+
+nz = -cross(xyz(:,'head_back',:)-hcom,xyz(:,'head_left',:)-hcom);
+nz = bsxfun(@rdivide,nz,sqrt(sum((nz).^2,3)));
+nm = nz.*20+hcom;
+xyz.addMarker('htx',[128,255,128],{{'head_back','head_front',[0,0,1]}},nm);
+
+ny = cross(xyz(:,'htx',:)-hcom,xyz(:,'head_back',:)-hcom);
+ny = bsxfun(@rdivide,ny,sqrt(sum((ny).^2,3)));
+nm = ny.*20+hcom;
+xyz.addMarker('hrx',[128,255,128],{{'head_back','head_front',[0,0,1]}},nm);
+
+nx = cross(xyz(:,'hrx',:)-hcom,xyz(:,'htx',:)-hcom);
+nx = bsxfun(@rdivide,nx,sqrt(sum((nx).^2,3)));
+nm = nx.*20+hcom;    
+xyz.addMarker('hbx',[128,255,128],{{'head_back','head_front',[0,0,1]}},nm);
+
+nx = cross(xyz(:,'hrx',:)-hcom,xyz(:,'htx',:)-hcom);
+nx = bsxfun(@rdivide,nx,sqrt(sum((nx).^2,3)));
+nm = nx.*20*sqrt(2)+hcom;    
+xyz.addMarker('hbxe',[128,255,128],{{'head_back','head_front',[0,0,1]}},nm);
+xyz.addMarker('hbte',[128,255,128],{{'head_back','head_front',[0,0,1]}},...
+                  genRotatedMarker(xyz,'hbxe',45,{'hbx','htx'}));
+xyz.addMarker('fhbte',[128,255,128],{{'head_back','head_front',[0,0,1]}},...
+               ButFilter(xyz(:,'hbte',:),3,[2]./(xyz.sampleRate/2),'low'));
+xyz.data(nniz(xyz(:,'hbte',:)),end,:) = ButFilter(xyz(nniz(xyz(:,'hbte',:)),'hbte',:),...
+                                                 3,[2]./(xyz.sampleRate/2),'low');
+
+
+xyz.addMarker('hbt',[128,255,128],{{'head_back','head_front',[0,0,1]}},...
+                  genRotatedMarker(xyz,'hbx',45,{'hbx','htx'}));
+xyz.addMarker('fhbt',[128,255,128],{{'head_back','head_front',[0,0,1]}},...
+               ButFilter(xyz(:,'hbt',:),3,[2]./(xyz.sampleRate/2),'low'));
+xyz.data(nniz(xyz(:,'hbt',:)),end,:) = ButFilter(xyz(nniz(xyz(:,'hbt',:)),'hbt',:),...
+                                                 3,[2]./(xyz.sampleRate/2),'low');
 
 
 % if xyz sampling rat e is greater than 120 Hz then resample it to 120 Hz
@@ -35,13 +70,20 @@ xyz.filter('ButFilter',3,55,'low');
 
 
 ang = create(MTADang,Trial,xyz);
+ang.data(~nniz(xyz(:,1,1)),:,:,:) = 0;
+
 
 fet = xyz.copy;
 %fet.data = ButFilter(ang(:,'head_back','fhcom',3),3,[2,50]./(Trial.ang.sampleRate/2),'bandpass');
-bang = ButFilter(ang(:,'head_back','fhcom',3),3,[.5,50]./(ang.sampleRate/2),'bandpass');
+%bang = ButFilter(ang(:,'head_back','fhcom',3),3,[.5,50]./(ang.sampleRate/2),'bandpass');
+%bang = ButFilter(ang(:,'head_back','fhbt',3),3,[.5,30]./(ang.sampleRate/2),'bandpass');
+%bang = ButFilter(ang(:,'head_back','fhbte',3),3,[.5,30]./(ang.sampleRate/2),'bandpass');
+bang = ButFilter(ang(:,'head_back','fhbt',3),3,[.5,30]./(ang.sampleRate/2),'bandpass');
+%bang = ButFilter(ang(:,'hbx','fhbte',3),3,[.5,30]./(ang.sampleRate/2),'bandpass');
 %$$$ bang = [bang,ButFilter(ang(:,'head_right','fhcom',3),3,[2,30]./(Trial.ang.sampleRate/2),'bandpass')];
 % $$$ bang = [bang,ButFilter(ang(:,'head_top','fhcom',3),3,[2,30]./(Trial.ang.sampleRate/2),'bandpass')];
-fet.data = [0;ButFilter(diff(bang),3,[.5,50]/(ang.sampleRate/2),'bandpass')];
+fet.data = bang;
+%fet.data = [0;ButFilter(diff(bang),3,[.5,30]/(ang.sampleRate/2),'bandpass')];
 
 switch mode
   case 'mta'
