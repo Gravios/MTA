@@ -10,9 +10,9 @@ function [U,meanA,stdA] = nunity(A,varargin)
 nind = nniz(A);
 
 if ~isempty(drpOutPrctile),
-    Ao = prctile(A(nind,:),drpOutPrctile);
+    Ao = prctile(A(nind,:,:,:,:,:),drpOutPrctile);
 else
-    Ao = A(nind,:);
+    Ao = A(nind,:,:,:,:,:);
 end
 
 

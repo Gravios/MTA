@@ -7,31 +7,36 @@ sname = 'jg05-20120310';
 disp = 0;
 %chans = [1:2:8];
 chans = [65:1:96];
-marker = 'spine_lower'
+marker = 'spine_lower';
 
 Trial = MTATrial(sname,'all');
-Trial.ang.load(Trial);
-Trial.xyz.load(Trial);
-Trial.lfp.load(Trial,chans);
-Trial.stc.updateMode('auto_wbhr');
-Trial.stc.load;
+ang = Trial.load('ang');
+xyz = Trial.load('xyz');
+lfp = Trial.load('lfp',chans);
+Stc = Trial.load('stc','NN0317');
 
-wlfp = WhitenSignal([Trial.lfp.data(:,6),Trial.lfp.data],[],1);
+wlfp = WhitenSignal([lfp.data(:,6),lfp.data],[],1);
 
 matlabpool open 12
 
 tl=[];
 fl=[];
 yl=[];
-spectral.nfft = 2^11;
-spectral.window = 2^10;
+spec.nfft = 2^11;
+spec.window = 2^10;
 parfor i = 1:size(wlfp,2),
-    [yl(:,:,i),fl(:,i),tl(:,i)] = mtchglong(wlfp(:,i),spectral.nfft,Trial.lfp.sampleRate,spectral.window,spectral.window*0.875,[],'linear',[],[1,40]);
+    [yl(:,:,i),fl(:,i),tl(:,i)] = mtchglong(wlfp(:,i),...
+                                            spec.nfft,...
+                                            lfp.sampleRate,...
+                                            spec.window,...
+                                            spec.window*0.875,...
+                                            [],'linear',[],[1,40]);
 end
+
 fl = fl(:,1);
 tl = tl(:,1);
 yldSampleRate = 1/diff(tl(1:2,1));
-tshift = round(spectral.window/2/Trial.lfp.sampleRate*yldSampleRate);
+tshift = round(spectral.window/2/lfp.sampleRate*yldSampleRate);
 yld = MTADlfp('data',yl,'sampleRate',yldSampleRate);
 yld.data = cat(1,zeros([tshift,yld.size(2:end)]),yld.data);
 yld.data(yld.data==0)=nan;

@@ -202,10 +202,15 @@ unvec  = cf(@(m,r,t) repmat(bsxfun(@rdivide,multiprod(m,r,[2,3],[2,3]),sqrt(sum(
 walkFetRot = cf(@(t,u)  sq(dot(t,u,3)),tvec,unvec);
 
 wfrCat = cat(1,walkFetRot{:});
-wfrMean = nanmean(wfrCat(nniz(wfrCat),:));
-wfrStd = nanmean(wfrCat(nniz(wfrCat),:));
-walkFetRot = cf(@(w,m,s) nunity(w,[],m,s),walkFetRot,repmat({wfrMean},1,numSessions),repmat({wfrStd},1,numSessions));
+wfrMean = nanmean(wfrCat(nniz(wfrCat),:,:));
+wfrStd = nanstd(wfrCat(nniz(wfrCat),:,:));
+walkFetRot = cf(@(w,m,s) nunity(w,[],m,s),...
+                walkFetRot,...
+                repmat({wfrMean},1,numSessions),...
+                repmat({wfrStd},1,numSessions));
 clear('wfrCat','wfrMean','wfrStd')
+
+
 
 % DECOMPOSE features ------------------------------------------------------------------------------
 % @wfs
@@ -291,20 +296,20 @@ for s = 1:numSessions, ang{s}.data(~nniz(xyz{s}),:,:,:) = 0;end
 %% FIG.3
 % DISPLAY eigen vectors for all sessions
 % D svd
-hfig = figure;
-hfig.Units = 'centimeters';
-hfig.Position(3:4) = [30,4];
-hfig.PaperPositionMode = 'auto';
-for i = 1:20,
-    subplot(2,10,i);imagesc(wts{1},1:size(wfet{1},2),reshape(Vww(:,i),[],size(wfet{1},2))'),
-    caxis([-0.08,0.08]);
-    axis xy
-end
-
-TrialName = [sessionList(s).sessionName,'.',sessionList(s).mazeName,'.',sessionList(s).trialName];
-FigName = ['SVD_walkturn_',TrialName];
-print(gcf,'-depsc2',fullfile(OwnDir,FigDir,[FigName,'.eps']));
-print(gcf,'-dpng',  fullfile(OwnDir,FigDir,[FigName,'.png']));
+% $$$ hfig = figure;
+% $$$ hfig.Units = 'centimeters';
+% $$$ hfig.Position(3:4) = [30,4];
+% $$$ hfig.PaperPositionMode = 'auto';
+% $$$ for i = 1:20,
+% $$$     subplot(2,10,i);imagesc(wts{1},1:size(wfet{1},2),reshape(Vww(:,i),[],size(wfet{1},2))'),
+% $$$     caxis([-0.08,0.08]);
+% $$$     axis xy
+% $$$ end
+% $$$ 
+% $$$ TrialName = [sessionList(s).sessionName,'.',sessionList(s).mazeName,'.',sessionList(s).trialName];
+% $$$ FigName = ['SVD_walkturn_',TrialName];
+% $$$ print(gcf,'-depsc2',fullfile(OwnDir,FigDir,[FigName,'.eps']));
+% $$$ print(gcf,'-dpng',  fullfile(OwnDir,FigDir,[FigName,'.png']));
 
 % $$$ 
 % $$$ % DISPLAY eigen vectors for specific session
@@ -546,8 +551,6 @@ outHang          = cf(@(p,f,s) hist2([p(s{'w&a'},1),f(s{'w&a'},3)],edr,edp), rhm
 
 
 
-hist2([prhm(
-
 
 
 hang = cf(@(a) MTADang('data',[circ_dist(circshift(a(:,'head_back','head_front',1),-10),...
@@ -623,7 +626,7 @@ linkaxes(sp,'x');
 
 % DISPLAY step detection 
 s = 1
-stepFeature = ButFilter(afetW{s}(:,4),3,[1,6]./(afetW{s}.sampleRate/2),'bandpass');
+stepFeature = ButFilter(afetW{s}(:,3),3,[1,6]./(afetW{s}.sampleRate/2),'bandpass');
 [steps,swayMagnitude] = LocalMinima(-abs(stepFeature),0,-4);
 states = {'walk','turn','pause','rear'};
 sclr = 'bgcr';
@@ -633,9 +636,11 @@ sp(end+1) = subplot2(10,4,1:8,1:4); hold on
 plot(ts{s},stepFeature);
 plot(ts{s}(steps),stepFeature(steps),'or')
 plot(ts{s},-afetW{s}(:,1)./2+20);
+plot(ts{s},-reshape(walkFetRot{s},[],size(wfet{s},2))*mean(reshape(Vww(:,1),[],size(wfet{s},2)))'.*20+20);
 plot(ts{s},-abs(afetW{s}(:,2))./2-20);
+plot(ts{s},-abs(reshape(walkFetRot{s},[],size(wfet{s},2))*mean(reshape(Vww(:,2),[],size(wfet{s},2)))').*20-20);
 Lines([],+20,'k');
-legend({'Step Feature','Putative Steps','PC1 Forward displacement'})
+legend({'Step Feature','Putative Steps','PC1 Forward displacement','PC1 raw','PC2 turning','PC2 raw'})
 sp(end+1)=subplot2(10,4,[9,10],[1:4]);
 plotSTC(Stc{s},1,'text',states,sclr,[],false);
 linkaxes(sp,'x');
@@ -651,7 +656,8 @@ stepsPC1 = [];
 % $$$ stepsWalkL = {};
 markers = {'spine_lower','pelvis_root','spine_middle','spine_upper','fbcom','hcom','fhcom'};
 for s = 1:numSessions,
-    stepFeature = ButFilter(fetWsvd{s}(:,3),3,[1,6]./(fetWsvd{s}.sampleRate/2),'bandpass');
+    %stepFeature = ButFilter(fetWsvd{s}(:,3),3,[1,6]./(fetWsvd{s}.sampleRate/2),'bandpass');
+    stepFeature = ButFilter(afetW{s}(:,3),3,[1,6]./(fetWsvd{s}.sampleRate/2),'bandpass');
     [steps,swayMagnitude] = LocalMinima(-abs(stepFeature),0,-4);
 % $$$     [stepsL,swayMagnitudeL] = LocalMinima(-stepFeature,0,-4);
 % $$$     [stepsR,swayMagnitudeR] = LocalMinima( stepFeature,0,-4);
