@@ -83,7 +83,7 @@ pos = xyz.copy();
 pos.data = cat(3,xyz(:,7,[1,2]),fxyz(:,7,3));
 
 Pfs = MTAApfs(Trial,         ... MTATrial
-                 1:40,         ... units
+                 [],         ... units
                  'loc&theta',... states
                  false,       ... overwrite
                  [],         ... tag
@@ -129,3 +129,54 @@ colorbar
 view([-70,10])
 pause(0.5)
 end
+
+
+
+Pfs = MTAApfs(Trial,            ... MTATrial
+                 [7:14],     ... units
+                 'theta-groom-sit',   ... states
+                 false,         ... overwrite
+                 [],            ... tag
+                 [20,20,20],     ... BinDims
+                 [2.2,2.2,2.2], ... SmoothingWeights
+                 'xya',         ... type
+                 [],            ... spkShuffle
+                 true,          ... posShuffle
+                 1000,          ... numIter
+                 pos,           ... pos
+                 [-500,500;-500,500;0,250]... bound_lims
+);
+
+
+
+
+bin1 = Pfs.adata.bins{1};
+bin2 = Pfs.adata.bins{2};
+bin3 = Pfs.adata.bins{3};
+
+width = Pfs.adata.binSizes(1);
+height = Pfs.adata.binSizes(2);
+radius = round(Pfs.adata.binSizes(1)/2)-find(Pfs.adata.bins{1}<-420,1,'last');
+centerW = width/2;
+centerH = height/2;
+[W,H] = meshgrid(1:width,1:height);           
+mask = double(sqrt((W-centerW-.5).^2 + (H-centerH-.5).^2) < radius);
+mask(mask==0)=nan;
+
+figure,
+clf,hold on,
+rateMap = mean(Pfs.data.rateMap(:,Pfs.data.clu==unit,:),3);
+rateMap = reshape(rateMap,numel(bin1),numel(bin2),numel(bin3)).*repmat(mask,[1,1,numel(bin3)]);
+pfSize = [numel(bin1),numel(bin2)];
+
+for i = 1:2:numel(bin3);
+    surf(bin3(i)*ones(pfSize),rateMap(:,:,i)','EdgeColor','none')
+end
+view([50,10])
+whitebg('k')
+grid on
+colorbar
+view([-70,10])
+pause(0.5)
+
+LocalMinimaN(-rateMap,-4,3)

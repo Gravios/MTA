@@ -34,5 +34,5 @@ end
 
 U = feval(ifnniz,size(A));
 
-U(nind,:) = bsxfun(@rdivide,bsxfun(@minus,A(nind,:),meanA),stdA);
+U(nind,:,:,:,:,:) = bsxfun(@rdivide,bsxfun(@minus,A(nind,:,:,:,:,:),meanA),stdA);
 

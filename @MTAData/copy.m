@@ -6,42 +6,24 @@ function DataCopy = copy(Data,varargin)
 % and modifying properties during the copy.
 %
 
-if iscell(Data),
-
-    DataCopy = cell(size(Data));
-    for d = 1:numel(Data),
-        DataCopy{d} = feval(class(Data{d}),[]);
-        % Copy all non-hidden properties.
-        p = properties(Data{d});
-        if numel(varargin)>2,
-             
-        end
-            
-        for i = 1:length(p)
-            if isa(Data{d}.(p{i}),'MTAData'),
-                DataCopy{d}.(p{i}) = Data{d}.(p{i}).copy;
-            else
-                DataCopy{d}.(p{i}) = Data{d}.(p{i});
-            end
-        end
+    
+DataCopy = feval(class(Data),[]);
+% Copy all non-hidden properties.
+p = properties(Data);
+    
+if ~isempty(varargin)
+    assert(numel(varargin)==1,'MTA:MTAData:copy:WrongNumberOfInputs');
+    if strcmp(varargin{1},'empty'),
+        p(~cellfun(@isempty,regexp(p,'^data$'))) = [];
     end
-    
-    
-else
-    
-    DataCopy = feval(class(Data),[]);
-    % Copy all non-hidden properties.
-    p = properties(Data);
-        
-        if numel(varargin)>2,
-            
-        end
-        
-        for i = 1:length(p)
-            if isa(Data.(p{i}),'MTAData'),
-                DataCopy.(p{i}) = Data.(p{i}).copy;
-            else
-                DataCopy.(p{i}) = Data.(p{i});
-            end
-        end
 end
+
+
+for i = 1:length(p)
+    if isa(Data.(p{i}),'MTAData'),
+        DataCopy.(p{i}) = Data.(p{i}).copy;
+    else
+        DataCopy.(p{i}) = Data.(p{i});
+    end
+end
+

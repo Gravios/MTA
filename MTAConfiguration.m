@@ -31,7 +31,7 @@ function MTAConfiguration(root_dir,varargin)
 %       Defined connections between markers (Not required if vsk file is
 %       present)
 % 
-[flag,host_server,data_server,overwrite] = DefaultArgs(varargin,{'','','',true});
+[flag,project_name,host_server,data_server,overwrite] = DefaultArgs(varargin,{'','','','',true});
 
 if ispc, 
     userdir= getenv('USERPROFILE'); 
@@ -39,11 +39,11 @@ else
     userdir= getenv('HOME');
 end
 
-%% Get MTA directory path
+% SET path to MTA toolbox directory
 mtap = fileparts(mfilename('fullpath'));
 
 
-%% paths to the data directories
+% SET paths to the data directory
 switch flag
     case 'absolute'
         data = root_dir;
@@ -126,7 +126,7 @@ MTAMarkerConnections = ...
 %% Save configuations
 
 if ~exist(fullfile(cfg, 'MTAConf.mat'),'file')||overwrite,
-    save(fullfile(cfg, 'MTAConf.mat'  ),'host_server','data_server');end
+    save(fullfile(cfg, 'MTAConf.mat'  ),'project_name','host_server','data_server');end
 
 if ~exist(fullfile(cfg, 'MTAPaths.mat'),'file')||overwrite,
     save(fullfile(cfg, 'MTAPaths.mat'),'cfg','data','arm','web');end

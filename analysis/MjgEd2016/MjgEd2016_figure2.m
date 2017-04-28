@@ -333,3 +333,93 @@ for s = 1:numel(slist)
 end
 
 
+
+
+
+
+% BEHAVIOR subtyping - Grooming
+
+groomPeriodsOri = [];
+
+sessionList = get_session_list('hand_labeled');
+numSessions = numel(sessionList);
+referenceSessionIndex = 1;
+RefTrial = MTATrial.validate(sessionList(referenceSessionIndex));
+
+Trials = arrayfun(@(Trial) MTATrial.validate(Trial), sessionList,     'UniformOutput',false);
+Stc    = cf(@(Trial) Trial.load('stc'),Trials);
+Fet    = cf(@(Trial,Ref) fet_raw(Trial),Trials);
+cf(@(fet,ref) fet.map_to_reference
+
+for s = 1:numSessions,
+
+    fet = fet_raw(Trial);
+    wfs = fet.segs([],embeddingWindow);
+    wfs = circshift(wfs,embeddingWindow/2,2);
+    wfs = MTADxyz('data',reshape(permute(wfs,[2,1,3]),size(wfs,2),[]),'sampleRate',fet.sampleRate);
+    wfs.data(isnan(wfs.data(:)))=0;    
+    %fet.unity([],[],[],[5,95],Stc{'m'});
+    featuresGroomSubSet = cat(1,mfet,fet(Stc{'m'},:));
+    groomPeriodsOri = cat(1,groomPeriodsOri,Stc{'m'}.data);
+    embeddingWindow = 64;
+
+end
+[Um,Sm,Vm] = svd(wfs(Stc{'m'},:),0);
+wts = (1:embeddingWindow)./fet.sampleRate;
+
+
+
+% DISPLAY eigen vectors
+hfig = figure;
+hfig.Units = 'centimeters';
+hfig.Position(3:4) = [30,4];
+hfig.PaperPositionMode = 'auto';
+for i = 1:40,
+    subplot(4,10,i);imagesc(wts,1:size(fet,2),reshape(Vm(:,i),[],size(fet,2))'),
+    caxis([-0.08,0.08]);
+    axis xy
+end
+
+
+
+
+% COMPUTE timeseries score for first 10 eigenvectors
+fetM = MTADxyz('data',wfs.data*Vm(:,1),'sampleRate',fet.sampleRate);
+for i = 1:40,fetM.data(:,i) = wfs.data*Vm(:,i);end
+fetM.sync = fet.sync.copy;
+fetM.origin = fet.origin;
+
+
+states = {'walk','rear','turn','pause','groom','sit'};
+sclr = 'brgcmk';
+figure,
+sp = [];
+sp(end+1)=subplot2(10,4,[1:8],[2:4]);
+plot(fetM(:,[1:4]))
+sp(end+1)=subplot2(10,4,[9,10],[2:4]);
+plotSTC(Stc,fet.sampleRate,'text',states,sclr,[],false);
+linkaxes(sp,'x');
+
+%3,9
+
+v = 3;
+figure,
+edx = linspace(-80,80,100);
+ind = Stc{'m'};
+h = bar(edx,histc(fetM(ind,v),edx),'histc');
+h.FaceColor = 'r';h.EdgeColor = 'r';h.FaceAlpha = 0.4;h.EdgeAlpha = 0.4;
+hold on
+ind = Stc{'a-m-r'};
+h = bar(edx,histc(fetM(ind,v),edx),'histc');
+h.FaceColor = 'c';h.EdgeColor = 'c';h.FaceAlpha = 0.4;h.EdgeAlpha = 0.4;
+
+
+figure,
+plot(fetM(Stc{'m'},1:20))
+
+m = fetM(Stc{'m'},1:20);
+
+mappedX = tsne(m(1:10:end,:), [], 2, 5, 80);
+
+figure
+plot(mappedX(:,1),mappedX(:,2),'.');

@@ -172,7 +172,8 @@ for ind = inSync,
                                        features.data(ind(1):ind(2),f),...
                                        mshift);
 
-        zind = features.data(sind(zind),f)==0;        
+        features.data(sind(zind),f) =0; 
+        
     end
 end
 features.resample(tempFet);

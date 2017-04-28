@@ -1,68 +1,91 @@
-function QuickSessionSetup(SessionParm,varargin)
+function QuickSessionSetup(sessionListName,varargin)
 % function QuickSessionSetup(SessionParm,varargin)
 % HostConf = load('MTAConf');
-% [host,local] = DefaultArgs(varargin,{HostConf.host_server,false},1);
-
-HostConf = load('MTAConf');
-[host,local,link] = DefaultArgs(varargin,{HostConf.host_server,false,true},1);
+% [host,local,link,overwrite] =
+% DefaultArgs(varargin,{HostConf.host_server,false},1);
+%
+%
+%
+% sessionList is a struct array which requires the * following
+% fields to function
+%
+%-----------------------------------------------------------------------
+%  req   Field            Type      Units          Example             |
+%-----------------------------------------------------------------------      
+%   *    sessionName:     String,   NA,            'jg05-20120311'     |
+%   *    mazeName:        String,   NA,            'cof'               |
+%   *    trialName:       String,   NA,            'all'               |
+%   *    xyz_host:        String,   NA,            '/path/to/xyz/data' |
+%   *    nlx_host:        String,   NA,            '/path/to/nlx/data' |
+%   *    xyzSampleRate:   Numeric   frames/second   119.881035         |
+%   *    host:            String,   NA,            'lmu'               |
+%   *    project',        String,   NA,            'general'           |
+%   *    TTLValue',       String,   NA,            'Vicon start'       |
+%        includeSyncInd', Integers, NA,            []                  |
+%        offsets',        Numeric,  Seconds,       [15,0]              |
+%   *    xOffSet',        Numeric,  mm,             0                  |                    
+%   *    yOffSet',        Numeric,  mm,             0                  |
+%        stcMode',        String,   NA,            'default'           |
+%-----------------------------------------------------------------------
+%   
     
+    
+% DEFARGS ------------------------------------------------------------------------------------------    
+Config = load('MTAConf.mat');    
+[overwrite] = DefaultArgs(varargin,{false},1);
+%--------------------------------------------------------------------------------------------------
+
+
+
+% MAIN ---------------------------------------------------------------------------------------------
+
+% RETRIVE session list
+sessionList = get_session_list(sessionListName);
+
+% FOREACH Session in Sessions
+%     CREATE new session if ses file is absent or overwrite is flagged
+for sessionArgs = sessionList
+
         
-    % Expecting Name of Session list, cell, or struct
-    if ischar(SessionParm), 
-        Sessions = get_session_list(SessionParm);
-    elseif iscell(SessionParm),
-        Sessions = get_session_list(SessionParm{:});
-    else
-        Sessions = SessionParm;
+%   CONFIGURE MTA toolbox
+    if ~all([strcmp(sessionArgs.project,    Config.project_name ),...
+             strcmp(sessionArgs.hostServer, Config.host_server  ),...
+             strcmp(sessionArgs.dataServer, Config.data_server  )]),
+        MTAstartup(sessionArgs.project,sessionArgs.hostServer,sessionArgs.dataServer);
+    end
+        
+
+%   LINK data to project folder
+    if all(isfield(sessionArgs,{'xyz_host','nlx_host'}))&&~ispc
+        linkSession(sessionArgs.sessionName,...
+                    sessionArgs.xyz_host,...
+                    sessionArgs.nlx_host);
+        dataLoggers = {'nlx','vicon'};
+    elseif isfield(sessionArgs,'xyz_host')&&~ispc
+        linkSession(sessionArgs.sessionName,...
+                    sessionArgs.xyz_host);
+        dataLoggers = {'vicon'};
     end
 
-    
-    % SessionList Struct Type
-    if isstruct(Sessions),
-        for s = 1:numel(Sessions)
-            if local,
-                MTAstartup(host,HostConf.data_server);
-            else
-                MTAstartup(host,Sessions(s).host);
-            end
-                
-            if all(isfield(Sessions(s),{'xyz_host','nlx_host'}))&&~ispc&&link,
-                linkSession(Sessions(s).sessionName,...
-                            Sessions(s).xyz_host,...
-                            Sessions(s).nlx_host);
-                dataLoggers = {'nlx','vicon'};
-            elseif isfield(Sessions(s),'xyz_host')&&~ispc&&link,
-                linkSession(Sessions(s).sessionName,...
-                            Sessions(s).xyz_host);
-                dataLoggers = {'vicon'};
-            end
-            
-            % Check for MoCap SampleRate
-            if isfield(Sessions(s),'xyzSampleRate'),
-                xyzSampleRate = Sessions(s).xyzSampleRate;
-            else
-                xyzSampleRate = [];
-            end
-            
-            % Create/Overwrite Session
-            Session = MTASession(Sessions(s).sessionName,...
-                                 Sessions(s).mazeName,...
-                                 true,...
-                                 Sessions(s).TTLValue,...
-                                 dataLoggers,...
-                                 'xyzSampleRate',xyzSampleRate);
-        end
-    
-    % SessionList Cell Type
-    elseif iscell(Sessions),    
-        for s = 1:numel(Sessions)
-            % Setup MTA
-            MTAstartup(host,Sessions{s}{4});
-            % Create/Overwrite Session
-            Session = MTASession(Sessions{s}{1},Sessions{s}{2},true,Sessions{s}{5});
-        end
+        
+%   CHECK for existing session and overwrite flag        
+    if isempty(listFiles(sessionArgs.sessionName,'.ses.')) || overwrite,        
 
+%       CHECK for MoCap SampleRate
+        if isfield(sessionArgs,'xyzSampleRate'),
+            xyzSampleRate = sessionArgs.xyzSampleRate;
+        else
+            xyzSampleRate = [];
+        end
+        
+%       CREATE Session
+        Session = MTASession(sessionArgs.sessionName,...
+                             sessionArgs.mazeName,...
+                             true,...
+                             sessionArgs.TTLValue,...
+                             dataLoggers,...
+                             'xyzSampleRate',xyzSampleRate);
     end
-
-
 end
+
+%---------------------------------------------------------------------------------------------------

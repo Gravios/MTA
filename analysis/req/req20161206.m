@@ -569,9 +569,81 @@ end
 walkFetRot = [];
 for t = rotationAngles;
     for m = 1:numel(tmar),
-        walkFetRot(nind,t==rotationAngles,m) = nunity(dot(tvec(nind,m,:),unvec(nind,t==rotationAngles,:),3));
+        walkFetRot(nind,t==rotationAngles,m) = dot(tvec(nind,m,:),unvec(nind,t==rotationAngles,:),3);
+        %walkFetRot(nind,t==rotationAngles,m) = nunity(dot(tvec(nind,m,:),unvec(nind,t==rotationAngles,:),3));
     end
 end
+
+
+% DISPLAY spine sway along spine
+OwnDir = '/storage/gravio/ownCloud/';
+FigDir = 'MjgEd2016/manuscript/Figures/Figure_3';
+set(0,'defaultAxesFontSize',8,...
+      'defaultTextFontSize',8)
+
+ts = [1:size(walkFetRot,1)]./180;
+
+hfig = figure(gen_figure_id);
+hfig.Units = 'centimeters';
+hfig.Position = [2,2,10,6];
+hax = axes('Units','centimeters','Position',[1,1,8,4])
+hold('on')
+plot(ts,walkFetRot(:,3,1)/6*180/10),
+plot(ts,walkFetRot(:,3,2)/6*180/10),
+plot(ts,walkFetRot(:,3,3)/6*180/10),
+plot(ts,walkFetRot(:,3,4)/6*180/10),
+xlim([66360,67267]./180)
+ylim([-35,35]);
+FigName = 'rat_walk_bodyVec90_markerTraj_feature_demo_';
+print(gcf,'-depsc2',fullfile(OwnDir,FigDir,[FigName,'.eps']));
+print(gcf,'-dpng',  fullfile(OwnDir,FigDir,[FigName,'.png']));
+
+
+hfig = figure(gen_figure_id);
+hfig.Units = 'centimeters';
+hfig.Position = [2,2,10,6];
+hax = axes('Units','centimeters','Position',[1,1,8,4])
+hold('on')
+plot(ts,walkFetRot(:,1,1)/6*180/10,'LineWidth',1),
+plot(ts,walkFetRot(:,1,2)/6*180/10,'LineWidth',1),
+plot(ts,walkFetRot(:,1,3)/6*180/10,'LineWidth',1),
+plot(ts,walkFetRot(:,1,4)/6*180/10,'LineWidth',1),
+xlim([66360,67267]./180)
+ylim([-10,75]);
+Lines([],0,'k');
+FigName = 'rat_walk_bodyVec0_markerTraj_feature_demo_';
+print(gcf,'-depsc2',fullfile(OwnDir,FigDir,[FigName,'.eps']));
+print(gcf,'-dpng',  fullfile(OwnDir,FigDir,[FigName,'.png']));
+
+
+hfig = figure(gen_figure_id);
+hfig.Units = 'centimeters';
+hfig.Position = [2,2,10,6];
+hax = axes('Units','centimeters','Position',[1,1,8,4])
+hold('on')
+plot(ts,walkFetRot(:,1,1)/6*180/10,'LineWidth',1),
+plot(ts,walkFetRot(:,1,2)/6*180/10,'LineWidth',1),
+plot(ts,walkFetRot(:,1,3)/6*180/10,'LineWidth',1),
+plot(ts,walkFetRot(:,1,4)/6*180/10,'LineWidth',1),
+xlim([66360,67267]./180)
+ylim([-10,75]);
+Lines([],0,'k');
+FigName = 'rat_walk_bodyVec0_markerTraj_feature_demo_';
+print(gcf,'-depsc2',fullfile(OwnDir,FigDir,[FigName,'.eps']));
+print(gcf,'-dpng',  fullfile(OwnDir,FigDir,[FigName,'.png']));
+
+
+
+fslf = ButFilter(ang(:,'spine_lower','fsl',3),3,[10]./(xyz.sampleRate/2),'low');
+fsuf = ButFilter(ang(:,'spine_upper','fsu',3)*2,3,[10]./(xyz.sampleRate/2),'low');
+plot(ButFilter(walkFetRot(:,3,1),3,[0.5,6]./(xyz.sampleRate/2),'bandpass').*5+35);
+plot(fslf,'b')
+plot(fsuf,'g')
+Lines(Trial.stc{'w'}(:)-.5,[],'b');
+Lines(Trial.stc{'n'}(:),[],'g');
+Lines(Trial.stc{'m'}(:),[],'m');
+Lines(Trial.stc{'r'}(:)-.5,[],'r');
+
 
 % DISPLAY spine sway along spine
 figure,hold on,

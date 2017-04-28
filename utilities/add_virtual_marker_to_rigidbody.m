@@ -1,5 +1,5 @@
 function xyz = add_virtual_marker_to_rigidbody(Session,varargin)
-%function xyz = ERCOR_fillgaps_RidgidBody(xyz,rb_model,gind)
+%function xyz = add_virtual_marker_to_rigidbody(xyz,rb_model,gind)
 % 
 % Tries to correct marker swaps and markers which wander from
 % a ridgid body constrains
@@ -105,6 +105,8 @@ if isempty(goodIndicies),
 end
 
 
+
+%solutionBasisCoordinates = rref(cat(2,mtBasis{goodIndex,nck},goodTargetVector));
 
 
 % COMPUTE the orthonormal triad basis for each frame

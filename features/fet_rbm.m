@@ -1,4 +1,4 @@
-function [rhm,varargout] = fet_rhm(Trial,varargin)
+function [rhm,varargout] = fet_rbm(Trial,varargin)
 % [rhm,fs,ts] = fet_rhm(Trial,varargin)
 % [sampleRate,mode,windowSize] = DefaultArgs(varargin,{Trial.xyz.sampleRate,'spectral',1});
 % Need to update the spectral window size to adapt to the xyz.sampleRate
@@ -21,8 +21,34 @@ rb = xyz.model.rb({'head_back','head_left','head_front','head_right'});
 % find the center of mass of the model
 hcom = xyz.com(rb);
 % add coordinates of the model's center of mass to the xyz object
-xyz.addMarker('fhcom',[.7,1,.7],{{'head_back','head_front',[0,0,1]}},ButFilter(hcom,3,[3]./(xyz.sampleRate/2),'low'));
+xyz.addMarker('fhcom',[.7,1,.7],{{'head_back','head_front',[0,0,1]}},ButFilter(hcom,3,[1]./(xyz.sampleRate/2),'low'));
 xyz.addMarker('hcom',[128,255,128],{{'head_back','head_front',[0,0,1]}},hcom);
+
+
+
+rb = xyz.model.rb({'spine_lower','pelvis_root','spine_middle'});
+bcom = xyz.com(rb);
+xyz.addMarker('fbcom',[.7,1,.7],{{'head_back','head_front',[0,0,1]}},...
+              ButFilter(bcom,4,[1]./(xyz.sampleRate/2),'low'));
+xyz.addMarker('bcom',[.7,1,.7],{{'head_back','head_front',[0,0,1]}},bcom);
+xyz.addMarker('fsl',[.7,1,.7],{{'head_back','head_front',[0,0,1]}},...
+              ButFilter(xyz(:,'spine_lower',:),4,[1.5]./(xyz.sampleRate/2),'low'));
+xyz.addMarker('fsm',[.7,1,.7],{{'head_back','head_front',[0,0,1]}},...
+              ButFilter(xyz(:,'spine_middle',:),4,[1.5]./(xyz.sampleRate/2),'low'));
+xyz.addMarker('fsu',[.7,1,.7],{{'head_back','head_front',[0,0,1]}},...
+              ButFilter(xyz(:,'spine_upper',:),4,[1.5]./(xyz.sampleRate/2),'low'));
+
+rb = xyz.model.rb({'pelvis_root','spine_middle','spine_upper'});
+bcom = xyz.com(rb);
+xyz.addMarker('fbucom',[.7,1,.7],{{'head_back','head_front',[0,0,1]}},...
+              ButFilter(bcom,4,[1]./(xyz.sampleRate/2),'low'));
+xyz.addMarker('bucom',[.7,1,.7],{{'head_back','head_front',[0,0,1]}},bcom);
+xyz.addMarker('fsl',[.7,1,.7],{{'head_back','head_front',[0,0,1]}},...
+              ButFilter(xyz(:,'spine_lower',:),4,[1.5]./(xyz.sampleRate/2),'low'));
+xyz.addMarker('fsm',[.7,1,.7],{{'head_back','head_front',[0,0,1]}},...
+              ButFilter(xyz(:,'spine_middle',:),4,[1.5]./(xyz.sampleRate/2),'low'));
+xyz.addMarker('fsu',[.7,1,.7],{{'head_back','head_front',[0,0,1]}},...
+              ButFilter(xyz(:,'spine_upper',:),4,[1.5]./(xyz.sampleRate/2),'low'));
 
 
 % if xyz sampling rat e is greater than 120 Hz then resample it to 120 Hz
@@ -40,10 +66,19 @@ ang.data(~nniz(xyz(:,1,1)),:,:,:) = 0;
 
 
 fet = xyz.copy;
+%bang = ang(:,'hbx','fhcom',3);
+%bang = ButFilter(ang(:,'fsm','spine_upper',3),4,[0.8,20]./(xyz.sampleRate/2),'bandpass');
+bang = ButFilter(ang(:,'pelvis_root','spine_upper',3),4,[0.5,20]./(xyz.sampleRate/2),'bandpass');
+%bang = ButFilter(ang(:,'fbcom','spine_upper',3),4,[0.5,20]./(xyz.sampleRate/2),'bandpass');
+%bang = ButFilter(ang(:,'fbcom','spine_upper',3),4,[0.8]./(xyz.sampleRate/2),'high');
+%bang = ButFilter(ang(:,'bucom','fsl',3),4,[0.8]./(xyz.sampleRate/2),'high');
+%bang = ang(:,'hbx','fhbte',3);
+%bang = ang(:,'hbx','hcom',2);
+%bang = ang(:,'hbt','fhcom',3);
 
-bang = ButFilter(ang(:,'head_back','fhcom',3),3,[.1,20]./(ang.sampleRate/2),'bandpass');
-
-fet.data = [0;ButFilter(diff(bang),3,[.5,30]/(ang.sampleRate/2),'bandpass')];
+fet.data = bang;
+%fet.data = [0;diff(bang)];
+%fet.data = [0;ButFilter(diff(bang),3,[.1,20]/(ang.sampleRate/2),'bandpass')];
 
 switch mode
   case 'mta'

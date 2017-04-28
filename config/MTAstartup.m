@@ -34,7 +34,7 @@ switch host_server % The severer where matlab is running.
         if ~exist(projPath),
             mkdir(projPath);
         end
-        MTAConfiguration(projPath,'absolute');        
+        MTAConfiguration(projPath,'absolute',projectName,host_server,data_server);
         MTA_PROJECT_PATH = projPath;
     end
   

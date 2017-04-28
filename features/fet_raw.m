@@ -4,7 +4,7 @@ function [fet,featureTitles,featureDesc] = fet_raw(Trial,varargin)
 % exhaustive set of features derived from the raw data
 %
 %
-[newSampleRate,RefTrial,procOpts] = DefaultArgs(varargin,{20,[],'SPLINE_SPINE_HEAD_EQD'},1);
+[newSampleRate,RefTrial,procOpts] = DefaultArgs(varargin,{Trial.xyz.sampleRate,[],'SPLINE_SPINE_HEAD_EQD'},1);
 
 fet = MTADfet(Trial.spath,...
               [],...
@@ -17,12 +17,12 @@ fet = MTADfet(Trial.spath,...
 % Loads preprocessed version of xyz
 nm = Trial.xyz.model.N;
 [xyz,ss] = preproc_xyz(Trial,procOpts);
-xyz.resample(newSampleRate);
-ss.resample(xyz);
+%xyz.resample(newSampleRate);
+%ss.resample(xyz);
 
 % FXYZ filtered 
 fxyz = xyz.copy;
-fxyz.filter('ButFilter',3,2.4,'low');
+fxyz.filter('ButFilter',3,30,'low');
 
 % FVELXY Filtered marker speeds in XY plane
 fvelxy = xyz.vel([],[1,2]);
@@ -129,7 +129,7 @@ catch err
     man = Trial.load('fet','lsppc');
 end
 man.filter('ButFilter',3,2,'low');
-man.resample(fxyz);
+%man.resample(fxyz);
 
 
 %% BFET
@@ -187,7 +187,7 @@ wfs = wfet.segs([],round(mxyz.sampleRate/2));
 wfs = MTADxyz('data',reshape(permute(sum(wfs.^2),[2,3,1]),size(wfs,2),[]),'sampleRate',mxyz.sampleRate);
 wfs.data = circshift(wfs.data,round(mxyz.sampleRate/4),2);
 wfs.data(isnan(wfs.data(:)))=0;
-wfs.resample(xyz);
+%wfs.resample(xyz);
 
 %% SS
 sd = sqrt(sum((ss.data-circshift(ss.data,-1,2)).^2,3));

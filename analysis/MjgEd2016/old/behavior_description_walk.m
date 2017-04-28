@@ -780,3 +780,6 @@ xyz.addMarker('hbt',[128,255,128],{{'head_back','head_front',[0,0,1]}},...
 xyz.addMarker('fhbt',[128,255,128],{{'head_back','head_front',[0,0,1]}},...
                ButFilter(xyz(:,'hbt',:),3,[2]./(xyz.sampleRate/2),'low'));
 xyz.data(nniz(xyz(:,'hbt',:)),end,:) = ButFilter(xyz(nniz(xyz(:,'hbt',:)),'hbt',:),3,[2]./(xyz.sampleRate/2),'low');
+
+
+

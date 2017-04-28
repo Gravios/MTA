@@ -38,26 +38,30 @@ if ~isempty(states),
     states.cast('TimeSeries',Data);
     states = logical(states.data);
 else
-    states = true(size(nind));
+    states = true([size(Data.data,1),1]);
 end
 
-nind = nind&states;
 
+A = Data.data;
 if ~isempty(drpOutPrctile),
-    A = prctile(Data.data(nind,:,:,:,:,:),drpOutPrctile);
-else
-    A = Data.data(nind,:,:,:,:,:);
-end
+    newFeatureDomains = prctile(Data.data(nind,:,:,:,:,:),drpOutPrctile);
+    inDomain = bsxfun(@lt,Data.data(:,:,:,:,:,:),newFeatureDomains(1,:)) & ...
+               bsxfun(@gt,Data.data(:,:,:,:,:,:),newFeatureDomains(2,:));
 
-if isempty(meanA)
-    meanA = mean(A);
+    A(inDomain(:)) = nan;
+end
+A(A==0)=nan;
+A(isinf(A))=nan;
+A(~states,:) = nan;
+
+if isempty(meanA),
+    meanA = nanmean(A);
 end
 if isempty(stdA)
-    stdA = std(A);
+    stdA = nanstd(A);
 end
 
-Data.data = feval(ifnniz,size(A));
+Data.data = bsxfun(@rdivide,bsxfun(@minus,Data.data,meanA),stdA);
 
-Data.data(nind,:,:,:,:,:) = bsxfun(@rdivide,bsxfun(@minus,A,meanA),stdA);
-
+Data.data(~nind,:,:,:,:,:) = ifnniz([sum(~nind),size(Data,2)]);
 

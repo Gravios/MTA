@@ -12,18 +12,25 @@ function [figH] = bhv_rhm_ncp_distrb(Trial,varargin)
 %
 %    ncp_chan:   numeric - Def(2), 
 %
-%    stc_mode:   string  - Def('auto_wbhr'), 
+%    stcMode:   string  - Def('auto_wbhr'), 
 
-[mode,ncp_thresh,ncp_chan,stc_mode] = DefaultArgs(varargin,{{'height','hangle'},[],2,'auto_wbhr'});
+Trial = MTATrial.validate(Trial);
+
+[mode,ncp_thresh,ncp_chan,stcMode,p] = DefaultArgs(varargin,{{,'hangle','bspeed','hspeed','NCPpow','RHMpow'},[],2,'auto_wbhr',8});
+
+%sigXOpts = 
+%sigYOpts = 
 
 
 disp(['bhv_rhm_ncp_distrb: ' Trial.filebase])
 %% Select behavioral state collection
-Trial.stc.updateMode(stc_mode);
+Trial.stc.updateMode(stcMode);
 Trial.stc.load;
 
 %% Load Rythmic Head Motion(RHM) feature
-rhm = fet_rhm(Trial);
+%rhm = fet_rhm_exp(Trial);
+rhm = fet_rbm(Trial);
+%rhm = fet_rhm(Trial);
 
 %% Load Nasal Cavity Pressure(NCP) feature
 ncp = fet_ncp(Trial,rhm,'mta',ncp_chan);
@@ -34,11 +41,12 @@ ncp = fet_ncp(Trial,rhm,'mta',ncp_chan);
 
 rhm.data = [rhm.data,ncp.data];
 
-sparm = struct('nFFT'     ,2^9,...
+
+sparm = struct('nFFT'     ,2^(p),...
                'Fs'       ,rhm.sampleRate,...
-               'WinLength',2^7,...
-               'nOverlap' ,2^7*.875,...
-               'FreqRange',[1,20]);
+               'WinLength',2^(p-1),...
+               'nOverlap' ,2^(p-1)*.875,...
+               'FreqRange',[.5,20]);
 
 [ys,fs,ts] = fet_spec(Trial,rhm,'mtcsdglong',false,[],sparm);
 
@@ -46,7 +54,7 @@ sparm = struct('nFFT'     ,2^9,...
 %% Get smoothed speed of the Body
 xyz = Trial.load('xyz').filter('ButFilter',3,2.4,'low');
 
-vh = xyz.vel('spine_lower',[1,2]);
+vh = xyz.vel({'spine_lower','head_front'},[1,2]);
 vh.resample(ys);
 vh.data = log10(abs(vh.data));
 vh.data(~nniz(vh(:))) = nan;
@@ -64,18 +72,17 @@ rhm_maxpow = MTADlfp('data',max(nys(:,fs>13&fs>5,1,1),[],2),'sampleRate',ys.samp
 ncp_maxpow = MTADlfp('data',max(nys(:,fs>13&fs>5,2,2),[],2),'sampleRate',ys.sampleRate);
 
     
-chan_labels = {'Rhythmic Head Motion','Nasal Cavity Pressure'};
+chan_labels = {'RHM','NCP'};
 
 figH = figure(gen_figure_id);
-%set(figH,'Position',[268    80   985   692]);
-pos =[67,441,1607,482];
-%pos =[20, 452, 1642, 471];
-set(figH,'Position',pos);
+figH.Units = 'centimeters';
+figH.Position = [1,1,30,20];
 for s = 1;%:numel(Trial.stc.states)
 
     clf;
     %sind = Trial.stc.states{s}.copy;
-    sind = Trial.stc{'a'};%+[1,-1];
+    sind = Trial.stc{'a-m'};%+[1,-1];
+    %sind = Trial.stc{'w'};%+[1,-1];
     %sind = Trial.stc{'w+q'}+[1,-1];
     %sind.resample(ys);
 
@@ -109,21 +116,30 @@ for s = 1;%:numel(Trial.stc.states)
             vhlim = [-1.5, 1.5];
             vh_label = 'Body Pitch';
             vh_units = 'rad';
-          case 'speed'
+          case 'bspeed'
             ind = nniz(vh(sind));
             %ind = ncp_maxpow(sind)>ncp_thresh&ind;
-            vhs =vh(sind);
+            vhs =vh(sind,1);
             vhs = vhs(ind);
             %vhlim =prctile(vhs,[5,98]);
-            vhlim = [-1.5,1.5];
+            vhlim = [-3,2];
             vh_label = 'Body Speed';
+            vh_units = 'cm/s';
+          case 'hspeed'
+            ind = nniz(vh(sind));
+            %ind = ncp_maxpow(sind)>ncp_thresh&ind;
+            vhs =vh(sind,2);
+            vhs = vhs(ind);
+            %vhlim =prctile(vhs,[5,98]);
+            vhlim = [-3,2];
+            vh_label = 'Head Speed';
             vh_units = 'cm/s';
           case 'NCPpow'
             vhncp = MTADlfp('data',ncp_maxpow(sind),'sampleRate',ncp_maxpow.sampleRate);
             ind = nniz(vh(sind));
             vhs =vhncp;
             vhs = vhs(ind);
-            vhlim =prctile(vhs,[5,95]);
+            vhlim =prctile(vhs,[2,98]);
             vh_label = 'NCP_pow(5-13)';      
             vh_units = 'mV^2/s';
           case 'RHMpow'
@@ -131,7 +147,7 @@ for s = 1;%:numel(Trial.stc.states)
             ind = nniz(vh(sind));
             vhs = clip(vhrhm,-9,5);
             vhs = vhs(ind);
-            vhlim =prctile(vhs,[5,95]);
+            vhlim =prctile(vhs,[2,98]);
             vh_label = 'RHM_pow(5-13)'
             vh_units = 'cm^2/s'
         end 
@@ -185,37 +201,39 @@ for s = 1;%:numel(Trial.stc.states)
 
         
         %% RHM psd
-        subplot2(numel(mode),4,m,1);
+        subplot2(3,numel(mode),1,m);
         imagesc(vedgs,fs,mrv(:,:,1)',[0,max(prctile(mrv(nniz(mrv),:,1),[95]),[],2)]),axis xy
-        title([chan_labels{1} ' mean PSD Binned by ' vh_label])
+        title({[chan_labels{1} ' mean PSD Binned by '],[ vh_label]})
         xlabel(['Binned ' vh_label ' (' vh_units ')']);
         ylabel('Frequency Hz')
-        colorbar
-        caxis([-2,2])
+        h = colorbar;
+        h.Position(1) = h.Position(1) +.05;
+        caxis([-1.5,1.5])
 
         %% NCP psd
-        subplot2(numel(mode),4,m,2);
+        subplot2(3,numel(mode),2,m);        
         imagesc(vedgs,fs,mrv(:,:,2)',[0,max(prctile(mrv(nniz(mrv),:,2),[95]),[],2)]),axis xy
-        title([chan_labels{2} ' mean PSD Binned by ' vh_label])
+        title({[chan_labels{2} ' mean PSD Binned by '],[ vh_label]})
         xlabel(['Binned ' vh_label ' (' vh_units ')']);
         ylabel('Frequency Hz')
-        colorbar
-        caxis([-2,2])
+        h = colorbar;
+        h.Position(1) = h.Position(1) +.05;
+        caxis([-1.5,1.5])
 
         %% RHM NCP coherence
-        subplot2(numel(mode),4,m,3);
+        subplot2(3,numel(mode),3,m);
         imagesc(edges(1,:),fs,vsc(:,:,1,2)'),axis xy,
-        title([chan_labels{1} ' & ' chan_labels{2} ' coherence'])
+        title({[chan_labels{1} ' & '],[ chan_labels{2} ' coherence']})
         xlabel(['Binned ' vh_label ' (' vh_units ')']);
         ylabel('Frequency Hz')
-        colorbar
+        h = colorbar;
+        h.Position(1) = h.Position(1) +.05;
         caxis([0.5,1]);
 
-        
-        subplot2(numel(mode),4,m,4);
-        bar(vedgs,N,'histc')
-        ylabel('Count')
-        xlabel(['Binned ' vh_label ' (' vh_units ')']);
+% $$$         subplot2(numel(mode),4,m,4);
+% $$$         bar(vedgs,N,'histc')
+% $$$         ylabel('Count')
+% $$$         xlabel(['Binned ' vh_label ' (' vh_units ')']);
 
     end
     colormap jet;

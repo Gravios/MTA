@@ -1,4 +1,4 @@
-function Data = addMarker(Data,name,color,sticks,data)
+function Data = addMarker(Data,varargin)
 %Session = addMarker(Session,name,color,sticks,xyz)
 %modify Model and xyz by adding an additional marker
 %
@@ -13,6 +13,16 @@ function Data = addMarker(Data,name,color,sticks,data)
 %             marker_name2 - string: marker descriptor (e.g.'bodypart_position')
 %             stick_color - numericArray: rgb values range - [0,1] (e.g.[0.4,1,0])
 %
+
+% DEFARGS ------------------------------------------------------------------------------------------
+defargs = struct('name',   'newMarker',                                                          ...
+                 'color',  [.7,1,.7],                                                            ...
+                 'sticks', {{{'head_back','head_front',[0,0,1]}}},                                 ...
+                 'data',   []                                                                    ...
+);        
+[name,color,sticks,data] = DefaultArgs(varargin,defargs,'--struct');
+%---------------------------------------------------------------------------------------------------  
+
 
 %check if marker exists
 if Data.model.gmi(name),

@@ -1,4 +1,4 @@
-function  get_state_transitions(Stc,varargin)
+function Stc = get_state_transitions(Stc,Trial,varargin)
 % function get_state_transitions(Stc,varargin)
 % 
 % Return TimePoints or TimePeriods of transitions from the
@@ -15,28 +15,25 @@ function  get_state_transitions(Stc,varargin)
 % DEFARGS ------------------------------------------------------------------------------------------
 defargs = struct('states',           {{'turn','walk'}},...
                  'transitionWindow', 0.2,...
-                 'ReferenceData',    Trial.load('xyz'),...
-                 'outputType',       'TimePeriods')...
+                 'ReferenceData',    [],...%Trial.load('xyz'),...
+                 'outputType',       'TimePeriods'...
 );
 
 [states, transitionWindow, ReferenceData, outputType] = ...
-    DefaultArgs(varargin,defargs,'--struct')
+    DefaultArgs(varargin,defargs,'--struct');
 %---------------------------------------------------------------------------------------------------
 
 
 % MAIN ---------------------------------------------------------------------------------------------
 
-Trial = MTATrial.validate('jg05-20120317.cof.all');
-xyz = Trial.load('xyz');
-smat = stc2mat(Stc,xyz,{'walk','rear'});
- = 0.2;%seconds 
-indexShift = round(transitionWindow * xyz.sampleRate / 2);
+smat = stc2mat(Stc,ReferenceData,states);
+indexShift = round(transitionWindow * ReferenceData.sampleRate / 2);
 
-stsTransitionMat = reshape(permute(cat(3,...
+stsTransitionMat = logical(reshape(permute(cat(3,...
                                        circshift(smat,indexShift),...
                                        circshift(smat,-indexShift)),...
                                    [1,2,3]),...
-                           size(smat,1),[]);
+                           size(smat,1),[]));
 
 stsTargetMat     = repmat([1,0,0,1],size(smat,1),1);
 
@@ -53,9 +50,12 @@ switch outputType,
                      Trial.sync.data(1),...            % Synchronization Origin
                      ['t_' Stc{states{1}}.label '2' Stc{states{2}}.label],...% label
                      'T');                             % key
+    else
+        Stc = stsTransitionPeriods;
     end
     
   case 'TimePoints'
+
     
   otherwise
     error('MTA:MTAStateCollection:get_state_transitions:InvalidOutputType',...
@@ -65,3 +65,4 @@ end
 
 
 %---------------------------------------------------------------------------------------------------
+

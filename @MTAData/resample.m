@@ -1,12 +1,21 @@
 function Data = resample(Data,DataObj,varargin)
 % Data = resample(Data,DataObj)
-% Resample Data to the DataObjects sampleRate
+% Resample Data to the target sample rate proveded in DataObj
+% 
+% NOTE - If target is an MTAData object rounding discrepancies will
+%        be corrected by trimming the tails to fit the target object.
+%    
+% Input:
+%   DataObject: numeric, target sample rate
+%               MTAData, target object to match data's sampleRate
+%
+%   interpMethod: string, ['spline'] Method for data interpolation/ downsampling
 %
 % Assumes the two objects have their starting points synchronized
 %
 %    upsampling 
-%         MTADxyz - uses spline
-%         MTADepoch - uses nearest neighbor
+%         MTAData - uses spline
+%         MTADepoch.type <- 'TimePeriods' - uses nearest neighbor
 %
 % WARNING - Doesn't modify the sync if sizes don't match
 % WARNING - uses interp1 with spline as default

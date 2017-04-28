@@ -7,5 +7,5 @@ else
 end
 
 files = dir(fullfile(MTASession().path.data,SessionName));
-re = [ fileExt ];% regular expression to match Session naming convention
+re = regexptranslate('escape',fileExt);% regular expression to match Session naming convention
 flist = {files(~cellfun(@isempty,regexp({files.name},re))).name};

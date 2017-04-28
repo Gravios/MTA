@@ -24,6 +24,8 @@ switch Data.type
         
         if numel(S.subs)==0,
             Data = Data.data;
+        elseif isempty(S.subs{1}),
+            Data = [];
         elseif all(cellfun(@islogical,S.subs)+cellfun(@isnumeric,S.subs)+...
                    cellfun(@strcmp,S.subs,repmat({':'},[1,numel(S.subs)]))),
             if strcmp(S.subs{1},':'),
