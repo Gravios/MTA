@@ -10,7 +10,7 @@
 
 % Figure Settings ----------------------------------------------------------------------
 OwnDir = '/storage/gravio/ownCloud/';
-FigDir = 'MjgEd2016/manuscript/Figures/Figure_3';
+FigDir = 'MjgEd2016/figures/Figure_3';
 % --------------------------------------------------------------------------------------
 
 
