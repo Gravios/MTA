@@ -72,7 +72,7 @@ switch mode
     % Modify time stamps and spec; add padding (0's)
     ts = ts+(parspec.WinLength/2)/fet.sampleRate;
     ssr = 1/diff(ts(1:2));
-    pad = round([ts(1),mod(fet.size(1)-round(parspec.WinLength/2),parspec.WinLength)/fet.sampleRate].*ssr)-[1,0];
+    pad = round([ts(1),size(fet,1)./fet.sampleRate-ts(end)].*ssr)-[1,0];
     szy = size(ys);
     rhm = MTADlfp('data',cat(1,zeros([pad(1),szy(2:end)]),ys,zeros([pad(2),szy(2:end)])),'sampleRate',ssr);
 

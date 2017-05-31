@@ -93,6 +93,9 @@ classdef MTASession < hgsetget
         %nq - struct: clustering quality and spike waveform characteristics
         nq = {};
 
+        %fbr - MTADfbr: (Time,ClusterId) fiber photometery with lfpSampleRate
+        fbr 
+
     end
 
     methods
@@ -125,11 +128,13 @@ classdef MTASession < hgsetget
                     Session = Session.updatePaths();
                     %Session.xyz.load(Session.sync);
                 elseif overwrite
+                    varargin(1:3) = [];
                     warning(['Overwriting Session: ' fullfile(Session.spath, [Session.filebase, '.ses.mat'])])
-                    Session.create(TTLValue,dataLoggers,xyzSampleRate);
+                    Session.create(varargin{:});
                 else
+                    varargin(1:3) = [];                    
                     warning(['Subsession with maze, ' Session.maze.name ', does not exist: creating session']);
-                    Session.create(TTLValue,dataLoggers,xyzSampleRate);
+                    Session.create(varargin{:});
                 end  
             end
         end
@@ -480,7 +485,7 @@ classdef MTASession < hgsetget
             if isa(Session,'MTASession'),
                 return;
             elseif ischar(Session),
-                pat =['(?<sessionName>[a-z_A-Z]+\d{2,2}[-]\d{8,8})\.'...
+                pat =['(?<sessionName>[a-z_A-Z]+\d{2,4}[-]\d{8,8})\.'...
                       '(?<mazeName>\w+)\.'...
                       '(?<trialName>\w+)'];
                 tok = regexp(Session,pat,'names');

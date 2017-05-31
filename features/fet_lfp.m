@@ -71,7 +71,8 @@ end
 
 ts = ts+WinLength*.5/sampleRate;
 ssr = 1/diff(ts(1:2));
-pad = round([ts(1),mod(sampleSize-WinLength*.5,WinLength)/sampleRate].*ssr)-[1,0];
+pad = round([ts(1),size(fet,1)./flfp.sampleRate-ts(end)].*ssr)-[1,0];
+%pad = round([ts(1),mod(sampleSize-WinLength*.5,WinLength)/sampleRate].*ssr)-[1,0];
 szy = size(ys);
 ts = cat(1,zeros([pad(1),1]),ts,zeros([pad(2),1]));
 

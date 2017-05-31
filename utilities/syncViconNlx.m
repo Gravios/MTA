@@ -43,7 +43,7 @@ if ~exist(Session.spath,'dir')
     else
         e.message    = ['Session: ' Session.name ', cannot be found or does not exist. ' ...
                        'Check paths or see the README for the correct directory structure for the MTA toolbox.'];
-        e.identifier = 'MTA:utilities:syncViconNlx:Session404';
+        e.identifier = 'MTA:utilities:syncViconNlx:SessionNotFound';
         error(e);
     end
 end

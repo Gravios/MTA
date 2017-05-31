@@ -1,8 +1,8 @@
 function features = map_to_reference_session(features,Trial,RefTrial,varargin)
-% function features = normalize_features_to_reference_trial(Trial,features,referenceTrial)
-% This Function is only meant for use with fet_tsne at the moment.
+%function features = map_to_reference_session(features,Trial,RefTrial,varargin)
+%[normEachSyncEpoch,verbose] = DefaultArgs(varargin,{false,false},1);
 
-[normEachSyncEpoch] = DefaultArgs(varargin,{false},1);
+[normEachSyncEpoch,verbose] = DefaultArgs(varargin,{false,false},1);
 % If Trial is not a MTASession try loading it.
 Trial = MTATrial.validate(Trial);
 
@@ -21,6 +21,32 @@ end
 
 
 switch features.label
+  case 'fet_bref_emb'
+    fetInds = [];
+    for i = 0:(size(features,2)/30)-1,
+        fetInds = [fetInds,[1:15]+30*i];
+    end
+% $$$     stdThresh = repmat({30},1,10);
+% $$$     kurThresh = repmat({20},1,10);
+    diffFun   = repmat({@minus},1,numel(fetInds));
+
+  case 'fet_bref'
+    fetInds   = [1:15];
+% $$$     stdThresh = repmat({30},1,10);
+% $$$     kurThresh = repmat({20},1,10);
+    diffFun   = repmat({@minus},1,15);
+
+  case 'fet_svd_mis'
+    fetInds =      [   1:5                      , 7:10                ];
+    stdThresh = cat(2, repmat({.2},    1,5)     , repmat({15},    1,4));
+    kurThresh = cat(2, repmat({5},     1,5)     , repmat({15},    1,4));
+    diffFun =   cat(2, repmat({@circ_dist},1,5) , repmat({@minus},1,4));
+    
+  case 'fet_rear_desc'
+    fetInds =      [   1:4                      , 5:11                ];
+    stdThresh = cat(2, repmat({.2},    1,4)     , repmat({15},    1,7));
+    kurThresh = cat(2, repmat({5},     1,4)     , repmat({15},    1,7));
+    diffFun =   cat(2, repmat({@circ_dist},1,4) , repmat({@minus},1,7));
 
   case 'fet_all2'
     fetInds =      [1:12,[40:44]];
@@ -48,6 +74,7 @@ switch features.label
   case 'fet_mis'
     fetInds =      [   1:5                      , 7:10                ];
     stdThresh = cat(2, repmat({.2},    1,5)     , repmat({15},    1,4));
+    kurThresh = cat(2, repmat({5},     1,5)     , repmat({15},    1,4));
     diffFun =   cat(2, repmat({@circ_dist},1,5) , repmat({@minus},1,4));
 
   case 'fet_all'
@@ -143,8 +170,10 @@ end
 % $$$ [tarMean,tarStd,tarCnt,tarDom] = mean_embeded_feature_vbvh(features,   Trial,fetInds,featureDomainBoundaries);
 % $$$ [refMean,refStd,refCnt,refDom] = mean_embeded_feature_vbvh(rfet,    RefTrial,fetInds,featureDomainBoundaries);
 % -----
-[tarMean,tarStd] = mean_embeded_feature_vbvh(features,   Trial,fetInds);
-[refMean,refStd] = mean_embeded_feature_vbvh(rfet,    RefTrial,fetInds);
+%[tarMean,tarStd,tarKur] = mean_embeded_feature_vbvh(features,   Trial,fetInds,[],verbose);
+%[refMean,refStd,refKur] = mean_embeded_feature_vbvh(rfet,    RefTrial,fetInds,[],verbose);
+[tarMean,tarStd,tarKur] = mean_embeded_feature_vbvhzbzh(features,   Trial,fetInds,[],verbose);
+[refMean,refStd,refKur] = mean_embeded_feature_vbvhzbzh(rfet,    RefTrial,fetInds,[],verbose);
 
 
 if normEachSyncEpoch,
@@ -159,9 +188,15 @@ end
 
 for ind = inSync,
     for f = fetInds;
-        nnz = nniz([tarMean{f}(:),refMean{f}(:)])...
-              & tarStd{f}(:)<stdThresh{f==fetInds}...
-              & refStd{f}(:)<stdThresh{f==fetInds};
+        nnz = nniz([tarMean{f}(:),refMean{f}(:)]);%,...
+% $$$               & tarStd{f}(:)<stdThresh{f==fetInds}...
+% $$$               & refStd{f}(:)<stdThresh{f==fetInds}...
+% $$$               & tarKur{f}(:)<kurThresh{f==fetInds}...
+% $$$               & refKur{f}(:)<kurThresh{f==fetInds};
+
+% $$$         nnz = nniz([tarMean{f}(:),refMean{f}(:)])...
+% $$$               & tarStd{f}(:)<stdThresh{f==fetInds}...
+% $$$               & refStd{f}(:)<stdThresh{f==fetInds};
         mzd = diffFun{f==fetInds}(tarMean{f}(:),refMean{f}(:));
         
         mshift = nanmedian(mzd(nnz));

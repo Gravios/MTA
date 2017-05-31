@@ -1,4 +1,17 @@
 function distributions_features(varargin)
+% Default arguments for distributions_features(varargin)
+% defargs = struct(...
+%     'sList'          , 'hand_labeled'                                           ,...
+%     'featureSet'     , 'fet_mis'                                                ,...
+%     'featureOpts'    , {{'newSampleRate',12,'procOpts','SPLINE_SPINE_HEAD_EQD'}},...
+%     'featureName'    , ''                                                       ,...
+%     'state'          , 'gper'                                                   ,...
+%     'resample'       , true                                                     ,...
+%     'normalize'      , true                                                     ,...
+%     'mapToReference' , true                                                     ,...
+%     'RefTrial'       , 'jg05-20120317.cof.all'                                   ...
+% );
+
 
 % Default arguments for distributions_features(varargin)
 defargs = struct(...
@@ -40,7 +53,7 @@ if normalize,
     RefTrial = MTATrial.validate(RefTrial);
     RefState = RefTrial.stc{'a'};
     rfet = feval(featureSet,RefTrial,featureOpts{:});
-    [rfet,Rmean,Rstd] = unity(rfet,[],[],[],[]);
+    [rfet,Rmean,Rstd] = nunity(rfet,[],[],[],[]);
 end
     
 
@@ -73,8 +86,8 @@ end
 
 
 if isempty(fett)||isempty(fetd)
-    fett = repmat( {''}, [1,cfet.size(2)] );
-    fetd = repmat( {''}, [1,cfet.size(2)] );
+    fett = repmat( {''}, [1,cfet{1}.size(2)] );
+    fetd = repmat( {''}, [1,cfet{1}.size(2)] );
 end
 
 c = jet(numel(cfet));

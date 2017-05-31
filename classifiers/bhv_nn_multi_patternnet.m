@@ -48,7 +48,7 @@ defArgs = struct('states',      {{'walk','rear','turn','pause','groom','sit'}},.
  targetState,prctTrain] = DefaultArgs(varargin,defArgs,'--struct');
 
 
-% Load the feature set
+% LOAD the feature set
 if isa(featureSet,'MTADfet'),
     features = featureSet.copy;
     featureSet = features.label;
@@ -58,7 +58,7 @@ else,
     end
 end
 
-% Load the hand labels
+% LOAD the hand labels
 if ~isempty(stcMode),
     if ischar(stcMode),
         Trial.load('stc',stcMode);
@@ -93,11 +93,12 @@ if isempty(model),
 end
 
 
+% MAP features to reference session
 if map2reference,
     % if model exists and the feautures should be mapped to a reference
     % session, parse said reference session from the model
     % NOTE: Replace this with a hash reference
-    filebasePattern = '[a-zA-Z]{1,2}[0-9]{2}[-][0-9]{8,8}(\.[a-zA-Z0-9]+){2,2}';
+    filebasePattern = '[a-zA-Z]{1,2}[0-9]{2,4}[-][0-9]{8,8}(\.[a-zA-Z0-9]+){2,2}';
     refSession = regexp(model,filebasePattern,'match');
     refSession = strsplit(refSession{1},'.');
     refSession = MTATrial(refSession{:});
@@ -333,7 +334,9 @@ for iter = 1:nIter,
                     StcRnd,                             ... StateCollection
                     trainingFeatures,                   ... feature set
                     [model '_' num2str(iter)],          ... model name
-                    'subset',trainingEpochs);                                        
+                    [],[],...
+                    nNeurons,...
+                    trainingEpochs);
             
 
         end
@@ -347,9 +350,10 @@ for iter = 1:nIter,
                                              [model '_' num2str(iter)]); % model name
 
         % if an stc was provided get comparison stats
-            ysm = MTADxyz('data',double(0<stc2mat(Stc,xyz)),'sampleRate',xyz.sampleRate); 
-            d_state = nansum(cat(3,ysm.data,d_state),3);
-            p_state = p_state +ns;
+        ysm = MTADxyz('data',double(0<stc2mat(Stc,xyz)),'sampleRate',xyz.sampleRate); 
+        d_state = nansum(cat(3,ysm.data,d_state),3);
+        p_state = p_state +ns;
+        
         if ~isempty(stcMode)            
             if nargout>=4,
                 labelingEpochs.resample(xyz);
@@ -389,6 +393,8 @@ d_state = MTADxyz('data',p_state,'sampleRate',xyz.sampleRate);
 % $$$ linkaxes(sp,'xy')
 % Determine winning states based on the the labels of nurmerous
 % neural networks.
+d_state.filter('ButFilter',3,2,'low');
+
 [~,maxState] = max(d_state.data,[],2);
 maxState(~nniz(xyz)) = 0;
 maxState(~any(d_state.data,2)) = 0;

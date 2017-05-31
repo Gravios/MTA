@@ -4,6 +4,15 @@ function [xyz,ss] = preproc_xyz(Trial,varargin)
 %
 % An attempt to normalize marker positions along the spine
 % between subjects using a 
+%
+% Current Opts:
+%
+%    SPLINE_SPINE
+%    SPLINE_SPINE_EQD
+%    SPLINE_SPINE_HEAD_EQD
+%    SPLINE_SPINE_HEAD_EQD_NO_TRB
+%    LOAD_TRB_XYZ
+% 
 
 [procOpts,overwrite] = DefaultArgs(varargin,{{},false},true);
 Trial = MTATrial.validate(Trial);
@@ -31,12 +40,12 @@ if ~iscell(procOpts), procOpts = {procOpts}; end
 while ~isempty(procOpts)
     switch procOpts{1}
       
-      case 'spline_spine'
+      case 'SPLINE_SPINE'
         ss = fet_spline_spine(Trial,'3dss',xyz);
         
         xyz.data(:,1:4,:) = ss(:,[5,35,65,95],:);
       
-      case 'spline_spine_eqd'
+      case 'SPLINE_SPINE_EQD'
         ss = fet_spline_spine(Trial,xyz);
         
         spineLength = MTADxyz('data',sqrt(sum(diff(ss.data,1,2).^2,3)),'sampleRate',xyz.sampleRate);
@@ -59,7 +68,7 @@ while ~isempty(procOpts)
 
       case 'SPLINE_SPINE_HEAD_EQD'
 
-        if ~isempty(listFiles(Trial.name,'\.seh\.h')) && ~overwrite
+        if ~isempty(listFiles(Trial.name,'.seh.h')) && ~overwrite
             xyz = Trial.load('xyz','seh');
         else
             
@@ -99,11 +108,14 @@ while ~isempty(procOpts)
             Trial = MTATrial.validate(Trial.filebase);
             xyz = Trial.load('xyz','seh');
         end
-        ss = fet_spline_spine(Trial,'3dssh',xyz);                
+        if nargout>1,
+            ss = fet_spline_spine(Trial,'3dssh',xyz);                
+        end
+        
       
       case 'SPLINE_SPINE_HEAD_EQD_NO_TRB'
 
-        if ~isempty(listFiles(Trial.name,'\.seh\.h')) && ~overwrite
+        if ~isempty(listFiles(Trial.name,'.seh.h')) && ~overwrite
             xyz = Trial.load('xyz','seh');
         else
             
@@ -143,9 +155,11 @@ while ~isempty(procOpts)
             Trial = MTATrial.validate(Trial.filebase);
             xyz = Trial.load('xyz','seh');
         end
-        ss = fet_spline_spine(Trial,'3dssh',xyz);                
+        if nargout>1,
+            ss = fet_spline_spine(Trial,'3dssh',xyz);                
+        end
        
-      case 'load_trb_xyz'
+      case 'LOAD_TRB_XYZ'
         xyz = Trial.load('xyz','trb');
     
     end

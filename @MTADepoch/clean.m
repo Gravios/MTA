@@ -18,6 +18,7 @@ if Data.sampleRate==1,
     Data.data(Data.data(:,1)<0|Data.data(:,2)<0,:) = [];
     % Drop periods which exceed the end of the sync
     Data.data(Data.data(:,1)>Data.sync.data(end)) = [];
+    if Data.isempty(), return, end    
     % Truncate periods which terminate after end of the sync
     Data.data( Data.data(:,1)<Data.sync.data(end)...
         &Data.data(:,2)>Data.sync.data(end),2)...
@@ -35,6 +36,7 @@ else
     % Drop periods which exceed the end of the sync
     Data.data(Data.data(:,1)>round(Data.sync.data(end)*Data.sampleRate)) = [];
     % Truncate periods which terminate after end of the sync
+    if Data.isempty(), return, end
     Data.data( Data.data(:,1)<round(Data.sync.data(end)*Data.sampleRate)...
         &Data.data(:,2)>round(Data.sync.data(end)*Data.sampleRate),2)...
         = round(Data.sync.data(end)*Data.sampleRate);

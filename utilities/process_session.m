@@ -7,7 +7,8 @@ rigidBodyCorrectionMode = 'MANUAL'; % ['EMGM'];
 S = get_session_list('jg04_CA1');
 S = get_session_list('jg04_CA3');
 S = get_session_list('Ed10');
-i = 2;
+S = get_session_list('rs0317');
+i = 1;
 
 if overwrite, QuickSessionSetup(S(i)); end
 s = MTASession.validate([S(i).sessionName,'.',S(i).mazeName,'.',S(i).trialName]); 

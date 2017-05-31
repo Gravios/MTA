@@ -62,7 +62,7 @@ end
 nind = nniz(tvec);
 for t = rotationAngles;
     for m = 1:numel(tmar),
-        walkFetRot(nind,t==rotationAngles,m) = nunity(dot(tvec(nind,m,:),unvec(nind,t==rotationAngles,:),3));
+        walkFetRot(nind,t==rotationAngles,m) = dot(tvec(nind,m,:),unvec(nind,t==rotationAngles,:),3);
     end
 end
 
@@ -77,7 +77,7 @@ nz = nniz(xyz);
 % svd
 bhvPeriods = Trial.stc{'w+n'};
 wfet = xyz.copy;
-wfet.data= zeros([size(xyz,1),size(walkFetRot,2)*size(walkFetRot,3)+size(zvec,2)]);
+wfet.data= zeros([size(xyz,1),size(walkFetRot,2)*size(walkFetRot,3)]);
 wfet.data(nz,:) = [reshape(walkFetRot(nz,:),[],size(walkFetRot,2)*size(walkFetRot,3)),zvec(nz,:)];
 wfs = wfet.segs([],embeddingWindow);
 wfs = circshift(wfs,embeddingWindow/2,2);

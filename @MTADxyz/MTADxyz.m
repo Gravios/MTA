@@ -39,7 +39,7 @@ classdef MTADxyz < MTAData
         function Data = MTADxyz(varargin)
             [path,filename,data,sampleRate,syncPeriods,syncOrigin,model,type,ext,name,label,key] = ...
                 DefaultArgs(varargin,{[],[],[],[],[],[],[],'TimeSeries','pos',[],'position','x'});
-            Data = Data@MTAData(path,filename,data,sampleRate,syncPeriods,syncOrigin,type,ext,name,label,key);            
+            Data = Data@MTAData(path,filename,data,sampleRate,syncPeriods,syncOrigin,type,ext,name,label,key);
             Data.model = model;
         end
 

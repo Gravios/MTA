@@ -9,6 +9,12 @@ function Session = create(Session,varargin)
 if     all(~cellfun(@isempty,regexpi(dataLoggers,{'nlx','vicon'})))
     Session = syncViconNlx(Session,TTLValue,xyzSampleRate);
 
+    %elseif     all(~cellfun(@isempty,regexpi(dataLoggers,{'openephys','optitrack','fiber'})))
+    %    Session = sync_openephys_optitrack(Session,TTLValue,xyzSampleRate);
+
+elseif     all(~cellfun(@isempty,regexpi(dataLoggers,{'openephys','optitrack'})))
+    Session = sync_openephys_optitrack_fiber(Session,TTLValue,xyzSampleRate);
+
 elseif all(~cellfun(@isempty,regexpi(dataLoggers,{'blackrock','vicon'})))
     warning(['Session creation routine does not exist ' ...
              'for Blackrock, thank you and have a nice day'])

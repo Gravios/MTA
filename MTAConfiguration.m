@@ -31,7 +31,12 @@ function MTAConfiguration(root_dir,varargin)
 %       Defined connections between markers (Not required if vsk file is
 %       present)
 % 
+
+global MTA_PROJECT_PATH % use this in the future to set root dir
+    
 [flag,project_name,host_server,data_server,overwrite] = DefaultArgs(varargin,{'','','','',true});
+
+
 
 if ispc, 
     userdir= getenv('USERPROFILE'); 
@@ -61,6 +66,16 @@ if ~exist(cfg,'dir'),
     mkdir(cfg);
 end
 
+analysisDir = fullfile(MTA_PROJECT_PATH,'analysis');
+if ~exist(analysisDir,'dir'),
+    mkdir(analysisDir);
+end
+
+analysisModelDir = fullfile(analysisDir,'models');
+if ~exist(analysisModelDir,'dir'),
+    mkdir(analysisModelDir);
+end
+
 arm = fullfile(cfg,'arm');
 if ~exist(arm,'dir')||overwrite
     copyfile(fullfile(mtap,'arm'),arm);
@@ -86,6 +101,7 @@ MTAMarkers ={'hip_right','pelvis_root','hip_left','spine_lower','knee_left',...
 %% List of the accepted mazes
 MTAMazes = {{'cof','circle',   [-500,500;-500,500;0,300],[-500,500;-500,500;0,360]},...
             {'chr','circle',   [-500,500;-500,500;0,300],[-500,500;-500,500;0,360]},...
+            {'hcf','rectangle',[-500,500;-500,500;0,300],[-500,500;-500,500;0,360]},...
             {'nor','circle',   [-500,500;-500,500;0,300],[-500,500;-500,500;0,360]},...
             {'odr','W',        [-500,500;-500,500;0,300],[-500,500;-500,500;0,360]},...
             {'cot','circle',   [-500,500;-500,500;0,300],[-500,500;-500,500;0,360]},...

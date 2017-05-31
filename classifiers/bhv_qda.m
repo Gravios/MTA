@@ -70,7 +70,7 @@ if train
         if ~isempty(sti)
             Model_Information.state_keys(i) = keys(sti);
         else
-            spare_keys = 'aqjpxothrymunslf';
+            spare_keys = 'qjpxothrymunslf';
             spare_keys = spare_keys(~ismember(spare_keys,cell2mat(keys)));
             Model_Information.state_keys(i) = spare_keys(i);
         end
