@@ -1,4 +1,4 @@
-function [fet,featureTitles,featureDesc,Nmean,Nstd] = fet_bref(Trial,varargin)
+function [fet,featureTitles,featureDesc,Nmean,Nstd] = fet_bref_red(Trial,varargin)
 % $$$ function [fet,featureTitles,featureDesc,Nmean,Nstd] = fet_mis(Trial,varargin)
 % $$$ defargs = struct('newSampleRate', 12,                       ...
 % $$$                  'normalize'    , false,                    ...
@@ -42,7 +42,7 @@ hcom = xyz.com(rb);
 xyz.addMarker('hcom',[.7,1,.7],{{'head_back','head_front',[0,0,1]}},hcom);
 clear('hcom');
 
-
+xyz.filter('ButFilter',5,3,'low');
 
 
 % Tranlational movements relative to body
@@ -75,7 +75,6 @@ end
 
 
 shft = 0;
-tmar = {'spine_lower','pelvis_root','spine_middle','spine_upper','hcom'};
 tvec = [];cvec = [];,zvec=[];
 for m = 1:numel(tmar),
     tvec(:,m,:) = circshift(xyz(:,tmar{m},[1,2]),-shft)-circshift(xyz(:,'bcom',[1,2]),shft);
@@ -106,7 +105,8 @@ end
 
 
 % CAT feature
-fet.data = [ reshape(walkFetRot,size(xyz,1),[]),zvec,reshape(dwalkFetRot,size(xyz,1),[]),dzvec ];
+fet.data = [ sq( walkFetRot(:,1,:)),sq( walkFetRot(:,2,:)),zvec,...
+             sq(dwalkFetRot(:,1,:)),sq(dwalkFetRot(:,2,:)),dzvec];
 % $$$ defSpec = struct('nFFT',2^9,'Fs',fet.sampleRate,...
 % $$$                  'WinLength',2^8,'nOverlap',2^8-4,...
 % $$$                  'FreqRange',[1,15]);

@@ -6,9 +6,9 @@ function process_openephys_mta(ephysSource,ephysDestination,subjectName,sessionN
 
 
 % $$$ subjectName = 'RS0317';
-% $$$ sessionName = 'RS0317-20170517';
+% $$$ sessionName = 'RS0317-20170612';
 % $$$ recordingTypes = {'lfp','fbr'};
-% $$$ ephysSource      = fullfile('/storage/gravio/data/raw/openephys/',subjectName,[sessionName,'-openephys']');
+% $$$ ephysSource      = '/storage/gravio/data/raw/openephys/';
 % $$$ ephysDestination = '/storage/gravio/data/processed/nlx/';
 
 sessionEphysPath = fullfile(ephysDestination,subjectName,sessionName);
@@ -16,12 +16,12 @@ sessionEphysPath = fullfile(ephysDestination,subjectName,sessionName);
 try,mkdir(sessionEphysPath);end
 processedOpenephysFilebase = fullfile(ephysDestination,subjectName,sessionName,sessionName);
 
-subSessionDir = dir(ephysSource);
+subSessionDir = dir(fullfile(ephysSource,subjectName,[sessionName,'-openephys']));
 subSessionDir(1:2) = [];
 subSessionDir(~[subSessionDir.isdir]) = [];
 copyfile(fullfile(ephysSource,subjectName,[sessionName,'-openephys'],...
                   subSessionDir(1).name,[subSessionDir(1).name,'.xml']),...
-         [ephysDestination,'.xml']);
+         [processedOpenephysFilebase,'.xml']);
 
 Par = LoadPar([ephysDestination,'.xml']);
 

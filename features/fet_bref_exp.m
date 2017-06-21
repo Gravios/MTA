@@ -1,14 +1,15 @@
-function [fet,featureTitles,featureDesc,Nmean,Nstd] = fet_bref(Trial,varargin)
+function [fet,featureTitles,featureDesc,Nmean,Nstd] = fet_bref_exp(Trial,varargin)
 % $$$ function [fet,featureTitles,featureDesc,Nmean,Nstd] = fet_mis(Trial,varargin)
 % $$$ defargs = struct('newSampleRate', 12,                       ...
 % $$$                  'normalize'    , false,                    ...
 % $$$                  'procOpts'     , {'SPLINE_SPINE_HEAD_EQD'});
 
 
+Trial = MTATrial.validate(Trial);
 
 % DEFARGS ------------------------------------------------------------------------------------------
-defargs = struct('newSampleRate', Trial.xyz.sampleRate,                 ...
-                 'normalize'    , false,                    ...
+defargs = struct('newSampleRate', Trial.xyz.sampleRate,    ...
+                 'normalize'    , false,                   ...
                  'procOpts'     , {'SPLINE_SPINE_HEAD_EQD'});
 
 [newSampleRate,normalize,procOpts] = DefaultArgs(varargin,defargs,'--struct');
@@ -103,25 +104,17 @@ end
 
 
 
+dwalkSegs = GetSegs([reshape(dwalkFetRot,size(xyz,1),[]),dzvec], ...  x
+                    1:size(dwalkFetRot),                         ...  start points
+                    round(xyz.sampleRate/2),                     ...  segments' lengths
+                    0                                            ...  If not complete
+);
 
 
 % CAT feature
-fet.data = [ reshape(walkFetRot,size(xyz,1),[]),zvec,reshape(dwalkFetRot,size(xyz,1),[]),dzvec ];
-% $$$ defSpec = struct('nFFT',2^9,'Fs',fet.sampleRate,...
-% $$$                  'WinLength',2^8,'nOverlap',2^8-4,...
-% $$$                  'FreqRange',[1,15]);
-% $$$ for s = 1:size(fet,2)
-% $$$     tfet = fet.copy;
-% $$$     tfet.data = tfet.data(:,s); 
-% $$$     [sfet{s},fs,ts] = fet_spec(Trial,tfet,'mtchglong',false,'defspec',defSpec);
-% $$$ end
-% $$$ 
-% $$$ sfet = cf(@(f) f.data,sfet);
-% $$$ fet.data = cat(2,sfet{:});
-% $$$ fet.data(:,1:2:end) = [];
-% $$$ fet.sampleRate = 1./diff(ts(1:2));
-% $$$ xyz.resample(fet);
-
+fet.data = [ reshape(walkFetRot,size(xyz,1),[]),zvec,...
+             reshape(dwalkFetRot,size(xyz,1),[]),dzvec,...
+             permute(rms(dwalkSegs),[2,3,1])];
 fet.data(~nniz(xyz),:)=0;
 
 fet.resample(newSampleRate);

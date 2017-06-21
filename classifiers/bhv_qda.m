@@ -2,48 +2,72 @@ function Stc = bhv_qda(Trial,Stc,varargin)
 [train,states,model_filename,display] = DefaultArgs(varargin,{false,[],'MTA_manual_mknsrw_QDA_model.mat',true});
 
 
-fwin = gtwin(0.75,Trial.xyz.sampleRate);
-dwin = gtwin(0.50,Trial.xyz.sampleRate);
+MODEL_TYPE = 'MTAC_QDA';
 
 
-xyz = Trial.load('xyz');
-xyz.filter(fwin);
+% If Trial is not a MTASession try loading it.
+Trial = MTATrial.validate(Trial);
 
-ang = Trial.ang.copy; 
-ang.create(Trial,xyz);
+varargout = cell([1,nargout-1]);
+
+% Default Arguments for uninitiated variables
+defArgs = struct('states',      {{'walk','rear','turn','pause','groom','sit'}},...
+                 'stcMode',     '',...
+                 'featureSet',  'fet_tsne_rev3',...
+                 'sampleRate',  12,...
+                 'model',       [],...
+                 'nNeurons',    100,...          
+                 'nIter',       100,...
+                 'randomizationMethod','',...
+                 'map2reference', false,... 
+                 'normalize',   false,...
+                 'tag',         '',...
+                 'targetState', '',...
+                 'prctTrain',   []...
+);
 
 
-xyz.addMarker('fhcom',[.7,1,.7],...
-              {{'head_back','head_front',[0,0,1]}},...
-              xyz.com(xyz.model.rb({'head_left','head_front','head_right'})));
+% LOAD the feature set
+if isa(featureSet,'MTADfet'),
+    features = featureSet.copy;
+    featureSet = features.label;
+else,
+    if ~strcmp(featureSet,'fet_all'), % For the love of God remove this!
+        features = feval(featureSet,Trial,sampleRate,false);
+    end
+end
 
-xyz.addMarker('fbcom',[.7,0,.7],...
-              {{'spine_lower','pelvis_root',[0,0,1]}},...
-              xyz.com(xyz.model.rb({'spine_lower','pelvis_root'})));
+% LOAD the hand labels
+if ~isempty(stcMode),
+    if ischar(stcMode),
+        Trial.load('stc',stcMode);
+        StcHL = Trial.stc.copy;
+    elseif isa(stcMode,'MTAStateCollection'),
+        StcHL = stcMode.copy;
+        stcMode = stcMode.mode;
+    end
+    StcHL.states = StcHL(states{:});
+    keys = cellfun(@subsref,StcHL(states{:}),repmat({substruct('.','key')},size(states)));
+end
 
 
-xyz.addMarker('fscom',[.7,0,.7],...
-              {{'spine_middle','spine_upper',[0,0,1]}},...
-              xyz.com(xyz.model.rb({'spine_middle','spine_upper'})));
+% If the model name is empty then create a composite name and 
+% toggle train to create new neural network models
+if isempty(model),
 
-
-fpv = xyz.vel({'fbcom','fscom','fhcom'},[1,2]);
-fpv.data(fpv.data<.01) = .01;
-
-fet =[];
-fet = [fet,fpv.data];
-fet = [fet,xyz(:,'fhcom',3)-xyz(:,'fbcom',3)];
-fet = [fet,ang(:,3,4,2)];
-fet = [fet,ang(:,5,7,2)];
-fet = [fet,ang(:,1,4,3)];
-fet = [fet,ang(:,1,3,3)];
-fet = [fet,ang(:,2,3,3)];
-fet = [fet,fet_turn(Trial)];
-fet = [fet,circshift(fet,round(.2*xyz.sampleRate)),circshift(fet,-round(.2*xyz.sampleRate))];
-
-fet = MTADxyz('data',fet,'sampleRate',Trial.xyz.sampleRate);
-fet.data(fet.data==0) = nan;
-fet_not_nan = prod(~isnan(fet.data),2)==1;
+    if ~isempty(prctTrain), prctTrainTag = ['_PRT_',prctTrain]; else, prctTrainTag = ''; end
+    
+    model = ['MTAC_BATCH-' tag targetState featureSet ...
+             '_SR_'  num2str(sampleRate)              ...
+             '_NORM_' num2str(normalize)              ...             
+             '_REF_' Trial.filebase                   ...
+             '_STC_' stcMode                          ...
+             '_NN_'  num2str(nNeurons)                ...
+             '_NI_'  num2str(nIter)                   ...
+             prctTrainTag                             ...
+             '_' MODEL_TYPE];
+    train = true;
+end
 
 
 

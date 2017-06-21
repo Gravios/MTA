@@ -26,54 +26,50 @@ xyz    = cf(@(Trial) Trial.load('xyz')         , Trials);
 % RESAMPLE to common sampleRate
 cf(@(x,s) x.resample(s),xyz,sampleRate);
 
-fet    = cf(@(Trial) fet_bref(Trial), Trials);
-cf(@(f,t) f.map_to_reference_session(t,'jg05-20120317.cof.all'),fet,Trials);
-for s = 1:numSessions, fet{s}.data(:,1:15) = []; end    
+% ADD virtual markers for body
+rb    = cf(@(x)   x.model.rb({'spine_lower','pelvis_root','spine_middle'}), xyz);
+bcom  = cf(@(x,r) x.com(r), xyz,rb);
+cf(@(x,b) x.addMarker('fbcom','data',ButFilter(b,4,[0.5]./(x.sampleRate/2),'low')),xyz,bcom);
+cf(@(x,b) x.addMarker('bcom','data',b), xyz,bcom);
+cf(@(x,b) x.addMarker('fsl','data',ButFilter(x(:,'spine_lower',:),4,[0.5]./(x.sampleRate/2),'low')),xyz,bcom);
+clear('bcom');
+% ADD virtual markers for head
+rb    = cf(@(x)   x.model.rb({'head_back','head_left','head_front','head_right'}),xyz);
+hcom  = cf(@(x,r) x.com(r),xyz,rb);
+cf(@(x,h) x.addMarker('fhcom','data',ButFilter(h,4,[0.8]./(x.sampleRate/2),'low')),xyz,hcom);
+cf(@(x,h) x.addMarker('hcom','data',h), xyz,hcom);
+clear('hcom');
 
-% $$$ % ADD virtual markers for body
-% $$$ rb    = cf(@(x)   x.model.rb({'spine_lower','pelvis_root','spine_middle'}), xyz);
-% $$$ bcom  = cf(@(x,r) x.com(r), xyz,rb);
-% $$$ cf(@(x,b) x.addMarker('fbcom','data',ButFilter(b,4,[0.5]./(x.sampleRate/2),'low')),xyz,bcom);
-% $$$ cf(@(x,b) x.addMarker('bcom','data',b), xyz,bcom);
-% $$$ cf(@(x,b) x.addMarker('fsl','data',ButFilter(x(:,'spine_lower',:),4,[0.5]./(x.sampleRate/2),'low')),xyz,bcom);
-% $$$ clear('bcom');
-% $$$ % ADD virtual markers for head
-% $$$ rb    = cf(@(x)   x.model.rb({'head_back','head_left','head_front','head_right'}),xyz);
-% $$$ hcom  = cf(@(x,r) x.com(r),xyz,rb);
-% $$$ cf(@(x,h) x.addMarker('fhcom','data',ButFilter(h,4,[0.8]./(x.sampleRate/2),'low')),xyz,hcom);
-% $$$ cf(@(x,h) x.addMarker('hcom','data',h), xyz,hcom);
-% $$$ clear('hcom');
-% $$$ 
-% $$$ 
-% $$$ % COMPUTE Features ------------------------------------------------------------------------------
-% $$$ % @walkFetRot
-% $$$ % NORM body vector projection
-% $$$ tmar = repmat({{'spine_lower','pelvis_root','spine_middle','spine_upper','hcom'}},1,numSessions);
-% $$$ tvec = cf(@(x,m,t) repmat(circshift(x(:,m,[1,2]),-(round(x.sampleRate*0.05)/2))...
-% $$$                           -circshift(x(:,m,[1,2]), (round(x.sampleRate*0.05)/2)),...
-% $$$                           [1,1,1,numel(rotationAngles{1})]),...
-% $$$           xyz,tmar,rotationAngles);
-% $$$ % BODY vector
-% $$$ bodyUnitVector = cf(@(x)  repmat(x(:,'fbcom',[1,2])-x(:,'fsl',[1,2]),1,1,1,4),xyz);
-% $$$ %bodyUnitVector = cf(@(x)  repmat(x(:,'spine_upper',[1,2])-x(:,'spine_lower',[1,2]),1,1,1,4),xyz);
-% $$$ rotMat = cf(@(t,m) reshape(repmat(permute([cos(t),-sin(t);...
-% $$$                                            sin(t),cos(t)],...
-% $$$                                           [3,1,2]),...
-% $$$                                   [size(m,1),1,1]),...
-% $$$                            size(m,1),2,2,numel(t)),rotationAngles,bodyUnitVector);
-% $$$ unvec  = cf(@(m,r,t) repmat(bsxfun(@rdivide,multiprod(m,r,[2,3],[2,3]),sqrt(sum(m.^2,3))),...
-% $$$                             [1,numel(t),1,1]),bodyUnitVector,rotMat,tmar);
-% $$$ % BODY oriented trajectory translation vector
-% $$$ walkFetRot = cf(@(t,u)  sq(dot(t,u,3)),tvec,unvec);
-% $$$ 
-% $$$ wfrCat = cat(1,walkFetRot{:});
-% $$$ wfrMean = nanmean(wfrCat(nniz(wfrCat),:,:));
-% $$$ wfrStd = nanstd(wfrCat(nniz(wfrCat),:,:));
-% $$$ walkFetRot = cf(@(w,m,s) nunity(w,[],m,s),...
-% $$$                 walkFetRot,...
-% $$$                 repmat({wfrMean},1,numSessions),...
-% $$$                 repmat({wfrStd},1,numSessions));
-% $$$ clear('wfrCat','wfrMean','wfrStd')
+
+% COMPUTE Features ------------------------------------------------------------------------------
+% @walkFetRot
+% NORM body vector projection
+tmar = repmat({{'spine_lower','pelvis_root','spine_middle','spine_upper','hcom'}},1,numSessions);
+tvec = cf(@(x,m,t) repmat(circshift(x(:,m,[1,2]),-(round(x.sampleRate*0.05)/2))...
+                          -circshift(x(:,m,[1,2]), (round(x.sampleRate*0.05)/2)),...
+                          [1,1,1,numel(rotationAngles{1})]),...
+          xyz,tmar,rotationAngles);
+% BODY vector
+bodyUnitVector = cf(@(x)  repmat(x(:,'fbcom',[1,2])-x(:,'fsl',[1,2]),1,1,1,4),xyz);
+%bodyUnitVector = cf(@(x)  repmat(x(:,'spine_upper',[1,2])-x(:,'spine_lower',[1,2]),1,1,1,4),xyz);
+rotMat = cf(@(t,m) reshape(repmat(permute([cos(t),-sin(t);...
+                                           sin(t),cos(t)],...
+                                          [3,1,2]),...
+                                  [size(m,1),1,1]),...
+                           size(m,1),2,2,numel(t)),rotationAngles,bodyUnitVector);
+unvec  = cf(@(m,r,t) repmat(bsxfun(@rdivide,multiprod(m,r,[2,3],[2,3]),sqrt(sum(m.^2,3))),...
+                            [1,numel(t),1,1]),bodyUnitVector,rotMat,tmar);
+% BODY oriented trajectory translation vector
+walkFetRot = cf(@(t,u)  sq(dot(t,u,3)),tvec,unvec);
+
+wfrCat = cat(1,walkFetRot{:});
+wfrMean = nanmean(wfrCat(nniz(wfrCat),:,:));
+wfrStd = nanstd(wfrCat(nniz(wfrCat),:,:));
+walkFetRot = cf(@(w,m,s) nunity(w,[],m,s),...
+                walkFetRot,...
+                repmat({wfrMean},1,numSessions),...
+                repmat({wfrStd},1,numSessions));
+clear('wfrCat','wfrMean','wfrStd')
 
 
 
@@ -81,37 +77,28 @@ for s = 1:numSessions, fet{s}.data(:,1:15) = []; end
 % @wfs
 % EMBED wfet 
 wfet = cf(@(x) x.copy('empty'), xyz);
-cf(@(w,z) set(w,'data',z.data),wfet,fet);
+cf(@(w,wfr) set(w,'data',[reshape(wfr,[],size(wfr,2)*size(wfr,3))]),wfet,walkFetRot);
 wfs  = cf(@(w,e) w.segs([],e),wfet,embeddingWindow);
 wfs =  cf(@(w,e) circshift(w,e/2,2),wfs,embeddingWindow);
 wfs =  cf(@(w,x) MTADxyz('data',reshape(permute(w,[2,1,3]),size(w,2),[]),...
               'sampleRate',x.sampleRate),wfs,xyz);
 for i = 1:numel(wfs), wfs{i}.data(isnan(wfs{i}.data(:)))=0; end
 
-% $$$ wfet = cf(@(x) x.copy('empty'), xyz);
-% $$$ cf(@(w,wfr) set(w,'data',[reshape(wfr,[],size(wfr,2)*size(wfr,3))]),wfet,walkFetRot);
-% $$$ wfs  = cf(@(w,e) w.segs([],e),wfet,embeddingWindow);
-% $$$ wfs =  cf(@(w,e) circshift(w,e/2,2),wfs,embeddingWindow);
-% $$$ wfs =  cf(@(w,x) MTADxyz('data',reshape(permute(w,[2,1,3]),size(w,2),[]),...
-% $$$               'sampleRate',x.sampleRate),wfs,xyz);
-% $$$ for i = 1:numel(wfs), wfs{i}.data(isnan(wfs{i}.data(:)))=0; end
-
 % DECOMPOSE wfet with svd for walk and turn periods for each session
-[~,Sw,Vw] = cf(@(w,s) svd(w([s{'w+n'}]+[0,-0.25],:),0), wfs, Stc);
+[~,Sw,Vw] = cf(@(w,s) svd(w([s{'m'}]+[0,-0.25],:),0), wfs, Stc);
 
 % DECOMPOSE wfet with svd for walk and turn periods within all sessions
-wfw = cf(@(w,s) w([s{'w+n'}]+[0,-0.25],:), wfs, Stc);
+wfw = cf(@(w,s) w([s{'m'}]+[0,-0.25],:), wfs, Stc);
 [~,Sww,Vww] = svd(cat(1,wfw{:}),0);
 
-
 % COMPUTE eigenvector loadings for each session's eigen vectors
-afetW = cf(@(w,v) MTADxyz('data',multiprod(w.data,v(:,1:20)),...
+afetW = cf(@(w,v) MTADxyz('data',multiprod(w.data,v(:,1:10)),...
                           'sampleRate',w.sampleRate),...
            wfs,repmat({Vww},1,numSessions));
 cf(@(f,x) set(f,'sync',x.sync.copy), afetW, xyz); cf(@(f,x) set(f,'origin',x.origin), afetW, xyz);
 
 % COMPUTE eigenvector loadings for each session's eigen vectors
-fetW = cf(@(w,v) MTADxyz('data',multiprod(w.data,v(:,1:20)),'sampleRate',w.sampleRate),wfs,Vw);
+fetW = cf(@(w,v) MTADxyz('data',multiprod(w.data,v(:,1:10)),'sampleRate',w.sampleRate),wfs,Vw);
 cf(@(f,x) set(f,'sync',x.sync.copy), fetW, xyz); cf(@(f,x) set(f,'origin',x.origin), fetW, xyz);
 
 % CREATE mask for eigenvectors for each session's eigen vectors
@@ -121,14 +108,14 @@ maskEigVec = repmat({maskEigVec},1,numSessions);
 rVw = cf(@(v,m) v.*m,Vw,maskEigVec);
 
 % REDUCED eigenvector loadings for  each session's eigen vectors
-rfetW = cf(@(w,v) MTADxyz('data',multiprod(w.data,v(:,1:20)),'sampleRate',w.sampleRate),wfs,rVw);
+rfetW = cf(@(w,v) MTADxyz('data',multiprod(w.data,v(:,1:10)),'sampleRate',w.sampleRate),wfs,rVw);
 cf(@(r,x) set(r,'sync',x.sync.copy), rfetW, xyz); cf(@(r,x) set(r,'origin',x.origin), rfetW, xyz);
 
 
 % COMPUTE features with reference session ----------------------------------------------------------
 referenceSessionIndex = 1;
 % REFERENCED compute eigenvector loadings
-fetWsvd = cf(@(w,v) MTADxyz('data',multiprod(w.data,v(:,1:20),[1,2],[1,2]),...
+fetWsvd = cf(@(w,v) MTADxyz('data',multiprod(w.data,v(:,1:10),[1,2],[1,2]),...
                             'sampleRate',w.sampleRate),...
              wfs,...
              repmat(rVw(referenceSessionIndex),1,numSessions));
@@ -139,7 +126,7 @@ cf(@(f,x) set(f,'sync',x.sync.copy),fetWsvdPhase,xyz); cf(@(f,x) set(f,'origin',
 
 % @rfetWsvd
 % REFERENCED reduced eigenvector loadings
-rfetWsvd = cf(@(w,v) MTADxyz('data',multiprod(w.data,v(:,1:20),[1,2],[1,2]),...
+rfetWsvd = cf(@(w,v) MTADxyz('data',multiprod(w.data,v(:,1:10),[1,2],[1,2]),...
                             'sampleRate',w.sampleRate),...
               wfs,...
               repmat(rVw(referenceSessionIndex),1,numSessions));
@@ -154,8 +141,8 @@ cf(@(f,x) set(f,'origin',x.origin) ,rfetWsvdPhase,xyz);
 wts = cf(@(e,s)  [1:e]./s,                        embeddingWindow,sampleRate);
 ts =  cf(@(x)    [1:size(x,1)]./x.sampleRate,     xyz);
 
-% $$$ % @ang
-% $$$ % COMPUTE  intermarker angles 
+% @ang
+% COMPUTE  intermarker angles 
 ang = cf(@(t,x) create(MTADang,t,x), Trials, xyz);
 for s = 1:numSessions, ang{s}.data(~nniz(xyz{s}),:,:,:) = 0;end
 
@@ -174,22 +161,30 @@ hfig = figure;
 hfig.Units = 'centimeters';
 hfig.Position(3:4) = [30,4];
 hfig.PaperPositionMode = 'auto';
-for i = 1:40,
-    pc = -reshape(Vww(:,i),[],size(wfet{1},2));
-    pc(:,[1:10]) = pc(:,[1:2:9,2:2:10]);    
-    %pc(:,[1:10]) = pc(:,[1:2:9,2:2:10]);
-    subplot(4,10,i);imagesc(wts{1},1:size(wfet{1},2),pc'),
+for i = 1:20,
+    subplot(2,10,i);imagesc(wts{1},1:size(wfet{1},2),reshape(Vww(:,i),[],size(wfet{1},2))'),
     caxis([-0.08,0.08]);
     axis xy
 end
 
-TrialName = [sessionList(s).sessionName,'.',sessionList(s).mazeName,'.',sessionList(s).trialName];
-FigName = ['SVD_walkturn_',TrialName];
-print(gcf,'-depsc2',fullfile(OwnDir,FigDir,[FigName,'.eps']));
-print(gcf,'-dpng',  fullfile(OwnDir,FigDir,[FigName,'.png']));
+% $$$ TrialName = [sessionList(s).sessionName,'.',sessionList(s).mazeName,'.',sessionList(s).trialName];
+% $$$ FigName = ['SVD_walkturn_',TrialName];
+% $$$ print(gcf,'-depsc2',fullfile(OwnDir,FigDir,[FigName,'.eps']));
+% $$$ print(gcf,'-dpng',  fullfile(OwnDir,FigDir,[FigName,'.png']));
 
-
-
+% $$$ 
+% $$$ % DISPLAY eigen vectors for specific session
+% $$$ % D svd
+% $$$ hfig = figure;
+% $$$ hfig.Units = 'centimeters';
+% $$$ hfig.Position(3:4) = [30,4];
+% $$$ hfig.PaperPositionMode = 'auto';
+% $$$ for i = 1:10,
+% $$$     subplot(1,10,i);imagesc(wts{s},1:size(wfet{s},2),reshape(Vw{s}(:,i),[],size(wfet{s},2))'),
+% $$$     caxis([-0.08,0.08]);
+% $$$     axis xy
+% $$$ end
+% $$$ 
 TrialName = [sessionList(s).sessionName,'.',sessionList(s).mazeName,'.',sessionList(s).trialName];
 FigName = ['SVD_walkturn_',TrialName];
 print(gcf,'-depsc2',fullfile(OwnDir,FigDir,[FigName,'.eps']));
@@ -207,21 +202,16 @@ hfig.PaperPositionMode = 'auto';
 sp = [];
 sp(end+1)=subplot2(10,4,[1:8],[2:4]);
 hold on;
-plot(ts{s},fet{s}(:,1).*5+260,'LineWidth',1); % spine sway 'spine_lower'
-plot(ts{s},fet{s}(:,2).*5+270,'LineWidth',1); % spine sway 'pelvis_root'
-plot(ts{s},fet{s}(:,3).*5+280,'LineWidth',1); % spine sway 'spine_middle'
-plot(ts{s},fet{s}(:,4).*5+290,'LineWidth',1); % spine sway 'spine_upper'
-plot(ts{s},afetW{s}(:,1),'r','LineWidth',1);           % Walk comp
-plot(ts{s},afetW{s}(:,2),'b','LineWidth',1);           % Walk comp
-plot(ts{s},afetW{s}(:,3),'g','LineWidth',1);           % Walk comp
-%plot(ts{s},sum(afetW{s}(:,[2:6,9:12]),2),'c','LineWidth',1);           % Turn comp
-%plot(ts{s},ButFilter(sum(afetW{s}(:,[2:6,9:12]),2),3,[1,6]./[sampleRate{s}/2],'bandpass'),'m','LineWidth',1);
-% $$$ plot(ts{s},afetW{s}(:,9),'r','LineWidth',1);           % Turn comp
-% $$$ plot(ts{s},afetW{s}(:,11),'m','LineWidth',1);           % Turn comp
-%plot(ts{s},ButFilter(fet{s}(:,2:2:8)*10,3,[1,6]./[sampleRate{s}/2],'bandpass'),'k')
-%plot(ts{s},mean(ButFilter(fet{s}(:,2:2:8)*10,3,[1,6]./[sampleRate{s}/2],'bandpass'),2),'r')
-%legend({'spine lower','pelvis root','spine middle','spine upper','PC1','PC2','PC3','PC4','PC5'})
-legend({'F1','F2','F3','F4','PC1','PC2','PC3'})
+% $$$ plot(ts{s},walkFetRot{s}(:,3,1).*5+60,'LineWidth',1); % spine sway 'spine_lower'
+% $$$ plot(ts{s},walkFetRot{s}(:,3,2).*5+70,'LineWidth',1); % spine sway 'pelvis_root'
+% $$$ plot(ts{s},walkFetRot{s}(:,3,3).*5+80,'LineWidth',1); % spine sway 'spine_middle'
+% $$$ plot(ts{s},walkFetRot{s}(:,3,4).*5+90,'LineWidth',1); % spine sway 'spine_upper'
+plot(ts{s},fetW{s}(:,1),'b','LineWidth',1);           % Walk comp
+plot(ts{s},fetW{s}(:,2),'r','LineWidth',1);           % Walk comp
+plot(ts{s},fetW{s}(:,3),'y','LineWidth',1);           % Turn comp
+plot(ts{s},fetW{s}(:,4),'g','LineWidth',1);           % Turn comp
+% $$$ plot(ts{s},fetW{s}(:,5),'m','LineWidth',1);           % Turn comp
+legend({'spine lower','pelvis root','spine middle','spine upper','PC1','PC2','PC3','PC4','PC5'})
 Lines([],0,'k');
 Lines([],5,'r');
 Lines([],-5,'r');
@@ -230,16 +220,16 @@ plotSTC(Stc{s},1,'text',states,sclr,[],false);
 linkaxes(sp,'x');
 for i = 2:2:10,
     sp(end+1)=subplot2(10,4,i-1:i,1);
-    imagesc(wts{s},1:size(fet{s},2),reshape(Vww{s}(:,i/2),[],size(fet{s},2))');
+    imagesc(wts{s},1:size(wfet{s},2),reshape(Vw{s}(:,i/2),[],size(wfet{s},2))');
     axis xy;
     caxis([-0.08,0.08]);
     ylabel(['PC',num2str(i/2)])
 end
 
-TrialName = [sessionList(s).sessionName,'.',sessionList(s).mazeName,'.',sessionList(s).trialName];
-FigName = ['SVD_walkturn_timeseries_',TrialName];
-print(hfig,'-depsc2',fullfile(OwnDir,FigDir,[FigName,'.eps']));
-print(hfig,'-dpng',  fullfile(OwnDir,FigDir,[FigName,'.png']));
+% $$$ TrialName = [sessionList(s).sessionName,'.',sessionList(s).mazeName,'.',sessionList(s).trialName];
+% $$$ FigName = ['SVD_walkturn_timeseries_',TrialName];
+% $$$ print(hfig,'-depsc2',fullfile(OwnDir,FigDir,[FigName,'.eps']));
+% $$$ print(hfig,'-dpng',  fullfile(OwnDir,FigDir,[FigName,'.png']));
 % $$$ 
 % $$$ 
 % $$$ 
@@ -981,70 +971,3 @@ figure,plot(xlag/120,x);
 
 
 
-sp = []
-s = 1;
-figure,
-sp(end+1)=subplot2(10,4,[1:8],[1:4]);hold on
-plot(ts{s},circ_dist(circshift(ang{s}(:,1,4,1),10),circshift(ang{s}(:,1,4,1),-10)))
-plot(ts{s},circ_dist(circshift(ang{s}(:,5,7,1),10),circshift(ang{s}(:,5,7,1),-10)))
-sp(end+1)=subplot2(10,4,[9,10],[1:4]);
-plotSTC(Stc{s},1,'text',states,sclr,[],false);
-linkaxes(sp,'x');
-
-
-
-sclr = 'brgcmy';
-figure
-for f = 1:15,%size(fet,2),
-    subplot(3,5,f);hold on
-    eds = linspace([repmat(nanmean(fet{1}(Stc{1}{'a'},f)),[1,2])+...
-                    repmat(nanstd(fet{1}(Stc{1}{'a'},f)),[1,2]).*[-10,10],300]);
-    for s = 1:numSessions,
-        hax = bar(eds,histc(fet{s}(Stc{s}{'m'},f),eds),'histc');
-        hax.FaceColor = sclr(s);
-        hax.EdgeColor = sclr(s);
-        hax.FaceAlpha = 0.4;
-        hax.EdgeAlpha = 0.4;
-    end
-    axis tight
-end
-
-
-
-
-fet    = cf(@(Trial) fet_bref(Trial), Trials);
-mfet = cf(@(a) a.copy(), fet);
-cf(@(f,t) f.map_to_reference_session(t,'jg05-20120317.cof.all'),mfet,Trials);
-
-
-figure,
-x = 16;
-y = 5;
-edx = linspace(-30,30,100);
-edy = linspace(-300,300,100);
-stsk = 'amrwnps'
-for s = 1:6,
-    p = 1;
-    for sts = stsk
-        sp(s,p,1) = subplot2(6,7,s,p);
-        ind = Stc{s}{sts};
-        hist2([fet{s}(ind,x),fet{s}(ind,y)],edx,edy);
-        title(ind.label)
-        p=p+1;
-    end
-end
-ForAllSubplots('caxis([0,100]),grid on')
-
-figure,
-for s = 1:6,
-    p = 1;
-    for sts = stsk
-        sp(s,p,2) = subplot2(6,7,s,p);
-        ind = Stc{s}{sts};
-        hist2([mfet{s}(ind,x),mfet{s}(ind,y)],edx,edy);
-        title(ind.label)
-        p=p+1;
-    end
-end
-linkaxes(sp(:),'x');
-ForAllSubplots('caxis([0,100]),grid on')

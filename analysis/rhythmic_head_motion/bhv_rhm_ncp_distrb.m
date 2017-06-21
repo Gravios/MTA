@@ -16,24 +16,30 @@ function [figH] = bhv_rhm_ncp_distrb(Trial,varargin)
 
 Trial = MTATrial.validate(Trial);
 
-[mode,ncp_thresh,ncp_chan,stcMode,p] = DefaultArgs(varargin,{{,'hangle','bspeed','hspeed','NCPpow','RHMpow'},[],2,'auto_wbhr',8});
+[mode,ncp_thresh,ncp_chan,stcMode,p] = DefaultArgs(varargin,{{,'hangle','bhangle','bspeed','hspeed','NCPpow','RHMpow'},[],2,'auto_wbhr',8});
 
 %sigXOpts = 
 %sigYOpts = 
 
+xyz = Trial.load('xyz').filter('ButFilter',3,2.4,'low');
 
 disp(['bhv_rhm_ncp_distrb: ' Trial.filebase])
 %% Select behavioral state collection
 Trial.stc.updateMode(stcMode);
 Trial.stc.load;
 
+
 %% Load Rythmic Head Motion(RHM) feature
 %rhm = fet_rhm_exp(Trial);
-rhm = fet_rbm(Trial);
+%rhm = fet_rbm(Trial);
 %rhm = fet_rhm(Trial);
+rhm = fet_rhmPCA(Trial);
+rhm.resample(xyz);
+rhm.data(~nniz(rhm.data(:))) = 1;
 
 %% Load Nasal Cavity Pressure(NCP) feature
 ncp = fet_ncp(Trial,rhm,'mta',ncp_chan);
+
 
 %% Whiten RHM and NCP for spectral comparison (PSD&CSD)
 % $$$ wang = [rhm.data,ncp.data];
@@ -52,8 +58,6 @@ sparm = struct('nFFT'     ,2^(p),...
 
 
 %% Get smoothed speed of the Body
-xyz = Trial.load('xyz').filter('ButFilter',3,2.4,'low');
-
 vh = xyz.vel({'spine_lower','head_front'},[1,2]);
 vh.resample(ys);
 vh.data = log10(abs(vh.data));
@@ -81,8 +85,8 @@ for s = 1;%:numel(Trial.stc.states)
 
     clf;
     %sind = Trial.stc.states{s}.copy;
-    sind = Trial.stc{'a-m'};%+[1,-1];
-    %sind = Trial.stc{'w'};%+[1,-1];
+    %sind = Trial.stc{'a-m-s'};%+[1,-1];
+    sind = Trial.stc{'w+n'};%+[1,-1];
     %sind = Trial.stc{'w+q'}+[1,-1];
     %sind.resample(ys);
 
@@ -110,6 +114,16 @@ for s = 1;%:numel(Trial.stc.states)
             ang = Trial.ang.copy;
             ang = ang.create(Trial,xyz);
             ind = nniz(ang(sind,'spine_lower','spine_upper',2));
+            %ind = ncp_maxpow(sind)>ncp_thresh&ind;
+            vhs = ang(sind,'spine_lower','spine_upper',2);
+            vhs = vhs(ind);
+            vhlim = [-1.5, 1.5];
+            vh_label = 'Body Pitch';
+            vh_units = 'rad';
+          case 'bhangle'
+            ang = Trial.ang.copy;
+            ang = ang.create(Trial,xyz);
+            ind = nniz(ang(sind,'spine_upper','head_front',2));
             %ind = ncp_maxpow(sind)>ncp_thresh&ind;
             vhs = ang(sind,'spine_lower','spine_upper',2);
             vhs = vhs(ind);

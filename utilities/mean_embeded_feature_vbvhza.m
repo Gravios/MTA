@@ -1,4 +1,4 @@
-function [mz,vz,cz,czDom] = mean_embeded_feature_vbvhzbzh(Data,Trial,varargin)
+function [mz,vz,cz,czDom] = mean_embeded_feature_vbvhza(Data,Trial,varargin)
 
 % DEFARGS ------------------------------------------------------------------------------------------
 [dims,featureDomainBoundaries,verbose] = DefaultArgs(varargin,{[],[],false},true);
@@ -22,8 +22,8 @@ vxy.data = log10(vxy.data);
 % Get the bin index for each marginal distribution
 [~,ind_v_b] = histc(vxy(:,'bcom'),VEL_HISTOGRAM_BOUNDARIES);
 [~,ind_v_h] = histc(vxy(:,'hcom'),VEL_HISTOGRAM_BOUNDARIES);
-[~,ind_z_b] = histc(xyz(:,'bcom',3),HEIGHT_HISTOGRAM_BOUNDARIES);
-[~,ind_z_h] = histc(xyz(:,'hcom',3),HEIGHT_HISTOGRAM_BOUNDARIES);
+[~,ind_z_a] = histc(xyz(:,'acom',3),HEIGHT_HISTOGRAM_BOUNDARIES);
+
 
 % SELECT only non-zero points whithout rearing and grooming
 if ~isempty(regexpi(Trial.stc.mode,'^hand_labeled.*')),
@@ -41,8 +41,8 @@ else
     ind.data = ind.data&bang>.8;
 end
 
-mind = nniz([ind_v_b,ind_v_h,ind_z_b,ind_z_h])&ind.data==1;
-manifoldIndex = [ind_v_b(mind),ind_v_h(mind),ind_z_b(mind),ind_z_h(mind)];
+mind = nniz([ind_v_b,ind_v_h,ind_z_a])&ind.data==1;
+manifoldIndex = [ind_v_b(mind),ind_v_h(mind),ind_z_a(mind)];
 
 mz = cell([1,Data.size(2)]);
 vz = cell([1,Data.size(2)]);

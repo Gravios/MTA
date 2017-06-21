@@ -138,6 +138,25 @@ classdef MTADfet < MTAData
     
     methods (Static)
         function Data = encapsulate(Trial,data,sampleRate,name,label,key)
+        %function Data = encapsulate(Trial,data,sampleRate,name,label,key)
+        %
+        %  Argin:
+        %    
+        %    Trial: MTASession/MTATrial, motion tracking session or trial object
+        %
+        %    data:  Numeric,             feature data NxD 
+        %                                N := number of samples
+        %                                D := number of features
+        %
+        %    sampleRate: Numeric,        final sampleRate of output 
+        %
+        %    name:  String,              Name of the feature set
+        %
+        %    label: String,              Label/Tag for reference. (short and descriptive)
+        %
+        %    key:   Char,                Single character for keyboard shortcuts
+        %
+        %
             Data = MTADfet(Trial.spath,...
                            [],...
                            data,...

@@ -97,17 +97,21 @@ for f = 1:cfet{1}.size(2),
     hfig = figure;
     hold('on');
     eds = linspace(-4,4,100);
-    for s = 1:numel(cfet),
-        hs = bar(eds,histc(cfet{s}(:,f),eds),'histc');
-        hs.FaceColor = c(cind,:);    
-        hs.FaceAlpha = .3;
-        cind = cind+1;
+    for s = 1:numel(cfet),    
+        subplot(numel(sesList),1,s);
+        bar(eds,histc(cfet{s}(:,f),eds),'histc');
+        xlim([-pi/2,pi/2]);
     end
-    legend(snames{:});
+% $$$         hs = bar(eds,histc(cfet{s}(:,f),eds),'histc');
+% $$$         hs.FaceColor = c(cind,:);    
+% $$$         hs.FaceAlpha = .3;
+% $$$         cind = cind+1;
+% $$$     end
+% $$$     legend(snames{:});
     pause(.3)
     reportfig(fullfile(getenv('PROJECT'),'figures'), hfig, [featureName '-' state], 'features', false,sList, ...
               ['feature: ',num2str(f),' - ' fetd{f}],[],false,'png');
-    close(hfig)           
+    %close(hfig)           
 end
 
 

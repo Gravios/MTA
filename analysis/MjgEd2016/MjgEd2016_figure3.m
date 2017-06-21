@@ -6,6 +6,15 @@
 % __________________________________________________________________|
 
 
+% FIG3FETMAT ---------------------------------------------------------------------------
+% parent: figure 3
+% subplots:
+%    subplot 1: Selected timeperiod of feature matrix
+%    subplot 2: Corresponds to subplot 1, contains state labels
+% location: MjgEd2016_figure3_svd_walk_alt.m
+%
+
+
 
 
 % Figure Settings ----------------------------------------------------------------------

@@ -13,7 +13,7 @@ end
 
 tempFet = features.copy;
 features.resample(Trial.xyz.sampleRate);
-
+minimumOccupancy = 1; % seconds
 
 if ~strcmp(features.label,'fet_all'), % Sorry this exists ...
     rfet = feval(features.label,RefTrial,features.sampleRate);
@@ -31,6 +31,11 @@ switch features.label
     diffFun   = repmat({@minus},1,numel(fetInds));
 
   case 'fet_bref'
+    fetInds   = [1:15];
+% $$$     stdThresh = repmat({30},1,10);
+% $$$     kurThresh = repmat({20},1,10);
+    diffFun   = repmat({@minus},1,15);
+  case 'fet_bref_exp'
     fetInds   = [1:15];
 % $$$     stdThresh = repmat({30},1,10);
 % $$$     kurThresh = repmat({20},1,10);
@@ -172,8 +177,11 @@ end
 % -----
 %[tarMean,tarStd,tarKur] = mean_embeded_feature_vbvh(features,   Trial,fetInds,[],verbose);
 %[refMean,refStd,refKur] = mean_embeded_feature_vbvh(rfet,    RefTrial,fetInds,[],verbose);
-[tarMean,tarStd,tarKur] = mean_embeded_feature_vbvhzbzh(features,   Trial,fetInds,[],verbose);
-[refMean,refStd,refKur] = mean_embeded_feature_vbvhzbzh(rfet,    RefTrial,fetInds,[],verbose);
+%[tarMean,tarStd,tarKur,tarCnt] = mean_embeded_feature_vbvhzbzh(features,   Trial,fetInds,[],verbose);
+%[refMean,refStd,refKur,refCnt] = mean_embeded_feature_vbvhzbzh(rfet,    RefTrial,fetInds,[],verbose);
+[tarMean,tarStd,tarKur,tarCnt] = mean_embeded_feature_vbvhza(features,   Trial,fetInds,[],verbose);
+[refMean,refStd,refKur,refCnt] = mean_embeded_feature_vbvhza(rfet,    RefTrial,fetInds,[],verbose);
+
 
 
 if normEachSyncEpoch,
@@ -188,7 +196,9 @@ end
 
 for ind = inSync,
     for f = fetInds;
-        nnz = nniz([tarMean{f}(:),refMean{f}(:)]);%,...
+        nnz = nniz([tarMean{f}(:),refMean{f}(:)])&...
+              tarCnt{f}(:)>minimumOccupancy*features.sampleRate&...
+              refCnt{f}(:)>minimumOccupancy*features.sampleRate;%,...
 % $$$               & tarStd{f}(:)<stdThresh{f==fetInds}...
 % $$$               & refStd{f}(:)<stdThresh{f==fetInds}...
 % $$$               & tarKur{f}(:)<kurThresh{f==fetInds}...

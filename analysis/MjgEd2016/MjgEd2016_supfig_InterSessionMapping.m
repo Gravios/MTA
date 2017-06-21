@@ -12,6 +12,10 @@ dbstop at 166 in map_to_reference_session.m
 
 
 %distributions_features
+distributions_features('featureSet','fet_head_pitch','state','gper');
+distributions_features('featureSet','fet_head_pitch','state','walk','mapToReference' , true);
+distributions_features('featureSet','fet_head_pitch','state', 'gper',...
+                       'normalize',false, 'mapToReference' , true);
 distributions_features('featureSet','fet_bref','state','walk');
 % FIRST dbstop within map_to_reference_session.m
 global bTar;
@@ -21,7 +25,7 @@ global binnedFeatureHistTar;
 global binnedFeatureHistRef;
 
 
-f = 2;
+f = 1;
 isCirc = false;
 vbins = linspace(-3,2,100);
 
@@ -36,7 +40,7 @@ set(hfig,'Position',[0,0,18,16])
 % MEAN Target
 axes('Units','centimeters',...
      'Position',[2,6,3,3]);
-imagesc(vbins,vbins,tarMean{f}');
+imagesc(vbins,vbins,tarMean{f}(:,:,10,10)');
 axis xy
 colormap jet
 caxis(clm)
@@ -79,7 +83,7 @@ set(hcb,'Position',[9.5,2,0.5,3]);
 title('std height reference');
 xlabel({'body speed','log10(cm/s)'});
 
-f = 4;
+f = 1;
 inSync = [1;features.size(1)];
 % $$$ nnz = nniz([tarMean{f}(:),refMean{f}(:)])...
 % $$$       & tarKur{f}(:)<stdThresh{f==fetInds}...
@@ -92,7 +96,8 @@ inSync = [1;features.size(1)];
 %nnz = nniz([tarMean{f}(:),refMean{f}(:)]) & tarKur{f}(:)<5 & refKur{f}(:)<5& tarStd{f}(:)<.5 & refStd{f}(:)<.5;
 nnz = nniz([tarMean{f}(:),refMean{f}(:)]) & tarStd{f}(:)<2 & refStd{f}(:)<2& tarKur{f}(:)<10 & refKur{f}(:)<10;
 nnz = nniz([tarMean{f}(:),refMean{f}(:)]) & tarStd{f}(:)<30 & refStd{f}(:)<30& tarKur{f}(:)<20 & refKur{f}(:)<20;
-nnz = nniz([tarMean{f}(:),refMean{f}(:)]);
+nnz = nniz([tarMean{f}(:),refMean{f}(:)])&tarCnt{f}(:)>minimumOccupancy*features.sampleRate&refCnt{f}(:)>minimumOccupancy*features.sampleRate;%,...
+
 mzd = diffFun{f==fetInds}(tarMean{f}(:),refMean{f}(:));
 mshift = nanmean(mzd(nnz));
 dm = tarMean{f}-refMean{f};
@@ -111,11 +116,11 @@ dm(~nnz) = nan;
 % $$$ set(gca,'Position',[12,6,3,3]);
 % $$$ title('mean height difference')
 % $$$  
- clf
+clf
 axes('Units','centimeters',...
      'Position',[5,2,5,5]);
 %bar(linspace(clm(1),clm(2),200),histc(mzd(nnz),linspace(clm(1),clm(2),200)),'histc');
-bar(linspace(-120,120,300),histc(dm(nnz),linspace(-120,120,300)),'histc');
+bar(linspace(-120,120,100),histc(dm(nnz),linspace(-120,120,100)),'histc');
 %xlim([-.3,.4])
 xlim([-120,120])
 Lines(mean(mzd(nnz)),[],'c');

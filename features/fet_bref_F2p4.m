@@ -1,4 +1,4 @@
-function [fet,featureTitles,featureDesc,Nmean,Nstd] = fet_bref(Trial,varargin)
+function [fet,featureTitles,featureDesc,Nmean,Nstd] = fet_bref_F2p4(Trial,varargin)
 % $$$ function [fet,featureTitles,featureDesc,Nmean,Nstd] = fet_mis(Trial,varargin)
 % $$$ defargs = struct('newSampleRate', 12,                       ...
 % $$$                  'normalize'    , false,                    ...
@@ -59,14 +59,13 @@ dzvec(~nniz(dzvec(:)))=0;
 
 unvec = [];
 rotationAngles = deg2rad([0,90]);
-mvec = xyz(:,'spine_upper',[1,2])-xyz(:,'spine_lower',[1,2]);
+mvec = xyz(:,'fbcom',[1,2])-xyz(:,'fsl',[1,2]);
 for theta = rotationAngles,
     rotMat = repmat(permute([cos(theta),-sin(theta);sin(theta),cos(theta)],[3,1,2]),[size(mvec,1),1,1]);
     unvec(:,end+1,:) = bsxfun(@rdivide,multiprod(mvec,rotMat,[2,3],[2,3]),sqrt(sum(mvec.^2,3)));
 end
 
 nind = nniz(tvec);
-dwalkFetRot = zeros([size(nind,1),numel(rotationAngles),numel(tmar)]);
 for t = rotationAngles;
     for m = 1:numel(tmar),
         dwalkFetRot(nind,t==rotationAngles,m) = dot(tvec(nind,m,:),unvec(nind,t==rotationAngles,:),3);
@@ -74,12 +73,12 @@ for t = rotationAngles;
 end
 
 
-shft = 0;
+shft = 3;
 tmar = {'spine_lower','pelvis_root','spine_middle','spine_upper','hcom'};
 tvec = [];cvec = [];,zvec=[];
 for m = 1:numel(tmar),
-    tvec(:,m,:) = circshift(xyz(:,tmar{m},[1,2]),-shft)-circshift(xyz(:,'bcom',[1,2]),shft);
-    cvec(:,m,:) = circshift(xyz(:,tmar{m},[1,2]),-shft)-circshift(xyz(:,'bcom',[1,2]),shft);
+    tvec(:,m,:) = circshift(xyz(:,tmar{m},[1,2]),-shft)-circshift(xyz(:,'fbcom',[1,2]),shft);
+    cvec(:,m,:) = circshift(xyz(:,tmar{m},[1,2]),-shft)-circshift(xyz(:,'fbcom',[1,2]),shft);
     zvec(:,m,:) = xyz(:,tmar{m},[3]);
 end
 %zvec = nunity(zvec);
@@ -87,14 +86,13 @@ zvec(~nniz(zvec(:)))=0;
 
 unvec = [];
 rotationAngles = deg2rad([0,90]);
-mvec = xyz(:,'spine_upper',[1,2])-xyz(:,'spine_lower',[1,2]);
+mvec = xyz(:,'fbcom',[1,2])-xyz(:,'fsl',[1,2]);
 for theta = rotationAngles,
     rotMat = repmat(permute([cos(theta),-sin(theta);sin(theta),cos(theta)],[3,1,2]),[size(mvec,1),1,1]);
     unvec(:,end+1,:) = bsxfun(@rdivide,multiprod(mvec,rotMat,[2,3],[2,3]),sqrt(sum(mvec.^2,3)));
 end
 
 nind = nniz(tvec);
-walkFetRot = zeros([size(nind,1),numel(rotationAngles),numel(tmar)]);
 for t = rotationAngles;
     for m = 1:numel(tmar),
         walkFetRot(nind,t==rotationAngles,m) = dot(tvec(nind,m,:),unvec(nind,t==rotationAngles,:),3);
