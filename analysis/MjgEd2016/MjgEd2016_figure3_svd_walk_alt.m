@@ -703,7 +703,17 @@ print(gcf,'-dpng',  fullfile(OwnDir,FigDir,[FigName,'.png']));
 
 
 
-% FIG3STSXCORR ------------------------------------------------------------------------------
+% SECTION -3- State transition optimization
+% Motivation: state label boundaries obtained from neural network
+% classiifiers may vary with respect to annotations by the
+% experimenter. 
+% Description: 
+
+% brainstorming
+% Detect peaks of pricipal component scores (PCS) and or derivatives.
+% compute JPDF of xcorr and pc amplitude peaks
+
+% FIG3STSTRIGAVE --------------------------------------------------------------------------------
 %fetOnSet = cf(@(x) x.copy('empty'), xyz);
 %cf(@(nf,f,s) set(nf,'data',f(:,1:2)),fetOnSet,afetW,sampleRate);
 %cf(@(nf,f,s) set(nf,'data',ButFilter(f(:,1:2),3,0.8/[s/2],'low')),fetOnSet,afetW,sampleRate);
@@ -840,14 +850,15 @@ cf(@(x) x.filter('ButFilter',3,1,'low'),fxyz);
 % COMPUTE Filtered ang
 fang = cf(@(t,x) create(MTADang,t,x), Trials, fxyz);
 for s = 1:numSessions, ang{s}.data(~nniz(xyz{s}),:,:,:) = 0;end
-
-
+% COMPUTE angular speed
 cang = cf(@(a) a.copy('empty'), ang);
 cf(@(c,a) set(c,'data',circ_dist(circshift(a(:,1,4,1),-10),circshift(a(:,1,4,1),10))),cang,fang);
 cf(@(c,a) set(c,'data',circ_dist(circshift(a(:,3,7,1),-10),circshift(a(:,3,7,1),10))),cang,fang);
 
+% LOAD neural network labeled states
 StcNN    = cf(@(Trial) Trial.load('stc','NN0317'), Trials);
 
+% FIG3XCORSTSTRANS ------------------------------------------------------------------------------------------
 s = 1;
 figure,
 transWindow = repmat({0.4},1,numSessions);
@@ -914,6 +925,8 @@ for t = 1:4
     title([tsts{t},' -> walk']);
 end
 
+% END FIG3XCORSTSTRANS --------------------------------------------------------------------------------------
+
 
 % PLOT state epoch duration distributions
 figure,
@@ -928,6 +941,9 @@ for s = 1:nsts,
     title(Stc{1}{sts(s)}.label);
     xlim([edx(1),edx(end)])
 end
+
+
+
 
 cummulativeIndex = cell2mat(cf(@size,xyz));
 cummulativeIndex = cumsum(cummulativeIndex(1:3:end));
