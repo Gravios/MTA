@@ -1,5 +1,5 @@
 function varargout = segs(Data,varargin)
-%function data = segs(Data,start_points,segment_length,if_not_complete)
+%function data = segs(Data,startPoints,segmentLength,ifNotComplete)
 % Wraper for - > [Segs Complete] = GetSegs(x, StartPoints, SegLen, IfNotComplete);
 %
 % extracts multiple segments from a time series x.  x may be a vector
@@ -17,14 +17,20 @@ function varargout = segs(Data,varargin)
 % returned.  A list of complete segments extracted is returned in Complete.
 % Default value for IfNotComplete: NaN.
 %
-[start_points,segment_length,if_not_complete] = ...
-    DefaultArgs(varargin,{1:Data.size(1),round(.5*Data.sampleRate),nan});
+[startPoints,segmentLength,ifNotComplete] = ...
+    DefaultArgs(varargin,{[],round(.5*Data.sampleRate),nan});
+
+if isempty(startPoints),
+    varargout = cell([1,2]);
+    return
+end
+
 oriDataSize = Data.size(2:5);
 if numel(nargout)>1,
     varargout = cell(1,2);
 else
     varargout = cell(1,1);
 end
-[varargout{:}] = reshape(GetSegs(Data.data,start_points,segment_length,if_not_complete),[segment_length,numel(start_points),oriDataSize]);
+[varargout{:}] = reshape(GetSegs(Data.data,startPoints,segmentLength,ifNotComplete),[segmentLength,numel(startPoints),oriDataSize]);
 
 end

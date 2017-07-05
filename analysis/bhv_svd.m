@@ -1,0 +1,102 @@
+function [fet,sfet,ts,eigenVectors,eigenValues] = bhv_svd(varargin)
+
+%% Fig.3.C SVD of embedded marker trajectories relative to body %%%%%%%%%%%%%%%%%%%%%%%%%%
+% Analysis of horizontal motion relative of to the body
+%
+%
+ 
+
+param = struct('sessionList',            'hand_labeled',...
+               'referenceTrial',         'jg05-20120317.cof.all',...
+               'svdState',               'rear',...
+               'preState',               {{'rear'}},...
+               'postState',              {{'gper'}},...
+               'eigenVectorFeaturesMask',{{[6:10,16:25],[1:10,16:25]}},...
+               'eigenVectorTemporalMask',[1:15,49:64],...
+               'eigenVectorIndices',     [1,2],...
+               'sampleRate',             119.881035,...
+               'embeddingWindow',        64 ...                    
+);
+
+param = struct('sessionList',            'hand_labeled',...
+               'referenceTrial',         'jg05-20120317.cof.all',...
+               'svdState',               'walk+turn',...
+               'preState',               {{'walk,turn,pause'}},...
+               'postState',              {{'walk,turn,pause'}},...
+               'eigenVectorFeaturesMask',{{[6:10,16:25],[1:10,16:25]}},...
+               'eigenVectorTemporalMask',[1:15,46:end],...
+               'eigenVectorIndices',     [1,2],...
+               'sampleRate',             119.881035,...
+               'embeddingWindow',        64...                    
+);
+
+
+
+% START data processing ------------------------------------------------------------------
+
+sessionList     = get_session_list(param.sessionList);                    
+numSessions     = numel(sessionList);                    
+sampleRate = repmat({param.sampleRate},1,numSessions);
+embeddingWindow = repmat({64},1,numSessions);
+
+                    
+% LOAD Trial objects
+Trials = af(@(Trial) MTATrial.validate(Trial)  , sessionList);
+
+% LOAD State Collections
+Stc    = cf(@(Trial)  Trial.load('stc')         , Trials);
+StcNN  = cf(@(Trial) Trial.load('stc','NN0317'), Trials);
+
+% LOAD Position data
+xyz    = cf(@(Trial) preproc_xyz(Trial)         , Trials);
+cf(@(x,s) x.resample(s),xyz,sampleRate);
+fxyz = cf(@(x) x.copy(), xyz);
+cf(@(f) f.filter('ButFilter',5,[2.4],'low'),fxyz);
+
+% LOAD and MAP Features to reference session
+fet = cf(@(Trial) fet_bref(Trial), Trials);
+cf(@(f,t) f.map_to_reference_session(t,param.referenceTrial),fet,Trials);
+for s = 1:numSessions, fet{s}.data(~nniz(xyz{s}),:,:) = 0;end
+
+
+% NORMALIZE feature matrix
+featureCat = cf(@(f) get(f,'data'),fet);
+featureCat = cat(1,featureCat{:});
+featureMean = nanmean(featureCat(nniz(featureCat),:,:));
+featureStd = nanstd(featureCat(nniz(featureCat),:,:));
+cf(@(w,m,s) set(w,'data',nunity(w,[],m,s)),...
+            fet,...
+            repmat({featureMean},1,numSessions),...
+            repmat({featureStd},1,numSessions));
+clear('featureCat','featureMean','featureStd')
+
+
+% @wfs
+% EMBBED feature
+wfs  = cf(@(w,e) w.segs(1:size(w,1),e),fet,param.embeddingWindow);
+wfs =  cf(@(w,e) circshift(w,e/2,2),wfs,embeddingWindow);
+wfs =  cf(@(w,x) MTADxyz('data',reshape(permute(w,[2,1,3]),size(w,2),[]),...
+              'sampleRate',x.sampleRate),wfs,xyz);
+for i = 1:numel(wfs), wfs{i}.data(isnan(wfs{i}.data(:)))=0; end
+
+% DECOMPOSE fet with svd for walk and turn periods within all sessions
+wfw = cf(@(w,s) w([s{param.svdState}]+[0.125,-0.125],:), wfs, Stc);
+%wfw = cf(@(w,s) w([s{'w'}]+[0.5,-0.5],:), wfs, Stc);
+[~,Sww,Vww] = svd(cat(1,wfw{:}),0);
+
+% COMPUTE eigenvector loadings for each session's eigen vectors
+% contains mask to select feature subset important to turning
+sfet = cf(@(x) x.copy('empty'), xyz);
+for i= param.eigenVectorIndices
+    eigenVector = reshape(Vww(:,i),[],size(fet{1},2));
+    eigenVector(:,param.eigenVectorFeaturesMask{i}) = 0;
+    eigenVector(param.eigenVectorTemporalMask,:) = 0;
+    eigenVector = reshape(eigenVector,[],1);
+    cf(@(r,w,v) set(r,'data',[get(r,'data'),multiprod(w.data,v)]),...
+       sfet,wfs,repmat({eigenVector},1,numSessions));
+end
+cf(@(f,x) set(f,'sync',x.sync.copy), sfet, xyz); 
+cf(@(f,x) set(f,'origin',x.origin), sfet, xyz);
+
+% TIME vectors
+ts =  cf(@(x)    [1:size(x,1)]./x.sampleRate,     xyz);

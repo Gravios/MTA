@@ -10,6 +10,7 @@ function sdim = size(Data,varargin)
 % Outputs:
 %   sdim - numericArray: contains the size of each dimension
 %
+
 if ~isempty(cell2mat(varargin)),
     dim = cell2mat(varargin);
     ndim = numel(dim);
@@ -19,7 +20,7 @@ if ~isempty(cell2mat(varargin)),
             sdim(i) = size(Data.data,dim(i));
         end
     else
-        sdim = size(Data.data,dim);
+        sdim = builtin('size',Data.data,dim);
     end
 else
     sdim = size(Data.data);
