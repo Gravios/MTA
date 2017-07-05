@@ -9,11 +9,10 @@ if ~isa(Trial,'MTATrial'),
     Trial = MTATrial(Trial);
 end
 
-Trial.stc.updateMode('auto_wbhr');
-Trial.stc.load;
+stc = Trial.load('stc','auto_wbhr');
+lfp = Trial.load('lfp',channels);
 
-Trial.lfp.load(Trial,channels);
-wlfp = WhitenSignal(Trial.lfp.data,[],1);
+wlfp = WhitenSignal(lfp.data,[],1);
 nchan = numel(channels);
 
 yr = {};
@@ -21,17 +20,19 @@ t = [];
 f = [];
 
 
+
 %if matlabpool('size')~=12,matlabpool open 12,end
 
 for bhv = 1:length(behaviors),
     y{bhv}=[];
     for b = 1:2,
-        rwlfp = GetSegs(wlfp,round(cell2mat({Trial.stc{behaviors{bhv},Trial.lfp.sampleRate}.data(:,b)})-(seglen/2).*Trial.lfp.sampleRate),seglen*Trial.lfp.sampleRate+winlen,0);
+        rwlfp = GetSegs(wlfp,round(cell2mat({stc{behaviors{bhv},lfp.sampleRate}.data(:,b)})-...
+                                   (seglen/2).*lfp.sampleRate),seglen*lfp.sampleRate+winlen,0);
         for j = 1:nchan,
             for i = 1:size(rwlfp,2),
                 [y{bhv}(:,:,i,b,j),f,t] = mtchglong(rwlfp(:,i,j),...
                                                      nffts,...
-                                                     Trial.lfp.sampleRate,...
+                                                     lfp.sampleRate,...
                                                      winlen,...
                                                      winlen*0.875,[],[],[],frange);
             end
