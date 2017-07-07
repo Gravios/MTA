@@ -233,3 +233,5 @@ nsmins = cf(@(c,i,t) LocalMinima(sum(c(2,:,i),3),60,t),...
 
 % ssmins nsmins
 
+
+%[smat,labels,keys] = mat2stc(mstc,Stc,sampleRate,varargin)

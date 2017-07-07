@@ -1,25 +1,41 @@
-function [smat,labels,keys] = mat2stc(mstc,Stc,sampleRate,varargin)
-%function [smat,labels,keys] = stc2mat(Stc,Data)
+function [Stc] = mat2stc(mstc,Stc,Data,Trial,varargin)
+%function [Stc] = stc2mat(mstc,Stc,Data)
 % assumes no heirarchical relationships between states
 % each is mutually exclusive from all others
-[labels,keys,sync,origin] = DefaultArgs(varargin,{Stc.list_state_attrib('key'),T},true);
 
-Stc = Stc.copy; % Don't mess up the Stc in other workspaces
+    
+% DEFARGS ------------------------------------------------------------------------------------------
+defargs = struct(...
+    'labels',             Stc.list_state_attrib('label'),...
+    'keys',               Stc.list_state_attrib('key')...
+);
+[labels,keys] = DefaultArgs(varargin,defargs,'--struct');
+%--------------------------------------------------------------------------------------------------
 
-nsts = numel(states);
-smat = zeros([Data.size(1),nsts]);
-keys = {};
-labels = {};
-g = 1;
-for i = Stc.gsi(states),
-    tper = resample(Stc.states{i},Data);
-    tper.cast('TimeSeries');
-    smat(tper==1,g) = g;
-    if nargout>1,
-        keys(g) = {tper.key};
-        labels(g) = {tper.label};
-    end
-    g = g+1;
+
+
+% MAIN ---------------------------------------------------------------------------------------------
+
+for i = 1:numel(labels),
+    sts = Stc.gsi(labels{i});
+    if isempty(sts),
+        Stc.addState(Trial.spath,...
+                     Trial.filebase,...
+                     mstc(:,i)>0,Data.sampleRate,...
+                     Trial.sync.copy,...
+                     Trial.sync.data(1),...
+                     labels{i},...
+                     keys{i},...
+                     'type','TimeSeries');
+        cast    (Stc.states{sts},'TimePeriods');
+        resample(Stc.states{sts},Data);
+    else        
+        resample(Stc.states{sts},Data);
+        cast    (Stc.states{sts},'TimeSeries',Data);
+        Stc.states{sts}.data = mstc(:,i)>0;
+        cast    (Stc.states{sts},'TimePeriods');
+    end    
+
 end
 
-end
+% END MAIN -----------------------------------------------------------------------------------------
