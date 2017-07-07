@@ -5,7 +5,7 @@ defargs = struct('rlist',  'training_hand_labeled',                          ...
                  'slist',  {{'hand_labeled_jg';'hand_labeled_Ed'}},          ...
                  'fetSet', 'fet_bref_exp',                                   ...
                  'tag_preprocessing', '+seh+',                               ...
-                 'tag_postprocessing','_PPNB',                               ...
+                 'tag_postprocessing','_PPSVD',                              ...
                  'sampleRate', 15,                                           ...
                  'nNeurons',   200,                                          ...
                  'nIter',      100,                                          ...
@@ -103,29 +103,102 @@ for rli = 1:numel(rlist),
 
             StcCor = ds.stc{s}.copy;
 
-            
-% $$$             figure,
-% $$$             sp(1) = subplot(411);
-% $$$             plot(dang.data);
-% $$$             plot(features(:,16));
-% $$$             sp(2) = subplot(412);
-% $$$             plotSTC(StcHL,features,[],states,'brgcmy');
-% $$$             sp(3) = subplot(413);
-% $$$             plotSTC(StcCor,features,[],states,'brgcmy');
-            
-% PAD turning
-% $$$             try
-% $$$                 key = 'n';                
-% $$$                 StcCor.states{StcCor.gsi(key)} = StcCor{key}+[-0.15,0.1];
-% $$$                 for sts = StcCor.states, sts{1}.clean; end
-% $$$                 for sts = StcCor.states,
-% $$$                     if strcmp(sts{1}.key,key),continue,end
-% $$$                     StcCor.states{StcCor.gsi(sts{1}.key)} = sts{1}-StcCor{key}.data; 
-% $$$                 end
-% $$$                 
-% $$$             end
+% REAR remove periods which have low mean heights 
+            key = 'r';
+            rhh = [];
+            rthresh = 140;
+            tds = ds.d_state{s};
+            [tpv,tps] = sort(ds.p_state{s},2,'descend');
+            try
+                for rp = ds.stc{s}{key}.data',
+                    rhh(end+1) = max(features(rp',15));
+                    if rhh(end)<rthresh,
+                        pind = rp(1):rp(2);
+                        tds(pind,2) = 0;
+                        tps(pind,:) = StcCor.gsi('pause');
+                        % maybe make a cat function for MTADepoch 
+                        StcCor.states{StcCor.gsi('pause')}.data = ...
+                            [StcCor.states{StcCor.gsi('pause')}.data;pind([1,end])];
+                    end
+                end
+                StcCor.states{StcCor.gsi(key)}.data(rhh<rthresh,:) = [];                
 
-%% speed: pause
+                StcCor.states{StcCor.gsi(key)} = StcCor{key}+[-0.15,0.0];
+
+                % clear other states from the timeperiods assigned
+                % to the state
+                for sts = StcCor.states,
+                    if strcmp(sts{1}.key,key),continue,end
+                    StcCor.states{StcCor.gsi(sts{1}.key)} = sts{1}-StcCor{key}.data; 
+                end
+            catch err
+                disp(err)
+            end
+
+
+% ADJUST rear offsets
+            adjust_state_boundaries_svd(Trial,StcCor,...
+                                        struct('sessionList',            'hand_labeled',...
+                                               'referenceTrial',         'jg05-20120317.cof.all',...
+                                               'sampleMode',             'centered',...
+                                               'svdState',               'rear',...
+                                               'antecedentState',        'gper-rear',...
+                                               'subsequentState',        'rear',...
+                                               'eigenVectorFeaturesMask',{{[6:10,16:25],[1:10,16:25]}},...
+                                               'eigenVectorTemporalMask',[1:15,46:64],...
+                                               'eigenVectorIndices',     [1,2],...
+                                               'sampleRate',             119.881035,...
+                                               'embeddingWindow',        64, ...                    
+                                               'regressionWindow',       100:181, ...
+                                               'regressionThreshold',    100 )
+            );
+            
+            
+% ADJUST rear offsets
+            adjust_state_boundaries_svd(Trial,StcCor,...
+                                        struct('sessionList',            'hand_labeled',...
+                                               'referenceTrial',         'jg05-20120317.cof.all',...
+                                               'sampleMode',             'centered',...
+                                               'svdState',               'rear',...
+                                               'antecedentState',        'rear',...
+                                               'subsequentState',        'gper-rear',...
+                                               'eigenVectorFeaturesMask',{{[6:10,16:25],[1:10,16:25]}},...
+                                               'eigenVectorTemporalMask',[1:15,46:64],...
+                                               'eigenVectorIndices',     [1,2],...
+                                               'sampleRate',             119.881035,...
+                                               'embeddingWindow',        64, ...                    
+                                               'regressionWindow',       100:181, ...
+                                               'regressionThreshold',    100 )
+            );
+
+            
+            
+            % 'pause' 'walk' evi = 1
+            % 'pause' 'turn' evi = 2
+            % 'turn'  'walk' evi = 1,2
+            param = struct('sessionList',            'hand_labeled',...
+                           'referenceTrial',         'jg05-20120317.cof.all',...
+                           'sampleMode',             'centered',...
+                           'svdState',               'walk+turn',...
+                           'antecedentState',        'pause',...
+                           'subsequentState',        'walk',...
+                           'eigenVectorFeaturesMask',{{[2:15,17:2:25,26:30],[1:16,18:24,26:30]}},...
+                           'eigenVectorTemporalMask',[1:15,46:64],...
+                           'eigenVectorIndices',     [1],...
+                           'sampleRate',             119.881035,...
+                           'embeddingWindow',        64, ...
+                           'regressionWindow',       91:151, ...
+                           'regressionThreshold',    200 ...
+            );
+                        
+            
+            adjust_state_boundaries_svd(Trial,StcCor);
+
+
+            
+            
+
+% TURN angular displacement
             try
                 key = 'n';
                 wd = [];
@@ -166,38 +239,6 @@ for rli = 1:numel(rlist),
             end
             
             
-% COMPOSITE rear
-            key = 'r';
-            rhh = [];
-            rthresh = 140;
-            tds = ds.d_state{s};
-            [tpv,tps] = sort(ds.p_state{s},2,'descend');
-            try
-                for rp = ds.stc{s}{key}.data',
-                    rhh(end+1) = max(features(rp',15));
-                    if rhh(end)<rthresh,
-                        pind = rp(1):rp(2);
-                        tds(pind,2) = 0;
-                        tps(pind,:) = StcCor.gsi('pause');
-                        % maybe make a cat function for MTADepoch 
-                        StcCor.states{StcCor.gsi('pause')}.data = ...
-                            [StcCor.states{StcCor.gsi('pause')}.data;pind([1,end])];
-                    end
-                end
-                StcCor.states{StcCor.gsi(key)}.data(rhh<rthresh,:) = [];                
-
-                StcCor.states{StcCor.gsi(key)} = StcCor{key}+[-0.15,0.0];
-
-                % clear other states from the timeperiods assigned
-                % to the state
-                for sts = StcCor.states,
-                    if strcmp(sts{1}.key,key),continue,end
-                    StcCor.states{StcCor.gsi(sts{1}.key)} = sts{1}-StcCor{key}.data; 
-                end
-
-                
-            end
-
 
             %% speed: pause
             try
@@ -416,40 +457,13 @@ end
 StcCor.states{StcCor.gsi(key)}.data(logicFun(pd,pthresh),:) = [];
 
 
-function query_normalization_prameters(varargin)
 
 
 
-function set_normalization_prameters(varargin)
 
-param = struct('sessionList',            'hand_labeled',...
-               'referenceTrial',         'jg05-20120317.cof.all',...
-               'svdState',               'rear',...
-               'preState',               {{'rear'}},...
-               'postState',              {{'gper'}},...
-               'eigenVectorFeaturesMask',{{[6:10,16:25],[1:10,16:25]}},...
-               'eigenVectorTemporalMask',[1:15,46:end],...
-               'eigenVectorIndices',     [1,2],...
-               'sampleRate',             119.881035,...
-               'embeddingWindow',        64 ...                    
-);
+% END function set_svd_parameters ------------------------------------------------------------------
 
 
-
-% @wtfetW 
-% COMPUTE eigenvector loadings for each session's eigen vectors
-% contains mask to select feature subset important to turning
-sfetW = cf(@(x) x.copy('empty'), xyz);
-for i= param.eigenVectorIndices
-    eigenVector = reshape(Vww(:,i),[],size(fet{1},2));
-    eigenVector(:,param.eigenVectorMask{i}) = 0;
-    eigenVector([1:15,46:end],:) = 0;
-    eigenVector = reshape(eigenVector,[],1);
-    cf(@(r,w,v) set(r,'data',[get(r,'data'),multiprod(w.data,v)]),...
-       wtfetW,wfs,repmat({eigenVector},1,numSessions));
-end
-cf(@(f,x) set(f,'sync',x.sync.copy), sfetW, xyz); 
-cf(@(f,x) set(f,'origin',x.origin),  sfetW, xyz);
 
 
 % END AUX METHODS ----------------------------------------------------------------------
