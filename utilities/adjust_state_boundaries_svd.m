@@ -14,9 +14,9 @@ function adjust_state_boundaries_svd(Trial,Stc,states,param,varargin)
 %    eigenVectorIndices      (numericArray)             [1,2]
 %    sampleRate              (numeric)                  119.881035
 %    embeddingWindow         (numeric)                  64
-%    regressionWindow        (numericArray)             100:181, 
+%    regressionWindow        (numericArray)             100:181,
 %    regressionThreshold     (numeric)                  100
-% 
+%    medianCorrectionOffset  (numeric)                  0.1333 
 
 % TESTARGS -----------------------------------------
 param = struct('sessionList',            'hand_labeled',...
@@ -32,7 +32,8 @@ param = struct('sessionList',            'hand_labeled',...
                'sampleRate',             119.881035,...
                'embeddingWindow',        64, ...                    
                'regressionWindow',       100:181, ...
-               'regressionThreshold',    5e4 );
+               'regressionThreshold',    5e4,...
+               'medianCorrectionOffset', 0.1333);
 varargin = {};
 Trial = [];
 Stc = [];
@@ -244,30 +245,50 @@ csw = cf(@(f) f.copy(),rof);
 cf(@(c,f,m) set(c,'data',sq(sum((f.data-repmat(permute(m,[3,2,4,1]),size(f,1),1,size(f,3))).^2,2))),...
    csw,rof,mfs);
 
-
+% DETECT transitions based on regression score
 nsmins = cf(@(c,i,t) LocalMinima(sum(c(2,:,i),3),60,t),...
             csw,repmat({param.eigenVectorIndices},1,numSessions),...
             repmat({param.regressionThreshold},1,numSessions));
+
+% SELECT putative transitions around state label transitions
 [nsmins,nsinds] = cf(@(m,s,p) SelectPeriods(m,bsxfun(@plus,[s{p}(:,1)],[-60,60]),'d',1),...
                      nsmins,Stc,repmat({param.subsequentState},1,numSessions));
 [ssmins,ssinds] = cf(@(m,s,p) SelectPeriods([s{p}(:,1)],bsxfun(@plus,m,[-60,60]),'d',1),...
                      nsmins,Stc,repmat({param.subsequentState},1,numSessions));
 
+% REMOVE redundant onsets; keep nearest to Stc label
+for s = 1:numSessions,
+    i = 1;
+    while i < numel(nsmins{s}),
+        if ssmins{s}(i) = ssmins{s}(i+1)
+            if abs(nsmins{s}(i)-ssmins{s}(i)) > abs(nsmins{s}(i+1)-ssmins{s}(i+1)),
+                nsmins{s}(i) = [];
+                ssmins{s}(i) = [];
+            else,
+                nsmins{s}(i+1) = [];
+                ssmins{s}(i+1) = [];
+            end
+        else
+            i = i+1;            
+        end
+    end
+end
 
-
-
-%csegs = cf(@(a,m) a.segs(m-120,360),sfet,nsmins);
-
+% CCG of detected transitions and labeled transitions
 [sccg,txx,pxx] = cf(@(s,n,sr) CCG([s;n],[ones(size(s));2*ones(size(n))],...
                                   2,40,sr,[1,2],'count'),...
                     ssmins,nsmins,sampleRate);
 accg = sum(cat(4,sccg{:}),4);
-%medianCorrectionOffset = median(cat(1,nsmins{:})-cat(1,ssmins{:}))./sampleRate{1};
 
-%medianCorrectionOffset = 0;
-medianCorrectionOffset = repmat({median(cat(1,nsmins{:})-cat(1,ssmins{:}))},1,numSessions);
-nsmins = cf(@(n,m) n-m, nsmins, medianCorrectionOffset);
 
+% ADD temporal offset to detected transitions
+if param.medianCorrectionOffset
+    %medianCorrectionOffset = repmat({median(cat(1,nsmins{:})-cat(1,ssmins{:}))},1,numSessions);
+    nsmins = cf(@(n,m) n-m, nsmins, repmat({round(parammedianCorrectionOffset.*param.sampleRate)},1,numSessions));
+end
+
+
+% APPLY adjusted state transitions to the state collection (Stc)
 smat = {};
 labels = {}; 
 keys = {};
@@ -292,8 +313,11 @@ for s = 1:numSessions,
 
         if backfill,
 % FIND antecedent states
-            backStateInd = find(smat(find(any(smat(1:sper.data(oldSubPerIndex,1),:),2),1,'last'),:));
+            backSearchInd = sper.data(oldSubPerIndex,1)-round(1.*sampleRate{1}):sper.data(oldSubPerIndex,1);
+            backSearchInd(backSearchInd<=0)=[];
+            backStateInd = find(smat(find(any(smat(backSearchInd,:),2),1,'last'),:));
             backStateInd(backStateInd==stateIndex) = [];
+            if isempty(backStateInd), continue; end
             smat(ind,backStateInd) = repmat(backStateInd,numel(ind),1);
         else
             smat(ind,stateIndex) = stateIndex;
