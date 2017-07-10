@@ -127,6 +127,9 @@ switch Data.type
             Data.data(end) = size(DataObj,1);
         end
     end
+
+    if Data.data(1)==0,Data.data(1)=1;end
+
     
 % $$$                   if isa(Data.sync,'MTAData'),
 % $$$                       Data.origin = rf(Data.origin/Data.sampleRate*newSampleRate); 

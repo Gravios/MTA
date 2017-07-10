@@ -4,11 +4,22 @@ function hax = plotSTC(Stc,varargin)
 %DefaultArgs(varargin,{Stc.states{1}.sampleRate,'',{},'',true},true);
 
 
+% DEFARGS ------------------------------------------------------------------------------------------
 hax = gca;
+defargs = struct(...
+    'sampleRate',     Stc.states{1}.sampleRate,...
+    'labelMethod',   '',...
+    'states',         {{'walk','rear','turn','pause','groom','sit'}},...
+    'stateColors',    'brgcmy',...
+    'staggeredStates',true ...
+);
+[sampleRate,labelMethod,states,stateColors,staggeredStates] = ...
+    DefaultArgs(varargin,defargs,'--struct');
+%--------------------------------------------------------------------------------------------------
 
-[sampleRate,label_method,states,stateColors,staggeredStates] = DefaultArgs(varargin,{Stc.states{1}.sampleRate,'',{},'',true},true);
 
 
+% MAIN ---------------------------------------------------------------------------------------------
 
 if ~isempty(states),
     states = Stc(states{:});
@@ -45,11 +56,11 @@ end
 hax.YTickMode = 'manual'
 hax.YTick = 1.5:numel(states)+0.5;
 
-if strcmp(label_method,'text'),
+if strcmp(labelMethod,'text'),
     if staggeredStates,
         set(hax,'YTickLabelMode','manual');
         set(hax,'YTickLabel',cellfun(@(x) x.label,states,'UniformOutput',false));
     end
 end
 
-    
+% END MAIN -----------------------------------------------------------------------------------------

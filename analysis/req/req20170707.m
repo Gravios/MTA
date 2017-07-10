@@ -82,6 +82,49 @@ dsfet = cf(@(f) f.copy(),fet);
 cf(@(f) f.resample(12), dsfet);
 
 fetSubsetGroom = cf(@(f,s) f(s{'m'},:),dsfet,Stc);
-fetSubsetGroom = cat(1,fetSubsetGroom{:});
+fetSubsetGroomId = cf(@(f,s) ones([size(f,1),1]).*s,fetSubsetGroom,mat2cell(1:6,1,ones([1,numSessions])));
+fetSubsetGroomIdAll = cat(1,fetSubsetGroomId{:});
+fetSubsetGroomAll = cat(1,fetSubsetGroom{:});
 
-tsneMap = tsne(fetSubsetGroom,[],2,30,80);
+tsneMap_sub = tsne(fetSubsetGroomAll(1:4:end,:),fetSubsetGroomIdAll(1:4:end),2,5,80);
+
+
+
+
+groomPerTs = cf(@(s) s{'m'}, Stc);
+cf(@(p) p.cast('TimeSeries',12), groomPerTs);
+
+
+figure,hold on
+for i = 1:numSessions,
+    ind = fetSubsetGroomIdAll==i;
+    scatter(tsneMap(ind,1),tsneMap(ind,2),20,sclr(i))
+end
+
+hfig = figure();
+plot(tsneMap(:,1),tsneMap(:,2),'.');
+[cpnts]=ClusterPP(hfig);
+
+
+
+fetSubsetGroomCumSize = mat2cell(cumsum([0,cellfun(@length, ...
+                    fetSubsetGroom(1:end-1))]),1,ones([1,numSessions]));
+
+groomPerTsIds = cf(@(p) p.copy(), groomPerTs);
+
+
+cf(@(p,c,t) set(p,'data',t(c+1:c+sum(p.data==1))),...
+   groomPerTsIds,fetSubsetGroomCumSize,repmat({cpnts},1,numSessions))
+    
+for i = 1:numSessions,
+    groomPerTsIds{i}.data(groomPerTsIds{i}.data==1) =  ...
+        cpnts(fetSubsetGroomCumSize{i}+1:fetSubsetGroomCumSize{i}+sum(groomPerTsIds{i}.data==1));
+end
+
+
+groomSubStateTags = cf(@(t) ['groom_ss_',t], ...
+                       mat2cell(num2str(unique(cpnts),'%i'),1,ones([1,numel(unique(cpnts))])));
+
+
+
+

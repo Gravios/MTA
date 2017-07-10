@@ -1,9 +1,10 @@
 
-function adjust_state_boundaries_svd(Trial,Stc,param,varargin)
+function adjust_state_boundaries_svd(Trial,Stc,states,param,varargin)
 
 % param (struct):
 %    sessionList             (string)                   'hand_labeled'
 %    referenceTrial          (string)                   'jg05-20120317.cof.all'
+%    featureSet              (string)                   'fet_bref'
 %    sampleMode              (string)                   'centered','trimmed'
 %    svdState                (string)                   'rear' 
 %    antecedentState         (string)                   'rear'
@@ -16,6 +17,28 @@ function adjust_state_boundaries_svd(Trial,Stc,param,varargin)
 %    regressionWindow        (numericArray)             100:181, 
 %    regressionThreshold     (numeric)                  100
 % 
+
+% TESTARGS -----------------------------------------
+param = struct('sessionList',            'hand_labeled',...
+               'referenceTrial',         'jg05-20120317.cof.all',...
+               'featureSet',             'fet_bref',...
+               'sampleMode',             'centered',...
+               'svdState',               'rear',...
+               'antecedentState',        'gper-rear',...
+               'subsequentState',        'rear',...
+               'eigenVectorFeaturesMask',{{[6:10,16:25],[1:10,16:25]}},...
+               'eigenVectorTemporalMask',[1:15,46:64],...
+               'eigenVectorIndices',     [1,2],...
+               'sampleRate',             119.881035,...
+               'embeddingWindow',        64, ...                    
+               'regressionWindow',       100:181, ...
+               'regressionThreshold',    5e4 );
+varargin = {};
+Trial = [];
+Stc = [];
+states = {'walk','rear','turn','pause','groom','sit'};
+
+%---------------------------------------------------
 
 % DEFARGS ------------------------------------------------------------------------------------------
 defargs = struct(...
@@ -184,7 +207,7 @@ for s = 1:numSessions,
                 sts{s}+repmat(shift,size(sts{s},1),1)>size(sfet{s},1)],2)>0,:)=[];
 end        
 % SEPARATE left and right trajectories for turns
-if any(cell2mat(cf(@isempty,regexp({param.antecedentState,param.subsequentState},'turn')))),
+if any(~cell2mat(cf(@isempty,regexp({param.antecedentState,param.subsequentState},'turn')))),
     shift = [0,round(0.5*param.sampleRate)];
     stsSind = cf(@(s,a) sign(circ_dist(...
         a(round(mean(s,2)+shift(1)),'spine_lower','spine_upper',1),...
@@ -213,7 +236,7 @@ rof = cf(@(a) a.copy(),sfet);
 cf(@(f,m) set(f,'data',circshift(f.segs(1:size(f,1),size(m,2)),round(size(m,2)/2),2)),...
    rof,mfs);
 cf(@(f,m) set(f,'data',repmat(permute(f.data,[4,1,2,3]),3,1,1)-...
-                repmat(linspace(-.5,.5,3)',[1,size(m,2),size(f,2),4])),...
+                repmat(linspace(-.5,.5,3)',[1,size(m,2),size(f,2),size(f,3)])),...
    rof,mfs);
 
 % COMPUTE regressed feature
@@ -229,9 +252,55 @@ nsmins = cf(@(c,i,t) LocalMinima(sum(c(2,:,i),3),60,t),...
                      nsmins,Stc,repmat({param.subsequentState},1,numSessions));
 [ssmins,ssinds] = cf(@(m,s,p) SelectPeriods([s{p}(:,1)],bsxfun(@plus,m,[-60,60]),'d',1),...
                      nsmins,Stc,repmat({param.subsequentState},1,numSessions));
+
+
+
+
 %csegs = cf(@(a,m) a.segs(m-120,360),sfet,nsmins);
 
-% ssmins nsmins
+[sccg,txx,pxx] = cf(@(s,n,sr) CCG([s;n],[ones(size(s));2*ones(size(n))],...
+                                  2,40,sr,[1,2],'count'),...
+                    ssmins,nsmins,sampleRate);
+accg = sum(cat(4,sccg{:}),4);
+%medianCorrectionOffset = median(cat(1,nsmins{:})-cat(1,ssmins{:}))./sampleRate{1};
+
+%medianCorrectionOffset = 0;
+medianCorrectionOffset = repmat({median(cat(1,nsmins{:})-cat(1,ssmins{:}))},1,numSessions);
+nsmins = cf(@(n,m) n-m, nsmins, medianCorrectionOffset);
+
+smat = {};
+labels = {}; 
+keys = {};
+for s = 1:numSessions,
+    [smat,labels,keys] = stc2mat(Stc{s},fet{s},states);
+    stateIndex = Stc{s}.gsi(param.subsequentState);
+    sper = Stc{s}.states{stateIndex};
+    for i = 1:numel(nsmins{s}),
+% FIND index of old period transition 
+        oldSubPerIndex = find(ssmins{s}(i)==sper.data(:,1));
+        shiftMagnitude = nsmins{s}(i)-ssmins{s}(i);
+% CLEAR region for transition adjustment
+        if shiftMagnitude<0,            
+            ind = sper.data(oldSubPerIndex,1)+shiftMagnitude:sper.data(oldSubPerIndex,1)-1;
+            backfill = false;
+            smat(ind,~ismember(1:size(smat,2),stateIndex)) = 0;            
+        elseif shiftMagnitude>0,            
+            ind = sper.data(oldSubPerIndex,1):sper.data(oldSubPerIndex,1)+shiftMagnitude-1;
+            backfill = true;
+            smat([ind],stateIndex) = 0;                        
+        end
+
+        if backfill,
+% FIND antecedent states
+            backStateInd = find(smat(find(any(smat(1:sper.data(oldSubPerIndex,1),:),2),1,'last'),:));
+            backStateInd(backStateInd==stateIndex) = [];
+            smat(ind,backStateInd) = repmat(backStateInd,numel(ind),1);
+        else
+            smat(ind,stateIndex) = stateIndex;
+        end    
+    end    
+
+    Stc{s} = mat2stc(smat,Stc{s},fet{s},Trials{s},labels,keys);
+end
 
 
-%[smat,labels,keys] = mat2stc(mstc,Stc,sampleRate,varargin)

@@ -6,8 +6,8 @@ function [Stc] = mat2stc(mstc,Stc,Data,Trial,varargin)
     
 % DEFARGS ------------------------------------------------------------------------------------------
 defargs = struct(...
-    'labels',             Stc.list_state_attrib('label'),...
-    'keys',               Stc.list_state_attrib('key')...
+    'labels',             {Stc.list_state_attrib('label')},...
+    'keys',               {Stc.list_state_attrib('key')}...
 );
 [labels,keys] = DefaultArgs(varargin,defargs,'--struct');
 %--------------------------------------------------------------------------------------------------
@@ -28,14 +28,15 @@ for i = 1:numel(labels),
                      keys{i},...
                      'type','TimeSeries');
         cast    (Stc.states{sts},'TimePeriods');
-        resample(Stc.states{sts},Data);
     else        
         resample(Stc.states{sts},Data);
-        cast    (Stc.states{sts},'TimeSeries',Data);
+        cast    (Stc.states{sts},'TimeSeries');
         Stc.states{sts}.data = mstc(:,i)>0;
         cast    (Stc.states{sts},'TimePeriods');
     end    
 
+    clean   (Stc.states{sts});
+    resample(Stc.states{sts},Data);        
 end
 
 % END MAIN -----------------------------------------------------------------------------------------
