@@ -23,13 +23,13 @@ cam(3).fov = 70;
 cam(4).name = 'Prime 41';
 cam(4).hpx=2048;
 cam(4).vpx=2048;
-cam(4).msize=4;
+cam(4).msize=5;
 cam(4).fov = 51;
 
 cam(5).name = 'Prime 13';
 cam(5).hpx=1280;
 cam(5).vpx=1024;
-cam(5).msize= 4;
+cam(5).msize= 5;
 cam(5).fov = 56;
 
 

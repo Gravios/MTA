@@ -1,6 +1,6 @@
 
 
-Trial = MTATrial('jg05-20120317');
+Trial = MTATrial.validate('jg05-20120317.cof.all');
 
 markers = {'spine_lower','pelvis_root','spine_middle','spine_upper',...
             'head_back',  'head_left',  'head_front',  'head_right'};
@@ -9,6 +9,9 @@ markers = {'spine_lower','pelvis_root','spine_middle','spine_upper',...
 
 xyz = Trial.load('xyz');
 xyz.filter('ButFilter',3,2.4,'low');
+
+ang = create(MTADang,Trial,xyz);
+
 vl = xyz.vel(markers,[1,2]);
 vl.data(vl.data<1e-3) = 1e-4;
 v = log10(abs(vl(:,1:8)));
@@ -26,19 +29,39 @@ nind = sum(vind);
 
 s = 1;
 for m = 1:size(v,2)
-for o = 1:size(v,2)
-for shift = sbound
-[out,xb,yb,p]=hist2([v(vind,m),circshift(v(vind,o),shift)],edges,edges);
-pxy = out./nind;
-px = histc(v(vind,m),xb);
-px = px(1:end-1)/nind;
-py = histc(circshift(v(vind,o),shift),yb);
-py = py(1:end-1)/nind;
-ixy(s,m,o) = nansum(nansum(pxy.*log2(pxy./(px*py'))));
-s = s+1;
+    for o = 1:size(v,2)
+        for shift = sbound
+            [out,xb,yb,p]=hist2([v(vind,m),circshift(v(vind,o),shift)],edges,edges);
+            pxy = out./nind;
+            px = histc(v(vind,m),xb);
+            px = px(1:end-1)/nind;
+            py = histc(circshift(v(vind,o),shift),yb);
+            py = py(1:end-1)/nind;
+            ixy(s,m,o) = nansum(nansum(pxy.*log2(pxy./(px*py'))));
+            s = s+1;
+        end
+        s = 1;
+    end
 end
+
+
+
+
 s = 1;
-end
+for m = 1:size(v,2)
+    for o = 1:size(v,2)
+        for shift = sbound
+            [out,xb,yb,p]=hist2([v(vind,m),circshift(v(vind,o),shift)],edges,edges);
+            pxy = out./nind;
+            px = histc(v(vind,m),xb);
+            px = px(1:end-1)/nind;
+            py = histc(circshift(v(vind,o),shift),yb);
+            py = py(1:end-1)/nind;
+            ixy(s,m,o) = nansum(nansum(pxy.*log2(pxy./(px*py'))));
+            s = s+1;
+        end
+        s = 1;
+    end
 end
 
 
