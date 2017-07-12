@@ -1,5 +1,35 @@
 
 
+% TIME vectors
+wts = cf(@(e,s)  [1:e]./s,                        embeddingWindow,sampleRate);
+ts =  cf(@(x)    [1:size(x,1)]./x.sampleRate,     xyz);
+
+
+
+i = 1;
+figure();
+hold('on');
+plot(fetSegs(:,:,i),'b');
+plot(nanmean(fetSegs(:,:,i),2),'r');
+
+
+sp = [];
+figure();
+sp(end+1)=subplot2(6,1,[1:4],1);
+hold('on');
+plot(ts{1},nansum(csw{1}(2,:,1),3)),
+%plot(ts{1},nansum(csw{1}(2,:,2),3)),
+%plot(ts{1},nansum(csw{1}(2,:,:),3)),
+Lines(mean(sts{1},2)./sampleRate{1},[],'g');
+sp(end+1)=subplot2(6,1,5,1);
+plotSTC(Stc{1},1);
+sp(end+1)=subplot2(6,1,6,1);
+plotSTC(StcNN{1},1);
+linkaxes(sp,'x');
+
+
+
+
 
 [sccg,txx,pxx] = cf(@(s,n,sr) CCG([s;n],[ones(size(s));2*ones(size(n))],...
                                   2,40,sr,[1,2],'count'),...
@@ -44,3 +74,15 @@ plotSTC(Stc{1});
 sp(end+1) = subplot2(5,1,5,1);
 plotSTC(StcCor{1});
 linkaxes(sp,'xy');
+
+
+
+sp = [];
+figure();
+sp(end+1)=subplot2(3,1,1,1);
+plotSTC(StcHL,1);
+sp(end+1)=subplot2(3,1,2,1);
+plotSTC(ds.stc{s},1);
+sp(end+1)=subplot2(3,1,3,1);
+plotSTC(StcCor,1);
+linkaxes(sp,'x');

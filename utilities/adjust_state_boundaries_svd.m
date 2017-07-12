@@ -16,6 +16,7 @@ function adjust_state_boundaries_svd(Stc,Trial,param,varargin)
 %    embeddingWindow         (numeric)                  64
 %    regressionWindow        (numericArray)             100:181,
 %    regressionThreshold     (numeric)                  100
+%    residualSearchWindow',  (numeric)                  0.25 
 %    medianCorrectionOffset  (numeric)                  0.1333 
 
 
@@ -36,6 +37,7 @@ function adjust_state_boundaries_svd(Stc,Trial,param,varargin)
 % $$$                'embeddingWindow',        64, ...                    
 % $$$                'regressionWindow',       100:181, ...
 % $$$                'regressionThreshold',    5e4,...
+% $$$                'residualSearchWindow',   0.25 
 % $$$                'medianCorrectionOffset', 0.14);
 % $$$ 
 % $$$ varargin = {};
@@ -108,6 +110,7 @@ sampleRate = repmat({param.sampleRate},1,numSessions);
 embeddingWindow = repmat({param.embeddingWindow},1,numSessions);
 trimWindow = repmat({[ param.embeddingWindow./4./param.sampleRate,...
                       -param.embeddingWindow./4./param.sampleRate]},1,numSessions);
+residualSearchWindow = round(param.residualSearchWindow.*param.sampleRate);
 
 % LOAD Trial objects
 Trials = af(@(Trial) MTATrial.validate(Trial)  , sessionList);
@@ -181,8 +184,6 @@ if ~exist(svdParameterFile)||overwriteSVD,
     end
     [~,Sww,Vww] = svd(cat(1,wfw{:}),0);
     save(svdParameterFile,'svdParameters','Sww','Vww');
-    
-    return
 else
 % LOAD SVD
     load(svdParameterFile);
@@ -193,7 +194,7 @@ end
 % COMPUTE eigenvector loadings for each session's eigen vectors
 % contains mask to select feature subset important to turning
 sfet = cf(@(x) x.copy('empty'), xyz);
-for i = param.eigenVectorIndices,
+for i = 1:numel(param.eigenVectorIndices),
     eigenVector = reshape(Vww(:,i),[],size(fet{1},2));
     eigenVector(:,param.eigenVectorFeaturesMask{i}) = 0;
     eigenVector(param.eigenVectorTemporalMask,:) = 0;
@@ -272,11 +273,6 @@ end
 
 
 
-
-%% END HERE THE LOADING MECHANISM FOR SAVED MEAN TRAJECTORIES
-
-
-
 rof = cf(@(a) a.copy(),sfet);
 cf(@(f,m) set(f,'data',circshift(f.segs(1:size(f,1),size(m,2)),round(size(m,2)/2),2)),...
    rof,mfs);
@@ -290,28 +286,56 @@ cf(@(c,f,m) set(c,'data',sq(sum((f.data-repmat(permute(m,[3,2,4,1]),size(f,1),1,
    csw,rof,mfs);
 
 % DETECT transitions based on regression score
-nsmins = cf(@(c,t) LocalMinima(sum(c(2,:,:),3),60,t),...
+nsmins = cf(@(c,t) LocalMinima(sum(c(2,:,:),3),0,t),...
             csw,repmat({param.regressionThreshold},1,numSessions));
 
-% SELECT putative transitions around state label transitions
-[nsmins,nsinds] = cf(@(m,s,p) SelectPeriods(m,bsxfun(@plus,[s{p}(:,1)],[-60,60]),'d',1),...
-                     nsmins,Stc,repmat({param.subsequentState},1,numSessions));
-[ssmins,ssinds] = cf(@(m,s,p) SelectPeriods([s{p}(:,1)],bsxfun(@plus,m,[-60,60]),'d',1),...
-                     nsmins,Stc,repmat({param.subsequentState},1,numSessions));
+% SELECT putative transitions around state label transitions 
+%% THIS SECTION NEEDS REPAIRS
+[nsmins,nsinds] = cf(@(m,s,w)                                                                     ...
+                     SelectPeriods(m,JoinRanges(bsxfun(@plus,[round(nanmean(s,2))],[-w,w]),[1,2]),'d',1),...
+                     nsmins,sts,repmat({residualSearchWindow},1,numSessions));
+stsstc = cf(@(m,s,p,w) SelectPeriods([s{p}(:,1)],bsxfun(@plus,mean(m,2),[-2,2]),'d',1),...
+                     sts,Stc,repmat({param.subsequentState},1,numSessions),...
+                     repmat({residualSearchWindow},1,numSessions));
+
+%nsmins = cf(@(n) unique(n),nsmins);
+[ssmins,ssinds] = cf(@(m,s,w)                                                                ...
+                     SelectPeriods(mean(s,2),JoinRanges(bsxfun(@plus,m,[-w,w]),[1,2]),'d',1),...
+                     nsmins,stsstc,repmat({residualSearchWindow},1,numSessions));
+[nsmins,nsinds] = cf(@(m,s,w)                                                                     ...
+                     SelectPeriods(m,JoinRanges(bsxfun(@plus,[round(nanmean(s,2))],[-w,w]),[1,2]),'d',1),...
+                     nsmins,ssmins,repmat({residualSearchWindow},1,numSessions));
+
+
+
+
+% $$$ 
+% $$$ 
+% $$$ [ssmins,ssinds] = cf(@(m,s,w) SelectPeriods(s,bsxfun(@plus,m,[-w,w]),'d',1),...
+% $$$                      nsmins,stsstc,repmat({residualSearchWindow},1,numSessions));
+% $$$ ssmins = cf(@(s) unique(s),ssmins);
+% $$$ 
+% $$$ [nsmins,nsinds] = cf(@(m,s,p,w) SelectPeriods(m,bsxfun(@plus,[s{p}(:,1)],[-w,w]),'d',1),...
+% $$$                      nsmins,Stc,repmat({param.subsequentState},1,numSessions),...
+% $$$                      repmat({residualSearchWindow},1,numSessions));
+% $$$ nsmins = cf(@(n) unique(n),nsmins);
+% $$$ [ssmins,ssinds] = cf(@(m,s,p,w) SelectPeriods([s{p}(:,1)],bsxfun(@plus,m,[-w,w]),'d',1),...
+% $$$                      nsmins,Stc,repmat({param.subsequentState},1,numSessions));
+% $$$                      repmat({residualSearchWindow},1,numSessions));
+%% THIS SECTION NEEDS REPAIRS
 
 % REMOVE redundant onsets; keep nearest to Stc label
 for s = 1:numSessions,
     i = 1;
     while i < numel(nsmins{s}),
-        if ssmins{s}(i) == ssmins{s}(i+1)
-            if abs(nsmins{s}(i)-ssmins{s}(i)) > abs(nsmins{s}(i+1)-ssmins{s}(i+1)),
+        if abs(nsmins{s}(i+1) - nsmins{s}(i)) < residualSearchWindow*2
+            if abs(nsmins{s}(i)-ssmins{s}(i)) > abs(nsmins{s}(i+1)-ssmins{s}(i))
                 nsmins{s}(i) = [];
-                ssmins{s}(i) = [];
             else,
                 nsmins{s}(i+1) = [];
-                ssmins{s}(i+1) = [];
             end
         else
+            
             i = i+1;            
         end
     end
@@ -331,8 +355,8 @@ labels = {};
 keys = {};
 for s = 1:numSessions,
     [smat,labels,keys] = stc2mat(Stc{s},fet{s},states);
-    stateIndex = Stc{s}.gsi(param.subsequentState);
-    sper = Stc{s}.states{stateIndex};
+    stateIndex = find(~cellfun(@isempty,regexp(labels,['^',param.subsequentState,'$'])));
+    sper = Stc{s}.states{Stc{s}.gsi(param.subsequentState)};
     for i = 1:numel(nsmins{s}),
 % FIND index of old period transition 
         oldSubPerIndex = find(ssmins{s}(i)==sper.data(:,1));
@@ -351,9 +375,9 @@ for s = 1:numSessions,
 
         if backfill,
 % FIND antecedent states
-            backSearchInd = sper.data(oldSubPerIndex,1)-round(1.*sampleRate{1}):sper.data(oldSubPerIndex,1);
+            backSearchInd = sper.data(oldSubPerIndex,1)-round(0.25.*sampleRate{1}):sper.data(oldSubPerIndex,1);
             backSearchInd(backSearchInd<=0)=[];
-            backStateInd = find(smat(find(any(smat(backSearchInd,:),2),1,'last'),:));
+            backStateInd = find(any(smat(backSearchInd,:)));
             backStateInd(backStateInd==stateIndex) = [];
             if isempty(backStateInd), continue; end
             smat(ind,backStateInd) = repmat(backStateInd,numel(ind),1);
@@ -362,6 +386,7 @@ for s = 1:numSessions,
         end    
     end    
 
+    %StcN{s} = mat2stc(smat,Stc{s}.copy,fet{s},Trials{s},labels,keys);
     Stc{s} = mat2stc(smat,Stc{s},fet{s},Trials{s},labels,keys);
 end
 

@@ -109,7 +109,8 @@ for rli = 1:numel(rlist),
 % ADJUST Rears'  onsets from all periods
 % ADJUST Rears' offsets from all periods
             
-% FILTER Turns 
+% FILTER Turns' duration lt 0.1 sec -> pause
+% FILTER Turns  
 % ADJUST Turns' onsets from Pause
 
 % FILTER Walks 
@@ -191,9 +192,31 @@ for rli = 1:numel(rlist),
             );
 
 
+% ADJUST pause to turn transitions 
+            adjust_state_boundaries_svd(StcCor,Trial,...
+                                struct('sessionList',            'hand_labeled', ...
+                                       'referenceTrial',         'jg05-20120317.cof.all',...
+                                       'featureSet',             'fet_bref',     ...
+                                       'sampleMode',             'trimmed',      ...
+                                       'svdState',               'walk+turn',    ...
+                                       'antecedentState',        'pause',        ...
+                                       'subsequentState',        'turn',         ...
+                                       'immutableStates',        {{}},           ...
+                                       'eigenVectorFeaturesMask',{{[2:15,17:2:25,26:30],[1:16,18:24,26:30]}},...
+                                       'eigenVectorTemporalMask',[1:15,46:64],   ...
+                                       'eigenVectorIndices',     [2],            ...
+                                       'sampleRate',             119.881035,     ...
+                                       'embeddingWindow',        64,             ...
+                                       'regressionWindow',       110:150,        ...
+                                       'regressionThreshold',    300,            ...
+                                       'medianCorrectionOffset', 0)              ...
+            );
 
+            
 
 % TURN angular displacement
+            try, StcCor = reassign_state_by_duration(StcCor,'n','p',0.1,tds,tps,@lt); end
+
             try
                 key = 'n';
                 wd = [];
@@ -234,28 +257,7 @@ for rli = 1:numel(rlist),
             end
 
 
-% ADJUST pause to turn transitions 
-            adjust_state_boundaries_svd(StcCor,Trial,...
-                                struct('sessionList',            'hand_labeled', ...
-                                       'referenceTrial',         'jg05-20120317.cof.all',...
-                                       'featureSet',             'fet_bref',     ...
-                                       'sampleMode',             'trimmed',      ...
-                                       'svdState',               'walk+turn',    ...
-                                       'antecedentState',        'pause',        ...
-                                       'subsequentState',        'turn',         ...
-                                       'immutableStates',        {{}},           ...
-                                       'eigenVectorFeaturesMask',{{[2:15,17:2:25,26:30],[1:16,18:24,26:30]}},...
-                                       'eigenVectorTemporalMask',[1:15,46:64],   ...
-                                       'eigenVectorIndices',     [2],            ...
-                                       'sampleRate',             119.881035,     ...
-                                       'embeddingWindow',        64,             ...
-                                       'regressionWindow',       110:150,        ...
-                                       'regressionThreshold',    300,            ...
-                                       'medianCorrectionOffset', 0)              ...
-            );
 
-            
-            
             
 
             
@@ -395,7 +397,7 @@ for rli = 1:numel(rlist),
             end
             
             
-
+            try, StcCor = reassign_state_by_duration(StcCor,'n','p',0.1,tds,tps,@lt); end
             try, StcCor = reassign_state_by_duration(StcCor,'n','w',0.2,tds,tps,@lt); end
             try, StcCor = reassign_state_by_duration(StcCor,'w','p',0.2,tds,tps,@lt); end
             try, StcCor = reassign_state_by_duration(StcCor,'s','p',1.5,tds,tps,@lt); end
@@ -459,62 +461,6 @@ end
 
 
 
-% AUX METHODS ----------------------------------------------------------------------
-
-function [StcCor,tempDState,tempPState] = reassign_state_by_duration(StcCor,key,defaultState,durationThreshold,tempDState,tempPState,logicFun)
-pd = [];
-states = StcCor.list_state_attrib;
-pthresh = log10(durationThreshold.*StcCor{key}.sampleRate);
-for rp = StcCor{key}.data',
-
-    % collect period durations
-    pd(end+1) = log10(abs(diff(rp)));
-
-    if logicFun(pd(end),pthresh),
-        pind = rp(1):rp(2);
-
-        %???
-        tempDState(pind,2) = 0;        
-        % promote next best state 
-        tempPState(pind,:) = circshift(tempPState(pind,:),-1,2);
-
-        if isempty(defaultState), 
-            % select next best state             
-            msts = mode(tempPState(pind,1));
-            if msts == 2; 
-                tps(pind,:) = circshift(tempPState(pind,:),-1,2);
-                msts = mode(tempPState(pind,1));
-            end                    
-        else % relabel state with a provided default state            
-            msts = StcCor.gsi(defaultState);
-        end
-        
-        
-        % reassign state
-        StcCor.states{StcCor.gsi(states{msts})}.data = ...
-            [StcCor.states{StcCor.gsi(states{msts})}.data;pind([1,end])];
-    end
-end
-
-% Resort and clean overlaps 
-for sts = StcCor.states,
-    sts{1}.clean; 
-end
-
-% Delete the reassigned periods within original state
-StcCor.states{StcCor.gsi(key)}.data(logicFun(pd,pthresh),:) = [];
-
-
-
-
-
-
-% END function set_svd_parameters ------------------------------------------------------------------
-
-
-
-
-% END AUX METHODS ----------------------------------------------------------------------
 
 
 
