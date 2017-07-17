@@ -1,12 +1,11 @@
-function Stc = get_state_transitions(Stc,Trial,varargin)
-% function get_state_transitions(Stc,Trial,varargin)
+function [Stc,antecedentStateIndices,subsequentStateIndices] = get_state_transitions(Stc,Trial,varargin)
+% function get_state_transitions(Stc,varargin)
 % 
 % Return TimePoints or TimePeriods of transitions from the
 % states{1} to states{2}.
 %
 % INPUTS 
 %     Stc:     MTAStateCollection,
-%     Trial:   MTATrial
 %     states:  cellstr,
 %     transitionWindow: numeric, 
 %     ReferencData: MTAData,
@@ -16,29 +15,39 @@ function Stc = get_state_transitions(Stc,Trial,varargin)
 % DEFARGS ------------------------------------------------------------------------------------------
 defargs = struct('states',           {{'turn','walk'}},...
                  'transitionWindow', 0.2,...
-                 'ReferenceData',    [],...%Trial.load('xyz'),...
+                 'referenceData',    [],...%Trial.load('xyz'),...
                  'outputType',       'TimePeriods'...
 );
 
-[states, transitionWindow, ReferenceData, outputType] = ...
+[states, transitionWindow, referenceData, outputType] = ...
     DefaultArgs(varargin,defargs,'--struct');
 %---------------------------------------------------------------------------------------------------
 
 
 % MAIN ---------------------------------------------------------------------------------------------
+tw = round(transitionWindow.*referenceData.sampleRate);
+subsequentState = [Stc{states{2},referenceData.sampleRate}];
+antecedentState = [Stc{states{1},referenceData.sampleRate}];
+stsTransitionPeriods = ...
+    IntersectRanges(bsxfun(@plus,subsequentState.data(:,2),[0 ,tw]),...
+                    bsxfun(@plus,antecedentState.data(:,1),[-tw,0])...
+);
 
-smat = stc2mat(Stc,ReferenceData,states);
-indexShift = round(transitionWindow * ReferenceData.sampleRate / 2);
+subsequentStateTransitionPoints = WithinRanges([subsequentState.data(:,1)],transitionPeriods)
+subsequentStateIndices = find(ismember(subsequentState.data(:,1),transitionPoints));
+antecedentStateTransitionPoints = WithinRanges([antecedentState.data(:,1)],transitionPeriods)
+antecedentStateIndices = find(ismember(antecedentState.data(:,1),transitionPoints));
 
-stsTransitionMat = logical(reshape(permute(cat(3,...
-                                       circshift(smat,indexShift),...
-                                       circshift(smat,-indexShift)),...
-                                   [1,2,3]),...
-                           size(smat,1),[]));
-
-stsTargetMat     = repmat([1,0,0,1],size(smat,1),1);
-
-stsTransitionPeriods = ThreshCross(all(stsTransitionMat==stsTargetMat,2),0.5,0);
+% $$$ smat = stc2mat(Stc,referenceData,states);
+% $$$ indexShift = round(transitionWindow * referenceData.sampleRate / 2);
+% $$$ stsTransitionMat = logical(reshape(permute(cat(3,...
+% $$$                                        circshift(smat,indexShift),...
+% $$$                                        circshift(smat,-indexShift)),...
+% $$$                                    [1,2,3]),...
+% $$$                            size(smat,1),[]));
+% $$$ stsTargetMat     = repmat([1,0,0,1],size(smat,1),1);
+% $$$ stsTransitionPeriods = ThreshCross(all(stsTransitionMat==stsTargetMat,2),0.5,0);
+% $$$ stsTransitionPeriods = bsxfun(@plus,stsTransitionPeriods,[1,0]);
 
 switch outputType,
   case 'TimePeriods'
@@ -46,7 +55,7 @@ switch outputType,
         Stc.addState(Trial.spath,...                         % system path to file
                      Trial.filebase,...                % prefix for filename generation
                      stsTransitionPeriods,...          % Data periods
-                     ReferenceData.sampleRate,...      % Data SampleRate
+                     referenceData.sampleRate,...      % Data SampleRate
                      Trial.sync.copy,...               % Trial Synchronization Periods
                      Trial.sync.data(1),...            % Synchronization Origin
                      ['t_' Stc{states{1}}.label '2' Stc{states{2}}.label],...% label
