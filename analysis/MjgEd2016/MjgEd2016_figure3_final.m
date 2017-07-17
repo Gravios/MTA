@@ -94,7 +94,7 @@ clear('zfrCat','zfrMean','zfrStd')
 
 % FILTERED feature matrix
 ffet = cf(@(f) f.copy, fet);
-cf(@(f) f.filter('ButFilter',5,[1.2,10],'bandpass'),ffet);
+cf(@(f) f.filter('ButFilter',5,[1.5,8],'bandpass'),ffet);
 
 % EMBED feature
 wfs  = cf(@(w,e) w.segs(1:size(w,1),e),fet,embeddingWindow);
@@ -295,7 +295,7 @@ print(hfig,'-dpng',  fullfile(OwnDir,FigDir,[FigName,'.png']));
 % location: MjgEd2016_figure3_svd_walk_alt.m
 
 % DISPLAY step detection 
-stepFeature = ffet{s}(:,17);
+stepFeature = ffet{s}(:,19);
 [steps,swayMagnitude] = LocalMinima(-abs(stepFeature),8,-1);
 % $$$ stepFeature = ButFilter(afetW{s}(:,5),3,[1,10]./(afetW{s}.sampleRate/2),'bandpass');
 % $$$ [steps,swayMagnitude] = LocalMinima(-abs(stepFeature),0,-4);
@@ -343,7 +343,7 @@ markers = {'spine_lower','pelvis_root','spine_middle','spine_upper','hcom'};
 for s = 1:numSessions,
     %stepFeature = ButFilter(fetWsvd{s}(:,3),3,[1,6]./(fetWsvd{s}.sampleRate/2),'bandpass');
     stepFeature = ffet{s}(:,17);
-    [steps,swayMagnitude] = LocalMinima(-abs(stepFeature),15,-1.5);
+    [steps,swayMagnitude] = LocalMinima(-abs(stepFeature),15,-1);
     %stepFeature = ButFilter(afetW{s}(:,3),3,[1,6]./(afetW{s}.sampleRate/2),'bandpass');
     %[steps,swayMagnitude] = LocalMinima(-abs(stepFeature),0,-4);
 % $$$     [stepsL,swayMagnitudeL] = LocalMinima(-stepFeature,0,-4);
@@ -468,6 +468,7 @@ print(gcf,'-dpng',  fullfile(OwnDir,FigDir,[FigName,'.png']));
 %cf(@(r,w,v) set(r,'data',[r.data,[zeros([1,size(r,2)]);diff(r.data)]]),sfet);
 
 zfrCat = cf(@(f) get(f,'data'),sfet);
+
 zfrCat = cat(1,zfrCat{:});
 zfrMean = nanmean(zfrCat(nniz(zfrCat),:,:));
 zfrStd = nanstd(zfrCat(nniz(zfrCat),:,:));
@@ -482,7 +483,15 @@ clear('zfrCat','zfrMean','zfrStd')
 
 
 transitionStatePost = {'rear'};
-transitionStatePre = {'pause','walk','pause+walk','gper-rear'};
+transitionStatePre = {'pause+walk'};
+shift = [0,0];
+sampleShift = [0,round(0.5*sfet{1}.sampleRate)];
+mStc = cf(@(s) s.copy(),StcHLC);
+sortTurns = false;
+fetInd = 1;
+
+transitionStatePost = {'rear'};
+transitionStatePre = {'pause+walk'};
 shift = [0,0];
 
 transitionStatePost = {'walk'};
@@ -495,12 +504,13 @@ transitionStatePre = {'pause','walk'};%,'rear','pause+walk+rear','gper-turn'};
 shift = [0,round(0.5*sfet{1}.sampleRate)];
 sampleShift = [0,round(0.25*sfet{1}.sampleRate)];
 
-mStc = cf(@(s) s.copy(),Stc);
+mStc = cf(@(s) s.copy(),StcHL);
+mStc = cf(@(s) s.copy(),StcHLC);
 
 
 
-sortTurns = false;
-fetInd = 1:4;
+
+
 for f = fetInd
 for pre = 1:numel(transitionStatePre),
     for p = 1:numel(transitionStatePost),
@@ -714,25 +724,38 @@ print(gcf,'-dpng',  fullfile(OwnDir,FigDir,[FigName,'.png']));
 
 
 
+% COLLECT segments using Hand labeled
+wfw = cf(@(w,s,t) w.segs(s{'r'}(:,1)-round(1.*w.sampleRate),round(3.*w.sampleRate)),...
+         sfet, Stc, Trials);        
+% COCATENATE trial data
+onf = cat(2,wfw{:});
+fetSegsORI = onf(:,:,:);
+
+wfw = cf(@(w,s,t) w.segs(s{'r'}(:,1)-round(1.*w.sampleRate),round(3.*w.sampleRate)),...
+         sfet, StcADJ, Trials);        
+% COCATENATE trial data
+onf = cat(2,wfw{:});
+fetSegsADJ = onf(:,:,:);
+
+
 % fetSegs
 figure,
-corSegs = cat(2,csegs{:});
 sp = [];
-nHalf = round(size(fetSegs,2)/2);
-fetSegsSE = zeros([size(fetSegs,1),size(fetSegs,3)]);
-corSegsSE = zeros([size(corSegs,1),size(corSegs,3)]);
+nHalf = round(size(fetSegsORI,2)/2);
+fetSegsSE = zeros([size(fetSegsORI,1),size(fetSegsORI,3)]);
+corSegsSE = zeros([size(fetSegsADJ,1),size(fetSegsADJ,3)]);
 for i = 1:2,
 sp(end+1)=subplot2(2,2,i,1);
 hold('on');
-plot(fetSegs(:,:,i),'b')
+plot(fetSegsORI(:,:,i),'b')
 
 
-fetSegsSE(:,i) = nanstd(nanmean(reshape(fetSegs(:,randi([1,size(fetSegs,2)],nHalf),i),[size(fetSegs,1),nHalf,nHalf]),2),[],3)./sqrt(nHalf);
-plot(nanmean(fetSegs(:,:,i),2),'c','LineWidth',1)
-plot(nanmean(fetSegs(:,:,i),2)+fetSegsSE(:,i)*2.576,'r','LineWidth',1)
-plot(nanmean(fetSegs(:,:,i),2)-fetSegsSE(:,i)*2.576,'r','LineWidth',1)
-plot(nanmean(fetSegs(:,:,i),2)+nanstd(fetSegs(:,:,i),[],2)*2.576,'m','LineWidth',1)
-plot(nanmean(fetSegs(:,:,i),2)-nanstd(fetSegs(:,:,i),[],2)*2.576,'m','LineWidth',1)
+fetSegsORISE(:,i) = nanstd(nanmean(reshape(fetSegsORI(:,randi([1,size(fetSegsORI,2)],nHalf),i),[size(fetSegsORI,1),nHalf,nHalf]),2),[],3)./sqrt(nHalf);
+plot(nanmean(fetSegsORI(:,:,i),2),'c','LineWidth',1)
+plot(nanmean(fetSegsORI(:,:,i),2)+fetSegsORISE(:,i)*2.576,'r','LineWidth',1)
+plot(nanmean(fetSegsORI(:,:,i),2)-fetSegsORISE(:,i)*2.576,'r','LineWidth',1)
+plot(nanmean(fetSegsORI(:,:,i),2)+nanstd(fetSegsORI(:,:,i),[],2)*2.576,'m','LineWidth',1)
+plot(nanmean(fetSegsORI(:,:,i),2)-nanstd(fetSegsORI(:,:,i),[],2)*2.576,'m','LineWidth',1)
 ylabel(['Rear SVD PC',num2str(i)])
 xlabel('time (samples@120Hz)')
 title('Triggered Average Hand Labeled')
@@ -741,14 +764,14 @@ Lines(120,[],'k');
 
 % csegs
 sp(end+1)=subplot2(2,2,i,2); hold('on')
-plot(corSegs(:,:,i),'b')
-nHalf = round(size(corSegs,2)/2);
-corSegsSE(:,i) = nanstd(nanmean(reshape(corSegs(:,randi([1,size(corSegs,2)],nHalf),i),[size(corSegs,1),nHalf,nHalf]),2),[],3)./sqrt(nHalf);
-plot(nanmean(corSegs(:,:,i),2),'c','LineWidth',1)
-plot(nanmean(corSegs(:,:,i),2)+corSegsSE(:,i)*2.576,'r','LineWidth',1)
-plot(nanmean(corSegs(:,:,i),2)-corSegsSE(:,i)*2.576,'r','LineWidth',1)
-plot(nanmean(corSegs(:,:,i),2)+nanstd(corSegs(:,:,i),[],2)*2.576,'m','LineWidth',1)
-plot(nanmean(corSegs(:,:,i),2)-nanstd(corSegs(:,:,i),[],2)*2.576,'m','LineWidth',1)
+plot(fetSegsADJ(:,:,i),'b')
+nHalf = round(size(fetSegsADJ,2)/2);
+fetSegsADJSE(:,i) = nanstd(nanmean(reshape(fetSegsADJ(:,randi([1,size(fetSegsADJ,2)],nHalf),i),[size(fetSegsADJ,1),nHalf,nHalf]),2),[],3)./sqrt(nHalf);
+plot(nanmean(fetSegsADJ(:,:,i),2),'c','LineWidth',1)
+plot(nanmean(fetSegsADJ(:,:,i),2)+fetSegsADJSE(:,i)*2.576,'r','LineWidth',1)
+plot(nanmean(fetSegsADJ(:,:,i),2)-fetSegsADJSE(:,i)*2.576,'r','LineWidth',1)
+plot(nanmean(fetSegsADJ(:,:,i),2)+nanstd(fetSegsADJ(:,:,i),[],2)*2.576,'m','LineWidth',1)
+plot(nanmean(fetSegsADJ(:,:,i),2)-nanstd(fetSegsADJ(:,:,i),[],2)*2.576,'m','LineWidth',1)
 title('Triggered Average Hand Labeled Re-aligned')
 ylabel(['Rear SVD PC',num2str(i)])
 xlabel('time (samples@120Hz)')
@@ -1519,3 +1542,116 @@ end
 
 
 
+% LOAD Trial objects
+Trials = af(@(Trial) MTATrial.validate(Trial)  , sessionList);
+
+% LOAD State Collections
+StcHL  = cf(@(Trial)  Trial.load('stc')         , Trials);
+StcHLC = cf(@(Trial)  Trial.load('stc',[Trial.stc.mode,'_SVDTRAJADJ']), Trials);
+
+Trials = af(@(Trial) MTATrial.validate(Trial)  , get_session_list('nn_labeled'));
+StcNN  = cf(@(Trial)  Trial.load('stc'), Trials);
+StcNNC = cf(@(Trial)  Trial.load('stc',[Trial.stc.mode,'_svdc']), Trials);
+
+
+
+% PLOT CCG between bhv transition and residules minimas - used to determin medianCorrectionOffset
+%medianCorrectionOffset = median(cat(1,nsmins{:})-cat(1,ssmins{:}))./sampleRate{1};
+
+figure();
+o = 1;
+transType = {'onset','offset'};
+states = 'walk';
+sto  = cf(@(s,state) [s{state}],StcHL ,repmat({state},1,numSessions));
+stn  = cf(@(s,state) [s{state}],StcNN ,repmat({state},1,numSessions));
+stoc = cf(@(s,state) [s{state}],StcHLC,repmat({state},1,numSessions));
+stnc = cf(@(s,state) [s{state}],StcNNC,repmat({state},1,numSessions));
+
+
+states = {'pause+walk','rear'};
+sto  = cf(@(c,s,t,f) [c.get_state_transitions(t,s,[],f)],StcHL ,repmat({states},1,numSessions),Trials,sfet);
+stn  = cf(@(c,s,t,f) [c.get_state_transitions(t,s,[],f)],StcNN ,repmat({states},1,numSessions),Trials,sfet);
+stoc = cf(@(c,s,t,f) [c.get_state_transitions(t,s,[],f)],StcHLC,repmat({states},1,numSessions),Trials,sfet);
+stnc = cf(@(c,s,t,f) [c.get_state_transitions(t,s,[],f)],StcNNC,repmat({states},1,numSessions),Trials,sfet);
+
+
+ccgOpts.binSize = 2;
+ccgOpts.halfBins = 40;
+ccgOpts.sampleRate = param.sampleRate;
+
+subplot(221);
+[sccg,txx,pxx] = cf(@(s,n,co) CCG([s;n],[ones(size(s));2*ones(size(n))],...
+                                  co.binSize,co.halfBins,co.sampleRate,[1,2],'count'),...
+                    sto,stn,repmat({ccgOpts},1,numSessions));
+accg = sum(cat(4,sccg{:}),4);
+bar(txx{1},accg(:,1,2));
+xlabel('Time Lag (ms)');
+ylabel('count')
+title(['CCG: HL VS NN labeled - ' strjoin(states,' to ')])
+
+subplot(222);
+[sccg,txx,pxx] = cf(@(s,n,co) CCG([s;n],[ones(size(s));2*ones(size(n))],...
+                                  co.binSize,co.halfBins,co.sampleRate,[1,2],'count'),...
+                    sto,stnc,repmat({ccgOpts},1,numSessions));
+accg = sum(cat(4,sccg{:}),4);
+bar(txx{1},accg(:,1,2));
+xlabel('Time Lag (ms)');
+ylabel('count')
+title(['CCG: HL VS NNC labeled - ' strjoin(states,' to ')])
+
+subplot(223);
+[sccg,txx,pxx] = cf(@(s,n,co) CCG([s;n],[ones(size(s));2*ones(size(n))],...
+                                  co.binSize,co.halfBins,co.sampleRate,[1,2],'count'),...
+                    stoc,stn,repmat({ccgOpts},1,numSessions));
+accg = sum(cat(4,sccg{:}),4);
+bar(txx{1},accg(:,1,2));
+xlabel('Time Lag (ms)');
+ylabel('count')
+title(['CCG: HLC VS NN labeled - ' strjoin(states,' to ')])
+
+subplot(224);
+[sccg,txx,pxx] = cf(@(s,n,co) CCG([s;n],[ones(size(s));2*ones(size(n))],...
+                                  co.binSize,co.halfBins,co.sampleRate,[1,2],'count'),...
+                    stoc,stnc,repmat({ccgOpts},1,numSessions));
+accg = sum(cat(4,sccg{:}),4);
+bar(txx{1},accg(:,1,2));
+xlabel('Time Lag (ms)');
+ylabel('count')
+title(['CCG: HLC VS NNC labeled - ' strjoin(states,' to ')])
+
+
+ForAllSubplots('xlim([-750,750])')
+suptitle(['stateTransition CCG']);
+FigName = ['stateTransition_CCG_',strjoin(states,'2')];
+print(gcf,'-depsc2',fullfile(OwnDir,FigDir,[FigName,'.eps']));
+print(gcf,'-dpng',  fullfile(OwnDir,FigDir,[FigName,'.png']));
+
+s = 2;
+figure,
+sp=[];
+sp(end+1)=subplot(411);
+plotSTC(StcHL{s},1);
+sp(end+1)=subplot(412);
+plotSTC(StcNN{s},1);
+sp(end+1)=subplot(413);
+plotSTC(StcHLC{s},1);
+sp(end+1)=subplot(414);
+plotSTC(StcNNC{s},1);
+linkaxes(sp,'x');
+
+
+allfet = cf(@(f,s) abs(f(s{'gper-sit-rear-groom'},16)), fet, StcHL);
+sitfet = cf(@(f,s) abs(f(s{'sit'},     16)), fet, StcHL);
+
+eds = linspace(50,150,50);
+eds = linspace(0,20,50);
+eds = linspace(-3,3,50);
+figure,
+subplot(211);
+bar(eds,histc(log10(cat(1,allfet{:})),eds),'histc');
+subplot(212);
+bar(eds,histc(log10(cat(1,sitfet{:})),eds),'histc');
+
+
+
+figure,

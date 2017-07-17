@@ -140,7 +140,7 @@ end
 % Create new StateCollection ... well copy
 
 Stc.updateMode([MODEL_TYPE '-' Model_Information.StcMode...
-                '-' cell2mat(Model_Information.state_keys)]);
+                '-' cell2mat(Model_Information.state_keys(~isempty(Model_Information.state_keys)))]);
 Stc.states = {};
 
 % Used to put labels into xyz sampleRate

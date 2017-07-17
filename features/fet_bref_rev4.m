@@ -1,17 +1,15 @@
-function [fet,featureTitles,featureDesc,Nmean,Nstd] = fet_bref(Trial,varargin)
-% function [fet,featureTitles,featureDesc,Nmean,Nstd] = fet_mis(Trial,varargin)
-% 
-% varargin:
-%     newSampleRate: numeric,  (Trial.xyz.sampleRate) - sample rate of xyz data
-%     normalize:     logical,  (false)                - covert each feature to z-score
-%     procOpts:      CellARY,  ({'SPLINE_SPINE_HEAD_EQD'}), - preprocessing options
-%
+function [fet,featureTitles,featureDesc,Nmean,Nstd] = fet_bref_rev4(Trial,varargin)
+% $$$ function [fet,featureTitles,featureDesc,Nmean,Nstd] = fet_mis(Trial,varargin)
+% $$$ defargs = struct('newSampleRate', 12,                       ...
+% $$$                  'normalize'    , false,                    ...
+% $$$                  'procOpts'     , {'SPLINE_SPINE_HEAD_EQD'});
 
 
+Trial = MTATrial.validate(Trial);
 
 % DEFARGS ------------------------------------------------------------------------------------------
-defargs = struct('newSampleRate', Trial.xyz.sampleRate,                 ...
-                 'normalize'    , false,                    ...
+defargs = struct('newSampleRate', Trial.xyz.sampleRate,    ...
+                 'normalize'    , false,                   ...
                  'procOpts'     , {'SPLINE_SPINE_HEAD_EQD'});
 
 [newSampleRate,normalize,procOpts] = DefaultArgs(varargin,defargs,'--struct');
@@ -28,11 +26,10 @@ fet = MTADfet(Trial.spath,...
               Trial.xyz.sampleRate,...
               Trial.sync.copy,...
               Trial.sync.data(1),...
-              [],'TimeSeries',[],'body referenced position and motion','fet_bref','b');                  
+              [],'TimeSeries',[],'body referenced position and motion',mfilename,'b');
 
 % PREPROC xyz
 xyz = preproc_xyz(Trial,procOpts);
-%xyz = Trial.load('xyz','trb');
 rb = xyz.model.rb({'spine_lower','pelvis_root','spine_middle','spine_upper'});
 hcom = xyz.com(rb);
 xyz.addMarker('fbcom',[.7,1,.7],{{'head_back','head_front',[0,0,1]}},...
@@ -44,20 +41,18 @@ rb = xyz.model.rb({'head_back','head_left','head_front','head_right'});
 hcom = xyz.com(rb);
 xyz.addMarker('hcom',[.7,1,.7],{{'head_back','head_front',[0,0,1]}},hcom);
 clear('hcom');
+xyz.filter('ButFilter',3,20,'low');
 
 
-
-
-% Tranlational movements relative to body
+% Translational movements relative to body
 shft = 3;
-tmar = {'spine_lower','pelvis_root','spine_middle','spine_upper','hcom'};
-tvec = [];cvec = [];,zvec=[];
+tmar = {'spine_lower','spine_middle','spine_upper'};
+tvec = zeros([size(xyz,1),numel(tmar),2]);
+dzvec = zeros([size(xyz,1),numel(tmar),1]);
 for m = 1:numel(tmar),
-    tvec(:,m,:) = circshift(xyz(:,tmar{m},[1,2]),-shft)-circshift(xyz(:,tmar{m},[1,2]),shft);
-    cvec(:,m,:) = circshift(xyz(:,tmar{m},[1,2]),-shft)-circshift(xyz(:,tmar{m},[1,2]),shft);
-    dzvec(:,m,:) = circshift(xyz(:,tmar{m},[3]),-shft)-circshift(xyz(:,tmar{m},[3]),shft);
+    tvec(:,m,1:2) = circshift(xyz(:,tmar{m},[1,2]),-shft)-circshift(xyz(:,tmar{m},[1,2]),shft);
+    dzvec(:,m,1)  = circshift(xyz(:,tmar{m},[3]),  -shft)-circshift(xyz(:,tmar{m},[3]),  shft);
 end
-%zvec = nunity(zvec);
 dzvec(~nniz(dzvec(:)))=0;
 
 unvec = [];
@@ -77,15 +72,22 @@ for t = rotationAngles;
 end
 
 
-shft = 0;
-tmar = {'spine_lower','pelvis_root','spine_middle','spine_upper','hcom'};
-tvec = [];cvec = [];,zvec=[];
+
+fldwalkFetRot = MTADxyz('data',cat(2,dwalkFetRot,permute(dzvec,[1,3,2])),'sampleRate',xyz.sampleRate);
+fldwalkFetRot.filter('ButFilter',3,1.5,'low');
+
+fmdwalkFetRot = MTADxyz('data',cat(2,dwalkFetRot,permute(dzvec,[1,3,2])),'sampleRate',xyz.sampleRate);
+fmdwalkFetRot.filter('ButFilter',3,[1.5,6],'bandpass');
+
+fhdwalkFetRot = MTADxyz('data',cat(2,dwalkFetRot,permute(dzvec,[1,3,2])),'sampleRate',xyz.sampleRate);
+fhdwalkFetRot.filter('ButFilter',3,7,'high');
+
+tvec = zeros([size(xyz,1),numel(tmar),2]);
+zvec = zeros([size(xyz,1),numel(tmar),1]);
 for m = 1:numel(tmar),
-    tvec(:,m,:) = circshift(xyz(:,tmar{m},[1,2]),-shft)-circshift(xyz(:,'bcom',[1,2]),shft);
-    cvec(:,m,:) = circshift(xyz(:,tmar{m},[1,2]),-shft)-circshift(xyz(:,'bcom',[1,2]),shft);
-    zvec(:,m,:) = xyz(:,tmar{m},[3]);
+    tvec(:,m,1:2) = xyz(:,tmar{m},[1,2])-xyz(:,'bcom',[1,2]);
+    zvec(:,m,1)   = xyz(:,tmar{m},[3]);
 end
-%zvec = nunity(zvec);
 zvec(~nniz(zvec(:)))=0;
 
 unvec = [];
@@ -104,28 +106,27 @@ for t = rotationAngles;
     end
 end
 
+fmdwalkSegs = GetSegs([reshape(fmdwalkFetRot.data,size(xyz,1),[])], ...  x
+                    1:size(dwalkFetRot,1),                         ...  start points
+                    round(xyz.sampleRate/2),                     ...  segments' lengths
+                    0                                            ...  If not complete
+);
 
-
+fhdwalkSegs = GetSegs([reshape(fhdwalkFetRot.data,size(xyz,1),[])], ...  x
+                    1:size(dwalkFetRot,1),                         ...  start points
+                    round(xyz.sampleRate/5),                     ...  segments' lengths
+                    0                                            ...  If not complete
+);
 
 
 % CAT feature
-fet.data = [ reshape(walkFetRot,size(xyz,1),[]),zvec,reshape(dwalkFetRot,size(xyz,1),[]),dzvec ];
-% $$$ defSpec = struct('nFFT',2^9,'Fs',fet.sampleRate,...
-% $$$                  'WinLength',2^8,'nOverlap',2^8-4,...
-% $$$                  'FreqRange',[1,15]);
-% $$$ for s = 1:size(fet,2)
-% $$$     tfet = fet.copy;
-% $$$     tfet.data = tfet.data(:,s); 
-% $$$     [sfet{s},fs,ts] = fet_spec(Trial,tfet,'mtchglong',false,'defspec',defSpec);
-% $$$ end
-% $$$ 
-% $$$ sfet = cf(@(f) f.data,sfet);
-% $$$ fet.data = cat(2,sfet{:});
-% $$$ fet.data(:,1:2:end) = [];
-% $$$ fet.sampleRate = 1./diff(ts(1:2));
-% $$$ xyz.resample(fet);
-
+fet.data = [ reshape(walkFetRot,size(xyz,1),[]),zvec,...
+             reshape(fldwalkFetRot.data,size(xyz,1),[]),...
+             permute(rms(fmdwalkSegs),[2,3,1]),...
+             permute(rms(fhdwalkSegs),[2,3,1])];
 fet.data(~nniz(xyz),:)=0;
+
+fet.filter('ButFilter',3,2.4,'low');
 
 fet.resample(newSampleRate);
 

@@ -1,17 +1,15 @@
-function [fet,featureTitles,featureDesc,Nmean,Nstd] = fet_bref(Trial,varargin)
-% function [fet,featureTitles,featureDesc,Nmean,Nstd] = fet_mis(Trial,varargin)
-% 
-% varargin:
-%     newSampleRate: numeric,  (Trial.xyz.sampleRate) - sample rate of xyz data
-%     normalize:     logical,  (false)                - covert each feature to z-score
-%     procOpts:      CellARY,  ({'SPLINE_SPINE_HEAD_EQD'}), - preprocessing options
-%
+function [fet,featureTitles,featureDesc,Nmean,Nstd] = fet_bref_rev2(Trial,varargin)
+% $$$ function [fet,featureTitles,featureDesc,Nmean,Nstd] = fet_mis(Trial,varargin)
+% $$$ defargs = struct('newSampleRate', 12,                       ...
+% $$$                  'normalize'    , false,                    ...
+% $$$                  'procOpts'     , {'SPLINE_SPINE_HEAD_EQD'});
 
 
+Trial = MTATrial.validate(Trial);
 
 % DEFARGS ------------------------------------------------------------------------------------------
-defargs = struct('newSampleRate', Trial.xyz.sampleRate,                 ...
-                 'normalize'    , false,                    ...
+defargs = struct('newSampleRate', Trial.xyz.sampleRate,    ...
+                 'normalize'    , false,                   ...
                  'procOpts'     , {'SPLINE_SPINE_HEAD_EQD'});
 
 [newSampleRate,normalize,procOpts] = DefaultArgs(varargin,defargs,'--struct');
@@ -50,7 +48,7 @@ clear('hcom');
 
 % Tranlational movements relative to body
 shft = 3;
-tmar = {'spine_lower','pelvis_root','spine_middle','spine_upper','hcom'};
+tmar = {'spine_lower','spine_middle','spine_upper','hcom'};
 tvec = [];cvec = [];,zvec=[];
 for m = 1:numel(tmar),
     tvec(:,m,:) = circshift(xyz(:,tmar{m},[1,2]),-shft)-circshift(xyz(:,tmar{m},[1,2]),shft);
@@ -106,25 +104,16 @@ end
 
 
 
+dwalkSegs = GetSegs([reshape(dwalkFetRot,size(xyz,1),[]),dzvec], ...  x
+                    1:size(dwalkFetRot),                         ...  start points
+                    round(xyz.sampleRate/3),                     ...  segments' lengths
+                    0                                            ...  If not complete
+);
 
 
 % CAT feature
-fet.data = [ reshape(walkFetRot,size(xyz,1),[]),zvec,reshape(dwalkFetRot,size(xyz,1),[]),dzvec ];
-% $$$ defSpec = struct('nFFT',2^9,'Fs',fet.sampleRate,...
-% $$$                  'WinLength',2^8,'nOverlap',2^8-4,...
-% $$$                  'FreqRange',[1,15]);
-% $$$ for s = 1:size(fet,2)
-% $$$     tfet = fet.copy;
-% $$$     tfet.data = tfet.data(:,s); 
-% $$$     [sfet{s},fs,ts] = fet_spec(Trial,tfet,'mtchglong',false,'defspec',defSpec);
-% $$$ end
-% $$$ 
-% $$$ sfet = cf(@(f) f.data,sfet);
-% $$$ fet.data = cat(2,sfet{:});
-% $$$ fet.data(:,1:2:end) = [];
-% $$$ fet.sampleRate = 1./diff(ts(1:2));
-% $$$ xyz.resample(fet);
-
+fet.data = [ reshape(walkFetRot,size(xyz,1),[]),zvec,...
+             permute(rms(dwalkSegs),[2,3,1])];
 fet.data(~nniz(xyz),:)=0;
 
 fet.resample(newSampleRate);

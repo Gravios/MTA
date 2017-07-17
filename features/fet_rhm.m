@@ -31,6 +31,7 @@ if isa(sampleRate,'MTAData'),
     xyz.resample(sampleRate);    
 elseif sampleRate > 120, 
     xyz.resample(120); 
+    defspec.Fs = 120;
 end
 xyz.filter('ButFilter',3,20,'low');
 

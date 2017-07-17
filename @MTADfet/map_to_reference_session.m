@@ -11,14 +11,12 @@ if strcmp(Trial.filebase,RefTrial.filebase),
     return
 end
 
+
 tempFet = features.copy;
 features.resample(Trial.xyz.sampleRate);
 minimumOccupancy = 1; % seconds
 
-if ~strcmp(features.label,'fet_all'), % Sorry this exists ...
-    rfet = feval(features.label,RefTrial,features.sampleRate);
-end
-
+rfet = feval(features.label,RefTrial,features.sampleRate);
 
 switch features.label
   case 'fet_bref_emb'
@@ -29,6 +27,20 @@ switch features.label
 % $$$     stdThresh = repmat({30},1,10);
 % $$$     kurThresh = repmat({20},1,10);
     diffFun   = repmat({@minus},1,numel(fetInds));
+  
+  case 'fet_bref_rev4'
+    fetInds   = [1:9];
+    diffFun   = repmat({@minus},1,9);
+
+  case 'fet_bref_rev3'
+    fetInds   = [1:12];
+    diffFun   = repmat({@minus},1,12);
+  
+  case 'fet_bref_rev2'
+    fetInds   = [1:12];
+% $$$     stdThresh = repmat({30},1,10);
+% $$$     kurThresh = repmat({20},1,10);
+    diffFun   = repmat({@minus},1,12);
 
   case 'fet_bref'
     fetInds   = [1:15];
