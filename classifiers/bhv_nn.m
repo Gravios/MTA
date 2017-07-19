@@ -126,9 +126,10 @@ if trainModel||~exist(model_loc,'file'),
     net = patternnet(nNeurons);
     %net.trainParam.showWindow = true;
     net.trainParam.showWindow = false;
-    fet = mapminmax
-    feature(ind,:)';
-    
+    psa = load_normalization_parameters_mapminmax(feature.label,...
+                                                  [],... need feature.treatmentRecord
+                                                  sessionList);
+    fet = mapminmax('apply',feature(ind,:)',psa);
     %view(net);    
     [net,tr] = train(net,fet,~~smat(ind,:)');
 

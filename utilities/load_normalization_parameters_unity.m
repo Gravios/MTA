@@ -27,7 +27,7 @@ end
 % MAIN ---------------------------------------------------------------------------------------------
 normalizationParameterFile =fullfile(MTA_PROJECT_PATH,...
                                      'analysis',...
-                                     ['normalizationParameters-',functionName,'_',tag,'.mat']);
+                                     ['normalizationParameters-unity-',functionName,'_',tag,'.mat']);
 
 if ~exist(normalizationParameterFile,'file') || overwrite,
     Trials = af(@(Trial) MTATrial.validate(Trial)  ,get_session_list(sessionList));
