@@ -40,12 +40,13 @@ defArgs = struct('states',      {{'walk','rear','turn','pause','groom','sit'}},.
                  'normalize',   false,...
                  'tag',         '',...
                  'targetState', '',...
-                 'prctTrain',   []...
+                 'prctTrain',   [],...
+                 'sessionList', '' ...
 );
 
 [states,stcMode,featureSet,sampleRate,model,nNeurons,...
  nIter,randomizationMethod,map2reference,normalize,tag,...
- targetState,prctTrain] = DefaultArgs(varargin,defArgs,'--struct');
+ targetState,prctTrain,sessionList] = DefaultArgs(varargin,defArgs,'--struct');
 
 
 % LOAD the feature set
@@ -115,9 +116,16 @@ if map2reference,
     end
 
     if normalize,
-        rfet = feval(featureSet,refSession,sampleRate,false);
-        [~,refMean,refStd] = nunity(rfet(refSession.stc{'a'},:));
-        features.unity([],refMean,refStd);
+        if isempty(sessionList),
+            rfet = feval(featureSet,refSession,sampleRate,false);
+            [~,refMean,refStd] = nunity(rfet(refSession.stc{'a'},:));
+            features.unity([],refMean,refStd);
+        else
+            [refMean,refStd] = load_normalization_parameters_unity(featureSet,...
+                                                                   refSession.filebase,...
+                                                                   sessionList);
+            features.unity([],refMean,refStd);
+        end
     end
 elseif normalize,
     [~,fetMean,fetStd] = nunity(features(Trial.stc{'a'},:));

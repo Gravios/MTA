@@ -63,22 +63,34 @@ sampleRate = repmat({param.sampleRate},1,numSessions);
 embeddingWindow = repmat({64},1,numSessions);
 
                     
+
 % LOAD Trial objects
-Trials = af(@(Trial) MTATrial.validate(Trial)  , sessionList);
+Trials = af(@(Trial) MTATrial.validate(Trial)  , get_session_list('nn_labeled'));
+StcNN  = cf(@(Trial)  Trial.load('stc'), Trials);
+StcNNC = cf(@(Trial)  Trial.load('stc',[Trial.stc.mode,'_svdc']), Trials);
+% LOAD State Collections
+
+
+% LOAD Trial objects
+Trials = af(@(Trial) MTATrial.validate(Trial)           ,sessionList);
 
 % LOAD State Collections
-Stc    = cf(@(Trial)  Trial.load('stc')         , Trials);
-StcNN  = cf(@(Trial) Trial.load('stc','NN0317'), Trials);
+Stc    = cf(@(Trial) Trial.load('stc')                  ,Trials);
+%StcNN  = cf(@(Trial) Trial.load('stc','NN0317')         ,Trials);
+StcHL  = cf(@(Trial)  Trial.load('stc')         , Trials);
+StcHLC = cf(@(Trial)  Trial.load('stc',[Trial.stc.mode,'_SVDTRAJADJ']), Trials);
+
 
 % LOAD Position data
-xyz    = cf(@(Trial) preproc_xyz(Trial)         , Trials);
-cf(@(x,s) x.resample(s),xyz,sampleRate);
-fxyz = cf(@(x) x.copy(), xyz);
-cf(@(f) f.filter('ButFilter',5,[2.4],'low'),fxyz);
+xyz    = cf(@(Trial) preproc_xyz(Trial)                 ,Trials);
+         cf(@(x,s)   x.resample(s)                      ,xyz,sampleRate);
+fxyz   = cf(@(x)     x.copy()                           ,xyz);
+         cf(@(f)     f.filter('ButFilter',5,[2.4],'low'),fxyz);
 
 % LOAD and MAP Features to reference session
-fet    = cf(@(Trial) fet_bref(Trial), Trials);
-cf(@(f,t) f.map_to_reference_session(t,param.referenceTrial),fet,Trials);
+fet    = cf(@(Trial) fet_bref(Trial)                    ,Trials);
+         cf(@(f,t,r) f.map_to_reference_session(t,r)    ,fet,Trials,...
+            repmat({param.referenceTrial},1,numSessions));
 for s = 1:numSessions, fet{s}.data(~nniz(xyz{s}),:,:) = 0;end
 
 % NORMALIZE feature matrix along the columns 
@@ -93,8 +105,8 @@ cf(@(w,m,s) set(w,'data',nunity(w,[],m,s)),...
 clear('zfrCat','zfrMean','zfrStd')
 
 % FILTERED feature matrix
-ffet = cf(@(f) f.copy, fet);
-cf(@(f) f.filter('ButFilter',5,[1.5,8],'bandpass'),ffet);
+ffet   = cf(@(f)     f.copy                            ,fet);
+         cf(@(f)     f.filter('ButFilter',5,[1.5,8],'bandpass'),ffet);
 
 % EMBED feature
 wfs  = cf(@(w,e) w.segs(1:size(w,1),e),fet,embeddingWindow);
@@ -105,17 +117,18 @@ for i = 1:numel(wfs), wfs{i}.data(isnan(wfs{i}.data(:)))=0; end
 
 % @svd
 % DECOMPOSE fet with svd for walk and turn periods within all sessions
-wfw = cf(@(w,s) w([s{param.svdState}]+[0.125,-0.125],:), wfs, Stc);
+wfw     = cf(@(w,s)    w([s{param.svdState}]+[0.125,-0.125],:), wfs, Stc);
 %wfw = cf(@(w,s) w([s{'w'}]+[0.5,-0.5],:), wfs, Stc);
 [~,Sww,Vww] = svd(cat(1,wfw{:}),0);
 
 % @afetW
 % COMPUTE eigenvector loadings for each session's eigen vectors
-afetW = cf(@(w,v) MTADxyz('data',multiprod(w.data,v(:,1:20)),...
+afetW   = cf(@(w,v) MTADxyz('data',multiprod(w.data,v(:,1:20)),...
                           'sampleRate',w.sampleRate),...
-           wfs,repmat({Vww},1,numSessions));
-cf(@(f,x) set(f,'sync',x.sync.copy), afetW, xyz); 
-cf(@(f,x) set(f,'origin',x.origin), afetW, xyz);
+             wfs,repmat({Vww},1,numSessions));
+cf(@(f,x) set(f,'sync'  ,x.sync.copy)    ,afetW, xyz); 
+cf(@(f,x) set(f,'origin',x.origin   )    ,afetW, xyz);
+
 
 % COMPUTE eigenvector loadings for each session's eigen vectors
 % contains mask to select feature subset important to turning
@@ -128,8 +141,8 @@ for i= param.eigenVectorIndices
     cf(@(r,w,v) set(r,'data',[get(r,'data'),multiprod(w.data,v)]),...
        sfet,wfs,repmat({eigenVector},1,numSessions));
 end
-cf(@(f,x) set(f,'sync',x.sync.copy), sfet, xyz); 
-cf(@(f,x) set(f,'origin',x.origin), sfet, xyz);
+cf(@(f,x) set(f,'sync'  ,x.sync.copy)   ,sfet, xyz); 
+cf(@(f,x) set(f,'origin',x.origin   )   ,sfet, xyz);
 
 
 % @ts
@@ -467,7 +480,7 @@ print(gcf,'-dpng',  fullfile(OwnDir,FigDir,[FigName,'.png']));
 % FIG3STSTRIGAVE --------------------------------------------------------------------------------
 %cf(@(r,w,v) set(r,'data',[r.data,[zeros([1,size(r,2)]);diff(r.data)]]),sfet);
 
-zfrCat = cf(@(f) get(f,'data'),sfet);
+zfrCat = cf(@(f) get(f,'data')    ,sfet);
 
 zfrCat = cat(1,zfrCat{:});
 zfrMean = nanmean(zfrCat(nniz(zfrCat),:,:));
@@ -483,30 +496,17 @@ clear('zfrCat','zfrMean','zfrStd')
 
 
 transitionStatePost = {'rear'};
-transitionStatePre = {'pause+walk'};
-shift = [0,0];
+transitionStatePre  = {'pause+walk'};
+shift = [0,30];
 sampleShift = [0,round(0.5*sfet{1}.sampleRate)];
-mStc = cf(@(s) s.copy(),StcHLC);
-sortTurns = false;
-fetInd = 1;
-
-transitionStatePost = {'rear'};
-transitionStatePre = {'pause+walk'};
-shift = [0,0];
-
-transitionStatePost = {'walk'};
-transitionStatePre = {'pause','turn','pause+turn','gper-walk'};
-shift = [round(-0.5*afetW{1}.sampleRate),0];
-
-
-transitionStatePost = {'turn'};
-transitionStatePre = {'pause','walk'};%,'rear','pause+walk+rear','gper-turn'};
-shift = [0,round(0.5*sfet{1}.sampleRate)];
-sampleShift = [0,round(0.25*sfet{1}.sampleRate)];
-
+%sampleShift = [round(0.5*sfet{1}.sampleRate),0];
+%mStc = cf(@(s) s.copy(),StcHLC);
 mStc = cf(@(s) s.copy(),StcHL);
-mStc = cf(@(s) s.copy(),StcHLC);
-
+sortTurns = false;
+fetInd = [1,2];
+f = 2;
+p = 1;
+pre = 1;
 
 
 
@@ -566,7 +566,7 @@ for pre = 1:numel(transitionStatePre),
             plot(segTime,nanmean(fetSegs(:,i{:}),2)+nanstd(fetSegs(:,i{:}),[],2)*2,'c')
             plot(segTime,nanmean(fetSegs(:,i{:}),2)-nanstd(fetSegs(:,i{:}),[],2)*2,'c')
         end
-        title([transitionStatePre{pre} ,' -> ',transitionStatePost{p}]);
+        title({['Stc: ',mStc{1}.mode],[transitionStatePre{pre} ,' -> ',transitionStatePost{p}]});
         ylabel('z-score')
         xlabel('time (s)')
         ylim([-10,10]);
@@ -606,7 +606,7 @@ for pre = 1:numel(transitionStatePre),
 % SAVE figure
         FigName = ['State_transition_',transitionStatePre{pre},...
                    '_to_',transitionStatePost{p},'_PC',num2str(f),'_sorted+',num2str(sortTurns),...
-                  '_test'];
+                  '_Stc_',mStc{1}.mode];
         print(gcf,'-depsc2',fullfile(OwnDir,FigDir,[FigName,'.eps']));
         print(gcf,'-dpng',  fullfile(OwnDir,FigDir,[FigName,'.png']));
     end
@@ -1542,16 +1542,6 @@ end
 
 
 
-% LOAD Trial objects
-Trials = af(@(Trial) MTATrial.validate(Trial)  , sessionList);
-
-% LOAD State Collections
-StcHL  = cf(@(Trial)  Trial.load('stc')         , Trials);
-StcHLC = cf(@(Trial)  Trial.load('stc',[Trial.stc.mode,'_SVDTRAJADJ']), Trials);
-
-Trials = af(@(Trial) MTATrial.validate(Trial)  , get_session_list('nn_labeled'));
-StcNN  = cf(@(Trial)  Trial.load('stc'), Trials);
-StcNNC = cf(@(Trial)  Trial.load('stc',[Trial.stc.mode,'_svdc']), Trials);
 
 
 
@@ -1569,10 +1559,18 @@ stnc = cf(@(s,state) [s{state}],StcNNC,repmat({state},1,numSessions));
 
 
 states = {'pause+walk','rear'};
-sto  = cf(@(c,s,t,f) [c.get_state_transitions(t,s,[],f)],StcHL ,repmat({states},1,numSessions),Trials,sfet);
-stn  = cf(@(c,s,t,f) [c.get_state_transitions(t,s,[],f)],StcNN ,repmat({states},1,numSessions),Trials,sfet);
-stoc = cf(@(c,s,t,f) [c.get_state_transitions(t,s,[],f)],StcHLC,repmat({states},1,numSessions),Trials,sfet);
-stnc = cf(@(c,s,t,f) [c.get_state_transitions(t,s,[],f)],StcNNC,repmat({states},1,numSessions),Trials,sfet);
+states = {'rear','pause+walk'};
+states = {'pause','walk'};
+states = {'pause','turn'};
+states = {'walk','pause'};
+sto  = cf(@(c,s,t,f) round(mean([c.get_state_transitions(t,s,[],f)],2)),...
+          StcHL,repmat({states},1,numSessions),Trials,sfet);
+stn  = cf(@(c,s,t,f) round(mean([c.get_state_transitions(t,s,[],f)],2)),...
+          StcNN ,repmat({states},1,numSessions),Trials,sfet);
+stoc = cf(@(c,s,t,f) round(mean([c.get_state_transitions(t,s,[],f)],2)),...
+          StcHLC,repmat({states},1,numSessions),Trials,sfet);
+stnc = cf(@(c,s,t,f) round(mean([c.get_state_transitions(t,s,[],f)],2)),...
+          StcNNC,repmat({states},1,numSessions),Trials,sfet);
 
 
 ccgOpts.binSize = 2;
@@ -1602,12 +1600,13 @@ title(['CCG: HL VS NNC labeled - ' strjoin(states,' to ')])
 subplot(223);
 [sccg,txx,pxx] = cf(@(s,n,co) CCG([s;n],[ones(size(s));2*ones(size(n))],...
                                   co.binSize,co.halfBins,co.sampleRate,[1,2],'count'),...
-                    stoc,stn,repmat({ccgOpts},1,numSessions));
+                    sto,stoc,repmat({ccgOpts},1,numSessions));
+
 accg = sum(cat(4,sccg{:}),4);
 bar(txx{1},accg(:,1,2));
 xlabel('Time Lag (ms)');
 ylabel('count')
-title(['CCG: HLC VS NN labeled - ' strjoin(states,' to ')])
+title(['CCG: HL VS HLC labeled - ' strjoin(states,' to ')])
 
 subplot(224);
 [sccg,txx,pxx] = cf(@(s,n,co) CCG([s;n],[ones(size(s));2*ones(size(n))],...
@@ -1621,24 +1620,28 @@ title(['CCG: HLC VS NNC labeled - ' strjoin(states,' to ')])
 
 
 ForAllSubplots('xlim([-750,750])')
-suptitle(['stateTransition CCG']);
 FigName = ['stateTransition_CCG_',strjoin(states,'2')];
 print(gcf,'-depsc2',fullfile(OwnDir,FigDir,[FigName,'.eps']));
 print(gcf,'-dpng',  fullfile(OwnDir,FigDir,[FigName,'.png']));
 
-s = 2;
+s = 1;
 figure,
 sp=[];
 sp(end+1)=subplot(411);
 plotSTC(StcHL{s},1);
+title('HL')
 sp(end+1)=subplot(412);
 plotSTC(StcNN{s},1);
+title('NN')
 sp(end+1)=subplot(413);
 plotSTC(StcHLC{s},1);
+title('HLC')
 sp(end+1)=subplot(414);
 plotSTC(StcNNC{s},1);
+%Lines(StcNNC
+title('NNC')
 linkaxes(sp,'x');
-
+ForAllSubplots('ylim([0.5,6.5])');
 
 allfet = cf(@(f,s) abs(f(s{'gper-sit-rear-groom'},16)), fet, StcHL);
 sitfet = cf(@(f,s) abs(f(s{'sit'},     16)), fet, StcHL);

@@ -126,8 +126,11 @@ if trainModel||~exist(model_loc,'file'),
     net = patternnet(nNeurons);
     %net.trainParam.showWindow = true;
     net.trainParam.showWindow = false;
+    fet = mapminmax
+    feature(ind,:)';
+    
     %view(net);    
-    [net,tr] = train(net,feature(ind,:)',~~smat(ind,:)');
+    [net,tr] = train(net,fet,~~smat(ind,:)');
 
     save(model_loc,'net','tr','Model_Information');
     return

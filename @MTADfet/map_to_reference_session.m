@@ -27,7 +27,15 @@ switch features.label
 % $$$     stdThresh = repmat({30},1,10);
 % $$$     kurThresh = repmat({20},1,10);
     diffFun   = repmat({@minus},1,numel(fetInds));
-  
+
+  case 'fet_bref_rev6'
+    fetInds   = [1:12];
+    diffFun   = repmat({@minus},1,9);
+
+  case 'fet_bref_rev5'
+    fetInds   = [1:9];
+    diffFun   = repmat({@minus},1,9);
+    
   case 'fet_bref_rev4'
     fetInds   = [1:9];
     diffFun   = repmat({@minus},1,9);

@@ -77,6 +77,7 @@ for rli = 1:numel(rlist),
 
             features = fet_bref(Trial);
             features.map_to_reference_session(Trial,refSession);
+            %features.filter('ButFilter',3,1,'low');
             %features.unity([],refMean,refStd);
 
 % GET normalization parameters
@@ -184,16 +185,16 @@ for rli = 1:numel(rlist),
             end
 
 
-% TURN angular displacement
-%try, StcCor = reassign_state_by_duration(StcCor,'n','p',0.1,tds,tps,@lt); end
+            % TURN angular displacement
+            %try, StcCor = reassign_state_by_duration(StcCor,'n','p',0.1,tds,tps,@lt); end
             disp('Sort out turns with too low of ang displacement');
             try
                 key = 'n';
                 wd = [];
                 ad = [];
                 wthresh = 3;
-                athresh = 0.4;
-                tails = [-0.0,0.0];
+                athresh = 1.2;
+                tails = [-0.0,0.1];
                 for rp = StcCor{key}.data',
                     wd(end+1) = mean(features(rp',16));
                     ad(end+1) = mean(abs(dang(rp')));
@@ -213,7 +214,7 @@ for rli = 1:numel(rlist),
                     end
                 end
                 StcCor.states{StcCor.gsi(key)}.data(wd <= wthresh & ad <= athresh,:) = [];
-                StcCor.states{StcCor.gsi(key)}.data(wd >  wthresh & ad <  athresh,:) = [];                
+                StcCor.states{StcCor.gsi(key)}.data(wd >  wthresh & ad <  athresh,:) = [];
                 StcCor.states{StcCor.gsi(key)} = StcCor{key}+tails;
                 for sts = StcCor.states, sts{1}.clean; end
                 for sts = StcCor.states,
@@ -231,13 +232,14 @@ for rli = 1:numel(rlist),
                 wh = [];
                 wb = [];
                 bthresh = 3;
-                wthresh = 0.5;
+                wthresh = 0.2;
                 hthresh = 85;
                 tails = [-0.0,0.0];
                 for rp = StcCor{key}.data',
                     wh(end+1) = mean(features(rp',13));
-                    wb(end+1) = mean(abs(features(rp',16)));
-                    if wb(end)<wthresh && wh(end)<hthresh,
+                    wb(end+1) = features(round(sum(rp)/2),16);
+                    wba(end+1) = mean(abs(features(rp',16)));
+                    if wba(end)<wthresh && wh(end)<hthresh,
                         pind = rp(1):rp(2);
                         tds(pind,2) = 0;
                         % maybe make a cat function for MTADepoch 
@@ -252,7 +254,7 @@ for rli = 1:numel(rlist),
                             [StcCor.states{StcCor.gsi('walk')}.data;pind([1,end])];
                     end
                 end
-                StcCor.states{StcCor.gsi(key)}.data(wb<wthresh & wh<hthresh,:) = [];
+                StcCor.states{StcCor.gsi(key)}.data(wba<wthresh & wh<hthresh,:) = [];
                 StcCor.states{StcCor.gsi(key)}.data(wb>bthresh,:) = [];
                 StcCor.states{StcCor.gsi(key)} = StcCor{key}+tails;
                 for sts = StcCor.states, sts{1}.clean; end
@@ -271,7 +273,7 @@ for rli = 1:numel(rlist),
                 wd = [];
                 wh = [];
                 hthresh = 85;                
-                wthresh = 0.5;
+                wthresh = 0.2;
                 tails = [-0.0,0.0];
                 for rp = StcCor{key}.data',
                     wh(end+1) = mean(features(rp',13));                    
@@ -298,35 +300,35 @@ for rli = 1:numel(rlist),
             end
 
             
-% $$$ 
-% $$$             %% speed: walk
-% $$$             try
-% $$$                 key = 'w';
-% $$$                 wd = [];
-% $$$                 wthresh = -0.2;
-% $$$                 tails = [-0.0,0.0];
-% $$$                 for rp = StcCor{key}.data',
-% $$$                     wd(end+1) = mean(features(rp',16));
-% $$$                     if wd(end)<wthresh,
-% $$$                         pind = rp(1):rp(2);
-% $$$                         tds(pind,2) = 0;
-% $$$                         % maybe make a cat function for MTADepoch 
-% $$$                         StcCor.states{StcCor.gsi('pause')}.data = ...
-% $$$                             [StcCor.states{StcCor.gsi('pause')}.data;pind([1,end])];
-% $$$                     end
-% $$$                 end
-% $$$                 StcCor.states{StcCor.gsi(key)}.data(wd<wthresh,:) = [];
-% $$$                 StcCor.states{StcCor.gsi(key)} = StcCor{key}+tails;
-% $$$                 for sts = StcCor.states, sts{1}.clean; end
-% $$$                 for sts = StcCor.states,
-% $$$                     if strcmp(sts{1}.key,key),continue,end
-% $$$                     StcCor.states{StcCor.gsi(sts{1}.key)} = sts{1}-StcCor{key}.data; 
-% $$$                 end
-% $$$             end
+
+            %% speed: walk
+            try
+                key = 'w';
+                wd = [];
+                wthresh = -0.2;
+                tails = [-0.1,0.1];
+                for rp = StcCor{key}.data',
+                    wd(end+1) = mean(features(rp',16));
+                    if wd(end)<wthresh,
+                        pind = rp(1):rp(2);
+                        tds(pind,2) = 0;
+                        % maybe make a cat function for MTADepoch 
+                        StcCor.states{StcCor.gsi('pause')}.data = ...
+                            [StcCor.states{StcCor.gsi('pause')}.data;pind([1,end])];
+                    end
+                end
+                StcCor.states{StcCor.gsi(key)}.data(wd<wthresh,:) = [];
+                StcCor.states{StcCor.gsi(key)} = StcCor{key}+tails;
+                for sts = StcCor.states, sts{1}.clean; end
+                for sts = StcCor.states,
+                    if strcmp(sts{1}.key,key),continue,end
+                    StcCor.states{StcCor.gsi(sts{1}.key)} = sts{1}-StcCor{key}.data; 
+                end
+            end
 
             try, StcCor = reassign_state_by_duration(StcCor,'w','p',0.1,tds,tps,@lt); end
             try, StcCor = reassign_state_by_duration(StcCor,'s','p',2.5,tds,tps,@lt); end
-            try, StcCor = reassign_state_by_duration(StcCor,'m','p',1.5,tds,tps,@lt); end
+            try, StcCor = reassign_state_by_duration(StcCor,'m','p',1,tds,tps,@lt); end
 
             disp('Adjust rear onset boundary');
 % ALL to rear

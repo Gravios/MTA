@@ -31,12 +31,14 @@ defargs = struct('fetSet',   'fet_bref',                                     ...
                  'rndMethod', 'WSBNT',                                       ...
                  'norm',      true,                                          ...
                  'mref',      true,                                          ...
+                 'sessionList','hand_labeled',                               ...
                  'prctTrain', []                                             ...
 );%-----------------------------------------------------------------------------
 
 
 [fetSet, mode, tag_preprocessing, tag_postprocessing,rlist, slist, sampleRate,...
- nNeurons, nIter, states, rndMethod, norm, mref,prctTrain] = DefaultArgs(varargin,defargs,'--struct');
+ nNeurons, nIter, states, rndMethod, norm, mref,prctTrain,sessionList] = ...
+    DefaultArgs(varargin,defargs,'--struct');
 
 rlist = get_session_list(rlist);
 
@@ -61,6 +63,7 @@ switch mode
         mod.map2reference = mref;        
         mod.tag = tag_preprocessing;
         mod.prctTrain = prctTrain;
+        mod.sessionList = sessionList;
 
         argin = struct2varargin(mod);
         
@@ -103,6 +106,8 @@ switch mode
                 mod.nIter      = nIter;
                 mod.map2reference = mref;
                 mod.normalize = norm;
+                mod.prctTrain = prctTrain;
+                mod.sessionList = sessionList;
                 argin = struct2varargin(mod);
                 [stc{end+1},d_state{end+1},ls{end+1},lsm{end+1},mdl{end+1},p_state{end+1}] = bhv_nn_multi_patternnet(Trial,argin{:});
                 stc{end}.save(1);
@@ -225,8 +230,15 @@ switch mode
             [mfilename],                         ... Figure Set Name
             'req',                               ... Directory where figures reside
             false,                               ... Do Not Preview
-            ['Fet:',fetSet,'Ref:',rlist(rli).sessionName,'.',rlist(rli).mazeName,'.',rlist(rli).trialName,' L:',slist{sli}],...thmb_cap
-            ['Fet:',fetSet,'Ref:',rlist(rli).sessionName,'.',rlist(rli).mazeName,'.',rlist(rli).trialName,' L:',slist{sli}],...exp_cap
+            ['Fet:',fetSet,'Ref:',rlist(rli).sessionName,'.',...
+                                  rlist(rli).mazeName,'.',...
+                                  rlist(rli).trialName,...
+             ' L:',slist{sli}],...thmb_cap
+            ['Fet:',fetSet,...
+             'Ref:',rlist(rli).sessionName,'.',...
+                    rlist(rli).mazeName,'.',...
+                    rlist(rli).trialName,...
+             ' L:',slist{sli}],...exp_cap
             [],                                  ... Resolution
             false,                               ... Do Not Save FIG
             'png',9,4);                                % Output Format

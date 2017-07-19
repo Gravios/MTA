@@ -26,17 +26,20 @@ defargs = struct('states',           {{'turn','walk'}},...
 
 % MAIN ---------------------------------------------------------------------------------------------
 tw = round(transitionWindow.*referenceData.sampleRate);
-subsequentState = [Stc{states{2},referenceData.sampleRate}];
-antecedentState = [Stc{states{1},referenceData.sampleRate}];
+subsequentState = resample(subsref(Stc,substruct('{}',{states{2}})),referenceData);
+antecedentState = resample(subsref(Stc,substruct('{}',{states{1}})),referenceData);
 stsTransitionPeriods = ...
-    IntersectRanges(bsxfun(@plus,subsequentState.data(:,2),[0 ,tw]),...
-                    bsxfun(@plus,antecedentState.data(:,1),[-tw,0])...
+    IntersectRanges(bsxfun(@plus,subsequentState.data,[-tw ,0]),...
+                    bsxfun(@plus,antecedentState.data,[0,tw])...
 );
 
-subsequentStateTransitionPoints = WithinRanges([subsequentState.data(:,1)],transitionPeriods)
-subsequentStateIndices = find(ismember(subsequentState.data(:,1),transitionPoints));
-antecedentStateTransitionPoints = WithinRanges([antecedentState.data(:,1)],transitionPeriods)
-antecedentStateIndices = find(ismember(antecedentState.data(:,1),transitionPoints));
+subsequentStateIndices = find(WithinRanges(subsequentState.data(:,1),stsTransitionPeriods)==1);
+subsequentStateTransitionPoints = subsequentState.data(subsequentStateIndices,1);
+antecedentStateIndices = find(WithinRanges([antecedentState.data(:,2)],stsTransitionPeriods)==1);
+antecedentStateTransitionPoints = antecedentState.data(antecedentStateIndices,1);
+
+
+stsTransitionPeriods = bsxfun(@plus,subsequentStateTransitionPoints,[-tw,tw]);
 
 % $$$ smat = stc2mat(Stc,referenceData,states);
 % $$$ indexShift = round(transitionWindow * referenceData.sampleRate / 2);
