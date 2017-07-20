@@ -18,11 +18,8 @@ function [varargout] = bhv_nn_multi_patternnet(Trial,varargin)
 %    labelingStats,
 %    labelingStatsMulti,
 
+MODEL_TYPE = 'NNmultiPN';
 
-MODEL_TYPE = 'NN_multiPN';
-
-
-% If Trial is not a MTASession try loading it.
 Trial = MTATrial.validate(Trial);
 
 varargout = cell([1,nargout-1]);
@@ -142,7 +139,7 @@ if ~isempty(targetState),
     nStates = 2;
 end
 
-% Initialize outputs
+% INITIALIZE outputs
 p_state = zeros([xyz.size(1),nStates]);
 d_state = zeros([xyz.size(1),nStates]);
 labelingStatsMulti.confussionMatrix = zeros([nIter,nStates,nStates]);
@@ -150,7 +147,7 @@ labelingStatsMulti.precision =   zeros([nIter,nStates]);
 labelingStatsMulti.sensitivity = zeros([nIter,nStates]);
 labelingStatsMulti.accuracy =    zeros([nIter,1]);
 
-% Initialize labeling timeperiods
+% INITIALIZE labeling timeperiods
 labelingEpochs = Trial.stc{'a'}.cast('TimeSeries');
 
 if ~isempty(targetState),
@@ -161,7 +158,7 @@ else
 end
 
 
-% load hand labeled state matrix
+% LOAD hand labeled state matrix
 if ~isempty(stcMode)
     shl = MTADxyz('data',double(0<stc2mat(StcHL,xyz,trainingStates)),'sampleRate',xyz.sampleRate);
 end

@@ -1,4 +1,4 @@
-function [fet,featureTitles,featureDesc,Nmean,Nstd] = fet_bref_rev6(Trial,varargin)
+function [fet,featureTitles,featureDesc,Nmean,Nstd] = fet_bref_rev7(Trial,varargin)
 % $$$ function [fet,featureTitles,featureDesc,Nmean,Nstd] = fet_mis(Trial,varargin)
 % $$$ defargs = struct('newSampleRate', 12,                       ...
 % $$$                  'normalize'    , false,                    ...
@@ -29,23 +29,14 @@ fet = MTADfet(Trial.spath,...
 
 % PREPROC xyz
 xyz = preproc_xyz(Trial,procOpts);
-rb = xyz.model.rb({'spine_lower','pelvis_root','spine_middle','spine_upper','hcom'});
-hcom = xyz.com(rb);
-xyz.addMarker('fbcom',[.7,1,.7],{{'head_back','head_front',[0,0,1]}},...
-              ButFilter(hcom,4,[0.1]./(xyz.sampleRate/2),'low'));
-xyz.addMarker('bcom',[.7,1,.7],{{'head_back','head_front',[0,0,1]}},hcom);
-xyz.addMarker('fsl',[.7,1,.7],{{'head_back','head_front',[0,0,1]}},...
-              ButFilter(xyz(:,'spine_lower',:),4,[1.5]./(xyz.sampleRate/2),'low'));
-rb = xyz.model.rb({'head_back','head_left','head_front','head_right'});
-hcom = xyz.com(rb);
-xyz.addMarker('hcom',[.7,1,.7],{{'head_back','head_front',[0,0,1]}},hcom);
-clear('hcom');
-xyz.filter('ButFilter',3,20,'low');
+
+xyz.filter('ButFilter',3,2.5,'low');
+
 
 
 % Translational movements relative to body
 shft = 3;
-tmar = {'spine_lower','pelvis_root','spine_middle','spine_upper'};
+tmar = {'spine_lower','pelvis_root','spine_middle','spine_upper','hcom'};
 tvec = zeros([size(xyz,1),numel(tmar),2]);
 dzvec = zeros([size(xyz,1),numel(tmar),1]);
 for m = 1:numel(tmar),
@@ -72,12 +63,6 @@ end
 
 
 
-fldwalkFetRot = MTADxyz('data',cat(2,dwalkFetRot,permute(dzvec,[1,3,2])),'sampleRate',xyz.sampleRate);
-fldwalkFetRot.filter('ButFilter',3,2,'low');
-
-fmdwalkFetRot = MTADxyz('data',cat(2,dwalkFetRot,permute(dzvec,[1,3,2])),'sampleRate',xyz.sampleRate);
-fmdwalkFetRot.filter('ButFilter',3,[2,8],'bandpass');
-
 
 tvec = zeros([size(xyz,1),numel(tmar),2]);
 zvec = zeros([size(xyz,1),numel(tmar),1]);
@@ -103,19 +88,16 @@ for t = rotationAngles;
     end
 end
 
-fmdwalkSegs = GetSegs([reshape(fmdwalkFetRot.data,size(xyz,1),[])], ...  x
-                    1:size(dwalkFetRot,1),                         ...  start points
-                    round(xyz.sampleRate/2),                     ...  segments' lengths
-                    0                                            ...  If not complete
-);
+fldwalkFetRot = MTADxyz('data',cat(2,dwalkFetRot,permute(dzvec,[1,3,2])),'sampleRate',xyz.sampleRate);
+fldwalkFetRot.filter('ButFilter',5,1,'low');
+
 
 % CAT feature
 fet.data = [ reshape(walkFetRot,size(xyz,1),[]),zvec,...
              reshape(fldwalkFetRot.data,size(xyz,1),[]),...
-             permute(rms(fmdwalkSegs),[2,3,1]) ];
+             reshape(fldwalkFetRot.data,size(xyz,1),[]).^2];
 fet.data(~nniz(xyz),:)=0;
 
-fet.filter('ButFilter',3,2.4,'low');
 
 fet.resample(newSampleRate);
 

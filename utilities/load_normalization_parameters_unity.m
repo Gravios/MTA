@@ -20,7 +20,7 @@ end
 % ID Vars - create hash tag
 if isempty(tag),
     tag = DataHash(struct('sessionList',   sessionList   ,...
-                          'referenceTrial',refTrial));
+                          'referenceTrial',referenceTrial));
 end
 %---------------------------------------------------------------------------------------------------
 

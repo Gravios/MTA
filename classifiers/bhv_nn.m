@@ -126,12 +126,22 @@ if trainModel||~exist(model_loc,'file'),
     net = patternnet(nNeurons);
     %net.trainParam.showWindow = true;
     net.trainParam.showWindow = false;
-    psa = load_normalization_parameters_mapminmax(feature.label,...
-                                                  [],... need feature.treatmentRecord
-                                                  sessionList);
-    fet = mapminmax('apply',feature(ind,:)',psa);
-    %view(net);    
-    [net,tr] = train(net,fet,~~smat(ind,:)');
+    
+% SET mapminmax with a Session group
+    net = struct(net);
+    netInputMapminmaxIndex = ~cellfun(@isempty,regexp(net.inputs{1}.processFcns,'mapminmax'));
+    net.inputs{1}.processSettings{netInputMapminmaxIndex}  = ...
+        load_normalization_parameters_mapminmax(feature.label,...
+                                                [],... need feature.treatmentRecord
+                                                'hand_labeled');
+    net = network(net);                                            
+
+% $$$     psa = load_normalization_parameters_mapminmax(feature.label,...
+% $$$                                                  [],... need feature.treatmentRecord
+% $$$                                                  'hand_labeled');
+    %view(net);        
+    [net,tr] = train(net,feature(ind,:)',~~smat(ind,:)');
+    %[net,tr] = train(net,mapminmax('apply',feature(ind,:)',psa),~~smat(ind,:)');
 
     save(model_loc,'net','tr','Model_Information');
     return
@@ -150,8 +160,12 @@ Stc.states = {};
 % Used to put labels into xyz sampleRate
 xyz = Trial.load('xyz');
 
+psa = load_normalization_parameters_mapminmax(feature.label,...
+                                              [],... need feature.treatmentRecord
+                                              'hand_labeled');
+
 % Compute scores for the neural network
-d_state = net(feature.data')';
+d_state = net(mapminmax('apply',feature.data',psa))';
 
 d_state = MTADxyz('data',d_state,'sampleRate',feature.sampleRate);
 d_state.resample(xyz);
