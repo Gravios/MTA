@@ -1,4 +1,4 @@
-function [varargout] = bhv_nn_multi_session_patternnet(sessionList,varargin)
+function [varargout] = bhv_nn_multi_session_patternnet(varargin)
 %function [stc,varargout] = bhv_nn_multi_patternnet(Trial,varargin)
 % 
 %
@@ -25,7 +25,8 @@ MODEL_TYPE = 'multiSesPatNet';
 varargout = cell([1,nargout-1]);
 
 % Default Arguments for uninitiated variables
-defArgs = struct('featureSet',                  'fet_bref_rev7',                               ...
+defArgs = struct('sessionList',                 '',                                            ...
+                 'featureSet',                  'fet_bref_rev7',                               ...
                  'sampleRate',                  10,                                            ...
                  'states',                      {{'walk','rear','turn','pause','groom','sit'}},...
                  'model',                       [],                                            ...
@@ -38,12 +39,12 @@ defArgs = struct('featureSet',                  'fet_bref_rev7',                
                  'trainingSessionList',         'hand_labeled',                                ...
                  'normalizationSessionList',    'hand_labeled',                                ...
                  'dropIndex',                   [],                                            ...
-                 'prctTrain',                   90,                                            ...                 
+                 'prctTrain',                   90,                                            ...
                  'stcTag',                      'msnn'                                         ...
 );
 
 
-[featureSet,sampleRate,states,model,nNeurons,nIter,randomizationMethod,...
+[sessionList,featureSet,sampleRate,states,model,nNeurons,nIter,randomizationMethod,...
  map2reference,normalize,referenceTrial,trainingSessionList,normalizationSessionList,...
  dropIndex,prctTrain,stcTag] = DefaultArgs(varargin,defArgs,'--struct');
 
@@ -72,12 +73,13 @@ if isempty(model),
              dropTag '+'                                      ...
              featureSet                                       ...
              '+SR'  num2str(sampleRate)                       ...
-             '+NN'  num2str(nNeurons)                         ...
+             'NN'  num2str(nNeurons)                         ...
              'NI'   num2str(nIter)                            ...
              'M'    num2str(map2reference)                    ...
-             '-MREF+' referenceTrial                          ...                          
-             'N'    num2str(normalize)                        ...             
-             '-NREF+' referenceTrial                          ...
+             'MREF+' referenceTrial                          ...                          
+             '+N'    num2str(normalize)                        ...             
+             'NREF+' referenceTrial                          ...
+             '+RND' randomizationMethod                        ...
              'PRCT' num2str(prctTrain)                        ...
              '-'    MODEL_TYPE];
 end
@@ -100,6 +102,8 @@ features = cf(@(Trial,fetSet,sr) feval(fetSet,Trial,sr,false),...
 StcHL = cf(@(Trial) Trial.load('stc'),Trials);
         cf(@(stc,states) set(stc,'states',stc(states{:})),...
              StcHL,states);
+keys   = cf(@(s) s.key,  StcHL{1}(states{1}));
+labels = cf(@(s) s.label,StcHL{1}(states{1}));
 
 % MAP features to reference session
 if map2reference,
@@ -159,20 +163,8 @@ shl = cf(@(s,x,sts) MTADxyz('data',double(0<stc2mat(s,x,sts)),...
 
 for iter = 1:nIter,
     try,        
-        % 00:30 FTS
-        if iter==1&&trainModel
-            model = [model '_RAND_' randomizationMethod];
-        end
-        if iter==1,
-            model_out = model;
-            model_path = fileparts(mfilename('fullpath'));
-            mkdir(fullfile(model_path,model));
-            model = [model '/' model];
-        end
-
-
         if trainModel,
-
+            
             switch randomizationMethod
               case 'ERS' % equal_restructured_sampling
                 % Can be found in MTA:classifiers:bhv_nn_multi_patternnet.m
@@ -195,36 +187,29 @@ for iter = 1:nIter,
                 % Can be found in MTA:classifiers:bhv_nn_multi_patternnet.m                
             end
             
-            % Concatenate stc's and features
-            %StcRnd = 
-            
 
 % CAST Stc object into state timeseries matrix
             [smat] = cf(@(stc,fet,states) stc2mat(stc,fet,states), ...
                         StcRnd,trainingFeatures,states);
             smat = cat(1,smat{:});
-
-
 % COCATENATE feature matrix
             trainingFeatures = cf(@(f) f.data, trainingFeatures);
             trainingFeatures = cat(1,trainingFeatures{:});
-            
-            
 % SELECT indecies which are not zero, nan or inf 
             ind    = any(smat,2)&nniz(trainingFeatures);
 
 % CREATE network object for training
             net = patternnet(nNeurons);
-            %net.trainParam.showWindow = true;
-            net.trainParam.showWindow = false;
+            net.trainParam.showWindow = true;
+            %net.trainParam.showWindow = false;
             net.inputs{1}.processFcns(2) = [];            
             [net,tr] = train(net,mapminmax('apply',trainingFeatures(ind,:)',psa),~~smat(ind,:)');
-            save(fullfile(modelPath,[modelPath,'-',num2str(iter),'.mat']),'net','tr','Model_Information');
-            if isempty(sessionList),return;end
+            save(fullfile(modelPath,[model,'-',num2str(iter),'.mat']),'net','tr');
+
         end
 
 % LOAD network        
-        load(fullfile(modelPath,[modelPath,'-',num2str(iter),'.mat']));
+        load(fullfile(modelPath,[model,'-',num2str(iter),'.mat']));
 
         networkOutput = cf(@(f,p)  net(mapminmax('apply',f.data',p))',  features,repmat({psa},[1,numTrials]));
         networkOutput = cf(@(d,s)  MTADxyz('data',d,'sampleRate',s),    networkOutput,sampleRate);
@@ -246,97 +231,58 @@ if nargout==0,
 end
 
 
-% $$$         % if an stc was provided get comparison stats
-% $$$         ysm = MTADxyz('data',double(0<stc2mat(Stc,xyz)),'sampleRate',xyz.sampleRate); 
-% $$$         d_state = nansum(cat(3,ysm.data,d_state),3);
-% $$$         p_state = p_state +ns;
-% $$$         
-% $$$         if ~isempty(stcMode)            
-% $$$             if nargout>=4,
-% $$$                 labelingEpochs.resample(xyz);
-% $$$                 ind = any(shl.data,2)&any(ysm.data,2)&labelingEpochs.data;
-% $$$                 tcm = confmat(shl(ind&labelingEpochs,:),ysm(ind&labelingEpochs,:)); % DEP: netlab
-% $$$                 labelingStatsMulti.confusionMatrix(iter,:,:) = round(tcm./xyz.sampleRate,2);
-% $$$                 labelingStatsMulti.precision(iter,:) = round(diag(tcm)./sum(tcm,2),4).*100;
-% $$$                 labelingStatsMulti.sensitivity(iter,:) = round(diag(tcm)'./sum(tcm),4).*100;
-% $$$                 labelingStatsMulti.accuracy(iter) = sum(diag(tcm))/sum(tcm(:));
-% $$$             end
-% $$$         end
 
-
-% $$$         n_state = d_state;
-% $$$ 
-% $$$ %  the winners from the losers
-% $$$         [~,maxState] = cf(@(d)    max(d,[],2),   d_state);
-% $$$         %maxState     = cf(@(d,s)  MTADxyz('data',d,'sampleRate',s),    maxState,sampleRate);        
-% $$$         %               cf(@(m,f)  set(m,'data',m(~nniz(f),:) = 0;
-% $$$         for s = 1:numTrials, maxState{s}(~nniz(features{s}),:) = 0; end
-% $$$         
-% $$$ 
-% $$$ % Smooth decision boundaries - 200 ms state minimum
-% $$$ % $$$         bwin = round(.2*sampleRate)+double(mod(round(.2*sampleRate),2)==0);
-% $$$ % $$$         mss = GetSegs(maxState,1:size(maxState,1),bwin,nan);
-% $$$ % $$$         maxState=circshift(sq(mode(mss))',floor(bwin/2));
-% $$$ 
-% $$$ % $$$ % Populate Stc object with the new states
-% $$$ % $$$ for i = 1:numel(Model_Information.state_labels),
-% $$$ % $$$ 
-% $$$ % $$$     sts = ThreshCross(maxState==i,0.5,1);
-% $$$ % $$$     if ~isempty(sts),
-% $$$ % $$$         sts = bsxfun(@plus,sts,[1,0]);
-% $$$ % $$$     end
-% $$$ % $$$     
-% $$$ % $$$     Stc.addState(Trial.spath,...
-% $$$ % $$$              Trial.filebase,...
-% $$$ % $$$              sts,...
-% $$$ % $$$              xyz.sampleRate,...
-% $$$ % $$$              feature.sync.copy,...
-% $$$ % $$$              feature.origin,...
-% $$$ % $$$              Model_Information.state_labels{i},...
-% $$$ % $$$              Model_Information.state_keys{i},...
-% $$$ % $$$              'TimePeriods');
-% $$$ % $$$ end
+%cf(@(c) c.filter('ButFilter',3,1,'low'),cumulativeNetworkOutput);
 
 
 
+%  the winners from the losers
+[~,maxState] = cf(@(c)    max(mean(c.data,3),[],2),   cumulativeNetworkOutput);
+%maxState     = cf(@(d,s)  MTADxyz('data',d,'sampleRate',s.sampleRate),    maxState,xyz);
+for s = 1:numTrials, 
+    maxState{s}(~nniz(xyz{s}),:) = 0; 
+end
 
-% $$$ 
-d_state = MTADxyz('data',p_state,'sampleRate',xyz.sampleRate);
-% $$$ 
-% $$$ 
-% $$$ figure,
-% $$$ sp    = subplot(311);imagesc(d_state.data');caxis([20,100]);
-% $$$ fds = d_state.copy;fds.filter('ButFilter',5,1,'low');
-% $$$ sp(2) = subplot(312);imagesc(fds.data');caxis([20,100]);
-% $$$ sp(3) = subplot(313);imagesc(shl.data');caxis([0,1]);
-% $$$ linkaxes(sp,'xy')
-% Determine winning states based on the the labels of nurmerous
-% neural networks.
-d_state.filter('ButFilter',3,2,'low');
 
-[~,maxState] = max(d_state.data,[],2);
-maxState(~nniz(xyz)) = 0;
-maxState(~any(d_state.data,2)) = 0;
-% Smooth decision boundaries - 200 ms state minimum
-% $$$ bwin = round(.2*xyz.sampleRate)+double(mod(round(.2*xyz.sampleRate),2)==0);
-% $$$ mss = GetSegs(maxState,1:size(maxState,1),bwin,nan);
-% $$$ maxState=circshift(sq(mode(mss))',floor(bwin/2));
+Stc = cf(@(s) s.copy,StcHL);
+cf(@(s) s.updateMode(['msnnN' num2str(trainModel) '+' trainingSessionList]), Stc);
+cf(@(s) set(s,'states',{}), Stc);
+
+for i = 1:numel(states),
+    sts = cf(@(m,i) ThreshCross(m==i,0.5,1),    maxState,repmat({i},[1,numTrials]));
+    try
+        sts = cf(@(m) bsxfun(@plus,m,[1,0]),    sts);
+    end
+
+    
+    cf(@(sts,s,t,x,label,key) s.addState(t.spath,t.filebase,sts,x.sampleRate,...
+                       x.sync.copy,x.origin,label,key,'TimePeriods'),...
+       sts,Stc,Trials,xyz,repmat(labels(i),[1,numTrials]),repmat(keys(i),[1,numTrials]))
+end
+
+
+
+        % if an stc was provided get comparison stats
+ysm = cf(@(s,x) MTADxyz('data',double(0<stc2mat(s,x)),'sampleRate',x.sampleRate),...
+         Stc,xyz);
 
 
 % Stats in comparision to the collection of labels specified in the stcMode
-labelingStats = struct();
-if ~isempty(stcMode),
-    ysm = MTADxyz('data',zeros([shl.size]),'sampleRate',xyz.sampleRate); 
-    ysm.data = ysm.data';
-    ysm.data([1:size(ysm,1):size(ysm,2).*size(ysm,1)]+maxState'-1) = 1;
-    ysm.data = ysm.data';
-    ind = any(shl.data,2)&any(ysm.data,2)&labelingEpochs.data;
-    tcm = confmat(shl(ind&labelingEpochs,:),ysm(ind&labelingEpochs,:)); % #DEP: netlab
-    labelingStats.confusionMatrix = round(tcm./xyz.sampleRate,2);
-    labelingStats.precision = round(diag(tcm)./sum(tcm,2),4).*100;
-    labelingStats.sensitivity = round(diag(tcm)'./sum(tcm),4).*100;
-    labelingStats.accuracy = sum(diag(tcm))/sum(tcm(:));
+labelingStats = repmat(struct('confusionMatrix',zeros([numStates{1},numStates{1}]),...
+                               'precision',     zeros([1,numStates{1}]),...
+                               'sensitivity',   zeros([1,numStates{1}]),...
+                               'accuracy',      0 ),[1,numTrials]);
+
+    ind = cf(@(s,y,l) any(s.data,2)&any(y.data,2), shl,ysm);
+    tcm = cf(@(s,y,i) confmat(s(i,:),y(i,:)),      shl,ysm,ind); % #DEP: netlab
+    af(@(l,t,s) setfield(l,'confusionMatrix',round(t{1}./s{1},2)),labelingStats,tcm,sampleRate);
+for s = 1:numTrials,
+    labelingStats(s).confusionMatrix = round(tcm{s}./sampleRate{s},2);
+    labelingStats(s).precision = round(diag(tcm{s})'./sum(tcm{s},2)',4).*100;
+    labelingStats(s).sensitivity = round(diag(tcm{s})'./sum(tcm{s}),4).*100;
+    labelingStats(s).accuracy = sum(diag(tcm{s}))/sum(tcm{s}(:));
 end
+
 % Copy State Collection object to store new labeled periods
 % $$$ Stc = Trial.stc.copy;
 % $$$ Stc.updateMode([MODEL_TYPE '-' Model_Information.StcMode...
