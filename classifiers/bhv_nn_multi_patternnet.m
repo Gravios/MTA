@@ -18,7 +18,7 @@ function [varargout] = bhv_nn_multi_patternnet(Trial,varargin)
 %    labelingStats,
 %    labelingStatsMulti,
 
-MODEL_TYPE = 'NNmultiPN';
+MODEL_TYPE = 'NN_multiPN';
 
 Trial = MTATrial.validate(Trial);
 

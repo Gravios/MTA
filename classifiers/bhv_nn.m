@@ -9,11 +9,11 @@ function [Stc,d_state,Model_Information,n_state] = bhv_nn(Trial,varargin)
 %
 %   fet:          string, def - 'fet_tsne'
 %
-%   modelName:   string, def - ['MTAC_' Trial.stc.mode '_LGR']
+%   modelName:    string, def - ['MTAC_' Trial.stc.mode '_LGR']
 %
 %   display:     logical, def - true
 %
-%   other_state: logical, def - false
+%   otherState:  logical, def - false
 %
 %   nNeurons:    numeric, def - 100
 %
@@ -24,20 +24,30 @@ function [Stc,d_state,Model_Information,n_state] = bhv_nn(Trial,varargin)
 
 % Constants
 MODEL_TYPE = 'NN';
-SAMPLE_RATE = 20;
 
 % Load Trial and or check if Trial is of the MTASession class
-Trial = MTATrial.validate(Trial);
-assert(isa(Trial,'MTASession'),['MTA:classifiers:' mfilename ':Trial not found']);
+if iscell(Trial)
+    
+else
+    Trial = MTATrial.validate(Trial);
+end
+
+
+
+if isa(Trial,'MTASession'),
+    stcMode = Trial.stc.mode;
+else
+    stcMode = '';
+end
 
 
 defArgs = struct('trainModel',    false,...
                  'states',        {Trial.stc.list_state_attrib('label')},...
                  'stc',           Trial.stc.copy,   ...
-                 'feature',       {{'fet_tsne',Trial,10}},  ...
-                 'modelName',     ['MTAC_' Trial.stc.mode '_' MODEL_TYPE],...
+                 'feature',       [],  ...
+                 'modelName',     ['MTAC_' stcMode '_' MODEL_TYPE],...
                  'display',       true,...
-                 'other_state',   false,...
+                 'otherState',   false,...
                  'nNeurons',      100,...
                  'subset',        [],...
                  'index',         []...
@@ -46,25 +56,12 @@ defArgs = struct('trainModel',    false,...
 
 
 [trainModel,states,Stc,feature,modelName,...
- display,other_state,nNeurons,subset,index] = DefaultArgs(varargin,defArgs,'--struct');
+ display,otherState,nNeurons,subset,index] = DefaultArgs(varargin,defArgs,'--struct');
 
 Stc = Stc.copy;
 %Stc.states = Stc(states{:});
 
 
-% LOAD feature if feature is a feature name
-% RESAMPLE to conserve memory during model fitting
-% feature.resample(30); for now leave it to the input SR
-% LOAD feature if feature is a feature name
-if iscell(feature),
-    feature = feval(feature{:});
-elseif ischar(feature);
-    try
-        feature = feval(feature,Trial,SAMPLE_RATE);
-    catch err
-        error(err.msg)
-    end
-end
 assert(isa(feature,'MTAData'),['MTA:classifiers:' mfilename ':Feature not found']);
 
 
@@ -100,7 +97,7 @@ if trainModel||~exist(model_loc,'file'),
     % periods of the session. 
     % IF TRUE  -> Create classifier model with the specified states and
     %             all other states as a composite state
-    if other_state, 
+    if otherState, 
         ind = resample(Stc{'a'}.cast('TimeSeries'),feature);
         ind = logical(ind.data);
         smat = cat(2,smat,ind);
@@ -128,20 +125,25 @@ if trainModel||~exist(model_loc,'file'),
     net.trainParam.showWindow = false;
     
 % SET mapminmax with a Session group
-    net = struct(net);
-    netInputMapminmaxIndex = ~cellfun(@isempty,regexp(net.inputs{1}.processFcns,'mapminmax'));
-    net.inputs{1}.processSettings{netInputMapminmaxIndex}  = ...
-        load_normalization_parameters_mapminmax(feature.label,...
-                                                [],... need feature.treatmentRecord
-                                                'hand_labeled');
-    net = network(net);                                            
+% $$$     net = struct(net);
+% $$$     netInputMapminmaxIndex = ~cellfun(@isempty,regexp(net.inputs{1}.processFcns,'mapminmax'));
+% $$$     net.inputs{1}.processSettings{netInputMapminmaxIndex}  = ...
+% $$$         load_normalization_parameters_mapminmax(feature.label,...
+% $$$                                                 [],... need feature.treatmentRecord
+% $$$                                                 'hand_labeled');
+% $$$     net = network(net);                                            
 
-% $$$     psa = load_normalization_parameters_mapminmax(feature.label,...
-% $$$                                                  [],... need feature.treatmentRecord
-% $$$                                                  'hand_labeled');
+    psa = load_normalization_parameters_mapminmax(feature.label,...
+                                                 [],... need feature.treatmentRecord
+                                                 'hand_labeled');
     %view(net);        
-    [net,tr] = train(net,feature(ind,:)',~~smat(ind,:)');
-    %[net,tr] = train(net,mapminmax('apply',feature(ind,:)',psa),~~smat(ind,:)');
+    %[net,tr] = train(net,feature(ind,:)',~~smat(ind,:)');
+    net.inputs{1}.processFcns(2) = [];
+    %mfet = ;
+    [net,tr] = train(net,mapminmax('apply',feature(ind,:)',psa),~~smat(ind,:)');
+% $$$     [net,tr] = train(net,...
+% $$$                      [ones([1,psa.xrows]),-ones([1,psa.xrows]),mfet],...
+% $$$                      [zeros([2,size(smat,2)]),~~smat(ind,:)']);
 
     save(model_loc,'net','tr','Model_Information');
     return

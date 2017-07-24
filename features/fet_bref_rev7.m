@@ -36,7 +36,7 @@ xyz.filter('ButFilter',3,2.5,'low');
 
 % Translational movements relative to body
 shft = 3;
-tmar = {'spine_lower','pelvis_root','spine_middle','spine_upper','hcom'};
+tmar = {'spine_lower','spine_middle','spine_upper','head_back','head_front'};
 tvec = zeros([size(xyz,1),numel(tmar),2]);
 dzvec = zeros([size(xyz,1),numel(tmar),1]);
 for m = 1:numel(tmar),
@@ -60,8 +60,6 @@ for t = rotationAngles;
         dwalkFetRot(nind,t==rotationAngles,m) = dot(tvec(nind,m,:),unvec(nind,t==rotationAngles,:),3);
     end
 end
-
-
 
 
 tvec = zeros([size(xyz,1),numel(tmar),2]);
@@ -88,8 +86,9 @@ for t = rotationAngles;
     end
 end
 
+
 fldwalkFetRot = MTADxyz('data',cat(2,dwalkFetRot,permute(dzvec,[1,3,2])),'sampleRate',xyz.sampleRate);
-fldwalkFetRot.filter('ButFilter',5,1,'low');
+fldwalkFetRot.filter('ButFilter',5,1.5,'low');
 
 
 % CAT feature
