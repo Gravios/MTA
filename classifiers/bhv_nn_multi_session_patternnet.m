@@ -27,13 +27,13 @@ varargout = cell([1,nargout-1]);
 % Default Arguments for uninitiated variables
 defArgs = struct('sessionList',                 '',                                            ...
                  'featureSet',                  'fet_bref_rev7',                               ...
-                 'sampleRate',                  10,                                            ...
                  'states',                      {{'walk','rear','turn','pause','groom','sit'}},...
                  'model',                       [],                                            ...
+                 'sampleRate',                  10,                                            ...
                  'nNeurons',                    25,                                            ...
                  'nIter',                       10,                                            ...
                  'randomizationMethod',         'WSBNT',                                       ...
-                 'map2reference',               true,                                          ... 
+                 'map2reference',               true,                                          ...
                  'normalize',                   true,                                          ...
                  'referenceTrial',              'jg05-20120317.cof.all',                       ...
                  'trainingSessionList',         'hand_labeled',                                ...
@@ -44,7 +44,7 @@ defArgs = struct('sessionList',                 '',                             
 );
 
 
-[sessionList,featureSet,sampleRate,states,model,nNeurons,nIter,randomizationMethod,...
+[sessionList,featureSet,states,model,sampleRate,nNeurons,nIter,randomizationMethod,...
  map2reference,normalize,referenceTrial,trainingSessionList,normalizationSessionList,...
  dropIndex,prctTrain,stcTag] = DefaultArgs(varargin,defArgs,'--struct');
 
@@ -63,6 +63,14 @@ xyz    = cf(@(Trial)  Trial.load('xyz')       , Trials);
 Trials(dropIndex) = [];
 xyz(dropIndex) = [];
 
+% LOAD the state collections
+StcHL = cf(@(Trial) Trial.load('stc'),Trials);
+        cf(@(stc,states) set(stc,'states',stc(states{:})),...
+             StcHL,states);
+keys   = cf(@(s) s.key,  StcHL{1}(states{1}));
+labels = cf(@(s) s.label,StcHL{1}(states{1}));
+
+
 % CREATE model name and directory from parameters if none is provided
 if isempty(model),
     dropTag = '';
@@ -73,14 +81,15 @@ if isempty(model),
              dropTag '+'                                      ...
              featureSet                                       ...
              '+SR'  num2str(sampleRate)                       ...
-             'NN'  num2str(nNeurons)                         ...
+             'NN'  num2str(nNeurons)                          ...
              'NI'   num2str(nIter)                            ...
              'M'    num2str(map2reference)                    ...
-             'MREF+' referenceTrial                          ...                          
-             '+N'    num2str(normalize)                        ...             
-             'NREF+' referenceTrial                          ...
-             '+RND' randomizationMethod                        ...
-             'PRCT' num2str(prctTrain)                        ...
+             'MREF+' referenceTrial                           ...                          
+             '+N'    num2str(normalize)                       ...             
+             'NREF+' referenceTrial                           ...
+             '+RND' randomizationMethod                       ...
+             '+PRCT' num2str(prctTrain)                       ...
+             '+STS+' strjoin(keys)                            ...
              '-'    MODEL_TYPE];
 end
 modelPath = fullfile(fileparts(mfilename('fullpath')),model);
@@ -98,12 +107,6 @@ features = cf(@(Trial,fetSet,sr) feval(fetSet,Trial,sr,false),...
               repmat({featureSet},[1,numTrials]),...
               sampleRate);
 
-% LOAD the state collections
-StcHL = cf(@(Trial) Trial.load('stc'),Trials);
-        cf(@(stc,states) set(stc,'states',stc(states{:})),...
-             StcHL,states);
-keys   = cf(@(s) s.key,  StcHL{1}(states{1}));
-labels = cf(@(s) s.label,StcHL{1}(states{1}));
 
 % MAP features to reference session
 if map2reference,
@@ -164,22 +167,22 @@ shl = cf(@(s,x,sts) MTADxyz('data',double(0<stc2mat(s,x,sts)),...
 for iter = 1:nIter,
     try,        
         if trainModel,
-            
+% RESAMPLE feature matrix
             switch randomizationMethod
               case 'ERS' % equal_restructured_sampling
                 % Can be found in MTA:classifiers:bhv_nn_multi_patternnet.m
               case 'WSB'   % whole state bootstrap
-                [StcRnd,labelingEpochs,trainingFeatures] = ...
+                [StcRnd,~,trainingFeatures] = ...
                     cf(@(s,f,sts) resample_whole_state_bootstrap(s,f,sts),...
                        StcHL,features,states);
                 trainingEpochs = [];
               case 'WSBN'  % whole state bootstrap noisy
-                [StcRnd,labelingEpochs,trainingFeatures] = ...
+                [StcRnd,~,trainingFeatures] = ...
                     cf(@(s,f,sts) resample_whole_state_bootstrap_noisy(s,f,sts),...
                        StcHL,features,states);
                 trainingEpochs = [];
               case 'WSBNT' % whole state bootstrap noisy with trimmed boundaries
-                [StcRnd,labelingEpochs,trainingFeatures] = ...
+                [StcRnd,~,trainingFeatures] = ...
                     cf(@(s,f,sts) resample_whole_state_bootstrap_noisy_trim(s,f,sts),...
                        StcHL,features,states);
                 trainingEpochs = [];
@@ -209,7 +212,7 @@ for iter = 1:nIter,
         end
 
 % LOAD network        
-        load(fullfile(modelPath,[model,'-',num2str(iter),'.mat']));
+        load(fullfile(modnelPath,[model,'-',num2str(iter),'.mat']));
 
         networkOutput = cf(@(f,p)  net(mapminmax('apply',f.data',p))',  features,repmat({psa},[1,numTrials]));
         networkOutput = cf(@(d,s)  MTADxyz('data',d,'sampleRate',s),    networkOutput,sampleRate);
@@ -231,12 +234,10 @@ if nargout==0,
 end
 
 
-
 %cf(@(c) c.filter('ButFilter',3,1,'low'),cumulativeNetworkOutput);
 
 
-
-%  the winners from the losers
+% SELECT max state labels 
 [~,maxState] = cf(@(c)    max(mean(c.data,3),[],2),   cumulativeNetworkOutput);
 %maxState     = cf(@(d,s)  MTADxyz('data',d,'sampleRate',s.sampleRate),    maxState,xyz);
 for s = 1:numTrials, 
@@ -244,64 +245,48 @@ for s = 1:numTrials,
 end
 
 
+
+% CREATE state collection with simple mode name
 Stc = cf(@(s) s.copy,StcHL);
 cf(@(s) s.updateMode(['msnnN' num2str(trainModel) '+' trainingSessionList]), Stc);
 cf(@(s) set(s,'states',{}), Stc);
-
+% CONVERT network output into a state collection
 for i = 1:numel(states),
     sts = cf(@(m,i) ThreshCross(m==i,0.5,1),    maxState,repmat({i},[1,numTrials]));
     try
         sts = cf(@(m) bsxfun(@plus,m,[1,0]),    sts);
-    end
-
-    
+    end    
     cf(@(sts,s,t,x,label,key) s.addState(t.spath,t.filebase,sts,x.sampleRate,...
                        x.sync.copy,x.origin,label,key,'TimePeriods'),...
        sts,Stc,Trials,xyz,repmat(labels(i),[1,numTrials]),repmat(keys(i),[1,numTrials]))
 end
+cf(@(s) s.save(true),    Stc);
+% CREATE state collection with model as mode
+cf(@(s) Stc.updateMode(model);
+cf(@(s) s.save(true),    Stc);
 
 
 
-        % if an stc was provided get comparison stats
+% CONVERT state collection into state matrix for inter labeler comparison
 ysm = cf(@(s,x) MTADxyz('data',double(0<stc2mat(s,x)),'sampleRate',x.sampleRate),...
          Stc,xyz);
-
-
-% Stats in comparision to the collection of labels specified in the stcMode
+% INITIALIZE inter labeler stats
 labelingStats = repmat(struct('confusionMatrix',zeros([numStates{1},numStates{1}]),...
                                'precision',     zeros([1,numStates{1}]),...
                                'sensitivity',   zeros([1,numStates{1}]),...
                                'accuracy',      0 ),[1,numTrials]);
-
-    ind = cf(@(s,y,l) any(s.data,2)&any(y.data,2), shl,ysm);
-    tcm = cf(@(s,y,i) confmat(s(i,:),y(i,:)),      shl,ysm,ind); % #DEP: netlab
-    af(@(l,t,s) setfield(l,'confusionMatrix',round(t{1}./s{1},2)),labelingStats,tcm,sampleRate);
+% COMPUTE inter labeler stats
+ind = cf(@(s,y,l) any(s.data,2)&any(y.data,2)&l, shl,ysm, ...
+         labelingEpochs
+);
+tcm = cf(@(s,y,i) confmat(s(i,:),y(i,:)),      shl,ysm,ind); % #DEP: netlab
+af(@(l,t,s) setfield(l,'confusionMatrix',round(t{1}./s{1},2)),labelingStats,tcm,sampleRate);
 for s = 1:numTrials,
     labelingStats(s).confusionMatrix = round(tcm{s}./sampleRate{s},2);
     labelingStats(s).precision = round(diag(tcm{s})'./sum(tcm{s},2)',4).*100;
     labelingStats(s).sensitivity = round(diag(tcm{s})'./sum(tcm{s}),4).*100;
     labelingStats(s).accuracy = sum(diag(tcm{s}))/sum(tcm{s}(:));
 end
-
-% Copy State Collection object to store new labeled periods
-% $$$ Stc = Trial.stc.copy;
-% $$$ Stc.updateMode([MODEL_TYPE '-' Model_Information.StcMode...
-% $$$                 '-' cell2mat(Model_Information.state_keys)]);
-% $$$ Stc.states = {};
-
-
-
-% Create new StateCollection ... well copy
-% $$$ Stc = Trial.stc.copy;
-% $$$ Stc.updateMode([MODEL_TYPE '-' Model_Information.Trial '-'...
-% $$$                 Model_Information.StcMode...
-% $$$                 '-' cell2mat(Model_Information.state_keys)]);
-% $$$ Stc.states = {};
-
-% Create new StateCollection ... well copy
-Stc = Trial.stc.copy;
-Stc.updateMode([model_out '-' cell2mat(Model_Information.state_keys)]);
-Stc.states = {};
 
 
 % Populate Stc object with the new states
@@ -324,8 +309,6 @@ for i = 1:numel(Model_Information.state_labels),
 end
 
 if nargout>=1, varargout{1} = Stc;                end
-if nargout>=2, varargout{2} = d_state.data;       end
-if nargout>=6, varargout{6} = p_state;            end
-if nargout>=3, varargout{3} = labelingStats;      end
-if nargout>=4, varargout{4} = labelingStatsMulti; end
-if nargout>=5, varargout{5} = model_out;          end
+if nargout>=2, varargout{2} = labelingStats;      end
+if nargout>=3, varargout{3} = cumulativeNetworkOutput; end
+if nargout>=4, varargout{4} = model; end
