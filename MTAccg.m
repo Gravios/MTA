@@ -46,7 +46,7 @@ classdef  MTAccg
 
                 [units,overwrite,rand_tag, method, partitions,  partition_feature, trackResPos,...
                  surrogate_sample_size, numIterations, binSize, halfBins, normalization] = ...
-                    DefaultArgs(varargin,{[],false,1,'normal',1,[],1,[],1,100,50,'hz'});
+                    DefaultArgs(varargin,{[],false,1,'normal',1,[],1,[],1,100,20,'hz'});
 
                 %% Load Trial data
 

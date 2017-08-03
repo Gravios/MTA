@@ -97,7 +97,7 @@ for rli = 1:numel(rlist),
             
             StcHL = Trial.stc.copy;
             shl = MTADxyz('data',double(~~stc2mat(StcHL,features,states)),'sampleRate',features.sampleRate);
-            ysm = MTADxyz('data',double(0<stc2mat(ds.stc{s},features,states)),'sampleRate',features.sampleRate); 
+
 
             StcCor = ds.stc{s}.copy();
 % $$$             StcNN = StcCor.copy();

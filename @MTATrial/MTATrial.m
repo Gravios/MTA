@@ -189,7 +189,8 @@ classdef MTATrial < MTASession
 
                 
             elseif iscell(Trial),
-                Trial = MTATrial(Trial{:});
+                return
+
                 
             elseif isstruct(Trial),
                 stcMode = '';

@@ -105,6 +105,8 @@ if isempty(Trial)
     sessionList = get_session_list(param.sessionList);
 elseif ischar(Trial)
     sessionList = get_session_list(Trial);
+elseif iscell(Trial),
+    sessionList = Trial; 
 else
     sessionList = {Trial}; 
 end
@@ -116,8 +118,11 @@ trimWindow = repmat({[ param.embeddingWindow./4./param.sampleRate,...
 residualSearchWindow = round(param.residualSearchWindow.*param.sampleRate);
 
 % LOAD Trial objects
-
-Trials = af(@(Trial) MTATrial.validate(Trial)  , sessionList);
+if isstruct(sessionList),
+    Trials = af(@(Trial) MTATrial.validate(Trial)  , sessionList);
+else
+    Trials = cf(@(Trial) MTATrial.validate(Trial)  , sessionList);
+end    
 
 % LOAD State Collections
 if isempty(Stc),

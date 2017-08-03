@@ -438,3 +438,40 @@
 %  Description: comparison 
 %  Bugs: NA
 %
+
+
+
+%% 2017 07 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+
+% req20170707 ----------------------------------------------------
+%
+%  Status: active
+%  Type: Analysis 
+%  Final_Forms: NA
+%  Description: Behavior subtyping with t-sne 
+%  Bugs: NA
+
+% req20170715 ----------------------------------------------------
+%
+%  Status: active
+%  Type: Analysis 
+%  Final_Forms: load_normalization_mapminmax.m
+%  Description: multi session normalization
+%  Bugs: NA
+
+% req20170726 ----------------------------------------------------
+%
+%  Status: active
+%  Type: Analysis 
+%  Final_Forms: NA
+%  Description: Quick ccg(behavior,unit) in the cortex
+%  Bugs: NA
+ 
+% req20170728 ----------------------------------------------------
+%
+%  Status: active
+%  Type: Analysis 
+%  Final_Forms: NA
+%  Description: Labeling statistics 
+%  Bugs: NA
+ 

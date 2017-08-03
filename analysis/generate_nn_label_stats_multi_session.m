@@ -1,4 +1,4 @@
-function [out] = generate_nn_label_stats_multi_session(varargin)
+function [out] = generate_nn_label_stats_multi_session(mode,varargin)
 %function [out] = generate_nn_label_stats_multi_session(varargin)
 %
 % DEFARGS ----------------------------------------------------------------------
@@ -19,12 +19,17 @@ function [out] = generate_nn_label_stats_multi_session(varargin)
 %    'dropIndex',                   [],                                            
 %    'prctTrain',                   90,                                            
 %    'stcTag',                      'msnn'                                         
-% 
+%    'postProcessingTag'            '' 
 
-% DEFARGS ------------------------------------------------------------------------
+global MTA_PROJECT_PATH
+
+MODEL_TYPE = 'multiSesPatNet';
+
+% DEFARGS ----------------------------------------------------------------------------------------
 defargs = struct('sessionList',                 '',                                            ...
                  'featureSet',                  'fet_bref_rev7',                               ...
                  'states',                      {{'walk','rear','turn','pause','groom','sit'}},...
+                 'keys',                        {{'w','r','n','p','m','s'}},                   ...
                  'model',                       [],                                            ...
                  'sampleRate',                  10,                                            ...
                  'nNeurons',                    25,                                            ...
@@ -37,257 +42,354 @@ defargs = struct('sessionList',                 '',                             
                  'normalizationSessionList',    'hand_labeled',                                ...
                  'dropIndex',                   [],                                            ...
                  'prctTrain',                   90,                                            ...
-                 'stcTag',                      'msnn'                                         ...
+                 'postProcessingTag',           ''                                             ...
 );
-%-------------------------------------------------------------------------------
-
-[d.sessionList,featureSet,states,model,sampleRate,nNeurons,nIter,randomizationMethod,...
- map2reference,normalize,referenceTrial,trainingSessionList,normalizationSessionList,...
- dropIndex,prctTrain,stcTag] = DefaultArgs(varargin,defArgs,'--struct','--struct-out');
-
-
-out = [];
-
-%rlist = get_session_list();
+[sessionList,featureSet,states,keys,model,sampleRate,nNeurons,nIter,randomizationMethod,       ...
+ map2reference,normalize,referenceTrial,trainingSessionList,normalizationSessionList,          ...
+ dropIndex,prctTrain,postProcessingTag] = DefaultArgs(varargin,defargs,'--struct');
+% ------------------------------------------------------------------------------------------------    
 
 
-% MAIN -------------------------------------------------------------------------
+
+% MAIN -------------------------------------------------------------------------------------------
 
 switch mode
-  case 'train' %Trian bhv_nn_multi_patternnet 
-    trainingList = get_session_list(trainingSessionList);
-    for s = rlist
-        
-        bhv_nn_multi_session_patternnet(defargs{:});
+% TRAIN ------------------------------------------------------------------------------------------
+  case 'train' 
+    trainingList = get_session_list(trainingSessionList); 
+    for dropIndex = 1:numel(trainingList),
+        bhv_nn_multi_session_patternnet(...
+            sessionList,         featureSet, states, keys, model,                             ...
+            sampleRate,          nNeurons,   nIter,  randomizationMethod,                     ...
+            map2reference,       normalize,  referenceTrial,                                  ...
+            trainingSessionList, normalizationSessionList,                                    ...
+            dropIndex,           prctTrain                                                    ...
+        );
     end
 
 
+    
+% COMPUTE ----------------------------------------------------------------------------------------
+  case 'compute'
 
-  case 'compute' % labels for trials in slist
-    % Ed 
-    for sli = 1:numel(slist),
-        for rli = 1:numel(rlist),
-            SesList = get_session_list(slist{sli});
 
-            if ~isempty(prctTrain), prctTrainTag = ['_PRT_',prctTrain]; else, prctTrainTag = ''; end
-
-            model = ['MTAC_BATCH-' tag_preprocessing fetSet ...
-                     '_SR_' num2str(sampleRate)             ...
-                     '_NORM_' num2str(norm)                 ...
-                     '_REF_' rlist(rli).sessionName,        ...
-                             '.' rlist(rli).mazeName        ...
-                             '.' rlist(rli).trialName       ...
-                     '_STC_' rlist(rli).stcMode             ...
-                     '_NN_' num2str(nNeurons)               ...
-                     '_NI_' num2str(nIter)                  ...
-                     prctTrainTag                           ...                     
-                     '_NNmultiPN_RAND_' rndMethod];
-
-            stc = {}; d_state = {};p_state = {}; ls = {}; lsm = {};mdl = {};
-            for s = SesList
-                Trial = MTATrial.validate(s);
-                Trial.load('stc',s.stcMode);
-                clear('mod');
-                mod.states     = states;
-                mod.stcMode    = s.stcMode;
-                mod.featureSet = fetSet;
-                mod.model      = model;
-                mod.sampleRate = sampleRate;
-                mod.nNeurons   = nNeurons;
-                mod.nIter      = nIter;
-                mod.map2reference = mref;
-                mod.normalize = norm;
-                mod.prctTrain = prctTrain;
-                mod.sessionList = sessionList;
-                argin = struct2varargin(mod);
-                [stc{end+1},d_state{end+1},ls{end+1},lsm{end+1},mdl{end+1},p_state{end+1}] = bhv_nn_multi_patternnet(Trial,argin{:});
-                stc{end}.save(1);
-            end
-
-            if mod.map2reference,
-                mapped = '-map2ref';
-            else
-                mapped = '';
-            end
-            
-            save(fullfile(MTASession().path.data,'analysis',[slist{sli},'-',model,mapped,'.mat']),...
-                 '-v7.3','slist','rlist','nNeurons','nIter','sampleRate','model','fetSet','rndMethod',...
-                 'states','stc','d_state','p_state','ls','mdl');
-
+    if isempty(sessionList),
+        sessionList = trainingSessionList; 
+        sesList = get_session_list(sessionList);
+        stc           = cell([1,numel(sesList)]); 
+        networkOutput = cell([1,numel(sesList)]);
+        labelingStats = cell([1,numel(sesList)]);
+        for dropIndex = 1:numel(sesList),
+            [stc(dropIndex),labelingStats{dropIndex},networkOutput{dropIndex}] =             ...
+                bhv_nn_multi_session_patternnet(                                             ...
+                    sesList(dropIndex),     featureSet,   states,   keys, model,             ...
+                    sampleRate,             nNeurons,     nIter,    randomizationMethod,     ...
+                    map2reference,          normalize,    referenceTrial,                    ...
+                    trainingSessionList,    normalizationSessionList,                        ...
+                    dropIndex,              prctTrain                                        ...
+            );
+        end
+    else
+        sesList = get_session_list(sessionList);
+        stc           = cell([1,numel(sesList)]); 
+        networkOutput = cell([1,numel(sesList)]);
+        labelingStats = cell([1,numel(sesList)]);        
+        for s = 1:numel(sesList),
+            [stc(s),labelingStats{s},networkOutput(s)] = bhv_nn_multi_session_patternnet(    ...
+                sessionList,            featureSet,   states,   keys,  model,                ...
+                sampleRate,             nNeurons,     nIter,    randomizationMethod,         ...
+                map2reference,          normalize,    referenceTrial,                        ...
+                trainingSessionList,    normalizationSessionList,                            ...
+                dropIndex,              prctTrain                                            ...
+            );   
         end
     end
 
+% CREATE statitics filename
+    statsName = ['MTAC_STATS+TRN+' trainingSessionList                                       ...
+                '+LBS+' sessionList '+'                                                      ...
+                featureSet                                                                   ...
+                '+SR'  num2str(sampleRate)                                                   ...
+                'NN'  num2str(nNeurons)                                                      ...
+                'NI'   num2str(nIter)                                                        ...
+                'M'    num2str(map2reference)                                                ...
+                'MREF+' referenceTrial                                                       ...
+                '+N'    num2str(normalize)                                                   ...
+                'NREF+' normalizationSessionList                                             ...
+                '+RND' randomizationMethod                                                   ...
+                '+PRCT' num2str(prctTrain)                                                   ...
+                '+STS+' strjoin(keys,'')                                                     ...
+                '-'    MODEL_TYPE];
+ 
+% SAVE labeling statitics
+    save(fullfile(MTA_PROJECT_PATH,'analysis',[statsName,'.mat']),                           ...
+         '-v7.3','nNeurons','nIter','sampleRate','featureSet',                               ...
+         'randomizationMethod','states','stc','labelingStats',                               ...
+         'networkOutput','trainingSessionList','sessionList','model'                         ...
+    );
 
-
-
-  case 'display'
-    if ~isempty(prctTrain), prctTrainTag = ['_PRT_',prctTrain]; else, prctTrainTag = ''; end                        
-    for sli = 1:numel(slist),
-        for rli = 1:numel(rlist),    
-
-
-            SesList = get_session_list(slist{sli});
-            SesList = {SesList(:).sessionName};
-            
-            nses = numel(SesList);
-            nsts = numel(states);
-
-
-            model = ['MTAC_BATCH-' tag_preprocessing fetSet ...
-                     '_SR_' num2str(sampleRate) ...
-                     '_NORM_' num2str(norm) ...         
-                     '_REF_' rlist(rli).sessionName, '.' rlist(rli).mazeName '.' rlist(rli).trialName ...
-                     '_STC_' rlist(rli).stcMode ...
-                     '_NN_' num2str(nNeurons) ...
-                     '_NI_' num2str(nIter) ...   
-                     prctTrainTag                           ...                                          
-                     '_NN_multiPN_RAND_' rndMethod];
-
-
-            if mref
-                mapped = '-map2ref';
-            else
-                mapped = '';
-            end
-            
-            
-            load(fullfile(MTASession().path.data,'analysis',[slist{sli},'-',model,...
-                                tag_postprocessing,mapped,'.mat']))
-            %slist = {'hand_labeled_jg';'hand_labeled_Ed'};
-
-
-            %figure
-            hfig = figure(3923992);clf
-            set(hfig,'Position',       [40         40        1500         500])
-
-            prop = 'accuracy';
-
-            subplot(131);
-            plot(cell2mat(cellfun(@subsref,ls, ...
-                                  repmat({substruct('.',prop)},[1,numel(ls)]),'uniformoutput',false))'.*100,'d')
-            xlim([0,5])
-            ylim([0,100])
-            ylabel(prop);
-            title({['Training Set: ' rlist(rli).sessionName],...
-                   ['Randomization: ' rndMethod ],...
-                   ['Labeling Set: ' slist{sli}],...
-                   ['Feature  Set: ' fetSet],...
-                   ['postProc: ' tag_postprocessing]});
-            set(gca,'XTickLabelMode','manual');
-            set(gca,'XTick',1:numel(SesList));
-            set(gca,'XTickLabel',SesList);
-            set(gca,'XTickLabelRotation',90);
-            pause(.1)
-
-            prop = 'precision';
-            subplot(132);plot(reshape(cell2mat(cellfun(@subsref,ls, ...
-                                                       repmat({substruct('.',prop)},[1,numel(ls)]),'uniformoutput',false))',nses,nsts)','d-')
-            xlim([0,7])
-            hax = gca;
-            hax.XTickLabelMode = 'manual';
-            hax.XTickLabel = cat(2,{''},states,{''});
-            ylim([0,100])
-            ylabel(prop)
-            title({['Training Set: ' rlist(rli).sessionName],...
-                   ['Randomization: ' rndMethod ],...
-                   ['Labeling Set: ' slist{sli}],...
-                   ['Feature  Set: ' fetSet],...
-                   ['postProc: ' tag_postprocessing]});
-            legend(SesList,'location','southwest');
-            pause(.1)
-
-            prop = 'sensitivity';
-
-            subplot(133);plot(reshape(cell2mat(cellfun(@subsref,ls, ...
-                                                       repmat({substruct('.',prop)},[1,numel(ls)]),'uniformoutput',false))',nsts,nses),'d-')
-            xlim([0,7])
-            hax = gca;
-            hax.XTickLabelMode = 'manual';
-            hax.XTickLabel = cat(2,{''},states,{''});
-            ylim([0,100])
-            ylabel(prop)
-            title({['Training Set: ' rlist(rli).sessionName],...
-                   ['Randomization: ' rndMethod ],...
-                   ['Labeling Set: ' slist{sli}],...
-                   ['Feature  Set: ' fetSet],...
-                   ['postProc: ' tag_postprocessing]});
-            legend(SesList,'location','southwest');
-            pause(3)
-
-
-
-% $$$             reportfig(fullfile(getenv('PROJECT'),'figures'),  ... Path where figures are stored
-% $$$             hfig,                                ... Figure handle
-% $$$             [mfilename],                         ... Figure Set Name
-% $$$             'req',                               ... Directory where figures reside
-% $$$             false,                               ... Do Not Preview
-% $$$             ['Fet:',fetSet,'Ref:',rlist(rli).sessionName,'.',...
-% $$$                                   rlist(rli).mazeName,'.',...
-% $$$                                   rlist(rli).trialName,...
-% $$$              ' L:',slist{sli}],...thmb_cap
-% $$$             ['Fet:',fetSet,...
-% $$$              'Ref:',rlist(rli).sessionName,'.',...
-% $$$                     rlist(rli).mazeName,'.',...
-% $$$                     rlist(rli).trialName,...
-% $$$              ' L:',slist{sli}],...exp_cap
-% $$$             [],                                  ... Resolution
-% $$$             false,                               ... Do Not Save FIG
-% $$$             'png',9,4);                                % Output Format
-            
-        end
+    
+    
+% OPTIMIZE --------------------------------------------------------------------------------------
+  case 'optimize'
+    sessionListWasEmpty = false;
+    if isempty(sessionList),
+        sessionList = trainingSessionList; 
+        sessionListWasEmpty = true;
     end
     
+% LOAD neural network labeled state collections
+    statsName = ['MTAC_STATS+TRN+' trainingSessionList                                       ...
+                '+LBS+' sessionList '+'                                                      ...
+                featureSet                                                                   ...
+                '+SR'   num2str(sampleRate)                                                  ...
+                'NN'    num2str(nNeurons)                                                    ...
+                'NI'    num2str(nIter)                                                       ...
+                'M'     num2str(map2reference)                                               ...
+                'MREF+' referenceTrial                                                       ...
+                '+N'    num2str(normalize)                                                   ...
+                'NREF+' normalizationSessionList                                             ...
+                '+RND'  randomizationMethod                                                  ...
+                '+PRCT' num2str(prctTrain)                                                   ...
+                '+STS+' strjoin(keys,'')                                                     ...
+                '-'     MODEL_TYPE];
+    disp(statsName);
+    stsRaw = load(fullfile(MTA_PROJECT_PATH,'analysis',[statsName,postProcessingTag,'.mat']));
+
+    
+    if sessionListWasEmpty,
+        sessionList = trainingSessionList; 
+        sesList = get_session_list(sessionList);
+        stc           = cell([1,numel(sesList)]);         
+        for dropIndex = 1:numel(sesList),
+            stc(dropIndex) = optimize_stc_transition(stsRaw.stc(dropIndex),                  ...
+                    sesList(dropIndex),     featureSet,   states,   keys, model,             ...
+                    sampleRate,             nNeurons,     nIter,    randomizationMethod,     ...
+                    map2reference,          normalize,    referenceTrial,                    ...
+                    trainingSessionList,    normalizationSessionList,                        ...
+                    dropIndex,              prctTrain                                        ...
+            );
+        end
+    else
+        sesList = get_session_list(sessionList);
+        stc           = cell([1,numel(sesList)]); 
+        networkOutput = cell([1,numel(sesList)]);
+        labelingStats = cell([1,numel(sesList)]);        
+        for s = 1:numel(sesList),
+            [Stc(s),labelingStats{s},networkOutput(s)] = bhv_nn_multi_session_patternnet(    ...
+                sessionList,            featureSet,   states,   keys,  model,                ...
+                sampleRate,             nNeurons,     nIter,    randomizationMethod,         ...
+                map2reference,          normalize,    referenceTrial,                        ...
+                trainingSessionList,    normalizationSessionList,                            ...
+                dropIndex,              prctTrain                                            ...
+            );   
+        end
+    end
+
+% REMOVE states disjoint to target state set
+    cf(@(stc,states) set(stc,'states',stc(states{:})), stc,repmat({states},[1,numel(stc)]));
+% COMPUTE cross label statistics between optimized and hand labeled state collections
+    labelingStats = compute_inter_stc_stats(sessionList,stc,states,sampleRate);
+
+% SAVE labeling statitics    
+    save(fullfile(MTA_PROJECT_PATH,'analysis',[statsName,'_pp.mat']),                        ...
+         '-v7.3','stc','labelingStats','nNeurons','nIter','sampleRate','featureSet',         ...
+         'randomizationMethod','states','trainingSessionList','sessionList'                  ...
+     );
+
+
+    
+    
+    
+    
+% DISPLAY --------------------------------------------------------------------------------------
+  case 'display'
+
+% DISPLAY - Load Data and Set Parameters --------------------------------------------------------    
+% SET figure save paths
+    OwnDir = '/storage/gravio/ownCloud/';
+    FigDir = 'Shared/Behavior Paper/Figures/Figure_1/parts';
+    try,mkdir(fullfile(OwnDir,FigDir));end    
+
+% SET figure dimensions
+    fig.w = 6;
+    fig.h = 4;
+    fig.units = 'centimeters';
+    ax.w = 4;
+    ax.h = 3;
+    ax.units = 'centimeters';
+
+% LOAD labeling statistics
+    if isempty(sessionList), sessionList = trainingSessionList;  end
+    statsName = ['MTAC_STATS+TRN+' trainingSessionList                                       ...
+                '+LBS+' sessionList '+'                                                      ...
+                featureSet                                                                   ...
+                '+SR'   num2str(sampleRate)                                                  ...
+                'NN'    num2str(nNeurons)                                                    ...
+                'NI'    num2str(nIter)                                                       ...
+                'M'     num2str(map2reference)                                               ...
+                'MREF+' referenceTrial                                                       ...
+                '+N'    num2str(normalize)                                                   ...
+                'NREF+' normalizationSessionList                                             ...
+                '+RND'  randomizationMethod                                                  ...
+                '+PRCT' num2str(prctTrain)                                                   ...
+                '+STS+' strjoin(keys,'')                                                     ...
+                '-'     MODEL_TYPE];
+    stsRaw = load(fullfile(MTA_PROJECT_PATH,'analysis',[statsName,postProcessingTag,'.mat']));
+    stsOpt = load(fullfile(MTA_PROJECT_PATH,'analysis',[statsName,postProcessingTag,'_pp.mat']));
+
+% DISPLAY - Plot Accuracy -----------------------------------------------------------------------
+
+% CREATE figure        
+    hfig = figure();
+    clf();
+    hold('on');
+    
+% APPLY figure properties
+    set(hfig,'PaperPositionMode','auto');
+    set(hfig,'units',fig.units);
+    set(hfig,'Position',[0,0,fig.w,fig.h]);
+    
+% FORMAT statistical data for boxplot
+    dat = [cell2mat(cf(@(x)x.accuracy,stsRaw.labelingStats));...
+           cell2mat(af(@(x)x.accuracy,stsOpt.labelingStats))]'.*100;
+    grp = bsxfun(@times,ones(size(dat)),[1:size(dat,2)]);
+    
+% PLOT boxplot
+    boxplot(dat(:),grp(:));
+    h = findobj(gca,'Tag','Box');
+    
+% OVERLAY each boxplot with patch
+    for j=1:length(h)
+            p = patch(get(h(j),'XData'),...
+                      get(h(j),'YData'),...
+                      [0.5,1,0.75].*double([rem(j,3)==1,rem(j,3)==2,rem(j,3)==0]),...
+                      'FaceAlpha',.5);
+% REORDER patches behind boxplots
+            uistack(p,'bottom');
+    end
+
+% FORMAT figure
+    title('accuracy')
+    ylim([50,100]);
+    grid('on');
+    set(gca,'gridlinestyle',':');
+    set(gca,'units',ax.units);
+    set(gca,'Position',[hfig.Position(3)/2-ax.w/2,hfig.Position(4)/2-ax.h/2,ax.w,ax.h]);
+    set(gca,'XTick',[1:3]);
+    set(gca,'YTick',[50:5:100]);
+    set(gca,'box','on');
+    
+% PRINT figure
+    print(hfig,'-depsc2',fullfile(OwnDir,FigDir,['fig1_labeling_accuracy-',featureSet,postProcessingTag,'.eps']))
+    print(hfig,'-dpng',fullfile(OwnDir,FigDir,['fig1_labeling_accuracy-',featureSet,postProcessingTag,'.png']))    
+
+    
+    
+% DISPLAY - Plot Precision ----------------------------------------------------------------
+
+% CREATE figure        
+    hfig = figure();
+    clf();
+    hold('on');
+    
+% APPLY figure properties
+    set(hfig,'PaperPositionMode','auto');
+    set(hfig,'units',fig.units);
+    set(hfig,'Position',[0,0,fig.w,fig.h]);
+    
+% FORMAT statistical data for boxplot
+    dat = [cell2mat(cf(@(x)x.precision,stsRaw.labelingStats));...
+           cell2mat(af(@(x)x.precision,stsOpt.labelingStats))]';
+    grp = bsxfun(@plus,repmat(repmat([1:numel(states)]',[numel(stsRaw.labelingStats),1]),...
+                              [1,size(dat,2)]),[0:1].*numel(states));
+    
+% PLOT boxplot
+    boxplot(dat(:),grp(:));
+    h = findobj(gca,'Tag','Box');
+    
+% OVERLAY each boxplot with patch
+    pcolor = [repmat([1,0,0],[numel(states),1]);repmat([0,0,1],[numel(states),1])];
+    for j=1:length(h)
+
+        p = patch(get(h(j),'XData'),...
+                  get(h(j),'YData'),...
+                  pcolor(j,:),...
+                  'FaceAlpha',.5);
+
+% REORDER patches behind boxplots
+        uistack(p,'bottom');
+    end
+
+% FORMAT figure
+    title('precision')
+    ylim([10,100]);
+    grid('on');
+    set(gca,'gridlinestyle',':');
+    set(gca,'units',ax.units);
+    set(gca,'Position',[hfig.Position(3)/2-ax.w/2,hfig.Position(4)/2-ax.h/2,ax.w,ax.h]);
+    set(gca,'XTick',[1:numel(states)*2]);
+    set(gca,'XTickLabel',[states(:),states(:)])
+    set(gca,'YTick',[10:10:100]);
+    set(gca,'box','on');
+    
+% PRINT figure
+    print(hfig,'-depsc2',fullfile(OwnDir,FigDir,['fig1_labeling_precision-',featureSet,postProcessingTag,'.eps']))
+    print(hfig,'-dpng',fullfile(OwnDir,FigDir,['fig1_labeling_precision-',featureSet,postProcessingTag,'.png']))    
+    
+% DISPLAY - Plot Precision ----------------------------------------------------------------
+
+% CREATE figure        
+    hfig = figure();
+    clf();
+    hold('on');
+    
+% APPLY figure properties
+    set(hfig,'PaperPositionMode','auto');
+    set(hfig,'units',fig.units);
+    set(hfig,'Position',[0,0,fig.w,fig.h]);
+    
+% FORMAT statistical data for boxplot
+    dat = [cell2mat(cf(@(x)x.sensitivity,stsRaw.labelingStats));...
+           cell2mat(af(@(x)x.sensitivity,stsOpt.labelingStats))]';
+    grp = bsxfun(@plus,repmat(repmat([1:numel(states)]',[numel(stsRaw.labelingStats),1]),...
+                              [1,size(dat,2)]),[0:1].*numel(states));
+    
+% PLOT boxplot
+    boxplot(dat(:),grp(:));
+    h = findobj(gca,'Tag','Box');
+    
+% OVERLAY each boxplot with patch
+    pcolor = [repmat([1,0,0],[numel(states),1]);repmat([0,0,1],[numel(states),1])];
+    for j=1:length(h)
+
+        p = patch(get(h(j),'XData'),...
+                  get(h(j),'YData'),...
+                  pcolor(j,:),...
+                  'FaceAlpha',.5);
+
+% REORDER patches behind boxplots
+        uistack(p,'bottom');
+    end
+
+% FORMAT figure
+    title('sensitivity')
+    ylim([10,100]);
+    grid('on');
+    set(gca,'gridlinestyle',':');
+    set(gca,'units',ax.units);
+    set(gca,'Position',[hfig.Position(3)/2-ax.w/2,hfig.Position(4)/2-ax.h/2,ax.w,ax.h]);
+    set(gca,'XTick',[1:numel(states)*2]);
+    set(gca,'XTickLabel',[states(:),states(:)])
+    set(gca,'YTick',[10:10:100]);
+    set(gca,'box','on');
+    
+% PRINT figure
+    print(hfig,'-depsc2',fullfile(OwnDir,FigDir,['fig1_labeling_sensitivity-',featureSet,postProcessingTag,'.eps']))
+    print(hfig,'-dpng',fullfile(OwnDir,FigDir,['fig1_labeling_sensitivity-',featureSet,postProcessingTag,'.png']))
     
 end
 
 
 
-% $$$ 
-% $$$ figure,hold on,
-% $$$ fetSet  = 'fet_tsne_rev15';
-% $$$ k = 1;
-% $$$ htl = {};
-% $$$ set(gcf,'interpreter','none')
-% $$$ for sli = 1:numel(slist),
-% $$$     for rli = 1:numel(refTrial),    
-% $$$         prop = 'accuracy';
-% $$$ 
-% $$$         model = ['MTAC_BATCH-' fetSet ...
-% $$$                  '_SR_' num2str(sampleRate) ...
-% $$$                  '_NORM_' num2str(norm) ...
-% $$$                  '_REF_' rlist(rli).sessionName, '.' ...
-% $$$                  rlist(rli).mazeName '.' ...
-% $$$                  rlist(rli).trialName ...
-% $$$                  '_STC_' rlist(rli).stcMode ...
-% $$$                  '_NN_' num2str(nNeurons) ...
-% $$$                  '_NI_' num2str(nIter) ...
-% $$$                  '_NN_multiPN_RAND_' rndMethod];
-% $$$ 
-% $$$         ds = load(fullfile(MTASession().path.data,'analysis',...
-% $$$                            [slist{sli},'-',model,mapped,'.mat']));
-% $$$ 
-% $$$         scat = scatter(k*ones([numel(ds.ls),1]),cell2mat(cellfun(@subsref,ds.ls, ...
-% $$$                                                           repmat({substruct('.',prop)},[1,numel(ds.ls)]),'uniformoutput',false))'.*100,30);
-% $$$ 
-% $$$         scat.MarkerFaceColor = scat.CData;
-% $$$         k=k+1;
-% $$$         htl = cat(2,htl,{['{' slist{sli} ' - ' rlist(rli).sessionName '}']});
-% $$$     end
-% $$$ end
-% $$$ 
-% $$$ xlim([0.5,k-0.5]);
-% $$$ ylim([50,100])
-% $$$ 
-% $$$ set(gca,'XTickLabelMode','manual');
-% $$$ set(gca,'XTick',1:k-1);
-% $$$ set(gca,'XTickLabel',{});
-% $$$ 
-% $$$ 
-% $$$ set(gca,'XTickLabel',htl);
-% $$$ set(gca,'XTickLabelRotation',90);
-% $$$ 
-% $$$ 
-% $$$ 
-% $$$ 
-% $$$ 
-% $$$ 
+
