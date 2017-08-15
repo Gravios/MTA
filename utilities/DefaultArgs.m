@@ -52,14 +52,36 @@ function varargout = DefaultArgs(Args, DefArgs, varargin)
 
 %% Set DefaultArgs' default args
 
-% If varargin is empty, setup path to the m-file calling, hereafter
-% known as CMF, DefaultsArgs.
-if numel(varargin)>0,
+% THROW error if output count doesn't equal the number of default args
+assert(nargout==numel(Args),'MTA:utilities:set_default_args:NArginDoesNotEqualNArgout');
+
+% IF varargin is empty, setup path to the m-file calling, hereafter known as CMF, DefaultsArgs.
+if numel(varargin)>0,    
+
     switch varargin{1}
+      
       case '--struct'
-        FuncPath = dbstack('-completenames');         
-        DefArgs = struct2varargin(DefArgs);
-        DefArgs = DefArgs(2:2:end);
+        
+% ASSIGN DefArgs fields in order to varargout cell array and return
+        varargout = {};
+                defaultArgFields = fields(DefArgs);
+        for field = defaultArgFields, varargout(end+1) = {DefArgs.(field{1})};  end
+
+% QUERY default argument variables from input struct
+        numInputArgs = numel(Args);
+        index = 1;
+        while index <= numInputArgs
+            if ischar(Args{index}) && isfield(DefArgs,Args{index}),
+% ASSIGN next postion in Args to varargout based on field tag in previous position in Args
+                varargout(~cellfun(@isempty(regxep(Args{index},defaultArgFields)))) = {Args{index+1}};
+                index = index+2;
+            else
+% ASSIGN next position in Args to varargout assuming correct order
+                varargout(index) = Args(i);
+                index = index+1;
+            end
+        end
+
       otherwise
         FuncPath = varargin{1};        
     end
@@ -80,8 +102,7 @@ if numel(FuncPath)>1,
         end
     end
 
-    % Defined line position for reading the CMF relative to the
-    % location of the DefaultArgs call in the CMF.
+% DEFINED line position for reading the CMF relative to the of the DefaultArgs call in the CMF.
     NLineBackSeek = 4;
     if numel(varargin)>2,
         if ~isempty(varargin{3}),
@@ -89,21 +110,20 @@ if numel(FuncPath)>1,
         end
     end
 
-    %% Ensure the DefArgs is a cell
     if ~iscell(DefArgs)
+% WRAP DefArgs in cell
         DefArgs = {DefArgs};
     end
 
+% Don't remember what this does 
     skiphead = 0;
     if isstruct(FuncPath),
-        
         skiphead = FuncPath(2).line-NLineBackSeek;
         if skiphead<0, skiphead=0; end
-
         FuncPath = FuncPath(2).file;
     end
 
-    % Open the function's mfile , pull excerpt where DefaultArgs is found (default is 15 lines)
+% OPEN matfile of function, copy code where DefaultArgs is located (default is 15 lines)
     fid = fopen(FuncPath);
     FSC = textscan(fid, '%s', 'Delimiter', '\n', 'Whitespace', '\b','HeaderLines',skiphead);
     fclose(fid);
@@ -111,25 +131,24 @@ if numel(FuncPath)>1,
     if numel(FSC)>NLineExcerpt,FSC = FSC(1:NLineExcerpt);end
 
 
-    %% Clean up excerpt 
+% CLEAN function code excerpt 
     for i = 1:numel(FSC),
-        % Remove white spaces
+% REMOVE white spaces
         FSC{i}(ismember(FSC{i},' ')) = [];
         if  isempty(FSC{i}),continue,end
-        % flag lines without code for deletion (i.e. comments)
-        
+% FLAG lines without code for deletion (i.e. comments)
         if strcmp(FSC{i}(1),'%'),
             FSC{i} = [];
         end
     end
+% DELETE flagged lines
     cind = find(cellfun(@isempty,FSC));
     if ~isempty(cind), 
         FSC(cind)=[];
     end
 
-    %% Parse variable names from excerpt
-
-    % Find the line where DefaultArgs exists
+% PARSE variable names from excerpt -------------------------------------------------------
+% FIND the line where DefaultArgs exists
     dfa_index = find(~cellfun(@isempty,regexpi(FSC,'defaultargs','once')),1);
 
     outind = [];
@@ -220,7 +239,7 @@ if numel(FuncPath)>1,
             varargout(i) = MatchedArgs(i);
         end
     end
-
+    
 else
     if isempty(Args),
         Args ={[]}; 
@@ -229,13 +248,13 @@ else
         DefArgs = {DefArgs};
     end
     nDefArgs = length(DefArgs);
-    nInArgs = length(Args);
+    numInputArgs = length(Args);
     if (nargout~=nDefArgs), ...
                  error('number of defaults is different from assigned'); 
     end
     
     for i = 1:nDefArgs,
-        if(i>nInArgs || isempty(Args{i}))
+        if(i>numInputArgs || isempty(Args{i}))
             varargout(i) = {DefArgs{i}};
         else
             varargout(i) = {Args{i}};
