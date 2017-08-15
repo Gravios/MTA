@@ -13,21 +13,28 @@ function [varargout] = bhv_nn_multi_session_patternnet(varargin)
 %    randomizationMode,
 %
 % varargout:
+%     Stc
+%     labelingStats
+%     cumulativeNetworkOutput
+%     model
+
 %    Stc,
 %    d_state,
 %    labelingStats,
 %    labelingStatsMulti,
 
 global MTA_PROJECT_PATH
+%global MTA_VERBOSITY
 
 MODEL_TYPE = 'multiSesPatNet';
 
 varargout = cell([1,nargout-1]);
 
-% Default Arguments for uninitiated variables
+% DEFARGS ----------------------------------------------------------------------------------------
 defArgs = struct('sessionList',                 '',                                            ...
                  'featureSet',                  'fet_bref_rev7',                               ...
                  'states',                      {{'walk','rear','turn','pause','groom','sit'}},...
+                 'keys',                        {{'w','r','n','p','m','s'}},                   ...
                  'model',                       [],                                            ...
                  'sampleRate',                  10,                                            ...
                  'nNeurons',                    25,                                            ...
@@ -39,69 +46,79 @@ defArgs = struct('sessionList',                 '',                             
                  'trainingSessionList',         'hand_labeled',                                ...
                  'normalizationSessionList',    'hand_labeled',                                ...
                  'dropIndex',                   [],                                            ...
-                 'prctTrain',                   90,                                            ...
-                 'stcTag',                      'msnn'                                         ...
+                 'prctTrain',                   90                                             ...
 );
+[sessionList,featureSet,states,keys,model,sampleRate,nNeurons,nIter,randomizationMethod,       ...
+ map2reference,normalize,referenceTrial,trainingSessionList,normalizationSessionList,          ...
+ dropIndex,prctTrain] = DefaultArgs(varargin,defArgs,'--struct');
+% ------------------------------------------------------------------------------------------------
 
 
-[sessionList,featureSet,states,model,sampleRate,nNeurons,nIter,randomizationMethod,...
- map2reference,normalize,referenceTrial,trainingSessionList,normalizationSessionList,...
- dropIndex,prctTrain,stcTag] = DefaultArgs(varargin,defArgs,'--struct');
+
+% MAIN -------------------------------------------------------------------------------------------
+
 
 if isempty(sessionList),
-    Trials = af(@(Trial)  MTATrial.validate(Trial), get_session_list(trainingSessionList));    
+% LOAD Trials for training neural network    
+    Trials = af(@(Trial)  MTATrial.validate(Trial), get_session_list(trainingSessionList));
     trainModel = true;
 else
+% LOAD Trials for behavioral labeling
     Trials = af(@(Trial)  MTATrial.validate(Trial), get_session_list(sessionList));
     trainModel = false;
 end
 
+% LOAD xyz as a reference for synchronization
 xyz    = cf(@(Trial)  Trial.load('xyz')       , Trials);
 
-
-
-Trials(dropIndex) = [];
-xyz(dropIndex) = [];
+% REMOVE unwanted Trials from list
+if isempty(sessionList),
+    Trials(dropIndex) = [];
+    xyz(dropIndex) = [];
+end
 
 % LOAD the state collections
 StcHL = cf(@(Trial) Trial.load('stc'),Trials);
         cf(@(stc,states) set(stc,'states',stc(states{:})),...
-             StcHL,states);
-keys   = cf(@(s) s.key,  StcHL{1}(states{1}));
-labels = cf(@(s) s.label,StcHL{1}(states{1}));
+             StcHL,repmat({states},[1,numel(Trials)]));
 
-
-% CREATE model name and directory from parameters if none is provided
+% CREATE model name from parameters if no model name is provided
 if isempty(model),
-    dropTag = '';
-    if ~isempty(dropIndex), dropTag = num2str(dropIndex);
-        dropTag(dropTag==[' '])='_';
+    dropIndexTag = '';
+    if ~isempty(dropIndex), dropIndexTag = num2str(dropIndex);
+        dropIndexTag(dropIndexTag==[' '])='_';
     end
-    model = ['MTAC_BATCH-' trainingSessionList '-'            ...
-             dropTag '+'                                      ...
-             featureSet                                       ...
-             '+SR'  num2str(sampleRate)                       ...
-             'NN'  num2str(nNeurons)                          ...
-             'NI'   num2str(nIter)                            ...
-             'M'    num2str(map2reference)                    ...
-             'MREF+' referenceTrial                           ...                          
-             '+N'    num2str(normalize)                       ...             
-             'NREF+' referenceTrial                           ...
-             '+RND' randomizationMethod                       ...
-             '+PRCT' num2str(prctTrain)                       ...
-             '+STS+' strjoin(keys)                            ...
-             '-'    MODEL_TYPE];
+    model = ['MTAC_BATCH+' trainingSessionList '+'                        ...
+             dropIndexTag '+'                                             ...
+             featureSet                                                   ...
+             '+SR'   num2str(sampleRate)                                  ...
+             'NN'    num2str(nNeurons)                                    ...
+             'NI'    num2str(nIter)                                       ...
+             'M'     num2str(map2reference)                               ...
+             'MREF+' referenceTrial                                       ...                          
+             '+N'    num2str(normalize)                                   ...             
+             'NREF+' normalizationSessionList                             ...
+             '+RND'  randomizationMethod                                  ...
+             '+PRCT' num2str(prctTrain)                                   ...
+             '+STS+' strjoin(keys,'')                                     ...
+             '+'     MODEL_TYPE];
 end
+
+% CREATE model path from model name 
 modelPath = fullfile(fileparts(mfilename('fullpath')),model);
 if ~exist(modelPath,'dir'),mkdir(modelPath);end
+disp(model);
 
+
+% ENCAPSULATE basic vars in cell arrays, replicated for cellfun operations
 numTrials  = numel(Trials);
 numStates  = repmat({numel(states)},[1,numTrials]);
 numIter    = repmat({nIter}        ,[1,numTrials]);
 states     = repmat({states}       ,[1,numTrials]);
 sampleRate = repmat({sampleRate}   ,[1,numTrials]);
 
-% LOAD the feature set
+
+% LOAD the feature set used for mapping behavior
 features = cf(@(Trial,fetSet,sr) feval(fetSet,Trial,sr,false),...
                Trials,...
               repmat({featureSet},[1,numTrials]),...
@@ -110,13 +127,15 @@ features = cf(@(Trial,fetSet,sr) feval(fetSet,Trial,sr,false),...
 
 % MAP features to reference session
 if map2reference,
+    xyzls  = cf(@(Trial)  Trial.load('xyz')       , Trials);
+             cf(@(f,x) x.resample(f), features,xyzls);
     refTrial = MTATrial.validate(referenceTrial);
     cf(@(f,t,r) f.map_to_reference_session(t,r),...
        features, Trials, repmat({refTrial},[1,numTrials]));
-    for s = 1:numTrials, features{s}.data(~nniz(xyz{s}),:,:) = 0;end
+    for s = 1:numTrials, features{s}.data(~nniz(xyzls{s}),:,:) = 0;end
 
-% CONDITIONAL normalization        
     if normalize,
+% CONDITIONAL normalization, use multiple sessions for normalization        
         [refMean,refStd] = load_normalization_parameters_unity(featureSet,...
                                                           refTrial.filebase,...
                                                           normalizationSessionList);
@@ -125,8 +144,9 @@ if map2reference,
            repmat({refMean},[1,numTrials]),...
            repmat({refStd}, [1,numTrials]));
     end
-% CONDITIONAL normalization    
+
 elseif normalize,
+% CONDITIONAL normalization, use multiple sessions for normalization    
     zfrCat = cf(@(f) get(f,'data'),    features); 
     zfrCat = cat(1,zfrCat{:});
     zfrMean = nanmean(zfrCat(nniz(zfrCat),:,:));
@@ -147,26 +167,32 @@ labelingStatsMulti.precision        = cf(@(i,n) zeros([i,n])  ,numIter,numStates
 labelingStatsMulti.sensitivity      = cf(@(i,n) zeros([i,n])  ,numIter,numStates);
 labelingStatsMulti.accuracy         = cf(@(i,n) zeros([i,1])  ,numIter);
 
+
 % INITIALIZE network output collection variable
 cumulativeNetworkOutput = cf(@(f) f.copy('empty'),    features);
 
+
 % INITIALIZE labeling timeperiods
-labelingEpochs = cf(@(Trial)    Trial.stc{'a'}.cast('TimeSeries'),    Trials);
+labelingEpochs = cf(@(t,x)  resample(t.stc{'a'}.cast('TimeSeries'),x), Trials,xyz);
+
 
 % LOAD mapminmax parameters
 psa = load_normalization_parameters_mapminmax(features{1}.label,...
                                               [],... need feature.treatmentRecord
                                               'hand_labeled');
 % LOAD hand labeled state matrix
-shl = cf(@(s,x,sts) MTADxyz('data',double(0<stc2mat(s,x,sts)),...
-                            'sampleRate',x.sampleRate),...
-         StcHL, xyz, states);
+shl = {};
+if ~any(cell2mat(cf(@(s) strcmp(s.mode,'default'),StcHL))),
+    shl = cf(@(s,x,sts) MTADxyz('data',double(0<stc2mat(s,x,sts)),...
+                                'sampleRate',x.sampleRate),...
+             StcHL, xyz, states);
+end
 
-
-
+% TRAIN or LABEL Trials
 for iter = 1:nIter,
     try,        
         if trainModel,
+            disp([mfilename,': training iteration: ',num2str(iter)]);
 % RESAMPLE feature matrix
             switch randomizationMethod
               case 'ERS' % equal_restructured_sampling
@@ -191,28 +217,32 @@ for iter = 1:nIter,
             end
             
 
-% CAST Stc object into state timeseries matrix
+% CAST state collection object into state label matrix
             [smat] = cf(@(stc,fet,states) stc2mat(stc,fet,states), ...
                         StcRnd,trainingFeatures,states);
             smat = cat(1,smat{:});
+            
 % COCATENATE feature matrix
             trainingFeatures = cf(@(f) f.data, trainingFeatures);
             trainingFeatures = cat(1,trainingFeatures{:});
+
 % SELECT indecies which are not zero, nan or inf 
             ind    = any(smat,2)&nniz(trainingFeatures);
 
 % CREATE network object for training
             net = patternnet(nNeurons);
-            net.trainParam.showWindow = true;
-            %net.trainParam.showWindow = false;
+            %net.trainParam.showWindow = true;
+            net.trainParam.showWindow = false;
             net.inputs{1}.processFcns(2) = [];            
             [net,tr] = train(net,mapminmax('apply',trainingFeatures(ind,:)',psa),~~smat(ind,:)');
             save(fullfile(modelPath,[model,'-',num2str(iter),'.mat']),'net','tr');
 
+            disp([mfilename,': training iteration: ',num2str(iter),': complete']);
+            
         end
 
 % LOAD network        
-        load(fullfile(modnelPath,[model,'-',num2str(iter),'.mat']));
+        load(fullfile(modelPath,[model,'-',num2str(iter),'.mat']));
 
         networkOutput = cf(@(f,p)  net(mapminmax('apply',f.data',p))',  features,repmat({psa},[1,numTrials]));
         networkOutput = cf(@(d,s)  MTADxyz('data',d,'sampleRate',s),    networkOutput,sampleRate);
@@ -234,79 +264,78 @@ if nargout==0,
 end
 
 
+% FILTER network output to reduce 
 %cf(@(c) c.filter('ButFilter',3,1,'low'),cumulativeNetworkOutput);
+disp([mfilename,': labeling states']);
 
 
-% SELECT max state labels 
+% SELECT maximum network output as state, winner takes all
 [~,maxState] = cf(@(c)    max(mean(c.data,3),[],2),   cumulativeNetworkOutput);
-%maxState     = cf(@(d,s)  MTADxyz('data',d,'sampleRate',s.sampleRate),    maxState,xyz);
-for s = 1:numTrials, 
-    maxState{s}(~nniz(xyz{s}),:) = 0; 
-end
-
+% UNLABEL regions where labels cannot exist 
+for s = 1:numTrials, maxState{s}(~nniz(xyz{s}),:) = 0; end
 
 
 % CREATE state collection with simple mode name
 Stc = cf(@(s) s.copy,StcHL);
 cf(@(s) s.updateMode(['msnnN' num2str(trainModel) '+' trainingSessionList]), Stc);
 cf(@(s) set(s,'states',{}), Stc);
-% CONVERT network output into a state collection
-for i = 1:numel(states),
+
+
+% APPEND network output labeles to state collection
+for i = 1:numStates{1},
     sts = cf(@(m,i) ThreshCross(m==i,0.5,1),    maxState,repmat({i},[1,numTrials]));
     try
         sts = cf(@(m) bsxfun(@plus,m,[1,0]),    sts);
     end    
     cf(@(sts,s,t,x,label,key) s.addState(t.spath,t.filebase,sts,x.sampleRate,...
                        x.sync.copy,x.origin,label,key,'TimePeriods'),...
-       sts,Stc,Trials,xyz,repmat(labels(i),[1,numTrials]),repmat(keys(i),[1,numTrials]))
+       sts,Stc,Trials,xyz,repmat(states{1}(i),[1,numTrials]),repmat(keys(i),[1,numTrials]))
 end
+
+% SAVE state collection
 cf(@(s) s.save(true),    Stc);
-% CREATE state collection with model as mode
-cf(@(s) Stc.updateMode(model);
+% UPDATE state collection mode with model name
+cf(@(s,m) s.updateMode(m),Stc,repmat({model},[1,numTrials]));
+% SAVE state collection
 cf(@(s) s.save(true),    Stc);
 
+
+% if MTA_VERBOSITY > 1, 
+disp([mfilename,': labeling states: complete']);
+disp([mfilename,': computing labeling statistics']);
+% end
 
 
 % CONVERT state collection into state matrix for inter labeler comparison
 ysm = cf(@(s,x) MTADxyz('data',double(0<stc2mat(s,x)),'sampleRate',x.sampleRate),...
          Stc,xyz);
+for s = 1:numTrials, 
+    ysm{s}.data(~nniz(xyz{s}),:) = 0; 
+end
+
 % INITIALIZE inter labeler stats
 labelingStats = repmat(struct('confusionMatrix',zeros([numStates{1},numStates{1}]),...
                                'precision',     zeros([1,numStates{1}]),...
                                'sensitivity',   zeros([1,numStates{1}]),...
                                'accuracy',      0 ),[1,numTrials]);
-% COMPUTE inter labeler stats
-ind = cf(@(s,y,l) any(s.data,2)&any(y.data,2)&l, shl,ysm, ...
-         labelingEpochs
-);
-tcm = cf(@(s,y,i) confmat(s(i,:),y(i,:)),      shl,ysm,ind); % #DEP: netlab
-af(@(l,t,s) setfield(l,'confusionMatrix',round(t{1}./s{1},2)),labelingStats,tcm,sampleRate);
-for s = 1:numTrials,
-    labelingStats(s).confusionMatrix = round(tcm{s}./sampleRate{s},2);
-    labelingStats(s).precision = round(diag(tcm{s})'./sum(tcm{s},2)',4).*100;
-    labelingStats(s).sensitivity = round(diag(tcm{s})'./sum(tcm{s}),4).*100;
-    labelingStats(s).accuracy = sum(diag(tcm{s}))/sum(tcm{s}(:));
-end
 
 
-% Populate Stc object with the new states
-for i = 1:numel(Model_Information.state_labels),
-
-    sts = ThreshCross(maxState==i,0.5,1);
-    if ~isempty(sts),
-        sts = bsxfun(@plus,sts,[1,0]);
+% COMPUTE inter labeler stats if valid comparative Stc was loaded above
+if ~isempty(shl),
+    ind = cf(@(s,y,l) any(s.data,2)&any(y.data,2)&l.data==1, shl,ysm,labelingEpochs);
+    tcm = cf(@(s,y,i) confmat(s(i,:),y(i,:)),      shl,ysm,ind); % #DEP: netlab
+    af(@(l,t,s) setfield(l,'confusionMatrix',round(t{1}./s{1},2)),labelingStats,tcm,sampleRate);
+    for s = 1:numTrials,
+        labelingStats(s).confusionMatrix = round(tcm{s}./sampleRate{s},2);
+        labelingStats(s).precision = round(diag(tcm{s})'./sum(tcm{s},2)',4).*100;
+        labelingStats(s).sensitivity = round(diag(tcm{s})'./sum(tcm{s}),4).*100;
+        labelingStats(s).accuracy = sum(diag(tcm{s}))/sum(tcm{s}(:));
     end
-    
-    Stc.addState(Trial.spath,...
-             Trial.filebase,...
-             sts,...
-             xyz.sampleRate,...
-             features.sync.copy,...
-             features.origin,...
-             Model_Information.state_labels{i},...
-             Model_Information.state_keys{i},...
-             'TimePeriods');
 end
+
+disp([mfilename,': computing labeling statistics: complete']);
+
+disp([mfilename,': complete']);
 
 if nargout>=1, varargout{1} = Stc;                end
 if nargout>=2, varargout{2} = labelingStats;      end

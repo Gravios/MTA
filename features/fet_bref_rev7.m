@@ -2,7 +2,7 @@ function [fet,featureTitles,featureDesc,Nmean,Nstd] = fet_bref_rev7(Trial,vararg
 % $$$ function [fet,featureTitles,featureDesc,Nmean,Nstd] = fet_mis(Trial,varargin)
 % $$$ defargs = struct('newSampleRate', 12,                       ...
 % $$$                  'normalize'    , false,                    ...
-% $$$                  'procOpts'     , {'SPLINE_SPINE_HEAD_EQD'});
+% $$$                  'procOpts'     , {{}});
 
 
 Trial = MTATrial.validate(Trial);
@@ -10,7 +10,7 @@ Trial = MTATrial.validate(Trial);
 % DEFARGS ------------------------------------------------------------------------------------------
 defargs = struct('newSampleRate', Trial.xyz.sampleRate,    ...
                  'normalize'    , false,                   ...
-                 'procOpts'     , {'SPLINE_SPINE_HEAD_EQD'});
+                 'procOpts'     , {{'SPLINE_SPINE_HEAD_EQD'}});
 
 [newSampleRate,normalize,procOpts] = DefaultArgs(varargin,defargs,'--struct');
 %--------------------------------------------------------------------------------------------------

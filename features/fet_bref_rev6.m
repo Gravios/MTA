@@ -10,7 +10,7 @@ Trial = MTATrial.validate(Trial);
 % DEFARGS ------------------------------------------------------------------------------------------
 defargs = struct('newSampleRate', Trial.xyz.sampleRate,    ...
                  'normalize'    , false,                   ...
-                 'procOpts'     , {'SPLINE_SPINE_HEAD_EQD'});
+                 'procOpts'     , {{'SPLINE_SPINE_HEAD_EQD'}});
 
 [newSampleRate,normalize,procOpts] = DefaultArgs(varargin,defargs,'--struct');
 %--------------------------------------------------------------------------------------------------

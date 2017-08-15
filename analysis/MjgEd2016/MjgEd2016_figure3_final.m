@@ -492,9 +492,10 @@ cf(@(w,m,s) set(w,'data',nunity(w,[],m,s)),...
 clear('zfrCat','zfrMean','zfrStd')
 
 
+cf(@(w,m,s) set(w,'data',-w.data),sfet)
 
 
-
+% rear parameters
 transitionStatePost = {'rear'};
 transitionStatePre  = {'pause+walk'};
 shift = [0,30];
@@ -503,11 +504,35 @@ sampleShift = [0,round(0.5*sfet{1}.sampleRate)];
 %mStc = cf(@(s) s.copy(),StcHLC);
 mStc = cf(@(s) s.copy(),StcHL);
 sortTurns = false;
-fetInd = [1,2];
-f = 2;
-p = 1;
-pre = 1;
+fetInd = [1];
+ylms = [-2,8];
+edy = linspace(ylms(1),ylms(2),50);
 
+fetInd = [2];
+ylms = [-8,8];
+edy = linspace(ylms(1),ylms(2),50);
+
+% walk parameters
+transitionStatePost = {'walk'};
+transitionStatePre  = {'pause'};
+shift = [0,30];
+sampleShift = [0,round(0.5*sfet{1}.sampleRate)];
+%sampleShift = [round(0.5*sfet{1}.sampleRate),0];
+%mStc = cf(@(s) s.copy(),StcHLC);
+mStc = cf(@(s) s.copy(),StcHL);
+sortTurns = false;
+
+fetInd = [1];
+ylms = [-2,5];
+sortTurns = false;
+
+transitionStatePost = {'turn'};
+transitionStatePre  = {'pause'};
+fetInd = [2];
+ylms = [-8,8];
+sortTurns = true;
+
+edy = linspace(ylms(1),ylms(2),50);
 
 
 
@@ -569,37 +594,41 @@ for pre = 1:numel(transitionStatePre),
         title({['Stc: ',mStc{1}.mode],[transitionStatePre{pre} ,' -> ',transitionStatePost{p}]});
         ylabel('z-score')
         xlabel('time (s)')
-        ylim([-10,10]);
+        ylim(ylms);
 
 % PLOT Feature distribution
         subplot2(1,3,1,3);
         hold('on');
 % NULL 
-        hout = cf(@(f,s,i) histc(f(s{'a-n-s-m-r'},i),-10:.2:10),...
-                  sfet,mStc,repmat({fetInd},[1,numSessions]));
+        hout = cf(@(f,s,i,e) histc(f(s{'a-n-s-m-r'},i),e),...
+                  sfet,mStc,repmat({f},[1,numSessions]),repmat({edy},[1,numSessions]));
         hout = sum(cat(2,hout{:}),2);
-        hax = barh(-10:.2:10,hout./sum(hout),'histc');
+        hax = barh(edy,hout./sum(hout),'histc');
         set(hax, 'FaceAlpha',0.4,'FaceColor',[0,0,1],...
                  'EdgeAlpha',0.4,'EdgeColor',[0,0,1]);
 % RIGHT 
-        hout = cf(@(f,s,g,i,shift) histc(f([round(mean(s(g==1,:),2)),...
+        hout = cf(@(f,s,g,i,shift,e) histc(f([round(mean(s(g==1,:),2)),...
                                             round(mean(s(g==1,:),2))]+repmat(shift,sum(g==1),1),i),...
-                                 -10:.2:10),...
-                  sfet,sts,stsSind,repmat({fetInd},[1,numSessions]),repmat({sampleShift},[1,numSessions]));
+                                 e),...
+                  sfet,sts,stsSind,repmat({f},[1,numSessions]),...
+                  repmat({sampleShift},[1,numSessions]),...
+                  repmat({edy},[1,numSessions]));
         hout = sum(cat(2,hout{:}),2);
-        hax = barh(-10:.2:10,hout./sum(hout),'histc');
+        hax = barh(edy,hout./sum(hout),'histc');
         set(hax, 'FaceAlpha',0.4,'FaceColor',[0,1,0],...
                  'EdgeAlpha',0.4,'EdgeColor',[0,1,0]);
 % LEFT 
-        hout = cf(@(f,s,g,i,shift) histc(f([round(mean(s(g==0,:),2)),...
+        hout = cf(@(f,s,g,i,shift,e) histc(f([round(mean(s(g==0,:),2)),...
                                             round(mean(s(g==0,:),2))]+repmat(shift,sum(g==0),1),i),...
-                                 -10:.2:10),...
-                  sfet,sts,stsSind,repmat({fetInd},[1,numSessions]),repmat({sampleShift},[1,numSessions]));
+                                 e),...
+                  sfet,sts,stsSind,repmat({f},[1,numSessions]),...
+                  repmat({sampleShift},[1,numSessions]),...
+                  repmat({edy},[1,numSessions]));
         hout = sum(cat(2,hout{:}),2);
-        hax = barh(-10:.2:10,hout./sum(hout),'histc');
+        hax = barh(edy,hout./sum(hout),'histc');
         set(hax, 'FaceAlpha',0.4,'FaceColor',[0,1,1],...
                  'EdgeAlpha',0.4,'EdgeColor',[0,1,1]);
-        ylim([-10,10]);
+        ylim(ylms);
         ylabel('z-score')
         xlabel('prob')
 
@@ -1658,3 +1687,34 @@ bar(eds,histc(log10(cat(1,sitfet{:})),eds),'histc');
 
 
 figure,
+
+
+
+figure();hold on
+%states = {'pause+walk','rear'};
+states = {'pause','walk'};
+states = {'pause','turn'};
+
+sto  = cf(@(c,s,t,f) round(mean([c.get_state_transitions(t,s,[],f)],2)),...
+          StcHL,repmat({states},1,numSessions) ,Trials,xyz);
+stn  = cf(@(c,s,t,f) round(mean([c.get_state_transitions(t,s,[],f)],2)),...
+          StcNN ,repmat({states},1,numSessions),Trials,xyz);
+stoc = cf(@(c,s,t,f) round(mean([c.get_state_transitions(t,s,[],f)],2)),...
+          StcHLC,repmat({states},1,numSessions),Trials,xyz);
+stnc = cf(@(c,s,t,f) round(mean([c.get_state_transitions(t,s,[],f)],2)),...
+          StcNNC,repmat({states},1,numSessions),Trials,xyz);
+ccgOpts.binSize = 5;
+ccgOpts.halfBins = 30;
+ccgOpts.sampleRate = param.sampleRate;
+[sccg,txx,pxx] = cf(@(s,n,co) CCG([s;n],[ones(size(s));2*ones(size(n))],...
+                                  co.binSize,co.halfBins,co.sampleRate,[1,2],'count'),...
+                    sto,stn,repmat({ccgOpts},1,numSessions));
+accg = sum(cat(4,sccg{:}),4);
+stairs(txx{1},accg(:,1,2));
+xlabel('Time Lag (ms)');
+ylabel('count')
+xlim([-500,500])
+
+FigName = ['stateTransition_CCG_stairs'];
+print(gcf,'-depsc2',fullfile(OwnDir,FigDir,[FigName,'.eps']));
+print(gcf,'-dpng',  fullfile(OwnDir,FigDir,[FigName,'.png']));
