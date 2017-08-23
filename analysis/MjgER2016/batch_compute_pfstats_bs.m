@@ -16,15 +16,13 @@ defargs = struct('sessionList',         'MjgEdER2016_bhv',                      
 states = cellfun(@strcat,states,repmat({'&theta'},size(states)),'UniformOutput',false);
 
 
-
-
 % TAG creation -------------------------------------------------------------------------------------
 % ID Vars - create 
 %sessionList
 %stcMode 
 %states 
 if isempty(tag),
-    tag = DataHash(struct('sessionList','MjgEdER2016_bhv','stcMode',stcMode,'states',{states}));
+    tag = DataHash(struct('sessionList',sessionList,'stcMode',stcMode,'states',{states}));
 end
 %---------------------------------------------------------------------------------------------------
 
@@ -38,19 +36,19 @@ parp = [];
 ds = {};
 for s = 1:numel(slist)
 
-    % Load trial meta data
+% LOAD trial meta data
     if isa(slist,'MTASession'),
         Trial = slist;
     else
         Trial = MTATrial.validate(slist(s));
     end
     
-    % Build output file name 
+% BUILD output file name 
     analysisFileName = fullfile(Trial.spath,[Trial.filebase,'_pfstatsBS_',tag,'.mat']);            
     
     if ~exist(analysisFileName,'file') || overwrite,    
 
-        % Display processing status
+% DISPLAY processing status
         if verbose,
             fprintf(['\nProcessing trial: %s\n',...
                      'Output to: %s\n'],Trial.filebase,analysisFileName);
@@ -58,7 +56,7 @@ for s = 1:numel(slist)
         
         
         
-        % load labeled behavior
+% LOAD labeled behavior
         try,
             Trial.load('stc',[Trial.name,'.',Trial.maze.name,'.gnd','.stc.',stcMode,'.mat']);
         catch err
@@ -67,16 +65,15 @@ for s = 1:numel(slist)
         end
 
 
-
-        % Reduce clu list based on theta pfs max rate        
+% REDUCE clu list based on theta pfs max rate        
         pft = pfs_2d_theta(Trial,[],[],overwrite);
         mrt = pft.maxRate;
         units = select_units(Trial,18);
         units = units(mrt(pft.data.clu(units))>1);
 
 
+% COMPUTE place fields and subsampled estimate
         if verbose, fprintf('\nProcessing placefields...\n'); end
-        % Compute place fields and subsampled estimate
         for sts = 1:numel(states),
             if verbose, fprintf('process state: %s...\n',states{sts}); end            
             defargs = get_default_args('MjgEdER2016','MTAAknnpfs_bs','struct');

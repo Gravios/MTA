@@ -1,4 +1,4 @@
-function [Stc] = label_bhv_shake(Trial,Stc,varargin);
+function [Stc] = label_bhv_shake(Stc,Trial,varargin);
 % function [Stc] = label_bhv_shake(Trial,Stc,varargin);
 % feature set: fet_bref
 
@@ -26,9 +26,11 @@ sclr = 'brgcmyk';
 
 
 
-if isempty(Trial)
+if isempty(Trial),
     sessionList = get_session_list(param.sessionList);                    
-else
+elseif ischar(Trial),
+    sessionList = get_session_list(Trial);                    
+else,
     sessionList = {Trial}; 
 end
 
@@ -63,54 +65,51 @@ svdTag           = DataHash(svdParameters);
 % MAIN ---------------------------------------------------------------------------------------------
 
 % LOAD Trial objects
-Trials = af(@(Trial) MTATrial.validate(Trial)  , sessionList);
+if iscell(sessionList)
+    Trials = cf(@(t)  MTATrial.validate(t),  sessionList);
+else
+    Trials = af(@(t)  MTATrial.validate(t),  sessionList);
+end
 
 % LOAD State Collections
 if isempty(Stc),
-    Stc    = cf(@(Trial)  Trial.load('stc')         , Trials);
+    Stc = cf(@(t)  t.load('stc'),  Trials);
 elseif ~iscell(Stc) && isa(Stc,'MTAStateCollection'),
     Stc = {Stc};
-elseif ischar(Stc),
+elseif ischar(Stc) & numSessions>1,
+    Stc = cf(@(t,s)  t.load('stc',s), Trials,repmat({Stc},[1,numSessions]));
+elseif ischar(Stc),    
     Stc = {Trial.load('stc',Stc)};
 end
 
     
     
 % LOAD Position data
-xyz    = cf(@(Trial) preproc_xyz(Trial)         , Trials);
-cf(@(x,s) x.resample(s),xyz,sampleRate);
-fxyz = cf(@(x) x.copy(), xyz);
-cf(@(f) f.filter('ButFilter',5,[2.4],'low'),fxyz);
+xyz    = cf(@(t)   preproc_xyz(t)         , Trials);
+         cf(@(x,s) x.resample(s)          , xyz,sampleRate);
+fxyz   = cf(@(x)   x.copy()               , xyz);
+         cf(@(f)   f.filter('ButFilter',5,[2.4],'low'),  fxyz);
 
 % LOAD and MAP Features to reference session
-fet = cf(@(Trial) feval(param.featureSet,Trial), Trials);
-cf(@(f,t) f.map_to_reference_session(t,param.referenceTrial),fet,Trials);
-for s = 1:numSessions, fet{s}.data(~nniz(xyz{s}),:,:) = 0;end
+features = cf(@(t,p)   feval(p.featureSet,t),  Trials,repmat({param},[1,numSessions]));
+           cf(@(f,t,p) f.map_to_reference_session(t,p.referenceTrial),...
+              features,Trials,repmat({param},[1,numSessions]));
+for s = 1:numSessions, features{s}.data(~nniz(xyz{s}),:,:) = 0;end
 
 
 % NORMALIZE feature matrix
-normalizationParameterFile = ...
-    fullfile(MTASession([]).path.data,'analysis',...
-             ['normalization_parameters-',normalizationTag,'.mat']);
-featureCat = [];
-if ~exist(normalizationParameterFile,'file'),   
-    featureCat = cf(@(f) get(f,'data'),fet);
-    featureCat = cat(1,featureCat{:});
-    featureMean = nanmean(featureCat(nniz(featureCat),:,:));
-    featureStd = nanstd(featureCat(nniz(featureCat),:,:));
-    save(normalizationParameterFile,'normalizationParameters','featureMean','featureStd');
-else
-    load(normalizationParameterFile);
-end
+[refMean,refStd] = load_normalization_parameters_unity(param.featureSet,...
+                                                       param.referenceTrial,...
+                                                       param.sessionList);
 cf(@(w,m,s) set(w,'data',nunity(w,[],m,s)),...
-            fet,...
-            repmat({featureMean},1,numSessions),...
-            repmat({featureStd},1,numSessions));
+            features,...
+            repmat({refMean},1,numSessions),...
+            repmat({refStd},1,numSessions));
 clear('featureCat','featureMean','featureStd')
 
 
 % EMBBED feature
-wfs  = cf(@(w,e) w.segs(1:size(w,1),e),fet,embeddingWindow);
+wfs  = cf(@(w,e) w.segs(1:size(w,1),e),features,embeddingWindow);
 wfs =  cf(@(w,e) circshift(w,e/2,2),wfs,embeddingWindow);
 wfs =  cf(@(w,x) MTADxyz('data',reshape(permute(w,[2,1,3]),size(w,2),[]),...
               'sampleRate',x.sampleRate),wfs,xyz);
@@ -122,7 +121,7 @@ svdParameterFile = ...
     fullfile(MTASession([]).path.data,'analysis',...
              ['svd_parameters-',svdTag,'.mat']);
 if ~exist(svdParameterFile),
-% DECOMPOSE fet with svd for a behavioral state within all Trials
+% DECOMPOSE features with svd for a behavioral state within all Trials
     switch param.sampleMode
       case 'trimmed'
         wfw = cf(@(w,s,tw,sr) w([s{param.svdState,sr}]+tw,:), ...
@@ -155,9 +154,9 @@ if display
     hfig.Position(3:4) = [30,16];
     hfig.PaperPositionMode = 'auto';
     for i = 1:20,
-        pc = reshape(Vww(:,i),[],size(fet{1},2));
+        pc = reshape(Vww(:,i),[],size(features{1},2));
         pc = pc(:,[1:2:9,2:2:10,11:15,16:2:24,17:2:25,26:30]);
-        subplot(2,10,i);imagesc(wts,1:size(fet{1},2),pc'),
+        subplot(2,10,i);imagesc(wts,1:size(features{1},2),pc'),
         caxis([-0.08,0.08]);
         %caxis([-.5,.5]);    
         axis xy
@@ -328,11 +327,31 @@ aper = cf(@(t,f) resample(t.sync.copy(),f.sampleRate),Trials,sfet);
 cf(@(p) set(p,'data',p.data-p.data(1)+1),aper);
 cf(@(p) p+[2,-2],aper);
 
+cf(@(s,p) cf(@(sts,per) set(sts,'data',get(sts-bsxfun(@plus,per,[-1,1]),'data')),...
+             s.states,repmat({p},[1,numel(s.states)])),...
+   Stc,repmat({nkper},[1,1]));
+
 cf(@(t,s,f,p) s.addState(t.spath,t.filebase,p,f.sampleRate,t.sync.copy,t.sync.data(1),'shake','k'),...
    Trials,Stc,sfet,nkper);
 cf(@(s,a) set(s.states{s.gsi('k')},'data',s.states{s.gsi('k')}&a.data), ...
    Stc,aper);
 
+
+for s = 1:numel(Stc),
+    [stcMatrix] = stc2mat(Stc{s},xyz{s},states);
+    stateVectors = bsxfun(@times,eye(numel(states)),1:numel(states));
+    for sts = states(1:end-1),
+        sts = sts{1};
+        [stcMatrix] = reassign_low_duration_state_to_neighboring_states(stcMatrix,...
+                                                  [Stc{s}{sts}],0.25*xyz{s}.sampleRate);
+    end
+    Stc{s} = mat2stc(stcMatrix,Stc{s},xyz{s},Trials{s});
+end
+
+
+
+
+cf(@(s) s.save(1), Stc);
 
 if numel(Stc)==1,
     Stc = Stc{1};

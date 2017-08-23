@@ -23,19 +23,19 @@ function StcCor = optimize_stc_transition(Stc,varargin)
 %     postprocessingTag        (String)                      '_ppsvd'
 %
 
+% global MTA_VERBOSITY_LEVEL
 
-MODEL_TYPE = 'multiSesPatNet';
-verbPrefix = 'MTA:classifiers:optimize_stc_transition: ';
+verbosePrefix = 'MTA:classifiers:optimize_stc_transition: ';
 
 % DEFARGS ----------------------------------------------------------------------------------------
 defArgs = struct('sessionList',                 '',                                            ...
-                 'featureSet',                  'fet_bref_rev7',                               ...
+                 'featureSet',                  'fet_mis',                                     ...
                  'states',                      {{'walk','rear','turn','pause','groom','sit'}},...
                  'keys',                        {{'w','r','n','p','m','s'}},                   ...
                  'model',                       [],                                            ...
                  'sampleRate',                  10,                                            ...
                  'nNeurons',                    25,                                            ...
-                 'nIter',                       10,                                            ...
+                 'nIter',                       100                                            ...
                  'randomizationMethod',         'WSBNT',                                       ...
                  'map2reference',               true,                                          ...
                  'normalize',                   true,                                          ...
@@ -49,7 +49,7 @@ defArgs = struct('sessionList',                 '',                             
                  );
 [sessionList,featureSet,states,keys,model,sampleRate,nNeurons,nIter,...
  randomizationMethod,map2reference,normalize,referenceTrial,trainingSessionList,...
- normalizationSessionList,dropIndex,prctTrain,postprocessingTag,modelType] = ...
+ normalizationSessionList,dropIndex,prctTrain,postprocessingTag,modelType,stcMode] = ...
     DefaultArgs(varargin,defArgs,'--struct');
 %-----------------------------------------------------------------------------
 
@@ -67,8 +67,8 @@ numTrials = numel(Trials);
 
 % LOAD Stc for opitimization
 if isempty(Stc),
-% CREATE model name
     if isempty(model),
+        % CREATE model name            
         dropIndexTag = '';
         if ~isempty(dropIndex), 
             dropIndexTag = num2str(dropIndex);
@@ -89,14 +89,21 @@ if isempty(Stc),
                  '+STS+' strjoin(keys,'')                         ...
                  '+'     modelType];
     end
-    StcCor = cf(@(t,m) t.load('stc',m),    Trials, repmat({model},[1,numTrials]));
+    % LOAD state collection based on the default bhv_nn_multi_session_patternnet model name
+    StcCor = cf(@(t,m) t.load('stc',m),    Trials, repmat({model},[1,numTrials]));        
+elseif ischar(Stc)
+    StcCor = cf(@(t,m) t.load('stc',m),    Trials, repmat({Stc},[1,numTrials]));        
 elseif iscell(Stc),    
     StcCor = cf(@(s)   s.copy(),         Stc);
 elseif isa(Stc,'MTAStateCollection'),
-    StcCor = {Stc.copy()};
+    StcCor = { Stc.copy() };
 else
     error('MTA:classifiers:optimize_stc_transition:UnknownStcSignature');
 end
+
+
+cf(@(stc,states) set(stc,'states',stc(states{:})),...
+   StcCor,repmat({states},[1,numel(Trials)]));
 
 
 %<--# REMOVE IN FUTURE VERSION
@@ -145,298 +152,232 @@ cf(@(d,ang) set(d,'data',circ_dist(circshift(ang(:,'spine_lower','spine_upper',1
 % ADJUST Walks' onsets from Pause
 
 
+
+
 % REAR remove periods which have low mean heights 
 
-for s = 1:numTrials,
-    disp([verbPrefix,'Processing: ',Trials{s}.filebase]);
 
-    disp([verbPrefix,'Assign all periods with high mean heights to rear']);
+
+for s = 1:numTrials,
+    disp([verbosePrefix,'Processing: ',Trials{s}.filebase]);
+
+
 
     [stcMatrix] = stc2mat(StcCor{s},xyz{s},states);
+    stateVectors = bsxfun(@times,eye(numel(states)),1:numel(states));
     
+    disp([verbosePrefix,'Assign all periods with low duration to neighboring states']);    
+    [stcMatrix] = reassign_low_duration_state_to_neighboring_states(stcMatrix,StcCor{s}{'n'},0.25*xyz{s}.sampleRate);
+    [stcMatrix] = reassign_low_duration_state_to_neighboring_states(stcMatrix,StcCor{s}{'w'},0.25*xyz{s}.sampleRate);
+    
+    disp([verbosePrefix,'Assign all periods with high mean heights to rear']);    
     for key = 'wnpms',
-        keyInd = find(key==cell2mat(keys));
-        keyVec = zeros([1,numel(keys)]);
-        keyVec(keyInd) = keyInd;
-        
-        rearInd = find('r'==keys);
-        rhh = [];
-        rthresh = 140;
-        try
+        keyVec  = stateVectors(find(key==cell2mat(keys)),:);
+        rearVec = stateVectors(find('r'==cell2mat(keys)),:);
+        rthresh = 135;
+        try,
             for rp = StcCor{s}{key}.data',
-                rhh(end+1) = max(features{s}(rp',14));
-                if rhh(end)>rthresh,
-                    stcMatrix(rp(1):rp(2),:) = rearVec;
-
-                    StcCor{s}.states{StcCor{s}.gsi('rear')}.data = [StcCor{s}.states{StcCor{s}.gsi('rear')}.data;rp'];
+                rhh = max(features{s}(rp',14));
+                if rhh > rthresh,
+% REASSIGN state to rear                                    
+                    stcMatrix(rp(1):rp(2),:) = repmat(rearVec,[diff(rp)+1,1]);
                 end
             end
-            StcCor{s}.states{StcCor{s}.gsi(key)}.data(rhh>rthresh,:) = [];                
-            StcCor{s}.states{StcCor{s}.gsi(key)} = StcCor{s}{key}+[-0,0];
-            % clear other states from the timeperiods assigned to the state
-            for sts = StcCor{s}.states,
-                if strcmp(sts{1}.key,key),continue,end
-                StcCor{s}.states{StcCor{s}.gsi(sts{1}.key)} = sts{1}-StcCor{s}{key}.data; 
-            end
         catch err
-            disp(err)
+            disp(err);
         end
     end
 
 
-    disp([verbPrefix,'REAR remove periods which have too low mean heights']);
+    disp([verbosePrefix,'REAR remove periods which have too low mean heights']);
     % REAR remove periods which have low mean heights 
     key = 'r';
-    rhh = [];
-    rthresh = 140;
+    keyVec  = stateVectors(find(key==cell2mat(keys)),:);
+    pauseVec = stateVectors(find('p'==cell2mat(keys)),:);    
+    rthresh = 125;
     try
         for rp = StcCor{s}{key}.data',
-            rhh(end+1) = max(features{s}(rp',14));
-            if rhh(end)<rthresh,
-                pind = rp(1):rp(2);
-                % maybe make a cat function for MTADepoch 
-                StcCor{s}.states{StcCor{s}.gsi('pause')}.data = ...
-                    [StcCor{s}.states{StcCor{s}.gsi('pause')}.data;pind([1,end])];
+            rhh = max(features{s}(rp',14));
+            if rhh < rthresh,
+% REASSIGN rear to pause                
+                stcMatrix(rp(1):rp(2),:) = repmat(pauseVec,[diff(rp)+1,1]);
             end
         end
-        StcCor{s}.states{StcCor{s}.gsi(key)}.data(rhh<rthresh,:) = [];                
-        StcCor{s}.states{StcCor{s}.gsi(key)} = StcCor{s}{key}+[-0,0];
-        % clear other states from the timeperiods assigned
-        % to the state
-        for sts = StcCor{s}.states,
-            if strcmp(sts{1}.key,key),continue,end
-            StcCor{s}.states{StcCor{s}.gsi(sts{1}.key)} = sts{1}-StcCor{s}{key}.data; 
-        end
     catch err
-        disp(err)
+        disp(err);
     end
 
 
     % TURN angular displacement
     %try, StcCor{s} = reassign_state_by_duration(StcCor{s},'n','p',0.1,tds,tps,@lt); end
-    disp([verbPrefix 'Sort out turns with too low of ang displacement']);
+    disp([verbosePrefix 'Sort out turns with too low of ang displacement']);
     try
         key = 'n';
-        wd = [];
-        ad = [];
-        wthresh = 1;
-        athresh = 1.2;
-        tails = [0,0];
+        keyVec  = stateVectors(find(key==cell2mat(keys)),:);
+        pauseVec = stateVectors(find('p'==cell2mat(keys)),:);
+        walkVec = stateVectors(find('w'==cell2mat(keys)),:);
+        wthresh = 4;
+        athresh = 1.4;
         for rp = StcCor{s}{key}.data',
-            wd(end+1) = mean(features{s}(rp',16));
-            ad(end+1) = mean(abs(dang{s}(rp')));
-            if wd(end) > wthresh && ad(end) < athresh
+            wd = mean(features{s}(rp',16));
+            ad = mean(abs(dang{s}(rp')));
+            if wd > wthresh && ad < athresh
 % REASSIGN turn to walk
-                StcCor{s}.states{StcCor{s}.gsi('walk')}.data = ...
-                    [StcCor{s}.states{StcCor{s}.gsi('walk')}.data;rp'];
+                stcMatrix(rp(1):rp(2),:) = repmat(walkVec,[diff(rp)+1,1]);
             end           
-            if wd(end) <= wthresh && ad(end) <= athresh
+            if wd <= wthresh && ad <= athresh
 % REASSIGN turn to pause
-                StcCor{s}.states{StcCor{s}.gsi('pause')}.data = ...
-                    [StcCor{s}.states{StcCor{s}.gsi('pause')}.data;rp'];
-            end
-        end
-        StcCor{s}.states{StcCor{s}.gsi(key)}.data( (wd <= wthresh & ad <= athresh)...
-                                                  |(wd >  wthresh & ad <  athresh),:) = [];
-        StcCor{s}.states{StcCor{s}.gsi(key)} = StcCor{s}{key}+tails;
-        for sts = StcCor{s}.states, sts{1}.clean; end
-        for sts = StcCor{s}.states,
-            if strcmp(sts{1}.key,key),continue,end
-            StcCor{s}.states{StcCor{s}.gsi(sts{1}.key)} = sts{1}-StcCor{s}{key}.data; 
+                stcMatrix(rp(1):rp(2),:) = repmat(pauseVec,[diff(rp)+1,1]);
+            end            
         end
     catch err
-        disp(err)                
+        disp(err);
     end
 
 
-    disp([verbPrefix,'Assign pause to sit if too low and still']);
+    disp([verbosePrefix,'Assign pause to sit if too low and still']);
     % PAUSE speed
     try
         key = 'p';
-        wh = [];
-        wb = [];
-        wba = [];                
-        bthresh = 4;
-        wthresh = 0.4;
+        keyVec  = stateVectors(find(key==cell2mat(keys)),:);
+        sitVec = stateVectors(find('s'==cell2mat(keys)),:);
+        walkVec = stateVectors(find('w'==cell2mat(keys)),:);
+        bthresh = 5;
+        wthresh = 0.2;
         hthresh = 86;
-        tails = [-0.0,0.0];
         for rp = StcCor{s}{key}.data',
-            wh(end+1) = mean(features{s}(rp',13));
-            wb(end+1) = features{s}(round(sum(rp)/2),16);
-            wba(end+1) = mean(abs(features{s}(rp',16)));
-            if wba(end)<wthresh && wh(end)<hthresh,
-                StcCor{s}.states{StcCor{s}.gsi('sit')}.data = ...
-                    [StcCor{s}.states{StcCor{s}.gsi('sit')}.data;rp'];
+            wh = mean(features{s}(rp',13));
+            wb = features{s}(round(sum(rp)/2),16);
+            wba = mean(abs(features{s}(rp',16)));
+            if wba < wthresh && wh < hthresh,
+% REASSIGN pause to sit
+                stcMatrix(rp(1):rp(2),:) = repmat(sitVec,[diff(rp)+1,1]);
             end
-            if wb(end)>bthresh,
-                StcCor{s}.states{StcCor{s}.gsi('walk')}.data = ...
-                    [StcCor{s}.states{StcCor{s}.gsi('walk')}.data;rp'];
-            end
+% $$$             if wb(end)>bthresh,
+% $$$                 stcMatrix(rp(1):rp(2),:) = repmat(walkVec,[diff(rp)+1,1]);
+% $$$             end
         end
-        StcCor{s}.states{StcCor{s}.gsi(key)}.data((wba<wthresh & wh<hthresh)|(wb>bthresh),:) = [];
-        StcCor{s}.states{StcCor{s}.gsi(key)} = StcCor{s}{key}+tails;
-        for sts = StcCor{s}.states, sts{1}.clean; end
-        for sts = StcCor{s}.states,
-            if strcmp(sts{1}.key,key),continue,end
-            StcCor{s}.states{StcCor{s}.gsi(sts{1}.key)} = sts{1}-StcCor{s}{key}.data; 
-        end
-        
+    catch err
+        disp(err);
     end
 
 
-    disp([verbPrefix,'Assign groom to sit if too low and still']);
-    % GROOM to sit if low speed
+    disp([verbosePrefix,'Assign groom to sit if too low and still']);
     try
         key = 'm';
-        wd = [];
-        wh = [];
-        wdur = [];        
-        wdthresh = 1.*xyz{s}.sampleRate;        
+        keyVec  = stateVectors(find(key==cell2mat(keys)),:);
+        sitVec = stateVectors(find('s'==cell2mat(keys)),:);
+        pauseVec = stateVectors(find('p'==cell2mat(keys)),:);        
         hthresh = 86;
         wthresh = 0.2;
-        tails = [-0.0,0.0];
+        gthresh = 140;
         for rp = StcCor{s}{key}.data',
-            wdur(end+1) = diff(rp([1,end]));
-            wh(end+1) = mean(features{s}(rp',13));                    
-            wd(end+1) = mean(abs(features{s}(rp',16)));
-            if wd(end) < wthresh && wh(end) < hthresh,
-                pind = rp(1):rp(2);
-                StcCor{s}.states{StcCor{s}.gsi('sit')}.data = ...
-                    [StcCor{s}.states{StcCor{s}.gsi('sit')}.data;pind([1,end])];
+            wh   = mean(features{s}(rp',13));                    
+            wd   = mean(abs(features{s}(rp',16)));
+            gd   = mean(sqrt(sum(features{s}(rp',[1,9]).^2,2)));
+            if wd < wthresh && wh < hthresh,
+% REASSIGN groom to sit                
+                stcMatrix(rp(1):rp(2),:) = repmat(sitVec,[diff(rp)+1,1]);
             end
-            if wdur(end) < wdthresh,
-                StcCor{s}.states{StcCor{s}.gsi('pause')}.data = ...
-                    [StcCor{s}.states{StcCor{s}.gsi('pause')}.data;pind([1,end])];
-
-            end            
-        end
-        StcCor{s}.states{StcCor{s}.gsi(key)}.data((wd<wthresh & wh(end)<hthresh)|(wdur<wdthresh),:) = [];
-        StcCor{s}.states{StcCor{s}.gsi(key)} = StcCor{s}{key}+tails;
-        for sts = StcCor{s}.states, sts{1}.clean; end
-        for sts = StcCor{s}.states,
-            if strcmp(sts{1}.key,key),continue,end
-            StcCor{s}.states{StcCor{s}.gsi(sts{1}.key)} = sts{1}-StcCor{s}{key}.data; 
+            if gd > gthresh,
+                stcMatrix(rp(1):rp(2),:) = repmat(pauseVec,[diff(rp)+1,1]);
+            end
         end
     catch err
-        disp(err)
+        disp(err);
     end
     
 
-    disp([verbPrefix,'Assign sit to pause if too fast']);
-% SPEED sit
+    disp([verbosePrefix,'Assign sit to pause if too fast']);
     try
         key = 's';
-        wd = []; 
-        wdur = [];
-        wthresh = .4;
-        wdthresh = 3.*xyz{s}.sampleRate;
-        tails = [0,0];
+        keyVec  = stateVectors(find(key==cell2mat(keys)),:);
+        pauseVec = stateVectors(find('p'==cell2mat(keys)),:);
+        wthresh = .3;
+        %wdthresh = 2.*xyz{s}.sampleRate;
         for rp = StcCor{s}{key}.data',
-            wd(end+1) = mean(abs(features{s}(rp',16)));
-            wdur(end+1) = diff(rp([1,end]));
-            if (wd(end)>wthresh)&(wdur(end)<wdthresh),
-                pind = rp(1):rp(2);
-                StcCor{s}.states{StcCor{s}.gsi('pause')}.data = ...
-                    [StcCor{s}.states{StcCor{s}.gsi('pause')}.data;pind([1,end])];
+            wd   = mean(abs(features{s}(rp',16)));
+            if wd > wthresh, % & wdur < wdthresh, 
+% REASSIGN sit to pause
+                stcMatrix(rp(1):rp(2),:) = repmat(pauseVec,[diff(rp)+1,1]);
             end
         end
-        StcCor{s}.states{StcCor{s}.gsi(key)}.data((wd<wthresh)&(wdur<wdthresh),:) = [];
-        StcCor{s}.states{StcCor{s}.gsi(key)} = StcCor{s}{key}+tails;
-        for sts = StcCor{s}.states, sts{1}.clean; end
-        for sts = StcCor{s}.states,
-            if strcmp(sts{1}.key,key),continue,end
-            StcCor{s}.states{StcCor{s}.gsi(sts{1}.key)} = sts{1}-StcCor{s}{key}.data; 
-        end
     catch err
-        disp(err)
-    end
-
-    try
-        key = 'w';
-        wd = []; 
-        wthresh = 0;
-        tails = [0,0];
-        for rp = StcCor{s}{key}.data',
-            wd(end+1) = mean(abs(features{s}(rp',16)));
-            if wd(end)<wthresh,
-                pind = rp(1):rp(2);
-                StcCor{s}.states{StcCor{s}.gsi('pause')}.data = ...
-                    [StcCor{s}.states{StcCor{s}.gsi('pause')}.data;pind([1,end])];
-            end
-        end
-        StcCor{s}.states{StcCor{s}.gsi(key)}.data((wd<wthresh),:) = [];
-        StcCor{s}.states{StcCor{s}.gsi(key)} = StcCor{s}{key}+tails;
-        for sts = StcCor{s}.states, sts{1}.clean; end
-        for sts = StcCor{s}.states,
-            if strcmp(sts{1}.key,key),continue,end
-            StcCor{s}.states{StcCor{s}.gsi(sts{1}.key)} = sts{1}-StcCor{s}{key}.data; 
-        end
-    catch err
-        disp(err)
+        disp(err);
     end
     
-% $$$     try, StcCor{s} = reassign_state_by_duration(StcCor{s},'w','p',0.1,tds,tps,@lt); end
-% $$$     try, StcCor{s} = reassign_state_by_duration(StcCor{s},'s','p',1.5,tds,tps,@lt); end
-% $$$     try, StcCor{s} = reassign_state_by_duration(StcCor{s},'m','p',1.5,tds,tps,@lt); end
+    StcCor{s} = mat2stc(stcMatrix,StcCor{s},features{s},Trials{s},states,keys);
+    [stcMatrix] = stc2mat(StcCor{s},xyz{s},states);    
+    [stcMatrix] = reassign_low_duration_state_to_neighboring_states(stcMatrix,StcCor{s}{'s'},5*xyz{s}.sampleRate);    
+    [stcMatrix] = reassign_low_duration_state_to_neighboring_states(stcMatrix,StcCor{s}{'m'},1.5*xyz{s}.sampleRate);        
+    [stcMatrix] = reassign_low_duration_state_to_neighboring_states(stcMatrix,StcCor{s}{'p'},0.2*xyz{s}.sampleRate);    
 
+    StcCor{s} = mat2stc(stcMatrix,StcCor{s},features{s},Trials{s},states,keys);
+    [stcMatrix] = stc2mat(StcCor{s},xyz{s},states);    
+    [stcMatrix] = reassign_low_duration_state_to_neighboring_states(stcMatrix,StcCor{s}{'s'},5*xyz{s}.sampleRate);    
+
+    StcCor{s} = mat2stc(stcMatrix,StcCor{s},features{s},Trials{s},states,keys);
+    
 end
 
 
-disp([verbPrefix,'Adjust rear onset boundary']);
-% ALL to rear
-StcCor = adjust_state_boundaries_svd(StcCor, Trials,                             ...
-                                     struct('sessionList',            'hand_labeled',                ...
-                                            'referenceTrial',         'jg05-20120317.cof.all',       ...
-                                            'featureSet',             'fet_bref',                    ...
-                                            'sampleMode',             'trimmed',                     ...
-                                            'svdState',               'rear',                        ...
-                                            'antecedentState',        'gper-rear',                   ...
-                                            'subsequentState',        'rear',                        ...
-                                            'immutableStates',        {{}},                          ...
-                                            'sampleRate',             119.881035,                    ...
-                                            'eigenVectorFeaturesMask',{{[6:10,16:25],[1:10,16:25]}}, ...
-                                            'eigenVectorTemporalMask',[1:15,46:64],                  ...
-                                            'eigenVectorIndices',     [1,2],                         ...
-                                            'sortTurnsIndex',         [false,false],                 ...
-                                            'embeddingWindow',        64,                            ...
-                                            'regressionWindow',       100:181,                       ...
-                                            'regressionThreshold',    5e3,                           ...
-                                            'residualSearchWindow',   0.5,                           ...
-                                            'medianCorrectionOffset', 0.14),                         ...
-                                     [],                                                             ...
-                                     false,                                                          ...
-                                     false,                                                          ...
-                                     false                                                           ...
-                                     );
 
-disp([verbPrefix,'Adjust rear offset boundary']);
-% REAR to all
-StcCor = adjust_state_boundaries_svd(StcCor,Trials,                              ...
-                                     struct('sessionList',            'hand_labeled',                ...
-                                            'referenceTrial',         'jg05-20120317.cof.all',       ...
-                                            'featureSet',             'fet_bref',                    ...
-                                            'sampleMode',             'trimmed',                     ...
-                                            'svdState',               'rear',                        ...
-                                            'antecedentState',        'rear',                        ...
-                                            'subsequentState',        'gper-rear',                   ...
-                                            'immutableStates',        {{}},                          ...
-                                            'sampleRate',             119.881035,                    ...
-                                            'eigenVectorFeaturesMask',{{[6:10,16:25],[1:10,16:25]}}, ...
-                                            'eigenVectorTemporalMask',[1:15,46:64],                  ...
-                                            'eigenVectorIndices',     [1,2],                         ...
-                                            'sortTurnsIndex',         [false,false],                 ...
-                                            'embeddingWindow',        64,                            ...
-                                            'regressionWindow',       50:150,                        ...
-                                            'regressionThreshold',    5e3,                           ...
-                                            'residualSearchWindow',   0.5,                           ...
-                                            'medianCorrectionOffset', -0.14),                        ...
-                                     [],                                                             ...
-                                     false,                                                          ...
-                                     false,                                                          ...
-                                     false                                                           ...
-                                     );
+% $$$ 
+% $$$ disp([verbosePrefix,'Adjust rear onset boundary']);
+% $$$ % ALL to rear
+% $$$ StcCor = adjust_state_boundaries_svd(StcCor, Trials,                             ...
+% $$$                                      struct('sessionList',            'hand_labeled',                ...
+% $$$                                             'referenceTrial',         'jg05-20120317.cof.all',       ...
+% $$$                                             'featureSet',             'fet_bref',                    ...
+% $$$                                             'sampleMode',             'trimmed',                     ...
+% $$$                                             'svdState',               'rear',                        ...
+% $$$                                             'antecedentState',        'gper-rear',                   ...
+% $$$                                             'subsequentState',        'rear',                        ...
+% $$$                                             'immutableStates',        {{}},                          ...
+% $$$                                             'sampleRate',             119.881035,                    ...
+% $$$                                             'eigenVectorFeaturesMask',{{[6:10,16:25],[1:10,16:25]}}, ...
+% $$$                                             'eigenVectorTemporalMask',[1:15,46:64],                  ...
+% $$$                                             'eigenVectorIndices',     [1,2],                         ...
+% $$$                                             'sortTurnsIndex',         [false,false],                 ...
+% $$$                                             'embeddingWindow',        64,                            ...
+% $$$                                             'regressionWindow',       100:181,                       ...
+% $$$                                             'regressionThreshold',    5e3,                           ...
+% $$$                                             'residualSearchWindow',   0.5,                           ...
+% $$$                                             'medianCorrectionOffset', 0.14),                         ...
+% $$$                                      [],                                                             ...
+% $$$                                      false,                                                          ...
+% $$$                                      false,                                                          ...
+% $$$                                      false                                                           ...
+% $$$                                      );
+% $$$ 
+% $$$ disp([verbosePrefix,'Adjust rear offset boundary']);
+% $$$ % REAR to all
+% $$$ StcCor = adjust_state_boundaries_svd(StcCor,Trials,                              ...
+% $$$                                      struct('sessionList',            'hand_labeled',                ...
+% $$$                                             'referenceTrial',         'jg05-20120317.cof.all',       ...
+% $$$                                             'featureSet',             'fet_bref',                    ...
+% $$$                                             'sampleMode',             'trimmed',                     ...
+% $$$                                             'svdState',               'rear',                        ...
+% $$$                                             'antecedentState',        'rear',                        ...
+% $$$                                             'subsequentState',        'gper-rear',                   ...
+% $$$                                             'immutableStates',        {{}},                          ...
+% $$$                                             'sampleRate',             119.881035,                    ...
+% $$$                                             'eigenVectorFeaturesMask',{{[6:10,16:25],[1:10,16:25]}}, ...
+% $$$                                             'eigenVectorTemporalMask',[1:15,46:64],                  ...
+% $$$                                             'eigenVectorIndices',     [1,2],                         ...
+% $$$                                             'sortTurnsIndex',         [false,false],                 ...
+% $$$                                             'embeddingWindow',        64,                            ...
+% $$$                                             'regressionWindow',       50:150,                        ...
+% $$$                                             'regressionThreshold',    5e3,                           ...
+% $$$                                             'residualSearchWindow',   0.5,                           ...
+% $$$                                             'medianCorrectionOffset', -0.14),                        ...
+% $$$                                      [],                                                             ...
+% $$$                                      false,                                                          ...
+% $$$                                      false,                                                          ...
+% $$$                                      false                                                           ...
+% $$$                                      );
 
-% $$$ disp([verbPrefix,'Adjust turn onset boundary from pause']);
+% $$$ disp([verbosePrefix,'Adjust turn onset boundary from pause']);
 % $$$ % PAUSE to TURN -------------------------------------------------------------------------------
 % $$$ StcCor = adjust_state_boundaries_svd(StcCor,Trials,                              ...
 % $$$                                      struct('sessionList',            'hand_labeled',                ...
@@ -466,7 +407,7 @@ StcCor = adjust_state_boundaries_svd(StcCor,Trials,                             
 % $$$ 
 % $$$ 
 % $$$ 
-% $$$ disp([verbPrefix,'Adjust walk onset boundary from pause']);
+% $$$ disp([verbosePrefix,'Adjust walk onset boundary from pause']);
 % $$$ % PAUSE to walk -------------------------------------------------------------------------------
 % $$$ StcCor = adjust_state_boundaries_svd(StcCor,Trials,                              ...
 % $$$                                      struct('sessionList',            'hand_labeled',                ...
@@ -502,11 +443,27 @@ cf(@(s,tag) s.updateMode([s.mode,tag]), StcCor,repmat({postprocessingTag},[1,num
 cf(@(s) s.save(1), StcCor);
 
 
-% END MAIN -------------------------------------------------------------------------
+% END MAIN ----------------------------------------------------------------------------------------
 
 
 
 
+% AUX METHODS --------------------------------------------------------------------------------------
 
+function [stcMatrix] = reassign_low_duration_state_to_neighboring_states(stcMatrix,state,duration)
+for rp = state.data'
+    wdur = diff(rp);
+    if wdur < duration,
+        try
+            startVec = stcMatrix(rp(1)-1,:);
+            stopVec  = stcMatrix(rp(2)+1,:);
+            midpoint = round(sum(rp)/2);
+            stcMatrix(rp(1):midpoint,:) = repmat(startVec,[midpoint-rp(1)+1,1]);
+            stcMatrix([midpoint+1]:rp(2),:) = repmat(stopVec, [rp(2)-midpoint,1]);
+        catch err
+            disp(err);
+        end
+    end
+end
 
-
+% END AUX METHODS ----------------------------------------------------------------------------------

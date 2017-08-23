@@ -46,7 +46,7 @@ for s = 1:numel(slist)
     pfkbs = {};
     for sts = 1:numel(states),
         for sti = sts+1:numel(states),
-            defargs = get_default_args_MjgEdER2016('MTAAknnpfs_perm','struct');
+            defargs = get_default_args('MjgER2016','MTAAknnpfs_perm','struct');
             defargs.units = units;
             defargs.states = [states(sts),states(sti)];
             defargs = struct2varargin(defargs);        
@@ -54,7 +54,7 @@ for s = 1:numel(slist)
         end
     end
 
-    % Parse place field features
+% PARSE place field features
 
     analysisFileName = fullfile(Trial.spath,[Trial.filebase,tag,'_pfStats.mat']);        
     
@@ -80,7 +80,7 @@ for s = 1:numel(slist)
 
         
         
-        % Fuck matlab ... seriously 
+% FUCK matlab ... seriously 
         pfkstats = [pfkstats{:}];
         pfkstats = [pfkstats{:}];
 
@@ -95,14 +95,14 @@ for s = 1:numel(slist)
         pfkboots = reshape(pfkboots,numel(units),numel(states))';
         
         
-        % Select the biggest baddest place field patch for all units
+% SELECT the biggest baddest place field patch for all units
         peakPatchArea = [];
         peakPatchCOM  = [];
         peakPatchRate = [];
 
         for t = 1:numel(states),
             for k = 1:pfkbs{1}.parameters.numIter,
-                % Retrieve the patch center of mass from patch with the highest firing rate
+% RETRIEVE the patch center of mass from patch with the highest firing rate
                 pcom = ...
                     ... %cellfun(@(x,y) sq(x.patchCOM(1,y,find(max(x.patchPFR(1,y,:))==x.patchPFR(1,y,:)),:)),...
                 arrayfun(@(x,y) sq(x.patchCOM(1,y,find(max(x.patchArea(1,y,:).*x.patchPFR(1,y,:))==x.patchArea(1,y,:).*x.patchPFR(1,y,:)),:)),...
@@ -116,13 +116,13 @@ for s = 1:numel(slist)
                                      pcom(pind),...
                                      'uniformoutput',false))';
 
-                % Retrieve the max patch Firing rate
+% RETRIEVE the max patch Firing rate
                 peakPatchRate(t,k,:) = ...
                     sq(arrayfun(@(x,y) max(x.patchPFR(1,y,:)),...
                                pfkboots(t,:),...
                                repmat(k,[1,numel(units)])));
 
-                % Retrieve the patch area from patch with highest firing rate
+% RETRIEVE the patch area from patch with highest firing rate
                 parea = ...
                     arrayfun(@(x,y) sq(x.patchArea(1,y,find(max(x.patchPFR(1,y,:))==x.patchPFR(1,y,:)),:)),...
                             pfkboots(t,:),...

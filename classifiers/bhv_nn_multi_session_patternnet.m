@@ -30,7 +30,7 @@ MODEL_TYPE = 'multiSesPatNet';
 
 varargout = cell([1,nargout-1]);
 
-% DEFARGS ----------------------------------------------------------------------------------------
+%% DEFARGS ----------------------------------------------------------------------------------------
 defArgs = struct('sessionList',                 '',                                            ...
                  'featureSet',                  'fet_bref_rev7',                               ...
                  'states',                      {{'walk','rear','turn','pause','groom','sit'}},...
@@ -55,17 +55,22 @@ defArgs = struct('sessionList',                 '',                             
 
 
 
-% MAIN -------------------------------------------------------------------------------------------
+%% MAIN -------------------------------------------------------------------------------------------
 
-
+trainModel = false;
 if isempty(sessionList),
 % LOAD Trials for training neural network    
     Trials = af(@(Trial)  MTATrial.validate(Trial), get_session_list(trainingSessionList));
     trainModel = true;
+elseif iscell(sessionList) & isa(sessionList{1},'MTASession'),
+% ASSIGN cell array of MTATrials for behavioral labeling    
+    Trials = sessionList;
+elseif isa(sessionList,'MTATrial'),
+    Trials = {sessionList};
 else
 % LOAD Trials for behavioral labeling
     Trials = af(@(Trial)  MTATrial.validate(Trial), get_session_list(sessionList));
-    trainModel = false;
+
 end
 
 % LOAD xyz as a reference for synchronization
@@ -79,9 +84,11 @@ end
 
 % LOAD the state collections
 StcHL = cf(@(Trial) Trial.load('stc'),Trials);
-        cf(@(stc,states) set(stc,'states',stc(states{:})),...
-             StcHL,repmat({states},[1,numel(Trials)]));
-
+if ~any(cell2mat(cf(@(s) strcmp(s.mode,'default'),StcHL))),
+    cf(@(stc,states) set(stc,'states',stc(states{:})),...
+         StcHL,repmat({states},[1,numel(Trials)]));
+end
+        
 % CREATE model name from parameters if no model name is provided
 if isempty(model),
     dropIndexTag = '';
@@ -127,8 +134,8 @@ features = cf(@(Trial,fetSet,sr) feval(fetSet,Trial,sr,false),...
 
 % MAP features to reference session
 if map2reference,
-    xyzls  = cf(@(Trial)  Trial.load('xyz')       , Trials);
-             cf(@(f,x) x.resample(f), features,xyzls);
+    xyzls  = cf(@(Trial)  Trial.load('xyz'),        Trials);
+             cf(@(f,x)    x.resample(f),            features,xyzls);
     refTrial = MTATrial.validate(referenceTrial);
     cf(@(f,t,r) f.map_to_reference_session(t,r),...
        features, Trials, repmat({refTrial},[1,numTrials]));
@@ -187,6 +194,8 @@ if ~any(cell2mat(cf(@(s) strcmp(s.mode,'default'),StcHL))),
                                 'sampleRate',x.sampleRate),...
              StcHL, xyz, states);
 end
+
+
 
 % TRAIN or LABEL Trials
 for iter = 1:nIter,
@@ -258,6 +267,7 @@ for iter = 1:nIter,
     end
     
 end
+
 
 if nargout==0,
     return,

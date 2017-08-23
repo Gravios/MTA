@@ -1,5 +1,5 @@
 function [StcRnd,labelingEpochs,trainingFeatures] = resample_whole_state_bootstrap_noisy_trim(StcHL,features,states,varargin)
-[prctTrain,stateBlockSize] = DefaultArgs(varargin,{90,10000},true);
+[prctTrain,stateBlockSize] = DefaultArgs(varargin,{90,15000},true);
 
 trainingEpochs = [];
 
@@ -83,7 +83,7 @@ StcRnd.addState([],...
                 'TimePeriods');
 end
 
-trainingFeatures.data = trainingFeatures.data+randn(trainingFeatures.size)/5;
+trainingFeatures.data = trainingFeatures.data+randn(trainingFeatures.size)/4;
 trainingFeatures.sync = newsync.copy;
 trainingFeatures.origin = 0;
 

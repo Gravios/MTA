@@ -1,4 +1,6 @@
 function hfig = PlotSessionErrors(Session,varargin)
+%function hfig = PlotSessionErrors(Session,figureHandle)
+%
 if ~isempty(varargin),
     hfig = figure(varargin{1})
 else    

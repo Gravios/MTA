@@ -11,6 +11,7 @@ function defargs = get_default_args(varargin)
 %   analysisTag:    string, some short tag for a given analysis or sub analysis
 %   funcName:       string, any function enumerated in the target m-file
 %   outputType:     string, valid values - 'struct' and 'cell'
+
 global MTA_CURRENT_PROJECT
 global MTA_PROJECT_PATH
 

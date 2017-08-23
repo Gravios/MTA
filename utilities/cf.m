@@ -1,6 +1,8 @@
 function varargout = cf(varargin)
 %function varargout = cf(varargin)
 %Wrapper for cellfun because Uniformity shouldn't be allowed
+%
+% see cellfun
 
 varargin = cat(2,varargin,{'UniformOutput',false});
 if nargout>0

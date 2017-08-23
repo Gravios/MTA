@@ -52,8 +52,6 @@ function varargout = DefaultArgs(Args, DefArgs, varargin)
 
 %% Set DefaultArgs' default args
 
-% THROW error if output count doesn't equal the number of default args
-assert(nargout==numel(Args),'MTA:utilities:set_default_args:NArginDoesNotEqualNArgout');
 
 % IF varargin is empty, setup path to the m-file calling, hereafter known as CMF, DefaultsArgs.
 if numel(varargin)>0,    
@@ -62,25 +60,38 @@ if numel(varargin)>0,
       
       case '--struct'
         
-% ASSIGN DefArgs fields in order to varargout cell array and return
+% ASSIGN default aguments fields in order to varargout cell array
         varargout = {};
-                defaultArgFields = fields(DefArgs);
-        for field = defaultArgFields, varargout(end+1) = {DefArgs.(field{1})};  end
-
+        defaultArgFields = fields(DefArgs);
+        assert( nargout == numel(defaultArgFields), ...
+                'MTA:utilities:set_default_args:NArginDoesNotEqualNArgout',...
+                'Count of outputs does not match the number of default arguments');
+        for field = defaultArgFields', varargout{end+1} = DefArgs.(field{1});  end
+        
 % QUERY default argument variables from input struct
         numInputArgs = numel(Args);
         index = 1;
+        nameValueMode = false;
         while index <= numInputArgs
+            
             if ischar(Args{index}) && isfield(DefArgs,Args{index}),
 % ASSIGN next postion in Args to varargout based on field tag in previous position in Args
-                varargout(~cellfun(@isempty(regxep(Args{index},defaultArgFields)))) = {Args{index+1}};
+                outputIndex = ~cellfun(@isempty,regexp(Args{index},defaultArgFields'));
+                varargout(outputIndex) = Args(index+1);
                 index = index+2;
-            else
+                nameValueMode = true;
+                
+            elseif nameValueMode, error('MTA:utilities:set_default_args:MissingNameValuePair');
+            
+            else,
 % ASSIGN next position in Args to varargout assuming correct order
-                varargout(index) = Args(i);
+                if ~isempty(Args{index})
+                    varargout(index) = Args(index);
+                end
                 index = index+1;
             end
         end
+        return;
 
       otherwise
         FuncPath = varargin{1};        
@@ -88,6 +99,12 @@ if numel(varargin)>0,
 else
     FuncPath = dbstack('-completenames'); 
 end
+
+% THROW error if output count doesn't equal the number of default args
+assert( nargout==numel(DefArgs), ...
+        'MTA:utilities:set_default_args:NArginDoesNotEqualNArgout',...
+        'Count of outputs does not match the number of default arguments');
+
 
 % assume generic array or logical
 % 1. single element array is a flag to not attempt parameter value paring 

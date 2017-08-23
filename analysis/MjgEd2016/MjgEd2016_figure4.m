@@ -1,261 +1,278 @@
-%% FIG4: Examples of feature dynamics and head body independence ---|
-% A  SPEED head and body                                            |
-% B  DIRECTION head and body                                        |
-% C  PITCH SLPR and SMSU                                            |
-% D  Intermarker Distance of head and upper spine                   |
-% E  Hand Labels                                                    |
-% F  RHM Rhythmic Head Motion                                       |
-% G  Mutual information between marker speeds                       |
-% H  Time lag of maximum mutual information (ms)                    |
-% __________________________________________________________________|
+% MjgEd2016 Figure 4 Head Body kinematic organization
+%
+% A. Timeseries of head and body angular velocities
+% B. Time lagged mutual information of head and body angular velocities
+% C. 
 
 
-MTAstartup('man_jgEd_2015');
-Trial = MTATrial('jg05-20120317');
-figPath = fullfile(Trial.path.data,'figures');
-anlPath = fullfile(Trial.path.data,'analysis');
-figPath = '/storage/gravio/manuscripts/man2015-jgEd-MoCap/Figures/Figure_2';
+sessionList = 'hand_labeled';
+Trials = af(@(Trial) MTATrial.validate(Trial), get_session_list(sessionList));
+stc = cf(@(t) t.load('stc'), Trials);
+%stc = cf(@(t) t.load('stc','msnnN0+hand_labeled'), Trials);
 
-xyz = Trial.load('xyz');
+s = 1
+xyz = cf(@(Trial) Trial.load('xyz'),                         Trials);
+vxy = cf(@(x)     x.vel({'spine_lower','head_front'},[1,2]), xyz   );
+for s = 1:numel(Trials), vxy{s}.data(vxy{s}.data<1e-3,:) = 1e-3;end
+for s = 1:numel(Trials), vxy{s}.data = log10(vxy{s}.data);end
+cf(@(x) x.filter('ButFilter',3,5,'low'),xyz);;
+ang = cf(@(t,x) create(MTADang,t,x),Trials,xyz);
 
-% SPD Low Pass Filtered 4Hz
-vl = xyz.copy;
-vl = vl.vel(,1:8,[1,2]);
-vl.filter('ButFilter',3,4);
+ind = cf(@(stc) [stc{'a-s-m'}],stc);
 
-% RHM Spectrum 1-30Hz
-dsp.nFFT= 2^8;
-dsp.Fs = 119.881035;
-dsp.WinLength = 2^7;
-dsp.nOverlap = 2^7.*0.8125;
-dsp.FreqRange = [1 30];
-[rhm,fs,ts] = fet_rhm(Trial,[],'mtchglong','defspec',dsp);
+%ind = cf(@(s,w,t) [s.get_state_transitions(t,{'pause+walk','rear'},1,w)],...
+%         stc, xyz, Trials);
 
-% XYZ Low Pass Filtered 4Hz
-xyz.data = ButFilter(xyz.data,3,[4]/(xyz.sampleRate/2),'low');
-
-% ANG From Low Pass Filtered (4Hz) XYZ data
-ang = create(Trial.ang.copy,Trial,xyz);
-
-
-sfet = Trial.ang.copy;
-% $$$ sfet.data = sum(abs([circ_dist(ang(:,1,3,1),ang(:,1,2,1)),...
-% $$$                      circ_dist(ang(:,2,4,1),ang(:,2,3,1)),...
-% $$$                      circ_dist(ang(:,3,5,1),ang(:,3,4,1)),...
-% $$$                      circ_dist(ang(:,4,7,1),ang(:,4,5,1))]),2);
-sfet.data = -nunity(circ_dist(ang(:,5,7,1),ang(:,1,4,1)));
-
-swg = Trial.ang.copy;
-swg.data = nunity(circ_dist(ang(:,1,4,1),ang(:,2,4,1)));
-
-
-%% mutinfo stuff
-v = log10(vl.data(:,[1:8]));
-
-edges = linspace(-.5,2,64);
-sbound = -130:130;
-ixy = zeros([numel(sbound),size(v,2),size(v,2)]);
-
-padding = [0,0];
-vind = logical(subsref(cast(resample(Trial.stc{'a'}+padding,xyz),'TimeSeries'),substruct('.',{'data'})));
-nind = numel(vind);
+% $$$ shift = [0,30];
+% $$$ for s = 1:numel(Trials), 
+% $$$     ind{s}(sum([ind{s}+repmat(shift,size(ind{s},1),1)<=0, ...
+% $$$                 ind{s}+repmat(shift,size(ind{s},1),1)>size(xyz{s},1)],2)>0,:)=[];
+% $$$ end
 
 s = 1;
-for m = 1:size(v,2)
-for o = 1:size(v,2)
-for shift = sbound
-[out,xb,yb,p]=hist2([v(vind,m),circshift(v(vind,o),shift)],edges,edges);
-pxy = out./nind;
-px = histc(v(vind,m),xb);
-px = px(1:end-1)/nind;
-py = histc(circshift(v(vind,o),shift),yb);
-py = py(1:end-1)/nind;
-ixy(s,m,o) = nansum(nansum(pxy.*log2(pxy./(px*py'))));
-s = s+1;
-end
-s = 1;
-end
-end
+tind = [277,283];
+figure
+sp = [];
+pdh = cf(@(ang,ind) circ_dist(circshift(ang(ind,'head_back','head_front',2),-1),...
+                              circshift(ang(ind,'head_back','head_front',2), 1)),...
+         ang,ind);
+adh = cf(@(ang,ind) circ_dist(circshift(ang(ind,'head_back','head_front',1),-1),...
+                              circshift(ang(ind,'head_back','head_front',1), 1)),...
+         ang,ind);
 
-[mixy,sixy] = max(ixy);
-mixy = sq(mixy);
-sixy = sq(sixy)-ceil(numel(sbound)/2);
-sixy = sixy([1:4,7],[1:4,7]);
+for marker = {'spine_lower','pelvis_root','spine_middle'},
+    pdb = cf(@(ang,ind) circ_dist(circshift(ang(ind,marker,'spine_upper',2),-1),...
+                                  circshift(ang(ind,marker,'spine_upper',2), 1)),...
+             ang,ind);
+    adb = cf(@(ang,ind) circ_dist(circshift(ang(ind,marker,'spine_upper',1),-1),...
+                                  circshift(ang(ind,marker,'spine_upper',1), 1)),...
+             ang,ind);
 
-
-
-%% Fig Parameters
-sts = 'rwnms';
-stc = 'rcymg';
-edgs    = {linspace(-.5,2,75)};
-edgs(2) = {linspace(-.5,2,75)};
-[edgs{:}] = get_histBinCenters(edgs);
-[X,Y] = meshgrid(edgs{:});
-ns = 6;
-
-xpers = bsxfun(@plus,Trial.stc{'w',1}(1:3:end,1),[-15,15]);
-xpers(xpers(:,1)<1,:) = [];
-xpers((xpers(:,2)-Trial.sync(end))>0,:) = [];
-s = 20;
-
-
-
-
-hfig = figure(2);
-
-
-% JPDF - Head/Body speed
-subplot2(ns,4,[3,4],4);cla;
-b = log10([median(vl(nniz(vl),[1:2]),2),median(vl(nniz(vl),[5:8]),2)]);
-hist2(b,edgs{1},edgs{2});
-xlabel('log10 body speed (cm/s)');
-ylabel('log10 head speed (cm/s)');
-title('JPDF of log10 head and body speeds');
-
-hold on,
-for i = 1:numel(sts),
-    b = log10([median(vl(Trial.stc{sts(i)},1:2),2),median(vl(Trial.stc{sts(i)},5:8),2)]);
-    o = hist2(b,linspace(-.5,2,75),linspace(-.5,2,75));
-    F = [.05 .1 .05; .1 .4 .1; .05 .1 .05];
-    o = conv2(o,F,'same');
-    contour(X,Y,o',[20,20],'linewidth',1.5,'Color',stc(i))
-end
-
-
-ndag = double(~eye(8));
-subplot2(ns,4,[1,2],4);
-imagesc(mixy(:,:).*ndag);
-colorbar
-title('mutual information between marker speeds');
-set(gca,'YtickMode','manual');
-set(gca,'Ytick',1:8);
-set(gca,'YtickLabelMode','manual');
-set(gca,'YtickLabel',vl.model.ml('short'));
-
-subplot2(ns,4,[5,6],4);
-imagesc(sixy(:,:)/vl.sampleRate*1000);
-colorbar
-title('time lag of maximum mutual information (ms)')
-
-set (hfig,'position',[0,0,1000,700])
-set (hfig,'paperposition',[0,0,1000/100,700/100])
-set (hfig,'PaperType','a3');
-ns = 6;
-periodInds = 1:size(xpers,1);
-periodInds = 32;
-periodInds = [14,24,29,35,36,48,54,55,84,89,92];
-for s = periodInds
-    ind = round(xpers(s,:).*xyz.sampleRate);
-    ind = ind(1):ind(2);
-    i = 1;
+    sp(end+1) = subplot2(2,8,1,1:5);hold('on')
+    plot([1:size(pdb{s},1)]./xyz{s}.sampleRate,pdb{s},'LineWidth',1);
+    plot([1:size(pdh{s},1)]./xyz{s}.sampleRate,pdh{s},'LineWidth',1);
+    sp(end+1) = subplot2(2,8,2,1:5);hold('on')
+    plot([1:size(adb{s},1)]./xyz{s}.sampleRate,adb{s},'LineWidth',1);
+    plot([1:size(adh{s},1)]./xyz{s}.sampleRate,adh{s},'LineWidth',1);
     
-    %figure(201) % SPEED head and body
-    subplot2(ns,4,i,[1:3]);i=i+1;cla
-    plot(ind/vl.sampleRate,[median(vl(ind,1:2),2),median(vl(ind,5:8),2)]),axis tight
-    title('xy speed of head and body')
-    ylabel('Speed (cm/s)');
-    ylim([0,80])
-    set(gca,'XTickLabelMode','manual');
-    set(gca,'XTickLabel',{});
-    set(gca,'TickDir','out');
-    
-    %figure(202) % DIRECTION head and body
-    subplot2(ns,4,i,[1:3]);i=i+1;cla
-    plot(ind/vl.sampleRate,[sfet(ind),swg(ind)])
-    axis tight
-    title('diff ang(head,body) and spine waggle')
-    ylabel('Circular difference normalized (AU)');
-    set(gca,'XTickLabelMode','manual');
-    set(gca,'XTickLabel',{});
-    set(gca,'TickDir','out');
+    p = xcorr(cat(1,pdb{:}),cat(1,pdh{:}),240,'coeff');
+    a = xcorr(cat(1,adb{:}),cat(1,adh{:}),240,'coeff');
 
-    
-    %figure(203)%  PITCH SLPR and SMSU
-    subplot2(ns,4,i,[1:3]);i=i+1;cla
-    plot(ind/vl.sampleRate,[ang(ind,1,3,2),ang(ind,5,7,2)]),axis tight
-    title('Pitch of Body and Head')
-    ylabel('Pitch (radians)');
-    ylim([-pi/2,pi/2])
-    set(gca,'XTickLabel',{});
-    set(gca,'TickDir','out');    
-    set(gca,'TickDir','out');
+    subplot2(2,8,1,[7:8]); hold('on'); grid('on');
+    plot([-240:240]./xyz{1}.sampleRate,a,'LineWidth',1)
+    xlim([-2,2])
 
-    
-    %figure(204) Intermarker Distance of head and upper spine
-    subplot2(ns,4,i,[1:3]);i=i+1;cla
-    plot(ind/vl.sampleRate,[ang(ind,4,5,3)]),axis tight%,ang(ind,4,7,3)])
-    title('Intermarker Distance of head and upper spine')
-    ylabel('Distance (mm)');
-    set(gca,'XTickLabelMode','manual');
-    set(gca,'XTickLabel',{});
-    set(gca,'TickDir','out');
-    
-
-    %figure(205) Hand labeles
-    subplot2(ns,4,i,[1:3]);i=i+1;cla
-    plotSTC(Trial.stc,1,'patch',{'rear','walk','turn','groom'},'rbgm');
-    title('hand labeling')
-    xlim(xpers(s,:));
-    ylim([0,1])
-    set(gca,'TickDir','out');
-    set(gca,'XTickLabelMode','manual');
-    set(gca,'XTickLabel',{});
-   
-    
-    %figure(206) RHM Rhythmic Head Motion
-    subplot2(ns,4,i,[1:3]);i=i+1;cla
-    sind = round(xpers(s,:).*rhm.sampleRate);
-    sind = sind(1):sind(2);
-    title('RHM Rhythmic Head Motion')
-    imagesc(ts(sind),fs,log10(rhm(sind,:))'),axis xy ,caxis([-6,-3.5])
-    ylabel('Frequency (Hz)')
-    xlabel('Time (s)')
-    set(gca,'TickDir','out');
-    %ca = colorbar;
-    %set(ca,'positon',[0.13,0.11,0.568882978723404,0.102587412587413])
-
-    
-    
-    saveas(hfig,fullfile(figPath,['Fig2-Features-sampleN_' num2str(s) '_' Trial.filebase '.png']),'png');
-    saveas(hfig,fullfile(figPath,['Fig2-Features-sampleN_' num2str(s) '_' Trial.filebase '.eps']),'epsc');
-
+    subplot2(2,8,2,[7:8]); hold('on'); grid('on');
+    plot([-240:240]./xyz{1}.sampleRate,p,'LineWidth',1)
+    xlim([-2,2]);
 
 end
+linkaxes(sp,'x')
+xlim(sp(1),tind);
+xlim(sp(2),tind);
+exampleTimePeriodStr = strjoin(num2str(tind),'-'
+FigName = ['ccg_head_body_angular_velocity,'_',exampleTimePeriodStr];
+print(gcf,'-depsc2',fullfile(OwnDir,FigDir,[FigName,'.eps']));
+print(gcf,'-dpng',  fullfile(OwnDir,FigDir,[FigName,'.png']));
 
 
 
-%Alt MUT info
 
-figure,
-plot(round(sbound/xyz.sampleRate*1000,3),[ixy(:,7,1),ixy(:,7,2),ixy(:,7,3),ixy(:,7,4)])
-hold on,plot(sbound(sixy(5,1)),mixy(7,2),
-xlim([round(sbound(1)/xyz.sampleRate*1000,3),round(sbound(end)/xyz.sampleRate*1000,3)]);
-legend('HF->SL','HF->PR','HF->SM','HF->SU')
-title({'Mutual Information Between Marker Speeds','with Varying Time Lags'})
-ylabel('Mutual Information (bits)')
-xlabel('Time Lag (ms)')
-
-
-% FIG3 Sup
-pbins = linspace(-7,-3,100);
-pfd = histc(log10(rhm(:,:)),pbins,1);
-figure,imagesc(pbins,fs,pfd'),axis xy
-title('RHM Power Distribution')
-xlabel('RHM Power (a.u.)')
-ylabel('Frequency (Hz)')
+% 
+phaseFrequencyRangeLow = [1.2,6];
+phaseFrequencyRangeHigh = [6,12];
+% LOAD features
+features = cf(@(t) fet_bref(t), Trials);
+featuresPhaseLow  = cf(@(f,frq) f.phase(frq), features,repmat({phaseFrequencyRangeLow},[1,numel(Trials)]));
+featuresPhaseHigh = cf(@(f,frq) f.phase(frq), features,repmat({phaseFrequencyRangeHigh},[1,numel(Trials)]));
+% FILTER features
+ffet = cf(@(f) f.copy(), features);
+cf(@(f) f.filter('ButFilter',3,[1.2,6],'bandpass'),ffet);
 
 
-% FIG3 Sup
 
-Trial = MTATrial('jg03-20110501');
-Trial = MTATrial('Ed05-20140529','all','ont');
-xyz = Trial.load('xyz');
-xyz.filter('ButFilter',3,20);
-ang = create(MTADang,Trial,xyz);
-wang = Trial.xyz.copy;
-wang.data = diff(circ_dist(ang(:,1,3,1),ang(:,2,4,1)).*5);
-wang.filter('ButFilter',3,20);
-figure,plot(diff(xyz(:,1,3))-diff(ang(:,1,3,2)).*50);
 
-Lines(Trial.stc{'w'}(:),[],'r');
 
+
+
+
+
+
+%% Fig.4 SVD of embedded marker trajectories relative to body at head raises%%%%%%%%%%%%%%%%%%%
+%
+%
+
+
+param = struct('sessionList',            'hand_labeled',...
+               'referenceTrial',         'jg05-20120317.cof.all',...
+               'svdState',               'walk+turn+pause',...
+               'preState',               {{'walk,turn,pause'}},...
+               'postState',              {{'walk,turn,pause'}},...
+               'eigenVectorFeaturesMask',{{[2:15,17:2:25,26:30],[1:16,18:24,26:30]}},...
+               'eigenVectorTemporalMask',[1:15,46:64],...
+               'eigenVectorIndices',     [1,2],...
+               'sampleRate',             119.881035,...
+               'embeddingWindow',        64 ...
+);
+
+
+
+
+% DEF figure variables -----------------------------------------------------------------
+
+% figure save paths
+OwnDir = '/storage/gravio/ownCloud/';
+FigDir = 'Shared/Behavior Paper/Figures/Figure_4/parts';
+
+states = {'walk','rear','turn','pause','groom','sit'};
+nsts = numel(states);
+sclr = 'brgcmy';
+
+% $$$ s = 1;                           % jg05-20120317.cof.all
+% $$$ exampleTimePeriod = [2170,2198]; % seconds
+% $$$ %exampleTimePeriod = [2183,2191]; % seconds
+% $$$ exampleTimePeriodStr = num2str(exampleTimePeriod);
+% $$$ exampleTimePeriodStr(exampleTimePeriodStr==' ') = '_';
+
+% END figure variables -----------------------------------------------------------------
+
+
+
+
+
+
+% START data processing ------------------------------------------------------------------
+
+sessionList     = get_session_list(param.sessionList);                    
+numSessions     = numel(sessionList);                    
+sampleRate = repmat({param.sampleRate},1,numSessions);
+embeddingWindow = repmat({64},1,numSessions);
+
+                    
+
+% LOAD Trial objects
+% $$$ Trials = af(@(Trial) MTATrial.validate(Trial)  , get_session_list('nn_labeled'));
+% $$$ StcNN  = cf(@(Trial)  Trial.load('stc'), Trials);
+% $$$ StcNNC = cf(@(Trial)  Trial.load('stc',[Trial.stc.mode,'_svdc']), Trials);
+% LOAD State Collections
+
+
+% LOAD Trial objects
+Trials = af(@(Trial) MTATrial.validate(Trial)           ,sessionList);
+
+% LOAD State Collections
+Stc    = cf(@(Trial) Trial.load('stc')                  ,Trials);
+%StcNN  = cf(@(Trial) Trial.load('stc','NN0317')         ,Trials);
+StcHL  = cf(@(Trial)  Trial.load('stc')         , Trials);
+StcHLC = cf(@(Trial)  Trial.load('stc',[Trial.stc.mode,'_SVDTRAJADJ']), Trials);
+
+
+% LOAD Position data
+xyz    = cf(@(Trial) preproc_xyz(Trial)                 ,Trials);
+         cf(@(x,s)   x.resample(s)                      ,xyz,sampleRate);
+fxyz   = cf(@(x)     x.copy()                           ,xyz);
+         cf(@(f)     f.filter('ButFilter',5,[2.4],'low'),fxyz);
+
+% LOAD and MAP Features to reference session
+fet    = cf(@(Trial) fet_bref(Trial)                    ,Trials);
+         cf(@(f,t,r) f.map_to_reference_session(t,r)    ,fet,Trials,...
+            repmat({param.referenceTrial},1,numSessions));
+for s = 1:numSessions, fet{s}.data(~nniz(xyz{s}),:,:) = 0;end
+
+% NORMALIZE feature matrix along the columns 
+zfrCat = cf(@(f) get(f,'data'),fet);
+zfrCat = cat(1,zfrCat{:});
+zfrMean = nanmean(zfrCat(nniz(zfrCat),:,:));
+zfrStd = nanstd(zfrCat(nniz(zfrCat),:,:));
+cf(@(w,m,s) set(w,'data',nunity(w,[],m,s)),...
+            fet,...
+            repmat({zfrMean},1,numSessions),...
+            repmat({zfrStd},1,numSessions));
+clear('zfrCat','zfrMean','zfrStd')
+
+% FILTERED feature matrix
+ffet   = cf(@(f)     f.copy                            ,fet);
+         cf(@(f)     f.filter('ButFilter',5,[1.5],'low'),ffet);
+
+headRaiseEvents = cf(@(f) ThreshCross(f(:,15),0,50),ffet);
+
+ind = cf(@(s) [s{'w+n+p'}],StcHL);
+headRaiseEvents = cf(@(h,i) SelectPeriods(h(:,1),i.data,'d',1),headRaiseEvents,ind);
+
+
+% EMBED feature
+wfs  = cf(@(w,e) w.segs(1:size(w,1),e),fet,embeddingWindow);
+wfs =  cf(@(w,e) circshift(w,e/2,2),wfs,embeddingWindow);
+wfs =  cf(@(w,x) MTADxyz('data',reshape(permute(w,[2,1,3]),size(w,2),[]),...
+              'sampleRate',x.sampleRate),wfs,xyz);
+for i = 1:numel(wfs), wfs{i}.data(isnan(wfs{i}.data(:)))=0; end
+
+% @svd
+% DECOMPOSE fet with svd for walk and turn periods within all sessions
+wfw     = cf(@(w,h)    w(h,:), wfs, headRaiseEvents);
+%wfw = cf(@(w,s) w([s{'w'}]+[0.5,-0.5],:), wfs, Stc);
+[~,Sww,Vww] = svd(cat(1,wfw{:}),0);
+
+% @afetW
+% COMPUTE eigenvector loadings for each session's eigen vectors
+afetW   = cf(@(w,v) MTADxyz('data',multiprod(w.data,v(:,1:20)),...
+                          'sampleRate',w.sampleRate),...
+             wfs,repmat({Vww},1,numSessions));
+cf(@(f,x) set(f,'sync'  ,x.sync.copy)    ,afetW, xyz); 
+cf(@(f,x) set(f,'origin',x.origin   )    ,afetW, xyz);
+
+
+% COMPUTE eigenvector loadings for each session's eigen vectors
+% contains mask to select feature subset important to turning
+sfet = cf(@(x) x.copy('empty'), xyz);
+for i= param.eigenVectorIndices
+    eigenVector = reshape(Vww(:,i),[],size(fet{1},2));
+    eigenVector(:,param.eigenVectorFeaturesMask{i}) = 0;
+    eigenVector(param.eigenVectorTemporalMask,:) = 0;
+    eigenVector = reshape(eigenVector,[],1);
+    cf(@(r,w,v) set(r,'data',[get(r,'data'),multiprod(w.data,v)]),...
+       sfet,wfs,repmat({eigenVector},1,numSessions));
+end
+cf(@(f,x) set(f,'sync'  ,x.sync.copy)   ,sfet, xyz); 
+cf(@(f,x) set(f,'origin',x.origin   )   ,sfet, xyz);
+
+
+% @ts
+% TIME vectors
+wts = cf(@(e,s)  [1:e]./s,                        embeddingWindow,sampleRate);
+ts =  cf(@(x)    [1:size(x,1)]./x.sampleRate,     xyz);
+
+% @ang
+% COMPUTE  intermarker angles 
+ang = cf(@(t,x) create(MTADang,t,x), Trials, fxyz);
+for s = 1:numSessions, ang{s}.data(~nniz(xyz{s}),:,:,:) = 0;end
+
+% FIG4EIGVECT ------------------------------------------------------------------------------
+% project: MjgEd2016
+% parent: figure 4
+% subplots: 1->N eigen vectors for all sessions during walking periods
+% location: MjgEd2016_figure3_svd_walk_alt.m
+
+hfig = figure;
+hfig.Units = 'centimeters';
+hfig.Position(3:4) = [30,16];
+hfig.PaperPositionMode = 'auto';
+for i = 1:20,
+    pc = -reshape(Vww(:,i),[],size(fet{1},2));
+    %pc = reshape(LR(:,i),[],size(fet{1},2));
+    pc = pc(:,[1:2:9,2:2:10,11:15,16:2:24,17:2:25,26:30]);
+    subplot(2,10,i);imagesc(wts{1},1:size(fet{1},2),pc'),
+    caxis([-0.08,0.08]);
+    %caxis([-.5,.5]);    
+    axis xy
+end
+
+
+FigName = ['SVD_eigVect_headRaises'];
+print(gcf,'-depsc2',fullfile(OwnDir,FigDir,[FigName,'.eps']));
+print(gcf,'-dpng',  fullfile(OwnDir,FigDir,[FigName,'.png']));
+
+% END FIG3EIGVECT ---------------------------------------------------------------------------
+
+
+%figure,plot(fet{1}(:,[17,25,30]));

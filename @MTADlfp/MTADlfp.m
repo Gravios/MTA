@@ -32,6 +32,7 @@ classdef MTADlfp < MTAData
             [path,filename,data,sampleRate,syncPeriods,syncOrigin,model,type,ext,name,label,key] = ...
                 DefaultArgs(varargin,{[],[],[],[],[],[],[],'TimeSeries','lfp',[],'lfp','l'});
             Data = Data@MTAData(path,filename,data,sampleRate,syncPeriods,syncOrigin,type,ext,name,label,key);
+            Data.filename = [filename '.' ext];
         end        
     end
     

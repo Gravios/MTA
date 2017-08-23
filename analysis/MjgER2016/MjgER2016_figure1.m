@@ -6,4 +6,5 @@
 %    C. Skeleton with trajectories
 %    D. Feature Matrix
 %    E. Behavioral labels - hand labels and neural network labels
-%    F. Beha
+
+% SEE MjgEd2016 figure 1

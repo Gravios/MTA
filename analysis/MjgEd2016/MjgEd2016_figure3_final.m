@@ -1691,9 +1691,9 @@ figure,
 
 
 figure();hold on
-%states = {'pause+walk','rear'};
-states = {'pause','walk'};
-states = {'pause','turn'};
+states = {'pause+walk','rear'};
+%states = {'pause','walk'};
+%states = {'pause','turn'};
 
 sto  = cf(@(c,s,t,f) round(mean([c.get_state_transitions(t,s,[],f)],2)),...
           StcHL,repmat({states},1,numSessions) ,Trials,xyz);
@@ -1708,13 +1708,15 @@ ccgOpts.halfBins = 30;
 ccgOpts.sampleRate = param.sampleRate;
 [sccg,txx,pxx] = cf(@(s,n,co) CCG([s;n],[ones(size(s));2*ones(size(n))],...
                                   co.binSize,co.halfBins,co.sampleRate,[1,2],'count'),...
-                    sto,stn,repmat({ccgOpts},1,numSessions));
+                    stn,stnc,repmat({ccgOpts},1,numSessions));
 accg = sum(cat(4,sccg{:}),4);
 stairs(txx{1},accg(:,1,2));
 xlabel('Time Lag (ms)');
 ylabel('count')
 xlim([-500,500])
 
-FigName = ['stateTransition_CCG_stairs'];
+legend({'walk','turn','rear'});
+
+FigName = ['stateTransition_CCG_stairs_nnCorrect'];
 print(gcf,'-depsc2',fullfile(OwnDir,FigDir,[FigName,'.eps']));
 print(gcf,'-dpng',  fullfile(OwnDir,FigDir,[FigName,'.png']));
