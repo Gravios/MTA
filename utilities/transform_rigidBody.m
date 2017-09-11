@@ -154,7 +154,7 @@ end
 %% Figure of search
 mind = [];
 for m = 1:7,
-[mind(m,:),mv] = LocalMinimaN(sq(vxyz(m,:,:,:)),100,100);
+    [mind(m,:),mv] = LocalMinimaN(sq(vxyz(m,:,:,:)),100,100);
 end
 
 % $$$ figure,
@@ -185,8 +185,7 @@ if ~exist(FileName_fine,'file')||overwrite,
     nj = j(nrange(2,:));
     nk = k(nrange(3,:));
 
-
-    %% Fine grain search
+% REFINE search
     ni = [ni(1):2:ni(2)];
     nj = [nj(1):2:nj(2)];
     nk = [nk(1):2:nk(2)];
@@ -251,6 +250,7 @@ end
 %save(fullfile(Session.spath,[Session.filebase '.xyz-shift_fine_a-m-s.mat']),'ni','nj','nk','nvxyz');
 %load(fullfile(Session.spath,[Session.filebase '.xyz-shift_fine_a-m-s.mat']),'ni','nj','nk','nvxyz');
 
+% LOCATE local minima of each variance field
 mind = [];
 for m = 1:7,
 [mind(m,:),mv] = LocalMinimaN(sq(nvxyz(m,:,:,:)),100,100);
@@ -268,139 +268,144 @@ end
 % $$$ end
 % $$$ suptitle(Session.filebase)
 
+% SET Domain of estimate search for isosurface
 ijk = cell(1,3);
 [ijk{:}] = meshgrid(ni,nj,nk);
 
-clist = 'rbgymck';
+% COMPUTE surfaces of thresholded region of the estimation domain
+mset = [1:7];
+for m = mset
+    svxyz = log10(sq(nvxyz(m,:,:,:)));
+    iopts = [ijk,{svxyz},{prctile(svxyz(nniz(svxyz(:))),2)}];
+    isos(m) = isosurface(iopts{:});
+end
 
 if display,
-    figure
-    for m =1:7,
-        svxyz = log10(sq(nvxyz(m,:,:,:)));
-        iopts = [ijk,{svxyz},{prctile(svxyz(:),2)}];
-        p = patch(isosurface(iopts{:}));
+    clist = 'rbgymck';    
+    figure();hold('on');
+    for m = mset
+        p = patch(isos(m));
         iopts(end) = {p};
         isonormals(iopts{:});
         p.FaceColor = clist(m);
         p.EdgeColor = 'none';
+        p.FaceAlpha = 0.3;
     end
     daspect([1 1 1]); 
     camlight; lighting phong
 end
 
 
-sp = [];
-figure();hold('on');
-mset = [1:7];
-for m = mset
-    %    sp(end+1) = subplot(2,4,m);
-    svxyz = log10(sq(nvxyz(m,:,:,:)));
-    iopts = [ijk,{svxyz},{prctile(svxyz(nniz(svxyz(:))),2)}];
-    isos(m) = isosurface(iopts{:});
-    p = patch(isos(m));
-    iopts(end) = {p};
-    isonormals(iopts{:});
-    p.FaceColor = clist(m);
-    p.EdgeColor = 'none';
-    p.FaceAlpha = 0.3;
-end
-daspect([1 1 1]); 
-camlight; lighting phong
-
-
-% find the center of each field
+% FIND the center of each field
 mpos = zeros([7,3]);
 mind = zeros([7,3]);
 for m = 1:7,
     [mind(m,:),mv] = LocalMinimaN(sq(nvxyz(m,:,:,:)),100,100);
-    mpos(m,:) = [nj(mind(m,2)),ni(mind(m,1)),nk(mind(m,3))];
+    mpos(m,:) = [nj(mind(m,2)),ni(mind(m,1)),nk(mind(m,3))]; % Annoying flip
 end
 
-nijk = cf(@(x)  x(:),  ijk);
-nijk = cat(2,nijk{:});
-
-varLines = [];
+% COMPUTE the vector of the elipsoid field's long axis
+varLines = zeros([7,3]);
 for m = mset
-% $$$     distToMv = sqrt(sum(bsxfun(@minus,nijk,mpos(m,:)).^2,2));
-% $$$     tnvxyz = sq(nvxyz(m,:,:,:));
-% $$$     tnvxyz = 1./(tnvxyz(:));
-% $$$     %dind = distToMv<30;
-% $$$     dind = tnvxyz(:)< prctile(tnvxyz(nniz(tnvxyz(:))),20);
-% $$$     [~,S,V] = svd(bsxfun(@times,tnvxyz(dind,:),nijk(dind,:)),0);
     [~,S,V] = svd(bsxfun(@minus,isos(m).vertices,mpos(m,:)),0);
-    for vind = 1
-        %axes(sp(m));
-        quiver3(mpos(m,1),mpos(m,2),mpos(m,3),V(1,vind),V(2,vind),V(3,vind),30)
-    end
-    varLines(m,:) = V(:,1);
+    varLines(m,:) = V(:,1);    
 end
 
+if display,
+    quiver3(mpos(:,1),mpos(:,2),mpos(:,3),varLines(:,1),varLines(:,2),varLines(:,3),30)
+end
+
+
+% COMPUTE pairwise coordinate pairs along vector orthoginal to lines
 scp = nan([7,7,3]);
 tcq = nan([7,7,3]);
 for p = 1:7,
     for q = p+1:7,
-u = varLines(p,:);
-v = varLines(q,:);
-w = mpos(p,:)-mpos(q,:);
-a = dot(u,u);
-b = dot(u,v);
-c = dot(v,v);
-d = dot(u,w);
-e = dot(v,w);
+        u = varLines(p,:);
+        v = varLines(q,:);
+        w = mpos(p,:)-mpos(q,:);
+        a = dot(u,u);
+        b = dot(u,v);
+        c = dot(v,v);
+        d = dot(u,w);
+        e = dot(v,w);
 
-sc = (b*e-c*d)/(a*c-b^2);
-tc = (a*e-b*d)/(a*c-b^2);
+        sc = (b*e-c*d)/(a*c-b^2);
+        tc = (a*e-b*d)/(a*c-b^2);
 
-scp(p,q,:) = mpos(p,:)+sc*varLines(p,:);
-tcq(p,q,:) = mpos(q,:)+tc*varLines(q,:);
-end
+        scp(p,q,:) = mpos(p,:)+sc*varLines(p,:);
+        tcq(p,q,:) = mpos(q,:)+tc*varLines(q,:);
+    end
 end
 % $$$ plot3(scp(1),scp(2),scp(3),'*b')
 % $$$ plot3(tcq(1),tcq(2),tcq(3),'*m')
 
-
+% COMPUTE cluster mean
 mpoint = nanmean(nanmean(cat(3,reshape(scp,[],3),reshape(tcq,[],3)),3));
 
-scatter3(mpoint(1),mpoint(2),mpoint(3),50,[0,0,1],'filled')
+% $$$ % ADD estimate of neck 
+% $$$ xyz.addMarker(['head_neck'],[255,0,255],{{'head_back','head_front',[255,0,255]}},bsxfun(@plus,nx*mpoint(2)+ny*mpoint(1)+nz*mpoint(3),xyz(:,'hcom',:)));
+% $$$ 
+% $$$ % ADD estimate of head center
+% $$$ i = 1;
+% $$$ xyz.addMarker(['head_center'],[255,0,255],{{'head_back','head_front',[255,0,255]}},bsxfun(@plus,nx*ni(mind(i,1))+ny*nj(mind(i,2))+nz*nk(mind(i,3)),xyz(:,'hcom',:)));
 
+% $$$ xyz.addMarker('nhb',[128,255,128],...
+% $$$               {{'spine_upper','nhb',[0,1,0]},...
+% $$$                {'nhb'        ,'nhr',[1,0,0]},...
+% $$$                {'nhb'        ,'nhl',[0,0,1]}},...
+% $$$               bsxfun(@plus,nx*ni(mind(i,1))+ny*nj(mind(i,2))+nz*nk(mind(i,3)),xyz(:,'head_back',:)));
+% $$$ xyz.addMarker('nhl',[128,255,128],...
+% $$$               {{'nhl','nhf',[0,0,1]}},...
+% $$$               bsxfun(@plus,nx*ni(mind(i,1))+ny*nj(mind(i,2))+nz*nk(mind(i,3)),xyz(:,'head_left',:)));
+% $$$ xyz.addMarker('nhf',[128,255,128],...
+% $$$               {},...
+% $$$               bsxfun(@plus,nx*ni(mind(i,1))+ny*nj(mind(i,2))+nz*nk(mind(i,3)),xyz(:,'head_front',:)));
+% $$$ xyz.addMarker('nhr',[128,255,128],...
+% $$$               {{'nhr','nhf',[1,0,0]}},...
+% $$$               bsxfun(@plus,nx*ni(mind(i,1))+ny*nj(mind(i,2))+nz*nk(mind(i,3)),xyz(:,'head_right',:)));
 
-
-xyz.addMarker(['head_trb'],[255,0,255],{{'head_back','head_front',[255,0,255]}},bsxfun(@plus,nx*mpoint(2)+ny*mpoint(1)+nz*mpoint(3),xyz(:,'hcom',:)));
-
-i = 1;
-xyz.addMarker(['head_trbf'],[255,0,255],{{'head_back','head_front',[255,0,255]}},bsxfun(@plus,nx*ni(mind(i,1))+ny*nj(mind(i,2))+nz*nk(mind(i,3)),xyz(:,'hcom',:)));
-
-
-xyz.addMarker('nhb',[128,255,128],...
-              {{'spine_upper','nhb',[0,1,0]},...
-               {'nhb'        ,'nhr',[1,0,0]},...
-               {'nhb'        ,'nhl',[0,0,1]}},...
-              bsxfun(@plus,nx*ni(mind(i,1))+ny*nj(mind(i,2))+nz*nk(mind(i,3)),xyz(:,'head_back',:)));
-xyz.addMarker('nhl',[128,255,128],...
-              {{'nhl','nhf',[0,0,1]}},...
-              bsxfun(@plus,nx*ni(mind(i,1))+ny*nj(mind(i,2))+nz*nk(mind(i,3)),xyz(:,'head_left',:)));
-xyz.addMarker('nhf',[128,255,128],...
-              {},...
-              bsxfun(@plus,nx*ni(mind(i,1))+ny*nj(mind(i,2))+nz*nk(mind(i,3)),xyz(:,'head_front',:)));
-xyz.addMarker('nhr',[128,255,128],...
-              {{'nhr','nhf',[1,0,0]}},...
-              bsxfun(@plus,nx*ni(mind(i,1))+ny*nj(mind(i,2))+nz*nk(mind(i,3)),xyz(:,'head_right',:)));
-
+% LOAD raw position data
 nxyz = Session.load('xyz');
+
 % $$$ nxyz.data(:,nxyz.model.gmi('head_back'),:) =  bsxfun(@plus,nx*ni(mind(i,1))+ny*nj(mind(i,2))+nz*nk(mind(i,3)),xyz(:,'head_back',:));
 % $$$ nxyz.data(:,nxyz.model.gmi('head_left'),:) =  bsxfun(@plus,nx*ni(mind(i,1))+ny*nj(mind(i,2))+nz*nk(mind(i,3)),xyz(:,'head_left',:));
 % $$$ nxyz.data(:,nxyz.model.gmi('head_front'),:) =  bsxfun(@plus,nx*ni(mind(i,1))+ny*nj(mind(i,2))+nz*nk(mind(i,3)),xyz(:,'head_front',:));
 % $$$ nxyz.data(:,nxyz.model.gmi('head_right'),:) =  bsxfun(@plus,nx*ni(mind(i,1))+ny*nj(mind(i,2))+nz*nk(mind(i,3)),xyz(:,'head_right',:));
-nxyz.data(:,nxyz.model.gmi('head_back'),:) =  bsxfun(@plus,nx*mpoint(2)+ny*mpoint(1)+nz*mpoint(3),xyz(:,'head_back',:))
-nxyz.data(:,nxyz.model.gmi('head_left'),:) =  bsxfun(@plus,nx*mpoint(2)+ny*mpoint(1)+nz*mpoint(3),xyz(:,'head_left',:))
-nxyz.data(:,nxyz.model.gmi('head_front'),:) =  bsxfun(@plus,nx*mpoint(2)+ny*mpoint(1)+nz*mpoint(3),xyz(:,'head_front',:))
-nxyz.data(:,nxyz.model.gmi('head_right'),:) =  bsxfun(@plus,nx*mpoint(2)+ny*mpoint(1)+nz*mpoint(3),xyz(:,'head_right',:))
 
+% ADD estimate of neck ( new hcom )
+nxyz.addMarker('head_neck',...
+               [255,0,255],...
+               {{'head_back','head_front',[255,0,255]}},...
+               bsxfun(@plus,nx*mpoint(2)+ny*mpoint(1)+nz*mpoint(3),xyz(:,'hcom',:))...
+);
 
+% ADD estimate of head center
+% $$$ i = 1;
+% $$$ nxyz.addMarker('head_center',...
+% $$$                [255,0,255],...
+% $$$                {{'head_back','head_front',[255,0,255]}},...
+% $$$                bsxfun(@plus,nx*ni(mind(i,1))...
+% $$$                       +ny*nj(mind(i,2))+nz*nk(mind(i,3)),xyz(:,'hcom',:))...
+% $$$ );
+
+% REPLACE data of each head marker with shifted position around neck
+nxyz.data(:,nxyz.model.gmi('head_back'),:) =  ...
+    bsxfun(@plus,nx*mpoint(2)+ny*mpoint(1)+nz*mpoint(3),xyz(:,'head_back',:))
+nxyz.data(:,nxyz.model.gmi('head_left'),:) =  ...
+    bsxfun(@plus,nx*mpoint(2)+ny*mpoint(1)+nz*mpoint(3),xyz(:,'head_left',:))
+nxyz.data(:,nxyz.model.gmi('head_front'),:) =  ...
+    bsxfun(@plus,nx*mpoint(2)+ny*mpoint(1)+nz*mpoint(3),xyz(:,'head_front',:))
+nxyz.data(:,nxyz.model.gmi('head_right'),:) =  ...
+    bsxfun(@plus,nx*mpoint(2)+ny*mpoint(1)+nz*mpoint(3),xyz(:,'head_right',:))
+
+% UPDATE MTADxyz object metadata
 nxyz.label = 'trb';
 nxyz.key  = 't';
 nxyz.name = 'tr_corrected_head';
 nxyz.updateFilename(Session);      
-nxyz.save;          
+
+% SAVE new MTADxyz object
+nxyz.save;
 
 
