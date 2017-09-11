@@ -10,30 +10,22 @@ ncp.filter('ButFilter',3,50,'low');
 
 ncp.data = clip(ncp.data,-8000,8000);
 
-
 rhm = fet_rhm(Trial);
 
 xyz = Trial.load('xyz');
 xyz.filter('ButFilter',3,30,'low');
+vxy = xyz.vel('spine_lower',[1,2]);
 ang = create(MTADang,Trial,xyz);
 
 fet = [];
-fet = [fet,sq(ang(:,1,2,:))];
-fet = [fet,sq(ang(:,1,3,:))];
-fet = [fet,sq(ang(:,1,4,:))];
-fet = [fet,sq(ang(:,1,7,:))];
-fet = [fet,sq(ang(:,2,3,:))];
-fet = [fet,sq(ang(:,2,4,:))];
-fet = [fet,sq(ang(:,2,7,:))];
-fet = [fet,sq(ang(:,3,4,:))];
-fet = [fet,sq(ang(:,3,7,:))];
-fet = [fet,sq(ang(:,4,7,:))];
+fet = [fet,sq(ang(:,1,4,3))];
+fet = [fet,sq(ang(:,2,4,3))];
+fet = [fet,sq(ang(:,3,5,3))];
 fet = [fet,rhm.data];
-
 nind = nniz(fet);
 
 
-net = layrecnet(1:30,10);
+net = layrecnet([1:20],20);
 [Xs,Xi,Ai,Ts] = preparets(net,con2seq(fet(nind,:)'),con2seq(ncp(nind,:)'));
 
 net = train(net,Xs,Ts,Xi,Ai);

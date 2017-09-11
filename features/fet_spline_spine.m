@@ -2,12 +2,22 @@ function ssp = fet_spline_spine(Trial,varargin)
 % function ss = fet_spline_spine(Trial)
 % An attempt to normalize marker positions along the spine
 % between subjects using a 
-Trial = MTASession.validate(Trial);
+% DEFARGS ------------------------------------------------------------------------------------------
+%Trial = MTASession.validate(Trial);
+Session = MTASession.validate([Trial.name,'.',Trial.maze.name,'.all']);
+defargs = struct('label',                   '3dssh',                                             ...
+                 'xyzMode',                 'trb',                                               ...
+                 'markers',  {{'spine_lower','pelvis_root','spine_middle','spine_upper','hcom'}},...
+                 'overwrite',               false                                                ...
+);
+[label,xyzMode,markers,overwrite] = DefaultArgs(varargin,defargs,'--struct');
+%---------------------------------------------------------------------------------------------------
 
-[label,xyz,markers,overwrite] = ...
-    DefaultArgs(varargin,{'3dssh',Trial.load('xyz'),{'spine_lower','pelvis_root','spine_middle','spine_upper','hcom'},false});
 
-%xyz = MTAData.validate(xyz);
+
+% MAIN ---------------------------------------------------------------------------------------------
+
+xyz = Session.load('xyz',xyzMode);
 
 switch label,
   case '3dss'
@@ -23,22 +33,19 @@ switch label,
                   xyz.com(xyz.model.rb({'head_back','head_left','head_front','head_right'})));
 end
 
-
-
-              
 % DELBLOCK if version>=3,
-if isempty(Trial.fet),
-    Trial.fet = MTADfet(Trial.spath,...
+if isempty(Session.fet),
+    Session.fet = MTADfet(Trial.spath,...
                         [],...
                         [],...
                         [],...
-                        Trial.sync.copy,...
-                        Trial.sync.data(1),...
+                        Session.sync.copy,...
+                        Session.sync.data(1),...
                         []);                  
 end
 % DELBLOCK end
 
-filename = cellstr_append_str([Trial.spath,'/'],list_files(Trial.name,[Trial.trialName,'.fet.',label,'.']));
+filename = cellstr_append_str([Session.spath,'/'],list_files(Session.name,[Session.trialName,'.fet.',label,'.']));
 if overwrite||isempty(filename),
     txyz = xyz(:,markers,:);
     pnts = zeros([xyz.size(1),size(fnplt(cscvn(sq(txyz(1,:,:))'))',1),3]);
@@ -48,14 +55,17 @@ if overwrite||isempty(filename),
         end
     end
     name = '3d spline interpolated spine'; key = 's';
-    ssp = MTADfet.encapsulate(Trial,...
+    ssp = MTADfet.encapsulate(Session,...
                               pnts,...
                               xyz.sampleRate,...
                               name,label,key);
-    ssp.updateFilename(Trial);
+    ssp.updateFilename(Session);
     ssp.save;
 else
+    xyz = Trial.load('xyz',xyzMode)
     ssp = Trial.load('fet',label);
 end
 
 ssp.resample(xyz);
+
+% END MAIN -----------------------------------------------------------------------------------------

@@ -11,13 +11,6 @@ if strcmp(Trial.filebase,RefTrial.filebase),
     return
 end
 
-
-tempFet = features.copy;
-features.resample(Trial.xyz.sampleRate);
-minimumOccupancy = 1; % seconds
-
-rfet = feval(features.label,RefTrial,features.sampleRate);
-
 switch features.label
   case 'fet_HB_pitch'
     fetInds   = [1,2];
@@ -227,8 +220,17 @@ switch features.label
     diffFun =   cat(2,repmat({@minus},1,5),repmat({@circ_dist},1,3));
     %diffFun =   cat(2,repmat({@minus},1,5),repmat({@circ_dist},1,3),{@minus});
   otherwise ,
-    fets = [];
+    warning('MTA:MTADfet:map_to_reference_session:FeatureSetNotFound');
+    return;
 end  
+
+
+tempFet = features.copy;
+features.resample(Trial.xyz.sampleRate);
+minimumOccupancy = 1; % seconds
+
+rfet = feval(features.label,RefTrial,features.sampleRate);
+
 
 % This section was a waste of time
 % $$$ targetFeatureDomainBoundaries = prctile(features.data(nniz(features.data),fetInds'),[5,95]);

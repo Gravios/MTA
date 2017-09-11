@@ -1,9 +1,18 @@
 function transform_rigidBody(Session,varargin);
-[display,overwrite] = DefaultArgs(varargin,{false,false});
 
-if ~strcmp(Session.trialName,'all'),
-    Session = MTASession.validate(Session);
-end
+
+% DEFARGS ------------------------------------------------------------------------------------------
+defargs = struct('display',false,'overwrite',false);
+[display,overwrite] = DefaultArgs(varargin,defargs,'--struct');
+%---------------------------------------------------------------------------------------------------
+
+
+% DEFARGS ------------------------------------------------------------------------------------------
+
+% $$$ if ~strcmp(Session.trialName,'all'),
+% $$$     Session = MTASession.validate(Session);
+% $$$ end
+Session = MTASession.validate([Session.name,'.',Session.maze.name,'.all']);
 
 %Session = MTASession('Ed05-20140529','all','ont');
 %Session = MTASession('Ed05-20140528');
@@ -47,38 +56,38 @@ xyz.addMarker('hrt',[128,255,128],{{'head_back','head_front',[0,0,1]}},...
                   genRotatedMarker(xyz,'hrx',45,{'hrx','htx'}));
 nhm = {'hcom','hbx','hrx','htx','hbt','hbr','hbrt','hrt'};    
 
-
-if display,
-    ind = 10000;
-    figure, daspect([1,1,1])
-    hold on,plot3(xyz(ind,7,1),xyz(ind,7,2),xyz(ind,7,3),'.b')
-    hold on,scatter3(xyz(ind,7,1),xyz(ind,7,2),xyz(ind,7,3),150,'b')
-    hold on,plot3(xyz(ind,5,1),xyz(ind,5,2),xyz(ind,5,3),'.c')
-    hold on,scatter3(xyz(ind,5,1),xyz(ind,5,2),xyz(ind,5,3),150,'c')
-    hold on,plot3(xyz(ind,6,1),xyz(ind,6,2),xyz(ind,6,3),'.b')
-    hold on,plot3(xyz(ind,8,1),xyz(ind,8,2),xyz(ind,8,3),'.b')
-    hold on,plot3(xyz(ind,'hbx',1),xyz(ind,'hbx',2),xyz(ind,'hbx',3),'*m')
-    hold on,scatter3(xyz(ind,'hbx',1),xyz(ind,'hbx',2),xyz(ind,'hbx',3),150,'m')
-    hold on,plot3(xyz(ind,'hrx',1),xyz(ind,'hrx',2),xyz(ind,'hrx',3),'*m')
-    hold on,scatter3(xyz(ind,'hrx',1),xyz(ind,'hrx',2),xyz(ind,'hrx',3),150,'m')
-    hold on,plot3(xyz(ind,'htx',1),xyz(ind,'htx',2),xyz(ind,'htx',3),'*m')
-    hold on,scatter3(xyz(ind,'htx',1),xyz(ind,'htx',2),xyz(ind,'htx',3),150,'m')
-    hold on,plot3(xyz(ind,'hcom',1),xyz(ind,'hcom',2),xyz(ind,'hcom',3),'+g')
-
-    hold on,plot3(xyz(ind,'hbt',1),xyz(ind,'hbt',2),xyz(ind,'hbt',3),'+k')
-    hold on,plot3(xyz(ind,'hbr',1),xyz(ind,'hbr',2),xyz(ind,'hbr',3),'+k')
-    hold on,plot3(xyz(ind,'hbrt',1),xyz(ind,'hbrt',2),xyz(ind,'hbrt',3),'+k')
-    hold on,plot3(xyz(ind,'hrt',1),xyz(ind,'hrt',2),xyz(ind,'hrt',3),'+k')
-    hold on,plot3(sxyz(ind,'hbx',1),sxyz(ind,'hbx',2),sxyz(ind,'hbx',3),'*m')
-    hold on,plot3(sxyz(ind,'hrx',1),sxyz(ind,'hrx',2),sxyz(ind,'hrx',3),'*m')
-    hold on,plot3(sxyz(ind,'htx',1),sxyz(ind,'htx',2),sxyz(ind,'htx',3),'*m')
-    hold on,plot3(sxyz(ind,'hcom',1),sxyz(ind,'hcom',2),sxyz(ind,'hcom',3),'+g')
-end 
+% $$$ 
+% $$$ if display,
+% $$$     ind = 10000;
+% $$$     figure, daspect([1,1,1])
+% $$$     hold on,plot3(xyz(ind,7,1),xyz(ind,7,2),xyz(ind,7,3),'.b')
+% $$$     hold on,scatter3(xyz(ind,7,1),xyz(ind,7,2),xyz(ind,7,3),150,'b')
+% $$$     hold on,plot3(xyz(ind,5,1),xyz(ind,5,2),xyz(ind,5,3),'.c')
+% $$$     hold on,scatter3(xyz(ind,5,1),xyz(ind,5,2),xyz(ind,5,3),150,'c')
+% $$$     hold on,plot3(xyz(ind,6,1),xyz(ind,6,2),xyz(ind,6,3),'.b')
+% $$$     hold on,plot3(xyz(ind,8,1),xyz(ind,8,2),xyz(ind,8,3),'.b')
+% $$$     hold on,plot3(xyz(ind,'hbx',1),xyz(ind,'hbx',2),xyz(ind,'hbx',3),'*m')
+% $$$     hold on,scatter3(xyz(ind,'hbx',1),xyz(ind,'hbx',2),xyz(ind,'hbx',3),150,'m')
+% $$$     hold on,plot3(xyz(ind,'hrx',1),xyz(ind,'hrx',2),xyz(ind,'hrx',3),'*m')
+% $$$     hold on,scatter3(xyz(ind,'hrx',1),xyz(ind,'hrx',2),xyz(ind,'hrx',3),150,'m')
+% $$$     hold on,plot3(xyz(ind,'htx',1),xyz(ind,'htx',2),xyz(ind,'htx',3),'*m')
+% $$$     hold on,scatter3(xyz(ind,'htx',1),xyz(ind,'htx',2),xyz(ind,'htx',3),150,'m')
+% $$$     hold on,plot3(xyz(ind,'hcom',1),xyz(ind,'hcom',2),xyz(ind,'hcom',3),'+g')
+% $$$ 
+% $$$     hold on,plot3(xyz(ind,'hbt',1),xyz(ind,'hbt',2),xyz(ind,'hbt',3),'+k')
+% $$$     hold on,plot3(xyz(ind,'hbr',1),xyz(ind,'hbr',2),xyz(ind,'hbr',3),'+k')
+% $$$     hold on,plot3(xyz(ind,'hbrt',1),xyz(ind,'hbrt',2),xyz(ind,'hbrt',3),'+k')
+% $$$     hold on,plot3(xyz(ind,'hrt',1),xyz(ind,'hrt',2),xyz(ind,'hrt',3),'+k')
+% $$$     hold on,plot3(sxyz(ind,'hbx',1),sxyz(ind,'hbx',2),sxyz(ind,'hbx',3),'*m')
+% $$$     hold on,plot3(sxyz(ind,'hrx',1),sxyz(ind,'hrx',2),sxyz(ind,'hrx',3),'*m')
+% $$$     hold on,plot3(sxyz(ind,'htx',1),sxyz(ind,'htx',2),sxyz(ind,'htx',3),'*m')
+% $$$     hold on,plot3(sxyz(ind,'hcom',1),sxyz(ind,'hcom',2),sxyz(ind,'hcom',3),'+g')
+% $$$ end 
 
 
 
 FileName_coarse = fullfile(Session.spath,[Session.filebase '.xyz-shift.mat']);
-if ~exist(FileName_coarse,'file')||overwrite,
+if ~exist(FileName_coarse,'file') || overwrite,
 
     i = [-100:10:100];
     j = [-100:10:100];
@@ -253,7 +262,7 @@ end
 % LOCATE local minima of each variance field
 mind = [];
 for m = 1:7,
-[mind(m,:),mv] = LocalMinimaN(sq(nvxyz(m,:,:,:)),100,100);
+    [mind(m,:),mv] = LocalMinimaN(sq(nvxyz(m,:,:,:)),100,100);
 end
 
 %figure,
@@ -270,7 +279,7 @@ end
 
 % SET Domain of estimate search for isosurface
 ijk = cell(1,3);
-[ijk{:}] = meshgrid(ni,nj,nk);
+[ijk{:}] = meshgrid(nj,ni,nk); % Why did I have to flip ni and nj
 
 % COMPUTE surfaces of thresholded region of the estimation domain
 mset = [1:7];
@@ -282,7 +291,8 @@ end
 
 if display,
     clist = 'rbgymck';    
-    figure();hold('on');
+    hfig = figure();
+    hold('on');
     for m = mset
         p = patch(isos(m));
         iopts(end) = {p};
@@ -312,8 +322,12 @@ for m = mset
 end
 
 if display,
-    quiver3(mpos(:,1),mpos(:,2),mpos(:,3),varLines(:,1),varLines(:,2),varLines(:,3),30)
+    figure(hfig);
+    quiver3(mpos(:,1),mpos(:,2),mpos(:,3),varLines(:,1),varLines(:,2),varLines(:,3),3);
+    saveas(hfig,fullfile(Session.spath,[mfilename,'-fine.fig','fig']));
+    delete(hfig);
 end
+
 
 
 % COMPUTE pairwise coordinate pairs along vector orthoginal to lines
@@ -342,6 +356,7 @@ end
 
 % COMPUTE cluster mean
 mpoint = nanmean(nanmean(cat(3,reshape(scp,[],3),reshape(tcq,[],3)),3));
+
 
 % $$$ % ADD estimate of neck 
 % $$$ xyz.addMarker(['head_neck'],[255,0,255],{{'head_back','head_front',[255,0,255]}},bsxfun(@plus,nx*mpoint(2)+ny*mpoint(1)+nz*mpoint(3),xyz(:,'hcom',:)));
@@ -391,13 +406,13 @@ nxyz.addMarker('head_neck',...
 
 % REPLACE data of each head marker with shifted position around neck
 nxyz.data(:,nxyz.model.gmi('head_back'),:) =  ...
-    bsxfun(@plus,nx*mpoint(2)+ny*mpoint(1)+nz*mpoint(3),xyz(:,'head_back',:))
+    bsxfun(@plus,nx*mpoint(2)+ny*mpoint(1)+nz*mpoint(3),xyz(:,'head_back',:));
 nxyz.data(:,nxyz.model.gmi('head_left'),:) =  ...
-    bsxfun(@plus,nx*mpoint(2)+ny*mpoint(1)+nz*mpoint(3),xyz(:,'head_left',:))
+    bsxfun(@plus,nx*mpoint(2)+ny*mpoint(1)+nz*mpoint(3),xyz(:,'head_left',:));
 nxyz.data(:,nxyz.model.gmi('head_front'),:) =  ...
-    bsxfun(@plus,nx*mpoint(2)+ny*mpoint(1)+nz*mpoint(3),xyz(:,'head_front',:))
+    bsxfun(@plus,nx*mpoint(2)+ny*mpoint(1)+nz*mpoint(3),xyz(:,'head_front',:));
 nxyz.data(:,nxyz.model.gmi('head_right'),:) =  ...
-    bsxfun(@plus,nx*mpoint(2)+ny*mpoint(1)+nz*mpoint(3),xyz(:,'head_right',:))
+    bsxfun(@plus,nx*mpoint(2)+ny*mpoint(1)+nz*mpoint(3),xyz(:,'head_right',:));
 
 % UPDATE MTADxyz object metadata
 nxyz.label = 'trb';

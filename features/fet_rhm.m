@@ -4,17 +4,27 @@ function [rhm,varargout] = fet_rhm(Trial,varargin)
 % Need to update the spectral window size to adapt to the xyz.sampleRate
 %
 % 
-%
 
+
+% DEFARGS ------------------------------------------------------------------------------------------
 parspec = empty_spec;
 xyz = Trial.load('xyz');
-%xyz = Trial.load('xyz','seh');
-%xyz.data(isnan(xyz.data(:)))=0;
 varargout = cell([1,nargout-1]);
-
-[sampleRate,mode,wsig,defspec,overwrite,newSR,type] = DefaultArgs(varargin,{'xyz','mta',1,def_spec_parm(xyz),false,[],'mta'});
-
+defargs = struct('sampleRate',                            'xyz',                                 ...
+                 'mode',                                  'mta',                                 ...
+                 'wsig',                                  true,                                  ...
+                 'defspec',                               def_spec_parm(xyz),                    ...
+                 'overwrite',                             false,                                 ...
+                 'newSR',                                 [],                                    ...
+                 'type',                                  'mta'                                  ...
+);
+{'xyz','mta',1,def_spec_parm(xyz),false,[],'mta'}
+[sampleRate,mode,wsig,defspec,overwrite,newSR,type] = DefaultArgs(varargin,defargs,'--struct');
 fs = []; ts = [];
+%---------------------------------------------------------------------------------------------------
+
+
+
 
 % create a ridgid body model
 rb = xyz.model.rb({'head_back','head_left','head_front','head_right'});

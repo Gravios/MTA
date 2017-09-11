@@ -286,3 +286,30 @@ xyz.data(:,xyz.model.gmi('head_front'),:) =  bsxfun(@plus,nx*ni(mind(i,1))+ny*nj
 xyz.data(:,xyz.model.gmi('head_right'),:) =  bsxfun(@plus,nx*ni(mind(i,1))+ny*nj(mind(i,2))+nz*nk(mind(i,3)),xyz(:,'head_right',:));
 
 
+
+
+transform_rigidBody(Trial);
+% diagnostics
+nxyz.data(~nniz(xyz),:,:) = eps;
+nxyz.data(~nniz(xyz),:,:) = 0;
+nxyz.save;
+
+Trial = MTATrial.validate('Ed05-20140529.ont.all');
+xyztrb = Trial.load('xyz','trb');
+xyz = Trial.load('xyz');
+
+ind = 20000;
+figure,hold on
+plotSkeleton(Trial,xyztrb,ind);
+plotSkeleton(Trial,xyz,ind);
+
+angtrb = create(MTADang,Trial,xyztrb);
+figure, plot(nunity(angtrb(:,'spine_upper','head_neck',3)))
+hold on,plot(nunity(angtrb(:,'spine_upper','head_neck',2)))
+
+
+
+Trials = af(@(t)  MTATrial.validate(t),                        get_session_list('hand_labeled'));
+         cf(@(t)  transform_rigidBody(t,true,true),           Trials);
+         cf(@(t)  fet_spline_spine(t,'overwrite',true),        Trials);
+xyz =    cf(@(t)  preproc_xyz(t,'SPLINE_SPINE_HEAD_EQI',true), Trials);

@@ -42,12 +42,12 @@ while ~isempty(procOpts)
     switch procOpts{1}
       
       case 'SPLINE_SPINE'
-        ss = fet_spline_spine(Trial,'3dss',xyz);
+        ss = fet_spline_spine(Trial,'3dss','pos');
         
         xyz.data(:,1:4,:) = ss(:,[5,35,65,95],:);
       
       case 'SPLINE_SPINE_EQD'
-        ss = fet_spline_spine(Trial,xyz);
+        ss = fet_spline_spine(Trial,'pos');
         
         spineLength = MTADxyz('data',sqrt(sum(diff(ss.data,1,2).^2,3)),'sampleRate',xyz.sampleRate);
         totalSpineLength = sum( spineLength.data ,2);
@@ -79,7 +79,7 @@ while ~isempty(procOpts)
             
             xyz = Trial.load('xyz','trb');
             %xyz.filter('ButFilter',3,50,'low');
-            ss = fet_spline_spine(Trial,'3dssh',xyz);                
+            ss = fet_spline_spine(Trial,'3dssh','trb');                
 
             % COM head Center of Mass
             xyz.addMarker('hcom',...     Name
@@ -131,7 +131,7 @@ while ~isempty(procOpts)
         end
         
         if nargout>1,            
-            ss = fet_spline_spine(Trial,'3dssh',xyz); 
+            ss = fet_spline_spine(Trial,'3dssh','trb'); 
 % $$$             nind = find(nniz(xyz));
 % $$$             ssn = ss.copy();
 % $$$             ssn.data = zeros([size(ss,1),size(ss,2)-6,size(ss,3)]);
@@ -154,7 +154,7 @@ while ~isempty(procOpts)
             
             %Trial = MTASession.validate(Trial.filebase);
             xyz = Trial.load('xyz','trb');
-            ss = fet_spline_spine(Trial,'3dssh',xyz,'overwrite',true);                
+            ss = fet_spline_spine(Trial,'3dssh','trb','overwrite',true);                
 
             % COM head Center of Mass
             xyz.addMarker('hcom',...     Name
@@ -189,7 +189,7 @@ while ~isempty(procOpts)
             xyz = Trial.load('xyz','seh');
         end
         if nargout>1,
-            ss = fet_spline_spine(Trial,'3dssh',xyz);                
+            ss = fet_spline_spine(Trial,'3dssh','trb');
         end
         
       
@@ -201,7 +201,7 @@ while ~isempty(procOpts)
             
             %Trial = MTASession.validate(Trial.filebase);
             xyz = Trial.load('xyz');
-            ss = fet_spline_spine(Trial,'3dssh',xyz,'overwrite',true);                
+            ss = fet_spline_spine(Trial,'3dssh','trb','overwrite',true);                
 
             % COM head Center of Mass
             xyz.addMarker('hcom',...     Name
@@ -236,7 +236,7 @@ while ~isempty(procOpts)
             xyz = Trial.load('xyz','seh');
         end
         if nargout>1,
-            ss = fet_spline_spine(Trial,'3dssh',xyz);                
+            ss = fet_spline_spine(Trial,'3dssh','trb');                
         end
        
       case 'LOAD_TRB_XYZ'

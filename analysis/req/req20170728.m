@@ -32,6 +32,9 @@ cf(@(x) x.filter('ButFilter',3,8,'low'),xyz);;
 % COMPUTE intermarker angles
 ang = cf(@(t,x) create(MTADang,t,x),Trials,xyz);
 
+pitch          = cf(@(t)     fet_HB_pitch(t)      , Trials  );
+angvel= 
+
 % COMPUTE body referenced body decomposition 
 features          = cf(@(t)     fet_bref(t)      , Trials  );
 featuresPhaseLow  = cf(@(f,frq) f.phase([1.2, 6]), features);
@@ -319,11 +322,6 @@ axis xy
 
 
 
-[dstate,mdstate] = compute_cross_correlation(...
-        'state',  stateTransition,...
-        'sbound', sbound,...
-        'overwrite',overwrite);
-
 
 %% mutinfo stuff
 OwnDir = '/storage/gravio/nextcloud/';
@@ -357,7 +355,8 @@ for stateTransition = stateTransitions,
     mthresh = [sq(nanmean(dRnd))+sq(nanstd(dRnd)).*5];
     mixy(mixy<mthresh|mixy<mthresh') = nan;
     sixy(isnan(mixy)) = nan;
-
+    mixy([1:size(mixy,1)]+[[0:(size(mixy,1)-1)]*size(mixy,1)]) = nan;
+    sixy([1:size(mixy,1)]+[[0:(size(sixy,1)-1)]*size(sixy,1)]) = nan;
 
     sp = gobjects(0);
     cp = gobjects(0);
@@ -366,7 +365,7 @@ for stateTransition = stateTransitions,
 
 
     subplot(121); 
-    [sp(end+1),cp(end+1)] = imagescnan(mixy',[0,2],'linear',1,[0.5,0.5,0.5],'colorMap',@bone); 
+    [sp(end+1),cp(end+1)] = imagescnan(mixy',[0,2],'linear',1,[0.5,0.5,0.5],'colorMap',@copper); 
     axis('xy');title(['Maximum mutual information']);
     Lines(5.5,[],'k');Lines(10.5,[],'k')
     Lines([],5.5,'k');Lines([],10.5,'k')
@@ -397,4 +396,19 @@ figure,
 plot(ixy(:,6,8))
 
 
+
+
+
+%% XCORR stuff
+overwrite = false;
+stateTransitions = {{'pause','walk'},{'pause','turn'},{'pause+walk','rear'}};
+stateTransition = stateTransitions{1};
+for stateTransition = stateTransitions,
+    stateTransition = stateTransition{1};
+    [dstate,mdstate] = compute_cross_correlation(...
+        'featureSet', 'fet_HB_ptich',...
+        'state',  stateTransition,...
+        'sbound', sbound,...
+        'overwrite',overwrite);
+end
 
