@@ -70,7 +70,7 @@ if isstruct(Sessions),
         if local,
             MTAstartup(s.project,host,HostConf.data_server);
         else
-            MTAstartup(s.project,host,s.host);
+            MTAstartup(s.project,host,s.hostServer);
         end
         
         Session = MTASession(s.sessionName,s.mazeName);

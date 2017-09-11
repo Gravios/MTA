@@ -38,7 +38,7 @@ Stc.addState(Trial.spath,...
              Trial.sync.data(1),...
              'theta','t');
 
-Stc{'t'}.save;
+Stc{'t'}.save(1);
 
 Stc.save(1);
 Trial.stc = Stc;

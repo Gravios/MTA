@@ -128,7 +128,7 @@ switch Data.type
         end
     end
 
-    if Data.data(1)==0,Data.data(1)=1;end
+    if ~isempty(Data.data)&Data.data(1)==0,Data.data(1)=1;end
 
     
 % $$$                   if isa(Data.sync,'MTAData'),

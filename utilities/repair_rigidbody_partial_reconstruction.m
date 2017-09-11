@@ -108,7 +108,12 @@ end
 
 
 % COMPUTE the orthonormal triad basis for each frame
-[~,~,mtBasis] = cellfun(@svd,cellfun(@squeeze,mat2cell(markerTriad.coor,ones([size(markerTriad.coor,1),1]),ones([size(markerTriad.coor,2),1]),3,3),'UniformOutput',false),'UniformOutput',false);
+[~,~,mtBasis] = cellfun(@(x) bsxfun(@rdivide,x,sqrt(sum(x.^2,2))),...
+                        cellfun(@squeeze,mat2cell(markerTriad.coor,...
+                                                  ones([size(markerTriad.coor,1),1]),...
+                                                  ones([size(markerTriad.coor,2),1]),3,3),...
+                                'UniformOutput',false),...
+                        'UniformOutput',false);
 
 reconstructedSolutions  = nan([size(markerTriad.nck,1),rigidBody.N-3,xyz.size(3),numel(goodIndicies)]);
 reconstructedSolutionsMarkerInds  = nan([size(markerTriad.nck,1),rigidBody.N-3]);
@@ -120,7 +125,7 @@ for goodIndex = goodIndicies(:)'
         for marker = 1:numel(markerToReconstruct)
             goodTargetVector = sq(rxyz(goodIndex,markerToReconstruct(marker),:)...
                                   -rxyz(goodIndex,markerTriad.nck(nck,2),:));
-            solutionBasisCoordinates = rref(cat(2,mtBasis{goodIndex,nck},goodTargetVector));
+            solutionBasisCoordinates = rref(cat(2,mtBasis{goodIndex,nck}',goodTargetVector));
             reconstructedSolutions(nck,marker,:,gcount) = solutionBasisCoordinates(:,4);
         end
     end

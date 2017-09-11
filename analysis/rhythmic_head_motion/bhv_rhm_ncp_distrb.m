@@ -16,32 +16,44 @@ function [figH] = bhv_rhm_ncp_distrb(Trial,varargin)
 
 Trial = MTATrial.validate(Trial);
 
-[mode,ncp_thresh,ncp_chan,stcMode,p] = DefaultArgs(varargin,{{,'hangle','bhangle','bspeed','hspeed','NCPpow','RHMpow'},[],2,'auto_wbhr',8});
+% DEFARGS ------------------------------------------------------------------------------------------
+defargs = struct('mode',           {{,'hangle','bhangle','bspeed','hspeed','NCPpow','RHMpow'}},  ...
+                 'ncpThreshold',   [],                                                           ...
+                 'ncpChannel',     2,                                                            ...
+                 'stcMode',        'msnn_ppsvd',                                                 ...
+                 'p',              8,                                                            ...
+                 'xyzProcOpts',    {'SPLINE_SPINE_HEAD_EQD'}                                     ...
+);
 
-%sigXOpts = 
-%sigYOpts = 
+[mode,ncpThreshold,ncpChannel,stcMode,p,xyzProcOpts] = DefaultArgs(varargin,defargs,'--struct');
+%---------------------------------------------------------------------------------------------------
 
-xyz = Trial.load('xyz').filter('ButFilter',3,2.4,'low');
+
+
+
+xyz = preproc_xyz(Trial,xyzProcOpts);
+xyz.filter('ButFilter',3,2.4,'low');
 
 disp(['bhv_rhm_ncp_distrb: ' Trial.filebase])
-%% Select behavioral state collection
-Trial.stc.updateMode(stcMode);
-Trial.stc.load;
+
+% SELECT behavioral state collection
+stc = Trial.load(stc,stcMode);
 
 
-%% Load Rythmic Head Motion(RHM) feature
+% LOAD Rythmic Head Motion(RHM) feature
 %rhm = fet_rhm_exp(Trial);
 %rhm = fet_rbm(Trial);
 %rhm = fet_rhm(Trial);
-rhm = fet_rhmPCA(Trial);
+%rhm = fet_rhmPCA(Trial);
+rhm = fet_rhm(Trial);
 rhm.resample(xyz);
 rhm.data(~nniz(rhm.data(:))) = 1;
 
-%% Load Nasal Cavity Pressure(NCP) feature
-ncp = fet_ncp(Trial,rhm,'mta',ncp_chan);
+% LOAD Nasal Cavity Pressure(NCP) feature
+ncp = fet_ncp(Trial,rhm,'mta',ncpChannel);
 
 
-%% Whiten RHM and NCP for spectral comparison (PSD&CSD)
+% WHITEN RHM and NCP for spectral comparison (PSD&CSD)
 % $$$ wang = [rhm.data,ncp.data];
 % $$$ wang = WhitenSignal(wang,[],1);
 
@@ -57,7 +69,7 @@ sparm = struct('nFFT'     ,2^(p),...
 [ys,fs,ts] = fet_spec(Trial,rhm,'mtcsdglong',false,[],sparm);
 
 
-%% Get smoothed speed of the Body
+% GET smoothed speed of the Body
 vh = xyz.vel({'spine_lower','head_front'},[1,2]);
 vh.resample(ys);
 vh.data = log10(abs(vh.data));
@@ -81,20 +93,20 @@ chan_labels = {'RHM','NCP'};
 figH = figure(gen_figure_id);
 figH.Units = 'centimeters';
 figH.Position = [1,1,30,20];
-for s = 1;%:numel(Trial.stc.states)
+for s = 1;
 
     clf;
-    %sind = Trial.stc.states{s}.copy;
-    %sind = Trial.stc{'a-m-s'};%+[1,-1];
-    sind = Trial.stc{'w+n'};%+[1,-1];
-    %sind = Trial.stc{'w+q'}+[1,-1];
+    %sind = stc.states{s}.copy;
+    %sind = stc{'a-m-s'};%+[1,-1];
+    sind = stc{'w+n+p'};%+[1,-1];
+    %sind = stc{'w+q'}+[1,-1];
     %sind.resample(ys);
 
     for m = 1:numel(mode),
         switch mode{m}
           case 'height'
             ind = nniz(xyz(sind,'head_front',3));
-            %ind = ncp_maxpow(sind)>ncp_thresh&ind;
+            %ind = ncp_maxpow(sind)>ncpThreshold&ind;
             vhs = log10(xyz(sind,'head_front',3));
             vhs = vhs(ind);
             vhlim = [1, 2.2];
@@ -104,7 +116,7 @@ for s = 1;%:numel(Trial.stc.states)
             ang = Trial.ang.copy;
             ang = ang.create(Trial,xyz);
             ind = nniz(ang(sind,'head_back','head_front',2));
-            %ind = ncp_maxpow(sind)>ncp_thresh&ind;
+            %ind = ncp_maxpow(sind)>ncpThreshold&ind;
             vhs = ang(sind,'head_back','head_front',2);
             vhs = vhs(ind);
             vhlim = [-1.5, 1.5];
@@ -114,7 +126,7 @@ for s = 1;%:numel(Trial.stc.states)
             ang = Trial.ang.copy;
             ang = ang.create(Trial,xyz);
             ind = nniz(ang(sind,'spine_lower','spine_upper',2));
-            %ind = ncp_maxpow(sind)>ncp_thresh&ind;
+            %ind = ncp_maxpow(sind)>ncpThreshold&ind;
             vhs = ang(sind,'spine_lower','spine_upper',2);
             vhs = vhs(ind);
             vhlim = [-1.5, 1.5];
@@ -124,7 +136,7 @@ for s = 1;%:numel(Trial.stc.states)
             ang = Trial.ang.copy;
             ang = ang.create(Trial,xyz);
             ind = nniz(ang(sind,'spine_upper','head_front',2));
-            %ind = ncp_maxpow(sind)>ncp_thresh&ind;
+            %ind = ncp_maxpow(sind)>ncpThreshold&ind;
             vhs = ang(sind,'spine_lower','spine_upper',2);
             vhs = vhs(ind);
             vhlim = [-1.5, 1.5];
@@ -132,7 +144,7 @@ for s = 1;%:numel(Trial.stc.states)
             vh_units = 'rad';
           case 'bspeed'
             ind = nniz(vh(sind));
-            %ind = ncp_maxpow(sind)>ncp_thresh&ind;
+            %ind = ncp_maxpow(sind)>ncpThreshold&ind;
             vhs =vh(sind,1);
             vhs = vhs(ind);
             %vhlim =prctile(vhs,[5,98]);
@@ -141,7 +153,7 @@ for s = 1;%:numel(Trial.stc.states)
             vh_units = 'cm/s';
           case 'hspeed'
             ind = nniz(vh(sind));
-            %ind = ncp_maxpow(sind)>ncp_thresh&ind;
+            %ind = ncp_maxpow(sind)>ncpThreshold&ind;
             vhs =vh(sind,2);
             vhs = vhs(ind);
             %vhlim =prctile(vhs,[5,98]);
@@ -254,7 +266,7 @@ for s = 1;%:numel(Trial.stc.states)
 
 % $$$     reportfig(fullfile(Trial.path.data,'figures'),figH, ...
 % $$$               'FileName',['mean_Coherence_RHM_NCP_X_' strjoin(mode,'_')],...
-% $$$               'Comment',[Trial.filebase ':BhvState: ' Trial.stc.states{s}.label],...
+% $$$               'Comment',[Trial.filebase ':BhvState: ' stc.states{s}.label],...
 % $$$               'Resolution',200,...
 % $$$               'SaveFig',true)
 end

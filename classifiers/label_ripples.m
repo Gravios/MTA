@@ -1,16 +1,44 @@
-function labelRipples(Trial)
-[Stc,chans,freqRange,specWindow] = ...
-    DefaultArgs(varargin,...{Trial.stc.copy,68:69,[150,250],50/Trial.lfp.sampleRate});
+function label_ripples(Trial,varargin)
+%function label_ripples(Trial,varargin)
+%
+% Inputs: 
+%    Trial:      (MTASession)             
+%    Stc:        (MTAStateCollection)     Trial.stc.copy()
+%    chans:      (numericArray)           68:69
+%    freqRange:  (numericArray)           [150,250]
+%    specWindow: (numeric)                50/Trial.lfp.sampleRate
+%
+
+
+% DEFARGS ------------------------------------------------------------------------------------------
+defargs = struct('Stc',               Trial.stc.copy(),                                         ...
+                 'chans',             68:69,                                                    ...
+                 'freqRange',         [150,250],                                                ...
+                 'specWindow',        50/Trial.lfp.sampleRate                                   ...
+);
+[Stc,chans,freqRange,specWindow] = DefaultArgs(varargin,defargs,'--struct');
+%--------------------------------------------------------------------------------------------------
+
+
+
+% MAIN ---------------------------------------------------------------------------------------------
 
 Trial = MTATrial.validate(Trial);
 Trial.lfp.filename = [Trial.name,'.lfp'];
 lfp = Trial.load('lfp',chans);
+
 lfp.filter('ButFilter',3,freqRange,'bandpass');
-lfp.data = mean(lfp.data(:,chans),2);
-slfp = lfp.segs(circshift([1:size(lfp,1)]',round((specWindow.*lfp.sampleRate)/2)),...
-                round(specWindow.*lfp.sampleRate));
-slfp = sum(slfp.^2)';
+
+% COMUTE spectral power
+lfp.data = mean(lfp.data,2);
+slfp = sum(lfp.segs(circshift([1:size(lfp,1)]',round((specWindow.*lfp.sampleRate)/2)),...
+                round(specWindow.*lfp.sampleRate)).^2)';
+
+% TRANSFORM power to z-score
 slfp = (slfp-nanmean(slfp))./nanstd(slfp);
+
+
+% FIND ripple periods
 spw = ThreshCross(slfp,2,10);
 gsind = zeros([size(spw,1),1]);
 spwPeak = [];
@@ -29,7 +57,10 @@ Stc.addState(Trial.spath,...
              Trial.sync.data(1),...
              'spw','g');
 
-Stc.save(1);
+Stc{'g'}.save(1);
+
+% END MAIN -----------------------------------------------------------------------------------------
+
 
 
 % $$$ 

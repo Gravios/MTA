@@ -16,7 +16,7 @@ end
 
 xyz.filter('ButFilter',3,50,'low');
 
-bang = transformOrigin(Trial,xyz,'head_back','head_front',{'head_left','head_right'});
+bang = transform_origin(Trial,xyz,'head_back','head_front',{'head_left','head_right'});
 bang.roll(isnan(bang.roll))=0;
 if d==0,
     bang = bang.roll;

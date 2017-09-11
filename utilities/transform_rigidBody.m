@@ -289,20 +289,87 @@ if display,
 end
 
 
-%hbx
-% $$$ mind = [];
-% $$$ figure,hold on
-% $$$ for i = 1:3,
-% $$$ [mind,mv] = LocalMinimaN(sq(nvxyz(i,:,:,:)),100,100);
-% $$$ plot3(ni(mind(1)),nj(mind(2)),nk(mind(3)),'+g');
-% $$$ end
-% $$$ for i = 4:7
-% $$$ [mind,mv] = LocalMinimaN(sq(nvxyz(i,:,:,:)),100,100);
-% $$$ plot3(ni(mind(1)),nj(mind(2)),nk(mind(3)),'+m');
-% $$$ end
+sp = [];
+figure();hold('on');
+mset = [1:7];
+for m = mset
+    %    sp(end+1) = subplot(2,4,m);
+    svxyz = log10(sq(nvxyz(m,:,:,:)));
+    iopts = [ijk,{svxyz},{prctile(svxyz(nniz(svxyz(:))),2)}];
+    isos(m) = isosurface(iopts{:});
+    p = patch(isos(m));
+    iopts(end) = {p};
+    isonormals(iopts{:});
+    p.FaceColor = clist(m);
+    p.EdgeColor = 'none';
+    p.FaceAlpha = 0.3;
+end
+daspect([1 1 1]); 
+camlight; lighting phong
 
-i =1;
-%ni(mind(i,1)),nj(mind(i,2)),nk(mind(i,3))
+
+% find the center of each field
+mpos = zeros([7,3]);
+mind = zeros([7,3]);
+for m = 1:7,
+    [mind(m,:),mv] = LocalMinimaN(sq(nvxyz(m,:,:,:)),100,100);
+    mpos(m,:) = [nj(mind(m,2)),ni(mind(m,1)),nk(mind(m,3))];
+end
+
+nijk = cf(@(x)  x(:),  ijk);
+nijk = cat(2,nijk{:});
+
+varLines = [];
+for m = mset
+% $$$     distToMv = sqrt(sum(bsxfun(@minus,nijk,mpos(m,:)).^2,2));
+% $$$     tnvxyz = sq(nvxyz(m,:,:,:));
+% $$$     tnvxyz = 1./(tnvxyz(:));
+% $$$     %dind = distToMv<30;
+% $$$     dind = tnvxyz(:)< prctile(tnvxyz(nniz(tnvxyz(:))),20);
+% $$$     [~,S,V] = svd(bsxfun(@times,tnvxyz(dind,:),nijk(dind,:)),0);
+    [~,S,V] = svd(bsxfun(@minus,isos(m).vertices,mpos(m,:)),0);
+    for vind = 1
+        %axes(sp(m));
+        quiver3(mpos(m,1),mpos(m,2),mpos(m,3),V(1,vind),V(2,vind),V(3,vind),30)
+    end
+    varLines(m,:) = V(:,1);
+end
+
+scp = nan([7,7,3]);
+tcq = nan([7,7,3]);
+for p = 1:7,
+    for q = p+1:7,
+u = varLines(p,:);
+v = varLines(q,:);
+w = mpos(p,:)-mpos(q,:);
+a = dot(u,u);
+b = dot(u,v);
+c = dot(v,v);
+d = dot(u,w);
+e = dot(v,w);
+
+sc = (b*e-c*d)/(a*c-b^2);
+tc = (a*e-b*d)/(a*c-b^2);
+
+scp(p,q,:) = mpos(p,:)+sc*varLines(p,:);
+tcq(p,q,:) = mpos(q,:)+tc*varLines(q,:);
+end
+end
+% $$$ plot3(scp(1),scp(2),scp(3),'*b')
+% $$$ plot3(tcq(1),tcq(2),tcq(3),'*m')
+
+
+mpoint = nanmean(nanmean(cat(3,reshape(scp,[],3),reshape(tcq,[],3)),3));
+
+scatter3(mpoint(1),mpoint(2),mpoint(3),50,[0,0,1],'filled')
+
+
+
+xyz.addMarker(['head_trb'],[255,0,255],{{'head_back','head_front',[255,0,255]}},bsxfun(@plus,nx*mpoint(2)+ny*mpoint(1)+nz*mpoint(3),xyz(:,'hcom',:)));
+
+i = 1;
+xyz.addMarker(['head_trbf'],[255,0,255],{{'head_back','head_front',[255,0,255]}},bsxfun(@plus,nx*ni(mind(i,1))+ny*nj(mind(i,2))+nz*nk(mind(i,3)),xyz(:,'hcom',:)));
+
 
 xyz.addMarker('nhb',[128,255,128],...
               {{'spine_upper','nhb',[0,1,0]},...
@@ -320,10 +387,14 @@ xyz.addMarker('nhr',[128,255,128],...
               bsxfun(@plus,nx*ni(mind(i,1))+ny*nj(mind(i,2))+nz*nk(mind(i,3)),xyz(:,'head_right',:)));
 
 nxyz = Session.load('xyz');
-nxyz.data(:,nxyz.model.gmi('head_back'),:) =  bsxfun(@plus,nx*ni(mind(i,1))+ny*nj(mind(i,2))+nz*nk(mind(i,3)),xyz(:,'head_back',:));
-nxyz.data(:,nxyz.model.gmi('head_left'),:) =  bsxfun(@plus,nx*ni(mind(i,1))+ny*nj(mind(i,2))+nz*nk(mind(i,3)),xyz(:,'head_left',:));
-nxyz.data(:,nxyz.model.gmi('head_front'),:) =  bsxfun(@plus,nx*ni(mind(i,1))+ny*nj(mind(i,2))+nz*nk(mind(i,3)),xyz(:,'head_front',:));
-nxyz.data(:,nxyz.model.gmi('head_right'),:) =  bsxfun(@plus,nx*ni(mind(i,1))+ny*nj(mind(i,2))+nz*nk(mind(i,3)),xyz(:,'head_right',:));
+% $$$ nxyz.data(:,nxyz.model.gmi('head_back'),:) =  bsxfun(@plus,nx*ni(mind(i,1))+ny*nj(mind(i,2))+nz*nk(mind(i,3)),xyz(:,'head_back',:));
+% $$$ nxyz.data(:,nxyz.model.gmi('head_left'),:) =  bsxfun(@plus,nx*ni(mind(i,1))+ny*nj(mind(i,2))+nz*nk(mind(i,3)),xyz(:,'head_left',:));
+% $$$ nxyz.data(:,nxyz.model.gmi('head_front'),:) =  bsxfun(@plus,nx*ni(mind(i,1))+ny*nj(mind(i,2))+nz*nk(mind(i,3)),xyz(:,'head_front',:));
+% $$$ nxyz.data(:,nxyz.model.gmi('head_right'),:) =  bsxfun(@plus,nx*ni(mind(i,1))+ny*nj(mind(i,2))+nz*nk(mind(i,3)),xyz(:,'head_right',:));
+nxyz.data(:,nxyz.model.gmi('head_back'),:) =  bsxfun(@plus,nx*mpoint(2)+ny*mpoint(1)+nz*mpoint(3),xyz(:,'head_back',:))
+nxyz.data(:,nxyz.model.gmi('head_left'),:) =  bsxfun(@plus,nx*mpoint(2)+ny*mpoint(1)+nz*mpoint(3),xyz(:,'head_left',:))
+nxyz.data(:,nxyz.model.gmi('head_front'),:) =  bsxfun(@plus,nx*mpoint(2)+ny*mpoint(1)+nz*mpoint(3),xyz(:,'head_front',:))
+nxyz.data(:,nxyz.model.gmi('head_right'),:) =  bsxfun(@plus,nx*mpoint(2)+ny*mpoint(1)+nz*mpoint(3),xyz(:,'head_right',:))
 
 
 nxyz.label = 'trb';
@@ -333,153 +404,3 @@ nxyz.updateFilename(Session);
 nxyz.save;          
 
 
-
-% $$$ xyz = Session.load('xyz');
-% $$$ ang = create(MTADang,Session,xyz);
-% $$$ nang = create(MTADang,Session,ixyz);
-% $$$ 
-% $$$ rbn = xyz.model.rb({'spine_lower','pelvis_root','spine_middle','spine_upper','nhb','nhl','nhf','nhr'});
-% $$$ nxyz = Session.xyz.copy;
-% $$$ nxyz.data = xyz(:,rbn.ml,:);
-% $$$ nxyz.model = rbn;
-% $$$ 
-% $$$ rbhn = xyz.model.rb({'nhb','nhl','nhf','nhr'});
-% $$$ txyz = Trial.xyz.copy;
-% $$$ txyz.addMarker('hcom',[128,255,128],{{'head_back','head_front',[0,0,1]}},nxyz.com(rbhn));
-% $$$ txyz.filter('ButFilter',3,2,'low');
-% $$$ nxyz.addMarker('fhcom',[128,128,128],...
-% $$$                {{'fhcom','nhb',[0,1,0]},...
-% $$$                 {'fhcom','nhl',[0,0,1]},...
-% $$$                 {'fhcom','nhr',[1,0,0]},...
-% $$$                 {'fhcom','nhf',[0,1,0]}},...
-% $$$                txyz(:,end,:));
-% $$$ 
-% $$$ ang =  create(MTADang,Trial,xyz);
-% $$$ ang.filter('ButFilter',1,20,'low');
-% $$$ nang = create(MTADang,Trial,nxyz);
-% $$$ nang.filter('ButFilter',1,20,'low');
-% $$$ 
-% $$$ txyz = xyz.copy;
-% $$$ tnxyz = nxyz.copy;
-% $$$ 
-% $$$ xyz = txyz.copy;
-% $$$ nxyz = tnxyz.copy;
-% $$$ %xyz.filter('ButFilter',3,5,'low');
-% $$$ %nxyz.filter('ButFilter',3,5,'low');
-% $$$ 
-% $$$ xyv = xyz.vel([1,7],[1,2]);
-% $$$ xyv.filter('ButFilter',3,2.4,'low');
-% $$$ xyv.data(xyv.data<.001) = 0.001;
-% $$$ xyn = nxyz.vel([1,7],[1,2]);
-% $$$ xyn.filter('ButFilter',3,2.4,'low');
-% $$$ xyn.data(xyn.data<.001) = 0.001;
-% $$$ 
-% $$$ ind = Trial.stc{'w'};
-% $$$ eds = linspace(-3,2,100);
-% $$$ figure,
-% $$$ subplot(211)
-% $$$ hist2(log10([xyn(ind,1),xyn(ind,2)]),eds,eds);
-% $$$ subplot(212)
-% $$$ hist2(log10([xyv(ind,1),xyv(ind,2)]),eds,eds);
-% $$$ 
-% $$$ ind = Trial.stc{'w'};
-% $$$ figure,hold on
-% $$$ ha = bar(eds,histc(log10(xyn(ind,2)),eds),'histc');
-% $$$ ha.FaceColor = 'r';
-% $$$ ha.FaceAlpha = .5;
-% $$$ hs = bar(eds,histc(log10(xyv(ind,2)),eds),'histc');
-% $$$ hs.FaceColor = 'c';
-% $$$ hs.FaceAlpha = .5;
-% $$$ 
-% $$$ figure,
-% $$$ for i = 1:1000,    
-% $$$     cla
-% $$$     xlim([-500,500])
-% $$$     ylim([-500,500])
-% $$$     zlim([0,350])
-% $$$     plotSkeleton(Trial,nxyz,i,'line',nang);
-% $$$     pause(.01);
-% $$$ end
-% $$$ 
-% $$$ 
-% $$$ [ys,fs,ts] =mtchglong(WhitenSignal(diff([nang(nniz(xyz),'fhcom','nhb',3),ang(nniz(xyz),'fhcom','head_back',3)]),[],1),2^8,ang.sampleRate,2^7,2^7*.875,[],[],[],[1,20]);
-% $$$ 
-% $$$ sp = [];
-% $$$ figure,
-% $$$ sp(1)=subplot(2,1,1);imagesc(ts,fs,log10(ys(:,:,1,1))'),axis xy, colormap jet,caxis([-5,-2.3])
-% $$$ sp(2)=subplot(2,1,2);imagesc(ts,fs,log10(ys(:,:,2,2))'),axis xy, colormap jet,caxis([-5,-2.3])
-% $$$ linkaxes(sp,'xy')
-
-
-% $$$ ms = nhm(2:end);
-% $$$ hfig = figure(3939);clf
-% $$$ plot(k,log10(vz));
-% $$$ xlabel('z shift from original coordinates (mm)');
-% $$$ ylabel('log10 variance of marker to filtered hcom');
-% $$$ legend(ms{:});
-% $$$ saveas(hfig,fullfile(['/storage/gravio/manuscripts/man2015-jgEd-MoCap/' ...
-% $$$                       'p20150708/'],[Trial.filebase '.zshift.eps']),'epsc');
-% $$$ 
-% $$$ hfig = figure(3939);
-% $$$ for m = 1:size(vxy),
-% $$$     clf,hold on
-% $$$     imagesc(k,k,log10(sq(vxy(m,:,:))));
-% $$$     locMin = LocalMinima2(log10(sq(vxy(m,:,:))),10,20);
-% $$$     locMin = fliplr(k(locMin));
-% $$$     plot(locMin(1),locMin(2),'*w');
-% $$$     xlim([k([1,end])]); xlabel('x shift from original coordinates (mm)');
-% $$$     ylim([k([1,end])]); ylabel('y shift from original coordinates (mm)');
-% $$$     title([nhm{m+1} ' variance of distance to filtered hcom x: ' num2str(locMin(1)) ' y: ' num2str(locMin(2))]);
-% $$$ saveas(hfig,fullfile(['/storage/gravio/manuscripts/man2015-jgEd-MoCap/' ...
-% $$$                       'p20150708/'],[Trial.filebase '.' nhm{m+1} '.eps']),'epsc');
-% $$$ 
-% $$$ end
-% $$$ 
-% $$$ saveas(hfig,fullfile(['/storage/gravio/manuscripts/man2015-jgEd-MoCap/' ...
-% $$$                       'p20150708/'],[Trial.filebase '.' nhm{m+1} '.eps']),'epsc');
-% $$$ 
-% $$$ 
-% $$$ %mkdir('/storage/gravio/manuscripts/man2015-jgEd-MoCap/p20150716/');
-% $$$ %save(fullfile(Trial.spath,[Trial.filebase '.xyz-shift.mat']),'i','j','k','vxyz');
-% $$$ load(fullfile(Trial.spath,[Trial.filebase '.xyz-shift.mat']));
-% $$$ 
-% $$$ 
-% $$$ 
-% $$$ rb_h_labels = {'head_back','head_left','head_front','head_right'};
-% $$$ rb_h_labels = {'nhb','nhl','nhf','nhr'};
-% $$$ hxyz = Trial.xyz.copy;
-% $$$ hxyz.model = xyz.model.rb(rb_h_labels);;
-% $$$ hxyz.data = xyz(:,rb_h_labels,:);
-% $$$ hxyz.addMarker('hcom',[128,255,128],{{'nhb','nhf',[0,0,255]}},xyz.com(hxyz.model));
-% $$$ 
-% $$$ fhcom = zeros([hxyz.size(1),1,hxyz.size(3)]);
-% $$$ fhcom(nniz(xyz),:,:) = ButFilter(hxyz(nniz(hxyz),'hcom',:),3,2/(hxyz.sampleRate/2),'low');
-% $$$ hxyz.addMarker('fhcom',[128,255,128],{{'nhb','nhf',[0,0,1]}},fhcom);
-% $$$ 
-% $$$ 
-% $$$ 
-% $$$ ang = create(MTADang,Trial,hxyz);
-% $$$ 
-% $$$ [ys,fs,ts] =mtchglong(WhitenSignal([ang(nniz(xyz),'nhb','fhcom',3),ang(nniz(xyz),'nhr','fhcom',3)],[],1),2^8,ang.sampleRate,2^7,2^7*.875,[],[],[],[1,40]);
-% $$$ 
-% $$$ sp = [];
-% $$$ figure,
-% $$$ sp(1)=subplot(2,1,1);
-% $$$ imagesc(ts,fs,log10(ys(:,:,1,1))'),axis xy, colormap jet,
-% $$$ sp(2)=subplot(2,1,2);
-% $$$ imagesc(ts,fs,log10(ys(:,:,2,2))'),axis xy, colormap jet,
-% $$$ linkaxes(sp,'xy')
-% $$$ 
-% $$$ hvel = hxyz.vel({'hcom'},[1,2]);
-% $$$ ovel = xyz.vel({'hcom'},[1,2]);
-% $$$ 
-% $$$ figure, plot(ovel.data),
-% $$$ hold on,plot(hvel.data)
-% $$$ Lines(Trial.stc{'w'}(:),[],'b');
-% $$$ 
-% $$$ hvel.filter('ButFilter',3,2.5,'low');
-% $$$ ovel.filter('ButFilter',3,2.5,'low');
-% $$$ 
-% $$$ figure, plot(ovel.data),
-% $$$ hold on,plot(hvel.data)
-% $$$ Lines(Trial.stc{'w'}(:),[],'b');

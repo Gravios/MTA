@@ -12,7 +12,7 @@ defargs = struct('plotType',           'line',...
 );
 
 
-[plotType,ang,trajectoryPeriod,trajectoryMarkers,hax] = DefaultArgs(varargin,default_args,'--struct');
+[plotType,ang,trajectoryPeriod,trajectoryMarkers,hax] = DefaultArgs(varargin,defargs,'--struct');
 
 
 if strcmp(class(hax),'matlab.ui.Figure'),hax = gca; end

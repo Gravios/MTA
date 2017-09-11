@@ -3,6 +3,15 @@
 % LOAD Trials 
 sessionList = 'hand_labeled';
 Trials = af(@(Trial) MTATrial.validate(Trial), get_session_list(sessionList));
+Trials(2) = [];
+numTrials = numel(Trials);
+
+% SET figure directories
+OwnDir = '/storage/gravio/nextcloud/';
+FigDir = 'Shared/Behavior Paper/Figures/Figure_4/parts';
+mkdir(fullfile(OwnDir,FigDir));
+
+
 % LOAD State collections 
 stc = cf(@(t) t.load('stc'), Trials);
 %stc = cf(@(t) t.load('stc','msnnN0+hand_labeled'), Trials);
@@ -18,7 +27,7 @@ for s = 1:numel(Trials), vxy{s}.data(vxy{s}.data<1e-3) = 1e-3;end
 for s = 1:numel(Trials), vxy{s}.data = log10(vxy{s}.data);end
 
 % FILTER xyz before computing angles 
-cf(@(x) x.filter('ButFilter',3,6,'low'),xyz);;
+cf(@(x) x.filter('ButFilter',3,8,'low'),xyz);;
 
 % COMPUTE intermarker angles
 ang = cf(@(t,x) create(MTADang,t,x),Trials,xyz);
@@ -66,6 +75,7 @@ daspect([1,1,1])
 
 ind = repmat({':'},[1,numel(Trials)]);; %cf(@(stc) [stc{'a-s-m'}],stc);
 
+ind = cf(@(stc) [stc{'a-s-m'}],stc);
 %ind = cf(@(s,w,t) [s.get_state_transitions(t,{'pause+walk','rear'},1,w)],...
 %         stc, xyz, Trials);
 
@@ -145,6 +155,83 @@ plotSTC(Stc{s});
 linkaxes(sp,'x')
 
 
+% ANTON 20170822 HEAD BODY PITCH 
+% JPDF of head body pitch 
+hbpitch = cf(@(t)  fet_HB_pitch(t),  Trials);
+cf(@(f,t,r) f.map_to_reference_session(t,r),...
+   hbpitch, Trials, repmat({'jg05-20120317.cof.all'},[1,numTrials]));
+for s = 1:numTrials, hbpitch{s}.data(~nniz(xyz{s}),:,:) = 0;end
+
+ind = cf(@(s)  s{'w+n+p'},  stc);
+      cf(@(i)  cast(i,'TimeSeries'),  ind);
+ind = cf(@(i)  i.data==1,  ind);
+ind = cat(1, ind{:});
+
+ahbpitch = cf(@(f)  f.data,  hbpitch);
+ahbpitch = cat(1, ahbpitch{:});
+
+axyz = cf(@(f)  f.data,  xyz);
+axyz = cat(1, axyz{:});
+
+
+hfig = figure(); 
+hist2([ahbpitch(ind,1),axyz(ind,5,3)],linspace(-0.3,0.4,100),linspace(50,140,100));
+caxis([0,1000])
+
+
+hfig = figure(); 
+hist2(ahbpitch(ind,:),linspace(-0.3,0.4,100),linspace(-1,.5,100));
+caxis([0,1000])
+
+% FIND threshold for head pitch
+% $$$ figure();
+% $$$ subplot2(3,1,1:2,1); plot(hbpitch{1}(:,2));
+% $$$ subplot2(3,1,  3,1); plotSTC(stc{1});
+% $$$ linkaxes(findobj(gcf,'Type','axes'),'x');
+
+% SET threshold for head pitch
+pThresh = repmat({-0.2},[1,numTrials]);
+
+pind = cf(@(p,t)  p(:,2)>t,  hbpitch, pThresh);
+pind = cat(1, pind{:});
+pper = ThreshCross(pind,0.5,20);
+pper(ind(pper(:,1))==0|ind(pper(:,2))==0,:) = [];
+
+pSegs = GetSegs(ahbpitch,pper(:,1)-30,60);
+pSegs(:,sq(abs(diff(pSegs([1,end],:,2))))<0.3,:) = [];
+                    
+% OVERLAY Trajectories at head pitch threshold 
+
+xl = [-0.3,0.5];
+yl = [-1,0.4];
+hfig = figure(); 
+subplot2(1,3,1,1);grid('on')
+hist2(ahbpitch(ind,:),linspace([xl,100]),linspace([yl,100]));
+caxis([0,1000])
+xlabel('body pitch (rad)');ylabel('head pitch (rad)');
+title('JPDF walk+turn+pause');
+subplot2(1,3,1,2);grid('on')
+hold('on');
+cm = jet(60);
+for i = 1:200
+    scatter(pSegs(:,i,1),pSegs(:,i,2),10,cm,'filled');
+end 
+xlim(xl); ylim(yl);
+xlabel('body pitch (rad)');ylabel('head pitch (rad)');
+title('Half second Trajectories change in pitch > 0.3 rad');
+subplot2(1,3,1,3);grid('on')
+hist2(reshape(pSegs,[],2),linspace([xl,100]),linspace([yl,100]));
+caxis([0,100]);
+xlabel('body pitch (rad)');ylabel('head pitch (rad)');
+title('JPDF of Trajectories change in pitch > 0.3 rad');
+ForAllSubplots('daspect([1,1,1])');
+FigName = ['jpdf_head_body_pitch'];
+print(gcf,'-depsc2',fullfile(OwnDir,FigDir,[FigName,'.eps']));
+print(gcf,'-dpng',  fullfile(OwnDir,FigDir,[FigName,'.png']));
+
+
+% HYPOTHESIS - upward head movements occupy a different route
+%              compared to downward head movements
 
 
 
@@ -232,10 +319,14 @@ axis xy
 
 
 
+[dstate,mdstate] = compute_cross_correlation(...
+        'state',  stateTransition,...
+        'sbound', sbound,...
+        'overwrite',overwrite);
 
 
 %% mutinfo stuff
-OwnDir = '/storage/gravio/ownCloud/';
+OwnDir = '/storage/gravio/nextcloud/';
 FigDir = 'Shared/Behavior Paper/Figures/Figure_4/parts';
 
 sbound = -240:240;
@@ -275,7 +366,7 @@ for stateTransition = stateTransitions,
 
 
     subplot(121); 
-    [sp(end+1),cp(end+1)] = imagescnan(mixy',[0,2],'linear',1,[0.5,0.5,0.5]); 
+    [sp(end+1),cp(end+1)] = imagescnan(mixy',[0,2],'linear',1,[0.5,0.5,0.5],'colorMap',@bone); 
     axis('xy');title(['Maximum mutual information']);
     Lines(5.5,[],'k');Lines(10.5,[],'k')
     Lines([],5.5,'k');Lines([],10.5,'k')
@@ -294,7 +385,7 @@ for stateTransition = stateTransitions,
         cp(s).Position([1,4]) = [sp(s).Position(1)+3.2,3];
     end
 
-    FigFilebase = fullfile(OwnDir,FigDir,['mis-time_lagged-',strjoin(stateTransition,'2')]);
+    FigFilebase = fullfile(OwnDir,FigDir,['mis-time_lagged-new-',strjoin(stateTransition,'2')]);
     print(hfig,'-depsc2',[FigFilebase,'.eps']);
     print(hfig,'-dpng',  [FigFilebase,'.png']);
     pause(0.1);

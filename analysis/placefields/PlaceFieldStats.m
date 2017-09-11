@@ -348,7 +348,7 @@ end
 function threshold = select_rate_threshold(pf,unit,method)
 switch method
   case 'shuffle'
-    defargs = get_default_args('MjgEdER2016','MTAAknnpfs','struct');
+    defargs = get_default_args('MjgER2016','MTAAknnpfs','struct');
     defargs.units = unit;
     defargs.states = 'theta';
     defargs.overwrite = false;

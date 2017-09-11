@@ -1,4 +1,4 @@
-function flist = listFiles(SessionName,varargin)
+function flist = list_files(SessionName,varargin)
 %function listFiles(SessionName,fileExt)
 if ~isempty(varargin)
     fileExt = varargin{1};

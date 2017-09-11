@@ -256,7 +256,7 @@
 %    Abandoned code for processing a session.
 %  Bugs: NA
 
-% req20160822 ----------------------------------------------------
+% req20160831 ----------------------------------------------------
 %
 %  Title: Train neural networks with alternate marker models
 %  Type: Utility
@@ -276,6 +276,24 @@
 % format: v0.2
 
 
+% req20160901 ----------------------------------------------------
+%
+%  Status: retired
+%  Type: Analysis
+%  Final_Forms: NA
+%  Description:
+%    Unknow purpose
+%  Bugs: NA
+
+% req20160927 ----------------------------------------------------
+%
+%  Status: retired
+%  Type: Analysis
+%  Final_Forms: NA
+%  Description:
+%    Explore use of k-means for feature clustering
+%  Bugs: NA
+
 % req20160929 ----------------------------------------------------
 %
 %  Status: retired
@@ -285,6 +303,21 @@
 %    Script for subjective evaluation of MTAAknnpfs_bs parameters
 %  Bugs: NA
 
+
+
+%% 2016 10 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+% format: v0.2
+
+
+% req20161006 ----------------------------------------------------
+%
+%  Status: retired
+%  Type: Analysis 
+%  Project: MjgEd2016
+%  Final_Forms: NA
+%  Description:
+%    Exploring copulas
+%  Bugs: NA
 
 
 
@@ -383,13 +416,26 @@
 
 %% 2017 01 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 
+% req20170126 ----------------------------------------------------
+%
+%  Status: active
+%  Project: MjgEd2016
+%  Type: Utility 
+%  Final_Forms: NA
+%  Description:
+%    Examine current inter-session/subject feature coregistration
+%  Bugs: NA
+
 
 % req20170127 ----------------------------------------------------
 %
 %  Status: active
+%  Project: MjgEd2016
 %  Type: Utility 
 %  Final_Forms: NA
 %  Description:
+%    Segment locomotive trajectories into in/out bound from 
+%    homebase locations
 %  Bugs: NA
 
 
@@ -399,6 +445,7 @@
 % req20170201 ----------------------------------------------------
 %
 %  Status: active
+%  Project: Mjgvk2017
 %  Type: Utility 
 %  Final_Forms: NA
 %  Description: Convert MTA objects to 2d mat for vassia colaboration
@@ -475,3 +522,32 @@
 %  Description: Labeling statistics 
 %  Bugs: NA
  
+% req20170731 ----------------------------------------------------
+%
+%  Status: active
+%  Type: Analysis 
+%  Final_Forms: NA
+%  Description: Labeling statistics 
+%  Bugs: NA
+
+
+
+
+%% 2017 08 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+
+% req20170802 ----------------------------------------------------
+%
+%  Status: active
+%  Type: Analysis 
+%  Final_Forms: NA
+%  Description: Behavior subtyping with t-sne 
+%  Bugs: NA
+
+
+% req20170811 ----------------------------------------------------
+%
+%  Status: active
+%  Type: Analysis 
+%  Final_Forms: NA
+%  Description: Behavior subtyping with t-sne 
+%  Bugs: NA

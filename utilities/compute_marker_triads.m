@@ -1,4 +1,5 @@
 function markerTriad = compute_marker_triads(rxyz)
+%function markerTriad = compute_marker_triads(rxyz)
 
 markerTriad.nck  = nchoosek(1:size(rxyz,2),3);
 markerTriad.com  = nan([size(rxyz,1),1,size(rxyz,3)]);
@@ -12,7 +13,7 @@ markerTriad.imo = nan([size(rxyz,1),size(markerTriad.nck,1)]);
 for nck = 1:size(markerTriad.nck,1),        
     oriSpan = ...
         permute(bsxfun(@minus,...
-                       rxyz(:,markerTriad.nck(nck,[1,3]),:),...
+                       rxyz(:,markerTriad.nck(nck,[3,1]),:),...
                        rxyz(:,markerTriad.nck(nck,2),:)),...
                 [1,4,2,3]);
 
@@ -27,7 +28,7 @@ for nck = 1:size(markerTriad.nck,1),
                   oriSpan(:,1,2,:),4));
     
     markerTriad.coor(:,nck,2,:) = ...
-        cross(markerTriad.coor(:,nck,1,:),oriSpan(:,1,2,:));
+        -cross(markerTriad.coor(:,nck,1,:),oriSpan(:,1,2,:));
 
     markerTriad.coor(:,nck,3,:) = ...
         cross(markerTriad.coor(:,nck,1,:),markerTriad.coor(:,nck,2,:));

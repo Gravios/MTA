@@ -12,7 +12,7 @@ function [fet,featureTitles,featureDesc,Nmean,Nstd] = fet_bref(Trial,varargin)
 % DEFARGS ------------------------------------------------------------------------------------------
 defargs = struct('newSampleRate', Trial.xyz.sampleRate,                 ...
                  'normalize'    , false,                    ...
-                 'procOpts'     , {'SPLINE_SPINE_HEAD_EQD'});
+                 'procOpts'     , {'SPLINE_SPINE_HEAD_EQI'});
 
 [newSampleRate,normalize,procOpts] = DefaultArgs(varargin,defargs,'--struct');
 %--------------------------------------------------------------------------------------------------

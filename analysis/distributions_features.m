@@ -13,105 +13,118 @@ function distributions_features(varargin)
 % );
 
 
-% Default arguments for distributions_features(varargin)
-defargs = struct(...
-    'sList'          , 'hand_labeled'                                           ,...
-    'featureSet'     , 'fet_mis'                                                ,...
-    'featureOpts'    , {{'newSampleRate',12,'procOpts','SPLINE_SPINE_HEAD_EQD'}},...
-    'featureName'    , ''                                                       ,...
-    'state'          , 'gper'                                                   ,...
-    'resample'       , true                                                     ,...
-    'normalize'      , true                                                     ,...
-    'mapToReference' , true                                                     ,...
-    'RefTrial'       , 'jg05-20120317.cof.all'                                   ...
+
+% DEFARGS ------------------------------------------------------------------------------------------
+defargs = struct(                                                                                ...
+    'sessionList',              'hand_labeled',                                                  ...
+    'featureSet',                'fet_mis',                                                      ...
+    'featureOpts',               {{'newSampleRate',12}},                                         ...
+    'state',                     'walk+turn+pause',                                              ...
+    'randomizationMethod',       @resample_whole_state_bootstrap_noisy_trim,                     ...
+    'normalize',                 true,                                                           ...
+    'map2reference',             true,                                                           ...
+    'normalizationSessionList',  'hand_labeled',                                                 ...    
+    'referenceTrial',            'jg05-20120317.cof.all'                                         ...
 );
 
-
-[sList,featureSet,featureOpts,featureName,state,...
- resample,normalize,mapToReference,RefTrial] = DefaultArgs(varargin,defargs,'--struct');
-
-if isempty(featureName)
-    featureName = featureSet;
-end
+[sessionList,featureSet,featureOpts,state, randomizationMethod,                                  ...
+normalize,map2reference,normalizationSessionList,referenceTrial] =                               ...
+    DefaultArgs(varargin,defargs,'--struct');
+%---------------------------------------------------------------------------------------------------
 
 
-sesList = get_session_list(sList);
 
-snames = cell([1,numel(sesList)]);
+% MAIN ---------------------------------------------------------------------------------------------
 
-for s = 1:numel(sesList),
-    snames{s} = sesList(s).sessionName; 
-end
+% LOAD Trials 
+Trials = af(@(t)  MTATrial.validate(t),  get_session_list(sessionList));
+snames = cf(@(t)  t.filebase,            Trials);
+numTrials = numel(Trials);
 
-%Reference Trial Stuff
+% LOAD features 
+[features,fett,fetd] = cf(@(Trial,fetSet,fetOpts) feval(fetSet,Trial,fetOpts{:}),...
+                          Trials,...
+                          repmat({featureSet },[1,numTrials]),...
+                          repmat({featureOpts},[1,numTrials]));
 
-if mapToReference||normalize,
-    RefTrial = MTATrial.validate(RefTrial);
-end
+% MAP features to reference session
+if map2reference,
+    xyzls  = cf(@(Trial)  Trial.load('xyz'),        Trials);
+             cf(@(f,x)    x.resample(f),            features,xyzls);
+    refTrial = MTATrial.validate(referenceTrial);
+    cf(@(f,t,r) f.map_to_reference_session(t,r),...
+       features, Trials, repmat({refTrial},[1,numTrials]));
+    for s = 1:numTrials, features{s}.data(~nniz(xyzls{s}),:,:) = 0;end
 
-if normalize,
-    RefTrial = MTATrial.validate(RefTrial);
-    RefState = RefTrial.stc{'a'};
-    rfet = feval(featureSet,RefTrial,featureOpts{:});
-    [rfet,Rmean,Rstd] = nunity(rfet,[],[],[],[]);
-end
-    
-
-cfet = {};
-oStc = {};
-for s = 1:numel(sesList),
-    Trial = MTATrial.validate(sesList(s));
-    Trial.load('stc',sesList(s).stcMode);
-    if s == 1,
-        [cfet{s},fett,fetd] = feval(featureSet,Trial,featureOpts{:});
-    else
-        [cfet{s}] = feval(featureSet,Trial,featureOpts{:});
-    end
-
-    if mapToReference&&~strcmp(Trial.filebase,RefTrial.filebase), 
-        cfet{s}.map_to_reference_session(Trial,RefTrial); 
-    end
     if normalize,
-        cfet{s} = unity(cfet{s},[],Rmean,Rstd);           
+% CONDITIONAL normalization, use multiple sessions for normalization        
+        [refMean,refStd] = load_normalization_parameters_unity(featureSet,...
+                                                               refTrial.filebase,...
+                                                               normalizationSessionList);
+        cf(@(f,m,s) f.unity(@nan,m,s), ...
+           features,...
+           repmat({refMean},[1,numTrials]),...
+           repmat({refStd}, [1,numTrials]));
     end
 
-    Stc = Trial.load('stc',sesList(s).stcMode);
-
-    if resample
-        [Stc,~,cfet{s}] = resample_whole_state_bootstrap_noisy_trim(Stc,cfet{s},{state});
-    end
-
-    cfet{s}.data = cfet{s}(Stc{state},:);
+elseif normalize,
+% CONDITIONAL normalization, use current sessions for normalization    
+    zfrCat = cf(@(f) get(f,'data'),    features); 
+    zfrCat = cat(1,zfrCat{:});
+    zfrMean = nanmean(zfrCat(nniz(zfrCat),:,:));
+    zfrStd  = nanstd( zfrCat(nniz(zfrCat),:,:));
+    cf(@(w,m,s) set(w,'data',nunity(w,[],m,s)),...
+       features,...
+       repmat({zfrMean},[1,numTrials]),...
+       repmat({zfrStd}, [1,numTrials]));
+    clear('zfrCat','zfrMean','zfrStd');
 end
 
 
+% LOAD state collection
+Stc = cf(@(t) t.stc.copy(), Trials);
+
+if ~isempty(randomizationMethod),
+% RESAMPLE randomly the features from the states
+    [Stc,~,features] = cf(@(s,f,sts) randomizationMethod(s,f,{sts}), ...
+                          Stc,features,repmat({state},[1,numTrials]));
+end
+
+cf(@(c,s,sts)  set(c,'data',c(s{sts},:)),  features, Stc, repmat({state},[1,numTrials]));
+
+
+% SET feature labels and descriptions
 if isempty(fett)||isempty(fetd)
-    fett = repmat( {''}, [1,cfet{1}.size(2)] );
-    fetd = repmat( {''}, [1,cfet{1}.size(2)] );
+    fett = repmat( {''}, [1,size(features{1},2)] );
+    fetd = repmat( {''}, [1,size(features{1},2)] );
+else
+    fett = fett{1};
+    fetd = fetd{1};
 end
 
-c = jet(numel(cfet));
-cind= 1;
-for f = 1:cfet{1}.size(2),
-    cind = 1;
-    hfig = figure;
+
+% PLOT feature distributions
+c = jet(numTrials);
+for f = 1:size(features{1},2),
+    hfig = figure();
     hold('on');
-    eds = linspace(-4,4,100);
-    for s = 1:numel(cfet),    
-        subplot(numel(sesList),1,s);
-        bar(eds,histc(cfet{s}(:,f),eds),'histc');
+    eds = linspace(-pi/2,pi/2,100);
+    for s = 1:numTrials,
+        subplot(numTrials,1,s);
+        bar(eds,histc(features{s}(:,f),eds),'histc');
         xlim([-pi/2,pi/2]);
     end
-% $$$         hs = bar(eds,histc(cfet{s}(:,f),eds),'histc');
-% $$$         hs.FaceColor = c(cind,:);    
-% $$$         hs.FaceAlpha = .3;
-% $$$         cind = cind+1;
-% $$$     end
-% $$$     legend(snames{:});
-    pause(.3)
-    reportfig(fullfile(getenv('PROJECT'),'figures'), hfig, [featureName '-' state], 'features', false,sList, ...
-              ['feature: ',num2str(f),' - ' fetd{f}],[],false,'png');
-    %close(hfig)           
+    pause(.1)
+    reportfig(fullfile(getenv('PROJECT'),'figures'),  ...
+              hfig,                                   ...
+              [features{1}.label '-' state],          ...
+              'features',                             ...
+              false,                                  ...
+              sessionList,                            ...
+              ['feature: ',num2str(f),' - ' fetd{f}], ...
+              [],                                     ...
+              false,                                  ...
+              'png');
 end
 
-
+% END MAIN -----------------------------------------------------------------------------------------

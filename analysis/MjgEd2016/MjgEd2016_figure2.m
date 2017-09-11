@@ -1,8 +1,12 @@
+% MjgEd2016 Figure 2 Select the behavioral feature space
+
+
+
 Trial = MTATrial('jg05-20120317');
 
 
 
-% Subplot Section A
+% SUBPLOT Section A Skeleton examples  ---------------------------------------------------------------------
 
 slist = {'rear','sit','groom','pause','walk','turn'};
 
@@ -23,7 +27,7 @@ for s = 1:numel(slist)
 end
 
 
-% SUBPLOT Section B
+% SUBPLOT Section B t-SNE of state subset ---------------------------------------------------------------------
 
 Trial = MTATrial.validate(Trial);
 mfilename = 'req20160310_8_genOptfigs';
@@ -110,7 +114,11 @@ print(gcf,'-depsc2',fullfile(getenv('PROJECT'),'manuscripts/man2015-jgEd-MoCap/F
 
 
 
-% SUBPLOT Section C
+
+
+
+
+% SUBPLOT Section C JPDF of best features--------------------------------------------------------------
 
 dsd = load(fullfile(Trial.spath,'req20160310_1_preproc-afet.mat'));
 bs = load(fullfile(Trial.spath,'req20160310_5_genfigs.mat'));
@@ -337,7 +345,9 @@ end
 
 
 
-% BEHAVIOR subtyping - Grooming
+
+
+% BEHAVIOR subtyping - Grooming -----------------------------------------------------------------------
 
 groomPeriodsOri = [];
 

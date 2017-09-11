@@ -9,6 +9,7 @@ function [xyz,ss] = preproc_xyz(Trial,varargin)
 %
 %    SPLINE_SPINE
 %    SPLINE_SPINE_EQD
+%    SPLINE_SPINE_HEAD_EQI
 %    SPLINE_SPINE_HEAD_EQD
 %    SPLINE_SPINE_HEAD_EQD_NO_TRB
 %    LOAD_TRB_XYZ
@@ -66,9 +67,88 @@ while ~isempty(procOpts)
         xyz.updateFilename(Trial);      
         xyz.save
 
+      case 'SPLINE_SPINE_HEAD_EQI'
+        
+        targetMarkers = {'spine_lower','pelvis_root','spine_middle','spine_upper','hcom'};
+        numMarkers = numel(targetMarkers);
+
+        if ~isempty(list_files(Trial.name,'.sehs.h')) && ~overwrite
+            xyz = Trial.load('xyz','sehs');
+        else
+            
+            
+            xyz = Trial.load('xyz','trb');
+            %xyz.filter('ButFilter',3,50,'low');
+            ss = fet_spline_spine(Trial,'3dssh',xyz);                
+
+            % COM head Center of Mass
+            xyz.addMarker('hcom',...     Name
+                          [.7,0,.7],...  Color
+                          {{'head_back', 'hcom',[0,0,255]},... Sticks to visually connect
+                           {'head_left', 'hcom',[0,0,255]},... new marker to skeleton
+                           {'head_front','hcom',[0,0,255]},...
+                           {'head_right','hcom',[0,0,255]}},... 
+                             xyz.com(xyz.model.rb({'head_back','head_left','head_front','head_right'})));
+            
+            spineSegmentLength = MTADxyz('data',sqrt(sum(diff(ss.data,1,2).^2,3)),'sampleRate',xyz.sampleRate);
+            nind = find(nniz(xyz));
+            ssn = ss.copy();
+            ssn.data = zeros([size(ss,1),size(ss,2)-6,size(ss,3)]);
+            markerInd = zeros([size(ss,1),numMarkers-2]);
+            for t = nind'
+                nzind = [true,spineSegmentLength(t,:)]>1e-10;
+                zind = find(~nzind)-1;
+                nzind([zind]) = ~nzind([zind]);    
+                ssn.data(t,:,:) = ss(t,nzind,:);
+                markerInd(t,:) = zind-[1:numel(zind)].*2+spineSegmentLength(t,[zind-1])./sum(reshape(spineSegmentLength(t,[zind-1,zind+1]),3,2),2)';
+            end
+            %spineSegmentLengthNew = MTADxyz('data',sqrt(sum(diff(ssn.data,1,2).^2,3)),'sampleRate',xyz.sampleRate);
+            baseInd = 100/(numMarkers-1);
+
+            samplePoints = 1:size(ssn,2);
+            for m = 1:numMarkers-2,
+                medianMarkerIndOffset = baseInd*m-median(markerInd(nind,m));
+                xMarInd = xyz.model.gmi(targetMarkers{m+1});
+                for d = 1:size(ssn,3),
+                    for t = nind',
+                        xyz.data(t,xMarInd,d) = interp1(samplePoints,ssn(t,:,d),markerInd(t,m)...
+                                                        +medianMarkerIndOffset,'spline');
+                    end
+                end
+            end
+
+            if isa(Trial,'MTATrial')
+                xyz.sync = Trial.sync.copy;
+                xyz.sync.sync = Trial.sync.copy;
+            end
+            xyz.label = 'sehs';
+            xyz.key  = 'h';
+            xyz.name = 'spline_spine_head_eqi_smooth';
+            xyz.updateFilename(Trial);      
+            xyz.save;
+            Trial = MTATrial.validate(Trial.filebase);
+            xyz = Trial.load('xyz','sehs');
+        end
+        
+        if nargout>1,            
+            ss = fet_spline_spine(Trial,'3dssh',xyz); 
+% $$$             nind = find(nniz(xyz));
+% $$$             ssn = ss.copy();
+% $$$             ssn.data = zeros([size(ss,1),size(ss,2)-6,size(ss,3)]);
+% $$$             for t = nind'
+% $$$                 nzind = [true,spineSegmentLength(t,:)]>1e-6;
+% $$$                 zind = find(~nzind)-1;
+% $$$                 nzind([zind]) = ~nzind([zind]);    
+% $$$                 ssn.data(t,:,:) = ss(t,nzind,:);
+% $$$             end
+% $$$             ss = ssn;
+        end
+
+        
+        
       case 'SPLINE_SPINE_HEAD_EQD'
 
-        if ~isempty(listFiles(Trial.name,'.seh.h')) && ~overwrite
+        if ~isempty(list_files(Trial.name,'.seh.h')) && ~overwrite
             xyz = Trial.load('xyz','seh');
         else
             
@@ -115,7 +195,7 @@ while ~isempty(procOpts)
       
       case 'SPLINE_SPINE_HEAD_EQD_NO_TRB'
 
-        if ~isempty(listFiles(Trial.name,'.seh.h')) && ~overwrite
+        if ~isempty(list_files(Trial.name,'.seh.h')) && ~overwrite
             xyz = Trial.load('xyz','seh');
         else
             

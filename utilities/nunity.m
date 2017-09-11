@@ -10,7 +10,8 @@ function [U,meanA,stdA] = nunity(A,varargin)
 nind = nniz(A);
 
 if ~isempty(drpOutPrctile),
-    Ao = prctile(A(nind,:,:,:,:,:),drpOutPrctile);
+% $$$     boundaries = prctile(A(nind,:,:,:,:,:),drpOutPrctile);
+% $$$     Ao = A(nind & WithinRanges(A,boundaries)
 else
     Ao = A(nind,:,:,:,:,:);
 end

@@ -221,6 +221,11 @@ for iter = 1:nIter,
                     cf(@(s,f,sts) resample_whole_state_bootstrap_noisy_trim(s,f,sts),...
                        StcHL,features,states);
                 trainingEpochs = [];
+              case 'WSBT' % whole state bootstrap noisy with trimmed boundaries
+                [StcRnd,~,trainingFeatures] = ...
+                    cf(@(s,f,sts) resample_whole_state_bootstrap_trim(s,f,sts),...
+                       StcHL,features,states);
+                trainingEpochs = [];
               case 'rndsamp'
                 % Can be found in MTA:classifiers:bhv_nn_multi_patternnet.m                
             end

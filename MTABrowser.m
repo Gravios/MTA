@@ -988,7 +988,7 @@ function MLxyzSourceMenu_Callback(hObject, eventdata, handles)
 function MLxyzSourceMenu_UpdateFcn(hObject, eventdata, handles)
     Session = getappdata(handles.MTABrowser,'Session');   
     filename = eventdata.Source.String{eventdata.Source.Value};
-    hObject.String = listFiles(Session.name,'pos');
+    hObject.String = list_files(Session.name,'pos');
     hObject.Value = find(~cellfun(@isempty,regexp(hObject.String,filename)));
     guidata(hObject,handles);  
 

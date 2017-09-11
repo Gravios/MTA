@@ -8,13 +8,14 @@ try,
     defargs = get_default_args(MTA_CURRENT_PROJECT,mfilename);
 catch err
     disp(err)
-    defargs = struct('referenceTrial','jg05-20120317.cof.all',...
-                     'sessionList'   ,'hand_labeled',...
-                     'tag'           ,'',...
+    defargs = struct('referenceTrial','jg05-20120317.cof.all',                                  ...
+                     'sessionList'   ,'hand_labeled',                                           ...
+                     'tag'           ,'',                                                       ...
                      'overwrite'     ,false);
 end    
 [referenceTrial,sessionList,tag,overwrite] = DefaultArgs(varargin,defargs,'--struct');
 %---------------------------------------------------------------------------------------------------
+
 
 % TAG creation -------------------------------------------------------------------------------------
 % ID Vars - create hash tag
@@ -23,6 +24,7 @@ if isempty(tag),
                           'referenceTrial',referenceTrial));
 end
 %---------------------------------------------------------------------------------------------------
+
 
 % MAIN ---------------------------------------------------------------------------------------------
 normalizationParameterFile =fullfile(MTA_PROJECT_PATH,...

@@ -7,3 +7,10 @@
 %    D. 
 %    E. 
 
+
+
+
+% CCG between theta and pause to walk onsets
+
+
+Trial = MTATrial;

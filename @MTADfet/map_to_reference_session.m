@@ -19,6 +19,11 @@ minimumOccupancy = 1; % seconds
 rfet = feval(features.label,RefTrial,features.sampleRate);
 
 switch features.label
+  case 'fet_HB_pitch'
+    fetInds   = [1,2];
+    stdThresh = {0.2,0.2};
+    diffFun   = {@circ_dist,@circ_dist};
+    
   case 'fet_bref_emb'
     fetInds = [];
     for i = 0:(size(features,2)/30)-1,
@@ -27,6 +32,40 @@ switch features.label
 % $$$     stdThresh = repmat({30},1,10);
 % $$$     kurThresh = repmat({20},1,10);
     diffFun   = repmat({@minus},1,numel(fetInds));
+  case 'fet_bref_SMSU'
+    fetInds   = [1:12];
+    diffFun   = repmat({@minus},1,numel(fetInds));
+  case 'fet_bref_SLHC'
+    fetInds   = [1:8];
+    diffFun   = repmat({@minus},1,numel(fetInds));
+  case 'fet_bref_TH'
+    fetInds   = [1:8];
+    diffFun   = repmat({@minus},1,numel(fetInds));
+  case 'fet_bref_rev13'
+    fetInds   = [1:9];
+    diffFun   = repmat({@minus},1,numel(fetInds));
+
+    
+  case 'fet_bref_rev12'
+    fetInds   = [1:12];
+    diffFun   = repmat({@minus},1,numel(fetInds));
+
+  case 'fet_bref_rev11'
+    fetInds   = [1:15,46,47];
+    diffFun   = cat(2,repmat({@minus},1,numel(fetInds)),...
+                    repmat({@circ_dist},1,2));
+  case 'fet_bref_rev10'
+    fetInds   = [1:15,46,47];
+    diffFun   = cat(2,repmat({@minus},1,numel(fetInds)),...
+                    repmat({@circ_dist},1,2));
+  case 'fet_bref_rev9'
+    fetInds   = [1:15];
+    diffFun   = repmat({@minus},1,numel(fetInds));
+  
+  case 'fet_bref_rev8'
+    fetInds   = [1:15];
+    diffFun   = repmat({@minus},1,numel(fetInds));
+
   case 'fet_bref_rev7'
     fetInds   = [1:15];
     diffFun   = repmat({@minus},1,numel(fetInds));

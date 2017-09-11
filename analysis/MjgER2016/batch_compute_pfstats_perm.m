@@ -8,7 +8,7 @@ tag = '';
 tag = 'bhvtheta';
 if ~isempty(tag),tag = ['_',tag];end
 
-stcMode = 'NN0317R';
+stcMode = 'msnn_ppsvd';
 states =  {'loc','rear','pause','lloc','hloc','lpause','hpause'};
 states = cellfun(@strcat,states,repmat({'&theta'},size(states)),'UniformOutput',false);
 overwrite = false;

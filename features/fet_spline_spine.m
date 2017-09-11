@@ -38,7 +38,7 @@ if isempty(Trial.fet),
 end
 % DELBLOCK end
 
-filename = cellstr_append_str([Trial.spath,'/'],listFiles(Trial.name,[Trial.trialName,'.fet.',label]));
+filename = cellstr_append_str([Trial.spath,'/'],list_files(Trial.name,[Trial.trialName,'.fet.',label,'.']));
 if overwrite||isempty(filename),
     txyz = xyz(:,markers,:);
     pnts = zeros([xyz.size(1),size(fnplt(cscvn(sq(txyz(1,:,:))'))',1),3]);

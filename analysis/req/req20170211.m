@@ -10,8 +10,6 @@ ncp.filter('ButFilter',3,50,'low');
 
 ncp.data = clip(ncp.data,-8000,8000);
 
-eds = linspace(-8000,8000,200);
-ncpb = discretize(ncp.data,eds);
 
 rhm = fet_rhm(Trial);
 
@@ -34,8 +32,16 @@ fet = [fet,rhm.data];
 
 nind = nniz(fet);
 
-net = patternnet(200);
-%net = feedforwardnet(1000);
+
+net = layrecnet(1:30,10);
+[Xs,Xi,Ai,Ts] = preparets(net,con2seq(fet(nind,:)'),con2seq(ncp(nind,:)'));
+
+net = train(net,Xs,Ts,Xi,Ai);
+
+view(net)
+Y = net(Xs,Xi,Ai);
+perf = perform(net,Y,Ts)
+
 
 ncpmat = zeros([numel(eds),size(ncp,1)]);
 ncpmat((0:size(ncp,1)-1)'*numel(eds)+ncpb)=1;

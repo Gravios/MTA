@@ -35,7 +35,7 @@ defArgs = struct('sessionList',                 '',                             
                  'model',                       [],                                            ...
                  'sampleRate',                  10,                                            ...
                  'nNeurons',                    25,                                            ...
-                 'nIter',                       100                                            ...
+                 'nIter',                       100,                                           ...
                  'randomizationMethod',         'WSBNT',                                       ...
                  'map2reference',               true,                                          ...
                  'normalize',                   true,                                          ...
@@ -49,7 +49,7 @@ defArgs = struct('sessionList',                 '',                             
                  );
 [sessionList,featureSet,states,keys,model,sampleRate,nNeurons,nIter,...
  randomizationMethod,map2reference,normalize,referenceTrial,trainingSessionList,...
- normalizationSessionList,dropIndex,prctTrain,postprocessingTag,modelType,stcMode] = ...
+ normalizationSessionList,dropIndex,prctTrain,postprocessingTag,modelType] = ...
     DefaultArgs(varargin,defArgs,'--struct');
 %-----------------------------------------------------------------------------
 
@@ -121,18 +121,21 @@ end
 %# REMOVE IN FUTURE VERSION -->
 
 % LOAD features
-features = cf(@(t)     fet_bref(t), Trials);
+features = cf(@(t)     fet_bref(t,[],[],'SPLINE_SPINE_HEAD_EQI_SMOOTH'), Trials);
            cf(@(f,t,r) f.map_to_reference_session(t,r), features,Trials,repmat({referenceTrial},[1,numTrials]));
 
-xyz = cf(@(t) t.load('xyz'),                      Trials);
-      cf(@(x) x.filter('ButFilter',5,1.5,'low'),  xyz);
+ffet     = cf(@(f)  f.copy(),  features);
+           cf(@(f)  f.filter('ButFilter',3,[1.2,6],'bandpass'),  ffet);
+
+xyz      = cf(@(t) t.load('xyz'),                      Trials);
+           cf(@(x) x.filter('ButFilter',5,1.5,'low'),  xyz);
 
 % $$$ vxy = cf(@(x) xyz.vel({'spine_lower','head_back'},[1,2]), xyz);
-ang  = cf(@(t,x) create(MTADang,t,x), Trials,xyz);
-dang = cf(@(x)   x.copy('empty'),xyz);
-cf(@(d,ang) set(d,'data',circ_dist(circshift(ang(:,'spine_lower','spine_upper',1),-1),...
-                      circshift(ang(:,'spine_lower','spine_upper',1),1))*ang.sampleRate),...
-   dang,ang);
+ang      = cf(@(t,x) create(MTADang,t,x), Trials,xyz);
+% $$$ dang     = cf(@(x)   x.copy('empty'),xyz);
+% $$$            cf(@(d,a) set(d,'data',circ_dist(circshift(a(:,'spine_lower','spine_upper',1),-1),...
+% $$$                                   circshift(a(:,'spine_lower','spine_upper',1),1))),...
+% $$$              dang,ang);
 
 % $$$             StcNN = StcCor.copy();
 % $$$             StcNN.updateMode(['nn_',refSession.filebase(1:4)]);
@@ -162,23 +165,53 @@ for s = 1:numTrials,
     disp([verbosePrefix,'Processing: ',Trials{s}.filebase]);
 
 
-
+    %# start
     [stcMatrix] = stc2mat(StcCor{s},xyz{s},states);
     stateVectors = bsxfun(@times,eye(numel(states)),1:numel(states));
+
+% DIAGNOSTIC plot stc
+% $$$     stcFig = figure();
+% $$$     subplot(411);
+% $$$     plotSTC(StcCor{s});
     
-    disp([verbosePrefix,'Assign all periods with low duration to neighboring states']);    
-    [stcMatrix] = reassign_low_duration_state_to_neighboring_states(stcMatrix,StcCor{s}{'n'},0.25*xyz{s}.sampleRate);
-    [stcMatrix] = reassign_low_duration_state_to_neighboring_states(stcMatrix,StcCor{s}{'w'},0.25*xyz{s}.sampleRate);
+    sitVec  =  stateVectors(find('s'==cell2mat(keys)),:);
+    walkVec  = stateVectors(find('w'==cell2mat(keys)),:);
+    pauseVec = stateVectors(find('p'==cell2mat(keys)),:);
+    groomVec = stateVectors(find('m'==cell2mat(keys)),:);
+    turnVec  = stateVectors(find('n'==cell2mat(keys)),:);    
+    rearVec  = stateVectors(find('r'==cell2mat(keys)),:);    
+
+
+    disp([verbosePrefix,'Assign GROOM periods with low duration ( < 2 sec ) to neighboring states']);        
+    [stcMatrix] = reassign_low_duration_state_to_neighboring_states(stcMatrix,[StcCor{s}{'m'}],2*xyz{s}.sampleRate);    
+
+    disp([verbosePrefix,'Assign2 TURN periods with low duration ( < 0.18 sec ) to neighboring states']);    
+    [stcMatrix] = reassign_low_duration_state_to_neighboring_states(stcMatrix,StcCor{s}{'n'},0.18*xyz{s}.sampleRate);
     
-    disp([verbosePrefix,'Assign all periods with high mean heights to rear']);    
+    disp([verbosePrefix,'Assign PAUSE periods with low duration ( < 0.18 sec ) to neighboring states']);        
+    [stcMatrix] = reassign_low_duration_state_to_neighboring_states(stcMatrix,StcCor{s}{'p'},0.18*xyz{s}.sampleRate);    
+    
+    disp([verbosePrefix,'Assign WALK periods with low duration ( < 0.18 sec ) to neighboring states']);    
+    [stcMatrix] = reassign_low_duration_state_to_neighboring_states(stcMatrix,StcCor{s}{'w'},0.18*xyz{s}.sampleRate);
+
+% DIAGNOSTIC plot stc
+% $$$     StcDiag{s} = mat2stc(stcMatrix,StcCor{s},features{s},Trials{s},states,keys);
+% $$$     figure(stcFig)
+% $$$     subplot(412);
+% $$$     plotSTC(StcDiag{s}); ylim([-0.5,6.5])
+% $$$     linkaxes(findobj(stcFig,'Type','axes'),'xy');
+
+    
+    % UPDATE states collection    
+    StcCor{s} = mat2stc(stcMatrix,StcCor{s},features{s},Trials{s},states,keys);
+    [stcMatrix] = stc2mat(StcCor{s},xyz{s},states);    
+    
+    disp([verbosePrefix,'Assign ALL periods with high mean heights (>135mm) to REAR']);    
     for key = 'wnpms',
         keyVec  = stateVectors(find(key==cell2mat(keys)),:);
-        rearVec = stateVectors(find('r'==cell2mat(keys)),:);
-        rthresh = 135;
         try,
             for rp = StcCor{s}{key}.data',
-                rhh = max(features{s}(rp',14));
-                if rhh > rthresh,
+                if 130 < max(features{s}(rp',14)),
 % REASSIGN state to rear                                    
                     stcMatrix(rp(1):rp(2),:) = repmat(rearVec,[diff(rp)+1,1]);
                 end
@@ -188,18 +221,15 @@ for s = 1:numTrials,
         end
     end
 
-
-    disp([verbosePrefix,'REAR remove periods which have too low mean heights']);
+    disp([verbosePrefix,'Remove REAR periods which have too low mean heights (<125mm)']);
     % REAR remove periods which have low mean heights 
     key = 'r';
     keyVec  = stateVectors(find(key==cell2mat(keys)),:);
-    pauseVec = stateVectors(find('p'==cell2mat(keys)),:);    
-    rthresh = 125;
     try
         for rp = StcCor{s}{key}.data',
-            rhh = max(features{s}(rp',14));
-            if rhh < rthresh,
+            if  120 > max(features{s}(rp',14)),
 % REASSIGN rear to pause                
+% $$$                 stcMatrix = reassign_period_to_neighboring_states(rp,stcMatrix);
                 stcMatrix(rp(1):rp(2),:) = repmat(pauseVec,[diff(rp)+1,1]);
             end
         end
@@ -207,70 +237,74 @@ for s = 1:numTrials,
         disp(err);
     end
 
+% $$$     StcDiag{s} = mat2stc(stcMatrix,StcCor{s},features{s},Trials{s},states,keys);
+% $$$     figure(stcFig)
+% $$$     subplot(413);
+% $$$     plotSTC(StcDiag{s}); ylim([-0.5,6.5])
+% $$$     linkaxes(findobj(stcFig,'Type','axes'),'xy');
 
     % TURN angular displacement
-    %try, StcCor{s} = reassign_state_by_duration(StcCor{s},'n','p',0.1,tds,tps,@lt); end
-    disp([verbosePrefix 'Sort out turns with too low of ang displacement']);
+    disp([verbosePrefix,'Reassign TURN periods with too low of ang displacement to either walk or pause']);
     try
         key = 'n';
         keyVec  = stateVectors(find(key==cell2mat(keys)),:);
-        pauseVec = stateVectors(find('p'==cell2mat(keys)),:);
-        walkVec = stateVectors(find('w'==cell2mat(keys)),:);
-        wthresh = 4;
-        athresh = 1.4;
-        for rp = StcCor{s}{key}.data',
-            wd = mean(features{s}(rp',16));
-            ad = mean(abs(dang{s}(rp')));
-            if wd > wthresh && ad < athresh
-% REASSIGN turn to walk
-                stcMatrix(rp(1):rp(2),:) = repmat(walkVec,[diff(rp)+1,1]);
-            end           
-            if wd <= wthresh && ad <= athresh
+        angvelThresh = 0.35;
+        for rp = StcCor{s}{key}.data',  
+            tang = ang{s}(rp,'spine_lower','spine_upper',1);
+            if angvelThresh > abs(circ_dist(tang(1),tang(2))),
 % REASSIGN turn to pause
-                stcMatrix(rp(1):rp(2),:) = repmat(pauseVec,[diff(rp)+1,1]);
-            end            
+                
+                stcMatrix(rp(1):rp(2),:) = repmat(pauseVec,[diff(rp)+1,1]);                
+            end                
         end
     catch err
         disp(err);
-    end
+    end        
 
 
-    disp([verbosePrefix,'Assign pause to sit if too low and still']);
+    disp([verbosePrefix,'Reassign PAUSE to SIT if body middle too low (<86mm) and still (<0.2mm/sec)']);
     % PAUSE speed
     try
         key = 'p';
         keyVec  = stateVectors(find(key==cell2mat(keys)),:);
-        sitVec = stateVectors(find('s'==cell2mat(keys)),:);
-        walkVec = stateVectors(find('w'==cell2mat(keys)),:);
-        bthresh = 5;
-        wthresh = 0.2;
-        hthresh = 86;
+        heightThresh = 86;
+        %wd=[];for rp = StcCor{s}{key}.data',wd(end+1) = mean(mean(features{s}(rp',16:2:22)));end        
         for rp = StcCor{s}{key}.data',
-            wh = mean(features{s}(rp',13));
-            wb = features{s}(round(sum(rp)/2),16);
-            wba = mean(abs(features{s}(rp',16)));
-            if wba < wthresh && wh < hthresh,
+            if heightThresh > mean(features{s}(rp',13)) & 0.4 > mean(mean(abs(features{s}(rp',16:2:22)))) & 0.2 > mean(abs(features{s}(rp',16))),
 % REASSIGN pause to sit
                 stcMatrix(rp(1):rp(2),:) = repmat(sitVec,[diff(rp)+1,1]);
             end
-% $$$             if wb(end)>bthresh,
-% $$$                 stcMatrix(rp(1):rp(2),:) = repmat(walkVec,[diff(rp)+1,1]);
-% $$$             end
         end
     catch err
         disp(err);
     end
 
-
-    disp([verbosePrefix,'Assign groom to sit if too low and still']);
+    disp([verbosePrefix,'Reassign WALK to PAUSE if speed too low (<0.2mm/sec)']);
+    % PAUSE speed
+    try
+        key = 'w';
+        keyVec  = stateVectors(find(key==cell2mat(keys)),:);
+        speedThresh = 1.5;
+        %wd=[];for rp = StcCor{s}{key}.data',wd(end+1) = mean(features{s}(rp',16));end
+        for rp = StcCor{s}{key}.data',
+            if speedThresh > mean(features{s}(rp',16)),
+% REASSIGN pause to sit
+                stcMatrix(rp(1):rp(2),:) = repmat(pauseVec,[diff(rp)+1,1]);
+            end
+        end
+    catch err
+        disp(err);
+    end
+    
+    
+    
+    disp([verbosePrefix,'Reassign GROOM to SIT if body middle too low (<86mm) and still (<0.2mm/sec)']);
     try
         key = 'm';
         keyVec  = stateVectors(find(key==cell2mat(keys)),:);
-        sitVec = stateVectors(find('s'==cell2mat(keys)),:);
-        pauseVec = stateVectors(find('p'==cell2mat(keys)),:);        
         hthresh = 86;
         wthresh = 0.2;
-        gthresh = 140;
+        gthresh = 150;
         for rp = StcCor{s}{key}.data',
             wh   = mean(features{s}(rp',13));                    
             wd   = mean(abs(features{s}(rp',16)));
@@ -278,26 +312,24 @@ for s = 1:numTrials,
             if wd < wthresh && wh < hthresh,
 % REASSIGN groom to sit                
                 stcMatrix(rp(1):rp(2),:) = repmat(sitVec,[diff(rp)+1,1]);
-            end
-            if gd > gthresh,
+            elseif gd > gthresh,
+% REASSIGN groom to pause                                
                 stcMatrix(rp(1):rp(2),:) = repmat(pauseVec,[diff(rp)+1,1]);
             end
         end
     catch err
         disp(err);
     end
-    
 
-    disp([verbosePrefix,'Assign sit to pause if too fast']);
+    
+    disp([verbosePrefix,'Reassign sit to pause if too fast (>0.3mm/sec)']);    
     try
         key = 's';
         keyVec  = stateVectors(find(key==cell2mat(keys)),:);
-        pauseVec = stateVectors(find('p'==cell2mat(keys)),:);
         wthresh = .3;
-        %wdthresh = 2.*xyz{s}.sampleRate;
         for rp = StcCor{s}{key}.data',
             wd   = mean(abs(features{s}(rp',16)));
-            if wd > wthresh, % & wdur < wdthresh, 
+            if wd > wthresh,
 % REASSIGN sit to pause
                 stcMatrix(rp(1):rp(2),:) = repmat(pauseVec,[diff(rp)+1,1]);
             end
@@ -305,17 +337,29 @@ for s = 1:numTrials,
     catch err
         disp(err);
     end
+
+% UPDATE stc matrix    
+    StcCor{s} = mat2stc(stcMatrix,StcCor{s},features{s},Trials{s},states,keys);
+    [stcMatrix] = stc2mat(StcCor{s},xyz{s},states);        
     
-    StcCor{s} = mat2stc(stcMatrix,StcCor{s},features{s},Trials{s},states,keys);
-    [stcMatrix] = stc2mat(StcCor{s},xyz{s},states);    
-    [stcMatrix] = reassign_low_duration_state_to_neighboring_states(stcMatrix,StcCor{s}{'s'},5*xyz{s}.sampleRate);    
-    [stcMatrix] = reassign_low_duration_state_to_neighboring_states(stcMatrix,StcCor{s}{'m'},1.5*xyz{s}.sampleRate);        
-    [stcMatrix] = reassign_low_duration_state_to_neighboring_states(stcMatrix,StcCor{s}{'p'},0.2*xyz{s}.sampleRate);    
+    disp([verbosePrefix,'Assign SIT periods with low duration ( < 5 sec ) to neighboring states']);        
+    [stcMatrix] = reassign_low_duration_state_to_neighboring_states(stcMatrix,StcCor{s}{'s'},5*xyz{s}.sampleRate);
 
-    StcCor{s} = mat2stc(stcMatrix,StcCor{s},features{s},Trials{s},states,keys);
-    [stcMatrix] = stc2mat(StcCor{s},xyz{s},states);    
-    [stcMatrix] = reassign_low_duration_state_to_neighboring_states(stcMatrix,StcCor{s}{'s'},5*xyz{s}.sampleRate);    
 
+% $$$     StcCor{s} = mat2stc(stcMatrix,StcCor{s},features{s},Trials{s},states,keys);
+% $$$     [stcMatrix] = stc2mat(StcCor{s},xyz{s},states);    
+% $$$ 
+% $$$     disp([verbosePrefix,'Assign SIT periods with low duration ( < 6 sec ) to neighboring states']);            
+% $$$     [stcMatrix] = reassign_low_duration_state_to_neighboring_states(stcMatrix,StcCor{s}{'s'},4*xyz{s}.sampleRate);
+
+    
+% $$$     StcDiag{s} = mat2stc(stcMatrix,StcCor{s},features{s},Trials{s},states,keys);
+% $$$     figure(stcFig)
+% $$$     subplot(414);
+% $$$     plotSTC(StcDiag{s}); ylim([-0.5,6.5])
+% $$$     linkaxes(findobj(stcFig,'Type','axes'),'xy');
+
+    
     StcCor{s} = mat2stc(stcMatrix,StcCor{s},features{s},Trials{s},states,keys);
     
 end
@@ -450,20 +494,7 @@ cf(@(s) s.save(1), StcCor);
 
 % AUX METHODS --------------------------------------------------------------------------------------
 
-function [stcMatrix] = reassign_low_duration_state_to_neighboring_states(stcMatrix,state,duration)
-for rp = state.data'
-    wdur = diff(rp);
-    if wdur < duration,
-        try
-            startVec = stcMatrix(rp(1)-1,:);
-            stopVec  = stcMatrix(rp(2)+1,:);
-            midpoint = round(sum(rp)/2);
-            stcMatrix(rp(1):midpoint,:) = repmat(startVec,[midpoint-rp(1)+1,1]);
-            stcMatrix([midpoint+1]:rp(2),:) = repmat(stopVec, [rp(2)-midpoint,1]);
-        catch err
-            disp(err);
-        end
-    end
-end
+
+
 
 % END AUX METHODS ----------------------------------------------------------------------------------
