@@ -1,5 +1,14 @@
 function [popMean,popStd] = load_normalization_parameters_unity(functionName,varargin)
-
+%function [popMean,popStd] = load_normalization_parameters_unity(functionName,varargin)
+%
+% Set or Get a feature set's mean and std using a collection of Sessions
+%
+% Inputs:
+%   referenceTrial: (string)  'jg05-20120317.cof.all'
+%   sessionList:    (string)  'hand_labeled'
+%   tag             (string)  ''
+%   overwrite       (logical) false
+%
 global MTA_CURRENT_PROJECT
 global MTA_PROJECT_PATH
 

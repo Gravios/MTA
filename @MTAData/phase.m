@@ -5,7 +5,7 @@ function phs = phase(Data,varargin)
 tbp = Data.copy;
 tbp.filter('ButFilter',n,freq_range,'bandpass');
 tbp_hilbert = zeros(size(Data));
-tbp_hilbert(nniz(Data),:) = Shilbert(tbp.data(nniz(Data),:));
+tbp_hilbert(nniz(Data),:) = hilbert(tbp.data(nniz(Data),:));
 tbp_phase = phase(tbp_hilbert);
 DataClass = class(Data);
 phs = feval(DataClass,'data',tbp_phase,...

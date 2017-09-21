@@ -361,10 +361,10 @@ switch sessionList
     Sessions(end).includeSyncInd = [1,2,5,6,9,10];
     Sessions(end).offsets        = [15,-15];
       
-    Sessions(end+1) = Sessions(end);
-    Sessions(end).sessionName    = 'ER06-20130614';
-    Sessions(end).trialName      = 'gnd';
-    Sessions(end).includeSyncInd = [1:3,6:8,11,12];
+% $$$     Sessions(end+1) = Sessions(end);
+% $$$     Sessions(end).sessionName    = 'ER06-20130614';
+% $$$     Sessions(end).trialName      = 'gnd';
+% $$$     Sessions(end).includeSyncInd = [1:3,6:8,11,12];
 
     % 11-12    
     % Ed10 sessions
@@ -482,10 +482,10 @@ switch sessionList
     Sessions(end).includeSyncInd = [1,2,5,6,9,10];
     Sessions(end).offsets        = [15,-15];
       
-    Sessions(end+1) = Sessions(end);
-    Sessions(end).sessionName    = 'ER06-20130614';
-    Sessions(end).trialName      = 'gnd';
-    Sessions(end).includeSyncInd = [1:3,6:8,11,12];
+% $$$     Sessions(end+1) = Sessions(end);
+% $$$     Sessions(end).sessionName    = 'ER06-20130614';
+% $$$     Sessions(end).trialName      = 'gnd';
+% $$$     Sessions(end).includeSyncInd = [1:3,6:8,11,12];
 
     % 5-6
     % Ed01 Sessions

@@ -56,19 +56,9 @@ if ~exist(normalizationParameterFile,'file') || overwrite,
             repmat({refStd}, 1,numel(Trials)));
     end
     
-
-% $$$     [StcRnd,labelingEpochs,trainingFeatures] = cf(@(s,f,sts) ...
-% $$$             resample_whole_state_bootstrap_noisy_trim(s,f,sts,[100],10000),...
-% $$$             Stc,fet,repmat({states},1,numel(Trials)));
-    
     mm = cf(@(f)  bsxfun(@plus,prctile(f.data,[1,99]),[-4;4])    ,fet);
     mm = cat(3,mm{:});    
     mm = [min(mm(1,:,:),[],3)',max(mm(2,:,:),[],3)'];
-% $$$     fdata = [];
-% $$$     for s = 1:numSessions,
-% $$$         fdata = cat(1,fdata,trainingFeatures{s}.data);
-% $$$     end
-% $$$     mm = bsxfun(@plus,prctile(fdata,[0.1,99.9]),[-2;2]);
   
     popPS.name   = 'mapminmax';
     popPS.xrows  = size(fet{1},2);

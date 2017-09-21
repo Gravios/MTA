@@ -11,9 +11,20 @@ function [rhm,varargout] = fet_spec(Trial,fet,varargin)
 %
 parspec = empty_spec;
 
-[mode,wsig,sampleRate,defspec,overwrite] = ...
- DefaultArgs(varargin,{'mtchglong',true,120,def_spec_parm(fet),true});
+% DEFARGS ------------------------------------------------------------------------------------------
+defargs = struct('mode',                    'mtchglong',                                         ...
+                 'wsig',                    true,                                                ...
+                 'sampleRate',              120,                                                 ...
+                 'defspec',                 def_spec_parm(fet),                                  ...
+                 'overwrite',               true                                                 ...
+);
+[mode,wsig,sampleRate,defspec,overwrite] = DefaultArgs(varargin,defargs,'--struct');
+%---------------------------------------------------------------------------------------------------
 
+
+
+
+% MAIN ---------------------------------------------------------------------------------------------
 
 varargout = cell([1,nargout-1]);
 
@@ -95,5 +106,4 @@ end
 
 end
 
-
-
+% END MAIN -----------------------------------------------------------------------------------------

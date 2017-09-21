@@ -551,3 +551,14 @@
 %  Final_Forms: NA
 %  Description: Behavior subtyping with t-sne 
 %  Bugs: NA
+
+
+%% 2017 08 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+
+% req20170901 ----------------------------------------------------
+%
+%  Status: inactive
+%  Type: Analysis 
+%  Final_Forms: NA
+%  Description: Find head only features for grooming detection
+%  Bugs: NA

@@ -45,7 +45,7 @@ if isempty(Session.fet),
 end
 % DELBLOCK end
 
-filename = cellstr_append_str([Session.spath,'/'],list_files(Session.name,[Session.trialName,'.fet.',label,'.']));
+filename = cell2mat(cellstr_append_str([Session.spath,'/'],list_files(Session.name,[Session.trialName,'.fet.',label,'.'])));
 if overwrite||isempty(filename),
     txyz = xyz(:,markers,:);
     pnts = zeros([xyz.size(1),size(fnplt(cscvn(sq(txyz(1,:,:))'))',1),3]);
@@ -62,7 +62,7 @@ if overwrite||isempty(filename),
     ssp.updateFilename(Session);
     ssp.save;
 else
-    xyz = Trial.load('xyz',xyzMode)
+    xyz = Trial.load('xyz',xyzMode);
     ssp = Trial.load('fet',label);
 end
 

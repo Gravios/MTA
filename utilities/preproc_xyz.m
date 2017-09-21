@@ -6,7 +6,7 @@ function [xyz,ss] = preproc_xyz(Trial,varargin)
 % between subjects using a 
 %
 % Current Opts:
-%
+%    NONE
 %    SPLINE_SPINE
 %    SPLINE_SPINE_EQD
 %    SPLINE_SPINE_HEAD_EQI
@@ -188,9 +188,6 @@ while ~isempty(procOpts)
             Trial = MTATrial.validate(Trial.filebase);
             xyz = Trial.load('xyz','seh');
         end
-        if nargout>1,
-            ss = fet_spline_spine(Trial,'3dssh','trb');
-        end
         
       
       case 'SPLINE_SPINE_HEAD_EQD_NO_TRB'
@@ -235,9 +232,6 @@ while ~isempty(procOpts)
             Trial = MTATrial.validate(Trial.filebase);
             xyz = Trial.load('xyz','seh');
         end
-        if nargout>1,
-            ss = fet_spline_spine(Trial,'3dssh','trb');                
-        end
        
       case 'LOAD_TRB_XYZ'
         xyz = Trial.load('xyz','trb');
@@ -245,6 +239,11 @@ while ~isempty(procOpts)
     end
     procOpts(1) = [];
 end
+
+if nargout>1,
+    ss = fet_spline_spine(Trial,'3dssh','trb');                
+end
+
 
 % COM lower Body Center of Mass
 xyz.addMarker('bcom',...     Name

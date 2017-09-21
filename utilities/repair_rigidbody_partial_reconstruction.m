@@ -80,15 +80,9 @@ assert(rigidBody.N>3,['MTA:utilities:ERCOR_fillgaps_RidgidBody, ' ...
 
 % CREATE a rigidbody model and xyz object
 rxyz = xyz.copy;
-trxyz = rxyz.copy;
+rxyz.model = rigidBody;
 rxyz.data = xyz(:,rigidBody.ml,:);
-rxyz.model = rigidBody;
-
-
-%
-rxyz = xyz.copy;
-rxyz.model = rigidBody;
-rxyz.data = xyz(:,rigidBodyMarkers,:);
+trxyz = rxyz.copy;
 
 % CREATE an orthogonal coordinate system base on each Triad
 markerTriad = compute_marker_triads(rxyz);
@@ -108,12 +102,12 @@ end
 
 
 % COMPUTE the orthonormal triad basis for each frame
-[~,~,mtBasis] = cellfun(@(x) bsxfun(@rdivide,x,sqrt(sum(x.^2,2))),...
-                        cellfun(@squeeze,mat2cell(markerTriad.coor,...
-                                                  ones([size(markerTriad.coor,1),1]),...
-                                                  ones([size(markerTriad.coor,2),1]),3,3),...
-                                'UniformOutput',false),...
-                        'UniformOutput',false);
+mtBasis = cellfun(@(x) bsxfun(@rdivide,x,sqrt(sum(x.^2,2))),...
+                  cellfun(@squeeze,mat2cell(markerTriad.coor,...
+                                            ones([size(markerTriad.coor,1),1]),...
+                                            ones([size(markerTriad.coor,2),1]),3,3),...
+                          'UniformOutput',false),...
+                  'UniformOutput',false);
 
 reconstructedSolutions  = nan([size(markerTriad.nck,1),rigidBody.N-3,xyz.size(3),numel(goodIndicies)]);
 reconstructedSolutionsMarkerInds  = nan([size(markerTriad.nck,1),rigidBody.N-3]);
@@ -224,45 +218,64 @@ reconstructedSolution.var = cellfun(@(x) cov(sq(x)'),...
 
 
 % COMPUTE smoothed basis for reconstruction
-segSize = 11; % must be odd
-embMtBasis = nan([segSize,size(mtBasis)]);
-embMtBasis = reshape(mtBasis(bsxfun(@plus,[1:size(mtBasis,1)-segSize]',0:segSize-1),:),...
-                     [segSize,size(mtBasis,1)-segSize,size(mtBasis,2)]);
-embMtBasis = cellfun(@shiftdim,embMtBasis,repmat({-1},size(embMtBasis)),'UniformOutput',false);
+segSize = 15; % must be odd
+% $$$ embMtBasis = nan([segSize,size(mtBasis)]);
+% $$$ embMtBasis = reshape(mtBasis(bsxfun(@plus,[1:size(mtBasis,1)-segSize]',0:segSize-1),:),...
+% $$$                      [segSize,size(mtBasis,1)-segSize,size(mtBasis,2)]);
+% $$$ embMtBasis = cellfun(@shiftdim,embMtBasis,repmat({-1},size(embMtBasis)),'UniformOutput',false);
 
-smtBasis = repmat({nan([size(xyz,3),size(xyz,3)])},size(mtBasis));
-halfSeg = round(segSize/2);
-for i = halfSeg:size(mtBasis)-halfSeg,
+%smtBasis = repmat({nan([size(xyz,3),size(xyz,3)])},size(mtBasis));
+smtBasis = mtBasis;
+halfSeg = floor(segSize/2);
+for ind = halfSeg+1:size(mtBasis)-halfSeg,
     for nck = 1:size(markerTriad.nck,1),
-        smtBasis{i,nck} = sq(mean(cell2mat(embMtBasis(:,i-halfSeg+1,nck))));
+        smtBasis{ind,nck} = mean(cat(3,mtBasis{ind-halfSeg:ind+halfSeg,1}),3);
+        %smtBasis{i,nck} = sq(mean(cell2mat(embMtBasis(:,i-halfSeg+1,nck))));
     end
 end
 
 
-% COMUPUTE the distance b
-mrdist = nan([size(mtBasis,1),size(markerTriad.nck,1),1,2]);
+% COMUPUTE the distance between each reconstruction
+mrdist = nan([size(mtBasis,1),...
+              size(markerTriad.nck,1),...
+              size(reconstructedSolutionsMarkerInds,2),...
+              2]);
 sign = [1,-1];
-markerTriad.solutions = nan([size(mtBasis,1),size(markerTriad.nck,1),1,size(rxyz,3)]);
-markerTriad.oriMarkerNckCoor =nan([size(mtBasis,1),size(markerTriad.nck,1),1,size(rxyz,3)]);
-m = 1;
-% COMPUTE distance between reconstrution and original marker
-for nck = 1:size(markerTriad.nck,1)
-    markerTriad.solutions(:,nck,m,:) = ...
-        cell2mat(cellfun(@transpose,...
-                         cellfun(@(x,y) x*y', smtBasis(:,nck),... %mtBasis(:,nck),...
-                                 repmat(reconstructedSolution.mean(nck,m),...
-                                        size(mtBasis,1),1),...
-                                 'UniformOutput',false),...
-                         'UniformOutput',false)...
-                 );
-    markerTriad.oriMarkerNckCoor(:,nck,m,:) = sq(rxyz(:,reconstructedSolutionsMarkerInds(nck,1),:)...
-                                     -rxyz(:,markerTriad.nck(nck,2),:));    
-    for s = 1:2        
-        mrdist(:,nck,m,s) = sqrt(sum((markerTriad.solutions(:,nck,1,:)...
-                                     -sign(s).*markerTriad.oriMarkerNckCoor(:,nck,1,:)).^2,4));
+markerTriad.solutions = nan([size(mtBasis,1),...
+                    size(markerTriad.nck,1),...
+                    size(reconstructedSolutionsMarkerInds,2),...
+                    size(rxyz,3)]);
+markerTriad.oriMarkerNckCoor =nan([size(mtBasis,1),...
+                    size(markerTriad.nck,1),...
+                    size(reconstructedSolutionsMarkerInds,2),...
+                    size(rxyz,3)]);
+for m = 1:size(reconstructedSolutionsMarkerInds,2)
+    % COMPUTE distance between reconstrution and original marker
+    for nck = 1:size(markerTriad.nck,1)
+        markerTriad.solutions(:,nck,m,:) = ...
+            cell2mat(cellfun(@transpose,...
+                             cellfun(@(x,y) x'*y', ...
+                                     mtBasis(:,nck),... %smtBasis(:,nck),...
+                                     repmat(reconstructedSolution.mean(nck,m),...
+                                            size(mtBasis,1),1),...
+                                     'UniformOutput',false),...
+                             'UniformOutput',false)...
+                     );
+        markerTriad.oriMarkerNckCoor(:,nck,m,:) = sq(rxyz(:,reconstructedSolutionsMarkerInds(nck,m),:)...
+                                                     -rxyz(:,markerTriad.nck(nck,2),:));    
+        for s = 1:2        
+            mrdist(:,nck,m,s) = sqrt(sum((markerTriad.solutions(:,nck,m,:)...
+                                          +sign(s).*markerTriad.oriMarkerNckCoor(:,nck,m,:)).^2,4));
+        end
     end
 end
 
+
+
+imdo = cat(3,markerTriad.imd,markerTriad.imo);
+zimdo = bsxfun(@rdivide,bsxfun(@minus,imdo,mean(imdo(goodIndicies,:,:))),std(imdo(goodIndicies,:,:)));
+
+ang = create(MTADang,Session,xyz);
 figure,
 sp=[];
 for nck = 1:size(markerTriad.nck,1)
@@ -275,9 +288,6 @@ sp(5) = subplot(6,1,5); plot(mean(abs(zimdo),3))
 sp(6) = subplot(6,1,6); plot(ang(:,5,7,2)*20)
 linkaxes(sp,'xy')
 
-
-imdo = cat(3,markerTriad.imd,markerTriad.imo);
-zimdo = bsxfun(@rdivide,bsxfun(@minus,imdo,mean(imdo(goodIndicies,:,:))),std(imdo(goodIndicies,:,:)));
 
 
 [~,solSign] = min(mrdist(:,:,1,:),[],4);
@@ -321,7 +331,12 @@ nxyz = rxyz.copy;
 m = 1;
 for i = 2:size(rxyz,1),
     for bti = 1:size(markerTriad.nck,1),
-       nxyz.data(i,reconstructedSolutionsMarkerInds(bti,m),:) = sign(solSign(i,bti)).*shiftdim(markerTriad.solutions(i,bti,m,:),1)+rxyz(i,markerTriad.nck(bti,2),:);
+       nxyz.data(i,reconstructedSolutionsMarkerInds(bti,m),:) = ...
+              shiftdim(markerTriad.solutions(i,bti,m,:),1)...
+              +rxyz(i,markerTriad.nck(bti,2),:);
+% $$$        nxyz.data(i,reconstructedSolutionsMarkerInds(bti,m),:) = ...
+% $$$               sign(solSign(i,bti)).*shiftdim(markerTriad.solutions(i,bti,m,:),1)...
+% $$$               +rxyz(i,markerTriad.nck(bti,2),:);
     end
 end
 ncom = mean(nxyz.data,2);
@@ -329,13 +344,8 @@ ncs = sqrt(sum(diff(ncom).^2,3));
 
 figure,plot([rcs,ncs])
 
+% well I'm stuck here again
 
-
-
-% CREATE an orthogonal coordinate system base on each Triad
-newMarkerTriad = compute_marker_triads(nxyz);
-% COMPUTE new basis
-[~,~,newmtBasis] = cellfun(@svd,cellfun(@squeeze,mat2cell(newMarkerTriad.coor,ones([size(newMarkerTriad.coor,1),1]),ones([size(newMarkerTriad.coor,2),1]),3,3),'UniformOutput',false),'UniformOutput',false);
 
 
 

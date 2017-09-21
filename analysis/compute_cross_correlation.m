@@ -52,8 +52,8 @@ end
 FileName = fullfile(MTA_PROJECT_PATH,'analysis',['xcorr-',tag,'.mat']);
 
 if ~exist(FileName,'file') || overwrite,
-% CONVERT speed to log10 scale
-    features = cf(@(t) fet_bref(t), Trials);
+% LOAD features
+    features = cf(@(t,f) feval(f,t), Trials,repmat({featureSet},1,numel(Trials)));
 
 
 % MAP to a reference session
@@ -61,9 +61,11 @@ if ~exist(FileName,'file') || overwrite,
        features, Trials);
 
 % LOAD multi-session normalization parameters
-    [refMean,refStd] = load_normalization_parameters_unity('fet_bref',...
-                                                      'jg05-20120317.cof.all',...
-                                                      'hand_labeled');
+    [refMean,refStd] = load_normalization_parameters_unity(featureSet,        ... featureSet
+                                                      'jg05-20120317.cof.all',... referenceSession
+                                                      'hand_labeled',         ... sessionList
+                                                      '',                     ... tag
+                                                      false);                   % overwrite
 % NORMALIZE feature set
     cf(@(f,m,s) f.unity(@nan,m,s), ...
        features,...
@@ -94,7 +96,9 @@ if ~exist(FileName,'file') || overwrite,
         ind = cf(@(s,sts)  cast([s{sts}],'TimeSeries'),  stc,repmat({state},[1,numel(Trials)]));
               cf(@(i,f)    resample(i,f)              ,  ind,features);
         ind = cf(@(i)      i.data                     ,  ind);
-    
+        ind = round(mean(ThreshCross(logical(cat(1,ind{:})),0.5,1),2));
+        
+
     elseif iscell(state),
 % SELECT state spcific events
 % SELECT time points of a specific transition type and cast to TimeSeries
@@ -108,26 +112,30 @@ if ~exist(FileName,'file') || overwrite,
         ind        = cf(@(i,trans) subsasgn(i,substruct('()',{trans,1}),1), ...
                         ind,transIndex);
 % $$$         ind        = cf(@(i)       conv(i,ones([60,1]),'same')>=1,ind);
-          
+        ind = find(logical(cat(1,ind{:})));          
     elseif isa(state,'MTADepoch'),
         
     end
 
 % SELECT random time points from a state subset
     
-    ind = find(logical(cat(1,ind{:})));
-    nind = sum(ind==1);
-    sbound = [0,sbound];
 
-    
+
+    sbound = [0,sbound];
     for m = 1:size(v,2)
         for o = 1:size(v,2)
             sv = v;
             for s = 1:numel(sbound)-1,
                 sv = circshift(sv,-diff(sbound([s,s+1])));
-                segs = prod(cat(3,GetSegs(v(:,m),ind,60,1),GetSegs(sv(:,o),ind,60,1)),3);
-                segs(:,~nniz(segs')) = [];
-                ixy(s,m,o) = sum(median(segs,2));
+                xsegs = GetSegs(v(:,m),ind-30,60,nan);
+                ysegs = GetSegs(sv(:,o),ind-30,60,nan);
+                %segs = prod(cat(3,GetSegs(v(:,m),ind-30,60,1),GetSegs(sv(:,o),ind-30,60,1)),3);
+% $$$                 xsegs(:,~nniz(xsegs')) = [];
+% $$$                 ysegs(:,~nniz(ysegs')) = [];                
+                %ixy(s,m,o) = sum(median(segs,2));
+                ixy(s,m,o) = (nanmean(nanmean(bsxfun(@rdivide,bsxfun(@minus,xsegs,nanmean(xsegs)).*...
+                                                  bsxfun(@minus,ysegs,nanmean(ysegs)),...
+                                    nanstd(xsegs).*nanstd(ysegs)))));
             end
         end
     end

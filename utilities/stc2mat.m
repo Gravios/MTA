@@ -18,7 +18,11 @@ labels = {};
 g = 1;
 
 if numel(states)==1&&iscell(states)
-    sts = {Stc(states{:})};    
+    try,
+        sts = {Stc(states{:})};    
+    catch
+        sts = {Stc.states{1}};
+    end
 else
     sts = Stc(states{:});        
 end

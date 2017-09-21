@@ -18,7 +18,6 @@ defargs = struct('sampleRate',                            'xyz',                
                  'newSR',                                 [],                                    ...
                  'type',                                  'mta'                                  ...
 );
-{'xyz','mta',1,def_spec_parm(xyz),false,[],'mta'}
 [sampleRate,mode,wsig,defspec,overwrite,newSR,type] = DefaultArgs(varargin,defargs,'--struct');
 fs = []; ts = [];
 %---------------------------------------------------------------------------------------------------

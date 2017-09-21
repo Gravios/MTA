@@ -1,3 +1,10 @@
+% req20170901 ----------------------------------------------------
+%
+%  Status: inactive
+%  Type: Analysis 
+%  Final_Forms: NA
+%  Description: Find head only features for grooming detection
+%  Bugs: NA
 
 
 Trial = MTATrial('jg05-20120317');

@@ -100,7 +100,8 @@ if ~exist(FileName_coarse,'file') || overwrite,
         %aind.resample(xyz);
         aind.cast('TimeSeries');
         aind.resample(xyz);
-        ind = aind.data&ind;
+        aind.data(isnan(aind.data))=0;
+        ind = logical(aind.data)&ind;
     end
     
 
@@ -206,7 +207,8 @@ if ~exist(FileName_fine,'file')||overwrite,
         %aind.resample(xyz);
         aind.cast('TimeSeries');
         aind.resample(xyz);
-        ind = aind.data&ind;
+        aind.data(isnan(aind.data))=0;        
+        ind = logical(aind.data) & ind;
     end
     
     nvxyz = zeros([7,numel(ni),numel(nj),numel(nk)]);
@@ -324,7 +326,7 @@ end
 if display,
     figure(hfig);
     quiver3(mpos(:,1),mpos(:,2),mpos(:,3),varLines(:,1),varLines(:,2),varLines(:,3),3);
-    saveas(hfig,fullfile(Session.spath,[mfilename,'-fine.fig','fig']));
+    saveas(hfig,fullfile(Session.spath,[mfilename,'-fine','.fig']));
     delete(hfig);
 end
 

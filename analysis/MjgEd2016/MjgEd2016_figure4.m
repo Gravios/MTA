@@ -276,3 +276,49 @@ print(gcf,'-dpng',  fullfile(OwnDir,FigDir,[FigName,'.png']));
 
 
 %figure,plot(fet{1}(:,[17,25,30]));
+
+
+
+% FIG4PITCHANGVEL ---------------------------------------------------------------------------
+OwnDir = '/storage/gravio/nextcloud/';
+FigDir = 'Shared/Behavior Paper/Figures/Figure_4/parts';
+
+
+
+sessionList = 'hand_labeled';
+Trials = af(@(Trial)  MTATrial.validate(Trial),  get_session_list(sessionList));
+stc = cf(@(t)  t.load('stc'),  Trials);
+%features = cf(@(Trial)  fet_HB_pitchvel(Trial),  Trials);
+features = cf(@(Trial)  fet_HB_angvel(Trial),  Trials);
+
+s = 1;                           % jg05-20120317.cof.all
+%exampleTimePeriod = [2170,2198]; % seconds
+exampleTimePeriod = [2183,2191]; % seconds
+exampleTimePeriodStr = num2str(exampleTimePeriod);
+exampleTimePeriodStr(exampleTimePeriodStr==' ') = '_';
+
+
+
+hfig = figure(gen_figure_id);
+hfig.Units = 'centimeters';
+hfig.Position(3:4) = [15,10];
+% subplot 1 - Feature Matrix
+subplot2(4,1,1:3,1); 
+plot([1:size(features{s},1)]./features{s}.sampleRate,features{s}.data.*features{s}.sampleRate);
+ylim([-15,15]);
+legend({'body','head'});
+
+% subplot 2 - State Labels
+subplot2(4,1,4,1);
+plotSTC(stc{s},1);
+linkaxes(findobj(hfig,'Type','axes'),'x');
+
+% preprint formating
+ForAllSubplots(['xlim([',num2str(exampleTimePeriod),'])'])
+
+% save figure
+TrialName = [Trials{s}.name,'.',Trials{s}.maze.name,'.',Trials{s}.trialName];
+FigName = ['F4_',features{s}.label,'_',TrialName,'_',exampleTimePeriodStr];
+print(gcf,'-depsc2',fullfile(OwnDir,FigDir,[FigName,'.eps']));
+print(gcf,'-dpng',  fullfile(OwnDir,FigDir,[FigName,'.png']));
+% END FIG4PITCHANGVEL ------------------------------------------------------------------------

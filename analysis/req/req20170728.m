@@ -400,15 +400,69 @@ plot(ixy(:,6,8))
 
 
 %% XCORR stuff
+OwnDir = '/storage/gravio/nextcloud/';
+FigDir = 'Shared/Behavior Paper/Figures/Figure_4/parts';
+
+sbound = -240:240;
+randomIndex = [];
+rng(20170728);
+while numel(randomIndex)<1000
+    randomIndex = randi([-1e5,1e5],[1,10000]);
+    randomIndex(abs(randomIndex)<240) = [];
+end
+randomIndex = randomIndex(1:1e3);
+
+sampleRate = 119.991035;
 overwrite = false;
+
+stl = 'transition';
 stateTransitions = {{'pause','walk'},{'pause','turn'},{'pause+walk','rear'}};
-stateTransition = stateTransitions{1};
-for stateTransition = stateTransitions,
-    stateTransition = stateTransition{1};
-    [dstate,mdstate] = compute_cross_correlation(...
-        'featureSet', 'fet_HB_ptich',...
-        'state',  stateTransition,...
-        'sbound', sbound,...
+
+stl = 'centered';
+stateTransitions = {'walk','turn','rear'};
+dstate = {}; mdstate = {};
+featureSet = 'fet_HB_pitchvel';
+featureSet = 'fet_HB_angvel';
+for s = 1:numel(stateTransitions),
+    [dstate{s},mdstate{s}] = compute_cross_correlation(...
+        'featureSet', featureSet,                 ...
+        'featureSubset', ':',                          ...
+        'state',  stateTransitions{s},                 ...
+        'sbound', sbound,                              ...
         'overwrite',overwrite);
+    [dRnd{s},mdRnd{s}]     = compute_cross_correlation(...
+        'featureSet', featureSet,                 ...
+        'featureSubset', ':',                          ...        
+        'state',  stateTransitions{s},                  ...
+        'sbound', randomIndex,                         ...
+        'overwrite',overwrite);
+    
 end
 
+figure();hold('on');
+sc = 'bgr';
+for s = 1:3,    
+    plot([1:size(dstate{s},1)]./sampleRate-round(size(dstate{s},1)/2)./sampleRate,dstate{s}(:,1,2),sc(s));
+end
+legend({'walk','turn','rear'})
+title(['head body xcorr:',featureSet]);
+xlabel('Time (s)')
+ylabel('Correlation')
+xlim([-0.5,0.5]);
+
+FigName = ['xcorr_head_body-',featureSet,'-',stl];
+print(gcf,'-depsc2',fullfile(OwnDir,FigDir,[FigName,'.eps']));
+print(gcf,'-dpng',  fullfile(OwnDir,FigDir,[FigName,'.png']));
+
+
+Trial = MTATrial.validate('jg05-20120317.cof.all');
+fet = fet_bref(Trial);
+stc = Trial.load('stc','hand_labeled_rev3_jg');
+sfet = MTADfet.encapsulate(Trial,fet(:,[17,25]),fet.sampleRate,'bla','bla','b');
+plot_features_with_stc(sfet,stc);
+feta = fet_HB_angvel(Trial);
+plot_features_with_stc(feta,stc,'fetLabels',{{'body','body-head','head'}});
+
+
+fetab = MTADfet.encapsulate(Trial,unity([feta(:,[2]),fet(:,17)]),fet.sampleRate,'bla','bla','b');
+plot_features_with_stc(fetab,stc);

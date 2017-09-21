@@ -2,7 +2,7 @@ function [location,occupancy] = identify_homebase_locations(Trial)
 %function homebaseLocation = identify_homebase_locations(Trial)
 % Returns up to 3 locations which are to be homebases of rodent subject
 
-xyz = preproc_xyz(Trial,'SPLINE_SPINE_HEAD_EQD');
+xyz = preproc_xyz(Trial,'SPLINE_SPINE_HEAD_EQI');
 state = Trial.stc{'pause'};
 type = 'xy';
 binSize = 20; %mm

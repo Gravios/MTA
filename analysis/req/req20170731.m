@@ -13,7 +13,7 @@ defargs = struct('sessionList',                 '',                             
                  'model',                       [],                                            ...
                  'sampleRate',                  10,                                            ...
                  'nNeurons',                    25,                                            ...
-                 'nIter',                       10,                                            ...
+                 'nIter',                       100,                                            ...
                  'randomizationMethod',         'WSBNT',                                       ...
                  'map2reference',               true,                                          ...
                  'normalize',                   true,                                          ...
@@ -109,10 +109,10 @@ generate_nn_label_stats_multi_session('display')
 % $$$ generate_nn_label_stats_multi_session('display', [],'fet_bref_rev12','nIter',10,'randomizationMethod','WSBT')
 
 % COMPLETE 
-% $$$ generate_nn_label_stats_multi_session('train',   [],'fet_mis','nIter',10,'randomizationMethod','WSBT')
-% $$$ generate_nn_label_stats_multi_session('compute', [],'fet_mis','nIter',10,'randomizationMethod','WSBT')
-% $$$ generate_nn_label_stats_multi_session('optimize',[],'fet_mis','nIter',10,'randomizationMethod','WSBT')
-% $$$ generate_nn_label_stats_multi_session('display', [],'fet_mis','nIter',10,'randomizationMethod','WSBT')
+generate_nn_label_stats_multi_session('train',   [],'fet_mis','nIter',10,'randomizationMethod','WSBT')
+generate_nn_label_stats_multi_session('compute', [],'fet_mis','nIter',10,'randomizationMethod','WSBT')
+generate_nn_label_stats_multi_session('optimize',[],'fet_mis','nIter',10,'randomizationMethod','WSBT')
+generate_nn_label_stats_multi_session('display', [],'fet_mis','nIter',10,'randomizationMethod','WSBT')
 
 % INCOMPLETE 
 generate_nn_label_stats_multi_session('train',   [],'fet_mis','nIter',100,'randomizationMethod','WSBT')
@@ -222,3 +222,29 @@ for s=1:6,stsOpt.labelingStats(s),end
 mean([[stsRaw.labelingStats(:).accuracy]',[stsOpt.labelingStats(:).accuracy]'])
 diff([[stsRaw.labelingStats(:).accuracy]',[stsOpt.labelingStats(:).accuracy]'],1,2)
 mean(diff([[stsRaw.labelingStats(:).accuracy]',[stsOpt.labelingStats(:).accuracy]'],1,2))
+
+
+% WEIGHTED network output
+
+
+% COMPLETE 
+% $$$ generate_nn_label_stats_multi_session_weighted('train',   [],'fet_bref_rev7','nIter',100)
+% $$$ generate_nn_label_stats_multi_session_weighted('compute', [],'fet_bref_rev7','nIter',100)
+% $$$ generate_nn_label_stats_multi_session_weighted('optimize',[],'fet_bref_rev7','nIter',100)
+generate_nn_label_stats_multi_session_weighted('display', [],'fet_bref_rev7','nIter',100)
+
+
+generate_nn_label_stats_multi_session_weighted('train',   [],'fet_mis','nIter',100,'randomizationMethod','WSBT')g
+enerate_nn_label_stats_multi_session_weighted('compute', [],'fet_mis','nIter',100,'randomizationMethod','WSBT')
+generate_nn_label_stats_multi_session_weighted('optimize',[],'fet_mis','nIter',100,'randomizationMethod','WSBT')
+generate_nn_label_stats_multi_session_weighted('display', [],'fet_mis','nIter',100,'randomizationMethod','WSBT')
+
+
+
+% Score fragmentation
+
+% number of fragments within hand labeled periods measured by counting the number of neural-network
+% label centers within each hand label.
+
+
+

@@ -34,6 +34,11 @@ switch features.label
   case 'fet_bref_TH'
     fetInds   = [1:8];
     diffFun   = repmat({@minus},1,numel(fetInds));
+  
+  case 'fet_bref_rev14'
+    fetInds   = [1:15];
+    diffFun   = repmat({@minus},1,numel(fetInds));
+  
   case 'fet_bref_rev13'
     fetInds   = [1:9];
     diffFun   = repmat({@minus},1,numel(fetInds));
@@ -220,7 +225,8 @@ switch features.label
     diffFun =   cat(2,repmat({@minus},1,5),repmat({@circ_dist},1,3));
     %diffFun =   cat(2,repmat({@minus},1,5),repmat({@circ_dist},1,3),{@minus});
   otherwise ,
-    warning('MTA:MTADfet:map_to_reference_session:FeatureSetNotFound');
+    warning('MTA:MTADfet:map_to_reference_session:FeatureSetNotFound',...
+            'MTA:MTADfet:map_to_reference_session:FeatureSetNotFound');
     return;
 end  
 
