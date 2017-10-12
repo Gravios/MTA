@@ -9,8 +9,8 @@ function [handleImage, handleColorbar] = imagescnan(imageData, varargin)
 %      handleColorbar: colorbar graphics handle
 %
 % varargin:
-%      colorLimits default = min/max
-%                 'dataType',                  'linear',  ...
+%      colorLimits: default = min/max
+%      dataType:                  'linear',  ...
 %                 'colorbarIsRequired',        false,     ...
 %                 'nanRGB',                    [1,0,0.8], ...
 %                 'gamma',                     1,         ...
@@ -50,8 +50,8 @@ if iscell(imageData)
     imageData = imageData{3};
 else
 % ASSIGN image axes' domains
-    Xax = [1:size(imageData,2)];
-    Yax = [1:size(imageData,1)];
+    Xax = [1:size(imageData,1)];
+    Yax = [1:size(imageData,2)];
 end
 
 if ~isreal(imageData)
@@ -80,7 +80,7 @@ switch dataType
     finalImage = reshape(repmat(bins,[1,1,3]),[],3);
     finalImage(nniz(finalImage),:) = cm(finalImage(nniz(finalImage),1),:);
     finalImage(isnan(imageData(:)),:) = repmat(nanRGB,[sum(isnan(imageData(:))),1]);
-    finalImage = reshape(finalImage,[numel(Xax),numel(Yax),3]);
+    finalImage = reshape(finalImage,[numel(Yax),numel(Xax),3]);
 
 
   case 'circular'
@@ -89,7 +89,7 @@ switch dataType
     finalImage = reshape(repmat(bins,[1,1,3]),[],3);
     finalImage(nniz(finalImage),:) = cm(finalImage(nniz(finalImage),1),:);
     finalImage(isnan(imageData(:)),:) = repmat(nanRGB,[sum(isnan(imageData(:))),1]);
-    finalImage = reshape(finalImage,[numel(Xax),numel(Yax),3]);
+    finalImage = reshape(finalImage,[numel(Yax),numel(Xax),3]);
   
   case 'complex', ... may need some work
     Hsv(:,:,1) = clip((imageData-colorLimits(1))./(colorLimits(2)-colorLimits(1)),0,1).^Gamma;
@@ -111,6 +111,7 @@ switch dataType
     % end
     
 end
+
 
 
 try 

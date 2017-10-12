@@ -1,4 +1,4 @@
-function [fet,featureTitles,featureDesc,Nmean,Nstd] = fet_bref(Trial,varargin)
+function [fet,featureTitles,featureDesc,Nmean,Nstd] = fet_bref_sph(Trial,varargin)
 % function [fet,featureTitles,featureDesc,Nmean,Nstd] = fet_mis(Trial,varargin)
 % 
 % varargin:
@@ -50,7 +50,7 @@ clear('hcom');
 
 % Tranlational movements relative to body
 shft = 3;
-tmar = {'spine_lower','pelvis_root','spine_middle','spine_upper','hcom'};
+tmar = {'spine_lower','pelvis_root','spine_middle','spine_upper','hcom','head_front'};
 tvec = [];cvec = [];,zvec=[];
 for m = 1:numel(tmar),
     tvec(:,m,:) = circshift(xyz(:,tmar{m},[1,2]),-shft)-circshift(xyz(:,tmar{m},[1,2]),shft);
@@ -79,7 +79,7 @@ end
 
 
 shft = 0;
-tmar = {'spine_lower','pelvis_root','spine_middle','spine_upper','hcom'};
+tmar = {'spine_lower','pelvis_root','spine_middle','spine_upper','hcom','head_front'};
 tvec = [];cvec = [];,zvec=[];
 for m = 1:numel(tmar),
     tvec(:,m,:) = circshift(xyz(:,tmar{m},[1,2]),-shft)-circshift(xyz(:,'bcom',[1,2]),shft);

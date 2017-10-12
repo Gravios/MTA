@@ -7,7 +7,19 @@ NBINS = 20;
 VEL_HISTOGRAM_BOUNDARIES = linspace(-3,2,NBINS);
 HEIGHT_HISTOGRAM_BOUNDARIES = linspace(0,200,NBINS);
 
-xyz = preproc_xyz(Trial,'SPLINE_SPINE_HEAD_EQD');
+
+% INITIALIZE output
+mz = {};
+vz = {};
+cz = {};
+czDom = {};
+
+%---------------------------------------------------------------------------------------------------
+
+
+% MAIN ---------------------------------------------------------------------------------------------
+
+xyz = preproc_xyz(Trial,'SPLINE_SPINE_HEAD_EQI');
 xyz.resample(Data);
 
 vxy = xyz.copy;
@@ -15,21 +27,20 @@ vxy.filter('ButFilter',3,2.4,'low');
 vxy = vxy.vel({'bcom','hcom'},[1,2]);
 vxy.data(vxy.data<1e-3) = 1e-3;
 vxy.data = log10(vxy.data);
-%---------------------------------------------------------------------------------------------------
 
-
-% MAIN ---------------------------------------------------------------------------------------------
-% Get the bin index for each marginal distribution
+% FIND the bin indicies for each marginal distribution
 [~,ind_v_b] = histc(vxy(:,'bcom'),VEL_HISTOGRAM_BOUNDARIES);
 [~,ind_v_h] = histc(vxy(:,'hcom'),VEL_HISTOGRAM_BOUNDARIES);
 [~,ind_z_a] = histc(xyz(:,'acom',3),HEIGHT_HISTOGRAM_BOUNDARIES);
-
 
 % SELECT only non-zero points whithout rearing and grooming
 if ~isempty(regexpi(Trial.stc.mode,'^hand_labeled.*')),
     ind = Trial.stc('a-m-r').cast('TimeSeries');
     ind.resample(Data);
-else
+elseif ~isempty(regexpi(Trial.stc.mode,'^mswnn_ppsvd$')),    
+    ind = Trial.stc('a-m-r').cast('TimeSeries');
+    ind.resample(Data);
+else,
     ang = create(MTADang,Trial,xyz);    
     ind = Trial.stc('a').cast('TimeSeries');
     ind.resample(Data);

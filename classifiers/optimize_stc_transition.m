@@ -359,6 +359,18 @@ for s = 1:numTrials,
     disp([verbosePrefix,'Assign SIT periods with low duration ( < 5 sec ) to neighboring states']);        
     [stcMatrix] = reassign_low_duration_state_to_neighboring_states(stcMatrix,StcCor{s}{'s'},5*xyz{s}.sampleRate);
 
+% $$$     StcCor{s} = mat2stc(stcMatrix,StcCor{s},features{s},Trials{s},states,keys);
+% $$$     [stcMatrix] = stc2mat(StcCor{s},xyz{s},states);        
+% $$$ 
+% $$$     disp([verbosePrefix,'Assign2 TURN periods with low duration ( < 0.18 sec ) to neighboring states']);    
+% $$$     [stcMatrix] = reassign_low_duration_state_to_neighboring_states(stcMatrix,StcCor{s}{'n'},0.18*xyz{s}.sampleRate);
+% $$$     
+% $$$     disp([verbosePrefix,'Assign PAUSE periods with low duration ( < 0.18 sec ) to neighboring states']);        
+% $$$     [stcMatrix] = reassign_low_duration_state_to_neighboring_states(stcMatrix,StcCor{s}{'p'},0.18*xyz{s}.sampleRate);
+% $$$     
+% $$$     disp([verbosePrefix,'Assign WALK periods with low duration ( < 0.18 sec ) to neighboring states']);    
+% $$$     [stcMatrix] = reassign_low_duration_state_to_neighboring_states(stcMatrix,StcCor{s}{'w'},0.18*xyz{s}.sampleRate);
+
 
 % $$$     StcCor{s} = mat2stc(stcMatrix,StcCor{s},features{s},Trials{s},states,keys);
 % $$$     [stcMatrix] = stc2mat(StcCor{s},xyz{s},states);    

@@ -4,6 +4,12 @@
 % B. Time lagged mutual information of head and body angular velocities
 % C. 
 
+% Time Periods for exemplification of features
+%exampleTimePeriod = [2170,2198]; % seconds
+exampleTimePeriod = [2183,2187]; % seconds
+exampleTimePeriodStr = num2str(exampleTimePeriod);
+exampleTimePeriodStr(exampleTimePeriodStr==' ') = '_';
+
 
 sessionList = 'hand_labeled';
 Trials = af(@(Trial) MTATrial.validate(Trial), get_session_list(sessionList));
@@ -121,7 +127,7 @@ param = struct('sessionList',            'hand_labeled',...
 % DEF figure variables -----------------------------------------------------------------
 
 % figure save paths
-OwnDir = '/storage/gravio/ownCloud/';
+OwnDir = '/storage/gravio/nextcloud/';
 FigDir = 'Shared/Behavior Paper/Figures/Figure_4/parts';
 
 states = {'walk','rear','turn','pause','groom','sit'};
@@ -278,33 +284,65 @@ print(gcf,'-dpng',  fullfile(OwnDir,FigDir,[FigName,'.png']));
 %figure,plot(fet{1}(:,[17,25,30]));
 
 
+% FIG4FETMAT ---------------------------------------------------------------------------
+% project: MjgEd2016
+% parent: figure 4
+% subplots:
+%    subplot 1: Selected timeperiod of feature matrix
+%    subplot 2: Corresponds to subplot 1, contains state labels
+% location: MjgEd2016_figure4.m
+%
+s = 1
+hfig = figure(gen_figure_id);
+hfig.Units = 'centimeters';
+hfig.Position(3:4) = [15,10];
+% subplot 1 - Feature Matrix
+sp = subplot2(4,1,1:3,1); 
+imagesc(ts{s},1:30,fet{s}(:,[16:2:24,17:2:25,26:30])');
+axis xy
+caxis([-6,6]);
+sp(1).YTick = [2.5,7.5,12.5,17.5,22.5,27.5];
+sp(1).YTickLabels = {'Dist2COM_F','Dist2COM_L','Dist2MAZE_Z',...
+                    'dF/dt','dL/dt','dZ/dt'};
+hcb = colorbar;
+hcb.Position(1) = hcb.Position(1)+0.1;
+% subplot 2 - State Labels
+sp(2) = subplot2(4,1,4,1);
+plotSTC(Stc{s},1,'text',states,sclr,[],false);
+linkaxes(sp,'x');
+
+% preprint formating
+ForAllSubplots(['xlim([',num2str(exampleTimePeriod),'])'])
+
+% save figure
+TrialName = [sessionList(s).sessionName,'.',sessionList(s).mazeName,'.',sessionList(s).trialName];
+FigName = ['featureMatrix_',TrialName,'_',exampleTimePeriodStr];
+print(gcf,'-depsc2',fullfile(OwnDir,FigDir,[FigName,'.eps']));
+print(gcf,'-dpng',  fullfile(OwnDir,FigDir,[FigName,'.png']));
+
+
+% END FIG3FETMAT ---------------------------------------------------------------------------
+
+
+
 
 % FIG4PITCHANGVEL ---------------------------------------------------------------------------
-OwnDir = '/storage/gravio/nextcloud/';
-FigDir = 'Shared/Behavior Paper/Figures/Figure_4/parts';
-
 
 
 sessionList = 'hand_labeled';
 Trials = af(@(Trial)  MTATrial.validate(Trial),  get_session_list(sessionList));
 stc = cf(@(t)  t.load('stc'),  Trials);
-%features = cf(@(Trial)  fet_HB_pitchvel(Trial),  Trials);
+features = cf(@(Trial)  fet_HB_pitchvel(Trial),  Trials);
 features = cf(@(Trial)  fet_HB_angvel(Trial),  Trials);
 
 s = 1;                           % jg05-20120317.cof.all
-%exampleTimePeriod = [2170,2198]; % seconds
-exampleTimePeriod = [2183,2191]; % seconds
-exampleTimePeriodStr = num2str(exampleTimePeriod);
-exampleTimePeriodStr(exampleTimePeriodStr==' ') = '_';
-
-
 
 hfig = figure(gen_figure_id);
 hfig.Units = 'centimeters';
 hfig.Position(3:4) = [15,10];
 % subplot 1 - Feature Matrix
 subplot2(4,1,1:3,1); 
-plot([1:size(features{s},1)]./features{s}.sampleRate,features{s}.data.*features{s}.sampleRate);
+plot([1:size(features{s},1)]./features{s}.sampleRate,features{s}.data(:,[1,3]).*features{s}.sampleRate);
 ylim([-15,15]);
 legend({'body','head'});
 

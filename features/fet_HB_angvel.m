@@ -12,7 +12,7 @@ function [fet,featureTitles,featureDesc] = fet_HB_angvel(Trial,varargin)
 defargs = struct('newSampleRate', Trial.xyz.sampleRate,                                          ...
                  'normalize'    , false,                                                         ...
                  'procOpts'     , {'SPLINE_SPINE_HEAD_EQI'},                                     ...
-                 'filtFreq'     , 6                                                              ...
+                 'filtFreq'     , 30                                                             ...
 );
 [newSampleRate,normalize,procOpts,filtFreq] = DefaultArgs(varargin,defargs,'--struct');
 %--------------------------------------------------------------------------------------------------
@@ -33,7 +33,8 @@ fet = MTADfet(Trial.spath,...
 % XYZ preprocessed 
 xyz = preproc_xyz(Trial,procOpts);
 xyz.resample(newSampleRate);
-xyz.filter('ButFilter',3,filtFreq,'low');
+%xyz.filter('ButFilter',3,filtFreq,'low');
+xyz.filter('RectFilter');
 
 % ANG Filtered Intermarker angles 
 ang = create(MTADang,Trial,xyz);
@@ -53,6 +54,8 @@ if nargout>1,
     featureTitles(end+1) = {'Yaw AngVel BPBU'};    
     featureDesc(end+1) = {['body angular velocity within xy plane']};
     featureTitles(end+1) = {'Yaw AngVel BUHC'};    
+    featureDesc(end+1) = {['head body angular velocity within xy plane']};
+    featureTitles(end+1) = {'Yaw AngVel HBHF'};    
     featureDesc(end+1) = {['head angular velocity within xy plane']};
 end
 

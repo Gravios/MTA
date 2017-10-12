@@ -7,7 +7,18 @@ function nq = NeuronQuality(Session, varargin)
 
 Par = LoadXml(fullfile(Session.spath,[Session.name '.xml']));
 
-[Electrodes,Display,Batch,overwrite] = DefaultArgs(varargin,{[1:Par.nElecGps],0,0,0});
+% DEFARGS ------------------------------------------------------------------------------------------
+defargs = struct('Electrodes',                      [1:Par.nElecGps],                            ...
+                 'Display',                         false,                                       ...
+                 'Batch',                           false,                                       ...
+                 'overwrite',                       false                                        ...
+);
+[Electrodes,Display,Batch,overwrite] = DefaultArgs(varargin,defargs,'--struct');
+%---------------------------------------------------------------------------------------------------
+
+
+
+% MAIN ---------------------------------------------------------------------------------------------
 nq =struct([]);
 
 if exist(fullfile(Session.spath,[Session.name '.NeuronQuality.mat']),'file') & ~overwrite
@@ -69,7 +80,7 @@ for el=GoodElectrodes
         % create represantative spikes sample for good cells
     end
     avSpk =[]; stdSpk = [];SpatLocal=[];SpkWidthC=[];SpkWidthL=[];SpkWidthR=[];posSpk=[];FirRate = [];AvSpkAll=[];
-    leftmax=[]; rightmax=[];troughamp=[];troughSD=[];
+    leftmax=[]; rightmax=[];troughamp=[];troughSD=[];spkMaxchanAll=[];
     for cnum=1:nClu
         % get spike wavesdhapes and compute SNR
         if nspk>0 % if there was a .spk file 
@@ -161,6 +172,7 @@ for el=GoodElectrodes
                 troughTime = troughTime*Sample2Msec;
                 if posSpk(cnum);	myAvSpk = -myAvSpk; end
                 AvSpkAll(cnum,:) = myAvSpk;
+                spkMaxchanAll(cnum,:) = maxampch;
                 
                 if Display
                     figure(765)
@@ -241,6 +253,7 @@ for el=GoodElectrodes
     nq(el).SpatLocal=SpatLocal';
     nq(el).FirRate = FirRate';
     nq(el).AvSpk = AvSpkAll;
+    nq(el).maxAmpChan = spkMaxchanAll;
     nq(el).RightMax= rightmax';
     nq(el).LeftMax= leftmax';
     nq(el).CenterMax= troughamp';
@@ -258,5 +271,5 @@ nq =CatStruct(nq);
 save(fullfile(Session.spath,[Session.name '.NeuronQuality.mat']),'nq');
 
 
-
+% END MAIN -----------------------------------------------------------------------------------------
 

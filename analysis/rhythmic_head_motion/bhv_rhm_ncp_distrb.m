@@ -37,7 +37,7 @@ xyz.filter('ButFilter',3,2.4,'low');
 disp(['bhv_rhm_ncp_distrb: ' Trial.filebase])
 
 % SELECT behavioral state collection
-stc = Trial.load(stc,stcMode);
+stc = Trial.load('stc',stcMode);
 
 
 % LOAD Rythmic Head Motion(RHM) feature
@@ -46,6 +46,8 @@ stc = Trial.load(stc,stcMode);
 %rhm = fet_rhm(Trial);
 %rhm = fet_rhmPCA(Trial);
 rhm = fet_rhm(Trial);
+%rhm = fet_rhp(Trial);
+%rhm = fet_rhm_rf(Trial);
 rhm.resample(xyz);
 rhm.data(~nniz(rhm.data(:))) = 1;
 
@@ -97,8 +99,9 @@ for s = 1;
 
     clf;
     %sind = stc.states{s}.copy;
-    %sind = stc{'a-m-s'};%+[1,-1];
-    sind = stc{'w+n+p'};%+[1,-1];
+    sind = stc{'a-m-s'};%+[1,-1];
+    %sind = stc{'w+n+p'};%+[1,-1];
+    %sind = stc{'a&w'};%+[1,-1];
     %sind = stc{'w+q'}+[1,-1];
     %sind.resample(ys);
 
@@ -174,8 +177,8 @@ for s = 1;
             vhs = clip(vhrhm,-9,5);
             vhs = vhs(ind);
             vhlim =prctile(vhs,[2,98]);
-            vh_label = 'RHM_pow(5-13)'
-            vh_units = 'cm^2/s'
+            vh_label = 'RHM_pow(5-13)';
+            vh_units = 'cm^2/s';
         end 
         vys = nys(sind,:,:,:);
         vys = vys(ind,:,:,:);
@@ -228,7 +231,7 @@ for s = 1;
         
         %% RHM psd
         subplot2(3,numel(mode),1,m);
-        imagesc(vedgs,fs,mrv(:,:,1)',[0,max(prctile(mrv(nniz(mrv),:,1),[95]),[],2)]),axis xy
+        imagesc(vedgs,fs,mrv(:,:,1)',[0,max(prctile(mrv(nniz(mrv),:,1),[95]),[],2)]);,axis xy
         title({[chan_labels{1} ' mean PSD Binned by '],[ vh_label]})
         xlabel(['Binned ' vh_label ' (' vh_units ')']);
         ylabel('Frequency Hz')
@@ -238,7 +241,7 @@ for s = 1;
 
         %% NCP psd
         subplot2(3,numel(mode),2,m);        
-        imagesc(vedgs,fs,mrv(:,:,2)',[0,max(prctile(mrv(nniz(mrv),:,2),[95]),[],2)]),axis xy
+        imagesc(vedgs,fs,mrv(:,:,2)',[0,max(prctile(mrv(nniz(mrv),:,2),[95]),[],2)]);,axis xy
         title({[chan_labels{2} ' mean PSD Binned by '],[ vh_label]})
         xlabel(['Binned ' vh_label ' (' vh_units ')']);
         ylabel('Frequency Hz')
@@ -248,7 +251,7 @@ for s = 1;
 
         %% RHM NCP coherence
         subplot2(3,numel(mode),3,m);
-        imagesc(edges(1,:),fs,vsc(:,:,1,2)'),axis xy,
+        imagesc(edges(1,:),fs,vsc(:,:,1,2)');,axis xy,
         title({[chan_labels{1} ' & '],[ chan_labels{2} ' coherence']})
         xlabel(['Binned ' vh_label ' (' vh_units ')']);
         ylabel('Frequency Hz')

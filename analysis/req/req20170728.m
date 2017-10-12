@@ -338,9 +338,11 @@ randomIndex = randomIndex(1:1e3);
 
 overwrite = false;
 stateTransitions = {{'pause','walk'},{'pause','turn'},{'pause+walk','rear'}};
-stateTransition = stateTransitions{1};
+stateTransition = stateTransitions{2};
 for stateTransition = stateTransitions,
-    stateTransition = stateTransition{1};
+stateTransition = stateTransition{1};
+
+% COMPUTE time lagged MI 
     [dstate,mdstate] = compute_time_lagged_mutual_information(...
         'state',  stateTransition,...
         'sbound', sbound,...
@@ -350,39 +352,62 @@ for stateTransition = stateTransitions,
         'sbound', randomIndex,...
         'overwrite',overwrite);
 
+% FIND Max MI and corresponding time lag
     [mixy,sixy] = max(permute(dstate,[2,3,1]),[],3); 
-    sixy = sq(sixy)-ceil(numel(sbound)/2);
-    mthresh = [sq(nanmean(dRnd))+sq(nanstd(dRnd)).*5];
-    mixy(mixy<mthresh|mixy<mthresh') = nan;
+    sixy = (sq(sixy)-ceil(numel(sbound)/2));
+    mthresh = [sq(nanmean(dRnd))+sq(nanstd(dRnd)).*10];
+    mixy(mixy<mthresh|mixy'<mthresh') = nan;
     sixy(isnan(mixy)) = nan;
     mixy([1:size(mixy,1)]+[[0:(size(mixy,1)-1)]*size(mixy,1)]) = nan;
     sixy([1:size(mixy,1)]+[[0:(size(sixy,1)-1)]*size(sixy,1)]) = nan;
 
+% GENERATE figure
+    hfig = figure();
+    hfig.Units = 'centimeters';
+    hfig.Position = [1,1,7,12];
+    hfig.PaperPositionMode = 'auto';
     sp = gobjects(0);
     cp = gobjects(0);
-    hfig = figure;
-    hfig.Units = 'centimeters';
+    
+% PLOT Max MI
+    axes();
+    [sp(end+1),cp(end+1)] = imagescnan(log10(mixy)',[-1.5,1],'linear',1,[0.5,0.5,0.5],'colorMap',@copper);     
+    %[sp(end+1),cp(end+1)] = imagescnan(mixy',[0,2],'linear',1,[0.5,0.5,0.5],'colorMap',@copper); 
+    axis('xy');title({strjoin(stateTransition,'2'),['Maximum mutual information']});
+    sp(end).Units = 'centimeters';        
+    sp(end).Position = [2,7,3,3];
+    sp(end).LineWidth = 1;
+    sp(end).XTick = [];    
+    sp(end).YTick = [];    
+% DRAW Lines to denote body groups    
+    Lines(5.5,[],'k',1);Lines(10.5,[],'k',1)
+    Lines([],5.5,'k',1);Lines([],10.5,'k',1)
+% DRAW LINE to separate the Diagonal    
+    hlin = line([0,15.5],[0,15.5]);
+    hlin.LineWidth = 1;
+    hlin.Color = [0,0,0];
+% MOVE Colorbar to the right axis    
+    cp(end).Units = 'centimeters';
+    cp(end).Position = [5.1,7,0.2,3];
 
-
-    subplot(121); 
-    [sp(end+1),cp(end+1)] = imagescnan(mixy',[0,2],'linear',1,[0.5,0.5,0.5],'colorMap',@copper); 
-    axis('xy');title(['Maximum mutual information']);
-    Lines(5.5,[],'k');Lines(10.5,[],'k')
-    Lines([],5.5,'k');Lines([],10.5,'k')
-
-    subplot(122); 
-    [sp(end+1),cp(end+1)] = imagescnan(sixy'./mdstate.sampleRate,[-0.35,0.35],'linear',1,[0.5,0.5,0.5]); 
-    axis('xy');title(['Time lag of maximum mutual information']);
-    Lines(5.5,[],'k');Lines(10.5,[],'k')
-    Lines([],5.5,'k');Lines([],10.5,'k')
-
-    hfig.Position(3:4) = [16,5];
-    for s = 1:numel(sp), 
-        sp(s).Units = 'centimeters';
-        sp(s).Position(3:4) = [3,3];
-        cp(s).Units = 'centimeters';
-        cp(s).Position([1,4]) = [sp(s).Position(1)+3.2,3];
-    end
+% PLOT Time Lag
+    axes();
+    [sp(end+1),cp(end+1)] = imagescnan(sixy'./mdstate.sampleRate,[-0.4,0.4],'linear',1,[0.5,0.5,0.5]); 
+    axis('xy');title({'Time lag of maximum',' mutual information'});
+    sp(end).Units = 'centimeters';        
+    sp(end).Position = [2,2,3,3];
+    sp(end).LineWidth = 1;
+    sp(end).XTick = [];    sp(end).YTick = [];
+% DRAW Lines to denote body groups
+    Lines(5.5,[],'k',1);Lines(10.5,[],'k',1)
+    Lines([],5.5,'k',1);Lines([],10.5,'k',1)
+% DRAW LINE to separate the Diagonal
+    hlin = line([0,15.5],[0,15.5]);
+    hlin.LineWidth = 1;
+    hlin.Color = [0,0,0];
+% MOVE Colorbar to the right axis
+    cp(end).Units = 'centimeters';
+    cp(end).Position = [5.1,2,0.2,3];
 
     FigFilebase = fullfile(OwnDir,FigDir,['mis-time_lagged-new-',strjoin(stateTransition,'2')]);
     print(hfig,'-depsc2',[FigFilebase,'.eps']);
@@ -466,3 +491,53 @@ plot_features_with_stc(feta,stc,'fetLabels',{{'body','body-head','head'}});
 
 fetab = MTADfet.encapsulate(Trial,unity([feta(:,[2]),fet(:,17)]),fet.sampleRate,'bla','bla','b');
 plot_features_with_stc(fetab,stc);
+
+
+
+
+% Turning segmentation
+
+Trial = MTATrial.validate('jg05-20120317.cof.all');
+stc = Trial.load('stc','hand_labeled_rev3_jg');
+
+Trial = MTATrial.validate('jg05-20120310.cof.all');
+stc = Trial.load('stc','msnn_ppsvd');
+
+Trial = MTATrial.validate('jg05-20120309.cof.all');
+stc = Trial.load('stc','msnn_ppsvd');
+
+Trial = MTATrial.validate('Ed05-20140529.ont.all');
+Trial = MTATrial.validate('Ed03-20140625.ont.all');
+Trial = MTATrial.validate('Ed03-20140624.ont.all');
+stc = Trial.load('stc','hand_labeled_rev1_Ed');
+
+
+xyz = preproc_xyz(Trial,'SPLINE_SPINE_HEAD_EQI');
+fxyz = xyz.copy();
+fxyz.filter('ButFilter',3,4,'low');
+ang = create(MTADang,Trial,fxyz);
+
+
+% $$$ ind = stc{'n'};
+% $$$ %hist2([ang(ind,'spine_lower','head_front',3),ang(ind,'spine_lower','spine_upper',2)],50,50)
+% $$$ hist2([ang(ind,'spine_lower','head_front',3),ang(ind,'spine_lower','hcom',2)],50,50)
+% $$$ hist2([ang(ind,'spine_lower','head_front',3),ang(ind,'spine_lower','head_front',2)],50,50)
+
+figure,
+subplot(121); ind = stc{'n'};
+hist2([ang(ind,'spine_lower','spine_middle',2),ang(ind,'head_back','head_front',2)],linspace(0,1,50),50)
+subplot(122); ind = stc{'w'};
+hist2([ang(ind,'spine_lower','spine_middle',2),ang(ind,'head_back','head_front',2)],linspace(0,1,50),50)
+
+figure,
+ind = stc{'a-s-m'};
+hist2([ang(ind,'pelvis_root','spine_upper',2) ,ang(ind,'spine_upper','hcom',2)],linspace(-0.4,1.4,50),linspace(-1,1.4,50))
+
+figure,
+ind = stc{'n'};
+hist2([ang(ind,'pelvis_root','spine_upper',2) ,ang(ind,'spine_upper','hcom',2)],linspace(-0.4,1.4,50),linspace(-1,1.4,50))
+
+caxis([0,800]);
+
+
+

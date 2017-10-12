@@ -29,7 +29,11 @@ switch Data.type
         if ~isempty(nd),
             Data.data(nind,:,:,:,:) = nd;
         end
+      case 'RectFilter'
+        Data.data = RectFilter(Data.data,varargin{:});
+        
       otherwise
+        error('MTA:MTAData:filter:ModeNotFound');
     end
   otherwise
     return

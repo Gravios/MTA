@@ -32,13 +32,16 @@ fet = MTADfet(Trial.spath,...
 % XYZ preprocessed 
 xyz = preproc_xyz(Trial,procOpts);
 xyz.resample(newSampleRate);
+%xyz.filter('RectFilter');
 
 % ANG Filtered Intermarker angles 
 ang = create(MTADang,Trial,xyz);
 
 % CAT feature
 %fet.data = [ang(:,'pelvis_root','spine_upper',2),ang(:,'spine_upper','hcom',2)];
-fet.data = [ang(:,'pelvis_root','spine_upper',2),ang(:,'head_back','head_front',2)];
+fet.data = [ang(:,'pelvis_root','spine_upper',2),...
+            ang(:,'spine_upper','hcom',2),...
+            ang(:,'head_back','head_front',2)];
 
 fet.data(~nniz(xyz),:)=0;
 featureTitles = {};
@@ -47,6 +50,8 @@ if nargout>1,
 
     featureTitles(end+1) = {'Pitch BPBU'};    
     featureDesc(end+1) = {['head pitch relative to xy plane']};
+    featureTitles(end+1) = {'Pitch BUHC'};    
+    featureDesc(end+1) = {['head body pitch relative to xy plane']};
     featureTitles(end+1) = {'Pitch HBHF'};    
     featureDesc(end+1) = {['head pitch relative to xy plane']};
 end

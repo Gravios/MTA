@@ -234,8 +234,8 @@ mean(diff([[stsRaw.labelingStats(:).accuracy]',[stsOpt.labelingStats(:).accuracy
 generate_nn_label_stats_multi_session_weighted('display', [],'fet_bref_rev7','nIter',100)
 
 
-generate_nn_label_stats_multi_session_weighted('train',   [],'fet_mis','nIter',100,'randomizationMethod','WSBT')g
-enerate_nn_label_stats_multi_session_weighted('compute', [],'fet_mis','nIter',100,'randomizationMethod','WSBT')
+% $$$ generate_nn_label_stats_multi_session_weighted('train',   [],'fet_mis','nIter',100,'randomizationMethod','WSBT')
+generate_nn_label_stats_multi_session_weighted('compute', [],'fet_mis','nIter',100,'randomizationMethod','WSBT')
 generate_nn_label_stats_multi_session_weighted('optimize',[],'fet_mis','nIter',100,'randomizationMethod','WSBT')
 generate_nn_label_stats_multi_session_weighted('display', [],'fet_mis','nIter',100,'randomizationMethod','WSBT')
 
@@ -245,6 +245,56 @@ generate_nn_label_stats_multi_session_weighted('display', [],'fet_mis','nIter',1
 
 % number of fragments within hand labeled periods measured by counting the number of neural-network
 % label centers within each hand label.
+
+Trial = MTATrial.validate('jg05-20120317.cof.all');
+states = {'walk','rear','turn','pause','groom','sit'};
+stch = Trial.load('stc','hand_labeled_rev3_jg');
+stcw = Trial.load('stc','MTAC_BATCH+hand_labeled+1+fet_mis+SR10NN25NI100M1MREF+jg05-20120317.cof.all+N1NREF+hand_labeled+RNDWSBT+PRCT90+STS+wrnpms+multiSesPatNet_weighted');
+stcp = Trial.load('stc','MTAC_BATCH+hand_labeled+1+fet_mis+SR10NN25NI100M1MREF+jg05-20120317.cof.all+N1NREF+hand_labeled+RNDWSBT+PRCT90+STS+wrnpms+multiSesPatNet_weighted_ppsvd');
+stcnp = Trial.load('stc','MTAC_BATCH+hand_labeled+1+fet_mis+SR10NN25NI100M1MREF+jg05-20120317.cof.all+N1NREF+hand_labeled+RNDWSBT+PRCT90+STS+wrnpms+multiSesPatNet_ppsvd');
+
+stcn = Trial.load('stc','msnn_ppsvd');
+
+
+figure(); plot_stcs(stch,stcnp,stcp);
+
+
+
+sres = [];
+sbhv = [];
+for s = 1:numel(states)
+    sper = stcp{states{s},119.881035};
+    sbhv = cat(1,sbhv,repmat(s,[size(sper,1),1]));
+    sres = cat(1,sres,round(mean(sper.data,2)));
+end
+
+stateCountH = cell2mat(cf(@(s)  size(s,1),  stch(states)))
+stateCountN = cell2mat(cf(@(s)  size(s,1),  stcw(states)))
+
+
+fragCnt = {};
+stateFragMismatch = zeros([numel(states),numel(states)]);
+for s = 1:numel(states),
+    sper = stch{states{s},119.881035};
+    for p = 1:size(sper,1),
+        sind = WithinRanges(sres,sper(p,:));
+        fragCnt{s}(p) = sum(sind);
+        bhvs = sbhv(sind);
+        stateFragMismatch(:,s) = stateFragMismatch(:,s)+histcounts(bhvs,1:numel(states)+1)';
+    end
+end
+
+
+figure,hist(fragCnt{1},10)
+
+
+sts = 'n';
+figure,
+subplot(311);hist(log10(diff(stch{sts}.data,1,2)),100)
+subplot(312);hist(log10(diff(stcw{sts}.data,1,2)),100)
+subplot(313);hist(log10(diff(stcp{sts}.data,1,2)),100)
+af(@(ax) xlim(ax,[0,3.5]), findobj(gcf,'Type','axes'));
+% CCG of state centers
 
 
 

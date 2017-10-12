@@ -553,7 +553,7 @@
 %  Bugs: NA
 
 
-%% 2017 08 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+%% 2017 09 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 
 % req20170901 ----------------------------------------------------
 %
@@ -562,3 +562,40 @@
 %  Final_Forms: NA
 %  Description: Find head only features for grooming detection
 %  Bugs: NA
+
+% req20170921 ----------------------------------------------------
+%
+%  Status: active
+%  Type: Analysis 
+%  Final_Forms: NA
+%  Description: Head body pitch azimuth xcorr
+%  Bugs: NA
+
+% req20170924 ----------------------------------------------------
+%
+%  Status: active
+%  Type: Analysis 
+%  Final_Forms: NA
+%  Description: Hippocampal Layer depth based on ephys data
+%  Bugs: NA
+
+% req20170925 ----------------------------------------------------
+%
+%  Status: active
+%  Type: Utility
+%  Final_Forms: NA
+%  Description: Modify xyz data for wei wei. Create virtual marker
+%               which best captures the rhythmic head motion 
+%               feature.
+%  Bugs: NA
+
+% req20170926 ----------------------------------------------------
+%
+%  Status: active
+%  Type: Analysis 
+%  Final_Forms: NA
+%  Description: examination of new RectFilter and usefulness in fet_rhm
+%  Bugs: NA
+
+
+

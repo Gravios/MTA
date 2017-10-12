@@ -140,7 +140,7 @@ switch mode
                 '+RND' randomizationMethod                                                   ...
                 '+PRCT' num2str(prctTrain)                                                   ...
                 '+STS+' strjoin(keys,'')                                                     ...
-                '-'    MODEL_TYPE];
+                '-'    MODEL_TYPE '_weighted'];
  
 % SAVE labeling statitics
     save(fullfile(MTA_PROJECT_PATH,'analysis',[statsName,'.mat']),                           ...
@@ -173,7 +173,7 @@ switch mode
                 '+RND'  randomizationMethod                                                  ...
                 '+PRCT' num2str(prctTrain)                                                   ...
                 '+STS+' strjoin(keys,'')                                                     ...
-                '-'     MODEL_TYPE];
+                '-'     MODEL_TYPE '_weighted'];
     disp(statsName);
     stsRaw = load(fullfile(MTA_PROJECT_PATH,'analysis',[statsName,postProcessingTag,'.mat']));
 
@@ -222,7 +222,7 @@ switch mode
 
 % DISPLAY - Load Data and Set Parameters --------------------------------------------------------    
 % SET figure save paths
-    OwnDir = '/storage/gravio/ownCloud/';
+    OwnDir = '/storage/gravio/nextcloud/';
     FigDir = 'Shared/Behavior Paper/Figures/Figure_1/parts';
     try,mkdir(fullfile(OwnDir,FigDir));end    
 
@@ -249,7 +249,7 @@ switch mode
                 '+RND'  randomizationMethod                                                  ...
                 '+PRCT' num2str(prctTrain)                                                   ...
                 '+STS+' strjoin(keys,'')                                                     ...
-                '-'     MODEL_TYPE];
+                '-'     MODEL_TYPE '_weighted'];
     stsRaw = load(fullfile(MTA_PROJECT_PATH,'analysis',[statsName,postProcessingTag,'.mat']));
     stsOpt = load(fullfile(MTA_PROJECT_PATH,'analysis',[statsName,postProcessingTag,'_pp.mat']));
 
@@ -296,8 +296,8 @@ switch mode
     set(gca,'box','on');
     
 % PRINT figure
-    print(hfig,'-depsc2',fullfile(OwnDir,FigDir,['fig1_labeling_accuracy-',featureSet,postProcessingTag,'.eps']))
-    print(hfig,'-dpng',fullfile(OwnDir,FigDir,['fig1_labeling_accuracy-',featureSet,postProcessingTag,'.png']))    
+    print(hfig,'-depsc2',fullfile(OwnDir,FigDir,['fig1_weighted_labeling_accuracy-',featureSet,postProcessingTag,'.eps']))
+    print(hfig,'-dpng',fullfile(OwnDir,FigDir,['fig1_weighted_labeling_accuracy-',featureSet,postProcessingTag,'.png']))    
 
     
     
@@ -349,8 +349,10 @@ switch mode
     set(gca,'box','on');
     
 % PRINT figure
-    print(hfig,'-depsc2',fullfile(OwnDir,FigDir,['fig1_labeling_precision-',featureSet,postProcessingTag,'.eps']))
-    print(hfig,'-dpng',fullfile(OwnDir,FigDir,['fig1_labeling_precision-',featureSet,postProcessingTag,'.png']))    
+    print(hfig,'-depsc2',fullfile(OwnDir,FigDir,['fig1_weighted_labeling_precision-',featureSet,postProcessingTag,'.eps']))
+    print(hfig,'-dpng',fullfile(OwnDir,FigDir,['fig1_weighted_labeling_precision-',featureSet,postProcessingTag,'.png']))    
+
+    
     
 % DISPLAY - Plot Precision ----------------------------------------------------------------
 
@@ -400,8 +402,8 @@ switch mode
     set(gca,'box','on');
     
 % PRINT figure
-    print(hfig,'-depsc2',fullfile(OwnDir,FigDir,['fig1_labeling_sensitivity-',featureSet,postProcessingTag,'.eps']))
-    print(hfig,'-dpng',fullfile(OwnDir,FigDir,['fig1_labeling_sensitivity-',featureSet,postProcessingTag,'.png']))
+    print(hfig,'-depsc2',fullfile(OwnDir,FigDir,['fig1_weighted_labeling_sensitivity-',featureSet,postProcessingTag,'.eps']))
+    print(hfig,'-dpng',fullfile(OwnDir,FigDir,['fig1_weighted_labeling_sensitivity-',featureSet,postProcessingTag,'.png']))
     
 end
 

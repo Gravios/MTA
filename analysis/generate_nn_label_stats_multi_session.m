@@ -222,7 +222,7 @@ switch mode
 
 % DISPLAY - Load Data and Set Parameters --------------------------------------------------------    
 % SET figure save paths
-    OwnDir = '/storage/gravio/ownCloud/';
+    OwnDir = '/storage/gravio/nextcloud/';
     FigDir = 'Shared/Behavior Paper/Figures/Figure_1/parts';
     try,mkdir(fullfile(OwnDir,FigDir));end    
 

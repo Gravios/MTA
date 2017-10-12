@@ -42,10 +42,9 @@ end
 A = Data.data;
 if ~isempty(drpOutPrctile),
     newFeatureDomains = prctile(Data.data(nind,:,:,:,:,:),drpOutPrctile);
-    inDomain = bsxfun(@lt,Data.data(:,:,:,:,:,:),newFeatureDomains(1,:)) & ...
-               bsxfun(@gt,Data.data(:,:,:,:,:,:),newFeatureDomains(2,:));
-
-    A(inDomain(:)) = nan;
+    exDomain = bsxfun(@lt,Data.data(:,:,:,:,:,:),newFeatureDomains(1,:,:,:,:,:)) & ...
+               bsxfun(@gt,Data.data(:,:,:,:,:,:),newFeatureDomains(2,:,:,:,:,:));
+    A(exDomain(:)) = nan;
 end
 A(A==0)=nan;
 A(isinf(A))=nan;
@@ -60,6 +59,6 @@ end
 
 Data.data = bsxfun(@rdivide,bsxfun(@minus,Data.data,meanA),stdA);
 
-Data.data(~nind,:,:,:,:,:) = ifnniz([sum(~nind),size(Data,2)]);
+Data.data(~nind,:,:,:,:,:) = ifnniz([sum(~nind),size(Data,[2,3,4,5,6])]);
 
 % END MAIN -----------------------------------------------------------------------------------------

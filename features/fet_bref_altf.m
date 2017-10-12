@@ -1,4 +1,4 @@
-function [fet,featureTitles,featureDesc,Nmean,Nstd] = fet_bref(Trial,varargin)
+function [fet,featureTitles,featureDesc,Nmean,Nstd] = fet_bref_altf(Trial,varargin)
 % function [fet,featureTitles,featureDesc,Nmean,Nstd] = fet_mis(Trial,varargin)
 % 
 % varargin:
@@ -32,6 +32,8 @@ fet = MTADfet(Trial.spath,...
 
 % PREPROC xyz
 xyz = preproc_xyz(Trial,procOpts);
+
+xyz.filter('RectFilter');
 %xyz = Trial.load('xyz','trb');
 rb = xyz.model.rb({'spine_lower','pelvis_root','spine_middle','spine_upper'});
 hcom = xyz.com(rb);
