@@ -582,11 +582,10 @@
 % req20170925 ----------------------------------------------------
 %
 %  Status: active
-%  Type: Utility
+%  Type: Analysis
 %  Final_Forms: NA
-%  Description: Modify xyz data for wei wei. Create virtual marker
-%               which best captures the rhythmic head motion 
-%               feature.
+%  Description: new rhm feature base on proper filtering
+%             
 %  Bugs: NA
 
 % req20170926 ----------------------------------------------------

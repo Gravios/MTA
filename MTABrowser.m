@@ -1395,7 +1395,7 @@ else
         state.data(state.data>0)=1;
         state.cast('TimePeriods');
         if ~state.isempty,
-            state.data(:,1) = state.data(:,1) + 1;
+            state.data(:,1) = state.data(:,1);
         end
         stc.states{s} = state;
     end

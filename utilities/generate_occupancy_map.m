@@ -2,9 +2,24 @@ function [occMap,Bins] = generate_occupancy_map(Trial,varargin)
 % function occ = xyocc(Trial,pos,type,binDims)
 % [pos,type,binDims] = DefaultArgs(varargin,{Trial.stc{'w'},'xy',[20,20]
 % Always us xy for now
-[pos,state,type,binDims,SmoothingWeights,bound_lims,display,report] = DefaultArgs(varargin,{Trial.load('xyz'),[],'xy',[20,20],[2.2,2.2],[],false,false});
+
+% DEFARGS ------------------------------------------------------------------------------------------
+defargs = struct('pos',              Trial.load('xyz'),                                          ...
+                 'state',            [],                                                         ...
+                 'type',             'xy',                                                       ...
+                 'binDims',          [20,20],                                                    ...
+                 'SmoothingWeights', [2.2,2.2],                                                  ...
+                 'boundLims',        [],                                                         ...
+                 'OccThresh',        [0.06],                                                     ...
+                 'display',          false,                                                      ...
+                 'report',           false                                                       ...
+);
+[pos,state,type,binDims,SmoothingWeights,boundLims,OccThresh,display,report] = ...
+    DefaultArgs(varargin,defargs,'--struct');
+%---------------------------------------------------------------------------------------------------
 
 
+% MAIN ---------------------------------------------------------------------------------------------
 if isempty(state),
     Trial = labelAllBhv(Trial);
     state = Trial.stc.states;
@@ -22,22 +37,24 @@ for t = 1:numel(state),
 
     ndims = length(type);
 
-    if isempty(bound_lims),
-        bound_lims = Trial.maze.boundaries(ismember('xyz',type),:);
+    if isempty(boundLims),
+        boundLims = Trial.maze.boundaries(ismember('xyz',type),:);
     end
 
-    Nbin = round(abs(diff(bound_lims,1,2))./binDims');
+    Nbin = round(abs(diff(boundLims,1,2))./binDims');
 
 
     Bins = cell(1,ndims);
-    k = Nbin./abs(diff(bound_lims,1,2));
-    msize = round(abs(diff(bound_lims,1,2)).*k);
-    for i = 1:ndims
-        Bins{i} = ([1:msize(i)]'-1)./repmat(k(i)',msize(i),1)+repmat(bound_lims(i,1),msize(i),1)+round(repmat(k(i)',msize(i),1).^-1/2);
+    k = Nbin./abs(diff(boundLims,1,2));
+    msize = round(abs(diff(boundLims,1,2)).*k);
+    for i = 1:ndims,
+        Bins{i} = ([1:msize(i)]'-1)./repmat(k(i)',msize(i),1)+...
+                  repmat(boundLims(i,1),msize(i),1)+...
+                  round(repmat(k(i)',msize(i),1).^-1/2);
     end
 
 
-    Pos = round((pos-repmat(bound_lims(:,1)',size(pos,1),1)).*repmat(k',size(pos,1),1))+1;
+    Pos = round((pos-repmat(boundLims(:,1)',size(pos,1),1)).*repmat(k',size(pos,1),1))+1;
     for i = 1:ndims   
         Pos(Pos(:,i)<1|Pos(:,i)>Nbin(i)|~nniz(Pos),:) = [];
     end
@@ -56,7 +73,7 @@ for t = 1:numel(state),
     Smoother = Smoother./sum(Smoother(:));
     occ = convn(occ,Smoother,'same');
 
-    OccThresh = 0.06;%0.12;%
+    %OccThresh = 0.06;%0.12;%
     gtind = occ>OccThresh;
 
     occm = NaN(msize');
@@ -96,4 +113,4 @@ if display
 
 end
 
-    
+% END MAIN -----------------------------------------------------------------------------------------

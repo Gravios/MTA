@@ -3,7 +3,7 @@
 %  Status: active
 %  Type: Analysis 
 %  Final_Forms: NA
-%  Description: Labeling statistics 
+%  Description: ctx units
 %  Bugs: NA
  
 
@@ -98,14 +98,21 @@ Trials = af(@(Trial) MTATrial.validate(Trial), get_session_list(sessionList));
 cf(@(t) t.load('stc','msnnN0+hand_labeled'), Trials);
 
 state = 'walk';
-durThresh  = 1.5;
+durThresh  = 1;
 BccgW = cf(@(Trial,state,durThresh) gen_bhv_ccg(Trial,state,durThresh),...
           Trials,...
           repmat({state},    [1,numel(Trials)]),...
           repmat({durThresh},[1,numel(Trials)]));
 
+state = 'turn';
+durThresh  = 0.5;
+BccgN = cf(@(Trial,state,durThresh) gen_bhv_ccg(Trial,state,durThresh),...
+          Trials,...
+          repmat({state},    [1,numel(Trials)]),...
+          repmat({durThresh},[1,numel(Trials)]));
+
 state = 'rear';
-durThresh  = 1.5;
+durThresh  = 1;
 BccgR = cf(@(Trial,state,durThresh) gen_bhv_ccg(Trial,state,durThresh),...
           Trials,...
           repmat({state},    [1,numel(Trials)]),...
@@ -123,49 +130,98 @@ end
 
 
 
-
+nq = cf(@(t) NeuronQuality(t,[],[],[],false),  Trials);
+pfs = cf(@(t) pfs_2d_states(t,'msnnN0+hand_labeled',{'rear','turn','walk'}), Trials);
+[accg,tbins] = cf(@(t) autoccg(MTASession.validate(t.filebase)),  Trials);
 
 % figure save paths
-OwnDir = '/storage/gravio/ownCloud/';
-FigDir = 'Shared/Behavior Paper/Figures/Figure_3/parts';
+OwnDir = '/storage/gravio/nextcloud/';
+FigDir = 'MjgER2016/figures/figure/parts';
 
-figure,
-s = 1;
-units = [3,4,5,11,22,23,28,38,42,43,46,54,57];
+units = {};
+units{1} = [3,4,5,11,22,23,28,38,42,43,46,54,57];
+units{2} = [9,19,21,26,29,58];
+units{3} = [9,12,17,21,34,43,51,52,60,61];
+units{4} = [2,3,11,13,14,16,19,21,28,29,40,49,52,64,65,67,72,77,87];
 
-s = 2;
-units = [9,19,21,26,29,58];
+pfs = cf(@(t,u) pfs_2d_states(t,u','msnnN0+hand_labeled',{'rear','turn','walk'}),Trials,units);
 
-s = 3;
-units = [9,12,17,21,34,43,51,52,60,61];
 
-s = 4
-units = [2,3,11,13,14,16,19,21,28,29,40,49,52,64,65,67,72,77,87];
-for u = units
+s = 4;
+u = units{s}(6);
 
-    clf;
-    subplot2(2,2,1,1);
-    BccgW{s}.plot(u,1);
-    title(['unit: ',num2str(u),' Walk Onset']);
-    subplot2(2,2,2,1);
-    BccgW{s}.plot(u,2);
-    title(['unit: ',num2str(u),' Walk Offset']);
-    subplot2(2,2,1,2);
-    BccgR{s}.plot(u,1);
+figure();
+set(gcf,'PaperPositionMode','auto');
+nx = 4;
+ny = 4;
+
+
+for s = 1:4,
+for u = units{s}
+
+    clf();
+
+    maxPfsRate = max(cell2mat(cf(@(p,u) p.maxRate(u), pfs{s},repmat({u},1,numel(pfs{s})))));
+    maxCcgRate = max(reshape([sq(BccgW{s}.ccg(:,u,:)),...
+                              sq(BccgN{s}.ccg(:,u,:)),...
+                              sq(BccgR{s}.ccg(:,u,:))],[],1));
+    
+    
+    % accg
+    subplot2(ny,nx,2,1);    
+    bar(tbins{s},accg{s}(:,u));axis tight;            
+    title({Trials{s}.filebase,['autoccg unit: ',num2str(u)]});    
+    
+    % THETA 
+    subplot2(ny,nx,1,1);
+    pfs{s}{1}.plot(u,[],[],maxPfsRate);
+    title(['Theta']);
+    
+    % REAR
+    subplot2(ny,nx,1,2);    
+    pfs{s}{2}.plot(u,[],[],maxPfsRate);
+    title(['Rear']);
+    subplot2(ny,nx,2,2);
+    BccgR{s}.plot(u,1);xlim([-2,2]);ylim([0,maxCcgRate]);
     title(['unit: ',num2str(u),' Rear Onset']);
-    subplot2(2,2,2,2);
-    BccgR{s}.plot(u,2);
+    subplot2(ny,nx,3,2);
+    BccgR{s}.plot(u,2);xlim([-2,2]);ylim([0,maxCcgRate]);
     title(['unit: ',num2str(u),' Rear Offset']);
-    ForAllSubplots('xlim([-2,2])')
+    %ForAllSubplots('xlim([-2,2])');
 
-    fc = get(gcf,'Children');
-    ForAllSubplots(['ylim([0,',num2str(max([fc(:).YLim])),'])'])
+    % TURN
+    subplot2(ny,nx,1,3);    
+    pfs{s}{3}.plot(u,[],[],maxPfsRate);
+    title(['Turn']);    
+    subplot2(ny,nx,2,3);
+    BccgN{s}.plot(u,1);xlim([-2,2]);ylim([0,maxCcgRate]);
+    title(['unit: ',num2str(u),' Turn Onset']);
+    subplot2(ny,nx,3,3);
+    BccgN{s}.plot(u,2);xlim([-2,2]);ylim([0,maxCcgRate]);
+    title(['unit: ',num2str(u),' Turn Offset']);
+    %ForAllSubplots('xlim([-2,2])');
+    
+    
+    % Walk
+    subplot2(ny,nx,1,4);
+    pfs{s}{4}.plot(u,[],[],maxPfsRate);
+    title(['Walk']);        
+    subplot2(ny,nx,2,4);
+    BccgW{s}.plot(u,1);xlim([-2,2]);ylim([0,maxCcgRate]);
+    title(['unit: ',num2str(u),' Walk Onset']);
+    subplot2(ny,nx,3,4);
+    BccgW{s}.plot(u,2);xlim([-2,2]);ylim([0,maxCcgRate]);
+    title(['unit: ',num2str(u),' Walk Offset']);
 
+
+    pause(0.5)    
+
+    
     FigName = ['stateTransition_unit_CCG_',Trials{s}.filebase,'_unit_',num2str(u)];
     print(gcf,'-depsc2',fullfile(OwnDir,FigDir,[FigName,'.eps']));
     print(gcf,'-dpng',  fullfile(OwnDir,FigDir,[FigName,'.png']));
     
 end
 
-
+end
 

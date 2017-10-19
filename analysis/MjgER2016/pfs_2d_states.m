@@ -2,14 +2,15 @@ function pfs = pfs_2d_states(Trial,varargin)
 
 
 % DEFARGS ------------------------------------------------------------------------------------------
-defargs = struct('stcMode',       'NN0317R',                                                     ...
+defargs = struct('units',         [],                                                            ...
+                 'stcMode',       'NN0317R',                                                     ...
                  'states',        {{'loc','lloc','hloc','rear','pause','lpause','hpause'}},      ...
                  'reportFig',     true,                                                          ...
                  'tag',           '',                                                            ...
                  'overwrite',     false                                                          ...
 );%-------------------------------------------------------------------------------------------------
 
-[stcMode,states,reportFig,tag,overwrite] = DefaultArgs(varargin,defargs,'--struct');
+[units,stcMode,states,reportFig,tag,overwrite] = DefaultArgs(varargin,defargs,'--struct');
 
 % modify states
 states = cellfun(@strcat,states,repmat({'&theta'},size(states)),'UniformOutput',false);
@@ -47,16 +48,19 @@ end
 
 
 % Reduce clu list based on theta pfs max rate
-pft = pfs_2d_theta(Trial);
-mrt = pft.maxRate;
-units = select_units(Trial,18);
-units = units(mrt(pft.data.clu(units))>1);
+
+if isempty(units)
+    pft = pfs_2d_theta(Trial);
+    mrt = pft.maxRate;
+    units = select_units(Trial,18);
+    units = units(mrt(pft.data.clu(units))>1);
+end
 
 nsts = numel(states);
 
 
 %% Setup figure paths
-OwnDir = '/storage/gravio/ownCloud/MjgEdER2016/';
+OwnDir = '/storage/gravio/nextcloud/MjgER2016/';
 FigDir = ['pfs_2d_states_',Trial.filebase,'_',tag];
 mkdir(fullfile(OwnDir,FigDir));
 

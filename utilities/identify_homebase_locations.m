@@ -1,16 +1,31 @@
-function [location,occupancy] = identify_homebase_locations(Trial)
+function [location,occupancy,normalizeOccupancyMap,xyBins] = identify_homebase_locations(Trial,varargin)
 %function homebaseLocation = identify_homebase_locations(Trial)
-% Returns up to 3 locations which are to be homebases of rodent subject
+% Returns putative homebase locations of rodent subject
+%
 
-xyz = preproc_xyz(Trial,'SPLINE_SPINE_HEAD_EQI');
-state = Trial.stc{'pause'};
-type = 'xy';
-binSize = 20; %mm
+% DEFARGS ------------------------------------------------------------------------------------------
+defargs = struct('state',                   'pause+sit+groom',                                   ...
+                 'stc',                     'msnn_ppsvd',                                        ...
+                 'type',                    'xy',                                                ...
+                 'binSize',                 20,                                                  ...
+                 'smoothingWeights',        [5,5],                                               ...
+                 'xyzProcOpts',             {{'SPLINE_SPINE_HEAD_EQI'}}                          ...
+);
+[state,stc,type,binSize,smoothingWeights,xyzProcOpts] = DefaultArgs(varargin,defargs,'--struct');
+%---------------------------------------------------------------------------------------------------
 
 
-[smoothedOccupancyMap,xyBins] = generate_occupancy_map(Trial,xyz,state,type,binSize);
+% MAIN --------------------------------------------------------------------------------------------- 
 
-normalizeOccupancyMap = smoothedOccupancyMap{1}./nansum(smoothedOccupancyMap{1}(:));
+stc = Trial.load('stc');
+xyz = preproc_xyz(Trial,xyzProcOpts);
+state = stc{state};
+state.data(diff(state.data,1,2)<state.sampleRate*10,:) = [];
+state.data = [state.data(:,1),state.data(:,1)+round(state.sampleRate)];
+
+[smoothedOccupancyMap,xyBins] = generate_occupancy_map(Trial,xyz,state,type,binSize,smoothingWeights,[],0.001);
+
+ normalizeOccupancyMap = smoothedOccupancyMap{1}./nansum(smoothedOccupancyMap{1}(:));
 
 [location,occupancy] = LocalMinimaN(-normalizeOccupancyMap,...
                                     -max(normalizeOccupancyMap(:))/2,...
@@ -18,3 +33,4 @@ normalizeOccupancyMap = smoothedOccupancyMap{1}./nansum(smoothedOccupancyMap{1}(
 location(:,1) = xyBins{1}(location(:,1));
 location(:,2) = xyBins{2}(location(:,2));
 
+% END MAIN -----------------------------------------------------------------------------------------

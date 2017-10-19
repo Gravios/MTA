@@ -281,7 +281,7 @@ for s = 1:numTrials,
     try
         key = 'p';
         keyVec  = stateVectors(find(key==cell2mat(keys)),:);
-        heightThresh = 86;
+        heightThresh = 88;
         %wd=[];for rp = StcCor{s}{key}.data',wd(end+1) = mean(mean(features{s}(rp',16:2:22)));end        
         for rp = StcCor{s}{key}.data',
             if heightThresh > mean(features{s}(rp',13)) & 0.4 > mean(mean(abs(features{s}(rp',16:2:22)))) & 0.2 > mean(abs(features{s}(rp',16))),
@@ -316,7 +316,7 @@ for s = 1:numTrials,
     try
         key = 'm';
         keyVec  = stateVectors(find(key==cell2mat(keys)),:);
-        hthresh = 86;
+        hthresh = 88;
         wthresh = 0.2;
         gthresh = 150;
         for rp = StcCor{s}{key}.data',

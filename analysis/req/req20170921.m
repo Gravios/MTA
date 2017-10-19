@@ -90,7 +90,7 @@ lfet   = cf(@(f)   f.copy(),                           features);
            
 %[fetp]    = cf(@(t)  fet_HB_angvel(t),         Trials);           
 
-for featureSet = {'fet_HB_pitchvel','fet_HB_pitch','fet_HB_angvel'},
+for featureSet = {'fet_HB_pitchvel','fet_HB_angvel'},
     [hbfet,fett,fetd]    = cf(@(t,f)  feval(f,t),         Trials,repmat(featureSet(1),[1,numel(Trials)]));
     %[hbfet,fett,fetd]    = cf(@(t)  fet_HB_pitch(t),         Trials);           
     %[hbfet,fett,fetd]    = cf(@(t)  fet_HB_pitchvel(t),         Trials);
@@ -102,10 +102,15 @@ for featureSet = {'fet_HB_pitchvel','fet_HB_pitch','fet_HB_angvel'},
 %          cf(@(f)   set(f,'data',[f.data(:,[21]),flipud(f.data(:,[21,25]))]),    hbfet);
 
     
-    specParm = repmat({struct('nFFT',2^9,'Fs',features{1}.sampleRate,...
-                              'WinLength',2^8,'nOverlap',2^8*0.875,...
+% $$$     specParm = repmat({struct('nFFT',2^9,'Fs',features{1}.sampleRate,...
+% $$$                               'WinLength',2^8,'nOverlap',2^8*0.875,...
+% $$$                               'FreqRange',[1,20])},...
+% $$$                       [1,numel(Trials)]);
+    specParm = repmat({struct('nFFT',2^8,'Fs',features{1}.sampleRate,...
+                              'WinLength',2^7,'nOverlap',2^7*0.875,...
                               'FreqRange',[1,20])},...
                       [1,numel(Trials)]);
+
     %[ys,fs,ts] = cf(@(t,f,p)  fet_spec(t,f,'mtfft',false,'defspec',p),  Trials,hbfet,specParm);
     [ys,fs,ts] = cf(@(t,f,p)  fet_spec(t,f,'mtcsdglong',false,'defspec',p),  Trials,hbfet,specParm);
 
@@ -126,8 +131,8 @@ for featureSet = {'fet_HB_pitchvel','fet_HB_pitch','fet_HB_angvel'},
         wper     = cf(@(s,y) s{sts,y.sampleRate},  stc,  ys);
         %wper     = cf(@(s,y) s{'r',y.sampleRate},  stca,  ys);
 
-        for fetInds = [1,1,2;2,3,3],    
-
+        for fetInds = [1,1;2,3],   
+ 
             chr = [];
             mvx = [];
             wdur = [];
@@ -167,7 +172,12 @@ for featureSet = {'fet_HB_pitchvel','fet_HB_pitch','fet_HB_angvel'},
 % $$$  figure,hist(hbm(:),50)
 % $$$ figure,imagesc(ts{1},fs{1},log10(ys{6}(:,:,1,1)')),axis xy; colormap jet;
 
+            %ind = wdur>2;
             ind = wdur>5;
+            
+            stats = circ_stats(hbm(ind))
+            [pval,z] = circ_rtest(hbm(ind))
+            
             out = [];
             mout = [];
             haout = [];
@@ -195,7 +205,10 @@ for featureSet = {'fet_HB_pitchvel','fet_HB_pitch','fet_HB_angvel'},
             % PLOT phaseDiff vs frequency pdf
             hax = axes;
             hax.Units = 'centimeters';
-            [~,hcb] = imagescnan({linspace(-pi,pi,30),fs{1},bsxfun(@rdivide,mout,sum(mout))'},[0,0.25],'linear',true);
+            [~,hcb] = imagescnan({linspace(-pi,pi,30),fs{1},bsxfun(@rdivide,mout,sum(mout))'},...
+                                 [0,0.25],...
+                                 'linear',...
+                                 true);
             title({[fett{1}{fetInds(1)}],[ ' - ' fett{1}{fetInds(2)}]});
             hax.Position = [2,11,3,3];
             hcb.Units = 'centimeters';
@@ -216,6 +229,7 @@ for featureSet = {'fet_HB_pitchvel','fet_HB_pitch','fet_HB_angvel'},
             title(hbfet{1}.label);
             ylim([0,0.25]);
             xlim([-pi,pi]);
+            
             FigName = ['head_body-',hbfet{1}.label,'-',sprintf('%i_%i',fetInds),'-',wper{1}.label];
             print(gcf,'-depsc2',fullfile(OwnDir,FigDir,[FigName,'.eps']));
             print(gcf,'-dpng',  fullfile(OwnDir,FigDir,[FigName,'.png']));
@@ -226,9 +240,9 @@ for featureSet = {'fet_HB_pitchvel','fet_HB_pitch','fet_HB_angvel'},
     end
 end
 
+
 figure,hold on
 plot(sq(median(abs(cell2mat(cf(@(f,s) (f.segs(s{'n'}(:,1)-60,120,nan)), hbfet,stca))),2,'omitnan')))
-
 plot(sq(median(abs(cell2mat(cf(@(f,s) (f.segs(s{'n'}(:,1)-60,120,nan)), hbfet,stc))),2,'omitnan')))
 
 

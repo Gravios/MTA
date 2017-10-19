@@ -26,26 +26,3 @@ out    = cf(@(f,v,i,ex,ey)    hist2([f(i,15),v(i,'head_front')],ex,ey), ...
 figure();
 imagesc(edx{1},edy{1},cat)
 
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-

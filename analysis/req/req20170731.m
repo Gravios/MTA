@@ -250,13 +250,26 @@ Trial = MTATrial.validate('jg05-20120317.cof.all');
 states = {'walk','rear','turn','pause','groom','sit'};
 stch = Trial.load('stc','hand_labeled_rev3_jg');
 stcw = Trial.load('stc','MTAC_BATCH+hand_labeled+1+fet_mis+SR10NN25NI100M1MREF+jg05-20120317.cof.all+N1NREF+hand_labeled+RNDWSBT+PRCT90+STS+wrnpms+multiSesPatNet_weighted');
-stcp = Trial.load('stc','MTAC_BATCH+hand_labeled+1+fet_mis+SR10NN25NI100M1MREF+jg05-20120317.cof.all+N1NREF+hand_labeled+RNDWSBT+PRCT90+STS+wrnpms+multiSesPatNet_weighted_ppsvd');
+stcwp = Trial.load('stc','MTAC_BATCH+hand_labeled+1+fet_mis+SR10NN25NI100M1MREF+jg05-20120317.cof.all+N1NREF+hand_labeled+RNDWSBT+PRCT90+STS+wrnpms+multiSesPatNet_weighted_ppsvd');
+stcn = Trial.load('stc','MTAC_BATCH+hand_labeled+1+fet_mis+SR10NN25NI100M1MREF+jg05-20120317.cof.all+N1NREF+hand_labeled+RNDWSBT+PRCT90+STS+wrnpms+multiSesPatNet');
 stcnp = Trial.load('stc','MTAC_BATCH+hand_labeled+1+fet_mis+SR10NN25NI100M1MREF+jg05-20120317.cof.all+N1NREF+hand_labeled+RNDWSBT+PRCT90+STS+wrnpms+multiSesPatNet_ppsvd');
+stcn = Trial.load('stc','msnn_ppsvd');
+
+plot_stcs(stch,stcw,stcn)
+
+
+Trial = MTATrial.validate('Ed01-20140707.cof.all');
+states = {'walk','rear','turn','pause','groom','sit'};
+stch = Trial.load('stc','hand_labeled_rev2_Ed');
+stcw = Trial.load('stc','MTAC_BATCH+hand_labeled+3+fet_mis+SR10NN25NI100M1MREF+jg05-20120317.cof.all+N1NREF+hand_labeled+RNDWSBT+PRCT90+STS+wrnpms+multiSesPatNet_weighted');
+stcwp = Trial.load('stc','MTAC_BATCH+hand_labeled+3+fet_mis+SR10NN25NI100M1MREF+jg05-20120317.cof.all+N1NREF+hand_labeled+RNDWSBT+PRCT90+STS+wrnpms+multiSesPatNet_weighted_ppsvd');
+stcn = Trial.load('stc','MTAC_BATCH+hand_labeled+3+fet_mis+SR10NN25NI100M1MREF+jg05-20120317.cof.all+N1NREF+hand_labeled+RNDWSBT+PRCT90+STS+wrnpms+multiSesPatNet');
+stcnp = Trial.load('stc','MTAC_BATCH+hand_labeled+3+fet_mis+SR10NN25NI100M1MREF+jg05-20120317.cof.all+N1NREF+hand_labeled+RNDWSBT+PRCT90+STS+wrnpms+multiSesPatNet_ppsvd');
 
 stcn = Trial.load('stc','msnn_ppsvd');
 
 
-figure(); plot_stcs(stch,stcnp,stcp);
+figure(); plot_stcs(stch,stcw,stcnp,stcp);
 
 
 

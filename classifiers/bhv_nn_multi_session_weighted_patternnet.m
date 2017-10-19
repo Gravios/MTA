@@ -311,7 +311,7 @@ end
 if trainModel || ~exist(fullfile(modelPath,[model,'-weights.mat']),'file'),
     ranks = [1:nIter]./sum(1:nIter);
     for i = 1:numStates{1},
-        stateScore = af(@(l,i)  l.precision(:,i),  labelingStatsMulti,repmat([i],[numTrials,1]));
+        stateScore = af(@(l,i)  l.accuracy(:,i),  labelingStatsMulti,repmat([i],[numTrials,1]));
         stateScore = cat(2,stateScore{:});
         [~,stateRankInd] = sort(mean(stateScore,2));
         stateRanks(:,i) = ranks(stateRankInd);
