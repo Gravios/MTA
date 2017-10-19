@@ -59,12 +59,12 @@ uccg.tshf = tbins(sq(uccg.tshf));
 
 
 
-%% get placefields
+% GET placefields
 OwnDir = '/storage/gravio/ownCloud/MjgEdER2016/';    
 states = Trial.stc.list_state_attrib;
 states(~cellfun(@isempty,regexp(states,'^spw$')))=[]; % drop the spw
-states(~cellfun(@isempty,regexp(states,'^sit$')))=[]; % drop the spw
-states(~cellfun(@isempty,regexp(states,'^groom$')))=[]; % drop the spw
+states(~cellfun(@isempty,regexp(states,'^sit$')))=[]; % drop the sit
+states(~cellfun(@isempty,regexp(states,'^groom$')))=[]; % drop the groom
 nsts = numel(states);
 
 binDims = [20,20];
@@ -170,7 +170,7 @@ end
 
 sunits = cunits;
 
-
+% PLOT place fields
 hfig = figure(2039321);clf
 hfig.Units = 'centimeters';
 hfig.Position = [0,0,55,3.5*numel(sunits)];
