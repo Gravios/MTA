@@ -1,5 +1,5 @@
 
-MTAConfiguration('/gpfs01/sirota/bach/data/gravio/','absolute');
+%MTAConfiguration('/gpfs01/sirota/bach/data/gravio/','absolute');
 
 %% place field fig
 
@@ -10,9 +10,12 @@ Trial = MTATrial('jg05-20120310');
 Trial.xyz.load(Trial);
 
 
+
+% SELECT units
 %units = [3:30];
 units = find(Trial.SpkWidthR>0.7&Trial.eDist>30);
-states = {'theta','rear&theta','walk&theta','hwalk&theta','lwalk&theta'};
+
+states = {'rear&theta','walk&theta','hwalk&theta','lwalk&theta','theta-groom-sit'};
 numsts = numel(states);
 
 xyo={};pfs={};accg={};

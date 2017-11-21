@@ -1,5 +1,5 @@
 function Stc = label_bhv_msnn(Stc,Trial,varargin)
-%function label_bhv_msnn(Trial,varargin)
+% function label_bhv_msnn(Trial,varargin)
 %
 % label trials with multi-session patternnet classifier 
 %
@@ -84,5 +84,5 @@ model = ['MTAC_BATCH+' trainingSessionList '+'            ...
 );
 
 % SAVE state collection with new name
-cf(@(s) s.updateMode(name),Stc);
+cf(@(s) s.updateMode('msnn'),Stc);
 cf(@(s) s.save(true),      Stc);

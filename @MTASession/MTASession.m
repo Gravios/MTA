@@ -497,8 +497,22 @@ classdef MTASession < hgsetget
                 end
 
                 
-            elseif iscell(Session),
-                Session = MTASession(Session{:});
+            elseif iscell(Session) && numel(Session)==1,
+                if isa(Session{1},'MTASession')
+                    Session = Session{1};
+                elseif ischar(Session{1})
+                    pat =['(?<sessionName>[a-z_A-Z]+\d{2,2}[-]\d{8,8})\.'...
+                          '(?<mazeName>\w+)\.'...
+                          '(?<trialName>\w+)'];
+                    tok = regexp(Session,pat,'names');
+                    if ~isempty(tok),
+                        Session = MTASession.validate(tok);
+                    else
+                        Session = MTASession(Session);                                    
+                    end
+                end    
+                return
+
                 
             elseif isstruct(Session),
                 stcMode = '';
@@ -507,7 +521,8 @@ classdef MTASession < hgsetget
                 end
 
                 Session = MTASession(Session.sessionName,...
-                                     Session.mazeName);
+                                     Session.mazeName,...
+                                     false);
 
                 if ~isempty(stcMode),
                     try,

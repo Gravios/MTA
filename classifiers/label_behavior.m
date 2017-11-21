@@ -17,10 +17,12 @@ cf(@(t)  label_bhv_shake('msnn_ppsvd',t),  Trials);
 % $$$ end
 
 % CREATE composite state of walk and turn
-cf(@(t)  reduce_stc_to_loc(t.load('stc','msnn_ppsvd')),  Trials);
+stc = cf(@(t)  reduce_stc_to_loc(t.load('stc','msnn_ppsvd')),  Trials);
 
 % LABEL sniffing periods
 
+cf(@(s,t) label_bhv_reduced(s,t), stc,Trials);
+
 
 % LABEL homebase behavior
-cf(@(t)  label_bhv_homebase([],t),  Trials);
+%cf(@(t)  label_bhv_homebase([],t),  Trials);

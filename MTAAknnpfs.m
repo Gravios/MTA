@@ -31,14 +31,14 @@ classdef MTAAknnpfs < hgsetget %< MTAAnalysis
                              'numIter',            1,                                    ...
                              'pos',                [],                                   ...
                              'sampleRate',         10,                                   ...
-                             'absTimeSubSample',   300                                   ...
-            );%-----------------------------------------------------------------------------
-
-            
+                             'absTimeSubSample',   300,                                  ...
+                             'nNodes',             4                                     ...
+            );            
             [units,states,overwrite,tag,ufr,binDims,nNearestNeighbors,distThreshold,...
-                type,ufrShufBlockSize,numIter,pos,sampleRate,absTimeSubSample]=...
+                type,ufrShufBlockSize,numIter,pos,sampleRate,absTimeSubSample,nNodes]=...
             DefaultArgs(varargin,defargs,'--struct');
-             
+            %-----------------------------------------------------------------------------             
+            
             units = units(:)';
         
             switch class(Obj)
@@ -227,7 +227,7 @@ classdef MTAAknnpfs < hgsetget %< MTAAnalysis
             parp = [];
             if numIter>1,
                 try,delete(gcp('nocreate')),end
-                parp = parpool(10);
+                parp = parpool(nNodes);
             end
             
 
@@ -312,13 +312,17 @@ classdef MTAAknnpfs < hgsetget %< MTAAnalysis
                   bin2 = Pfs.adata.bins{2};
                   
                   switch mode
+                    case 'field'
+                      rateMap = Pfs.data.rateMap(:,Pfs.data.clu==unit,1);
                     case 'mean'
-                      rateMap = nanmean(Pfs.data.rateMap(:,Pfs.data.clu==unit,:),3);
+                      rateMap = nanmean(Pfs.data.rateMap(:,Pfs.data.clu==unit,2:end),3);
                     case 'std'
-                      rateMap = nanstd(Pfs.data.rateMap(:,Pfs.data.clu==unit,:),[],3);
+                      rateMap = nanstd(Pfs.data.rateMap(:,Pfs.data.clu==unit,2:end),[],3);
                     case 'sig'
-                      rateMap = 1./nansum((repmat(max(Pfs.data.rateMap(:,Pfs.data.clu==unit,:)),[size(Pfs.data.rateMap,1),1,1])...
-                                          -repmat(Pfs.data.rateMap(:,Pfs.data.clu==unit,1),[1,1,Pfs.parameters.numIter]))<0,3)';
+                      rateMap = 1./nansum((repmat(max(Pfs.data.rateMap(:,Pfs.data.clu==unit,:)),...
+                                                  [size(Pfs.data.rateMap,1),1,1])...
+                                          -repmat(Pfs.data.rateMap(:,Pfs.data.clu==unit,1),...
+                                                  [1,1,Pfs.parameters.numIter]))<0,3)';
                     otherwise
                       if isnumeric(mode)
                           rateMap = Pfs.data.rateMap(:,Pfs.data.clu==unit,mode);
@@ -344,6 +348,9 @@ classdef MTAAknnpfs < hgsetget %< MTAAnalysis
                       caxis(colorLimits);        
 
                       axis xy
+                      text(Pfs.adata.bins{1}(end)-250,Pfs.adata.bins{2}(end)-50,...
+                          sprintf('%2.1f',max(rateMap(:))),'Color','w','FontWeight','bold','FontSize',10)
+                      
                   end
                   return
                   

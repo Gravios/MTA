@@ -22,10 +22,7 @@ function Sessions = get_session_list(sessionList,varargin)
 %                             'stcMode',      'default'            ...
 
 
-if isstruct(sessionList) | isa(sessionList,'MTASession'),
-    Sessions = sessionList;
-    return
-end
+
 
 
 prjPath_xyz = '';
@@ -39,6 +36,27 @@ end
 
 
 [my_xyz,my_nlx,fieldModifications] = DefaultArgs(varargin,{prjPath_xyz,prjPath_nlx,struct()});
+
+if isstruct(sessionList) | isa(sessionList,'MTASession'),
+    Sessions = sessionList;        
+    if isfield(fieldModifications,'stcMode'),
+        Sessions.load('stc',fieldModifications.stcMode);
+    end
+    return
+elseif ischar(sessionList),
+    pat =['(?<sessionName>[a-z_A-Z]+\d{2,4}[-]\d{8,8})\.'...
+          '(?<mazeName>\w+)\.'...
+          '(?<trialName>\w+)'];
+    tok = regexp(sessionList,pat,'names');
+    if ~isempty(tok),
+        Sessions = MTASession.validate(sessionList);
+        if isfield(fieldModifications,'stcMode'),
+            Sessions.load('stc',fieldModifications.stcMode);
+        end
+        return
+    end
+end
+
 
 path = load('MTAPaths.mat');
 
@@ -253,11 +271,48 @@ switch sessionList
     my_xyz = fullfile(tmy_xyz,'Ed10');
     my_nlx = '/storage/eduardo/data/processed/nlx/Ed10';
 
-    Sessions(1) = struct(    'sessionName',  'Ed10-20140813', ...
+% $$$     Sessions(1) = struct(    'sessionName',  'Ed10-20140813', ...
+% $$$                              'mazeName',     'cof',           ...
+% $$$                              'trialName',    'all',           ...
+% $$$                              'xyz_host',      my_xyz,         ...
+% $$$                              'nlx_host',      my_nlx,         ...
+% $$$                              'xyzSampleRate', 119.881035,     ...
+% $$$                              'hostServer',   'lmu',           ...
+% $$$                              'dataServer',   'lmu',           ...
+% $$$                              'project',      'general',       ...
+% $$$                              'TTLValue',     '0x0002',        ...
+% $$$                              'includeSyncInd',[],             ...
+% $$$                              'offsets',       [15,-15],       ...
+% $$$                              'xOffSet',       0,              ...
+% $$$                              'yOffSet',       0,              ...
+% $$$                              'stcMode',      'default',       ...
+% $$$                              'ncpChannel',    65              ...
+% $$$                              );
+% $$$     
+% $$$ % $$$     Sessions(end+1) = Sessions(end);
+% $$$ % $$$     Sessions(end).sessionName = 'Ed10-20140814';
+% $$$ % $$$     
+% $$$ % $$$     Sessions(end+1) = Sessions(end);
+% $$$ % $$$     Sessions(end).sessionName = 'Ed10-20140815';
+% $$$ % $$$     
+% $$$ % $$$     Sessions(end+1) = Sessions(end);
+% $$$ % $$$     Sessions(end).sessionName = 'Ed10-20140816';
+% $$$     
+% $$$     Sessions(end+1) = Sessions(end);
+% $$$     Sessions(end).sessionName = 'Ed10-20140817';
+% $$$     Sessions(end).includeSyncInd = [1:7];    
+% $$$     Sessions(end).mazeName  = 'cof';
+% $$$     Sessions(end).trialName = 'gnd';
+
+    % 7-8
+    % Ed01 Sessions
+
+    
+    Sessions(1) = struct(    'sessionName',  'Ed01-20140707', ...
                              'mazeName',     'cof',           ...
                              'trialName',    'all',           ...
-                             'xyz_host',      my_xyz,         ...
-                             'nlx_host',      my_nlx,         ...
+                             'xyz_host',      '/storage/eduardo/data/processed/xyz/',         ...
+                             'nlx_host',      '/storage/eduardo/data/processed/nlx/Ed01/',    ...
                              'xyzSampleRate', 119.881035,     ...
                              'hostServer',   'lmu',           ...
                              'dataServer',   'lmu',           ...
@@ -268,36 +323,8 @@ switch sessionList
                              'xOffSet',       0,              ...
                              'yOffSet',       0,              ...
                              'stcMode',      'default',       ...
-                             'ncpChannel',    65              ...
+                             'ncpChannel',    2               ...
                              );
-    
-% $$$     Sessions(end+1) = Sessions(end);
-% $$$     Sessions(end).sessionName = 'Ed10-20140814';
-% $$$     
-% $$$     Sessions(end+1) = Sessions(end);
-% $$$     Sessions(end).sessionName = 'Ed10-20140815';
-% $$$     
-% $$$     Sessions(end+1) = Sessions(end);
-% $$$     Sessions(end).sessionName = 'Ed10-20140816';
-    
-    Sessions(end+1) = Sessions(end);
-    Sessions(end).sessionName = 'Ed10-20140817';
-    Sessions(end).includeSyncInd = [1:7];    
-    Sessions(end).mazeName  = 'cof';
-    Sessions(end).trialName = 'gnd';
-
-    % 7-8
-    % Ed01 Sessions
-    Sessions(end+1) = Sessions(end);
-    Sessions(end).sessionName = 'Ed01-20140707';
-    Sessions(end).mazeName    = 'cof';
-    Sessions(end).trialName   = 'all';
-    Sessions(end).xyz_host    = '/storage/eduardo/data/processed/xyz/';
-    Sessions(end).nlx_host    = '/storage/eduardo/data/processed/nlx/Ed01/';
-    Sessions(end).xyzSampleRate  = 119.881035;
-    Sessions(end).TTLValue       = '0x0002';
-    Sessions(end).includeSyncInd = [];
-    Sessions(end).ncpChannel = 2;
     
     Sessions(end+1) =    Sessions(end);
     Sessions(end).sessionName = 'Ed01-20140709';
@@ -342,7 +369,8 @@ switch sessionList
                          'offsets',       [0,0],            ...
                          'xOffSet',       0,                ...
                          'yOffSet',       0,                ...
-                         'stcMode',      'msnn_ppsvd'       ...
+                         'stcMode',      'msnn_ppsvd_raux', ...
+                         'thetaRef',    [8:8:64]          ...
     );
 
     Sessions(end+1) = Sessions(end);
@@ -360,7 +388,9 @@ switch sessionList
     Sessions(end).TTLValue       = 'Vicon start';
     Sessions(end).includeSyncInd = [1,2,5,6,9,10];
     Sessions(end).offsets        = [15,-15];
-      
+    Sessions(end).thetaRef     = [8:8:64,77,77,77,77];
+
+    
 % $$$     Sessions(end+1) = Sessions(end);
 % $$$     Sessions(end).sessionName    = 'ER06-20130614';
 % $$$     Sessions(end).trialName      = 'gnd';
@@ -376,11 +406,13 @@ switch sessionList
     Sessions(end).xyz_host    =  my_xyz;
     Sessions(end).nlx_host    =  my_nlx;
     Sessions(end).TTLValue    = '0x0002';
-
+    Sessions(end).thetaRef     = [8:8:32];
+    
     Sessions(end+1) =    Sessions(end);
     Sessions(end).sessionName = 'Ed10-20140817';
     Sessions(end).trialName   = 'gnd';
     Sessions(end).includeSyncInd = [1:7];
+
 
     % 13-23
     % jg04 sessions
@@ -398,6 +430,7 @@ switch sessionList
     Sessions(end).includeSyncInd = [];    
     Sessions(end).project       = 'general';
 
+    
     Sessions(end+1) = Sessions(1);
     Sessions(end).sessionName = 'jg04-20120128';
     Sessions(end+1) = Sessions(1);
@@ -413,6 +446,7 @@ switch sessionList
     
     Sessions(end+1) = Sessions(end);
     Sessions(end).sessionName = 'jg04-20120210';
+    Sessions(end).thetaRef = [8,16];
     Sessions(end+1) = Sessions(end);
     Sessions(end).sessionName = 'jg04-20120211';
     Sessions(end+1) = Sessions(1);
@@ -432,15 +466,20 @@ switch sessionList
     Sessions(end).nlx_host    =   my_nlx;
     Sessions(end).TTLValue    = '0x0040';
     Sessions(end).includeSyncInd = [];
-
+    Sessions(end).thetaRef     = [8:8:64,repmat(69,[1,5])];
+    
     Sessions(end+1) =   Sessions(end);
     Sessions(end).sessionName =   'jg05-20120310';
+    Sessions(end).thetaRef     = [8:8:64,repmat(69,[1,4])];    
     Sessions(end+1) =   Sessions(end);
-    Sessions(end).sessionName =   'jg05-20120311';    
+    Sessions(end).sessionName =   'jg05-20120311';  
+    Sessions(end).thetaRef     = [8:8:32,37,43,49,57,repmat(68,[1,4])];
     Sessions(end+1) =   Sessions(end);
     Sessions(end).sessionName =   'jg05-20120312';
+    Sessions(end).thetaRef     = [8:8:40,46,53,61,repmat(72,[1,4])];
     Sessions(end+1) =   Sessions(end);
     Sessions(end).sessionName =   'jg05-20120317';
+    Sessions(end).thetaRef     = [8:8:32,40,47,53,59,repmat(73,[1,4])];
 
   case 'BHV_S4H5',
     tmy_nlx = my_nlx;
@@ -792,6 +831,7 @@ switch sessionList
       );
 
       
+
       
   case 'Ed10'
 
@@ -1135,6 +1175,52 @@ switch sessionList
                          'yOffSet',       -325,           ...
                          'stcMode',      'default'        ...
     );
+
+    
+    case 'Ed10-20140822.cof'
+
+        my_xyz = fullfile(my_xyz,'Ed10');
+        my_nlx = '/storage/eduardo/data/processed/nlx/Ed10';
+
+        Sessions(1) = struct('sessionName',  'Ed10-20140822', ...
+                             'mazeName',     'cof',           ...
+                             'trialName',    'all',           ...
+                             'xyz_host',      my_xyz,         ...
+                             'nlx_host',      my_nlx,         ...
+                             'xyzSampleRate', 119.881035,     ...
+                             'hostServer',   'lmu',           ...
+                             'dataServer',   'lmu',           ...
+                             'project',      'vr_exp',        ...
+                             'TTLValue',     '0x0002',        ...
+                             'includeSyncInd',[],             ...
+                             'offsets',       [15,-15],       ...
+                             'xOffSet',       0,              ...
+                             'yOffSet',       0,              ...
+                             'stcMode',      'default'        ...
+        );
+
+
+  case 'Ed10-20140820.cof'
+    my_xyz = fullfile(my_xyz,'Ed10');
+    my_nlx = '/storage/eduardo/data/processed/nlx/Ed10';
+    Sessions(1) = struct('sessionName',  'Ed10-20140820', ...
+                          'mazeName',     'cof',           ...
+                          'trialName',    'all',           ...
+                          'xyz_host',      my_xyz,         ...
+                          'nlx_host',      my_nlx,         ...
+                          'xyzSampleRate', 119.881035,     ...
+                          'hostServer',   'lmu',           ...
+                          'dataServer',   'lmu',           ...
+                          'project',      'vr_exp',        ...
+                          'TTLValue',     '0x0002',        ...
+                          'includeSyncInd',[],             ...
+                          'offsets',       [15,-15],       ...
+                          'xOffSet',       0,              ...
+                          'yOffSet',       0,              ...
+                          'stcMode',      'default'        ...
+        );
+
+            
     
   case 'Ed10VR_teleport'
     Sessions(1) = struct('sessionName',  'Ed10-20140820', ...

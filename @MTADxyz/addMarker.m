@@ -17,7 +17,7 @@ function Data = addMarker(Data,varargin)
 % DEFARGS ------------------------------------------------------------------------------------------
 defargs = struct('name',   'newMarker',                                                          ...
                  'color',  [.7,1,.7],                                                            ...
-                 'sticks', {{{'head_back','head_front',[0,0,1]}}},                                 ...
+                 'sticks', {{}},                                                                 ...
                  'data',   []                                                                    ...
 );        
 [name,color,sticks,data] = DefaultArgs(varargin,defargs,'--struct');
@@ -25,16 +25,21 @@ defargs = struct('name',   'newMarker',                                         
 
 
 %check if marker exists
-if Data.model.gmi(name),
-    %warning('MTA:MTADxyz:addMarker:MarkerExists, aborting marker assignment');
-    return;
+markerIndex = Data.model.gmi(name);
+if markerIndex,
+    %warning('MTA:MTADxyz:addMarker:MarkerExists, Overwriting Marker');
+    Data.data(:,markerIndex,:) = data;
+else
+    Marker = MTAMarker(name,color);
+    Data.model.Markers{end+1} = Marker;
+    Data.model.N = Data.model.N + 1;
+    if ~isempty(sticks),
+        for i = 1:length(sticks),
+            Data.model.Connections{end+1} = MTAStick(sticks{i}{1},sticks{i}{2},sticks{i}{3});
+        end
+    end
+    Data.data = cat(2,Data.data,data);
+    
 end
-Marker = MTAMarker(name,color);
-Data.model.Markers{end+1} = Marker;
-Data.model.N = Data.model.N + 1;
-for i = 1:length(sticks),
-    Data.model.Connections{end+1} = MTAStick(sticks{i}{1},sticks{i}{2},sticks{i}{3});
-end
-Data.data = cat(2,Data.data,data);
-end
+
 

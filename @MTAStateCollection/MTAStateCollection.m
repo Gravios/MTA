@@ -102,7 +102,9 @@ classdef MTAStateCollection < hgsetget
                     
             catch err, 
                 disp(err)
-                error('MTAStateCollection:load:ModeDoesNotExist');
+                error(struct('message',    'State collection mode not found',...
+                             'identifier', 'MTAStateCollection:load:ModeDoesNotExist',...
+                             'stack',      dbstack));
             end
             
             

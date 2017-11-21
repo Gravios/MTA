@@ -96,12 +96,18 @@ while ~isempty(procOpts)
             ssn.data = zeros([size(ss,1),size(ss,2)-6,size(ss,3)]);
             markerInd = zeros([size(ss,1),numMarkers-2]);
             for t = nind'
+                try,
                 nzind = [true,spineSegmentLength(t,:)]>1e-10;
                 zind = find(~nzind)-1;
                 nzind([zind]) = ~nzind([zind]);    
                 ssn.data(t,:,:) = ss(t,nzind,:);
-                markerInd(t,:) = zind-[1:numel(zind)].*2+spineSegmentLength(t,[zind-1])./sum(reshape(spineSegmentLength(t,[zind-1,zind+1]),3,2),2)';
+                markerInd(t,:) = zind-[1:numel(zind)].*2+spineSegmentLength(t,[zind-1])./ ...
+                    sum(reshape(spineSegmentLength(t,[zind-1,zind+1]),3,2),2)';
+                catch err, disp(err)
+                    markerInd(t,:) = markerInd(t-1,:);
+                end
             end
+            
             %spineSegmentLengthNew = MTADxyz('data',sqrt(sum(diff(ssn.data,1,2).^2,3)),'sampleRate',xyz.sampleRate);
             baseInd = 100/(numMarkers-1);
 
@@ -275,3 +281,4 @@ xyz.addMarker('acom',...    Name
 
               
               
+xyz.data(isnan(xyz.data)) = eps;

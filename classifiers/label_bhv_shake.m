@@ -95,7 +95,7 @@ features = cf(@(t,p)   feval(p.featureSet,t),  Trials,repmat({param},[1,numSessi
            cf(@(f,t,p) f.map_to_reference_session(t,p.referenceTrial),...
               features,Trials,repmat({param},[1,numSessions]));
 for s = 1:numSessions, features{s}.data(~nniz(xyz{s}),:,:) = 0;end
-
+           cf(@(f,s)   f.resample(s),          features,sampleRate);
 
 % NORMALIZE feature matrix
 [refMean,refStd] = load_normalization_parameters_unity(param.featureSet,...
@@ -329,11 +329,11 @@ cf(@(p) p+[2,-2],aper);
 
 cf(@(s,p) cf(@(sts,per) set(sts,'data',get(sts-bsxfun(@plus,per,[-1,1]),'data')),...
              s.states,repmat({p},[1,numel(s.states)])),...
-   Stc,repmat({nkper},[1,1]));
+   Stc,nkper);
 
 cf(@(t,s,f,p) s.addState(t.spath,t.filebase,p,f.sampleRate,t.sync.copy,t.sync.data(1),'shake','k'),...
    Trials,Stc,sfet,nkper);
-cf(@(s,a) set(s.states{s.gsi('k')},'data',s.states{s.gsi('k')}&a.data), ...
+cf(@(s,a) set(s.states{s.gsi('k')},'data',get(s.states{s.gsi('k')}&a.data,'data')), ...
    Stc,aper);
 
 
@@ -343,7 +343,7 @@ for s = 1:numel(Stc),
     for sts = states(1:end-1),
         sts = sts{1};
         [stcMatrix] = reassign_low_duration_state_to_neighboring_states(stcMatrix,...
-                                                  [Stc{s}{sts}],0.25*xyz{s}.sampleRate);
+                                                  [Stc{s}{sts}],0.18*sfet{s}.sampleRate);
     end
     Stc{s} = mat2stc(stcMatrix,Stc{s},xyz{s},Trials{s});
 end

@@ -23,9 +23,10 @@ Trial = MTATrial.validate('Ed10-20140817.cof.gnd');
 chans = [8,16,17,25];
 
 %Trial = MTATrial.validate(Trial);
-stcMode = 'NN0317R';
-Stc = Trial.load('stc',stcMode);
-OwnDir = '/storage/gravio/ownCloud/MjgEdER2016/';
+stcMode = 'msnn_ppsvd_raux';
+Trial.load('stc',stcMode);
+Stc = Trial.stc.copy();
+OwnDir = '/storage/gravio/nextcloud/MjgER2016/figures/figure3';
 FigDir = 'exp_phase_2d_drz_theta';
 mkdir(fullfile(OwnDir,FigDir))
 phase_chan = 1;
@@ -37,9 +38,8 @@ phase_chan = 1;
 %[chans,phase_chan,stcMode] = DefaultArgs(varargin,{[66,72,78,84],1,'NN0317R'});
 
 % Load Stc
-states = {'rear','loc','lloc','hloc','pause','lpause','hpause'};
-states = cellfun(@strcat,states,repmat({'&theta'},size(states)),'UniformOutput',false);
-states = cat(2,{'theta-sit-groom'},states,{'pause-theta'});
+states = {'rear&theta','loc&theta','lloc&theta','hloc&theta',...
+          'pause&theta','lpause&theta','hpause&theta','theta-groom-sit'};
 nsts = numel(states);
 
 % Load Position
@@ -48,7 +48,13 @@ xyz.filter('ButFilter',3,2.4,'low');
 
 % Load Units
 pft = pfs_2d_theta(Trial);
-mrt = pft.maxRate;
+[mrt,pmp] = pft.maxRate;
+
+pfstats = compute_pfstats_bs(Trial);
+patchCOM = [];
+for unit = units,
+    patchCOM(end+1,:) = fliplr(sq(mean(pfstats.peakPatchCOM(8,:,pfstats.cluMap==unit,:)))');
+end
 
 % Reduce clu list based on theta pfs max rate
 units = select_units(Trial,18);
@@ -61,79 +67,16 @@ lfp.resample(xyz);
 tbp_phase = lfp.phase([6,12]);
 
 
-
-spk = {};
-pfdist = [];
-pmr  = [];
-pmp  = [];
-wpmr = [];
-pfd  = [];
-DRZ  = [];
-
-
 for s = 1:nsts,        
     % Load spikes 
     spk{s} = Trial.spk.copy;
     spk{s}.create(Trial,xyz.sampleRate,states{s},[],'deburst');
 end
 
+% COMPUTE directed rate zones
+drz = compute_drz(Trial,pft,units);
+ddz = compute_ddz(Trial,pft,units);
 
-    
-% Get the mean firing rate for each xy position along trajectory 
-wpmr = zeros(xyz.size(1),numel(units));
-
-[~,indx] = min(abs( repmat(pft.adata.bins{1}',xyz.size(1),1)...
-                    -repmat(xyz(:,Trial.trackingMarker,1),1,numel(pft.adata.bins{1}))),...
-               [],2);
-
-[~,indy] = min(abs( repmat(pft.adata.bins{2}',xyz.size(1),1)...
-                    -repmat(xyz(:,Trial.trackingMarker,2),1,numel(pft.adata.bins{2}))),...
-               [],2);
-
-rateMapIndex = sub2ind(pft.adata.binSizes',indx,indy);
-for unit = units,
-    rateMap = pft.plot(unit,'mean');      %  for MTAApfs
-                                          %rateMap = rot90(rot90(rateMap)'); % for MTAAknnpfs
-    wpmr(:,unit==units) = rateMap(rateMapIndex);
-end
-
-    % Get the peak firing rate and position of each place field
-[pmr,pmp] = pft.maxRate(units,'mean');
-pmr = repmat(pmr(:)',xyz.size(1),1);
-
-
-% Get the rat's 
-pfds = [];
-pfdd = [];
-for unit = units
-    pfhxy = xyz(:,{'head_back','head_front'},:);
-    pfhxy = cat(2,pfhxy,permute(repmat([pmp(unit==units,:),0],xyz.size(1),1),[1,3,2]));
-    pfhxy = MTADxyz([],[],pfhxy,xyz.sampleRate);
-    
-    cor = cell(1,3);
-    [cor{:}] = cart2sph(pfhxy(:,2,1)-pfhxy(:,1,1),pfhxy(:,2,2)-pfhxy(:,1,2),pfhxy(:,2,3)-pfhxy(:,1,3));
-    cor = cell2mat(cor);
-    
-    por = cell(1,3);
-    [por{:}] = cart2sph(pfhxy(:,3,1)-pfhxy(:,1,1),pfhxy(:,3,2)-pfhxy(:,1,2),pfhxy(:,3,3)-pfhxy(:,1,3));
-    por = cell2mat(por);
-    
-    pfds(:,unit==units) = circ_dist(cor(:,1),por(:,1));
-    pfdd(:,unit==units) = por(:,3);
-    
-end
-
-pfdist = pfdd;
-pfd = zeros(size(pfds));
-pfd(abs(pfds)<=pi/2)=-1;
-pfd(abs(pfds)>pi/2)=1;
-
-% Calculate DRZ 
-DRZ = pfd.*(1-wpmr./pmr);
-
-
-
-%spk,DRZ,pfdist
 
 % load autocorrelogram
 [accg,tbins] = autoccg(MTASession.validate(Trial.filebase));
@@ -146,14 +89,14 @@ set(0,'defaultAxesFontSize',8,...
 aIncr = true;
 hfig = figure(38384);
 hfig.Units = 'centimeters';
-hfig.Position = [1,1,55,24];    
+hfig.Position = [1,1,40,20];    
 hfig.PaperPositionMode = 'auto';
 
 unit = units(1);
 distThresh = 250;
 while unit~=-1,
-
-    clf
+ 
+   clf
     for s = 1:nsts,
         res = spk{s}(unit);
         % Plot unit auto correlogram
@@ -164,25 +107,94 @@ while unit~=-1,
 
         if numel(res) <50,continue,end
         res(res>xyz.size(1))=[];
-        ares=res;
-        ares(pfdist(ares,unit==units)<distThresh)=[];
-        res(pfdist(res,unit==units)>=distThresh)=[];            
 
-        drzspk = DRZ(res,unit==units);
+        drzspk = drz(res,unit==units);
+        ddzspk = ddz(res,unit==units);        
+        phzspk = tbp_phase(res,phase_chan);
+        gind = ~isnan(drzspk)&~isnan(phzspk);
+
+        subplot2(9,nsts,[1,2],s);  hold('on');
+        plot(xyz(res,Trial.trackingMarker,1),xyz(res,Trial.trackingMarker,2),'.m');
+        xlim([-500,500]),ylim([-500,500])
+        title(states{s})
+
+        subplot2(9,nsts,[4,5],s);  hold('on');
+        pft.plot(unit,'mean',[],mrt(unit==pft.data.clu).*1.5,'isCircular',true);
+        %plot(pmp(unit==pft.data.clu,1),pmp(unit==pft.data.clu,2),'w*')
+        plot(patchCOM(unit==units,1),patchCOM(unit==units,2),'w*')
+        title(num2str(unit))
+
+        % Plot phase drz relationship
+        if sum(gind)>10,
+            subplot2(9,nsts,[7,8],s);
+            hold('on');
+            plot(drzspk(gind),circ_rad2ang(phzspk(gind)),'b.');
+            plot(drzspk(gind),circ_rad2ang(phzspk(gind))+360,'b.');
+            xlim([-1,1]),
+            ylim([-180,540])
+        end
+% $$$         if sum(gind)>10,
+% $$$             subplot2(9,nsts,[7,8],s);
+% $$$             hold('on');
+% $$$             plot(ddzspk(gind),circ_rad2ang(phzspk(gind)),'b.');
+% $$$             plot(ddzspk(gind),circ_rad2ang(phzspk(gind))+360,'b.');
+% $$$             xlim([-600,600]),
+% $$$             ylim([-180,540])
+% $$$         end
+
+    end
+    
+    FigName = [Trial.filebase,'_',FigDir,'_nearPatchCenter',num2str(distThresh),'_unit',num2str(unit)];
+    print(gcf,'-dpng',  fullfile(OwnDir,FigDir,[FigName,'.png']));
+    %print(gcf,'-depsc2',fullfile(OwnDir,FigDir,[FigName,'.eps']));
+    unit = figure_controls(hfig,unit,units,aIncr);        
+end
+
+
+
+
+% FIGURE plot place field, 2d DRZ vs theta phase
+set(0,'defaultAxesFontSize',8,...
+      'defaultTextFontSize',8)
+
+aIncr = true;
+hfig = figure(38384);
+hfig.Units = 'centimeters';
+hfig.Position = [1,1,40,20];    
+hfig.PaperPositionMode = 'auto';
+
+unit = units(1);
+distThresh = 250;
+while unit~=-1,
+ 
+   clf
+    for s = 1:nsts,
+        res = spk{s}(unit);
+        % Plot unit auto correlogram
+        if s == 1,
+            subplot2(9,nsts,[9],s);
+            bar(tbins,accg(:,unit));axis tight;            
+        end
+
+        if numel(res) <50,continue,end
+        res(res>xyz.size(1))=[];
+% $$$         ares=res;
+% $$$         ares(pfdist(ares,unit==units)<distThresh)=[];
+% $$$         res(pfdist(res,unit==units)>=distThresh)=[];            
+
+        drzspk = drz(res,unit==units);
         phzspk = tbp_phase(res,phase_chan);
         gind = ~isnan(drzspk)&~isnan(phzspk);
 
         subplot2(9,nsts,[1,2],s);hold on
-        plot(xyz(ares,Trial.trackingMarker,1),xyz(ares,Trial.trackingMarker,2),'.b');
+% $$$         plot(xyz(ares,Trial.trackingMarker,1),xyz(ares,Trial.trackingMarker,2),'.b');
         plot(xyz(res,Trial.trackingMarker,1),xyz(res,Trial.trackingMarker,2),'.m');
         xlim([-500,500]),ylim([-500,500])
         title(states{s})
 
         subplot2(9,nsts,[4,5],s);
-        pft.plot(unit,'mean',[],mrt(unit).*1.5,'isCircular',true);
-        text(pft.adata.bins{1}(end)-250,pft.adata.bins{2}(end)-50,...
-             sprintf('%2.1f',pft.maxRate(unit)),'Color','w','FontWeight','bold','FontSize',10)
-        hold on,plot(pmp(unit==units,1),pmp(unit==units,2),'w*')
+        pft.plot(unit,'mean',[],mrt(unit==pft.data.clu).*1.5,'isCircular',true);
+        hold on,plot(pmp(unit==pft.data.clu,1),pmp(unit==pft.data.clu,2),'w*')
         title(num2str(unit))
 
         % Plot phase drz relationship
@@ -201,6 +213,7 @@ while unit~=-1,
     %print(gcf,'-depsc2',fullfile(OwnDir,FigDir,[FigName,'.eps']));
     unit = figure_controls(hfig,unit,units,aIncr);        
 end
+
 
 
 

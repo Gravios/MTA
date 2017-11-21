@@ -7,6 +7,7 @@ function linkSession(session_name,xyz_path,nlx_path)
 % 
 % TODO make linkSession windows compatible 
 % UPDATE requires link shell extension
+% MOD removed f flag from ln command
 
 Session = MTASession([]);
 datDir = fullfile(Session.path.data,session_name);
@@ -35,14 +36,14 @@ if exist('nlx_path','var')
             nlxDir = fullfile(Session.path.data,'nlx',session_name);
             mkdir(nlxDir);
             if numel(dir(fullfile(nlx_path,session_name)))>2,
-                system(['ln -sf ' fullfile(nlx_path,session_name) '/* ' nlxDir]);
+                system(['ln -s ' fullfile(nlx_path,session_name) '/* ' nlxDir]);
             end
         else
             % if nlx_path is within the MTA data collection
             nlxDir = fullfile(nlx_path,session_name);
         end
         cd(datDir);
-        system(['ln -sf ../nlx/' session_name '/* ' datDir ])
+        system(['ln -s ../nlx/' session_name '/* ' datDir ])
         
     end
 end

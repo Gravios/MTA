@@ -41,7 +41,7 @@ classdef MTAAknnpfs_perm < hgsetget %< MTAAnalysis
                     %pfsState = Session.stc.states(Session.stc.gsi(states));
                     pfsState = Session.stc{states};
                     
-                    Pfs.parameters.states = states;
+                    Pfs.parameters.states = {pfsState{1}.label,pfsState{2}.label};
                     Pfs.parameters.type   = type;
                     Pfs.parameters.ufrShufBlockSize= ufrShufBlockSize;
                     Pfs.parameters.numIter  = numIter;
@@ -228,7 +228,7 @@ classdef MTAAknnpfs_perm < hgsetget %< MTAAnalysis
             parp = [];
             if numIter>1,
                 try,delete(gcp('nocreate')),end
-                parp = parpool(10);
+                parp = parpool(8);
             end
             
             i = 1;            
@@ -408,7 +408,7 @@ classdef MTAAknnpfs_perm < hgsetget %< MTAAnalysis
                 binDimTag(isspace(binDimTag)) = '_';
                 nnnTag = num2str(Pfs.parameters.nNearestNeighbors);
                 Pfs.filename = [Session.filebase ...
-                    '.pfknn.' Pfs.parameters.type '.' ...
+                    '.pfknnperm.' Pfs.parameters.type '.' ...
                               Session.trackingMarker '.' ...
                               strjoin(Pfs.parameters.states,'+') '.' ...
                     'us' num2str(Pfs.parameters.ufrShufBlockSize) ...

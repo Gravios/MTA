@@ -10,6 +10,7 @@ function [rhm,varargout] = fet_rhm(Trial,varargin)
 Trial = MTATrial.validate(Trial);
 parspec = empty_spec;
 xyz = Trial.load('xyz');
+%xyz = preproc_xyz(Trial,'SPLINE_SPINE_HEAD_EQI');
 varargout = cell([1,nargout-1]);
 defargs = struct('sampleRate',                            'xyz',                                 ...
                  'mode',                                  'mta',                                 ...

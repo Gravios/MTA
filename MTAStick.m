@@ -20,6 +20,9 @@ classdef MTAStick
             Stick.marker1 = marker1;
             Stick.marker2 = marker2;
             Stick.color = color;
+            if any(Stick.color)>1,
+                Stick.color = Stick.color/255;
+            end
         end
     end
 end

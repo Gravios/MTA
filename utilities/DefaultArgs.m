@@ -76,7 +76,7 @@ if numel(varargin)>0,
             
             if ischar(Args{index}) && isfield(DefArgs,Args{index}),
 % ASSIGN next postion in Args to varargout based on field tag in previous position in Args
-                outputIndex = ~cellfun(@isempty,regexp(Args{index},defaultArgFields'));
+                outputIndex = ~cell2mat(cf(@isempty,regexp(Args{index},cf(@(x) ['^',x,'$'],defaultArgFields'))));
                 varargout(outputIndex) = Args(index+1);
                 index = index+2;
                 nameValueMode = true;

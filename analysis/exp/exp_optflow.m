@@ -10,9 +10,9 @@ Session = MTASession('Ed10-20140821',...
 );
 
 xyz = Session.load('xyz');
-xyz.data(:,:,1) = xyz.data(:,:,1)-70;
-xyz.data(:,:,2) = xyz.data(:,:,2)-325;
-xyz.save;
+% $$$ xyz.data(:,:,1) = xyz.data(:,:,1)-70;
+% $$$ xyz.data(:,:,2) = xyz.data(:,:,2)-325;
+% $$$ xyz.save;
 
 
 T = get_session_list('Ed10VR_opticflow',...

@@ -556,15 +556,39 @@
 %% 2017 09 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 
 % req20170901 ----------------------------------------------------
-%
 %  Status: inactive
 %  Type: Analysis 
 %  Final_Forms: NA
 %  Description: Find head only features for grooming detection
 %  Bugs: NA
 
+% req20170906 ----------------------------------------------------
+%  Status: inactive
+%  Type: Analysis 
+%  Final_Forms: NA
+%  Description: exploration of other rhythmic head motions
+%  Bugs: NA
+
+% req20170912 ----------------------------------------------------
+%  Type: Analysis (distraction)
+%  Final_Forms: NA
+%  Description: behavior labeling with recursive neural network 
+%  Bugs: NA
+
+% req20170913 ----------------------------------------------------
+%  Type: Analysis
+%  Final_Forms: NA
+%  Description: Single Step Analysis
+%  Bugs: NA
+
+% req20170914 ----------------------------------------------------
+%  Status: active
+%  Type: Analysis 
+%  Final_Forms: NA
+%  Description: revisiting repair rigidbody partial reconstruction 
+%  Bugs: NA
+
 % req20170921 ----------------------------------------------------
-%
 %  Status: active
 %  Type: Analysis 
 %  Final_Forms: NA
@@ -572,7 +596,6 @@
 %  Bugs: NA
 
 % req20170924 ----------------------------------------------------
-%
 %  Status: active
 %  Type: Analysis 
 %  Final_Forms: NA
@@ -580,20 +603,67 @@
 %  Bugs: NA
 
 % req20170925 ----------------------------------------------------
-%
 %  Status: active
 %  Type: Analysis
 %  Final_Forms: NA
 %  Description: new rhm feature base on proper filtering
-%             
 %  Bugs: NA
 
 % req20170926 ----------------------------------------------------
-%
 %  Status: active
 %  Type: Analysis 
 %  Final_Forms: NA
 %  Description: examination of new RectFilter and usefulness in fet_rhm
+%  Bugs: NA
+
+%% 2017 10 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+
+% req20171020 ----------------------------------------------------
+%  Status: retired
+%  Type: Analysis
+%  Final_Forms: NA
+%  Description: exploration of other rhythmic head motions
+%  Bugs: NA
+
+% req20171023 ----------------------------------------------------
+%  Status: active
+%  Type: Analysis
+%  Final_Forms: NA
+%  Description: Second quick look into lfp stuff
+%  Bugs: NA
+
+% req20171026 ----------------------------------------------------
+%  Status: active
+%  Type: Test
+%  Final_Forms: NA
+%  Description: Debug and Characterize the label_bhv_reduced_aux classifier
+%  Bugs: NA
+
+% req20171031 ----------------------------------------------------
+%  Status: active
+%  Type: Analysis
+%  Final_Forms: MjgER2016_figure3.m
+%  Description: processing and display of placefields 
+%  Bugs: NA
+
+
+
+
+%% 2017 11 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+
+% req20171101 ----------------------------------------------------
+%  Status: active
+%  Type: Analysis
+%  Final_Forms: MjgER2016_drzfields.m
+%  Description: directional rate zone (DRZ) versus various features
+%  Bugs: NA
+
+
+% req20171107 ----------------------------------------------------
+%  Status: active
+%  Type: Analysis
+%  Final_Forms: NA
+%  Description: State occupancy breakdown
 %  Bugs: NA
 
 

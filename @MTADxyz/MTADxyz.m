@@ -29,6 +29,7 @@ classdef MTADxyz < MTAData
     
     properties
         model
+        poseIndex = [];
     end
     
     properties(Transient=true)

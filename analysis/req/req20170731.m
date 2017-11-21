@@ -310,4 +310,26 @@ af(@(ax) xlim(ax,[0,3.5]), findobj(gcf,'Type','axes'));
 % CCG of state centers
 
 
+23
 
+
+% REDUCED XYZ MODEL
+generate_nn_label_stats_multi_session('train',   [],'fet_bref_SLPR','nIter',100,'randomizationMethod','WSBT')
+generate_nn_label_stats_multi_session('compute', [],'fet_bref_SLPR','nIter',100,'randomizationMethod','WSBT')
+generate_nn_label_stats_multi_session('optimize',[],'fet_bref_SLPR','nIter',100,'randomizationMethod','WSBT')
+generate_nn_label_stats_multi_session('display', [],'fet_bref_SLPR','nIter',100,'randomizationMethod','WSBT')
+generate_nn_label_stats_multi_session_weighted('train',   [],'fet_bref_SLPR','nIter',100,'randomizationMethod','WSBT')
+generate_nn_label_stats_multi_session_weighted('compute', [],'fet_bref_SLPR','nIter',100,'randomizationMethod','WSBT')
+generate_nn_label_stats_multi_session_weighted('optimize',[],'fet_bref_SLPR','nIter',100,'randomizationMethod','WSBT')
+generate_nn_label_stats_multi_session_weighted('display', [],'fet_bref_SLPR','nIter',100,'randomizationMethod','WSBT')
+
+% HEAD only 
+generate_nn_label_stats_multi_session('train',   [],'fet_href_H','nIter',100,'randomizationMethod','WSBT')
+generate_nn_label_stats_multi_session('compute', [],'fet_href_H','nIter',100,'randomizationMethod','WSBT')
+generate_nn_label_stats_multi_session('optimize',[],'fet_href_H','nIter',100,'randomizationMethod','WSBT')
+generate_nn_label_stats_multi_session('display', [],'fet_href_H','nIter',100,'randomizationMethod','WSBT')
+
+generate_nn_label_stats_multi_session('train',   [],'fet_href_HF','nIter',100,'randomizationMethod','WSBT')
+generate_nn_label_stats_multi_session('compute', [],'fet_href_HF','nIter',100,'randomizationMethod','WSBT')
+generate_nn_label_stats_multi_session('optimize',[],'fet_href_HF','nIter',100,'randomizationMethod','WSBT')
+generate_nn_label_stats_multi_session('display', [],'fet_href_HF','nIter',100,'randomizationMethod','WSBT')

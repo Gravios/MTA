@@ -17,6 +17,7 @@ xedges = {};
 yedges = {};
 labels = {};
 
+% varargin = {};
 % DEFARGS ------------------------------------------------------------------------------------------
 defargs = struct('state',                  'w+p+n',                                              ...
                  'stcMode',                'msnn_ppsvd',                                         ...
@@ -36,6 +37,8 @@ sper = stc{state};
 % LOAD marker position data
 xyz = preproc_xyz(Trial);
 
+xyz.filter('RectFilter');
+
 % CREATE Virtual marker, on axis orthogonal to the transverse plane of the rat's head
 nz  = -cross(xyz(:,'head_back',:)-xyz(:,'hcom',:),xyz(:,'head_left',:)-xyz(:,'hcom',:));
 nz  = bsxfun(@rdivide,nz,sqrt(sum((nz).^2,3)));
@@ -45,7 +48,7 @@ xyz.addMarker('htx',[128,255,128],{{'head_back','head_front',[0,0,1]}},nm);
 % CREATE Virtual marker, a low pass filtered copy of the head's center of mass
 xyz.addMarker('flhcom',[.7,1,.7],...
               {{'head_back','head_front',[0,0,1]}},...
-              ButFilter(xyz(:,'hcom',:),3,freqRange(1)./(xyz.sampleRate/2),'low'));
+              ButFilter(xyz(:,'hcom',:),3,2./(xyz.sampleRate/2),'low'));
 
 % LOAD rhythmic head motion 
 rhm = fet_rhm(Trial);
@@ -60,7 +63,38 @@ map_to_reference_session(pitch,Trial,referenceTrial);
 % COMPUTE longitudinal rhythmic rotational motion of the head
 rtm = rhm.copy();
 rtm.data = circ_dist(ang(:,'flhcom','htx',2),ang(:,'flhcom','head_front',2));
-rtm.filter('ButFilter',3,freqRange,'bandpass');
+
+figure,
+plot(rtm.data);
+
+rtm.filter('RectFilter');
+rtm.data = [0;diff(RectFilter(diff(rtm.data)));0];
+rtm.data = [0;RectFilter(diff(rtm.data))];
+
+figure();
+plot(nunity(rhm.data)*3);
+hold('on');
+plot(nunity(rtm.data));
+
+wrtm = nunity([rhm.data,rtm.data]);
+%wrtm(nniz(rtm)) = WhitenSignal(rtm(nniz(rtm)));
+[ys,fs,ts] = mtchglong(wrtm,2^8,rtm.sampleRate,2^7,2^7*0.875,[],[],[],[1,20]);
+
+figure();
+subplot(211);
+imagesc(ts,fs,log10(ys(:,:,1,1))');
+axis('xy');
+colormap('jet');
+caxis([-4,-0.5])
+subplot(212);
+imagesc(ts,fs,log10(ys(:,:,2,2))');
+axis('xy');
+colormap('jet');
+caxis([-3,0])
+linkaxes(findobj(gcf,'Type','Axes'),'x');
+
+
+%rtm.filter('ButFilter',3,freqRange,'bandpass');
 
 % COMPUTE rhythmic pitch motion of the head
 rpm = rhm.copy();

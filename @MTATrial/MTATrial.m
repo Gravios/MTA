@@ -174,21 +174,38 @@ classdef MTATrial < MTASession
         %
             
             if isa(Trial,'MTATrial'),
-                return;
+                return
+            elseif isa(Trial,'MTASession'),
+                Trial = MTATrial(Trial);
+                return
+                
             elseif ischar(Trial),
                 pat =['(?<sessionName>[a-z_A-Z]+\d{2,2}[-]\d{8,8})\.'...
                       '(?<mazeName>\w+)\.'...
                       '(?<trialName>\w+)'];
                 tok = regexp(Trial,pat,'names');
                 if ~isempty(tok),
-                    Trial = tok;
-                    Trial = MTATrial.validate(Trial);
+                    Trial = MTATrial.validate(tok);
                 else
                     Trial = MTATrial(Trial);                                    
                 end
+                return
 
                 
-            elseif iscell(Trial),
+            elseif iscell(Trial) && numel(Trial)==1,
+                if isa(Trial{1},'MTASession')
+                    Trial = Trial{1};
+                elseif ischar(Trial{1})
+                    pat =['(?<sessionName>[a-z_A-Z]+\d{2,2}[-]\d{8,8})\.'...
+                          '(?<mazeName>\w+)\.'...
+                          '(?<trialName>\w+)'];
+                    tok = regexp(Trial,pat,'names');
+                    if ~isempty(tok),
+                        Trial = MTATrial.validate(tok);
+                    else
+                        Trial = MTATrial(Trial);                                    
+                    end
+                end    
                 return
 
                 

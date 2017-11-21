@@ -33,7 +33,7 @@ if isempty(Trial.stc.gsi('t')),Trial = labelTheta(Trial);end
 
 %% Setup figure paths
 if reportFig
-    OwnDir = '/storage/gravio/ownCloud/MjgEdER2016/';
+    OwnDir = '/storage/gravio/nextcloud/MjgER2016/';
     FigDir = ['pfs_2d_theta_',Trial.filebase];
     mkdir(fullfile(OwnDir,FigDir));
 end
@@ -43,9 +43,17 @@ end
 
 % MAIN -------------------------------------------------------------------------    
 %% compute 2d place fields for the theta state
-defargs = get_default_args_MjgEdER2016('MTAApfs','struct');
+
+try, 
+    state = 'theta-sit-groom';
+    Trial.stc{state};
+catch
+    state = 'theta';
+end
+
+defargs = get_default_args('MjgER2016','MTAApfs','struct');
 defargs.units = units;
-defargs.states = 'theta-sit-groom';
+defargs.states = state;
 defargs.overwrite = overwrite;
 defargs.tag = mfilename;
 defargs = struct2varargin(defargs);

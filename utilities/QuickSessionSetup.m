@@ -69,7 +69,7 @@ for sessionArgs = sessionList
 
         
 %   CHECK for existing session and overwrite flag        
-    if isempty(listFiles(sessionArgs.sessionName,'.ses.')) || overwrite,        
+    if isempty(list_files(sessionArgs.sessionName,['.',sessionArgs.mazeName,'.ses.'])) || overwrite,        
 
 %       CHECK for MoCap SampleRate
         if isfield(sessionArgs,'xyzSampleRate'),

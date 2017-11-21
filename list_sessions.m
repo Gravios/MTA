@@ -1,13 +1,18 @@
-function listSessions(pattern)
-if ~exist('pattern','var'),
-    pattern = '.*ses.*';
+function list_sessions(sessionName)
+if ~exist('sessionName','var'),
+    sessionName = '';
 end
 
+% RETRIVE file list of project directory
 ses = MTASession([]);
-ds = dir(fullfile(ses.path.data,pattern));
-fname = {ds(cellfun(@numel,{ds.name})==13).name}
+files = dir(fullfile(ses.path.data,sessionName));
 
-for f = fname
+re = '^[a-zA-Z]{1,2}[0-9]{2,4}[-][0-9]{8,8}$'; % session naming convention
+
+% SELECT directories matching session naming convention
+sessionList = {files(~cellfun(@isempty,regexp({files.name},re)) & [files(:).isdir]).name};
+ 
+for f = sessionList
     
     fprintf('-%s---------------------------------------------------------------\n',f{1})
     fprintf('|                                                                             |\n')

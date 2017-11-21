@@ -1,9 +1,16 @@
 function [pfstats,pfbstats,pfmstats] = PlaceFieldStats(Trial,pf,unit,varargin)
 
-[verbose] = DefaultArgs(varargin,{true});
+
+% DEFARGS ------------------------------------------------------------------------------------------
+defargs = struct('maxNumPatches',                    2,                                          ...
+                 'verbose',                          true                                        ...
+);
+[maxNumPatches,verbose] = DefaultArgs(varargin,defargs,'--struct');
+%---------------------------------------------------------------------------------------------------
+
 VERSION = '0.1';
-thresholdMethod = 'shuffle';
-%thresholdMethod = 'percentile';
+%thresholdMethod = 'shuffle';
+thresholdMethod = 'percentile';
 
 if verbose,
     fprintf('PlaceFieldStats v%s \n\n',version)
@@ -14,11 +21,11 @@ end
 map = sq(pf.data.rateMap(:,unit==pf.data.clu,:));
 pkfr = max(map(:,1));
 
-rateThreshold = select_rate_threshold(pf,unit,thresholdMethod); %helper function (see end)
+rateThreshold = select_rate_threshold(Trial,pf,unit,thresholdMethod); %helper function (see end)
 
 maxNumPatches =2;
 maxBinCount = round(prod(pf.adata.binSizes)*0.12);
-%maxBinCount = round(prod(pf.adata.binSizes)*0.1);
+
 
 %%!!!! Discrepency between MTAApfs and MTAAknnpfs_bs
 %ratemap = reshape(map(:,1)',fliplr(pf.adata.binSizes'))';
@@ -313,39 +320,8 @@ if verbose,
 end
 
 
-% $$$ 
-% $$$ if nargout>1,        
-% $$$     pfshuff.peakFR = zeros(pf.parameters.numIter,1);
-% $$$     pfshuff.patchArea = zeros(pf.parameters.numIter,1);
-% $$$     pfshuff.patchPFR = zeros(pf.parameters.numIter,1);
-% $$$     pfshuff.patchMFR = zeros(pf.parameters.numIter,1);
-% $$$     pfshuff.patchCnt = zeros(pf.parameters.numIter,1);;
-% $$$     %% Patch stats
-% $$$     bsB = cell(pf.parameters.numIter,1);
-% $$$     bsPFR = zeros(pf.parameters.numIter,1);
-% $$$     bsMFR = zeros(pf.parameters.numIter,1);
-% $$$ 
-% $$$     for i = 1:pf.parameters.numIter,
-% $$$         bsB{i} = bwboundaries(reshape(map(:,i),pf.adata.binSizes')'>pfstats.rateThreshold);
-% $$$         if ~isempty(bsB{i}),
-% $$$             [~,tmpi] = max(cellfun(@numel,bsB{i}));
-% $$$             bsB{i} = bsB{i}{tmpi};
-% $$$ 
-% $$$             bsMFR(i) = mean(map(sub2ind(pf.adata.binSizes',bsB{i}(:,2),bsB{i}(:,1)),i));
-% $$$             bsPFR(i) = max(map(sub2ind(pf.adata.binSizes',bsB{i}(:,2),bsB{i}(:,1)),i));
-% $$$         end
-% $$$     end
-% $$$ 
-% $$$     pfshuff.peakFR = sq(max(map))';
-% $$$     pfshuff.patchArea = cellfun(@size,bsB,repmat({1},pf.parameters.numIter,1));
-% $$$     pfshuff.patchPFR = bsPFR;
-% $$$     pfshuff.patchMFR = bsMFR;
-% $$$ end
-% $$$ 
 
-% $$$ if nargout>1,        
-
-function threshold = select_rate_threshold(pf,unit,method)
+function threshold = select_rate_threshold(Trial,pf,unit,method)
 switch method
   case 'shuffle'
     defargs = get_default_args('MjgER2016','MTAAknnpfs','struct');
@@ -357,7 +333,7 @@ switch method
     
     mmap = pf.plot(unit,'mean');
     smap = pf.plot(unit,'std');
-    threshold = nanmean(mmap(:))+nanmean(smap(:))*5;
+    threshold = nanmean(mmap(:))+nanmean(smap(:))*3;
   case 'percentile'    
     map = sq(pf.data.rateMap(:,unit==pf.data.clu,:));    
     threshold = prctile(sq(map(:)),95);

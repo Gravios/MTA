@@ -2,29 +2,27 @@ function ds = batch_compute_pfstats(varargin)
 
 
 % DEFARGS ------------------------------------------------------------------------------------------
-defargs = struct('sessionList',         'MjgEdER2016_bhv',                                       ...
-                 'stcMode',             'NN0317R',                                               ...
+defargs = struct('sessionList',         'MjgER2016_bhv',                                         ...
+                 'stcMode',             'msnn_ppsvd_raux',                                       ...
                  'states',              {{'loc','lloc','hloc','rear','pause','lpause','hpause'}},...
                  'tag',                 '',                                                      ...
-                 'overwrite',           false                                                    ...
+                 'overwrite',           false,                                                   ...
+                 'verbose',             false                                                    ...
 );%-------------------------------------------------------------------------------------------------
 
-[sessionList,stcMode,states,tag,overwrite] = DefaultArgs(varargin,defargs,'--struct');
+[sessionList,stcMode,states,tag,overwrite,verbose] = DefaultArgs(varargin,defargs,'--struct');
 
 % modify states
 states = cellfun(@strcat,states,repmat({'&theta'},size(states)),'UniformOutput',false);
-
+states{end+1} = 'theta';
 
 
 
 % TAG creation -------------------------------------------------------------------------------------
-% ID Vars - create hash tag
-%
-%    sessionList
-%    stcMode 
-%    states 
 if isempty(tag),
-    tag = DataHash(struct('sessionList',sessionList,'stcMode',stcMode,'states',{states}));
+    tag = DataHash(struct('sessionList',sessionList,...
+                          'stcMode',    stcMode,    ...
+                          'states',     {states}));
 end
 %---------------------------------------------------------------------------------------------------
 

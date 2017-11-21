@@ -8,14 +8,15 @@ Trial = MTATrial.validate(Trial);
 
 RefTrial = MTATrial.validate(RefTrial);
 if strcmp(Trial.filebase,RefTrial.filebase),
-    return
+    return;
 end
+
 
 switch features.label
   case 'fet_HB_pitch'
-    fetInds   = [1,2];
-    stdThresh = {0.2,0.2};
-    diffFun   = {@circ_dist,@circ_dist};
+    fetInds   = [1,2,3];
+    stdThresh = {0.2,0.2,0.2};
+    diffFun   = {@circ_dist,@circ_dist,@circ_dist};
     
   case 'fet_bref_emb'
     fetInds = [];
@@ -25,9 +26,19 @@ switch features.label
 % $$$     stdThresh = repmat({30},1,10);
 % $$$     kurThresh = repmat({20},1,10);
     diffFun   = repmat({@minus},1,numel(fetInds));
+  case 'fet_href_H'    
+    return;
+  case 'fet_href_HF'
+    fetInds   = [1,2];
+    diffFun   = repmat({@minus},1,numel(fetInds));
   case 'fet_bref_SMSU'
     fetInds   = [1:12];
     diffFun   = repmat({@minus},1,numel(fetInds));
+  
+  case 'fet_bref_SLPR'
+    fetInds   = [1:12];
+    diffFun   = repmat({@minus},1,numel(fetInds));
+  
   case 'fet_bref_SLHC'
     fetInds   = [1:8];
     diffFun   = repmat({@minus},1,numel(fetInds));

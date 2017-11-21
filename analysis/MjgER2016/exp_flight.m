@@ -30,9 +30,8 @@ Stc = Trial.load('stc','default');
 
 
 %% Place field vars
-% Select pyramidal units
+% SELECT pyramidal units
 units = select_units(Trial,18,'pyr');
-% Set Overwrite flag variable for place field calculations
 overwrite = false;
 % Initialize place field variable
 pfs = {};
@@ -106,8 +105,8 @@ pfs{3} = MTAApfs(Trial,units,'flight&theta',...
 
 
 %% setup figure paths
-OwnDir = '/storage/gravio/ownCloud/MjgEdER2016';
-FigDir = ['pfs_flight_',Trial.filebase];
+OwnDir = '/storage/gravio/nextcloud/';
+FigDir = ['MjgER2016/figures/figure3/flight_',Trial.filebase];
 mkdir(fullfile(OwnDir,FigDir));
 
 
@@ -138,13 +137,19 @@ mask = double(sqrt((W-centerW-.5).^2 + (H-centerH-.5).^2) < radius);
 mask(mask==0)=nan;
     
     
+mRates = [];
+for p = 1:3
+    mRates(:,p) = pfs{p}.maxRate;
+end
+mRates = max(mRates,[],2);
 
-unit = units(128);
+
+
 hfig = figure(393929);
 autoincr = true;
 unit = units(1);
 set(hfig,'Units','centimeters');
-set(hfig,'Position',[1,1,40,15]);
+set(hfig,'Position',[1,1,40,10]);
 set(hfig,'PaperPositionMode','auto');
 i = 1;
 
@@ -156,7 +161,7 @@ while unit~=-1,
         ratemap(isnan(ratemap)) = -1;
         for s = 1:numel(slices)
             sp(i,s) = axes('Units',spOpts.units,...
-                           'Position',[(spOpts.width+round(spOpts.padding/2))*(s+1)+round(spOpts.padding/2),...
+                           'Position',[(spOpts.width+round(spOpts.padding/2))*(s+1)+round(spOpts.padding/2)-4,...
                                        (spOpts.height+round(spOpts.padding/2))*(i-1)+round(spOpts.padding/2),...
                                         spOpts.width,...
                                         spOpts.height]...
@@ -166,7 +171,8 @@ while unit~=-1,
             imagesc(pf.adata.bins{1},pf.adata.bins{2},ratemap(:,:,slices(s)).*mask');    
             axis xy
             colormap([0,0,0;parula]);
-            caxis([-1,max(ratemap(:).*reshape(repmat(mask,[1,1,size(ratemap,3)]),[],1))]);
+            %caxis([-1,max(ratemap(:).*reshape(repmat(mask,[1,1,size(ratemap,3)]),[],1))]);
+            caxis([-1,mRates(unit==units).*0.5]);
             title(num2str(round(pf.adata.bins{3}(slices(s))))) 
             text(pf.adata.bins{1}(end)-350,pf.adata.bins{2}(end)-50,...
                  sprintf('%2.1f',max(max(ratemap(:,:,slices(s))))),'Color','w','FontWeight','bold','FontSize',10)
@@ -330,3 +336,59 @@ while unit~=-1,
 
     unit = figure_controls(hfig,unit,units,autoincr);    
 end
+
+
+
+
+% Flight of Ed10-20140822
+
+MTAstartup('vr_exp');
+
+QuickSessionSetup('Ed10-20140822.cof');
+QuickTrialSetup('Ed10-20140822.cof');
+
+s = MTASession.validate('Ed10-20140822.cof.all');
+
+NeuronQuality(s)
+figure();pZ(s,gcf,'t');
+figure();pXY(s);
+
+Trial = MTATrial.validate('Ed10-20140822.cof.all');
+
+figure();pZ(Trial,gcf,'t');
+figure();pXY(s);
+pft = pfs_2d_theta(Trial,[],[],false); % overwrite
+
+figure();
+for u = pft.data.clu,
+    clf();
+    plot(pft,u);
+    title(['unit: ',num2str(u),'  el:',pft.data.el(u)]);
+    waitforbuttonpress();    
+end
+
+%compute_pfstats_bs(Trial,'Ed10-20140822.cof',)
+
+
+Trial = MTATrial.validate('Ed10-20140822.cof.all');
+
+
+Trial = MTATrial.validate('Ed10-20140822.rov.all');
+
+
+pfkbs = {};
+
+Trial = MTATrial.validate('Ed10-20140822.rov.stf');
+fprintf('processing state: %s...\n',states{sts});
+defargs = get_default_args('MjgER2016','MTAAknnpfs_bs','struct');
+defargs.overwrite = true;
+defargs.states = 'velthresh&theta';
+defargs.nNodes = 12;
+defargs = struct2varargin(defargs);        
+pfkbs{1} = MTAAknnpfs_bs(Trial,defargs{:});      
+
+Trial = MTATrial.validate('Ed10-20140822.rov.vobj');
+Trial = MTATrial.validate('Ed10-20140822.rov.blk');
+Trial = MTATrial.validate('Ed10-20140822.rov.fly');
+
+

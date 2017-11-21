@@ -18,6 +18,9 @@ classdef MTAMarker
             Marker.name = name;
             if ischar(color),
                 Marker.color = str2num(color);
+                if any(Marker.color>1)
+                    Marker.color = Marker.color/255;
+                end
             else
                 Marker.color = color(:)';
             end

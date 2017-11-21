@@ -7,6 +7,7 @@ function [rhm,varargout] = fet_rhp(Trial,varargin)
 
 
 % DEFARGS ------------------------------------------------------------------------------------------
+Trial = MTATrial.validate(Trial);
 parspec = empty_spec;
 xyz = Trial.load('xyz');
 varargout = cell([1,nargout-1]);
@@ -42,9 +43,8 @@ elseif sampleRate > 120,
     xyz.resample(120); 
     defspec.Fs = 120;
 end
-
 %xyz.filter('ButFilter',3,20,'low');
-xyz.filter('RectFilter');
+xyz.filter('RectFilter',3,4);
 
 ang = create(MTADang,Trial,xyz);
 ang.data(~nniz(xyz(:,1,1)),:,:,:) = 0;
@@ -53,10 +53,13 @@ ang.data(~nniz(xyz(:,1,1)),:,:,:) = 0;
 fet = xyz.copy;
 
 %bang = ButFilter(ang(:,'head_back','fhcom',3),3,[.1,20]./(ang.sampleRate/2),'bandpass');
-bang = RectFilter(ang(:,'head_back','head_front',2));
+%bang = RectFilter(ang(:,'head_back','fhcom',3));
+
 
 %fet.data = [0;ButFilter(diff(bang),3,[.5,30]/(ang.sampleRate/2),'bandpass')];
-fet.data = circ_dist(circshift(bang,-1),circshift(bang,1));
+fet.data = [0;diff(RectFilter(diff(ang(:,'head_back','head_front',2))));0];
+%fet.data = [0;diff(RectFilter(diff(ang(:,'head_back','head_front',2))));0];
+%fet.data = [0;diff(ang(:,'head_back','fhcom',3))];
 
 switch mode
   case 'mta'

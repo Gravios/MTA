@@ -73,7 +73,7 @@ if isstruct(Sessions),
             MTAstartup(s.project,host,s.hostServer);
         end
         
-        Session = MTASession(s.sessionName,s.mazeName);
+        Session = MTASession.validate(s);
         
         xsync = Session.xyz.sync.copy;
         xsync = xsync+s.offsets;
