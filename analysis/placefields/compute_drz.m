@@ -1,10 +1,24 @@
-function drz = compute_drz(Trial,pft,units)
+function drz = compute_drz(Trial,varargin)
 
-pfstats = compute_pfstats_bs(Trial);
+% pft
+% units
+% pfstats
+
+% DEFARGS ------------------------------------------------------------------------------------------
+defargs = struct('pft',                    [],                                                   ...
+                 'units',                  [],                                                   ...
+                 'pfstats',                [],                                                   ...
+                 'filtCutOffFreq',         1.5                                                   ...
+);
+[pft,units,pfstats,filtCutOffFreq] = DefaultArgs(varargin,defargs,'--struct');
+%---------------------------------------------------------------------------------------------------
+
+%if isempty(pfstats),    pfstats = compute_pfstats_bs(Trial);    end
 
 
 [mrt,mrp] = pft.maxRate(units);
 xyz = Trial.load('xyz');
+xyz.filter('ButFilter',3,filtCutOffFreq,'low');
 
 % Get the mean firing rate for each xy position along trajectory 
 wpmr = zeros(xyz.size(1),numel(units));
@@ -25,11 +39,13 @@ end
 pfds = [];
 pfdd = [];
 peakPatchRate = [];
+peakPatchRate = mrt';
 for unit = units
-    peakPatchRate(1,end+1) = mean(pfstats.peakPatchRate(8,:,pfstats.cluMap==unit),'omitnan');
-    pfhxy = xyz(:,{'head_back','head_front'},:);
-    %pfhxy = cat(2,pfhxy,permute(repmat([mrp(unit==units,:),0],[size(xyz,1),1]),[1,3,2]));
-    pfhxy = cat(2,pfhxy,permute(repmat([fliplr(sq(mean(pfstats.peakPatchCOM(8,:,pfstats.cluMap==unit,:),'omitnan'))'),0],[size(xyz,1),1]),[1,3,2]));
+    %peakPatchRate(1,end+1) = mean(pfstats.peakPatchRate(8,:,pfstats.cluMap==unit),'omitnan');
+    %pfhxy = xyz(:,{'spine_middle','head_back'},:);
+    pfhxy = cat(2,xyz(:,{'head_front'},:),circshift(xyz(:,{'head_front'},:),round(xyz.sampleRate/10)));
+    pfhxy = cat(2,pfhxy,permute(repmat([mrp(unit==units,:),0],[size(xyz,1),1]),[1,3,2]));
+    %pfhxy = cat(2,pfhxy,permute(repmat([fliplr(sq(mean(pfstats.peakPatchCOM(8,:,pfstats.cluMap==unit,:),'omitnan'))'),0],[size(xyz,1),1]),[1,3,2]));
     pfhxy = MTADxyz([],[],pfhxy,xyz.sampleRate);
     
     cor = cell(1,3);
@@ -45,8 +61,8 @@ for unit = units
     
 end
 pfd = zeros(size(pfds));
-pfd(abs(pfds(:))<=pi/2)=-1;
-pfd(abs(pfds(:))>pi/2)=1;
+pfd(abs(pfds(:))>=pi/2)=-1;
+pfd(abs(pfds(:))<pi/2)=1;
 
 % Calculate DRZ 
 %drz = pfd.*(1-bsxfun(@rdivide,wpmr,mrt'));

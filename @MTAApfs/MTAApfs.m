@@ -330,7 +330,7 @@ classdef MTAApfs < hgsetget %< MTAAnalysis
 
                     %% Caluculate Place Fields
                     tic
-                    [Pfs.data.rateMap(:,dind(i),1), Pfs.adata.bins] =  ...
+                    [Pfs.data.rateMap(:,dind(i),1), Pfs.adata.bins,Pfs.data.si(:,dind(i)),Pfs.data.spar(:,dind(i))] =  ...
                         PlotPF(Session,sstpos(sresind(:,1),:),sstpos,binDims,SmoothingWeights,type,boundaryLimits,xyz.sampleRate);
                     toc
                     if numIter>1,
@@ -358,7 +358,7 @@ classdef MTAApfs < hgsetget %< MTAAnalysis
                     
                 end  
                 i = i+1;
-            end
+            end%for unit
             % Save Data after Calculations
             save(pf_tmpfile,'Pfs','-v7.3')
             field = fieldnames(Pfs.data);

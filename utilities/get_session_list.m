@@ -431,17 +431,17 @@ switch sessionList
     Sessions(end).project       = 'general';
 
     
-    Sessions(end+1) = Sessions(1);
+    Sessions(end+1) = Sessions(end);
     Sessions(end).sessionName = 'jg04-20120128';
-    Sessions(end+1) = Sessions(1);
+    Sessions(end+1) = Sessions(end);
     Sessions(end).sessionName = 'jg04-20120129';
-    Sessions(end+1) = Sessions(1);
+    Sessions(end+1) = Sessions(end);
     Sessions(end).sessionName = 'jg04-20120130';
-    Sessions(end+1) = Sessions(1);
+    Sessions(end+1) = Sessions(end);
     Sessions(end).sessionName = 'jg04-20120131';
-    Sessions(end+1) = Sessions(1);
+    Sessions(end+1) = Sessions(end);
     Sessions(end).sessionName = 'jg04-20120201';
-    %Sessions(end+1) = Sessions(1);
+    %Sessions(end+1) = Sessions(end);
     %Sessions(end).sessionName = 'jg04-20120203';
     
     Sessions(end+1) = Sessions(end);
@@ -449,9 +449,9 @@ switch sessionList
     Sessions(end).thetaRef = [8,16];
     Sessions(end+1) = Sessions(end);
     Sessions(end).sessionName = 'jg04-20120211';
-    Sessions(end+1) = Sessions(1);
+    Sessions(end+1) = Sessions(end);
     Sessions(end).sessionName = 'jg04-20120212';
-    Sessions(end+1) = Sessions(1);
+    Sessions(end+1) = Sessions(end);
     Sessions(end).sessionName = 'jg04-20120213';
     
     % 24-28    

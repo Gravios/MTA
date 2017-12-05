@@ -337,7 +337,7 @@ classdef MTAAknnpfs_bs < hgsetget %< MTAAnalysis
                   
                   
                   %% Normal rateMap = reshape(rateMap',numel(bin1),numel(bin2))';
-                  rateMap = reshape(rateMap,numel(bin2),numel(bin1))'.*mask;
+                  rateMap = reshape(rateMap,numel(bin2),numel(bin1),[])'.*mask;
                   
                   if nargout==0,                    
 

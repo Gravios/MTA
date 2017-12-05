@@ -54,8 +54,9 @@ end
 defargs = get_default_args('MjgER2016','MTAApfs','struct');
 defargs.units = units;
 defargs.states = state;
+defargs.SmoothingWeights = [3.3,3.3];
 defargs.overwrite = overwrite;
-defargs.tag = mfilename;
+%defargs.tag = mfilename;
 defargs = struct2varargin(defargs);
 pf = MTAApfs(Trial,defargs{:});
 
