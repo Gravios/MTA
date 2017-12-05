@@ -1,4 +1,4 @@
-function [pfs_dp,pfs_dh,pfs_dm] =  MjgER2016_drzfields(Trial,overwrite)
+function [pfs_dp,pfs_dh,pfs_dm] =  MjgER2016_drzfields(Trial,varargin)
 %  Status: active
 %  Type: Analysis
 %  Final_Forms: MjgER2016_drzfields.m
@@ -6,8 +6,13 @@ function [pfs_dp,pfs_dh,pfs_dm] =  MjgER2016_drzfields(Trial,overwrite)
 %  Bugs: NA
 %  Original_Form: req20171101.m
 
+% DEFARGS ------------------------------------------------------------------------------------------
+defargs = struct('overwrite',                      false,                                        ...
+                 'pfstats',                        []                                            ...
+);
+[overwrite,pfstats] = DefaultArgs(varargin,defargs,'--struct');
+%---------------------------------------------------------------------------------------------------
 
-%overwrite = true;
 sessionListName = 'MjgER2016';
 sessionList = get_session_list(sessionListName);
 
@@ -24,7 +29,7 @@ Trial.load('stc',stcMode);
 
 
 % LOAD placefield statistics 
-pfstats = compute_pfstats_bs(Trial);
+if isempty(pfstats),    pfstats = compute_pfstats_bs(Trial);    end
 
 
 % LOAD theta state placefields
@@ -41,18 +46,19 @@ pft = MTAAknnpfs_bs(Trial,defargs{:});
 
 
 units = pfstats.cluMap;
-xyz = Trial.load('xyz');
-ang = create(MTADang,Trial,xyz);
-[rhm,fs,ts] = fet_rhm(Trial,[],'mtchglong');
-% DIAGNOSTIC_FIG figure,imagesc(ts,fs,log10(rhm.data)');axis('xy');colormap('jet');
-rhmp = rhm.copy();
-rhmp.data = median(log10(rhm(:,5<fs&fs<12)),2);
-rhmp.resample(xyz);
-% DIAGNOSTIC_FIG figure,plot(rhmp.data)
 
-% COMPUTE direction rate zones
-drz = compute_drz(Trial,pft,units);
+if overwrite,
+    xyz = Trial.load('xyz');
+    [rhm,fs,ts] = fet_rhm(Trial,[],'mtchglong');
+    % DIAGNOSTIC_FIG figure,imagesc(ts,fs,log10(rhm.data)');axis('xy');colormap('jet');
+    rhmp = rhm.copy();
+    rhmp.data = median(log10(rhm(:,5<fs&fs<12)),2);
+    rhmp.resample(xyz);
+    % DIAGNOSTIC_FIG figure,plot(rhmp.data)
 
+    % COMPUTE direction rate zones
+    drz = compute_drz(Trial,pft,units);
+end
 
 % LOAD pitches 
 % MAP pitches to reference trial

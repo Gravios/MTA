@@ -8,7 +8,7 @@ if isempty(units),
     units = Pfs.data.clu;
 end
 rho = nan(numel(units),1);
-for u = units',
+for u = units(:)',
     rm = Pfs.plot(u);
     cmat = [1,1,1;1,0,1;1,1,1];
     c = conv2(rm,cmat,'valid')./8;

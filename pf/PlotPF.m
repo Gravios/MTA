@@ -1,5 +1,8 @@
-function [RateMap, Bins] = PlotPF(Session,spkpos,pos,varargin)
+function [RateMap, Bins, SI, Spar] = PlotPF(Session,spkpos,pos,varargin)
 [binDims,SmoothingWeights,type,bound_lims,posSampleRate] = DefaultArgs(varargin,{50,[],'xy',[],Session.xyz.sampleRate});
+
+SI = [];
+Spar = [];
 
 ndims = numel(binDims);
 
@@ -75,9 +78,7 @@ RateMap = RateMap(:);
 RateMap(~gtind) = NaN;
 %% Find the units overall mean rate given the 
 %% current state
-% $$$ MRate = sum(SCount(gtind))/TotOcc;
-% $$$ if nargout>3
-% $$$     varargout(1) = {nansum(POcc(gtind).*(RateMap(gtind)./MRate).*log2(RateMap(gtind)./MRate))};
-% $$$ end
-% $$$ Spar = 1/nansum(POcc(gtind).*RateMap(gtind).^2./MRate.^2);
+MRate = sum(SCount(gtind))/TotOcc;
+if nargout >= 3,  SI = nansum(POcc(gtind).*(RateMap(gtind)./MRate).*log2(RateMap(gtind)./MRate));  end
+if nargout >= 4,  Spar = 1/nansum(POcc(gtind).*RateMap(gtind).^2./MRate.^2);  end
 

@@ -7,12 +7,7 @@ pitchReferenceTrial = 'Ed05-20140529.ont.all';
 FigDir = '/storage/gravio/figures/placefields';
 mkdir(FigDir);
 
- 
-% LOAD Trials
-% COMPUTE placefield statistics
-Trials  = af(@(t)  MTATrial.validate(t),   sessionList);
-          cf(@(t)  t.load('nq'),           Trials);
-
+% SET behvaioral states
 states = {'loc&theta','lloc&theta','hloc&theta','rear&theta',    ...
           'pause&theta','lpause&theta','hpause&theta',           ...
           'theta-groom-sit'};
@@ -20,75 +15,108 @@ statesCcg = {'loc','lloc','hloc','rear',    ...
           'pause','lpause','hpause',           ...
           'theta-groom-sit'};
 
-overwrite = false;
-testRequested = false;
+ 
+% LOAD Trials
+% COMPUTE placefield statistics
+Trials  = af(@(t)  MTATrial.validate(t),   sessionList);
+          cf(@(t)  t.load('nq'),           Trials);
+pfstats = cf(@(t)  compute_pfstats_bs(t),       Trials);
 
-% pfstats = cf(@(t)  compute_pfstats_bs(t),       Trials);
+
 % $$$ cf(@(t)  MjgER2016_drzfields(t,true), Trials);
 
-% FOR each Trial -------------------------------------------------------------
 
+
+
+patchComparison = [];
+
+% FOR each Trial -------------------------------------------------------------
 for t = 1:20,
+
+% LOAD Trial
     Trial = Trials{t};
-    mkdir(fullfile(FigDir,Trial.filebase));
-    stc = Trial.stc.copy();
-    %spk = Trial.spk.copy();
-    %spk.load_spk(Trial);
-    xyz = Trial.load('xyz');
-    %pch = fet_HB_pitch(Trial);
-    %map_to_reference_session(pch,Trial,pitchReferenceTrial);    
-    
-    pfstats = compute_pfstats_bs(Trial,'overwrite',overwrite);
-    units = pfstats.cluMap;
-    pft = pfs_2d_theta(Trial);
-    
-    
+    units = pfstats{t}.cluMap;    
+    disp(['Processing trial: ' Trial.filebase]);
+
 % LOAD placefields and subsampled estimate
     for sts = 1:numel(states),        
         defargs = get_default_args('MjgER2016','MTAAknnpfs_bs','struct');
-        defargs.units = pfstats.cluMap;
+        defargs.units = units;
         %defargs.overwrite = true;
         defargs.states = states{sts};
         defargs = struct2varargin(defargs);        
         pfkbs{sts} = MTAAknnpfs_bs(Trial,defargs{:});      
     end
 
-    unit = 150;
-    s = 1;
-    o = 1;
-    rmap = plot(pfkbs{o},unit);
-    patchInd = pfstats.pfmstats(s,unit==pfstats.cluMap).patchRateInd(1,1,:,:);
-    oPatchRates = rmap(patchInd(1,:),patchInd(2,:));
-    
-    
+% COMPARE patches
+    for u = 1:numel(units),
+        unit = units(u);
+        for s = 1:8,
+            for o = 1:8,
+                rmap = plot(pfkbs{o},unit,'mean');
+                patchInd = sq(pfstats{t}.pfmstats(s,unit==units).patchRateInd(1,1,1,:,:));
+                oPatchRates = rmap(sub2ind(size(rmap),patchInd(1,nniz(patchInd(1,:)'))',...
+                                           patchInd(2,nniz(patchInd(2,:)'))'));
+                if s == 1 && o ==1, pcuInd = size(patchComparison,1)+1; end
+                
+                if sum(nniz(oPatchRates))>0.9*numel(oPatchRates), 
+                    patchComparison(pcuInd,s,o) = mean(oPatchRates,'omitnan');
+                    patchComparison(pcuInd,s,o) = mean(oPatchRates,'omitnan');                    
+                else,
+                    patchComparison(pcuInd,s,o) = nan;
+                end
+                    
+            end%for o
+        end%for s 
+    end%for u
+end%for t
 
-    
-    figure();
-    if testRequested,
-        for u = 1:numel(units),
-            subplot(121);
-            plot(pft,units(u));
-            subplot(122);
-            plot(pfkbs{8},units(u));
-            waitforbuttonpress();
-        end
-    end
-    
-    
-% LOAD DRZ fields
-    dfs = cell([1,3]);
-    [dfs{:}] = MjgER2016_drzfields(Trial,true);
-    dfst = {'pitch','height','rhm'};
+        
+figure();
+subplot(141); plot(patchComparison(:,4,1),patchComparison(:,4,4),'.'); daspect([1,1,1]);xlim([0,35]);ylim([0,35]);grid('on');
+xlabel('mean loc rate in rear');ylabel('mean rear rate in rear');
+subplot(142); plot(patchComparison(:,1,1),patchComparison(:,1,4),'.'); daspect([1,1,1]);xlim([0,35]);ylim([0,35]);grid('on');
+subplot(143); plot(patchComparison(:,2,2),patchComparison(:,2,3),'.'); daspect([1,1,1]);xlim([0,35]);ylim([0,35]);grid('on');
+subplot(144); plot(patchComparison(:,3,2),patchComparison(:,3,3),'.'); daspect([1,1,1]);xlim([0,35]);ylim([0,35]);grid('on');
 
-% COMPUTE place fields and subsampled estimate
-% $$$ for sts = 1:numel(states),
-% $$$         [bhvccg{sts},sper{sts}] = gen_bhv_ccg(Trial,statesCcg{sts},0.5);
-% $$$     end
-% $$$     sper{end}{1}(sper{end}{1}>(size(xyz,1)./xyz.sampleRate.*1250)) = [];
-% $$$     sper{end}{2}(sper{end}{2}>(size(xyz,1)./xyz.sampleRate.*1250)) = [];    
+figure();
+subplot(121); plot(patchComparison(:,8,1),patchComparison(:,8,4),'.'); daspect([1,1,1]);xlim([0,35]);ylim([0,35]);grid('on');
+subplot(122); plot(patchComparison(:,8,2),patchComparison(:,8,3),'.'); daspect([1,1,1]);xlim([0,35]);ylim([0,35]);grid('on');
+title;xlabel('low loc');ylabel('high loc');
 
 
-    %[accg,tbins] = autoccg(Trial);
-
-    % PLACEFIELD figure now located in placefield_summary.m
-end
+figure();
+subplot(
+hist((patchComparison(:,8,2)-patchComparison(:,8,3))./(patchComparison(:,8,2)+patchComparison(:,8,3)),50);
+        
+% $$$ 
+% $$$     
+% $$$ 
+% $$$     
+% $$$     
+% $$$ % LOAD DRZ fields
+% $$$     dfs = cell([1,3]);
+% $$$     [dfs{:}] = MjgER2016_drzfields(Trial,true);
+% $$$     dfst = {'pitch','height','rhm'};
+% $$$ 
+% $$$ 
+% $$$ 
+% $$$     %[accg,tbins] = autoccg(Trial);
+% $$$ 
+% $$$     % PLACEFIELD figure now located in placefield_summary.m
+% $$$ end
+% $$$ 
+% $$$ pr = reshape(cell2mat(cf(@(p) [p.pfmstats.peakFR],pfstats)),8,[]);
+% $$$ 
+% $$$ 
+% $$$ figure();
+% $$$ 
+% $$$ clf();
+% $$$ % loc x rear
+% $$$ subplot(221);  hold('on');  plot(pr(1,:),pr(4,:),'.');  daspect([1,1,1]);
+% $$$                line([0,40],[0,40]);  line([0,40],[0,20]); line([0,20],[0,40]);
+% $$$ subplot(222);  hold('on');  plot(pr(2,:),pr(4,:),'.');   daspect([1,1,1]);
+% $$$                line([0,40],[0,40]);  line([0,40],[0,20]); line([0,20],[0,40]);
+% $$$                
+% $$$ subplot(224);  hold('on');  plot(pr(3,:),pr(4,:),'.');   daspect([1,1,1]);
+% $$$                line([0,40],[0,40]);  line([0,40],[0,20]); line([0,20],[0,40]);               

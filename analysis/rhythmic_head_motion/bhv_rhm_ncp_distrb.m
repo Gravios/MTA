@@ -22,7 +22,7 @@ defargs = struct('mode',           {{,'hangle','bhangle','bspeed','hspeed','NCPp
                  'ncpChannel',     2,                                                            ...
                  'stcMode',        'msnn_ppsvd',                                                 ...
                  'p',              8,                                                            ...
-                 'xyzProcOpts',    {'SPLINE_SPINE_HEAD_EQD'}                                     ...
+                 'xyzProcOpts',    {'SPLINE_SPINE_HEAD_EQI'}                                     ...
 );
 
 [mode,ncpThreshold,ncpChannel,stcMode,p,xyzProcOpts] = DefaultArgs(varargin,defargs,'--struct');
@@ -53,8 +53,48 @@ rhm.data(~nniz(rhm.data(:))) = 1;
 
 % LOAD Nasal Cavity Pressure(NCP) feature
 ncp = fet_ncp(Trial,rhm,'mta',ncpChannel);
+figure(); hold('on');
+plot(ncp.data);
+ncp.filter('RectFilter',5,5);
+plot(ncp.data);
+ncp.filter('ButFilter',3,[0.5,14],'bandpass');
+plot(ncp.data);
+
+ncpPeaks = LocalMinima(ncp.data,8,-500);
+ncpPeaks(ncpPeaks>size(xyz,1)) = [];
+ncpFreq = 1./((ncpPeaks-circshift(ncpPeaks,1))/ncp.sampleRate);
 
 
+% $$$ ncpPhaseHigh = ncp.phase([3,12]);
+% $$$ ncpPhaseLow = ncp.phase([1,3]);
+% $$$ ncpFreq = ncpPhase.copy;
+% $$$ ncpFreq.data = abs(circ_dist(circshift(ncpPhase.data,0),circshift(ncpPhase.data,1)))*ncpPhase.sampleRate./(2*pi);
+
+figure();hold('on');
+plot(ncpFreq);
+
+ncpFreq = median(GetSegs(ncpFreq,circshift([1:size(ncpFreq,1)]',5),11));
+plot(ncpFreq);
+
+
+figure();
+subplot(131);
+ind = WithinRanges(ncpPeaks,[stc{'p',ncp.sampleRate}]);
+plot(vh(ncpPeaks(ind),2),ncpFreq(ind)+randn([1,sum(ind)]),'.')
+xlim([-3,3]);  ylim([0,16]);  grid('on');
+subplot(132);
+ind = WithinRanges(ncpPeaks,[stc{'p&t',ncp.sampleRate}]);
+plot(vh(ncpPeaks(ind),2),ncpFreq(ind)+randn([1,sum(ind)]),'.')
+xlim([-3,3]);  ylim([0,16]);  grid('on');
+subplot(133);
+ind = WithinRanges(ncpPeaks,[stc{'p-t',ncp.sampleRate}]);
+plot(vh(ncpPeaks(ind),2),ncpFreq(ind)+randn([1,sum(ind)]),'.')
+xlim([-3,3]);  ylim([0,16]);  grid('on');
+
+
+
+
+figure,plot(vh(stc{'p'},2),ncpFreq(stc{'p'}),'.');
 % WHITEN RHM and NCP for spectral comparison (PSD&CSD)
 % $$$ wang = [rhm.data,ncp.data];
 % $$$ wang = WhitenSignal(wang,[],1);
@@ -185,8 +225,8 @@ for s = 1;
 
 
         vbins = 30;
-        %vedgs = linspace(vhlim(1),vhlim(2),vbins);
-        vedgs = prctile(vhs,linspace(1,99,vbins));
+        vedgs = linspace(vhlim(1),vhlim(2),vbins);
+        %vedgs = prctile(vhs,linspace(1,99,vbins));
         [N,vbs] = histc(vhs,vedgs);
         mrv = nan(numel(N),nys.size(2),nys.size(3));
         for c = 1:nys.size(3),
@@ -199,8 +239,8 @@ for s = 1;
         end
 
         
-        edges = prctile(vhs,linspace(1,99,vbins));        
-        %edges = linspace(vhlim(1),vhlim(2),30);
+        %edges = prctile(vhs,linspace(1,99,vbins));        
+        edges = linspace(vhlim(1),vhlim(2),30);
         edges = [edges(1:end-1);edges(2:end)];
         edges_labels = mat2cell(10.^mean(edges),1,ones(1,size(edges,2)))';
         yss = ys(sind,:,:,:);
