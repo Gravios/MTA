@@ -45,33 +45,38 @@ for t = 1:20,
     clf();
 
     Trial = Trials{t};    
-
+    mkdir(fullfile(FigDir,Trial.filebase));
     disp(['Processing Trial: ' Trial.filebase]);
     
-    mkdir(fullfile(FigDir,Trial.filebase));
+% COPY stc
+% LOAD spike waveforms
+% LOAD marker positions
+% COMPUTE head pitch
+% COREGISTER head pitch to reference session
     stc = Trial.stc.copy();
     spkw = Trial.spk.copy();
     spkw.load_spk(Trial);
     xyz = Trial.load('xyz');
     pch = fet_HB_pitch(Trial);
     map_to_reference_session(pch,Trial,pitchReferenceTrial);    
-    
-    pfstats = compute_pfstats_bs(Trial,'overwrite',overwrite);
-    units = pfstats.cluMap;
+
+% SELECT high quality units with place fields
+% COMPUTE placefields' statistics
+% LOAD placefields for theta state
+    units = select_placefields(Trial);
+    pfstats = compute_pfstats_bs(Trial,units,'overwrite',overwrite);
     pft = pfs_2d_theta(Trial);
 
-% LOAD local field potential
+% LOAD local field potential (lfp)
+% RESAMPLE lfp to xyz sample rate
+% COMPUTE lfp phase in theta band
     Trial.lfp.filename = [Trial.name,'.lfp'];
     lfp = Trial.load('lfp',sessionList(t).thetaRef);
     lfp.resample(xyz);
     tbp_phase = lfp.phase([6,12]);
 
-% LOAD spikes     
-    spk = {};
-    for s = 1:numel(states),
-        spk{s} = Trial.spk.copy;
-        spk{s}.create(Trial,xyz.sampleRate,states{s},[],'deburst');
-    end
+% LOAD spikes 
+    spk.create(Trial,xyz.sampleRate,'theta',[],'deburst');
 
 % LOAD placefields and subsampled estimate
     for sts = 1:numel(states),        
@@ -202,14 +207,18 @@ tic
         
         
         for s = 1:numel(states),
-% SELECT spikes
-            res = spk{s}(unit);
+% GET current state
+% SELECT spikes within current state 
+% SKIP if spike count is less than 50
+            state = [stc{states{s},spk.sampleRate}];
+            res = spk(unit);
+            res = res(WithinRanges(res,state.data));
             if numel(res) >50,
                 res(res>xyz.size(1))=[];
                 drzspk = drz(res,unit==units);
                 %ddzspk = sqrt(abs(ddz(res,unit==units))./pi).*sign(ddz(res,unit==units));
                 ddzspk = ddz(res,unit==units);
-                phzspk = tbp_phase(res,spk{s}.map(spk{s}.map(:,1)==units(u),2));
+                phzspk = tbp_phase(res,spk.map(spk.map(:,1)==units(u),2));
                 gind = ~isnan(drzspk)&~isnan(phzspk);                
             else
                 res = [];
@@ -314,5 +323,5 @@ tic
 toc
         delete(sp);        
 
-    end%for unit
-end
+    end%for units
+end%for Trials

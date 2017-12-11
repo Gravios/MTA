@@ -8,7 +8,7 @@ function drz = compute_drz(Trial,varargin)
 defargs = struct('pft',                    [],                                                   ...
                  'units',                  [],                                                   ...
                  'pfstats',                [],                                                   ...
-                 'filtCutOffFreq',         1.5                                                   ...
+                 'filtCutOffFreq',         2.5                                                   ...
 );
 [pft,units,pfstats,filtCutOffFreq] = DefaultArgs(varargin,defargs,'--struct');
 %---------------------------------------------------------------------------------------------------
@@ -43,7 +43,7 @@ peakPatchRate = mrt';
 for unit = units
     %peakPatchRate(1,end+1) = mean(pfstats.peakPatchRate(8,:,pfstats.cluMap==unit),'omitnan');
     %pfhxy = xyz(:,{'spine_middle','head_back'},:);
-    pfhxy = cat(2,xyz(:,{'head_front'},:),circshift(xyz(:,{'head_front'},:),round(xyz.sampleRate/10)));
+    pfhxy = cat(2,xyz(:,{'head_front'},:),circshift(xyz(:,{'head_front'},:),round(xyz.sampleRate/5)));
     pfhxy = cat(2,pfhxy,permute(repmat([mrp(unit==units,:),0],[size(xyz,1),1]),[1,3,2]));
     %pfhxy = cat(2,pfhxy,permute(repmat([fliplr(sq(mean(pfstats.peakPatchCOM(8,:,pfstats.cluMap==unit,:),'omitnan'))'),0],[size(xyz,1),1]),[1,3,2]));
     pfhxy = MTADxyz([],[],pfhxy,xyz.sampleRate);

@@ -668,3 +668,19 @@
 
 
 
+%% 2017 12 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+
+% req20171202 ----------------------------------------------------
+%  Status: active
+%  Type: Analysis
+%  Final_Forms: NA
+%  Description: Optimizing place field and drz parameters
+%  Bugs: NA
+
+% req20171205 ----------------------------------------------------
+%  Status: active
+%  Type: Analysis
+%  Final_Forms: NA
+%  Description: Determine the respiration frequency distribution during 
+%               immobility
+%  Bugs: NA

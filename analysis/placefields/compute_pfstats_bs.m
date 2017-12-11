@@ -2,7 +2,7 @@ function ds = compute_pfstats_bs(Trial,varargin)
 
 
 % DEFARGS ------------------------------------------------------------------------------------------
-defargs = struct('sessionList',         'MjgER2016',                                             ...
+defargs = struct('units',               [],                                                      ...
                  'stcMode',             'msnn_ppsvd_raux',                                       ...
                  'states',              {{'loc&theta','lloc&theta','hloc&theta','rear&theta',    ...
                                           'pause&theta','lpause&theta','hpause&theta',           ...
@@ -11,13 +11,13 @@ defargs = struct('sessionList',         'MjgER2016',                            
                  'overwrite',           false,                                                   ...
                  'verbose',             true                                                     ...
 );
-[sessionList,stcMode,states,tag,overwrite,verbose] = DefaultArgs(varargin,defargs,'--struct');
+[units,stcMode,states,tag,overwrite,verbose] = DefaultArgs(varargin,defargs,'--struct');
 %---------------------------------------------------------------------------------------------------
 
 
 % TAG creation -------------------------------------------------------------------------------------
 if isempty(tag),
-    tag = DataHash(struct('sessionList',  sessionList,...
+    tag = DataHash(struct('sessionList',  'MjgER2016',...
                           'stcMode',      stcMode,...
                           'states',       {states}));
 end
@@ -40,10 +40,12 @@ if ~exist(analysisFileName,'file') || overwrite,
     Trial.load('stc',stcMode);
 
 % REDUCE clu list based on theta pfs max rate        
-    pft = pfs_2d_theta(Trial,[],[],true); % overwrite
-    mrt = pft.maxRate;
-    units = select_units(Trial,18);
-    units = units(mrt(pft.data.clu(units))>1);
+    if isempty(units),
+        pft = pfs_2d_theta(Trial); 
+        mrt = pft.maxRate;
+        units = select_units(Trial,18);
+        units = units(mrt(pft.data.clu(units))>1);
+    end
 
 % COMPUTE shuffeled place fields in theta state
     defargs = get_default_args('MjgER2016','MTAAknnpfs','struct');
@@ -69,7 +71,7 @@ if ~exist(analysisFileName,'file') || overwrite,
 
 % PARSE place field features
 % COMPILE placefield statistics
-    cluMap = units;
+    clu = units;
     pfkstats = {};        pfkboots = {};        pfmstats = {};
     if 0,%isempty(gcp('nocreate')),
         parp = parpool(8);
@@ -148,15 +150,18 @@ if ~exist(analysisFileName,'file') || overwrite,
     if verbose, fprintf('\nSaving pfstats.\n'); end
     session = Trial.filebase;
     save(analysisFileName,'-v7.3',...
-         'session','stcMode','states','cluMap',...
+         'session','stcMode','states','clu',...
          'pfkstats','pfkboots','pfmstats',...
          'peakPatchArea','peakPatchCOM','peakPatchRate');
-end % if savefile exists
+end%if savefile exists
 
-% DISPLAY processing status                    
+
+
+% DISPLAY processing status
 if verbose, fprintf('\nLoading %s...\n\n',analysisFileName); end
 % LOAD pfstats
 ds = load(analysisFileName);
+
 
 
 % END MAIN -------------------------------------------------------------------------------------------

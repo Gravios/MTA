@@ -48,7 +48,7 @@ rhm.data(~nniz(rhm.data(:))) = 1;
 % LOAD Nasal Cavity Pressure(NCP) feature
 ncp = fet_ncp(Trial,rhm,'mta',ncpChannel);
 
-figure,plot(vh(stc{'p'},2),ncpFreq(stc{'p'}),'.');
+% $$$ figure,plot(vh(stc{'p'},2),ncpFreq(stc{'p'}),'.');
 % WHITEN RHM and NCP for spectral comparison (PSD&CSD)
 % $$$ wang = [rhm.data,ncp.data];
 % $$$ wang = WhitenSignal(wang,[],1);
