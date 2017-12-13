@@ -12,17 +12,11 @@ optimize_stc_transition('msnn',sessionList);
 Trials = af(@(t) MTATrial.validate(t), get_session_list(sessionList));
 cf(@(t)  label_bhv_shake('msnn_ppsvd',t),  Trials);
 
-% $$$ for t = 1:numel(Trials),
-% $$$     label_bhv_shake('msnn_ppsvd',Trials{t});
-% $$$ end
-
 % CREATE composite state of walk and turn
 stc = cf(@(t)  reduce_stc_to_loc(t.load('stc','msnn_ppsvd')),  Trials);
 
 % LABEL sniffing periods
-
-cf(@(s,t) label_bhv_reduced(s,t), stc,Trials);
-
+cf(@(s,t)  label_bhv_reduced(s,t),  stc,Trials);
 
 % LABEL homebase behavior
 %cf(@(t)  label_bhv_homebase([],t),  Trials);

@@ -1,35 +1,33 @@
 function [svar,states,stateSize,velMean,velStd] = pfs_overdispertion(Trial,varargin)
 
 % DEFARGS ------------------------------------------------------------------------------------------
-defargs = struct(stcMode...
+defargs = struct('stcMode',               'msnn_ppsvd_raux',                                     ...
+                 'sampleRate',            20,                                                    ...
+                 'display',               false                                                  ...
 );
-[] = DefaultArgs(varargin,defargs,'--struct');
+[stcMode] = DefaultArgs(varargin,defargs,'--struct');
 %---------------------------------------------------------------------------------------------------
 
 
 
-%% Get units which are of good enough quality
-units = select_units(Trial,25,'pyr');
-Trial.load('nq');
-units = units(Trial.nq.SNR(units)>1);
-numClu = numel(units);
+
+Trial.load('stc',stcMode);
+stc = Trial.stc.copy();
+units = select_placefields(Trial);
 
 display = false;
-smpleRate = 20;
+sampleRate = 20;
 
 
 xyz = Trial.load('xyz');
 xyz.filter('ButFilter',3,1,'low');
-vxy = xyz.vel(Trial.trackingMarker,[1,2]);
-vxy.resample(sampleRate);
 xyz.resample(sampleRate);
+vxy = xyz.vel(Trial.trackingMarker,[1,2]);
 xyz.data = sq(xyz(:,Trial.trackingMarker,[1,2]));
 
 % LOAD unit firing rate
 ufr = Trial.ufr.copy;
-ufr.create(Trial,xyz,[],units);
-ufr.resample(xyz);
-
+ufr.create(Trial,xyz,[],units,5);
 
 sxyz = xyz.copy;
 sufr = ufr.copy;
@@ -37,7 +35,8 @@ sufr = ufr.copy;
 Tag = '';
 switch mode
     case 'std'
-        states = {'theta','rear','walk','hswalk','lswalk'};
+        states = {'loc&theta','lloc&theta','hloc&theta','rear&theta',...
+                  'pause&theta','lpause&theta','hpause&theta','theta-groom-sit'};
 % $$$     case 'rnd'
 % $$$         Trial.stc.states{end+1} = rndState(Trial,'t',0.5);
 % $$$         states = {'theta','rear','walk','hswalk','lswalk','x'};
@@ -61,8 +60,13 @@ for s = 1:numel(states),
     velStd = vxy(stc{states{s}});
     velStd = nanstd(log10(velStd(nniz(velStd))));
 
-    % LOAD placefields
-    pfc{s} = MTAApfs(Trial,units,states{s},false,'binDims',[20,20],'SmoothingWeights',[1.8,1.8]);
+% LOAD place fields
+    defargs = get_default_args('MjgER2016','MTAApfs','struct');
+    defargs.units = units;
+    defargs.states = states{s};
+    defargs.SmoothingWeights = [3,3];
+    defargs = struct2varargin(defargs);
+    pfc{s} = MTAApfs(Trial,defargs{:});
 
     twpmr = ones(sxyz.size(1),numel(units));
     [~,indx] = min(abs(repmat(pfc{s}.adata.bins{1}',sxyz.size(1),1)...
@@ -97,12 +101,12 @@ if display,
     while unit~=-1,
         u =find(units==unit);
         for s = 1:numel(states);
-            subplot2(2,numel(states),1,s),
+            subplot2(2,numel(states),1,s);
             pfc{s}.plot(unit,[],1);
-            title([states{s},': ',num2str(unit)])
-            subplot2(2,numel(states),2,s),
-            hist(ufrwd{s}(expr{s}(:,u)>2,u),100)
-            title(['var: ',num2str(var(ufrwd{s}(nniz(ufrwd{s}(:,u))&expr{s}(:,u)>ethresh,u)))])
+            title([states{s},': ',num2str(unit)]);
+            subplot2(2,numel(states),2,s);
+            hist(ufrwd{s}(expr{s}(:,u)>2,u),100);
+            title(['var: ',num2str(var(ufrwd{s}(nniz(ufrwd{s}(:,u))&expr{s}(:,u)>ethresh,u)))]);
         end
         unit = figure_controls(hfig,unit,units);
     end
@@ -111,7 +115,8 @@ end
 
 for s =1:numel(states),
     svar(s) = var(ufrwd{s}(nniz(ufrwd{s}(:))&expr{s}(:)>ethresh));
-    stateSize(s) = sum(diff(stc{states{s}.data,1,2));
+    sper = stc{states{s}};
+    stateSize(s) = sum(diff(sper.data,1,2));
 end
 %Trial.stc.states(end) = [];
 

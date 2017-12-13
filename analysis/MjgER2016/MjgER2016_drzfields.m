@@ -7,10 +7,11 @@ function [pfs_dp,pfs_dh,pfs_dm] =  MjgER2016_drzfields(Trial,varargin)
 %  Original_Form: req20171101.m
 
 % DEFARGS ------------------------------------------------------------------------------------------
-defargs = struct('overwrite',                      false,                                        ...
+defargs = struct('units',                          [],                                           ...
+                 'overwrite',                      false,                                        ...
                  'pfstats',                        []                                            ...
 );
-[overwrite,pfstats] = DefaultArgs(varargin,defargs,'--struct');
+[units,overwrite,pfstats] = DefaultArgs(varargin,defargs,'--struct');
 %---------------------------------------------------------------------------------------------------
 
 sessionListName = 'MjgER2016';
@@ -29,18 +30,19 @@ Trial.load('stc',stcMode);
 
 
 % LOAD placefield statistics 
-if isempty(pfstats),    pfstats = compute_pfstats_bs(Trial);    end
+if isempty(pfstats),  pfstats = compute_pfstats_bs(Trial);    end
+if isempty(units),    units   = pfstats.clu;                  end
 
 
 % LOAD theta state placefields
-defargs = get_default_args('MjgER2016','MTAAknnpfs_bs','struct');
-defargs.units = pfstats.cluMap;
-defargs.states = 'theta-groom-sit';
-defargs = struct2varargin(defargs);        
-pft = MTAAknnpfs_bs(Trial,defargs{:});      
-[mrt,mrp] = pft.maxRate([],'mean');
-% $$$ pft = pfs_2d_theta(Trial,'overwrite',true);
-% $$$ [mrt,mrp] = pft.maxRate();
+% $$$ defargs = get_default_args('MjgER2016','MTAAknnpfs_bs','struct');
+% $$$ defargs.units = pfstats.cluMap;
+% $$$ defargs.states = 'theta-groom-sit';
+% $$$ defargs = struct2varargin(defargs);        
+% $$$ pft = MTAAknnpfs_bs(Trial,defargs{:});      
+% $$$ [mrt,mrp] = pft.maxRate([],'mean');
+pft = pfs_2d_theta(Trial);
+[mrt,mrp] = pft.maxRate();
 
 
 

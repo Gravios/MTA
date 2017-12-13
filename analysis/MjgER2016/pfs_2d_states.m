@@ -4,19 +4,14 @@ function pfs = pfs_2d_states(Trial,varargin)
 % DEFARGS ------------------------------------------------------------------------------------------
 defargs = struct('units',         [],                                                            ...
                  'stcMode',       'NN0317R',                                                     ...
-                 'states',        {{'loc','lloc','hloc','rear','pause','lpause','hpause'}},      ...
+                 'states',        {{'loc&theta','lloc&theta','hloc&theta','rear&theta',          ...
+                                    'pause&theta','lpause&theta','hpause&theta','theta-sit-groom'}},...
                  'reportFig',     true,                                                          ...
                  'tag',           '',                                                            ...
                  'overwrite',     false                                                          ...
 );%-------------------------------------------------------------------------------------------------
 
 [units,stcMode,states,reportFig,tag,overwrite] = DefaultArgs(varargin,defargs,'--struct');
-
-% modify states
-states = cellfun(@strcat,states,repmat({'&theta'},size(states)),'UniformOutput',false);
-states = cat(2,{'theta-sit-groom'},states);
-
-
 
 
 % TAG creation -------------------------------------------------------------------------------------
@@ -30,13 +25,11 @@ end
 %---------------------------------------------------------------------------------------------------
 
 
-
-
 % MAIN ---------------------------------------------------------------------------------------------
 
 Trial= MTATrial.validate(Trial);    
 
-% load labeled behavior
+% LOAD labeled behavior
 if ~strcmp(Trial.stc.mode,stcMode),
     try,
         Trial.load('stc',[Trial.name,'.',Trial.maze.name,'.gnd','.stc.',stcMode,'.mat']);
@@ -47,8 +40,7 @@ if ~strcmp(Trial.stc.mode,stcMode),
 end
 
 
-% Reduce clu list based on theta pfs max rate
-
+% REDUCE clu list based on theta pfs max ratea
 if isempty(units)
     pft = pfs_2d_theta(Trial);
     mrt = pft.maxRate;
@@ -63,7 +55,6 @@ nsts = numel(states);
 OwnDir = '/storage/gravio/nextcloud/MjgER2016/';
 FigDir = ['pfs_2d_states_',Trial.filebase,'_',tag];
 mkdir(fullfile(OwnDir,FigDir));
-
 
 
 %% compute 3d place fields for the theta state
@@ -172,6 +163,7 @@ if reportFig
         print(gcf,'-dpng',  fullfile(OwnDir,FigDir,[FigName,'.png']));
 
         unit = figure_controls(hfig,unit,units,autoincr);    
+        pause(0.2);
     end
 
 end

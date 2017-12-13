@@ -1,5 +1,5 @@
 function xyz = ERCOR_fillgaps_RidgidBody(Session,varargin)
-%function xyz = ERCOR_fillgaps_RidgidBody(xyz,rb_model,gind)
+%function xyz = ERCOR_fillgaps_RidgidBody(Session, varargin)
 % 
 % Tries to correct marker swaps and markers which wander from
 % a ridgid body constrains
@@ -8,17 +8,22 @@ function xyz = ERCOR_fillgaps_RidgidBody(Session,varargin)
 %
 % Note: This function is interactive and depends on the function ClusterPP.
 % 
-% variables:
+%  reqargin:
 %
-%    xyz: MTADxyz, motion capture "mocap" data 
+%    Session: MTASession, Session to be processed
 %
 %  varargin:
 %
-%    goodIndex: double, the index which servers as a "good" template.
-%                        if goodIndex is empty a gui will help you out :)
+%    mode: string FLAGS - 'EMGM'   : gaussian mixture model
+%                         'MANUAL' : manual error annotation
+%    
+%    method: string FLAGS - 'BEST_SWAP_PERMUTATION'    : find marker label permutation which fits rigidbody
+%                           'RIGIDBODY_RECONSTRUCTION' : reconstruct 'noisy' marker using other markers
 %
-%    rb_model: MTAModel, model which contains the markers with a
-%                        ridgid body constraint.
+%    goodIndices: double, the indicies used to create a good rigidbody template
+%                 empty,  Index selection GUI will appear
+%
+%    rigidBodyMarkers: cellstr, Markers of rigidbody
 %
 %    MarkerSwapErrorThreshold: double, Threshold for switching to auxilary
 %                                      Error correction methods.
@@ -238,7 +243,7 @@ for i = errorIds',
             disp(['Ridgid body intermarker distance optimization'])
         end
         
-      case 'RIGIDBODY_PARTIAL_RECONSTRUCTION'
+      case 'RIGIDBODY_RECONSTRUCTION'
     
 
         
