@@ -406,7 +406,12 @@ switch sessionList
     Sessions(end).xyz_host    =  my_xyz;
     Sessions(end).nlx_host    =  my_nlx;
     Sessions(end).TTLValue    = '0x0002';
+    Sessions(end).includeSyncInd = [];    
     Sessions(end).thetaRef     = [8:8:32];
+
+    Sessions(end).sessionName = 'Ed10-20140816';
+    Sessions(end).trialName   = 'all';
+    Sessions(end).includeSyncInd = [];
     
     Sessions(end+1) =    Sessions(end);
     Sessions(end).sessionName = 'Ed10-20140817';
@@ -419,7 +424,7 @@ switch sessionList
     my_nlx = tmy_nlx;
     my_xyz = fullfile(my_xyz,'jg04');
     Sessions(end+1) = Sessions(end);
-    Sessions(end).sessionName = 'jg04-20120127';
+    Sessions(end).sessionName = 'jg04-20120128';
     Sessions(end).mazeName    = 'cof';
     Sessions(end).trialName   = 'all';
     Sessions(end).xyz_host    = my_xyz;
@@ -430,9 +435,6 @@ switch sessionList
     Sessions(end).includeSyncInd = [];    
     Sessions(end).project       = 'general';
 
-    
-    Sessions(end+1) = Sessions(end);
-    Sessions(end).sessionName = 'jg04-20120128';
     Sessions(end+1) = Sessions(end);
     Sessions(end).sessionName = 'jg04-20120129';
     Sessions(end+1) = Sessions(end);

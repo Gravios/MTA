@@ -37,14 +37,18 @@ switch numel(Pfs.parameters.type)
     end
 
 % COMPUTE rateMap output type
-    switch nMode
-      case 'mean',    rateMap = mean(Pfs.data.rateMap(:,Pfs.data.clu==unit,:),3);
-      case 'std' ,    rateMap = std(Pfs.data.rateMap(:,Pfs.data.clu==unit,:),[],3);
-      case 'sig'
-        rateMap = 1./sum((repmat(max(Pfs.data.rateMap(:,Pfs.data.clu==unit,:)),[size(Pfs.data.rateMap,1),1,1])...
-                          -repmat(Pfs.data.rateMap(:,Pfs.data.clu==unit,1),[1,1,Pfs.parameters.numIter]))<0,3)';
-      otherwise
-        rateMap = Pfs.data.rateMap(:,Pfs.data.clu==unit,1);
+    if isnumeric(nMode)
+        rateMap = Pfs.data.rateMap(:,Pfs.data.clu==unit,nMode);    
+    else
+        switch nMode
+          case 'mean',    rateMap = mean(Pfs.data.rateMap(:,Pfs.data.clu==unit,:),3,'omitnan');
+          case 'std' ,    rateMap = std(Pfs.data.rateMap(:,Pfs.data.clu==unit,:),[],3,'omitnan');
+          case 'sig'
+            rateMap = 1./sum((repmat(max(Pfs.data.rateMap(:,Pfs.data.clu==unit,:)),[size(Pfs.data.rateMap,1),1,1])...
+                              -repmat(Pfs.data.rateMap(:,Pfs.data.clu==unit,1),[1,1,Pfs.parameters.numIter]))<0,3)';
+          otherwise
+            rateMap = Pfs.data.rateMap(:,Pfs.data.clu==unit,1);
+        end
     end
     
 % RESHAPE rateMap from 1D to 2D

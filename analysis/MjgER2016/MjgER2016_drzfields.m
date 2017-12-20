@@ -30,9 +30,9 @@ Trial.load('stc',stcMode);
 
 
 % LOAD placefield statistics 
-if isempty(pfstats),  pfstats = compute_pfstats_bs(Trial);    end
-if isempty(units),    units   = pfstats.clu;                  end
-
+% $$$ if isempty(pfstats),  pfstats = compute_pfstats_bs(Trial);    end
+%if isempty(units),    units   = pfstats.clu;                  end
+if isempty(units),    units   = select_placefields(Trial);                  end
 
 % LOAD theta state placefields
 % $$$ defargs = get_default_args('MjgER2016','MTAAknnpfs_bs','struct');
@@ -45,31 +45,30 @@ pft = pfs_2d_theta(Trial);
 [mrt,mrp] = pft.maxRate();
 
 
-
-
-units = pfstats.cluMap;
-
 if overwrite,
     xyz = Trial.load('xyz');
+% COMPUTE rhythmic head motion spectra
+% COMPUTE rhythmic head motion power within 5-12 Hz frequency band
     [rhm,fs,ts] = fet_rhm(Trial,[],'mtchglong');
-    % DIAGNOSTIC_FIG figure,imagesc(ts,fs,log10(rhm.data)');axis('xy');colormap('jet');
     rhmp = rhm.copy();
     rhmp.data = median(log10(rhm(:,5<fs&fs<12)),2);
     rhmp.resample(xyz);
-    % DIAGNOSTIC_FIG figure,plot(rhmp.data)
+    % DIAGNOSTIC_FIG figure();  imagesc(ts,fs,log10(rhm.data)');axis('xy');colormap('jet');    
+    % DIAGNOSTIC_FIG figure();  plot(rhmp.data);
 
-    % COMPUTE direction rate zones
-    drz = compute_drz(Trial,pft,units);
+% COMPUTE direction rate zones
+    drz = compute_drz(Trial,units,pft);
 end
 
-% LOAD pitches 
-% MAP pitches to reference trial
-pch = fet_HB_pitch(Trial);
-map_to_reference_session(pch,Trial,pitchReferenceTrial);    
 
 
 %% PLACEFIELD DRZ X HEAD PITCH --------------------------------------------------------------
 if overwrite,
+% LOAD pitches 
+% MAP pitches to reference trial
+    pch = fet_HB_pitch(Trial);
+    map_to_reference_session(pch,Trial,pitchReferenceTrial);    
+
     for u = 1:numel(units);
         defargs = get_default_args('MjgER2016','MTAApfs','struct');
         defargs.tag       = 'drzXpitch';

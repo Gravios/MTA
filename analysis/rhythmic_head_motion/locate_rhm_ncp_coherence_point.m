@@ -14,16 +14,11 @@ defargs = struct('display',false,'overwrite',false);
 % $$$ end
 Session = MTASession.validate([Session.name,'.',Session.maze.name,'.all']);
 
-%Session = MTASession('Ed05-20140529','all','ont');
-%Session = MTASession('Ed05-20140528');
-%Session = MTASession('jg05-20120317');
-%Session = MTASession('jg05-20120317');
-%Session = MTASession('Ed03-20140625');
-%display = false;
-%overwrite = false;
+ncp = fet_ncp(Session);
+
+xyz = Session.load('xyz','trb');
 
 
-xyz = Session.load('xyz');
 rb = Session.xyz.model.rb({'head_back','head_left','head_front','head_right'});
 hcom = xyz.com(rb);
 
@@ -31,129 +26,110 @@ xyz.addMarker('fhcom',[128,255,128],{{'head_back','head_front',[0,0,1]}},...
                ButFilter(hcom,3,[2]./(Session.xyz.sampleRate/2),'low'));
 xyz.addMarker('hcom',[128,255,128],{{'head_back','head_front',[0,0,1]}},hcom);
 
+% GENERATE orthogonal basis, origin: head's center of mass
 nz = -cross(xyz(:,'head_back',:)-hcom,xyz(:,'head_left',:)-hcom);
 nz = bsxfun(@rdivide,nz,sqrt(sum((nz).^2,3)));
 nm = nz.*20+hcom;
 xyz.addMarker('htx',[128,255,128],{{'head_back','head_front',[0,0,1]}},nm);
-
+% GENERATE orthogonal basis, origin: head's center of mass
 ny = cross(xyz(:,'htx',:)-hcom,xyz(:,'head_back',:)-hcom);
 ny = bsxfun(@rdivide,ny,sqrt(sum((ny).^2,3)));
 nm = ny.*20+hcom;
 xyz.addMarker('hrx',[128,255,128],{{'head_back','head_front',[0,0,1]}},nm);
-
+% GENERATE orthogonal basis, origin: head's center of mass
 nx = cross(xyz(:,'hrx',:)-hcom,xyz(:,'htx',:)-hcom);
 nx = bsxfun(@rdivide,nx,sqrt(sum((nx).^2,3)));
 nm = nx.*20+hcom;    
 xyz.addMarker('hbx',[128,255,128],{{'head_back','head_front',[0,0,1]}},nm);
-
-xyz.addMarker('hbt',[128,255,128],{{'head_back','head_front',[0,0,1]}},...
-                  genRotatedMarker(xyz,'hbx',45,{'hbx','htx'}));
-xyz.addMarker('hbr',[128,255,128],{{'head_back','head_front',[0,0,1]}},...
-                  genRotatedMarker(xyz,'hbx',45,{'hbx','hrx'}));    
-xyz.addMarker('hbrt',[128,255,128],{{'head_back','head_front',[0,0,1]}},...
-                  genRotatedMarker(xyz,'hbr',45,{'hbx','htx'}));
-xyz.addMarker('hrt',[128,255,128],{{'head_back','head_front',[0,0,1]}},...
-                  genRotatedMarker(xyz,'hrx',45,{'hrx','htx'}));
+% GENERATE rotated orthogonal basis, origin: head's center of mass
+xyz.addMarker('hbt',  [0.5,1,0.5],[],genRotatedMarker(xyz,'hbx',45,{'hbx','htx'}));
+xyz.addMarker('hbr',  [0.5,1,0.5],[],genRotatedMarker(xyz,'hbx',45,{'hbx','hrx'}));    
+xyz.addMarker('hbrt', [0.5,1,0.5],[],genRotatedMarker(xyz,'hbr',45,{'hbx','htx'}));
+xyz.addMarker('hrt',  [0.5,1,0.5],[],genRotatedMarker(xyz,'hrx',45,{'hrx','htx'}));
 nhm = {'hcom','hbx','hrx','htx','hbt','hbr','hbrt','hrt'};    
 
-% $$$ 
-% $$$ if display,
-% $$$     ind = 10000;
-% $$$     figure, daspect([1,1,1])
-% $$$     hold on,plot3(xyz(ind,7,1),xyz(ind,7,2),xyz(ind,7,3),'.b')
-% $$$     hold on,scatter3(xyz(ind,7,1),xyz(ind,7,2),xyz(ind,7,3),150,'b')
-% $$$     hold on,plot3(xyz(ind,5,1),xyz(ind,5,2),xyz(ind,5,3),'.c')
-% $$$     hold on,scatter3(xyz(ind,5,1),xyz(ind,5,2),xyz(ind,5,3),150,'c')
-% $$$     hold on,plot3(xyz(ind,6,1),xyz(ind,6,2),xyz(ind,6,3),'.b')
-% $$$     hold on,plot3(xyz(ind,8,1),xyz(ind,8,2),xyz(ind,8,3),'.b')
-% $$$     hold on,plot3(xyz(ind,'hbx',1),xyz(ind,'hbx',2),xyz(ind,'hbx',3),'*m')
-% $$$     hold on,scatter3(xyz(ind,'hbx',1),xyz(ind,'hbx',2),xyz(ind,'hbx',3),150,'m')
-% $$$     hold on,plot3(xyz(ind,'hrx',1),xyz(ind,'hrx',2),xyz(ind,'hrx',3),'*m')
-% $$$     hold on,scatter3(xyz(ind,'hrx',1),xyz(ind,'hrx',2),xyz(ind,'hrx',3),150,'m')
-% $$$     hold on,plot3(xyz(ind,'htx',1),xyz(ind,'htx',2),xyz(ind,'htx',3),'*m')
-% $$$     hold on,scatter3(xyz(ind,'htx',1),xyz(ind,'htx',2),xyz(ind,'htx',3),150,'m')
-% $$$     hold on,plot3(xyz(ind,'hcom',1),xyz(ind,'hcom',2),xyz(ind,'hcom',3),'+g')
-% $$$ 
-% $$$     hold on,plot3(xyz(ind,'hbt',1),xyz(ind,'hbt',2),xyz(ind,'hbt',3),'+k')
-% $$$     hold on,plot3(xyz(ind,'hbr',1),xyz(ind,'hbr',2),xyz(ind,'hbr',3),'+k')
-% $$$     hold on,plot3(xyz(ind,'hbrt',1),xyz(ind,'hbrt',2),xyz(ind,'hbrt',3),'+k')
-% $$$     hold on,plot3(xyz(ind,'hrt',1),xyz(ind,'hrt',2),xyz(ind,'hrt',3),'+k')
-% $$$     hold on,plot3(sxyz(ind,'hbx',1),sxyz(ind,'hbx',2),sxyz(ind,'hbx',3),'*m')
-% $$$     hold on,plot3(sxyz(ind,'hrx',1),sxyz(ind,'hrx',2),sxyz(ind,'hrx',3),'*m')
-% $$$     hold on,plot3(sxyz(ind,'htx',1),sxyz(ind,'htx',2),sxyz(ind,'htx',3),'*m')
-% $$$     hold on,plot3(sxyz(ind,'hcom',1),sxyz(ind,'hcom',2),sxyz(ind,'hcom',3),'+g')
-% $$$ end 
+fxyz = xyz.copy();
+fxyz.filter('RectFilter',3,4);
 
-
-
-FileName_coarse = fullfile(Session.spath,[Session.filebase '.xyz-shift.mat']);
+FileName_coarse = fullfile(Session.spath,[Session.filebase '.rhmXncp-shift_v2.mat']);
 if ~exist(FileName_coarse,'file') || overwrite,
 
-    i = [-100:10:100];
-    j = [-100:10:100];
-    k = [-100:10:0];
+    i = [-20:10:20];
+    j = [-20:10:20];
+    k = [-150:10:150];
 
+% COMPUTE head speed
     vxy = xyz.vel('head_front',[1,2]);
+% RESTRICT computations to periods where head speed is greater than 2cm/2        
     ind = vxy.data>2;
-    aind = Session.stc{'a'};
-    if ~isempty(aind),
-        %aind.resample(xyz);
-        aind.cast('TimeSeries');
-        aind.resample(xyz);
-        aind.data(isnan(aind.data))=0;
-        ind = logical(aind.data)&ind;
-    end
     
-
+    if ~isempty(periods)
+% RESTRICT computations to specified data subset
+        pind = false([size(vxy,1),1]);
+        for p = 1:size(periods,1),
+            pind(periods(p,1):periods(p,2)) = true;
+        end
+        ind = ind&pind;
+    else
+% RESTRICT computations to good periods
+        aind = Session.stc{'a'};
+        if ~isempty(aind),
+            %aind.resample(xyz);
+            aind.cast('TimeSeries');
+            aind.resample(xyz);
+            aind.data(isnan(aind.data))=0;
+            ind = logical(aind.data)&ind;
+        end
+    end
+    ind = MTADepoch([],[],ind,xyz.sampleRate,xyz.sync,xyz.origin,'TimeSeries');
+    
     vxyz = zeros([7,numel(i),numel(j),numel(k)]);
 
-% $$$ x = 51;
-% $$$ y = 51;
-% $$$ z = 32; 
-% $$$ pool = parpool(10);
 
-    txyz = xyz.copy;
-    txyz.data = xyz(:,nhm,:);
-    txyz.model = xyz.model.rb(nhm);
+    txyz = fxyz(:,nhm,:);
     for x = 1:numel(i),tic
         for y = 1:numel(j)
             for z = 1:numel(k)
-
-                sxyz = txyz.copy;
-                sxyz.data = bsxfun(@plus,nx*i(x)+ny*j(y)+nz*k(z),sxyz.data);
-
-
-                fhcom = zeros([sxyz.size(1),1,3]);
-                fhcom(nniz(sxyz),:,:) = ButFilter(sxyz(nniz(sxyz),'hcom',:),3,2/(sxyz.sampleRate/2),'low');
-                sxyz.addMarker('fhcom',[128,255,128],{{'hbx','hcom',[0,0,1]}},fhcom);
-
-                sxyz.data = sxyz(ind,:,:);
-                ang = [sxyz(:,'hbx',:)-sxyz(:,'fhcom',:);...
-                       sxyz(:,'hrx',:)-sxyz(:,'fhcom',:);...
-                       sxyz(:,'htx',:)-sxyz(:,'fhcom',:);...
-                       ...
-                       sxyz(:,'hbt',:)-sxyz(:,'fhcom',:);...
-                       sxyz(:,'hbr',:)-sxyz(:,'fhcom',:);...
-                       sxyz(:,'hbrt',:)-sxyz(:,'fhcom',:);...
-                       sxyz(:,'hrt',:)-sxyz(:,'fhcom',:)];
-
-
-                ang = mat2cell(permute(ang,[1,3,2]),size(ang,1),[1,1,1]);
+                sxyz = bsxfun(@plus,nx*i(x)+ny*j(y)+nz*k(z),txyz);
+                sxyz(nniz(sxyz),1,:) = ButFilter(sxyz(nniz(sxyz),1,:),3,2/(xyz.sampleRate/2),'low');
+                ang = mat2cell(sq(reshape(bsxfun(@minus,sxyz(:,2:8,:),sxyz(:,1,:)),[],1,3)),size(sxyz,1)*7,[1,1,1]);
                 [~,~,ang] = cart2sph(ang{:});
-                ang = reshape(ang,[],7);
-
-                for m = 1:7,
-                    bnds = prctile(ang(:,m),[.1,99.1]);
-                    vxyz(m,x,y,z) = nanvar(ang(bnds(1)<ang(:,m)&ang(:,m)<bnds(2),m));
-                    
-                end
-
-            end
-        end
+                ang = MTADfet.encapsulate(Session,...
+                                          diff(reshape(ang,[],7)),...
+                                          fxyz.sampleRate,'rhythmic head motion','rhm','r');
+                
+                ang.filter('RectFilter');
+                ang.data = cat(1,zeros([1,numel(nhm)-1]),diff(ang.data),zeros([1,numel(nhm)-1]));
+                ang.filter('RectFilter');
+                
+                for m = 1%1:numel(nhm)-1,
+                    % Modify time stamps and spec; add padding (0's)
+                    % COMPUTE cross spectra
+                    [ys,fs,ts] = mtcsdglong([ang(:,m),ncp.data],2^8,fxyz.sampleRate,2^7,2^6,[],[],[],[5,14]);
+                    if m ==1,
+                        ts = ts+(2^6/2)/fxyz.sampleRate;
+                        ssr = 1/diff(ts(1:2));
+                        pad = round([ts(1),size(fxyz,1)./fxyz.sampleRate-ts(end)].*ssr)-[1,0];
+                        szy = size(ys);
+                        if x==1&&y==1&&z==1,
+                            resample(ind,ssr);
+                            if size(ys,1)>size(ind,1),
+                                ind.data = cat(1,ind.data,zeros([size(ys,1)-size(ind,1),1]));
+                            elseif size(ys,1)<size(ind,1),
+                                ind.data = ind.data(1:size(ys,1));
+                            end
+                            ind = ind.data;
+                        end
+                    end 
+                    yss = sq(mean(cat(1,zeros([pad(1),szy(2:end)]),ys,zeros([pad(2),szy(2:end)])),2));
+                    vxyz(m,x,y,z) = nanmean(abs(yss(ind,1,2)))./nanmean(sqrt(yss(ind,1,1).*yss(ind,2,2)));
+                end%for m
+            end%for z
+        end%for y
         toc
-    end
+    end%for x
 
-    save(FileName_coarse,'i','j','k','vxyz');
+    save(FileName_coarse,'i','j','k','vxbyz');
 else
     load(FileName_coarse);
 end
@@ -164,7 +140,7 @@ end
 %% Figure of search
 mind = [];
 for m = 1:7,
-    [mind(m,:),mv] = LocalMinimaN(sq(vxyz(m,:,:,:)),100,100);
+    [mind(m,:),mv] = LocalMinimaN(-sq(vxyz(m,:,:,:)),100,100);
 end
 
 % $$$ figure,

@@ -69,4 +69,5 @@ switch class(Session)
         Data.data = ds.data;
     end
 end
-end
+
+Data.update_hash();

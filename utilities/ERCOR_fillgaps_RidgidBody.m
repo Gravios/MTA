@@ -41,7 +41,7 @@ function xyz = ERCOR_fillgaps_RidgidBody(Session,varargin)
 
 
 % DEFARGS ------------------------------------------------------------------------------------------
-defArgs = struct('mode',      'EMGM',                                                            ...
+defArgs = struct('mode',      'MANUAL',                                                            ...
                  'method',    'BEST_SWAP_PERMUTATION',                                           ...
                  'goodIndicies', [],                                                             ...
                  'rigidBodyMarkers',  {{'head_back','head_left','head_right','head_front','head_top'}},  ...
@@ -190,10 +190,17 @@ errorIds(errorIds==0)=[];
 
 figure,hold on
 c = jet(numel(errorIds));
+emptyErrIds = [];
 for u = errorIds'
-    scatter(efet(eid==u,1),efet(eid==u,5),4,c(u,:));
-    eidCount(u) = sum(eid==u);
+    if ~isempty(efet(eid==u,1)),
+        scatter(efet(eid==u,1),efet(eid==u,5),4,c(u,:));
+        eidCount(u) = sum(eid==u);
+    else
+        emptyErrIds(end+1) = u;
+    end
 end
+errorIds(ismember(errorIds,emptyErrIds)) = [];
+
 
 disp('')
 disp(['Number of error groups: ' num2str(numel(errorIds))]);

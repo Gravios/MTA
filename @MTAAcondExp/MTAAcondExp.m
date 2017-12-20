@@ -1,10 +1,13 @@
 classdef MTAAcondExp < hgsetget 
-    properties
+    properties        
         path
-        filename
+        filename       
         hash
         tag
         ext
+        Trial
+        Data
+        spkOpts
         parameters        
         meta
         data
@@ -17,8 +20,12 @@ classdef MTAAcondExp < hgsetget
         % Trial
         % Data
         % Spk
+        % State
         % parameters
-        % 
+        %   .binDims
+        %   .smoothingWeights
+        %   .randomizationMethod
+        %
             
             
         % PARAMETERS struct:
@@ -30,10 +37,10 @@ classdef MTAAcondExp < hgsetget
         % 
             
         % HASH struct:
-        %    state
-        %    tag
-        %    
-        % 
+        %    State.hash
+        %    Data.hash
+        %    Spk.hash
+        %    parameters
             
         end
 

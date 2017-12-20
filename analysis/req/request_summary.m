@@ -684,3 +684,20 @@
 %  Description: Determine the respiration frequency distribution during 
 %               immobility
 %  Bugs: NA
+
+% req20171215 ----------------------------------------------------
+%  Status: active
+%  Type: Analysis
+%  Final_Forms: NA
+%  Description: parameter scripts for testing locate_rhm_ncp_coherence_point
+%  Bugs: NA
+
+% req20171221 ----------------------------------------------------
+%  Status: active
+%  Type: Analysis
+%  Final_Forms: NA
+%  Description: Ploting place fields of session over range of states
+%               for use in figures
+%  Bugs: NA
+
+

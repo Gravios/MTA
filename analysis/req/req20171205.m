@@ -12,15 +12,25 @@ OwnDir = '/storage/gravio/nextcloud/';
 FigDir = 'MjgER2016/figures/supplementary';
 % --------------------------------------------------------------------------------------
 
+pitchReferenceTrial = 'Ed05-20140529.ont.all';
 
-%Trial = MTATrial.validate('Ed10-20140813.cof.all');
+Trial = MTATrial.validate('Ed10-20140813.cof.all');
+
 Trial = MTATrial.validate('Ed10-20140816.cof.all');
 Trial = MTATrial.validate('Ed10-20140817.cof.gnd');
 ncpChannel = 65;
+
+Trial = MTATrial.validate('Ed05-20140528.cof.all');
+Trial = MTATrial.validate('Ed05-20140529.ont.all');
+ncpChannel = 2;
+
 stc   = Trial.load('stc','msnn_ppsvd_raux');
 xyz   = preproc_xyz(Trial,{'SPLINE_SPINE_HEAD_EQI'});
 xyz.filter('ButFilter',3,2.4,'low');
-ang = create(MTADang,Trial,xyz);
+
+
+pch = fet_HB_pitch(Trial);
+map_to_reference_session(pch,Trial,pitchReferenceTrial);
 
 % SPEED 
 vh = xyz.vel({'spine_lower','head_front'},[1,2]);
@@ -34,15 +44,16 @@ rhm.data(~nniz(rhm.data(:))) = nan;
 % NORMALIZE rhm feature
 rhm.data = nunity(rhm.data);
 
-[rhmp,fs,ts] = fet_rhm(Trial,[],'mtchglong',true);
-%figure,imagesc(ts,fs,log10(rhmp.data'));colormap('jet');axis('xy');
-rhmf = rhmp.copy();
+[rhms,fs,ts] = fet_rhm(Trial,[],'mtchglong',true);
+% figure,imagesc(ts,fs,log10(rhms.data'));colormap('jet');axis('xy');
+rhmf = rhms.copy();
 fsInd = 2<fs&fs<13;
 fsSub = fs(fsInd);
-[~,rhmf.data] = max(log10(rhmp(:,fsInd)),[],2);
+[~,rhmf.data] = max(log10(rhms(:,fsInd)),[],2);
 rhmf.data = fsSub(rhmf.data);
 rhmf.filter('ButFilter',3,2,'low');
 rhmf.resample(xyz);
+rhmp = rhms.copy;
 rhmp.data = median(log10(rhmp(:,fs<6&fs<13)),2);
 rhmp.resample(xyz);
 
@@ -65,16 +76,94 @@ ncpFreq = 1./((ncpPeaks-circshift(ncpPeaks,1)+circshift(ncpPeaks,-1)-ncpPeaks)/2
 ncpFreq = median(GetSegs(ncpFreq,circshift([1:size(ncpFreq,1)]',5),11));
 
 
+pind = stc{'x+p+s',ncp.sampleRate};
+pind = stc{'p',ncp.sampleRate};
+
+
+
+ind = ncpPeaks;
+sind = WithinRanges(ncpPeaks,pind.data);
+ind = ncpPeaks(sind);
+
+cs = jet(25);
+edc = linspace(1,10,25);
+cbin = discretize(ncpFreq(sind)',edc);
+cbin(isnan(cbin)) = 25;
+hfig = figure();
+csc = cs(cbin,:);
+csc(cbin==26,:) = repmat([1,1,1],[sum(cbin==26),1]);
+scatter(pch(ind,3),rhmp(ind),5,csc,'filled')
+xlim([-pi/2,pi/2]);
+ylim([-10,-5]);
+colormap(jet);
+caxis([1,10]);
+colorbar();
+
+FigName = ['respiration_headpitch_X_rhmPow_C_ncpFreq',Trial.filebase];
+
+print(gcf,'-depsc2',fullfile(OwnDir,FigDir,[FigName,'.eps']));
+print(gcf,'-dpng',  fullfile(OwnDir,FigDir,[FigName,'.png']));
+
+
+
+cs = jet(25);
+edc = linspace(-pi/2,pi/2,25);
+cbin = discretize(pch(ind,3)',edc);
+cbin(isnan(cbin)) = 25;
+hfig = figure();
+csc = cs(cbin,:);
+csc(cbin==26,:) = repmat([1,1,1],[sum(cbin==26),1]);
+
+figure
+scatter(ncpFreq(sind)'+randn([sum(sind),1])/10,rhmf(ind),5,pch(ind,3),'filled')
+colormap('jet');
+
+figure
+scatter(ncpFreq(sind)'+randn([sum(sind),1])/10,rhmf(ind),5,rhmp(ind),'filled')
+colormap('jet');
+
+figure
+scatter(ncpFreq(sind)'+randn([sum(sind),1])/10,rhmf(ind),5,pch(ind,3),'filled')
+colormap('jet');
+
+figure
+scatter(pch(ind,3),rhmf(ind),5,rhmp(ind),'filled')
+colormap('jet');
+xlabel('pitch');
+ylabel('rhm freq');
+
+
+figure
+scatter(vh(ind,2),rhmf(ind),5,rhmp(ind),'filled')
+colormap('jet');
+
+
+figure
+scatter(vh(ind,2),rhmf(ind),5,pch(ind,3),'filled')
+colormap('jet');
+
+
+daspect([1,1,1]);
+line([0,12],[0,12],'Color','m');
+
+
+pper = stc{'p'};
+plper = cast(stc{'q'},'TimeSeries');
+phper = cast(stc{'j'},'TimeSeries');
+phlr = [];
+pdur = [];
+for p = pper.data'
+    pls = sum(plper(p'));
+    phs = sum(phper(p'));
+    phlr(end+1) = pls/(phs+pls);
+    pdur(end+1) = diff(p)./pper.sampleRate;
+end
 
 figure();
-pind =rhmf(ncpPeaks)>6;
-ind = ncpPeaks(pind);
-plot(ncpFreq(pind)'+randn([sum(pind),1]),ang(ind,5,7,2),'.');
+bar(0:0.05:1,histc(phlr,0:0.05:1),'histc');
 
-plot(ncpFreq(pind)'+randn([sum(pind),1]),rhmp(ind),'.');
-
-
-
+figure();
+plot(phlr'+randn([numel(phlr),1])/100,log10(pdur),'.');
 
 % FIGURE head speed ------------------a----------------------------------------------
 hfig = figure();

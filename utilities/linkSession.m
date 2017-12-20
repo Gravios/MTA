@@ -1,5 +1,5 @@
-function linkSession(session_name,xyz_path,nlx_path)
-%function linkSession(session_name,xyz_path,nlx_path)
+function linkSession(sessionName,xyzPath,nlxPath)
+%function linkSession(sessionName,xyzPath,nlxPath)
 %
 %  Creates Session folder in the current MTA project
 %  and creates symlinks pointed to folders containing
@@ -10,62 +10,66 @@ function linkSession(session_name,xyz_path,nlx_path)
 % MOD removed f flag from ln command
 
 Session = MTASession([]);
-datDir = fullfile(Session.path.data,session_name);
+datDir = fullfile(Session.path.data,sessionName);
 try,mkdir(datDir);end
 
-if ~isempty(xyz_path),
-    % get list of directories along the path xyz_path
-    xyz_maze_dirs = dir(fullfile(xyz_path,session_name));xyz_maze_dirs(1:2)=[];
-    if ~strcmp(xyz_path,fullfile(Session.path.data,'xyz')),
-        xyzDir = fullfile(Session.path.data,'xyz',session_name);
-        try,mkdir(xyzDir);end
-        for maze = 1:numel(xyz_maze_dirs),
-            try,mkdir(fullfile(xyzDir,xyz_maze_dirs(maze).name));end
-            system(['ln -sf ' fullfile(xyz_path,session_name,xyz_maze_dirs(maze).name) '/* ' fullfile(xyzDir,xyz_maze_dirs(maze).name)]);
+if ~isempty(xyzPath),
+% GET directory list along xyzPath
+    xyzMazeDirs = dir(fullfile(xyzPath,sessionName));xyzMazeDirs(1:2)=[];
+    if ~strcmp(xyzPath,fullfile(Session.path.data,'xyz')),        
+        xyzDir = fullfile(Session.path.data,'xyz',sessionName);
+        create_directory(xyzDir);
+% REMOVE old links
+        system(['find ',xyzDir,' -type l -delete']);        
+        for maze = 1:numel(xyzMazeDirs),
+% CREATE maze directory for xyz data files
+            create_directory(fullfile(xyzDir,xyzMazeDirs(maze).name));
+            system(['find ',fullfile(xyzDir,xyzMazeDirs(maze).name),' -type l -delete']);
+            system(['ln -s ' fullfile(xyzPath,sessionName,xyzMazeDirs(maze).name) '/* ' fullfile(xyzDir,xyzMazeDirs(maze).name)]);
         end
     else
-        xyzDir = fullfile(xyz_path,session_name);
+        xyzDir = fullfile(xyzPath,sessionName);
     end
 end
 
 
 % Link Nlx data to nlx folder
-if exist('nlx_path','var')
-    if ~isempty(nlx_path),
-        if ~strcmp(nlx_path,fullfile(Session.path.data,'nlx')),
-            nlxDir = fullfile(Session.path.data,'nlx',session_name);
-            mkdir(nlxDir);
-            if numel(dir(fullfile(nlx_path,session_name)))>2,
-                system(['ln -s ' fullfile(nlx_path,session_name) '/* ' nlxDir]);
+if exist('nlxPath','var')
+    if ~isempty(nlxPath),
+        if ~strcmp(nlxPath,fullfile(Session.path.data,'nlx')),
+            nlxDir = fullfile(Session.path.data,'nlx',sessionName);
+            create_directory(nlxDir);
+            system(['find ',nlxDir,' -type l -delete']);
+            if numel(dir(fullfile(nlxPath,sessionName)))>2,
+                system(['ln -s ' fullfile(nlxPath,sessionName) '/* ' nlxDir]);
             end
         else
-            % if nlx_path is within the MTA data collection
-            nlxDir = fullfile(nlx_path,session_name);
+            % if nlxPath is within the MTA data collection
+            nlxDir = fullfile(nlxPath,sessionName);
         end
         cd(datDir);
-        system(['ln -s ../nlx/' session_name '/* ' datDir ])
-        
+        system(['find ',datDir,' -type l -delete']);        
+        system(['ln -s ../nlx/' sessionName '/* ' datDir ])
     end
 end
 
 
 % For each maze in the xyz data link directory 
-if exist('xyz_path','var')    
-    if ~isempty(xyz_path),
-        for maze = 1:numel(xyz_maze_dirs),
+if exist('xyzPath','var')    
+    if ~isempty(xyzPath),
+        for maze = 1:numel(xyzMazeDirs),
             cd(datDir);
-            try,mkdir(xyz_maze_dirs(maze).name);end
+            try,mkdir(xyzMazeDirs(maze).name);end
             
             try
-                system(['ln -sf ../xyz/' session_name '/' xyz_maze_dirs(maze).name '/' ...
-                        session_name '-' xyz_maze_dirs(maze).name '.vsk ' ...
-                        datDir '/' session_name '-' xyz_maze_dirs(maze).name '.vsk ']);
+                system(['ln -sf ../xyz/' sessionName '/' xyzMazeDirs(maze).name '/' ...
+                        sessionName '-' xyzMazeDirs(maze).name '.vsk ' ...
+                        datDir '/' sessionName '-' xyzMazeDirs(maze).name '.vsk ']);
             end
-            cd(fullfile(datDir,xyz_maze_dirs(maze).name))
+            cd(fullfile(datDir,xyzMazeDirs(maze).name))
             try,
-                system(['ln -sf ../../xyz/' session_name '/' ...
-                        xyz_maze_dirs(maze).name '/* ' datDir '/' ...
-                        xyz_maze_dirs(maze).name '/']);
+                system(['find ',datDir,'/',xyzMazeDirs(maze).name,'/ -type l -delete']);
+                system(['ln -s ../../xyz/',sessionName,'/',xyzMazeDirs(maze).name,'/* ',datDir,'/',xyzMazeDirs(maze).name,'/']);
             end
             
         end

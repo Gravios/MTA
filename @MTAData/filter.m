@@ -8,6 +8,7 @@ switch Data.type
     switch mode
       case 'gauss'
         [Window] = DefaultArgs(varargin,{.05});
+        filterHash = DataHash({mode,Window});
         if numel(Window)==1,
             Window = round(Window.*Data.sampleRate);
             Window = Window+double(mod(Window,2)==0);
@@ -16,8 +17,10 @@ switch Data.type
         zind = nniz(Data);
         Data.data = reshape(Filter0(Window,Data.data),Data.size);
         Data.data(zind) = 0;
+        Data.update_hash(filterHash);
       case 'ButFilter'
         [order,freq,flag] = DefaultArgs(varargin,{3,4,'low'});
+        filterHash = DataHash({mode,order,freq,flag});
         freq = freq/(Data.sampleRate/2);
         nind = ~nniz(Data);
         nd = [];
@@ -29,8 +32,9 @@ switch Data.type
         if ~isempty(nd),
             Data.data(nind,:,:,:,:) = nd;
         end
+        Data.update_hash(filterHash);
       case 'RectFilter'
-        Data.data = RectFilter(Data.data,varargin{:});
+        Data = RectFilter(Data,varargin{:});
         
       otherwise
         error('MTA:MTAData:filter:ModeNotFound');
@@ -38,5 +42,9 @@ switch Data.type
   otherwise
     return
 end
-end
+
+
+
+
+
 

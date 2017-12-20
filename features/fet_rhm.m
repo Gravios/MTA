@@ -3,8 +3,6 @@ function [rhm,varargout] = fet_rhm(Trial,varargin)
 % [sampleRate,mode,windowSize] = DefaultArgs(varargin,{Trial.xyz.sampleRate,'spectral',1});
 % Need to update the spectral window size to adapt to the xyz.sampleRate
 %
-% 
-
 
 % DEFARGS ------------------------------------------------------------------------------------------
 Trial = MTATrial.validate(Trial);
@@ -25,8 +23,6 @@ fs = []; ts = [];
 %---------------------------------------------------------------------------------------------------
 
 
-
-
 % create a ridgid body model
 rb = xyz.model.rb({'head_back','head_left','head_front','head_right'});
 % find the center of mass of the model
@@ -34,7 +30,6 @@ hcom = xyz.com(rb);
 % add coordinates of the model's center of mass to the xyz object
 xyz.addMarker('fhcom',[.7,1,.7],{{'head_back','head_front',[0,0,1]}},ButFilter(hcom,3,[3]./(xyz.sampleRate/2),'low'));
 xyz.addMarker('hcom',[128,255,128],{{'head_back','head_front',[0,0,1]}},hcom);
-
 
 % if xyz sampling rat e is greater than 120 Hz then resample it to 120 Hz
 if ischar(sampleRate), sampleRate = Trial.(sampleRate).sampleRate;end
@@ -44,55 +39,63 @@ elseif sampleRate > 120,
     xyz.resample(120); 
     defspec.Fs = 120;
 end
-%xyz.filter('ButFilter',3,20,'low');
-xyz.filter('RectFilter',3,4);
 
+xyz.filter('RectFilter',3,4);
 ang = create(MTADang,Trial,xyz);
 ang.data(~nniz(xyz(:,1,1)),:,:,:) = 0;
 
-
 fet = xyz.copy;
 
-%bang = ButFilter(ang(:,'head_back','fhcom',3),3,[.1,20]./(ang.sampleRate/2),'bandpass');
-%bang = RectFilter(ang(:,'head_back','fhcom',3));
+rhm = MTADfet.encapsulate(Trial,...
+                          [0;diff(ang(:,'head_back','fhcom',3));0],...
+                          ang.sampleRate,...
+                          'rhythmic head motion feature',...
+                          'rhm',...
+                          'r');
+rhm.filter('RectFilter');
+rhm.data = diff(rhm.data);
+rhm.update_hash();
 
+if strcmp(mode,'mta'),  return;  end
 
-%fet.data = [0;ButFilter(diff(bang),3,[.5,30]/(ang.sampleRate/2),'bandpass')];
-fet.data = [0;diff(RectFilter(diff(ang(:,'head_back','fhcom',3))));0];
-%fet.data = [0;diff(RectFilter(diff(ang(:,'head_back','head_front',2))));0];
-%fet.data = [0;diff(ang(:,'head_back','fhcom',3))];
+% TAG creation -------------------------------------------------------------------------------------
+% ID Vars - create hash tag
+hash = DataHash(struct('sampleRate',                   sampleRate,                               ...
+                       'mode',                         mode,                                     ...
+                       'wsig',                         wsig,                                     ...
+                       'newSR',                        newSR,                                    ...
+                       'type',                         type,                                     ...
+                       'xyz',                          xyz.hash)                                 ...
+);
+%---------------------------------------------------------------------------------------------------
+
 
 switch mode
-  case 'mta'
-    rhm = MTADfet.encapsulate(Trial,...
-                              fet.data,...
-                              fet.sampleRate,...
-                              'rhythmic head motion feature',...
-                              'rhm',...
-                              'r');
   case 'raw'
     rhm = fet.data;
   otherwise
     dsf = fieldnames(defspec);
     for i = 1:length(dsf),parspec.(dsf{i}) = defspec.(dsf{i});end
-    data = zeros(fet.size);
+    data = zeros(rhm.size);
+    
+    hash = DataHash({hash,parspec});
     
     if wsig,
         try,load(fullfile(Trial.path.arm,[mfilename,'.arm.mat']));end
 
         if exist('ARmodel','var')||overwrite,
-            data(nniz(fet.data),:) = WhitenSignal(fet.data(nniz(fet.data),:),...
+            data(nniz(rhm.data),:) = WhitenSignal(rhm.data(nniz(rhm.data),:),...
                                                       [],...
                                                       true,...
                                                       ARmodel);
         else
-            [data(nniz(fet.data),:),ARmodel] = WhitenSignal(fet.data(nniz(fet.data),:),...
+            [data(nniz(rhm.data),:),ARmodel] = WhitenSignal(rhm.data(nniz(rhm.data),:),...
                                                                 [],...
                                                                 true);
             save(fullfile(Trial.path.arm,[mfilename,'.arm.mat']),'ARmodel');
         end
     else
-        data(nniz(fet.data),:) = fet.data(nniz(fet.data),:);
+        data(nniz(rhm.data),:) = rhm.data(nniz(rhm.data),:);
     end
 
      svout = cell([1,nargout-3]);
@@ -100,9 +103,9 @@ switch mode
 
 
     % Modify time stamps and spec; add padding (0's)
-    ts = ts+(parspec.WinLength/2)/fet.sampleRate;
+    ts = ts+(parspec.WinLength/2)/rhm.sampleRate;
     ssr = 1/diff(ts(1:2));
-    pad = round([ts(1),mod(fet.size(1)-round(parspec.WinLength/2),parspec.WinLength)/fet.sampleRate].*ssr)-[1,0];
+    pad = round([ts(1),mod(rhm.size(1)-round(parspec.WinLength/2),parspec.WinLength)/rhm.sampleRate].*ssr)-[1,0];
     szy = size(ys);
     rhm = MTADlfp('data',cat(1,zeros([pad(1),szy(2:end)]),ys,zeros([pad(2),szy(2:end)])),'sampleRate',ssr);
 
@@ -126,6 +129,8 @@ switch mode
 
     if strcmp(type,'raw'),
         rhm = rhm.data;
+    else
+        rhm.update_hash(hash);
     end
     
     

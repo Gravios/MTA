@@ -92,10 +92,14 @@ classdef MTAData < hgsetget
         
         %syncOrigin - double: time of data origin in seconds with respect to the syncPeriods
         origin = 0;
+        
+        %hash - string: hash modified by functions acting upon MTAData objects
+        hash = 'zzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzz';
     end
     
     properties( Transient=true )
         treatmentRecord = {};
+
     end
     
     properties (Abstract)
@@ -127,6 +131,7 @@ classdef MTAData < hgsetget
             Data.sampleRate = sampleRate;
             Data.sync = syncPeriods;
             Data.origin = syncOrigin;
+            Data.update_hash();
         end
     end
     

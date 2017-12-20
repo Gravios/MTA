@@ -22,6 +22,14 @@ end
 
 
 % MAIN ---------------------------------------------------------------------------------------------
+
+
+
+% UPDATE hash property of Data object
+Data.update_hash(DataHash(struct('order',order,'numApplications',numApplications)));
+
+
+
 % END MAIN -----------------------------------------------------------------------------------------
 
 

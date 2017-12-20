@@ -235,8 +235,10 @@ elseif isa(Data,'MTAData'),
         
         Data.data = Data.data(find(nper==1,1,'first'):find(nper==1,1,'last'),:,:,:,:);
     end
+
+    Data.update_hash();
     
-end
+end%if datatype
 
 % Is this right? I think it is
 if round(Data.origin*Data.sampleRate) ~= newOrigin;

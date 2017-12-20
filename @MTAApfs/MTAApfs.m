@@ -74,8 +74,8 @@ classdef MTAApfs < hgsetget %< MTAAnalysis
 
         function Pfs = MTAApfs(Obj, varargin)     
             [units,states,overwrite,tag,binDims,SmoothingWeights,type,...
-             spkShuffle,posShuffle,numIter,xyzp,boundaryLimits,bootstrap]=...
-            DefaultArgs(varargin,{[],'walk',0,[],[30,30],[1.2,1.2],'xy',0,0,1,MTADxyz([]),[],0});
+             spkShuffle,posShuffle,numIter,xyzp,boundaryLimits,bootstrap,halfsample,shuffleBlockSize]=...
+            DefaultArgs(varargin,{[],'walk',0,[],[30,30],[1.2,1.2],'xy',0,0,1,MTADxyz([]),[],0,0,1});
 
             units = units(:)';            
 
@@ -90,6 +90,7 @@ classdef MTAApfs < hgsetget %< MTAAnalysis
                     % Update map - need better method
                     Session.spk.create(Session);
                     
+                    sampleRate = 10;
                     
                     if xyzp.isempty,
                         xyz = Session.xyz.copy;
@@ -98,6 +99,10 @@ classdef MTAApfs < hgsetget %< MTAAnalysis
                     else
                         xyz = xyzp;
                     end
+                    
+                    
+                    %sampleRate = 20;
+                    %xyz.resample(sampleRate);
 
                     
                     Pfs.path = Session.spath;
@@ -264,14 +269,12 @@ classdef MTAApfs < hgsetget %< MTAAnalysis
             end
             
             
-            %% Get State Positions
+% GET State Positions
             if pfsState.isempty,return,end
             sstpos = sq(xyz(pfsState,:));
-
             
-            %% load Units into spk object;
+% LOAD Units into spk object;
             Session.spk.create(Session,xyz.sampleRate,pfsState,units);
-
 
             i = 1;
             for unit=selected_units,
@@ -289,32 +292,6 @@ classdef MTAApfs < hgsetget %< MTAAnalysis
                     if ~spkShuffle
                         res = repmat(res,1,numIter);
                     else
-% $$$                         res = repmat(sstres,1,numIter);
-% $$$                         spkswind = round(spkShuffle*xyz.sampleRate);
-% $$$                         spkWindInd =  [1:spkswind:res(end)-spkswind;(spkswind+1):spkswind:res(end)];
-% $$$                         for s = 2:numIter,
-% $$$                             tres = [];
-% $$$                             for t = spkWindInd
-% $$$                             tres = vertcat(tres,resSelectPeriods(sstres,t,'d',1,0));
-% $$$                         end
-
-% $$$                         shufSpkInd = zeros([nSpk,numIter]);
-% $$$                         spkswind = round(spkShuffle*xyz.sampleRate);
-% $$$                         startres = res(1);
-% $$$                         spkTSeries = false([res(end)-startres,1]);
-% $$$                         spad = spkswind-mod(numel(spkTSeries),spkswind);
-% $$$                         spkTSeries = [spkTSeries;false([spad,1])];
-% $$$                         spkTSeries(res(:,1)-res(1)+1) = true;
-% $$$                         spkTSeriesInd =  1:numel(spkTSeries);
-% $$$                         spkTSeriesInd = reshape(spkTSeriesInd,[],spkswind);
-% $$$                         nsbins = size(spkTSeriesInd,1);
-% $$$                         
-% $$$                         for s = 2:numIter,
-% $$$                             shufInd = reshape(spkTSeriesInd(randperm(nsbins),:),[],1);
-% $$$                             
-% $$$                             res(:,s) = find(spkTSeries(shufInd))+startres;
-% $$$                             %res(:,s) = find(reshape(spkTSeries(:,spkTSeries(randperm(nsbins),:),s),[],1))+startres;
-% $$$                         end
                     end
                     
                     % shifts the position of the res along the sstpos
@@ -328,33 +305,61 @@ classdef MTAApfs < hgsetget %< MTAAnalysis
                         sresind = reshape(sresind(randi(nSpk,[round(nSpk.*bootstrap),numIter]),1),[],numIter);
                     end
 
-                    %% Caluculate Place Fields
-                    tic
+                    
+                    
+                    if halfsample,
+                    
+                        samplesPerBlock = round(xyz.sampleRate*shuffleBlockSize);
+                        vlen = size(sstpos,1);
+                        trim = mod(vlen,samplesPerBlock);
+                        
+                        sstpos = sstpos(1:vlen-trim,:);
+                        sresind(sstres>size(sstpos,1),:) = [];                        
+                        sstres(sstres>size(sstpos,1)) = [];
+
+                        
+                        shuffleBlockCount = (vlen-trim)/samplesPerBlock;
+                        randSubsetSize =(shuffleBlockCount-mod(shuffleBlockCount,2))/2;
+                        shuffleBlockInd = reshape(1:size(sstpos,1),[],shuffleBlockCount);
+                        halfSampleBlockInd = zeros([numIter,randSubsetSize]);
+                        halfSampleInd = zeros([randSubsetSize*samplesPerBlock,numIter]);
+                        
+                        for j = 1:2:numIter,
+                            rp = randperm(shuffleBlockCount);
+                            halfSampleBlockInd(j  ,:) = rp(1:randSubsetSize);
+                            halfSampleBlockInd(j+1,:) = rp(randSubsetSize+1:2*randSubsetSize);
+                        end
+                        
+                        for j = 1:numIter
+                            halfSampleInd(:,j) = reshape(shuffleBlockInd(:,halfSampleBlockInd(j,:)),[],1);
+                        end
+                        
+                        
+                    else
+                        halfSampleInd = 1:size(sstpos,1);
+                    end
+
+% COMPUTE Place Fields
+                    tic; %disp(unit);
                     [Pfs.data.rateMap(:,dind(i),1), Pfs.adata.bins,Pfs.data.si(:,dind(i)),Pfs.data.spar(:,dind(i))] =  ...
                         PlotPF(Session,sstpos(sresind(:,1),:),sstpos,binDims,SmoothingWeights,type,boundaryLimits,xyz.sampleRate);
                     toc
+
+% COMPUTE Bootstrap
                     if numIter>1,
-                         for bsi = 2:numIter
-                             Pfs.data.rateMap(:,dind(i),bsi) = PlotPF(Session,sstpos(sresind(:,bsi),:),sstpos,binDims,SmoothingWeights,type,boundaryLimits);
-                         end
-                     end
-%                         Pfs.rateMap{unit} = sq(bsMap);
-%                         PlaceField.stdMap{unit} = sq(std(bsMap,0,3));
-%                     else
-%                         PlaceField.rateMap{unit} = sq(bsMap);
-%                         PlaceField.stdMap{unit} = [];
-%                     end
+                        tic
+                        for bsi = 2:numIter
+                             Pfs.data.rateMap(:,dind(i),bsi) = PlotPF(Session,...
+                                                                      sstpos(sresind(ismember(sresind(:,bsi),halfSampleInd(:,bsi)),bsi),:),...
+                                                                      sstpos(halfSampleInd(:,bsi),:),...
+                                                                      binDims,...
+                                                                      SmoothingWeights,...
+                                                                      type,...
+                                                                      boundaryLimits);
+                        end;
+                        toc
+                    end;
                     
-%                     try
-%                         if isempty(PlaceField.rateMap{unit}), continue, end,
-%                         PlaceField.rateMap{unit}(isnan(PlaceField.rateMap{unit})) = 0;
-%                         PlaceField.maxRateInd{unit} = LocalMinima2(-PlaceField.rateMap{unit},-0.2,12);
-%                         PlaceField.rateMap{unit}(PlaceField.rateMap{unit}(:)==0) = nan;
-%                         if isempty(PlaceField.maxRateInd{unit}), continue, end,
-%                         PlaceField.maxRatePos{unit} = [PlaceField.ybin(PlaceField.maxRateInd{unit}(:,2));PlaceField.xbin(PlaceField.maxRateInd{unit}(:,1))]'*[0 1; 1 0];
-%                         PlaceField.maxRate{unit} = PlaceField.rateMap{unit}(round(size(PlaceField.rateMap{unit},1)*[PlaceField.maxRateInd{unit}(:,2)-1]+PlaceField.maxRateInd{unit}(:,1)));
-%                         [~,PlaceField.maxRateMax{unit}] = max(PlaceField.maxRate{unit});
-%                     end
                     
                 end  
                 i = i+1;

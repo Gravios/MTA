@@ -1,68 +1,89 @@
 function MTAstartup(varargin)
 %function MTAstartup(varargin)
-%[projectName,host_server,data_server,add_basic_paths] = DefaultArgs(varargin,{'general','cin','bach',true});
+%[projectName,hostServer,dataServer,addBasicPaths] = DefaultArgs(varargin,{'general','cin','bach',true});
 %
 % variables:
 %   
-%   host_server: string, your personal tag which denotes the working
+%   hostServer: string, your personal tag which denotes the working
 %                        environment you are currently using.
 %
-%   data_server: string, your personal tag which denote in which
+%   dataServer: string, your personal tag which denote in which
 %                        mounted, file system your target data is located.
 %
-%   add_basic_paths: logical, flag which adds a set of paths which
+%   addBasicPaths: logical, flag which adds a set of paths which
 %                    are important to the functionality of MTA,
 %                    please ensure they point to the correct locations.
 %                    (These paths can be found at the end of the script)
 
-[projectName,host_server,data_server,add_basic_paths] = DefaultArgs(varargin,{'general','lmu','lmu',true});
+clearvars('-except','varargin','MTA_CURRENT_PROJECT','MTA_PROJECT_PATH')
+
+% DEFARGS ------------------------------------------------------------------------------------------
+defargs = struct('projectName',                      '',                                         ...
+                 'hostServer',                       'lmu',                                      ...
+                 'dataServer',                       'lmu',                                      ...
+                 'addBasicPaths',                    true,                                       ...
+                 'configure',                        true                                        ...
+);
+[projectName,hostServer,dataServer,addBasicPaths,configure] = ...
+    DefaultArgs(varargin,defargs,'--struct');
+%---------------------------------------------------------------------------------------------------
+
 
 global MTA_CURRENT_PROJECT;
 global MTA_PROJECT_PATH;
 
 
-switch host_server % The severer where matlab is running. 
+if ~isempty(projectName),
+    MTA_CURRENT_PROJECT = projectName;
+else
+    configure = false;
+    addBasicPaths = false;
+end
+
+
+
+switch hostServer % The severer where matlab is running. 
                    % Note: the addpath statement must point to 
                    % the "local" version of MTA.
   
   case 'lmu'
     addpath('/storage/share/matlab/MTA/');
 
-    switch data_server % Where the data is located
+    switch dataServer % Where the data is located
       case 'lmu'
         projPath = fullfile('/storage/gravio/data/project/',projectName);
         if ~exist(projPath),
             mkdir(projPath);
         end
-        MTAConfiguration(projPath,'absolute',projectName,host_server,data_server);
+        if configure, MTAConfiguration(projPath,'absolute',projectName,hostServer,dataServer); end;
         MTA_PROJECT_PATH = projPath;
     end
   
   case 'cin'
     addpath('/gpfs01/sirota/homes/share/matlab/MTA/');
 
-    switch data_server % Where the data is located
+    switch dataServer % Where the data is located
       case 'cin'
-        MTAConfiguration('/gpfs01/sirota/home/gravio/data','absolute');
+        if configure, MTAConfiguration('/gpfs01/sirota/home/gravio/data','absolute'); end;
       case 'bach'
         %MTAConfiguration('/gpfs01/sirota/bach/data/gravio','absolute');
-        MTAConfiguration('/gpfs01/sirota/data/bachdata/data/gravio','absolute');
+        if configure, MTAConfiguration('/gpfs01/sirota/data/bachdata/data/gravio','absolute'); end;
     end
 
   case 'bach'
     addpath('/data/homes/share/matlab/MTA/');
 
-    switch data_server % Where the data is located
+    switch dataServer % Where the data is located
       case 'cin'
-        MTAConfiguration('/mnt/gpfs/home/gravio/data','absolute');  
+        if configure, MTAConfiguration('/mnt/gpfs/home/gravio/data','absolute'); end;
       case 'bach'
-        MTAConfiguration('/gpfs01/sirota/data/bachdata/data/gravio','absolute');
+        if configure, MTAConfiguration('/gpfs01/sirota/data/bachdata/data/gravio','absolute'); end;
         %MTAConfiguration('/data/homes/gravio/data','absolute');
     end
 
   case 'mypc'
 
-    switch data_server % Where the data is located
+    switch dataServer % Where the data is located
       case 'mypc'
         MTAConfiguration('C:\Users\yomama\data','absolute');        
       case 'myhd'
@@ -78,7 +99,7 @@ end
 
 % most likely will need corrections when you set
 % up MTA for the first time
-if add_basic_paths 
+if addBasicPaths 
                    
     if ispc,
         userpath = getenv('HOMEPATH');
@@ -86,7 +107,7 @@ if add_basic_paths
         userpath = getenv('HOME');
     end
 
-    switch data_server
+    switch dataServer
       case 'lmu'
         addpath(genpath('/storage/share/matlab/Third-Party_Toolboxes/HMM/hmmbox/'));
         addpath(genpath('/storage/share/matlab/Third-Party_Toolboxes/netlab/'));

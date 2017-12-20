@@ -38,5 +38,5 @@ if ~isempty(field),
     end
 else
     load(fullfile(Session.spath, [Session.filebase '.ses.mat']));    
-end
-end
+end%if emptyfield
+

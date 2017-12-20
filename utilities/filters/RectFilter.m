@@ -1,9 +1,9 @@
-function signal = RectFilter(signal,varargin)
-% function signal = RectFilter(signal,varargin)
+function Data = RectFilter(Data,varargin)
+% function Data = RectFilter(Data,varargin)
 % 
 % Inputs:
 %  
-%     signal: (numeric:array,matrix)      Signal to be filtered (NxMxPx...) 
+%     Data: (numeric:array,matrix)      Data to be filtered (NxMxPx...) 
 %     order:  (Integer)                   {default = 3} widow size in number of samples 
 %     numApplications: (Integer)          number of passes with rectangular filter
 
@@ -15,19 +15,21 @@ defargs = struct('order',                 3,                                    
 %---------------------------------------------------------------------------------------------------
 
 
-
 % MAIN ---------------------------------------------------------------------------------------------
 
-signalDimensions = size(signal);
+dimensions = size(Data);
 for n = 1:numApplications,
-    signal(nniz(signal),:,:,:,:,:) = ...
+    Data.data(nniz(Data),:,:,:,:,:) = ...
         reshape(...
          permute(...
-          mean(circshift(GetSegs(signal(nniz(signal),:,:,:,:,:),1:sum(nniz(signal)),order,nan),...
+          mean(circshift(GetSegs(Data(nniz(Data),:,:,:,:,:),1:sum(nniz(Data)),order,nan),...
                          floor(order/2),2),...
                1,'omitnan'),...
-                 [[2:ndims(signal)+1],1]),...
-                [sum(nniz(signal)),signalDimensions(2:end)]);
+                 [[2:numel(dimensions)+1],1]),...
+                [sum(nniz(Data)),dimensions(2:end)]);
 end
+
+% UPDATE hash property of Data object
+Data.update_hash(DataHash(struct('order',order,'numApplications',numApplications)));
 
 % END MAIN -----------------------------------------------------------------------------------------

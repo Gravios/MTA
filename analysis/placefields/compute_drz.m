@@ -1,20 +1,15 @@
 function drz = compute_drz(Trial,varargin)
 
-% pft
-% units
-% pfstats
-
 % DEFARGS ------------------------------------------------------------------------------------------
-defargs = struct('pft',                    [],                                                   ...
-                 'units',                  [],                                                   ...
+defargs = struct('units',                  [],                                                   ...
+                 'pft',                    [],                                                   ...
                  'pfstats',                [],                                                   ...
                  'filtCutOffFreq',         2.5                                                   ...
 );
-[pft,units,pfstats,filtCutOffFreq] = DefaultArgs(varargin,defargs,'--struct');
+[units,pft,pfstats,filtCutOffFreq] = DefaultArgs(varargin,defargs,'--struct');
 %---------------------------------------------------------------------------------------------------
 
 %if isempty(pfstats),    pfstats = compute_pfstats_bs(Trial);    end
-
 
 [mrt,mrp] = pft.maxRate(units);
 xyz = Trial.load('xyz');

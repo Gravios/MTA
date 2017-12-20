@@ -3,6 +3,9 @@ function Data = load(Data,Session,varargin)
 %[channels,gselect,periods] = DefaultArgs(varargin,{[],{'AnatGrps',1,1},[]});
 [channels,gselect,periods] = DefaultArgs(varargin,...
                                          {[],{'AnatGrps',1,1},[]});
+%% Hard coded - remove at later date
+Session.lfp.filename = [Session.name,'.lfp'];
+
 if isempty(periods),
     if Session.sync.sampleRate~=1,Session.sync.resample(1);end
     periods = round(Session.sync([1,end]).*Session.lfp.sampleRate);
