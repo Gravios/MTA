@@ -258,7 +258,7 @@ classdef MTAStateCollection < hgsetget
                                 end
                                 
                                 % Perform all operations parsed from the input
-                                sts = eval_operation_list(sts,stsFuncs);                                
+                                sts = eval_operation_list(sts,stsFuncs);
                                 
                                 % Check that the result is MTADepoch
                                 if isa(sts{1},'MTADepoch'),

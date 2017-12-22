@@ -106,7 +106,7 @@ if addBasicPaths
     else
         userpath = getenv('HOME');
     end
-
+    %dirs = regexp(genpath(parentdir),['[^;]*'],'match');
     switch dataServer
       case 'lmu'
         addpath(genpath('/storage/share/matlab/Third-Party_Toolboxes/HMM/hmmbox/'));
