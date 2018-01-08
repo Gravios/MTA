@@ -7,9 +7,9 @@
 %  Bugs: NA
  
 
-sl = get_session_list('ctx');
+sessionList = get_session_list('ctx');
 for i = 1:3%numel(sessionList);
-s = MTASession.validate(sl(i));
+s = MTASession.validate(sessionList(i));
 s.spk.create(s);
 s.save
 %headMarkers = regexpi(s.xyz.model.ml,'^head_[A-Za-z]*','match');
@@ -96,6 +96,7 @@ model = ['MTAC_BATCH+' trainingSessionList '+'            ...
 
 Trials = af(@(Trial) MTATrial.validate(Trial), get_session_list(sessionList));
 cf(@(t) t.load('stc','msnnN0+hand_labeled'), Trials);
+Stc = cf(@(t) t.stc.copy(), Trials);
 
 state = 'walk';
 durThresh  = 1;
@@ -122,7 +123,7 @@ figure,
 s = 1;
 for u = 1:size(BccgW{s}.ccg,2)
     cla;
-    Bccg{s}.plot(u,1);
+    BccgW{s}.plot(u,1);
     title(num2str(u));
     %pause(.4);
     waitforbuttonpress;
@@ -130,13 +131,15 @@ end
 
 
 
-nq = cf(@(t) NeuronQuality(t,[],[],[],false),  Trials);
-pfs = cf(@(t) pfs_2d_states(t,'msnnN0+hand_labeled',{'rear','turn','walk'}), Trials);
+%nq = cf(@(t) NeuronQuality(t,[],[],[],false),  Trials);
+cf(@(t) t.load('nq'),  Trials);
+nq = cf(@(t) t.nq,     Trials);
+pfs = cf(@(t,s) pfs_2d_states(t,s,{'rear','turn','walk'}), Trials, Stc);
 [accg,tbins] = cf(@(t) autoccg(MTASession.validate(t.filebase)),  Trials);
 
 % figure save paths
 OwnDir = '/storage/gravio/nextcloud/';
-FigDir = 'MjgER2016/figures/figure/parts';
+FigDir = 'MjgER2016/figures/figure3/parts/state_transition_ctx';
 
 units = {};
 units{1} = [3,4,5,11,22,23,28,38,42,43,46,54,57];
@@ -161,7 +164,7 @@ for u = units{s}
 
     clf();
 
-    maxPfsRate = max(cell2mat(cf(@(p,u) p.maxRate(u), pfs{s},repmat({u},1,numel(pfs{s})))));
+    %maxPfsRate = max(cell2mat(cf(@(p,u) p.maxRate(u), pfs{s},repmat({u},1,numel(pfs{s})))));
     maxCcgRate = max(reshape([sq(BccgW{s}.ccg(:,u,:)),...
                               sq(BccgN{s}.ccg(:,u,:)),...
                               sq(BccgR{s}.ccg(:,u,:))],[],1));
@@ -169,17 +172,17 @@ for u = units{s}
     
     % accg
     subplot2(ny,nx,2,1);    
-    bar(tbins{s},accg{s}(:,u));axis tight;            
+    %bar(tbins{s},accg{s}(:,u));axis tight;            
     title({Trials{s}.filebase,['autoccg unit: ',num2str(u)]});    
     
     % THETA 
     subplot2(ny,nx,1,1);
-    pfs{s}{1}.plot(u,[],[],maxPfsRate);
+    %pfs{s}{1}.plot(u,[],[],maxPfsRate);
     title(['Theta']);
     
     % REAR
     subplot2(ny,nx,1,2);    
-    pfs{s}{2}.plot(u,[],[],maxPfsRate);
+    %pfs{s}{2}.plot(u,[],[],maxPfsRate);
     title(['Rear']);
     subplot2(ny,nx,2,2);
     BccgR{s}.plot(u,1);xlim([-2,2]);ylim([0,maxCcgRate]);
@@ -191,7 +194,7 @@ for u = units{s}
 
     % TURN
     subplot2(ny,nx,1,3);    
-    pfs{s}{3}.plot(u,[],[],maxPfsRate);
+    %pfs{s}{3}.plot(u,[],[],maxPfsRate);
     title(['Turn']);    
     subplot2(ny,nx,2,3);
     BccgN{s}.plot(u,1);xlim([-2,2]);ylim([0,maxCcgRate]);
@@ -204,7 +207,7 @@ for u = units{s}
     
     % Walk
     subplot2(ny,nx,1,4);
-    pfs{s}{4}.plot(u,[],[],maxPfsRate);
+    %pfs{s}{4}.plot(u,[],[],maxPfsRate);
     title(['Walk']);        
     subplot2(ny,nx,2,4);
     BccgW{s}.plot(u,1);xlim([-2,2]);ylim([0,maxCcgRate]);

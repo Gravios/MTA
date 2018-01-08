@@ -1,36 +1,40 @@
-% SEARCH for position which minimizes placefield size
 
-units = Trial.spk.map(:,1)';
-markers = {'spine_lower','pelvis_root','spine_middle','spine_upper','head_back','head_front'};
-for m = 1:numel(markers),
-    Trial.trackingMarker = markers{m};
-    defargs = get_default_args('MjgER2016','MTAApfs','struct');
-    defargs.units = units;
-    defargs.overwrite = true;
-    defargs.states = 'theta-groom-sit';
-    defargs = struct2varargin(defargs);        
-    pft{m} = MTAApfs(Trial,defargs{:});      
-end
+% $$$ % SEARCH for position which minimizes placefield size
+% $$$ 
+% $$$ units = Trial.spk.map(:,1)';
+% $$$ markers = {'spine_lower','pelvis_root','spine_middle','spine_upper','head_back','head_front'};
+% $$$ for m = 1:numel(markers),
+% $$$     Trial.trackingMarker = markers{m};
+% $$$     defargs = get_default_args('MjgER2016','MTAApfs','struct');
+% $$$     defargs.units = units;
+% $$$     defargs.overwrite = true;
+% $$$     defargs.states = 'theta-groom-sit';
+% $$$     defargs = struct2varargin(defargs);        
+% $$$     pft{m} = MTAApfs(Trial,defargs{:});      
+% $$$ end
+% $$$ 
+% $$$ 
+% $$$ 
+% $$$ % place fields generated from each marker along the spine and head
+% $$$ figure();
+% $$$ for unit = units,
+% $$$     clf();
+% $$$     for m = 1:numel(markers),
+% $$$         subplot(1,numel(markers),m);
+% $$$         plot(pft{m},unit);    
+% $$$         title([num2str(unit),' ',markers{m}]);
+% $$$     end
+% $$$     waitforbuttonpress();
+% $$$ end
+% $$$ 
+% $$$ 
+% $$$ % normalized spatial information as function of rostro-caudal distance
+% $$$ figure();
+% $$$ plot(bsxfun(@rdivide,cat(2,e{:})',max(cat(2,e{:})')));
 
+Trial = MTATrial.validate('jg05-20120310.cof.all');
 
-
-% place fields generated from each marker along the spine and head
-figure();
-for unit = units,
-    clf();
-    for m = 1:numel(markers),
-        subplot(1,numel(markers),m);
-        plot(pft{m},unit);    
-        title([num2str(unit),' ',markers{m}]);
-    end
-    waitforbuttonpress();
-end
-
-
-% normalized spatial information as function of rostro-caudal distance
-figure();
-plot(bsxfun(@rdivide,cat(2,e{:})',max(cat(2,e{:})')));
-
+units = select_placefields(Trial);
 
 % Now generate a head local gradient of spatial information around the head
 
@@ -56,7 +60,7 @@ nx = cross(xyz(:,'hrx',:)-hcom,xyz(:,'htx',:)-hcom);
 nx = bsxfun(@rdivide,nx,sqrt(sum((nx).^2,3)));
 nm = nx.*20+hcom;
 xyz.addMarker('hbx',  [0.5,1,0.5],[],nm);
-nhm = {'hcom','hbx','hrx','htx'};
+nhm = {'hcom'};%,'hbx','hrx','htx'};
 
 
 i = [-100:10:100];
@@ -66,8 +70,39 @@ k = [-50:10:50];
 txyz = xyz(:,nhm,:);
 ind = nniz(txyz);
 
-sxyz = bsxfun(@plus,nx*i(x)+ny*j(y)+nz*k(z),txyz);
-sxyz(nniz(sxyz),1,:) = ButFilter(sxyz(nniz(sxyz),1,:),3,2/(xyz.sampleRate/2),'low');
+
+pft = cell([numel(i),numel(j),numel(k)]);
+for x = 1:numel(i),
+    for y = 1:numel(j),
+        for z = 1:numel(k)
+            sxyz = bsxfun(@plus,nx*i(x)+ny*j(y)+nz*k(z),txyz);
+            defargs = get_default_args('MjgER2016','MTAApfs','struct');
+            defargs.units = units;
+            defargs.states = 'theta-groom-sit';
+            defargs.numIter = 1;
+            %defargs.overwrite = true;
+            defargs.halfsample = false;
+            defargs.tag = ['ms-x',num2str(i(x)),'y',num2str(j(y)),'z',num2str(k(z))];
+            defargs.xyzp = MTADfet.encapsulate(Trial,sxyz(:,1,[1,2]),xyz.sampleRate,'','','');
+            defargs = struct2varargin(defargs);        
+            
+            pft{x,y,z} = MTAApfs(Trial,defargs{:});
+        end
+    end
+end
+
+msi = cell2mat(cf(@(p)  mean(p.data.si,'omitnan'), pft));
+ssi = cell2mat(cf(@(p)  std(p.data.si,'omitnan'),  pft));
+
+figure,
+for x = 2:2:numel(i),
+    subplot2(2,10,1,x/2);
+    imagesc(j,k,sq(msi(x,:,:))')
+    subplot2(2,10,2,x/2);    
+    imagesc(j,k,sq(ssi(x,:,:))')
+end
+
+%sxyz(nniz(sxyz),1,:) = ButFilter(sxyz(nniz(sxyz),1,:),3,2/(xyz.sampleRate/2),'low');
 
 
 

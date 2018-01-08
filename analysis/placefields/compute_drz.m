@@ -1,4 +1,19 @@
 function drz = compute_drz(Trial,varargin)
+%function drz = compute_drz(Trial,varargin)
+%
+%  colapse 2d place field 
+%
+%  varargin:
+%
+%    units - NumericArray: contains integer identifiers of units
+%
+%    pft -   MTAApfs: MTA placefield object
+%
+%    pfstats - Struct: contains information on placefield statistics
+%
+%    filtCutOffFreq - Numeric: frequency cutoff for position filtering
+%
+
 
 % DEFARGS ------------------------------------------------------------------------------------------
 defargs = struct('units',                  [],                                                   ...

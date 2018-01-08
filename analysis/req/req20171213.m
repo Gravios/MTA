@@ -8,7 +8,11 @@ pitchReferenceTrial = 'Ed05-20140529.ont.all';
 Trials  = af(@(t)  MTATrial.validate(t),   sessionList);
 units   = cf(@(t)  select_placefields(t),  Trials);
 
+Trials(cell2mat(cf(@isempty,units))) = [];
+units(cell2mat(cf(@isempty,units))) = [];
+
 numTrials = numel(Trials);
+
 
 pfd  = cell([1,3]);  
 [pfd{:}]= cf(@(t)  MjgER2016_drzfields(t), Trials);
@@ -46,33 +50,37 @@ rateMaxPitch  = binsPitch(rateMaxInd(nniz(rateMaxInd,1),1));
 rateMaxHeight = binsHeight(rateMaxInd(nniz(rateMaxInd,2),2));
 rateMaxRHM    = binsRHM(rateMaxInd(nniz(rateMaxInd,3),3));
 
-figure();
+figure();  
 subplot(131);  hist(rateMaxPitch,25);
 subplot(132);  hist(rateMaxHeight,20);
 subplot(133);  hist(rateMaxRHM,25);
 
 figure();
-subplot(131);  plot(rateMaxPitch,diff(rateMaxRng(nniz(rateMaxRng,1,1),1,:),1,3),'.');
-subplot(132);  plot(rateMaxHeight,diff(rateMaxRng(nniz(rateMaxRng,2,1),2,:),1,3),'.');
-subplot(133);  plot(rateMaxRHM,diff(rateMaxRng(nniz(rateMaxRng,3,1),3,:),1,3),'.');
+subplot(131);  plot(rateMaxPitch+randn(size(rateMaxPitch))/50,...
+                    diff(rateMaxRng(nniz(rateMaxRng,1,1),1,:),1,3)+randn(size(rateMaxPitch)),'.');
+subplot(132);  plot(rateMaxHeight+randn(size(rateMaxHeight))*10,...
+                    diff(rateMaxRng(nniz(rateMaxRng,2,1),2,:),1,3)+randn(size(rateMaxHeight)),'.');
+subplot(133);  plot(rateMaxRHM+randn(size(rateMaxRHM))/20,...
+                    diff(rateMaxRng(nniz(rateMaxRng,3,1),3,:),1,3)+randn(size(rateMaxRHM)),'.');
 
 
 figure();
 subplot(131);  
 hold('on');
-for i = 1:10,
-    plot(rateMaxPitch+randn(size(rateMaxPitch))/50,rateMaxHeight+randn(size(rateMaxHeight))*10,'.b');
+for i = 1:1,
+    plot(rateMaxPitch+randn(size(rateMaxPitch))/25,...
+         rateMaxHeight+randn(size(rateMaxHeight))*10,'.b');
 end
 
 subplot(132);  
 hold('on');
-for i = 1:10,
-    plot(rateMaxPitch+randn(size(rateMaxPitch))/50,rateMaxRHM+randn(size(rateMaxRHM))/10,'.b');
+for i = 1:1,
+    plot(rateMaxPitch+randn(size(rateMaxPitch))/25,rateMaxRHM+randn(size(rateMaxRHM))/10,'.b');
 end
 
 
 subplot(133);
 hold('on');
-for i = 1:10,
+for i = 1:1,
     plot(rateMaxHeight+randn(size(rateMaxHeight))*10,rateMaxRHM+randn(size(rateMaxRHM))/10,'.b');
 end

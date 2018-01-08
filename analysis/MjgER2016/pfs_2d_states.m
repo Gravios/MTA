@@ -64,6 +64,7 @@ for s = 1:nsts
     defargs.units = units;
     defargs.states = states{s};
     defargs.numIter = 1;
+    defargs.halfsample = false;
     defargs = struct2varargin(defargs);        
     pfs{s} = MTAApfs(Trial,defargs{:});      
 end

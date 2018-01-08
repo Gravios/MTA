@@ -1,8 +1,10 @@
 function [errorPeriods,hfcl,etrig] = FindErrorPeriods(Trial,varargin)
 %function [errorPeriods,hbflr,hrlbf,etrig] = FindErrorPeriods(Trial,varargin)
-[markers] = DefaultArgs(varargin,{{'head_back','head_left','head_front','head_right'}},1);
+[xyz,markers] = DefaultArgs(varargin,{'position',{'head_back','head_left','head_front','head_right'}},1);
 
-xyz =Trial.load('xyz');
+if ischar(xyz),
+    xyz = Trial.load('xyz',xyz);
+end
 
 
 hfcl{1} = transform_origin(Trial,xyz,markers{1},markers{3},{markers{2},markers{4}});

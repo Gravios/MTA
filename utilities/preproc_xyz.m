@@ -12,7 +12,7 @@ function [xyz,ss] = preproc_xyz(Trial,varargin)
 %    SPLINE_SPINE_HEAD_EQI
 %    SPLINE_SPINE_HEAD_EQD
 %    SPLINE_SPINE_HEAD_EQD_NO_TRB
-%    LOAD_TRB_XYZ
+%    trb
 % 
 
 [procOpts,overwrite] = DefaultArgs(varargin,{{},false},true);
@@ -239,7 +239,7 @@ while ~isempty(procOpts)
             xyz = Trial.load('xyz','seh');
         end
        
-      case 'LOAD_TRB_XYZ'
+      case 'trb'
         xyz = Trial.load('xyz','trb');
     
     end

@@ -64,8 +64,8 @@ switch numel(Pfs.parameters.type)
     imagesc(bin1,bin2,rateMap');
 
 % APPEND text which contains the maximum rate of the map
-    text(Pfs.adata.bins{1}(end)-250,Pfs.adata.bins{2}(end)-50,...
-         sprintf('%2.1f',max(rateMap(:))),'Color','w','FontWeight','bold','FontSize',8)
+% $$$     text(Pfs.adata.bins{1}(end)-250,Pfs.adata.bins{2}(end)-50,...
+% $$$          sprintf('%2.1f',max(rateMap(:))),'Color','w','FontWeight','bold','FontSize',8)
 % SET colormap with lowest value as black
     colormap([0,0,0;parula]);
 % ADJUST color scale

@@ -2,8 +2,8 @@ function Data = load(Data,varargin)
 % Data = load(Data,varargin)
 % Loads data from disk into MTAData object
 % 
-% inputs: 
-%    Session: 
+% varargin: 
+%    Session 
 %    filename
 %    syncshift
 %

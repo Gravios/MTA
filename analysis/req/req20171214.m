@@ -172,16 +172,20 @@ Trials  = af(@(t)  MTATrial.validate(t),   sessionList);
 states = {'loc&theta','lloc&theta','hloc&theta','rear&theta',     ...
           'pause&theta','lpause&theta','hpause&theta','theta-groom-sit'};
 
+dropTrialInd = cell2mat(cf(@isempty,units));
+Trials(dropTrialInd) = [];
+sessionList(dropTrialInd) = [];
+units(dropTrialInd) = [];
+
+
 for t = 1:numel(Trials),
     clf();
     Trial = Trials{t};    
     pfs_2d_theta(Trial,'overwrite',true);
-    units = select_placefields(Trial);
-    if isempty(units), continue, end;
     
     for s = 1:numel(states),
         defargs = get_default_args('MjgER2016','MTAApfs','struct');
-        defargs.units = units;
+        defargs.units = units{t};
         defargs.states = states{s};
         defargs.overwrite = true;
         defargs = struct2varargin(defargs);
@@ -191,5 +195,19 @@ for t = 1:numel(Trials),
     MjgER2016_drzfields(Trial,units,true);
     
 end
+units = cf(@(t)      select_placefields(t), Trials);
 
+cf(@(t)  generate_placefields(t),  Trials);
+
+t = 1;
+Trial = Trials{t};
+xyz = preproc_xyz(Trial,'trb');
+% LOAD local field potential (lfp)
+% RESAMPLE lfp to xyz sample rate
+% COMPUTE lfp phase in theta band (6-12 Hz)
+lfp = Trial.load('lfp',sessionList(t).thetaRef);
+lfp.resample(xyz);
+thetaPhase = lfp.phase([6,12]);
+
+units{t} = select_placefields(Trial);
 

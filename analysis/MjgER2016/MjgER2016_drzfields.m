@@ -17,7 +17,6 @@ defargs = struct('units',                          [],                          
 sessionListName = 'MjgER2016';
 sessionList = get_session_list(sessionListName);
 
-testRequested = false;
 
 pitchReferenceTrial = 'Ed05-20140529.ont.all';
 
@@ -62,143 +61,73 @@ end
 
 
 
-%% PLACEFIELD DRZ X HEAD PITCH --------------------------------------------------------------
+% COMPUTE place fields
+pargs = get_default_args('MjgER2016','MTAApfs','struct');
+pargs.units      = units;
+pargs.states     = 'theta-groom-sit';
+pargs.overwrite  = overwrite;
+pargs.numIter    = 1001;
+pargs.halfsample = true;
+
+% DRZ X HEAD PITCH
+pargs.tag            = 'DRZxPITCH';
+pargs.boundaryLimits = [-1,1;-pi/2-0.3,pi/2+0.3];
+pargs.binDims        = [0.1,0.1];
 if overwrite,
 % LOAD pitches 
 % MAP pitches to reference trial
+    pargs.xyzp = MTADxyz('data',[drz(:,1),pch(:,3)],'sampleRate',xyz.sampleRate);
     pch = fet_HB_pitch(Trial);
-    map_to_reference_session(pch,Trial,pitchReferenceTrial);    
-
+    map_to_reference_session(pch,Trial,pitchReferenceTrial);
     for u = 1:numel(units);
-        defargs = get_default_args('MjgER2016','MTAApfs','struct');
-        defargs.tag       = 'drzXpitch';
-        defargs.units     = units(u);
-        defargs.states    = 'theta-groom-sit';
-        defargs.overwrite = overwrite;    
-        defargs.binDims   = [0.1,0.1];
-        defargs.boundaryLimits = [-1,1;-pi/2,pi/2];    
-        defargs.xyzp      = MTADxyz('data',[drz(:,u),pch(:,3)],...
-                                    'sampleRate',xyz.sampleRate);
-        defargs = struct2varargin(defargs);        
-        pfs_dp = MTAApfs(Trial,defargs{:});      
+        pargs.units      = units(u);        
+        pargs.xyzp.data = [drz(:,u),pch(:,3)];
+        pfsArgs = struct2varargin(pargs);
+        pfs_dp = MTAApfs(Trial,pfsArgs{:});
     end
 end
-
-defargs = get_default_args('MjgER2016','MTAApfs','struct');
-defargs.tag       = 'drzXpitch';
-defargs.units     = units;
-defargs.states    = 'theta-groom-sit';
-defargs.binDims   = [0.1,0.1];
-defargs.boundaryLimits = [-1,1;-pi/2,pi/2];
-defargs = struct2varargin(defargs);        
-pfs_dp = MTAApfs(Trial,defargs{:});      
-
-if testRequested,
-    figure();
-    for u = 1:numel(units),
-        subplot(121);  hold('on'); 
-        plot(pft,units(u)); 
-        plot(mrp(units(u)==pft.data.clu,1),mrp(units(u)==pft.data.clu,2),'*m');
-        subplot(122);  plot(pfs_dp,units(u),'isCircular',false);
-        colorbar();
-        waitforbuttonpress();
-    end
-end
+pargs.units      = units;
+pargs.overwrite = false;
+pfsArgs = struct2varargin(pargs);
+pfs_dp = MTAApfs(Trial,pfsArgs{:});
 
 
-%% PLACEFIELD DRZ X HEAD HEIGHT -------------------------------------------------------------
+
+% DRZ X HEAD HEIGHT
+pargs.tag              = 'DRZxHEIGHT';    
+pargs.boundaryLimits   = [-1,1;-10,350];
+pargs.binDims          = [0.1,20];
 if overwrite,
+    pargs.xyzp = MTADxyz('data',[drz(:,1),xyz(:,'head_front',3)],'sampleRate',xyz.sampleRate);
     for u = 1:numel(units);
-        defargs = get_default_args('MjgER2016','MTAApfs','struct');
-        defargs.tag       = 'drzXheight';    
-        defargs.units     = units(u);
-        defargs.states    = 'theta-groom-sit';
-        defargs.overwrite = overwrite;    
-        defargs.binDims   = [0.1,20];
-        defargs.boundaryLimits = [-1,1;0,300];    
-        defargs.xyzp      = MTADxyz('data',[drz(:,u),xyz(:,'head_front',3)],...
-                                    'sampleRate',xyz.sampleRate);
-        defargs = struct2varargin(defargs);        
-        pfs_dh = MTAApfs(Trial,defargs{:});      
+        pargs.units      = units(u);
+        pargs.xyzp.data = [drz(:,u),xyz(:,'head_front',3)];
+        pfsArgs = struct2varargin(pargs);
+        pfs_dh = MTAApfs(Trial,pfsArgs{:});
     end
 end
+pargs.units      = units;
+pargs.overwrite = false;
+pfsArgs = struct2varargin(pargs);
+pfs_dh = MTAApfs(Trial,pfsArgs{:});
 
-defargs = get_default_args('MjgER2016','MTAApfs','struct');
-defargs.tag       = 'drzXheight';    
-defargs.units     = units;
-defargs.states    = 'theta-groom-sit';
-defargs.binDims   = [0.1,20];
-defargs.boundaryLimits = [-1,1;0,350];
-defargs = struct2varargin(defargs);        
-pfs_dh = MTAApfs(Trial,defargs{:});      
 
-if testRequested,
-    figure();
-    for u = 1:numel(units),
-        subplot(121);  hold('on'); 
-        plot(pft,units(u)); 
-        plot(mrp(units(u)==pft.data.clu,1),mrp(units(u)==pft.data.clu,2),'*m');
-        subplot(122);  plot(pfs_dh,units(u),'isCircular',false);
-        colorbar();
-        waitforbuttonpress();
-    end
-end
 
-%% PLACEFIELD DRZ X RHMP HEIGHT -------------------------------------------------------------
+% DRZ X RHMP HEIGHT
+pargs.tag              = 'DRZxRHMP';        
+pargs.boundaryLimits   = [-1,1;-9,-2];
+pargs.binDims          = [0.1,0.15];
 if overwrite,
+    pargs.xyzp = MTADxyz('data',[drz(:,1),rhmp.data],'sampleRate',xyz.sampleRate);
     for u = 1:numel(units);
-        defargs = get_default_args('MjgER2016','MTAApfs','struct');
-        defargs.tag       = 'drzXrhmp';        
-        defargs.units     = units(u);
-        defargs.states    = 'theta-groom-sit';
-        defargs.binDims   = [0.1,0.15];
-        defargs.overwrite = overwrite;
-        defargs.boundaryLimits = [-1,1;-8.5,-3];    
-        defargs.xyzp      = MTADxyz('data',[drz(:,u),rhmp.data],...
-                                    'sampleRate',xyz.sampleRate);
-        defargs = struct2varargin(defargs);        
-        pfs_dm = MTAApfs(Trial,defargs{:});      
+        pargs.units      = units(u);
+        pargs.xyzp.data = [drz(:,u),rhmp.data];
+        pfsArgs = struct2varargin(pargs);
+        pfs_dm = MTAApfs(Trial,pfsArgs{:});
     end
 end
+pargs.units      = units;
+pargs.overwrite = false;
+pfsArgs = struct2varargin(pargs);
+pfs_dm = MTAApfs(Trial,pfsArgs{:});
 
-defargs = get_default_args('MjgER2016','MTAApfs','struct');
-defargs.tag       = 'drzXrhmp';        
-defargs.units     = units;
-defargs.states    = 'theta-groom-sit';
-defargs.binDims   = [0.1,0.15];
-defargs.boundaryLimits = [-1,1;-8.5,-3];    
-defargs = struct2varargin(defargs);        
-pfs_dm = MTAApfs(Trial,defargs{:});      
-
-if testRequested,
-    figure();
-    for u = 1:numel(units),
-        subplot(121);  hold('on'); 
-        plot(pft,units(u)); 
-        plot(mrp(units(u)==pft.data.clu,1),mrp(units(u)==pft.data.clu,2),'*m');
-        subplot(122);  plot(pfs_dm,units(u),'isCircular',false);
-        colorbar();
-        waitforbuttonpress();
-    end
-end
-
-
-% $$$ figure();
-% $$$ for unit = units,
-% $$$     clf();
-% $$$     subplot(141); % placefield theta
-% $$$     hold('on');
-% $$$     pft.plot(unit);
-% $$$     plot(mrp(pft.data.clu==unit,1),mrp(pft.data.clu==unit,2),'*m');
-% $$$     plot(pfstats{1}.peakPatchCOM(8,1,unit==units,2),pfstats{1}.peakPatchCOM(8,1,unit==units,1),'*g')
-% $$$     subplot(142); % drz X pitch 
-% $$$     pfs_dp.plot(unit,'isCircular',false);
-% $$$     colorbar();
-% $$$     subplot(143); % drz X pitch 
-% $$$     pfs_dm.plot(unit,'isCircular',false);
-% $$$     colorbar();
-% $$$     subplot(144); % drz X height
-% $$$     pfs_dh.plot(unit,'isCircular',false);
-% $$$     colorbar();    
-% $$$     waitforbuttonpress();
-% $$$ end

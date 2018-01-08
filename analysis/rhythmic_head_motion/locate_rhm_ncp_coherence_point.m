@@ -51,12 +51,13 @@ nhm = {'hcom','hbx','hrx','htx','hbt','hbr','hbrt','hrt'};
 fxyz = xyz.copy();
 fxyz.filter('RectFilter',3,4);
 
+%FileName_coarse = fullfile(Session.spath,[Session.filebase '.rhmXncp-shift.mat']);
 FileName_coarse = fullfile(Session.spath,[Session.filebase '.rhmXncp-shift_v2.mat']);
 if ~exist(FileName_coarse,'file') || overwrite,
 
-    i = [-20:10:20];
-    j = [-20:10:20];
-    k = [-150:10:150];
+    i = [-30:15:30];
+    j = [-30:15:30];
+    k = [-150:5:150];
 
 % COMPUTE head speed
     vxy = xyz.vel('head_front',[1,2]);
@@ -102,7 +103,7 @@ if ~exist(FileName_coarse,'file') || overwrite,
                 ang.data = cat(1,zeros([1,numel(nhm)-1]),diff(ang.data),zeros([1,numel(nhm)-1]));
                 ang.filter('RectFilter');
                 
-                for m = 1%1:numel(nhm)-1,
+                for m = 1:numel(nhm)-1,
                     % Modify time stamps and spec; add padding (0's)
                     % COMPUTE cross spectra
                     [ys,fs,ts] = mtcsdglong([ang(:,m),ncp.data],2^8,fxyz.sampleRate,2^7,2^6,[],[],[],[5,14]);
@@ -129,7 +130,7 @@ if ~exist(FileName_coarse,'file') || overwrite,
         toc
     end%for x
 
-    save(FileName_coarse,'i','j','k','vxbyz');
+    save(FileName_coarse,'i','j','k','vxyz');
 else
     load(FileName_coarse);
 end

@@ -82,7 +82,8 @@ print(hfig,'-dpng',  fullfile(FigPath,[FigName,'.png']));
 %    k = [-150:10:150]; vertical 
 
 Session = MTASession.validate(sessionList(5)); % 'Ed05-20140529.ont.all'
-
+Session = MTASession.validate(sessionList(4)); % 'Ed05-20140529.ont.all'
+Session = MTASession.validate(sessionList(2)); % 'Ed03-20140709.cof.all'
 
 
 cvals = [min(vxyz(:)),max(vxyz(:))];
@@ -90,7 +91,7 @@ cvals = [min(vxyz(:)),max(vxyz(:))];
 hfig = figure();
 hfig.Position = [1,50,1000,700];
 hfig.PaperPositionMode = 'auto';
-offset = 16;
+offset = 39;
 
 for z = 1:5,
     for m = 1:7,
@@ -124,7 +125,7 @@ suptitle(['mean rhm ncp cohorence for displaced hcoms: ',Session.filebase])
 
 % SAVE figure
 % SAVE png
-FigName = 'prot_Ed05-20140529.ont.all_search_headRefSpace_max_rhmXncp_coherence';
+FigName = [Session.filebase,'_search_headRefSpace_max_rhmXncp_coherence'];
 savefig(hfig,fullfile(FigPath,[FigName,'.fig']))
 print(hfig,'-depsc2',fullfile(FigPath,[FigName,'.eps']));
 print(hfig,'-dpng',  fullfile(FigPath,[FigName,'.png']));
