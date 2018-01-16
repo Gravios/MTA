@@ -15,6 +15,27 @@ function [xyz,ss] = preproc_xyz(Trial,varargin)
 %    trb
 % 
 
+% USE this example to make beter eqd 
+% $$$ format long g
+% $$$ fpath = 'Y:\Whaling\raw data\matlab\data cleaning\10m res\';
+% $$$ files = dir( fullfile(fpath,'txyzMLLW_*.txt') ); 
+% $$$ files = strcat(fpath,{files.name}');
+% $$$ f_txt=[];
+% $$$ for i=1:numel(files)
+% $$$     data = importdata(files{i});
+% $$$     total_length = arclength(data(:,2),data(:,3),data(:,4),'linear');
+% $$$     if total_length>10
+% $$$         newData= interparc(0:(10/total_length):1,data(:,2),data(:,3),data(:,4),'linear');
+% $$$         f_txt=[f_txt;newData];
+% $$$     else
+% $$$         N=.5;
+% $$$         newData= interparc(0:N:1, data(:,2), data(:,3),data(:,4),'linear');
+% $$$         f_txt=[f_txt;newData];
+% $$$     end
+% $$$ end
+% $$$ dlmwrite('10mres.txt',f_txt); 
+
+
 [procOpts,overwrite] = DefaultArgs(varargin,{{},false},true);
 Trial = MTATrial.validate(Trial);
 

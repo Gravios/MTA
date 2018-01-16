@@ -13,7 +13,6 @@ units(cell2mat(cf(@isempty,units))) = [];
 
 numTrials = numel(Trials);
 
-
 pfd  = cell([1,3]);  
 [pfd{:}]= cf(@(t)  MjgER2016_drzfields(t), Trials);
 highRateInds = -0.5 < pfd{1}{1}.adata.bins{1} & pfd{1}{1}.adata.bins{1} < 0.5;
@@ -26,7 +25,7 @@ rateMaxRng = nan([numTrials,max(cellfun('length',units)),numel(pfd),2]);
 for t = 1:numTrials,
     for u = 1:numel(units{t}),
         for p = 1:numel(pfd),
-            rateMap = plot(pfd{p}{t},units{t}(u),'isCircular',false);
+            rateMap = plot(pfd{p}{t},units{t}(u),'mean','isCircular',false);
             rateMap = mean(rateMap(highRateInds,:),'omitnan');
             [rateMaxVal(t,u,p),rateMaxInd(t,u,p)] = max(rateMap);
             try
@@ -72,6 +71,7 @@ for i = 1:1,
          rateMaxHeight+randn(size(rateMaxHeight))*10,'.b');
 end
 
+
 subplot(132);  
 hold('on');
 for i = 1:1,
@@ -84,3 +84,39 @@ hold('on');
 for i = 1:1,
     plot(rateMaxHeight+randn(size(rateMaxHeight))*10,rateMaxRHM+randn(size(rateMaxRHM))/10,'.b');
 end
+
+
+
+FigDir = create_directory('/storage/gravio/figures/placefields'); 
+hax = gobjects([1,3]);
+hfig = figure();
+hfig.Units = 'centimeters';
+hfig.PaperPositionMode = 'auto';
+hax(1) = subplot(131);  
+plot(rateMaxPitch+randn(size(rateMaxPitch))/25,...
+     rateMaxHeight+randn(size(rateMaxHeight))*10,'.b','MarkerSize',1);
+xlabel('pitch (rad)')
+ylabel('height (mm)')
+title('Peak pitch vs height');
+
+hax(2) = subplot(132);  
+plot(rateMaxPitch+randn(size(rateMaxPitch))/25,...
+     rateMaxRHM+randn(size(rateMaxRHM))/10,'.b','MarkerSize',1);
+xlabel('pitch (rad)');
+ylabel('rhm 6-12Hz (A.U.)');
+title('Peak pitch vs rhm');
+
+hax(3) = subplot(133);
+plot(rateMaxHeight+randn(size(rateMaxHeight))*10,...
+     rateMaxRHM+randn(size(rateMaxRHM))/10,'.b','MarkerSize',1);
+xlabel('height (mm)');
+ylabel('rhm 6-12Hz (A.U.)');
+title('Peak height vs rhm');
+hfig.Position = [0.5,0.5,12,4];
+af(@(h) set(h,'Units','centimeters'), hax);
+af(@(h) set(h,'Position',[h.Position(1:2),2,2]), hax);
+FigName = ['pop_drzfields'];
+print(gcf,'-depsc2',fullfile(FigDir,[FigName,'.eps']));
+print(gcf,'-dpng',  fullfile(FigDir,[FigName,'.png']));
+
+

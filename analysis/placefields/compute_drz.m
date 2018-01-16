@@ -26,6 +26,7 @@ defargs = struct('units',                  [],                                  
 
 %if isempty(pfstats),    pfstats = compute_pfstats_bs(Trial);    end
 
+%[mrt,mrp] = pft.maxRate(units,'mode','first');
 [mrt,mrp] = pft.maxRate(units);
 xyz = Trial.load('xyz');
 xyz.filter('ButFilter',3,filtCutOffFreq,'low');
@@ -41,6 +42,7 @@ wpmr = zeros(xyz.size(1),numel(units));
 
 rateMapIndex = sub2ind(pft.adata.binSizes',indx,indy);
 for unit = units,
+    %rateMap = pft.plot(unit,1);
     rateMap = pft.plot(unit,'mean');
     wpmr(:,unit==units) = rateMap(rateMapIndex);
 end

@@ -14,9 +14,6 @@ defargs = struct('units',                          [],                          
 [units,overwrite,pfstats] = DefaultArgs(varargin,defargs,'--struct');
 %---------------------------------------------------------------------------------------------------
 
-sessionListName = 'MjgER2016';
-sessionList = get_session_list(sessionListName);
-
 
 pitchReferenceTrial = 'Ed05-20140529.ont.all';
 
@@ -34,12 +31,6 @@ Trial.load('stc',stcMode);
 if isempty(units),    units   = select_placefields(Trial);                  end
 
 % LOAD theta state placefields
-% $$$ defargs = get_default_args('MjgER2016','MTAAknnpfs_bs','struct');
-% $$$ defargs.units = pfstats.cluMap;
-% $$$ defargs.states = 'theta-groom-sit';
-% $$$ defargs = struct2varargin(defargs);        
-% $$$ pft = MTAAknnpfs_bs(Trial,defargs{:});      
-% $$$ [mrt,mrp] = pft.maxRate([],'mean');
 pft = pfs_2d_theta(Trial);
 [mrt,mrp] = pft.maxRate();
 
@@ -65,7 +56,6 @@ end
 pargs = get_default_args('MjgER2016','MTAApfs','struct');
 pargs.units      = units;
 pargs.states     = 'theta-groom-sit';
-pargs.overwrite  = overwrite;
 pargs.numIter    = 1001;
 pargs.halfsample = true;
 
@@ -76,9 +66,10 @@ pargs.binDims        = [0.1,0.1];
 if overwrite,
 % LOAD pitches 
 % MAP pitches to reference trial
-    pargs.xyzp = MTADxyz('data',[drz(:,1),pch(:,3)],'sampleRate',xyz.sampleRate);
     pch = fet_HB_pitch(Trial);
-    map_to_reference_session(pch,Trial,pitchReferenceTrial);
+    map_to_reference_session(pch,Trial,pitchReferenceTrial);    
+    pargs.overwrite  = overwrite;    
+    pargs.xyzp = MTADxyz('data',[drz(:,1),pch(:,3)],'sampleRate',xyz.sampleRate);
     for u = 1:numel(units);
         pargs.units      = units(u);        
         pargs.xyzp.data = [drz(:,u),pch(:,3)];
@@ -86,7 +77,7 @@ if overwrite,
         pfs_dp = MTAApfs(Trial,pfsArgs{:});
     end
 end
-pargs.units      = units;
+pargs.units     = units;
 pargs.overwrite = false;
 pfsArgs = struct2varargin(pargs);
 pfs_dp = MTAApfs(Trial,pfsArgs{:});
@@ -98,6 +89,7 @@ pargs.tag              = 'DRZxHEIGHT';
 pargs.boundaryLimits   = [-1,1;-10,350];
 pargs.binDims          = [0.1,20];
 if overwrite,
+    pargs.overwrite = true;
     pargs.xyzp = MTADxyz('data',[drz(:,1),xyz(:,'head_front',3)],'sampleRate',xyz.sampleRate);
     for u = 1:numel(units);
         pargs.units      = units(u);
@@ -106,7 +98,7 @@ if overwrite,
         pfs_dh = MTAApfs(Trial,pfsArgs{:});
     end
 end
-pargs.units      = units;
+pargs.units     = units;
 pargs.overwrite = false;
 pfsArgs = struct2varargin(pargs);
 pfs_dh = MTAApfs(Trial,pfsArgs{:});
@@ -118,6 +110,7 @@ pargs.tag              = 'DRZxRHMP';
 pargs.boundaryLimits   = [-1,1;-9,-2];
 pargs.binDims          = [0.1,0.15];
 if overwrite,
+    pargs.overwrite = true;    
     pargs.xyzp = MTADxyz('data',[drz(:,1),rhmp.data],'sampleRate',xyz.sampleRate);
     for u = 1:numel(units);
         pargs.units      = units(u);
@@ -126,7 +119,7 @@ if overwrite,
         pfs_dm = MTAApfs(Trial,pfsArgs{:});
     end
 end
-pargs.units      = units;
+pargs.units     = units;
 pargs.overwrite = false;
 pfsArgs = struct2varargin(pargs);
 pfs_dm = MTAApfs(Trial,pfsArgs{:});

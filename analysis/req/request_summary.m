@@ -692,12 +692,31 @@
 %  Description: parameter scripts for testing locate_rhm_ncp_coherence_point
 %  Bugs: NA
 
+% req20171220 ----------------------------------------------------
+%  Status: active
+%  Type: Analysis
+%  Final_Forms: NA
+%  Description: Phase precession analysis
+%  Bugs: NA
+
 % req20171221 ----------------------------------------------------
 %  Status: active
 %  Type: Analysis
 %  Final_Forms: NA
 %  Description: Ploting place fields of session over range of states
 %               for use in figures
+%  Bugs: NA
+
+
+
+%% 2018 01 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+
+% req20170109 ----------------------------------------------------
+%  Status: active
+%  Type: Analysis
+%  Final_Forms: NA
+%  Description: Refine place field selection, based on spatial information
+%               of each state
 %  Bugs: NA
 
 

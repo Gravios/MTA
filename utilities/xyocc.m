@@ -2,7 +2,7 @@ function [occMap,Bins] = xyocc(Trial,varargin)
 % function occ = xyocc(Trial,pos,type,binDims)
 % [pos,type,binDims] = DefaultArgs(varargin,{Trial.stc{'w'},'xy',[20,20]
 % Always us xy for now
-[tpos,type,binDims,SmoothingWeights,bound_lims,display,report] = DefaultArgs(varargin,{Trial.stc.states,'xy',[20,20],[2.2,2.2],[],false,false});
+[tpos,type,binDims,SmoothingWeights,bound_lims,display,report] = DefaultArgs(varargin,{Trial.stc.states,'xy',[20,20],[2.5,2.5],[],false,false});
 
 
 if isempty(tpos),
@@ -61,7 +61,7 @@ for t = 1:numel(tpos),
     Smoother = Smoother./sum(Smoother(:));
     occ = convn(occ,Smoother,'same');
 
-    OccThresh = 0.06;%0.12;%
+    OccThresh = 0.1.^numel(binDims);
     gtind = occ>OccThresh;
 
     occm = NaN(msize');
