@@ -3,14 +3,14 @@ function hfig = PlotSessionErrors(Session,varargin)
 
 % DEFARGS ------------------------------------------------------------------------------------------
 defargs = struct('hfig',                             figure(8384839),                            ...
-                 'xyz',                              'position'                                  ...
+                 'xyz',                              'pos'                                       ...
 );
 [hfig,xyz] = DefaultArgs(varargin,defargs,'--struct');
 %---------------------------------------------------------------------------------------------------
 
 
 hfig.Name = 'Transformed distances of ridgid body markers';
-hold on
+hold('on')
 [ep hbc et] = FindErrorPeriods(Session,xyz);
 % $$$ subplot(121)
 plot(et)

@@ -3,6 +3,7 @@ function orient_head_to_rhm_alt(Trial,xyz,ncpChannel)
 
 Trial = 'Ed01-20140709.cof.all';
 Trial = 'Ed01-20140707.cof.all';
+Trial = 'Ed01-20140717.cof.all';
 
 Trial = 'Ed03-20140624.cof.all';
 Trial = 'Ed03-20140625.cof.all';
@@ -14,238 +15,311 @@ Trial = 'Ed10-20140816.cof.all';
 Trial = 'Ed10-20140817.cof.gnd';
 
 Trials = {'Ed03-20140624.cof.all','Ed03-20140625.cof.all'};
-
-for t = 1:numel(Trials);
-Trial = MTATrial.validate(Trials{t});
-ncpChannel = [];
+Trials = {'Ed01-20140707.cof.all','Ed01-20140709.cof.all','Ed05-20140528.cof.all','Ed03-20140625.cof.all','Ed10-20140816.cof.all'};
+ncpChannels = [2,2,2,2,66];
 %ncpChannel = 66;
-xyz = preproc_xyz(Trial,'trb');
-ncp = fet_ncp(Trial,[],[],ncpChannel);
-
-vxy = xyz.vel({'hcom','head_front'},[1,2]);
-vxy.data(vxy(:)<1e-3) = 1e-3;
-vxy = log10(vxy.data);
 
 
-% Need basis vectors from transtform_rigidbody.m
-blen = 45;
 
-xyz.addMarker('fhcom',[.7,1,.7],{{'head_back','head_front',[0,0,1]}},ButFilter(xyz(:,'hcom',:),3,[3]./(xyz.sampleRate/2),'low'));
-xyz.data(~nniz(xyz(:,1,1)),end,:) = 0;
-
-
-% GENERATE orthogonal basis, origin: head's center of mass
-nz = -cross(xyz(:,'head_back',:)-xyz(:,'hcom',:),xyz(:,'head_left',:)-xyz(:,'hcom',:));
-nz = bsxfun(@rdivide,nz,sqrt(sum((nz).^2,3))); 
-nm = nz.*20+xyz(:,'hcom',:);
-xyz.addMarker('htx',  [0.5,1,0.5],[],nm);
-nm = nz.*45+xyz(:,'hcom',:);
-xyz.addMarker('hrhm',  [0.5,1,0.5],[],nm);
-
-% GENERATE orthogonal basis, origin: head's center of mass
-ny = cross(xyz(:,'htx',:)-xyz(:,'hcom',:),xyz(:,'head_back',:)-xyz(:,'hcom',:));
-ny = bsxfun(@rdivide,ny,sqrt(sum((ny).^2,3)));
-nm = ny.*20+xyz(:,'hcom',:);
-xyz.addMarker('hrx',  [0.5,1,0.5],[],nm);
-
-
-% GENERATE orthogonal basis, origin: head's center of mass
-nx = cross(xyz(:,'hrx',:)-xyz(:,'hcom',:),xyz(:,'htx',:)-xyz(:,'hcom',:));
-nx = bsxfun(@rdivide,nx,sqrt(sum((nx).^2,3)));
-nm = nx.*20+xyz(:,'hcom',:);
-xyz.addMarker('hbx',  [0.5,1,0.5],[],nm);
-
-evec = bsxfun(@minus,xyz(:,{'hbx','hrx','htx'},:),xyz(:,{'hcom'},:));
-
-
-pind = nniz(evec)&vxy(:,2)>0;
-
-dispFigs = true;
-moffset = 1000;
-
-markers = {'hcom','head_front'};
-
-% Find Best orientation (good luck)
-
-%% Display the Original basis for the head
-if dispFigs,
-    hfig = figure(20392039);
-    set(hfig,'units','centimeters')
-    set(hfig,'Position',[11 0 32 25])
-    set(hfig,'PaperPositionMode','auto');
-    clf;
-    subplot(2,2,1);
-    hold('on');
-    sind = find(pind,1,'first')+moffset;    
-    hline = gco;
-    markers = {'head_back','head_left','head_front','head_right','hbx','hrx','htx'};
-    mcolors = 'bgmrbrcb';
-    mlineWidth = ones([1,numel(mcolors)]); mlineWidth(end)=3;
-    mlineMarker = repmat({'none'},[1,numel(mcolors)]);
-    mlineMarker{end} = 'o';
-    for m = 1:numel(markers)
-        hline(end+1) = line(xyz(sind,{'hcom',markers{m}},1),... X
-                            xyz(sind,{'hcom',markers{m}},2),... Y
-                            xyz(sind,{'hcom',markers{m}},3),... Z
-                            'Color',mcolors(m),...
-                            'LineWidth',mlineWidth(m),...
-                            'Marker',mlineMarker{m});
-    end
+for tind = 1:numel(Trials);
+    tic
     
-    title('Vector Search Space');
-    daspect([1,1,1]);
-end
+    %    Trial = MTATrial.validate(Trial);
+    Trial = MTATrial.validate(Trials{tind});
+    ncpChannel = ncpChannels(tind);
+    %ncpChannel = 66;
+    xyz = preproc_xyz(Trial,'trb');
+    ncp = fet_ncp(Trial,[],[],ncpChannel);
 
-ind = vxy(:,2)>0.3;
-aind = Trial.stc{'a'};
-aind.cast('TimeSeries');
-aind.resample(xyz);
-aind.data(isnan(aind.data))=0;
-ind = logical(aind.data)&ind;
-
-ind = MTADepoch([],[],ind,xyz.sampleRate,xyz.sync,xyz.origin,'TimeSeries');
+    vxy = xyz.vel({'hcom','head_front'},[1,2]);
+    vxy.data(vxy(:)<1e-3) = 1e-3;
+    vxy = log10(vxy.data);
 
 
-%% Rotate a basis around the unit sphere
-spw = [];
-cpw = [];
-rpw = [];
-npw = [];
+    % Need basis vectors from transtform_rigidbody.m
+    blen = 45;
+
+    xyz.addMarker('fhcom',[.7,1,.7],{{'head_back','head_front',[0,0,1]}},...
+                  ButFilter(xyz(:,'hcom',:),3,[3]./(xyz.sampleRate/2),'low'));
+    xyz.data(~nniz(xyz(:,1,1)),end,:) = 0;
 
 
-rots = 2.5:5:180;
-tots = 2.5:5:360;
+    % GENERATE orthogonal basis, origin: head's center of mass
+    nz = -cross(xyz(:,'head_back',:)-xyz(:,'hcom',:),xyz(:,'head_left',:)-xyz(:,'hcom',:));
+    nz = bsxfun(@rdivide,nz,sqrt(sum((nz).^2,3))); 
+    nm = nz.*20+xyz(:,'hcom',:);
+    xyz.addMarker('htx',  [0.5,1,0.5],[],nm);
+    nm = nz.*45+xyz(:,'hcom',:);
+    xyz.addMarker('hrhm',  [0.5,1,0.5],[],nm);
 
-% $$$ rots = 15:15:180;
-% $$$ tots = 0:15:360;
-% $$$ 
-% $$$ rots = 5:40:180;
-% $$$ tots = 5:40:360;
-% $$$ 
+    % GENERATE orthogonal basis, origin: head's center of mass
+    ny = cross(xyz(:,'htx',:)-xyz(:,'hcom',:),xyz(:,'head_back',:)-xyz(:,'hcom',:));
+    ny = bsxfun(@rdivide,ny,sqrt(sum((ny).^2,3)));
+    nm = ny.*20+xyz(:,'hcom',:);
+    xyz.addMarker('hrx',  [0.5,1,0.5],[],nm);
 
-for d =  1:numel(rots)
-% SET rotation axis to z-axis (htx)
-% ROTATE around z-axis (htx)
-    m = 1;
-    ax_ord = [1,2,3];
-    j =1:3;
-    head_norm = bsxfun(@rdivide,sq(evec(:,m,ax_ord)),sqrt(sum(evec(:,m,ax_ord).^2,3)));
-    head_kron = reshape(repmat(head_norm',3,1).*head_norm(:,j(ones(3,1),:)).',[3,3,size(head_norm,1)]);
-    j = [ 0,-1, 1;...
-          1, 0,-1;...
-          -1, 1, 0];
-    k = [1,3,2;...
-         3,1,1;...
-         2,1,1];
-    head_cpm = reshape(head_norm(:,k)',3,3,size(head_norm,1)).*repmat(j,[1,1,size(head_norm,1)]);
-% CREATE rotation matrix
-    j = 1:3;
-    rot_ang = deg2rad(rots(d));
-    head_rotMat = cos(rot_ang)*repmat(eye(3),[1,1,size(head_norm,1)])...
-        +sin(rot_ang)*head_cpm...
-        +(1-cos(rot_ang))*head_kron;
 
-% SET matrix
-    ovec = evec(:,2,:);
-% CREATE new basis vector from rotation
-    nvec = permute(sum(head_rotMat.*permute(reshape(ovec(:,j(ones(3,1),:)),[size(head_norm,1),3,3]),[2,3,1]),2),[3,2,1]);
-    nvec = cat(2,evec,nvec);
+    % GENERATE orthogonal basis, origin: head's center of mass
+    nx = cross(xyz(:,'hrx',:)-xyz(:,'hcom',:),xyz(:,'htx',:)-xyz(:,'hcom',:));
+    nx = bsxfun(@rdivide,nx,sqrt(sum((nx).^2,3)));
+    nm = nx.*20+xyz(:,'hcom',:);
+    xyz.addMarker('hbx',  [0.5,1,0.5],[],nm);
 
-% SET rotation axis to new vector
-    m = 2;
-    ax_ord = [1,2,3];
-    j =1:3;
-    head_norm = bsxfun(@rdivide,sq(nvec(:,m,ax_ord)),sqrt(sum(nvec(:,m,ax_ord).^2,3)));
-    head_kron = reshape(repmat(head_norm',3,1).*head_norm(:,j(ones(3,1),:)).',[3,3,size(head_norm,1)]);
-    j = [ 0,-1, 1;...
-          1, 0,-1;...
-         -1, 1, 0];
-    k = [1,3,2;...
-         3,1,1;...
-         2,1,1];
-    head_cpm = reshape(head_norm(:,k)',3,3,size(head_norm,1)).*repmat(j,[1,1,size(head_norm,1)]);
+    evec = bsxfun(@minus,xyz(:,{'hbx','hrx','htx'},:),xyz(:,{'hcom'},:));
 
-    for t =  1:numel(tots)
-% ROTATE sep wise around new vector
-        j =1:3;  
-        rot_ang = deg2rad(tots(t));
-        head_rotMat =  cos(rot_ang)*repmat(eye(3),[1,1,size(head_norm,1)])...
-                      +sin(rot_ang)*head_cpm...
-                      +(1-cos(rot_ang))*head_kron;
 
-        % Rotated marker;???
-        ovec = nvec(:,4,:);
-        ovec = bsxfun(@rdivide,ovec,sqrt(sum(ovec.^2,3))).*blen;
+    pind = nniz(evec)&vxy(:,2)>0;
 
-        % Create new marker
-        tmark = permute(sum(head_rotMat.*permute(reshape(ovec(:,j(ones(3,1),:)),[size(head_norm,1),3,3]), ...
-                                                 [2,3,1]),2),[3,1,2])+sq(xyz(:,'hcom',:));
+    dispFigs = true;
+    moffset = 1000;
 
-        sxyz = MTADfet.encapsulate(Trial,cat(2,xyz(:,'fhcom',:),permute(tmark,[1,3,2])),xyz.sampleRate,...
-                                   'sxyz','sxyz','s');
-        sxyz.filter('RectFilter',3,4);
-        sxyz.data = diff([0;diff(sqrt(sum(diff(sxyz.data,[],2).^2,3)));0]);        
-        rxyz = sxyz.copy();
-        rxyz.data(~nniz(xyz(:,1,1))) = 0;
-        rxyz.filter('ButFilter',3,[6,14],'bandpass');
-        xsegs = nansum(GetSegs(rxyz(pind),[1:round(xyz.sampleRate/2):sum(pind)]-round(xyz.sampleRate),...
-                                         round(xyz.sampleRate)).^2);
-        spw(d,t) = nanmedian(xsegs);
+    markers = {'hcom','head_front'};
 
-        [ys,fs,ts] = mtcsdglong([sxyz.data,ncp.data],2^8,sxyz.sampleRate,2^7,2^6,[],[],[],[5,14]);
-        if d ==1&&t==1,
-            ts = ts+(2^6/2)/sxyz.sampleRate;
-            ssr = 1/diff(ts(1:2));
-            pad = round([ts(1),size(sxyz,1)./sxyz.sampleRate-ts(end)].*ssr)-[1,0];
-            szy = size(ys);
+    % Find Best orientation (good luck)
 
-            resample(ind,ssr);
-            if size(ys,1)>size(ind,1),
-                ind.data = cat(1,ind.data,zeros([size(ys,1)-size(ind,1),1]));
-            elseif size(ys,1)<size(ind,1),
-                ind.data = ind.data(1:size(ys,1));
-            end
-            ind = ind.data;
-
-        end 
-        yss = sq(mean(cat(1,zeros([pad(1),szy(2:end)]),ys,zeros([pad(2),szy(2:end)])),2));
-        cpw(d,t) = nanmean(abs(yss(ind,1,2)))./nanmean(sqrt(yss(ind,1,1).*yss(ind,2,2)));
-        rpw(d,t) = log10(nanmean(abs(yss(ind,1,1))));
-        if dispFigs,
-            plot3(tmark(sind,1),tmark(sind,2),tmark(sind,3),'*r');
-            drawnow();
+    %% Display the Original basis for the head
+    if dispFigs,
+        hfig = figure(20392039);
+        set(hfig,'units','centimeters')
+        set(hfig,'Position',[11 0 32 25])
+        set(hfig,'PaperPositionMode','auto');
+        clf;
+        subplot(2,2,1);
+        hold('on');
+        sind = find(pind,1,'first')+moffset;    
+        hline = gco;
+        markers = {'head_back','head_left','head_front','head_right','hbx','hrx','htx'};
+        mcolors = 'bgmrbrcb';
+        mlineWidth = ones([1,numel(mcolors)]); mlineWidth(end)=3;
+        mlineMarker = repmat({'none'},[1,numel(mcolors)]);
+        mlineMarker{end} = 'o';
+        for m = 1:numel(markers)
+            hline(end+1) = line(xyz(sind,{'hcom',markers{m}},1),... X
+            xyz(sind,{'hcom',markers{m}},2),... Y
+            xyz(sind,{'hcom',markers{m}},3),... Z
+            'Color',mcolors(m),...
+                'LineWidth',mlineWidth(m),...
+                'Marker',mlineMarker{m});
         end
-    end%for t
-end%for d
+        
+        title('Vector Search Space');
+        daspect([1,1,1]);
+    end
 
-save(['/storage/gravio/data/project/general/analysis/orient_head_to_rhm_alt-',Trial.filebase,'.mat'],...
-     'rots','tots','spw','cpw','rpw');
+    ind = vxy(:,2)>0.3;
+    aind = Trial.stc{'a'};
+    aind.cast('TimeSeries');
+    aind.resample(xyz);
+    aind.data(isnan(aind.data))=0;
+    ind = logical(aind.data)&ind;
+
+    ind = MTADepoch([],[],ind,xyz.sampleRate,xyz.sync,xyz.origin,'TimeSeries');
+
+
+    %% Rotate a basis around the unit sphere
+    spw = [];
+    cpw = [];
+    rpw = [];
+    npw = [];
+
+
+    rots = 2.5:5:180;
+    tots = 2.5:5:360;
+
+    for d =  1:numel(rots)
+        % SET rotation axis to z-axis (htx)
+        % ROTATE around z-axis (htx)
+        m = 1;
+        ax_ord = [1,2,3];
+        j =1:3;
+        head_norm = bsxfun(@rdivide,sq(evec(:,m,ax_ord)),sqrt(sum(evec(:,m,ax_ord).^2,3)));
+        head_kron = reshape(repmat(head_norm',3,1).*head_norm(:,j(ones(3,1),:)).',[3,3,size(head_norm,1)]);
+        j = [ 0,-1, 1;...
+              1, 0,-1;...
+              -1, 1, 0];
+        k = [1,3,2;...
+             3,1,1;...
+             2,1,1];
+        head_cpm = reshape(head_norm(:,k)',3,3,size(head_norm,1)).*repmat(j,[1,1,size(head_norm,1)]);
+        % CREATE rotation matrix
+        j = 1:3;
+        rot_ang = deg2rad(rots(d));
+        head_rotMat = cos(rot_ang)*repmat(eye(3),[1,1,size(head_norm,1)])...
+            +sin(rot_ang)*head_cpm...
+            +(1-cos(rot_ang))*head_kron;
+
+        % SET matrix
+        ovec = evec(:,2,:);
+        % CREATE new basis vector from rotation
+        nvec = permute(sum(head_rotMat.*permute(reshape(ovec(:,j(ones(3,1),:)),[size(head_norm,1),3,3]),[2,3,1]),2),[3,2,1]);
+        nvec = cat(2,evec,nvec);
+
+        % SET rotation axis to new vector
+        m = 2;
+        ax_ord = [1,2,3];
+        j =1:3;
+        head_norm = bsxfun(@rdivide,sq(nvec(:,m,ax_ord)),sqrt(sum(nvec(:,m,ax_ord).^2,3)));
+        head_kron = reshape(repmat(head_norm',3,1).*head_norm(:,j(ones(3,1),:)).',[3,3,size(head_norm,1)]);
+        j = [ 0,-1, 1;...
+              1, 0,-1;...
+              -1, 1, 0];
+        k = [1,3,2;...
+             3,1,1;...
+             2,1,1];
+        head_cpm = reshape(head_norm(:,k)',3,3,size(head_norm,1)).*repmat(j,[1,1,size(head_norm,1)]);
+
+        for t =  1:numel(tots)
+            % ROTATE sep wise around new vector
+            j =1:3;  
+            rot_ang = deg2rad(tots(t));
+            head_rotMat =  cos(rot_ang)*repmat(eye(3),[1,1,size(head_norm,1)])...
+                +sin(rot_ang)*head_cpm...
+                +(1-cos(rot_ang))*head_kron;
+
+            % Rotated marker;???
+            ovec = nvec(:,4,:);
+            ovec = bsxfun(@rdivide,ovec,sqrt(sum(ovec.^2,3))).*blen;
+
+            % Create new marker
+            tmark = permute(sum(head_rotMat.*permute(reshape(ovec(:,j(ones(3,1),:)),[size(head_norm,1),3,3]), ...
+                                                     [2,3,1]),2),[3,1,2])+sq(xyz(:,'hcom',:));
+
+            sxyz = MTADfet.encapsulate(Trial,cat(2,xyz(:,'fhcom',:),permute(tmark,[1,3,2])),xyz.sampleRate,...
+                                       'sxyz','sxyz','s');
+            sxyz.filter('RectFilter',3,4);
+            sxyz.data = diff([0;diff(sqrt(sum(diff(sxyz.data,[],2).^2,3)));0]);        
+            rxyz = sxyz.copy();
+            rxyz.data(~nniz(xyz(:,1,1))) = 0;
+            rxyz.filter('ButFilter',3,[6,12],'bandpass');
+            xsegs = nansum(GetSegs(rxyz(pind),[1:round(xyz.sampleRate/2):sum(pind)]-round(xyz.sampleRate),...
+                                   round(xyz.sampleRate)).^2);
+            spw(d,t) = nanmedian(xsegs);
+
+            %sxyz.data(nniz(sxyz),:,:) = WhitenSignal(sxyz(nniz(sxyz),:,:));
+            [ys,fs,ts] = mtcsdglong([sxyz.data,ncp.data],2^7,sxyz.sampleRate,2^6,2^5,[],[],[],[6,12]);
+            colormap('jet');
+            if d ==1&&t==1,
+                ts = ts+(2^6/2)/sxyz.sampleRate;
+                ssr = 1/diff(ts(1:2));
+                pad = round([ts(1),size(sxyz,1)./sxyz.sampleRate-ts(end)].*ssr)-[1,0];
+                szy = size(ys);
+
+                resample(ind,ssr);
+                if size(ys,1)>size(ind,1),
+                    ind.data = cat(1,ind.data,zeros([size(ys,1)-size(ind,1),1]));
+                elseif size(ys,1)<size(ind,1),
+                    ind.data = ind.data(1:size(ys,1));
+                end
+                ind = ind.data;
+
+            end 
+            yss = sq(mean(cat(1,zeros([pad(1),szy(2:end)]),ys,zeros([pad(2),szy(2:end)])),2,'omitnan'));
+            cpw(d,t) = mean(abs(yss(ind,1,2)),'omitnan')./mean(sqrt(yss(ind,1,1).*yss(ind,2,2)),'omitnan');
+            rpw(d,t) = log10(median(abs(yss(ind,1,1)),'omitnan'));
+            if dispFigs,
+                plot3(tmark(sind,1),tmark(sind,2),tmark(sind,3),'*r');
+                drawnow();
+            end
+        end%for t
+    end%for d
+
+    save(['/storage/gravio/data/project/general/analysis/orient_head_to_rhm_alt-',Trial.filebase,'.mat'],...
+         'rots','tots','spw','cpw','rpw');
+    toc
+end%for tind
+
+
+
+%% display
+Trials = af(@(t)  MTATrial.validate(t),  get_session_list('ncp'));
+ds = cf(@(t) load(['/storage/gravio/data/project/general/analysis/orient_head_to_rhm_alt-', ...
+                     t.filebase,'.mat']), Trials);
+
+
+ny = 4;
+nx = numel(Trials);
+hfig = figure(666003);
+hfig.Units = 'centimeters';
+hfig.Position = [0.5, 0.5, 40, 20];
+hfig.PaperPositionMode = 'auto';
+for t = 1:nx,
+    subplot2(ny,nx,1,t);
+    imagesc(ds{t}.rots,ds{t}.tots,ds{t}.spw');
+
+    subplot2(ny,nx,2,t);    imagesc(ds{t}.rots,ds{t}.tots,ds{t}.rpw');    title('rhm power');
+    subplot2(ny,nx,3,t);    imagesc(ds{t}.rots,ds{t}.tots,ds{t}.cpw');    title('rhm spec power');
+    subplot2(ny,nx,4,t);    plot([ds{t}.tots;ds{t}.tots]',[ds{t}.spw(19,:);ds{t}.cpw(19,:)]'); 
+    title(['rhm ncp coherence power']);
+    ylim([0,0.75])
+    title(Trials{t}.filebase);
 end
-Trial = 'Ed05-20140528.cof.all';
-Trial = 'Ed05-20140529.ont.all';
-
-Trial = 'Ed01-20140709.cof.all';
-Trial = 'Ed01-20140707.cof.all';
-
-Trial = 'Ed03-20140624.cof.all';
-Trial = 'Ed03-20140625.cof.all';
-
-
-Trial = 'Ed10-20140816.cof.all';
-Trial = 'Ed10-20140817.cof.gnd';
-Trial = MTATrial.validate(Trial);
-load(['/storage/gravio/data/project/general/analysis/orient_head_to_rhm_alt-',Trial.filebase,'.mat']);
-
-
-figure,
-subplot(221);imagesc(rots,tots,spw');%caxis([0.07,0.15]); estimate
-subplot(222);imagesc(rots,tots,cpw'),%caxis([0.4,0.55]);
-subplot(223);imagesc(rots,tots,rpw'),%caxis([0.4,0.55]);
-subplot(224);plot([tots;tots]',[spw(19,:);cpw(19,:)]')
+FigName = ['rhm_ncp_trb_rot_profile'];
+print(hfig,'-depsc2',fullfile(FigDir,[FigName,'.eps']));        
+print(hfig,'-dpng',  fullfile(FigDir,[FigName,'.png']));
 
 
 
+sspw = cf(@(t,d) MTADfet.encapsulate(t,repmat(d.spw,[3,3]),1,'','',''),  Trials, ds);
+scpw = cf(@(t,d) MTADfet.encapsulate(t,repmat(d.cpw,[3,3]),1,'','',''),  Trials, ds);
 
+cf(@(s)  s.filter('RectFilter',5),  sspw);
+cf(@(s)  set(s,'data',s.data'),     sspw);
+cf(@(s)  s.filter('RectFilter',5),  sspw);
+cf(@(s)  set(s,'data',s.data'),     sspw);
+
+cf(@(s)  s.filter('RectFilter',5),  scpw);
+cf(@(s)  set(s,'data',s.data'),     scpw);
+cf(@(s)  s.filter('RectFilter',5),  scpw);
+cf(@(s)  set(s,'data',s.data'),     scpw);
+
+[minds,mvs] = cf(@(s) LocalMinimaN(-s.data,-nanmean(s.data(:)),10), sspw);
+[mindc,mvc] = cf(@(s) LocalMinimaN(-s.data,-nanmean(s.data(:)),10), scpw);
+
+minds = cf(@(m,d) bsxfun(@minus,m,[numel(d.rots),numel(d.tots)]),  minds, ds);
+mindc = cf(@(m,d) bsxfun(@minus,m,[numel(d.rots),numel(d.tots)]),  mindc, ds);
+
+mvs   = cf(@(v,m,d) v([m(:,1)>0 & m(:,2)>0 & m(:,1)<numel(d.rots) & m(:,2)<numel(d.tots)]), mvs,minds,ds);
+minds = cf(@(m,d) m([m(:,1)>0 & m(:,2)>0 & m(:,1)<numel(d.rots) & m(:,2)<numel(d.tots)],:), minds,ds);
+
+mvc   = cf(@(v,m,d) v([m(:,1)>0 & m(:,2)>0 & m(:,1)<numel(d.rots) & m(:,2)<numel(d.tots)]), mvc,mindc,ds);
+mindc = cf(@(m,d) m([m(:,1)>0 & m(:,2)>0 & m(:,1)<numel(d.rots) & m(:,2)<numel(d.tots)],:), mindc,ds);
+
+[mvc,mmvcind] = cf(@(m)    min(m),  mvc);
+mindc         = cf(@(m,i)  m(i,:),  mindc, mmvcind);
+
+
+mindsa = cf(@(m,d) circ_ang2rad([d.rots(m(:,1))',d.tots(m(:,2))']),  minds,ds);
+mindca = cf(@(m,d) circ_ang2rad([d.rots(m(:,1)),d.tots(m(:,2))]),  mindc,ds);
+
+ctrdRadius = repmat({0.25},[1,numel(Trials)]);
+[ctrdX,ctrdY] = cf(@(d) ndgrid(circ_ang2rad(d.rots),circ_ang2rad(d.tots)), ds);
+ctrdPos       = cf(@(x,y)  cat(3,x,y),  ctrdX,ctrdY);
+ctrdInd      = cf(@(r,p,m) find(r>sqrt(sum(bsxfun(@circ_dist,sq(reshape(p,[],1,2)),m).^2,2))),...
+              ctrdRadius,ctrdPos,mindca);
+cpwCenters    = cf(@(d,x,y,i)  sum([d.cpw(i)./sum(d.cpw(i)).*x(i),d.cpw(i)./sum(d.cpw(i)).*y(i)]),...
+                   ds,ctrdX,ctrdY,ctrdInd);
+
+
+figure,hold('on');imagesc(ds{1}.cpw');axis('xy')
+plot(rem(ctrdInd{1}(:),36),floor(ctrdInd{1}(:)/36),'.g')
+plot(mindc{1}(:,1),mindc{1}(:,2),'.m')
+plot(rad2deg(cpwCenters{1}(:,1)),rad2deg(cpwCenters{1}(:,2)),'.m');
+
+
+[scDist,scMind]      = cf(@(d,p,m)  min(sqrt(sum(bsxfun(@circ_dist,p,m).^2,2))),ds,mindsa,cpwCenters);
+
+
+scMean = circ_mean(reshape(cell2mat(cf(@(d,p,m)  circ_dist(p(2,:),m),ds,mindsa,cpwCenters)),[2,numel(Trials)])');
+
+scStd = circ_std(reshape(cell2mat(cf(@(d,p,m)  circ_dist(p(2,:),m),ds,mindsa,cpwCenters)),[2,numel(Trials)])');
+
+
+
+% $$$ 
+% $$$ % Get best vector set
+% $$$ cang(t) = tots(mins(end));
+% $$$ rncd(t) = circ_dist(tots(mins(end)),tots(minsr(end)));
+% $$$ 
 
 
 %subplot(224);imagesc(rots,tots,npw'),%caxis([0.4,0.55]);
@@ -254,134 +328,128 @@ subplot(224);plot([tots;tots]',[spw(19,:);cpw(19,:)]')
 % $$$ sspw = [flipud(circshift(spw',round(size(spw,2)/2))),fliplr(spw')];
 % $$$ sspw = [sspw,circshift(sspw,round(size(sspw,2)/8))];
 
-
-
-%% Automatic orientation detection
-% spw is the map where the peaks represents the front and back of
-% the head. The indicies (d,t) are the two angle thingies you need 
-% to get the final orientation vector. 
-
-Trials = {'Ed05-20140528.cof.all','Ed05-20140529.ont.all',...
-          'Ed01-20140709.cof.all','Ed01-20140707.cof.all',...
-          'Ed03-20140624.cof.all','Ed03-20140625.cof.all',...
-          'Ed10-20140816.cof.all','Ed10-20140817.cof.gnd'};
-
-for t = 1:numel(Trials);
-    Trial = MTATrial.validate(Trials{t});
-    load(['/storage/gravio/data/project/general/analysis/orient_head_to_rhm_alt-',Trial.filebase,'.mat']);
-
-srpw = repmat(spw,[3,3]);
-sspw = repmat(cpw,[3,3]);
-
-%figure,imagesc(sspw')
-
-SmoothingWeights = [3,3];
-msize = size(sspw);
-ndims = numel(msize);
-
-sind = cell(1,2);
-for i = 1:ndims,
-    sind{i} = linspace(-round(msize(i)/2),round(msize(i)/2),msize(i));
-end
-[sind{:}] = ndgrid(sind{:});
-for i = 1:ndims,
-    sind{i} = sind{i}.^2/SmoothingWeights(i)^2/2;
-end
-Smoother = exp(sum(-cat(ndims+1,sind{:}),ndims+1));
-Smoother = Smoother./sum(Smoother(:));
-
-srpw = convn(srpw,Smoother,'same');
-sspw = convn(sspw,Smoother,'same');
-
-frpw = srpw(size(spw,1)+1:size(spw,1)*2,size(spw,2)+1:size(spw,2)*2);
-fspw = sspw(size(spw,1)+1:size(spw,1)*2,size(spw,2)+1:size(spw,2)*2);
-
-% $$$ if dispFigs,
-% $$$     subplot(222);
-% $$$     imagesc(rots,tots,fspw');
-% $$$     title('Rhythmic(6-13Hz) mean PSD')
-% $$$     xlabel('\phi (rad)')
-% $$$     ylabel('\theta (rad)');
+% $$$ 
+% $$$ 
+% $$$ %% Automatic orientation detection
+% $$$ % spw is the map where the peaks represents the front and back of
+% $$$ % the head. The indicies (d,t) are the two angle thingies you need 
+% $$$ % to get the final orientation vector. 
+% $$$ 
+% $$$ Trials = {'Ed05-20140528.cof.all','Ed05-20140529.ont.all',...
+% $$$           'Ed01-20140709.cof.all','Ed01-20140707.cof.all',...
+% $$$           'Ed03-20140624.cof.all','Ed03-20140625.cof.all',...
+% $$$           'Ed10-20140816.cof.all','Ed10-20140817.cof.gnd'};
+% $$$ 
+% $$$ for t = 1:numel(Trials);
+% $$$     Trial = MTATrial.validate(Trials{t});
+% $$$     load(['/storage/gravio/data/project/general/analysis/orient_head_to_rhm_alt-',Trial.filebase,'.mat']);
+% $$$ 
+% $$$ srpw = repmat(spw,[3,3]);
+% $$$ sspw = repmat(cpw,[3,3]);
+% $$$ 
+% $$$ 
+% $$$ %figure,imagesc(sspw')
+% $$$ 
+% $$$ SmoothingWeights = [3,3];
+% $$$ msize = size(sspw);
+% $$$ ndims = numel(msize);
+% $$$ 
+% $$$ sind = cell(1,2);
+% $$$ for i = 1:ndims,
+% $$$     sind{i} = linspace(-round(msize(i)/2),round(msize(i)/2),msize(i));
 % $$$ end
-[mins,minv] = LocalMinimaN(-sspw,-nanmean(sspw(:)),10);
-[minsr,minvr] = LocalMinimaN(-rspw,-nanmean(rspw(:)),10);
+% $$$ [sind{:}] = ndgrid(sind{:});
+% $$$ for i = 1:ndims,
+% $$$     sind{i} = sind{i}.^2/SmoothingWeights(i)^2/2;
+% $$$ end
+% $$$ Smoother = exp(sum(-cat(ndims+1,sind{:}),ndims+1));
+% $$$ Smoother = Smoother./sum(Smoother(:));
+% $$$ 
+% $$$ srpw = convn(srpw,Smoother,'same');
+% $$$ sspw = convn(sspw,Smoother,'same');
+% $$$ 
+% $$$ frpw = srpw(size(spw,1)+1:size(spw,1)*2,size(spw,2)+1:size(spw,2)*2);
+% $$$ fspw = sspw(size(spw,1)+1:size(spw,1)*2,size(spw,2)+1:size(spw,2)*2);
+% $$$ 
+% $$$ [mins,minv] = LocalMinimaN(-sspw,-nanmean(sspw(:)),10);
+% $$$ [minsr,minvr] = LocalMinimaN(-rspw,-nanmean(rspw(:)),10);
+% $$$ 
+% $$$ mins = bsxfun(@minus,mins,[numel(rots),numel(tots)]);
+% $$$ 
+% $$$ 
+% $$$ minv(~[mins(:,1)>0 & mins(:,2)>0 & mins(:,1)<numel(rots) & mins(:,2)<numel(tots)]) = [];
+% $$$ mins(~[mins(:,1)>0 & mins(:,2)>0 & mins(:,1)<numel(rots) & mins(:,2)<numel(tots)],:) = [];
+% $$$ 
+% $$$ minvr(~[minsr(:,1)>0 & minsr(:,2)>0 & minsr(:,1)<numel(rots) & minsr(:,2)<numel(tots)]) = [];
+% $$$ minsr(~[minsr(:,1)>0 & minsr(:,2)>0 & minsr(:,1)<numel(rots) & minsr(:,2)<numel(tots)],:) = [];
+% $$$ 
+% $$$ % Get best vector set
+% $$$ cang(t) = tots(mins(end));
+% $$$ rncd(t) = circ_dist(tots(mins(end)),tots(minsr(end)));
+% $$$ 
+% $$$ end
+% $$$ 
+% $$$ bvecs = [];
 
-mins = bsxfun(@minus,mins,[numel(rots),numel(tots)]);
+dt = [mindsa{1}(2,1),circ_dist(mindsa{1}(2,2),-scMean(2))];
 
-
-minv(~[mins(:,1)>0 & mins(:,2)>0 & mins(:,1)<numel(rots) & mins(:,2)<numel(tots)]) = [];
-mins(~[mins(:,1)>0 & mins(:,2)>0 & mins(:,1)<numel(rots) & mins(:,2)<numel(tots)],:) = [];
-
-minvr(~[minsr(:,1)>0 & minsr(:,2)>0 & minsr(:,1)<numel(rots) & minsr(:,2)<numel(tots)]) = [];
-minsr(~[minsr(:,1)>0 & minsr(:,2)>0 & minsr(:,1)<numel(rots) & minsr(:,2)<numel(tots)],:) = [];
-
-% Get best vector set
-cang(t) = tots(mins(end));
-rncd(t) = circ_dist(tots(mins(end)),tots(minsr(end)));
-
-end
-
-bvecs = [];
-
-for dt = mins'
 % ROTATE around z-axis (htx)
-    m = 1;
-    ax_ord = [1,2,3];
-    j =1:3;
-    head_norm = bsxfun(@rdivide,sq(evec(:,m,ax_ord)),sqrt(sum(evec(:,m,ax_ord).^2,3)));
-    head_kron = reshape(repmat(head_norm',3,1).*head_norm(:,j(ones(3,1),:)).',[3,3,size(head_norm,1)]);
-    j = [ 0,-1, 1;...
-          1, 0,-1;...
-          -1, 1, 0];
-    k = [1,3,2;...
-         3,1,1;...
-         2,1,1];
-    head_cpm = reshape(head_norm(:,k)',3,3,size(head_norm,1)).*repmat(j,[1,1,size(head_norm,1)]);
+m = 1;
+ax_ord = [1,2,3];
+j =1:3;
+head_norm = bsxfun(@rdivide,sq(evec(:,m,ax_ord)),sqrt(sum(evec(:,m,ax_ord).^2,3)));
+head_kron = reshape(repmat(head_norm',3,1).*head_norm(:,j(ones(3,1),:)).',[3,3,size(head_norm,1)]);
+j = [ 0,-1, 1;...
+      1, 0,-1;...
+      -1, 1, 0];
+k = [1,3,2;...
+     3,1,1;...
+     2,1,1];
+head_cpm = reshape(head_norm(:,k)',3,3,size(head_norm,1)).*repmat(j,[1,1,size(head_norm,1)]);
 
-    j = 1:3;
-    rot_ang = deg2rad(rots(dt(1)));    
-    head_rotMat = cos(rot_ang)*repmat(eye(3),[1,1,size(head_norm,1)])...
-        +sin(rot_ang)*head_cpm...
-        +(1-cos(rot_ang))*head_kron;
+j = 1:3;
+rot_ang = dt(1);    
+head_rotMat = cos(rot_ang)*repmat(eye(3),[1,1,size(head_norm,1)])...
+    +sin(rot_ang)*head_cpm...
+    +(1-cos(rot_ang))*head_kron;
 
-    % Rotated marker; Head back
-    ovec = evec(:,2,:);
+% Rotated marker; Head back
+ovec = evec(:,2,:);
 
-    nvec = permute(sum(head_rotMat.*permute(reshape(ovec(:,j(ones(3,1),:)),[size(head_norm,1),3,3]),[2,3,1]),2),[3,2,1]);
-    nvec = cat(2,evec,nvec);
+nvec = permute(sum(head_rotMat.*permute(reshape(ovec(:,j(ones(3,1),:)),[size(head_norm,1),3,3]),[2,3,1]),2),[3,2,1]);
+nvec = cat(2,evec,nvec);
 
-    m = 2;
-    ax_ord = [1,2,3];
-    j =1:3;
-    head_norm = bsxfun(@rdivide,sq(nvec(:,m,ax_ord)),sqrt(sum(nvec(:,m,ax_ord).^2,3)));
-    head_kron = reshape(repmat(head_norm',3,1).*head_norm(:,j(ones(3,1),:)).',[3,3,size(head_norm,1)]);
-    j = [ 0,-1, 1;...
-          1, 0,-1;...
-          -1, 1, 0];
-    k = [1,3,2;...
-         3,1,1;...
-         2,1,1];
-    head_cpm = reshape(head_norm(:,k)',3,3,size(head_norm,1)).*repmat(j,[1,1,size(head_norm,1)]);
-    
-    j =1:3;  
-    rot_ang = deg2rad(tots(dt(2)));
-    head_rotMat = cos(rot_ang)*repmat(eye(3),[1,1,size(head_norm,1)])...
-        +sin(rot_ang)*head_cpm...
-        +(1-cos(rot_ang))*head_kron;
+m = 2;
+ax_ord = [1,2,3];
+j =1:3;
+head_norm = bsxfun(@rdivide,sq(nvec(:,m,ax_ord)),sqrt(sum(nvec(:,m,ax_ord).^2,3)));
+head_kron = reshape(repmat(head_norm',3,1).*head_norm(:,j(ones(3,1),:)).',[3,3,size(head_norm,1)]);
+j = [ 0,-1, 1;...
+      1, 0,-1;...
+      -1, 1, 0];
+k = [1,3,2;...
+     3,1,1;...
+     2,1,1];
+head_cpm = reshape(head_norm(:,k)',3,3,size(head_norm,1)).*repmat(j,[1,1,size(head_norm,1)]);
 
-    % Rotated marker;???
-    ovec = nvec(:,4,:);    
-    ovec = bsxfun(@rdivide,ovec,sqrt(sum(ovec.^2,3))).*blen;
+j =1:3;  
+rot_ang = dt(2);
+head_rotMat = cos(rot_ang)*repmat(eye(3),[1,1,size(head_norm,1)])...
+    +sin(rot_ang)*head_cpm...
+    +(1-cos(rot_ang))*head_kron;
 
-    % Create new marker
-    tmark = permute(permute(sum(head_rotMat.*permute(reshape(ovec(:,j(ones(3,1),:)),...
-                                                      [size(head_norm,1),3,3]), ...
-                                             [2,3,1]),2),...
-                            [3,1,2])+sq(xyz(:,'hcom',:)),...
-                    [1,3,2]);
-    bvecs = cat(2,bvecs,tmark);
+% Rotated marker;???
+ovec = nvec(:,4,:);    
+ovec = bsxfun(@rdivide,ovec,sqrt(sum(ovec.^2,3))).*blen;
 
-end
+% Create new marker
+tmark = permute(permute(sum(head_rotMat.*permute(reshape(ovec(:,j(ones(3,1),:)),...
+                                                  [size(head_norm,1),3,3]), ...
+                                                 [2,3,1]),2),...
+                        [3,1,2])+sq(xyz(:,'hcom',:)),...
+                [1,3,2]);
+bvecs = cat(2,bvecs,tmark);
+
 
 
 

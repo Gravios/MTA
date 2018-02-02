@@ -1,4 +1,11 @@
-% Place fields in non theta periods minus ripples 
+% req20171214 ----------------------------------------------------
+%  Status: active
+%  Type: Analysis
+%  Final_Forms: NA
+%  Description: Place fields in non theta periods minus ripples
+%  Bugs: NA
+
+
 
 
 Trial = MTATrial.validate('jg05-20120310.cof.all');

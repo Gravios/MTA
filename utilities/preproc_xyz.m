@@ -301,5 +301,23 @@ xyz.addMarker('acom',...    Name
               xyz.com(xyz.model.rb({'spine_lower','pelvis_root','spine_middle','spine_upper','head_back','head_front'})));
 
               
+
+% GENERATE orthogonal basis, origin: head's center of mass
+nz = -cross(xyz(:,'head_back',:)-xyz(:,'hcom',:),xyz(:,'head_left',:)-xyz(:,'hcom',:));
+nz = bsxfun(@rdivide,nz,sqrt(sum((nz).^2,3))); 
+ny = cross(nz,xyz(:,'head_back',:)-xyz(:,'hcom',:));
+ny = bsxfun(@rdivide,ny,sqrt(sum((ny).^2,3)));
+nx = cross(ny,nz);
+nx = bsxfun(@rdivide,nx,sqrt(sum((nx).^2,3)));
+% NOSE 
+xyz.addMarker('nose',...     Name
+              [.7,0,.7],...  Color
+              {{'head_back', 'hcom',[0,0,255]},... Sticks to visually connect
+               {'head_left', 'hcom',[0,0,255]},... new marker to skeleton
+               {'head_front','hcom',[0,0,255]},...
+               {'head_right','hcom',[0,0,255]}},... 
+              xyz(:,'hcom',:)+nx*-40);
+              
+              
               
 xyz.data(isnan(xyz.data)) = eps;

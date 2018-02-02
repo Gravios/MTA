@@ -1,4 +1,4 @@
-% req20171215 ----------------------------------------------------
+% req20171216 ----------------------------------------------------
 %  Status: active
 %  Type: Analysis
 %  Final_Forms: NA
@@ -9,8 +9,6 @@ FigPath = '/storage/gravio/figures/locate_max_rhmXncp_coherence';
 create_directory(FigPath);
 
 sessionList = get_session_list('ncp');
-
-
 
 % INITIAL search space
 %    i = [-50:5:50];   longitudinal
@@ -91,7 +89,7 @@ cvals = [min(vxyz(:)),max(vxyz(:))];
 hfig = figure();
 hfig.Position = [1,50,1000,700];
 hfig.PaperPositionMode = 'auto';
-offset = 39;
+offset = 35;
 
 for z = 1:5,
     for m = 1:7,

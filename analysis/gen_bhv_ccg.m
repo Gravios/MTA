@@ -1,15 +1,34 @@
 function  [Bccg,sper] = gen_bhv_ccg(Trial,varargin)
-[state,durThresh] = DefaultArgs(varargin,{'rear',1.5});
+[state,durThresh,units,numPartitions] = DefaultArgs(varargin,{'rear',1.5,[],4});
 
 
 sper = Trial.stc.filter(Trial.lfp.sampleRate,{state,{'exclusion',{state},2},{'duration',durThresh}});
 
 if ~iscell(sper), sper = mat2cell(sper,size(sper,1),[1,1]);end
 
+pft = pfs_2d_theta(Trial);    
+[~,mrp] = pft.maxRate();
+
+
+
 try,
-Bccg = MTAccg(Trial,state,['CCG around' state 'and offset'], ...
-              sper,{[state ' onset'],[state ' offset']},'overwrite',true,...
-              'normalization','hz');
+    Bccg = MTAccg(Trial,                                              ... Trial              
+                  state,                                              ... name              
+                  ['CCG around' state 'and offset'],                  ... Description              
+                  sper,                                               ... ResTrain
+                  {[state ' onset'],[state ' offset']},               ... CluTags
+                  units,                                                 ... units              
+                  true,                                               ... overwrite
+                  [],                                                 ... rand_tag
+                  'abs_dist',                                         ... method
+                  numPartitions,                                      ... partitions
+                  mrp,                                                ... partition_feature
+                  [],                                                 ... surrogate_sample_size
+                  1,                                                  ... numIterations
+                  200,                                                ... binSize
+                  20,                                                 ... halfBins
+                  'hz'                                                ... normalization
+    );
 catch err,
     disp(err);
     af(@(err) disp(err),err.stack);

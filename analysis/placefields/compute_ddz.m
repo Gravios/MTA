@@ -1,12 +1,13 @@
-function ddz = compute_ddz(Trial,varargin)
+function [ddz,pfds] = compute_ddz(Trial,varargin)
 
 % DEFARGS ------------------------------------------------------------------------------------------
 defargs = struct('units',                  [],                                                   ...
                  'pft',                    [],                                                   ...
                  'pfstats',                [],                                                   ...
-                 'filtCutOffFreq',         2.5                                                   ...
+                 'filtCutOffFreq',         2.5,                                                  ...
+                 'marker',                 'nose'                                                ...
 );
-[units,pft,pfstats,filtCutOffFreq] = DefaultArgs(varargin,defargs,'--struct');
+[units,pft,pfstats,filtCutOffFreq,marker] = DefaultArgs(varargin,defargs,'--struct');
 %---------------------------------------------------------------------------------------------------
 
 %if isempty(pfstats),    pfstats = compute_pfstats_bs(Trial);    end
@@ -14,15 +15,15 @@ defargs = struct('units',                  [],                                  
 dims = 2;
 
 [mrt,mrp] = pft.maxRate(units);
-xyz = Trial.load('xyz');
+xyz = preproc_xyz(Trial,'trb');
 xyz.filter('ButFilter',3,filtCutOffFreq,'low');
-%xyz.filter('ButFilter',3,1.5,'low');
+
 
 % Get the rat's heading 
 pfds = [];
 pfdd = [];
 for unit = units
-    pfhxy = cat(2,xyz(:,{'head_front'},:),circshift(xyz(:,{'head_front'},:),round(xyz.sampleRate/5)));
+    pfhxy = cat(2,xyz(:,{'nose'},:),circshift(xyz(:,{'nose'},:),round(xyz.sampleRate/5)));
     %pfhxy = xyz(:,{'head_back','head_front'},:);
     pfhxy = cat(2,pfhxy,permute(repmat([mrp(unit==units,:),0],[size(xyz,1),1]),[1,3,2]));
     %pfhxy = cat(2,pfhxy,permute(repmat([fliplr(sq(mean(pfstats.peakPatchCOM(8,:,pfstats.cluMap==unit,:)))'),0],[size(xyz,1),1]),[1,3,2]));    

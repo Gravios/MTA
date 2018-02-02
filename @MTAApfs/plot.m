@@ -2,15 +2,25 @@
 function rateMap = plot(Pfs,varargin)
 % function rateMap = plot(Pfs,varargin)
 % plot placefield of the specified unit
+% varargin:
+%    unit                   [],                                                   
+%    nMode                  'mean',                                               
+%    ifColorbar             false,                                                
+%    maxRate                [],                                                   
+%    isCircular             true
+%    reqSigVals             false
+%
+
 
 % DEFARGS ------------------------------------------------------------------------------------------
 defargs = struct('unit',                   [],                                                   ...
                  'nMode',                  'mean',                                               ...
                  'ifColorbar',             false,                                                ...
                  'maxRate',                [],                                                   ...
-                 'isCircular',             true                                                  ...
+                 'isCircular',             true,                                                 ...
+                 'sigThresh',              []                                                    ...
 );
-[unit,nMode,ifColorbar,maxRate,isCircular] = DefaultArgs(varargin,defargs,'--struct');
+[unit,nMode,ifColorbar,maxRate,isCircular,sigThresh] = DefaultArgs(varargin,defargs,'--struct');
 %---------------------------------------------------------------------------------------------------
 
 
@@ -43,13 +53,22 @@ switch numel(Pfs.parameters.type)
         switch nMode
           case 'mean',    rateMap = mean(Pfs.data.rateMap(:,Pfs.data.clu==unit,:),3,'omitnan');
           case 'std' ,    rateMap = std(Pfs.data.rateMap(:,Pfs.data.clu==unit,:),[],3,'omitnan');
+          case 'snr',     rateMap = mean(Pfs.data.rateMap(:,Pfs.data.clu==unit,:),3,'omitnan')...
+                                    ./std(Pfs.data.rateMap(:,Pfs.data.clu==unit,:),[],3,'omitnan');
+                          rateMap(isinf(rateMap)) = nan;                          
           case 'sig'
             rateMap = 1./sum((repmat(max(Pfs.data.rateMap(:,Pfs.data.clu==unit,:)),[size(Pfs.data.rateMap,1),1,1])...
                               -repmat(Pfs.data.rateMap(:,Pfs.data.clu==unit,1),[1,1,Pfs.parameters.numIter]))<0,3)';
           otherwise
             rateMap = Pfs.data.rateMap(:,Pfs.data.clu==unit,1);
-        end
+        end                    
     end
+    
+    if ~isempty(sigThresh) && Pfs.parameters.numIter > 1,
+        sigMask = sum(~isnan(Pfs.data.rateMap(:,Pfs.data.clu==unit,:)),3)>Pfs.parameters.numIter*sigThresh;
+        rateMap(~sigMask(:)) = nan;
+    end 
+
     
 % RESHAPE rateMap from 1D to 2D
     rateMap = reshape(rateMap,numel(bin1),numel(bin2)).*mask;
@@ -58,6 +77,7 @@ switch numel(Pfs.parameters.type)
 
 % ASSIGN maximum rate of colormap
     if isempty(maxRate), maxRate = max(rateMap(:)); end
+    if isnan(maxRate), maxRate = 0; end    
 
 % ASSIGN elements with nans a black color value
     rateMap(isnan(rateMap)) = -1;

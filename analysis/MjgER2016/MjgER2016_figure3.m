@@ -1,3 +1,12 @@
+% MjgER2016 Figure3
+%
+% Subplots:
+%    A. autoccgs
+%    B. Placefield examples for each state
+%    C. 
+%    D. Feature Matrix
+%    E. Behavioral labels - hand labels and neural network labels
+
 
 
 sessionListName = 'MjgER2016';

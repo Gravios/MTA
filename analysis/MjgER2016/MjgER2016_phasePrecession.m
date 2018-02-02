@@ -1,4 +1,4 @@
-function [P,phzStats,Rmax] = MjgER2016_phasePrecession(Trial,drz,ddz,phz,spk,units)
+function [P,phzStats,Rmax,drzHCnt] = MjgER2016_phasePrecession(Trial,drz,ddz,phz,spk,units)
 %function [P,phzStats,Rmax] = MjgER2016_phasePrecession(Trial,drz,ddz,phz,spk,units)
 %
 % Compute phase precession coefficients between distance restricted drz and lfp phase
@@ -24,6 +24,8 @@ P          = nan([numel(units),mResults,2]);
 phzStats   = nan([numel(units),mResults,2]);
 s          = 1;
 Rmax       = nan([numel(units),mResults]);
+
+drzHCnt    = zeros([numel(units),10]);
 
 % GET res
 
@@ -56,6 +58,9 @@ for unit = units;
     if sum(gind)<10,
         continue;
     end    
+    
+
+    drzHCnt(uind,:) = histcounts(drzspk,linspace(-1,1,11));
 
 
     lin = drzspk(gind); 

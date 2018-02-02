@@ -5,7 +5,7 @@ function [mxr,mxp] = maxRate(Pfs,varargin)
 
 % DEFARGS ------------------------------------------------------------------------------------------
 defargs = struct('units',                  [],                                                   ...
-                 'isCircular',             'true',                                               ...
+                 'isCircular',             true,                                                 ...
                  'mode',                   'mean'                                                ...
 );
 [units,isCircular,mode] = DefaultArgs(varargin,defargs,'--struct');
@@ -40,6 +40,8 @@ for u = units(:)',
     switch mode
       case 'mean'        
         rateMap = mean(Pfs.data.rateMap(:,Pfs.data.clu==u,:),3,'omitnan');
+      case 'std'        
+        rateMap = std(Pfs.data.rateMap(:,Pfs.data.clu==u,:),[],3,'omitnan');
       otherwise
         rateMap = Pfs.data.rateMap(:,Pfs.data.clu==u,1);
     end

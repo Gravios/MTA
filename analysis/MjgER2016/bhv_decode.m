@@ -11,14 +11,14 @@ states = {'loc&theta','rear&theta','pause&theta'};
 Trial.load('nq');
 pft = pfs_2d_theta(Trial); 
 mrt = pft.maxRate;
-units = select_units(Trial,18,'pyr');
-units = units(mrt(pft.data.clu(units))>0.8);
+units = select_placefields(Trial);
+
 
 for sts = 1:numel(states),
     defargs = get_default_args('MjgER2016','MTAApfs','struct');
     defargs.units = units;
     defargs.states = states{sts};
-    defargs.numIter = 1000;
+    defargs.numIter = 1001;
     defargs.halfsample = true;
     defargs.overwrite = false;
     defargs = struct2varargin(defargs);
@@ -140,12 +140,17 @@ plot(pos(ind(1),1),pos(ind(1),2),'*m');
 ylim([-500,500])
 xlim([-500,500])
 
-stst = zeros([size(sts,1),7])';
-inind = [1:size(sts,1)].*7-7;
+
+%stst = zeros([size(sts,1),7])';
+%inind = [1:size(sts,1)].*7-7;
+%stst(sts(nniz(sts))+inind(nniz(sts))') = 1;
+
+stst = zeros([size(sts,1),3])';
+inind = [1:size(sts,1)].*3-3;
 stst(sts(nniz(sts))+inind(nniz(sts))') = 1;
 
 %figure,plot(sts)
-sto = stc2mat(Trial.stc,xyz,states(2:8));
+sto = stc2mat(Trial.stc,xyz,states(:));
 
 
 
@@ -234,3 +239,6 @@ figure,
 plot(mpl{1}(:,1),mpl{1}(:,2),'.');
 ylim([-500,500])
 xlim([-500,500])
+
+
+

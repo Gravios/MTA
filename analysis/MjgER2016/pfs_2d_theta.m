@@ -28,6 +28,7 @@ defargs = struct('numIter',      1,                                       ...
 Trial= MTATrial.validate(Trial);    
 units = Trial.spk.map(:,1);
 
+
 % load theta periods
 if isempty(Trial.stc.gsi('t')),Trial = labelTheta(Trial);end
 

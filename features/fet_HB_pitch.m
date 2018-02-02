@@ -11,7 +11,7 @@ function [fet,featureTitles,featureDesc] = fet_HB_pitch(Trial,varargin)
 % DEFARGS ------------------------------------------------------------------------------------------
 defargs = struct('newSampleRate', Trial.xyz.sampleRate,                                          ...
                  'normalize'    , false,                                                         ...
-                 'procOpts'     , {'SPLINE_SPINE_HEAD_EQI'});
+                 'procOpts'     , {'trb'});
 
 [newSampleRate,normalize,procOpts] = DefaultArgs(varargin,defargs,'--struct');
 %--------------------------------------------------------------------------------------------------
@@ -39,9 +39,9 @@ ang = create(MTADang,Trial,xyz);
 
 % CAT feature
 %fet.data = [ang(:,'pelvis_root','spine_upper',2),ang(:,'spine_upper','hcom',2)];
-fet.data = [ang(:,'pelvis_root','spine_upper',2),...
+fet.data = [ang(:,'spine_middle','spine_upper',2),...
             ang(:,'spine_upper','hcom',2),...
-            ang(:,'head_back','head_front',2)];
+            ang(:,'hcom','nose',2)];
 
 fet.data(~nniz(xyz),:)=0;
 featureTitles = {};

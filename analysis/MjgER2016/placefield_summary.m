@@ -9,11 +9,15 @@
 sessionListName = 'MjgER2016';
 sessionList = get_session_list(sessionListName);
 pitchReferenceTrial = 'Ed05-20140529.ont.all';
+generateFigureParts = true;
+marker = 'nose';
 
-
-FigDir = create_directory('/storage/gravio/figures/placefields'); 
-
-
+if generateFigureParts,
+    FigDir = create_directory('/storage/gravio/figures/parts/placefields');
+else,
+    FigDir = create_directory('/storage/gravio/figures/placefields'); 
+end        
+        
 % LOAD Trials
 % COMPUTE placefield statistics
 Trials  = af(@(t)  MTATrial.validate(t),   sessionList);
@@ -27,18 +31,21 @@ statesCcg = {'loc','lloc','hloc','rear','pause','lpause','hpause',...
 
 numStates = numel(states);
 
+cf(@(t) t.load('nq'), Trials);
+
+
 % PROCESS session data
 % $$$ cf(@(t)  pfs_2d_theta(t,'overwrite',true),  Trials);
+% $$$ cf(@(t)  pfs_2d_states(t,'overwrite',true),  Trials);
 % $$$ cf(@(t)  compute_pfstats_bs(t,'overwrite',true),  Trials);
 % $$$ cf(@(t)  MjgER2016_drzfields(t,[],true), Trials);
 
 % FOR each Trial -------------------------------------------------------------
 
-hfig = figure();
+hfig = figure(666001);
 hfig.Position = [273, 54, 1269, 681];
 hfig.PaperPositionMode = 'auto';
 ny = 12;
-
 
 for t = 1:numel(Trials),
     clf();
@@ -76,54 +83,46 @@ for t = 1:numel(Trials),
     units = select_placefields(Trial);
     if isempty(units), continue;end;
     pft = pfs_2d_theta(Trial,'overwrite',false);    
-    pfstats = compute_pfstats_bs(Trial,units);
+    %pfstats = compute_pfstats_bs(Trial,units);
+    pfstats = [];
     spk = Trial.spk.copy();
     spk.create(Trial,xyz.sampleRate,'theta',units,'deburst');    
     
 % LOAD placefields and subsampled estimate
-    for sts = 1:numStates,        
-        defargs = get_default_args('MjgER2016','MTAAknnpfs_bs','struct');
-        defargs.units = units;
-        defargs.states = states{sts};
-        defargs = struct2varargin(defargs);        
-        pfkbs{sts} = MTAAknnpfs_bs(Trial,defargs{:});      
-    end
     for sts = 1:numStates,
-        defargs = get_default_args('MjgER2016','MTAApfs','struct');
-        defargs.units = units;
-        defargs.states = states{sts};
-        defargs.numIter = 1000;
-        defargs.halfsample = true;
-        defargs.overwrite = false;
-        defargs = struct2varargin(defargs);
-        pfs{sts} = MTAApfs(Trial,defargs{:});
+        da = get_default_args('MjgER2016','MTAApfs','struct');
+        da.units = units;
+        da.states = states{sts};
+        da.overwrite = false;
+        pfsArgs = struct2varargin(da);
+        pfs{sts} = MTAApfs(Trial,pfsArgs{:});
     end    
     
+% COMPUTE behavioral state occupancy maps
     stsocc = cell(size(states));
     for sts = 1:numStates,    
         [stsocc(sts),stsoccBins] = xyocc(Trial,stc{states{sts}});
     end
     maxocc = max(cellfun(@(r) max(r(:)),stsocc));
+
+% COMPUTE drz and ddz
+    drz = compute_drz(Trial,units,pft,pfstats,[],marker);
+    ddz = compute_ddz(Trial,units,pft,pfstats,[],marker);
     
+% COMPUTE unit auto correlogram
+    [accg,tbins] = autoccg(Trial);
+    
+% COMPUTE place fields and subsampled estimate
+    for sts = 1:numStates,
+        [bhvccg{sts},sper{sts}] = gen_bhv_ccg(Trial,statesCcg{sts},0.5);
+        sper{sts}{1}(sper{sts}{1}>ceil(size(xyz,1)./xyz.sampleRate.*1250)-1) = [];
+        sper{sts}{2}(sper{sts}{2}>ceil(size(xyz,1)./xyz.sampleRate.*1250)-1) = [];
+    end
     
 % LOAD DRZ fields
     dfs = cell([1,3]);
     [dfs{:}] = MjgER2016_drzfields(Trial,units,false);%,pfstats);
     dfst = {'pitch','height','rhm'};
-    
-% COMPUTE drz and ddz
-    drz = compute_drz(Trial,units,pft);%,pfstats);
-    ddz = compute_ddz(Trial,units,pft);%,pfstats);
-    
-% COMPUTE place fields and subsampled estimate
-% $$$     for sts = 1:numStates,
-% $$$         [bhvccg{sts},sper{sts}] = gen_bhv_ccg(Trial,statesCcg{sts},0.5);
-% $$$         sper{sts}{1}(sper{sts}{1}>ceil(size(xyz,1)./xyz.sampleRate.*1250)-1) = [];
-% $$$         sper{sts}{2}(sper{sts}{2}>ceil(size(xyz,1)./xyz.sampleRate.*1250)-1) = [];
-% $$$     end
-    
-    [accg,tbins] = autoccg(Trial);
-
     
 % COMPUTE phase precession
     drzp = drz;    drzp(drzp<0)=nan;
@@ -133,38 +132,41 @@ for t = 1:numel(Trials),
     P  = {};   phzStats  = {};   Rmax  = {};
     PP = {};   phzStatsP = {};   RmaxP = {};
     PN = {};   phzStatsN = {};   RmaxN = {};
-         
+    
     
     for s = 1:numStates,
         spkpp = Trial.spk.copy();
         spkpp.create(Trial,xyz.sampleRate,states{s},units,'deburst');
-        [P{s},  phzStats{s}, Rmax{s}] = MjgER2016_phasePrecession(Trial,drz,ddz,phz,spkpp,units);
-        [PP{s},phzStatsP{s},RmaxP{s}] = MjgER2016_phasePrecession(Trial,drzp,ddzp,phz,spkpp,units);
-        [PN{s},phzStatsN{s},RmaxN{s}] = MjgER2016_phasePrecession(Trial,drzn,ddzn,phz,spkpp,units);
+        [P{s},  phzStats{s}, Rmax{s}, drzHCnt{s}] = MjgER2016_phasePrecession(Trial,drz,ddz,phz,spkpp,units);
+        [PP{s},phzStatsP{s},RmaxP{s},drzHCntP{s}] = MjgER2016_phasePrecession(Trial,drzp,ddzp,phz,spkpp,units);
+        [PN{s},phzStatsN{s},RmaxN{s},drzHCntN{s}] = MjgER2016_phasePrecession(Trial,drzn,ddzn,phz,spkpp,units);
     end
-
+    
     
 % $$$     mCom = pfstats.peakPatchCOM(:,:,ismember(pfstats.cluMap,units),:);
 % $$$     mCom(mCom==0) = nan;
 % $$$     mCom = sq(mean(pfstats.peakPatchCOM,2,'omitnan'));
-
-        
+    
+    
     for u = 1:numel(units),  tic        
-        
-        %clf();
-        sp = [];
+        %figure(hfig);
+        clf();
+        sp = gobjects([1,0]);
         unit = units(u);
         
 % $$$         mpfsRate = max(cell2mat(cf(@(p,u) max(p.maxRate(u)),...
 % $$$                                    pfkbs,repmat({unit},[1,numStates]))));
-        pfsMaxRates = cell2mat(cf(@(p,u) max(p.maxRate(u)),pfs,repmat({unit},[1,numStates])));
-        mpfsRate = max(pfsMaxRates);
-
-% $$$         if mpfsRate<=0,mpfsRate=1;end % default to 1 if 0
-% $$$         mccgRate = max(cell2mat(cf(@(c,u) max(max(c.ccg(:,u,:))),...
-% $$$                                    bhvccg,repmat({unit},[1,numel(bhvccg)]))));
-% $$$         if mccgRate<=0,mccgRate=1;end % default to 1 if 0
-
+        pfsMaxRates = cell2mat(cf(@(p,u) max(p.maxRate(u,true,1)),pfs,repmat({unit},[1,numStates])));
+        dfsMaxRates = cell2mat(cf(@(p,u) max(p.maxRate(u,false,1)),dfs,repmat({unit},[1,numel(dfs)])));        
+        mpfsRate = max([pfsMaxRates,dfsMaxRates]);
+        pfsMaxRatesMean = cell2mat(cf(@(p,u) max(p.maxRate(u,true,'mean')),pfs,repmat({unit},[1,numStates])));
+        
+        
+        
+        mccgRate = max(cell2mat(cf(@(c,u) max(max(c.ccg(:,u==c.cluMap(:,1),:,1))),...
+                                   bhvccg,repmat({unit},[1,numel(bhvccg)]))));
+        if mccgRate<=0,mccgRate=1;end % default to 1 if 0
+        
         uResw = spkw.res(spkw.clu==unit);
         uSpkw = spkw.spk(spkw.clu==unit,:,:);
         [~,sInd] = SelectPeriods(uResw,[stc{states{end},1}],'d',1,0);
@@ -172,13 +174,28 @@ for t = 1:numel(Trials),
         else,              mspkt = bsxfun(@plus,sq(mean(uSpkw(sInd,:,:)))',fliplr(linspace(1000,8000,size( uSpkw,2))));
         end
 
+        FigInfo = uicontrol('Parent',hfig,...
+                            'Style','text',...
+                            'String',{['Unit: ',num2str(unit)],...
+                                       Trial.filebase,...
+                                      ['stcMode: ',Trial.stc.mode],...
+                                      ['eDist:   ',num2str(Trial.nq.eDist(unit))],...
+                                      ['Refrac:  ',num2str(log10(Trial.nq.Refrac(unit)))],...
+                                      ['SNR:     ',num2str(Trial.nq.SNR(unit))],...
+                                      ['AmpSym:  ',num2str(Trial.nq.AmpSym(unit))],...
+                                      ['SpkWidthR:  ',num2str(Trial.nq.SpkWidthR(unit))]...
+                                     },...
+                            'Units','centimeters',...
+                            'Position',[2,18.5,6,3.5]);
+
+        
         % row1col1 - auto ccg
-        sp(end+1) = subplot2(ny,numStates+2,1:2,1);
+        sp(end+1) = subplot2(ny,numStates+2,3:4,1);
         bar(tbins,accg(:,unit));axis tight;
-        title(['Trial: ',Trial.filebase,' Unit: ',num2str(unit)]);
+
 
         % row1col1 - pitch hl loc distrib
-        sp(end+1) = subplot2(ny,numStates+2,3:4,1);hold('on');
+        sp(end+1) = subplot2(ny,numStates+2,5:6,1);hold('on');
         ind = [stc{'lloc'}];
         hax = bar(linspace(-pi/2,pi/2,50),histc(pch(ind,3),linspace(-pi/2,pi/2,50)),'histc');
         hax.FaceColor = 'c';
@@ -193,7 +210,7 @@ for t = 1:numel(Trials),
         hax.EdgeAlpha = 0.5;
 
         % row1col1 - pitch hl pause distrib
-        sp(end+1) = subplot2(ny,numStates+2,5:6,1);hold('on');
+        sp(end+1) = subplot2(ny,numStates+2,7:8,1);hold('on');
         ind = [stc{'lpause'}];
         hax = bar(linspace(-pi/2,pi/2,50),histc(pch(ind,3),linspace(-pi/2,pi/2,50)),'histc');
         hax.FaceColor = 'c';
@@ -249,25 +266,29 @@ for t = 1:numel(Trials),
             
 % PLACEFIELDS MTAAknnpfs
             sp(end+1) = subplot2(ny,numStates+2,[1,2],s+1);hold('on');
-            plot(pfkbs{s},unit,'mean',[],mpfsRate);
-            set(gca,'YTickLabel',{});set(gca,'XTickLabel',{});            
-            title(statesCcg{s});            
+% $$$             plot(pfkbs{s},unit,'mean',[],mpfsRate);
+% $$$             set(gca,'YTickLabel',{});set(gca,'XTickLabel',{});            
+% $$$             title(statesCcg{s});            
+            plot(pfs{s},unit,1,[],mpfsRate);
+            set(gca,'YTickLabel',{});set(gca,'XTickLabel',{});
+            title(sprintf('Max Rate: %3.2f',pfsMaxRates(s)));
 
+            
 % PLACEFIELDS MTAApfs
             sp(end+1) = subplot2(ny,numStates+2,[3,4],s+1);hold('on');
             plot(pfs{s},unit,'mean',[],mpfsRate);
             set(gca,'YTickLabel',{});set(gca,'XTickLabel',{});
-            title(sprintf('Max Rate: %3.2f',pfsMaxRates(s)));
+            title(sprintf('Max Rate: %3.2f',pfsMaxRatesMean(s)));
             
 % TRANSITION Positions
-            if u == 1,
-                subplot2(ny,numStates+2,[5,6],s+1);
-                hold('on');
-                imagesc(stsoccBins{1},stsoccBins{2},stsocc{s}');
-                axis('xy');
-                set(gca,'YTickLabel',{});set(gca,'XTickLabel',{});                
-                caxis([0,maxocc])
-            end                
+            sp(end+1) = subplot2(ny,numStates+2,[5,6],s+1);
+            hold('on');
+            imagesc(stsoccBins{1},stsoccBins{2},stsocc{s}');
+            axis('xy');
+            set(gca,'YTickLabel',{});set(gca,'XTickLabel',{});                
+            caxis([0,maxocc])
+            title(statesCcg{s});                            
+
 % TRAJECTORIES Positions
 % $$$             if unit==units(1),
 % $$$                 subplot2(ny,numStates+2,[3,4],s+1);
@@ -288,7 +309,7 @@ for t = 1:numel(Trials),
                 hist2([[drzspk(gind);drzspk(gind)],...
                       [circ_rad2ang(phzspk(gind));circ_rad2ang(phzspk(gind))+360]],...
                       linspace(-1,1,25),...
-                      linspace(-180,520,30));
+                      linspace(-180,540,30));
                 xlim([-1,1]);
                 ylim([-180,540]);
                 
@@ -305,27 +326,44 @@ for t = 1:numel(Trials),
 
             sp(end+1) = subplot2(ny,numStates+2,[9,10],s+1); hold('on');
             if sum(gind)>10,
-                hist2([[ddzspk(gind);ddzspk(gind)],...
-                       [circ_rad2ang(phzspk(gind));circ_rad2ang(phzspk(gind))+360]],...
-                      linspace(-250,250,25),...
-                      linspace(-180,520,30));
+                plot([drzspk(gind);drzspk(gind)],...
+                     [circ_rad2ang(phzspk(gind));circ_rad2ang(phzspk(gind))+360],...
+                     '.','MarkerSize',1);
+                xlim([-1,1]);
+                ylim([-180,540]);
                 
-                xlim([-250,250]),
-                %xlim([-20,20]),                
-                %xlim([-90000,90000]),
+                plot([-1,1],circ_rad2ang(2*pi*P{s}(u,1,1)*[-1,1]+P{s}(u,1,2)),'-m','LineWidth',1)
+                plot([-1,1],circ_rad2ang(2*pi*P{s}(u,1,1)*[-1,1]+P{s}(u,1,2))+360,'-m','LineWidth',1)
+
+                plot([0,1],circ_rad2ang(2*pi*PP{s}(u,1,1)*[0,1]+PP{s}(u,1,2)),'-r','LineWidth',1)
+                plot([0,1],circ_rad2ang(2*pi*PP{s}(u,1,1)*[0,1]+PP{s}(u,1,2))+360,'-r','LineWidth',1)
+
+                plot([-1,0],circ_rad2ang(2*pi*PN{s}(u,1,1)*[-1,0]+PN{s}(u,1,2)),'-g','LineWidth',1)
+                plot([-1,0],circ_rad2ang(2*pi*PN{s}(u,1,1)*[-1,0]+PN{s}(u,1,2))+360,'-g','LineWidth',1)
+                xlim([-1,1]),
                 ylim([-180,540])
             end
+
+% $$$             sp(end+1) = subplot2(ny,numStates+2,[9,10],s+1); hold('on');
+% $$$             if sum(gind)>10,
+% $$$                 hist2([[ddzspk(gind);ddzspk(gind)],.a..
+% $$$                        [circ_rad2ang(phzspk(gind));circ_rad2ang(phzspk(gind))+360]],...
+% $$$                       linspace(-250,250,25),...
+% $$$                       linspace(-180,520,30));
+% $$$                 
+% $$$                 xlim([-250,250]),
+% $$$                 %xlim([-20,20]),                
+% $$$                 %xlim([-90000,90000]),
+% $$$                 ylim([-180,540])
+% $$$             end
             
-            
+
 % TRANITION triggered histogram onset
-% $$$             sp(end+1) = subplot2(ny,numStates+2,[5,6],s+1);
-% $$$             plot(bhvccg{s},unit,1);axis('tight');        title('onset');
-% $$$             ylim([0,mccgRate]);
-% $$$             
 % TRANITION triggered histogram offset
-% $$$             sp(end+1) = subplot2(ny,numStates+2,[7,8],s+1);
-% $$$             plot(bhvccg{s},unit,2);axis('tight');        title('offset');
-% $$$             ylim([0,mccgRate]);
+            sp(end+1) = subplot2(ny,numStates+2,[11,12],s+1); hold('on');            
+            plot(bhvccg{sts}.tbin,RectFilter(sq(bhvccg{s}.ccg(:,unit==bhvccg{s}.cluMap(:,1),:,1))))
+            %plot(bhvccg{s}.tbin,RectFilter(sq(bhvccg{s}.ccg(:,unit==bhvccg{s}.cluMap(:,1),:))));
+            ylim([0,mccgRate]);
 
 % WAVEFORM of unit
 % $$$             sp(end+1) = subplot2(ny,numStates+2,[9:12],s+1);
@@ -350,12 +388,17 @@ for t = 1:numel(Trials),
         end
         
 
+        % FORMAT for figure parts
+        if generateFigureParts,
+            af(@(h) set(h,'Units','centimeters'), sp);
+            af(@(h) set(h,'Position',[h.Position(1:2),1.5,1.5]), sp);
+        end
 
         pause(0.01);
         
         FigName = ['pfs','_',Trial.filebase,'_unit-',num2str(unit)];
-        %print(gcf,'-depsc2',fullfile(FigDir,[FigName,'.eps']));
-        print(gcf,'-dpng',  fullfile(FigDir,Trial.filebase,[FigName,'.png']));
+        print(hfig,'-depsc2',fullfile(FigDir,Trial.filebase,[FigName,'.eps']));        
+        print(hfig,'-dpng',  fullfile(FigDir,Trial.filebase,[FigName,'.png']));
 toc
         delete(sp);        
 
@@ -363,20 +406,3 @@ toc
 end%for Trials
 
 
-
-% TESTING CODE
-
-
-% $$$     if testRequested,
-% $$$     htfig = figure();        
-% $$$         for u = 1:numel(units),
-% $$$             subplot(1,numel(pfkbs)+1,1);
-% $$$             plot(pft,units(u));
-% $$$             for sts = 1:numel(pfkbs),
-% $$$                 subplot(1,numel(pfkbs)+1,sts+1);
-% $$$                 plot(pfkbs{sts},units(u),'mean');
-% $$$             end
-% $$$             waitforbuttonpress();
-% $$$         end
-% $$$     end
-% $$$ 

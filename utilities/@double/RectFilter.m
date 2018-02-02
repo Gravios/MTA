@@ -3,7 +3,7 @@ function Data = RectFilter(Data,varargin)
 % 
 % Inputs:
 %  
-%     Data:   (MTAData)      Data to be filtered (NxMxPx...) 
+%     Data: (numeric:array,matrix)      Data to be filtered (NxMxPx...) 
 %     order:  (Integer)                   {default = 3} widow size in number of samples 
 %     numApplications: (Integer)          number of passes with rectangular filter
 
@@ -16,28 +16,23 @@ defargs = struct('order',                 3,                                    
 
 
 % MAIN ---------------------------------------------------------------------------------------------
-nind = nniz(Data.data);
-
-Data.data = cat(1,flipud(Data.data(1:order,:,:,:,:,:)),...
-                  Data.data,...
-                  flipud(Data.data(end-order:end,:,:,:,:,:)));
+Data = cat(1,flipud(Data(1:order,:,:,:,:,:)),...
+                  Data,...
+                  flipud(Data(end-order:end,:,:,:,:,:)));
 
 dimensions = size(Data);
 for n = 1:numApplications,
-    Data.data(nniz(Data),:,:,:,:,:) = ...
+    Data(:,:,:,:,:,:) = ...
         reshape(...
          permute(...
-          mean(circshift(GetSegs(Data(nniz(Data),:,:,:,:,:),1:sum(nniz(Data)),order,nan),...
+          mean(circshift(GetSegs(Data(:,:,:,:,:,:),1:size(Data,1),order,nan),...
                          floor(order/2),2),...
                1,'omitnan'),...
                  [[2:numel(dimensions)+1],1]),...
-                [sum(nniz(Data)),dimensions(2:end)]);
+                [size(Data,1),dimensions(2:end)]);
 end
 
-Data.data = Data.data(order+1:end-order-1,:,:,:,:,:);
-Data.data(~nind,:,:,:,:,:) = 0;
+Data = Data(order+1:end-order-1,:,:,:,:,:);
 
-% UPDATE hash property of Data object
-Data.update_hash(DataHash(struct('order',order,'numApplications',numApplications)));
 
 % END MAIN -----------------------------------------------------------------------------------------

@@ -685,7 +685,37 @@
 %               immobility
 %  Bugs: NA
 
+% req20171212 ----------------------------------------------------
+%  Status: active
+%  Type: ProcessData
+%  Final_Forms: NA
+%  Description: Go through Eduardo's rats which contain pressure 
+%               sensors to collect statistics.
+%  Bugs: NA
+
+% req20171213 ----------------------------------------------------
+%  Status: active
+%  Type: Analysis
+%  Final_Forms: NA
+%  Description: drzfield population stats
+%  Bugs: NA
+
+% req20171214 ----------------------------------------------------
+%  Status: active
+%  Type: Analysis
+%  Final_Forms: NA
+%  Description: Place fields in non theta periods minus ripples
+%  Bugs: NA
+
 % req20171215 ----------------------------------------------------
+%  Status: active
+%  Type: Analysis
+%  Final_Forms: NA
+%  Description: use placefield rate and area to search for point 
+%               spatial representation
+%  Bugs: NA
+
+% req20171216 ----------------------------------------------------
 %  Status: active
 %  Type: Analysis
 %  Final_Forms: NA
@@ -699,24 +729,53 @@
 %  Description: Phase precession analysis
 %  Bugs: NA
 
-% req20171221 ----------------------------------------------------
-%  Status: active
-%  Type: Analysis
-%  Final_Forms: NA
-%  Description: Ploting place fields of session over range of states
-%               for use in figures
-%  Bugs: NA
 
 
 
 %% 2018 01 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 
-% req20170109 ----------------------------------------------------
+% req20180109 ----------------------------------------------------
 %  Status: active
 %  Type: Analysis
 %  Final_Forms: NA
 %  Description: Refine place field selection, based on spatial information
 %               of each state
 %  Bugs: NA
+
+% req20180117 ----------------------------------------------------
+%  Status: active
+%  Type: Analysis
+%  Final_Forms: NA
+%  Description: Quick Gamma Burst Analysis
+%  Bugs: NA
+
+% req20180120 ----------------------------------------------------
+%  Status: active
+%  Type: Analysis
+%  Final_Forms: NA
+%  Description: testing new formulation of rhm
+%  Bugs: NA
+
+% req20180123 ----------------------------------------------------
+%  Status: active
+%  Type: Analysis
+%  Final_Forms: NA
+%  Description: RateMap(Pitch,Height) where drz := [-0.5,0.5]
+%  Bugs: NA
+
+% req20180127 ----------------------------------------------------
+%  Status: active
+%  Type: Analysis
+%  Final_Forms: NA
+%  Description: Comparison of trb hcom and nose prediction for placefields
+%  Bugs: NA
+
+% req20180129 ----------------------------------------------------
+%  Status: active
+%  Type: Analysis
+%  Final_Forms: NA
+%  Description: M: spatial self-representation
+%  Bugs: NA
+
 
 

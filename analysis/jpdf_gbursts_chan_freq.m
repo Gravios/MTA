@@ -1,11 +1,11 @@
 
-Trial = MTATrial('jg05-20120310');
+Trial = MTATrial('jg05-20120311');
 stc_mode = 'auto_wbhr';
 channels = 65:96;
 Trial.stc.updateMode(stc_mode);
 Trial.stc.load;
-ds = load(fullfile(Trial.spath,[Trial.name '.SelectBursts3.lfpinterp.all.1-96.mat']));
-ds = load(fullfile(Trial.spath,[Trial.name,'.DetectGammaBursts3_ALL.lfpinterp.65-96.mat']));
+ds = load(fullfile(Trial.spath,[Trial.name '.DetectGammaBursts3.lfpinterp.65-96.mat']));
+%ds = load(fullfile(Trial.spath,[Trial.name,'.DetectGammaBursts3_ALL.lfpinterp.65-96.mat']));
 numsts = numel(Trial.stc.states);
 
 figure(32343)

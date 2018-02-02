@@ -13,14 +13,39 @@ units(cell2mat(cf(@isempty,units))) = [];
 
 numTrials = numel(Trials);
 
+pft = cf(@(t) pfs_2d_theta(t),  Trials);
+
 pfd  = cell([1,3]);  
 [pfd{:}]= cf(@(t)  MjgER2016_drzfields(t), Trials);
 highRateInds = -0.5 < pfd{1}{1}.adata.bins{1} & pfd{1}{1}.adata.bins{1} < 0.5;
 
+nx = 4;
+ny = 2;
+t = 18;
+for u = 1:numel(units{t}),
+figure(29302302),clf();
+subplot2(ny,nx,[1,2],[1,2]);plot(pft{t},units{t}(u));colorbar();title(num2str(units{t}(u)));
+rm = plot(pfd{1}{t},units{t}(u),'isCircular',false);
+subplot2(ny,nx,[1],3);imagesc(pfd{1}{t}.adata.bins{1},pfd{1}{t}.adata.bins{2},rm');colorbar();axis('xy');
+subplot2(ny,nx,[2],3);imagesc(pfd{1}{t}.adata.bins{1},pfd{1}{t}.adata.bins{2},bsxfun(@rdivide,rm,max(rm))');colorbar();axis('xy');
+lrm = LocalMinima2(-rm,0,20);
+hold('on');
+scatter(pfd{1}{t}.adata.bins{1}(lrm(1)),pfd{1}{t}.adata.bins{2}(lrm(2)),20,'m','filled');
+rm = plot(pfd{3}{t},units{t}(u),'isCircular',false);
+subplot2(ny,nx,[1],4);imagesc(pfd{3}{t}.adata.bins{1},pfd{3}{t}.adata.bins{2},rm');colorbar();axis('xy');
+subplot2(ny,nx,[2],4);imagesc(pfd{3}{t}.adata.bins{1},pfd{3}{t}.adata.bins{2},bsxfun(@rdivide,rm,max(rm))');colorbar();axis('xy');
+lrm = LocalMinima2(-rm,0,20);
+hold('on');
+scatter(pfd{3}{t}.adata.bins{1}(lrm(1)),pfd{3}{t}.adata.bins{2}(lrm(2)),20,'m','filled');
+waitforbuttonpress();
+end
+
 map        = nan([numTrials,max(cellfun('length',units)),2]);
-rateMapInd = nan([numTrials,max(cellfun('length',units)),numel(pfd)]);
-rateMapVal = nan([numTrials,max(cellfun('length',units)),numel(pfd)]);
+rateMaxInd = nan([numTrials,max(cellfun('length',units)),numel(pfd)]);
+rateMaxVal = nan([numTrials,max(cellfun('length',units)),numel(pfd)]);
 rateMaxRng = nan([numTrials,max(cellfun('length',units)),numel(pfd),2]);
+rateMaxRngCnt = nan([numTrials,max(cellfun('length',units)),numel(pfd)]);
+
 
 for t = 1:numTrials,
     for u = 1:numel(units{t}),
@@ -31,31 +56,37 @@ for t = 1:numTrials,
             try
                 rateMaxRng(t,u,p,:) = cat(4,find([rateMap>[rateMaxVal(t,u,p)/2]]==1,1,'first'),...
                                             find([rateMap>[rateMaxVal(t,u,p)/2]]==1,1,'last'));
+                rateMaxRngCnt(t,u,p) = sum(isnan(rateMap(:)));
+
             end
             map(t,u,:) = cat(3,t,units{t}(u));
         end
     end
 end
 
-rateMaxVal = sq(reshape(rateMaxVal,[],1,numel(pfd)));
-rateMaxInd = sq(reshape(rateMaxInd,[],1,numel(pfd)));
-rateMaxRng = sq(reshape(rateMaxRng,[],1,numel(pfd),2));
+rateMaxVal    = sq(reshape(rateMaxVal,[],1,numel(pfd)));
+rateMaxInd    = sq(reshape(rateMaxInd,[],1,numel(pfd)));
+rateMaxRng    = sq(reshape(rateMaxRng,[],1,numel(pfd),2));
+rateMaxRngCnt = sq(reshape(rateMaxRngCnt,[],1,numel(pfd)));
+
+
 
 binsPitch  = pfd{1}{1}.adata.bins{2};
 binsHeight = pfd{2}{1}.adata.bins{2};
 binsRHM    = pfd{3}{1}.adata.bins{2};
 
-rateMaxPitch  = binsPitch(rateMaxInd(nniz(rateMaxInd,1),1));
-rateMaxHeight = binsHeight(rateMaxInd(nniz(rateMaxInd,2),2));
-rateMaxRHM    = binsRHM(rateMaxInd(nniz(rateMaxInd,3),3));
+rateMaxPitch  = binsPitch(rateMaxInd(nniz(rateMaxInd),1));
+rateMaxHeight = binsHeight(rateMaxInd(nniz(rateMaxInd),2));
+rateMaxRHM    = binsRHM(rateMaxInd(nniz(rateMaxInd),3));
+rateRngCnt =  rateMaxRngCnt(nniz(rateMaxInd),:,:);
 
 figure();  
-subplot(131);  hist(rateMaxPitch,25);
-subplot(132);  hist(rateMaxHeight,20);
-subplot(133);  hist(rateMaxRHM,25);
+subplot(131);  hist(rateMaxPitch(rateRngCnt(:,1)<12),20);
+subplot(132);  hist(rateMaxHeight(rateRngCnt(:,2)<6),20);
+subplot(133);  hist(rateMaxRHM(rateRngCnt(:,3)<15),20);
 
 figure();
-subplot(131);  plot(rateMaxPitch+randn(size(rateMaxPitch))/50,...
+subplot(131);  plot(rateMaxPitch+randn([sum(ind),1])/50,...
                     diff(rateMaxRng(nniz(rateMaxRng,1,1),1,:),1,3)+randn(size(rateMaxPitch)),'.');
 subplot(132);  plot(rateMaxHeight+randn(size(rateMaxHeight))*10,...
                     diff(rateMaxRng(nniz(rateMaxRng,2,1),2,:),1,3)+randn(size(rateMaxHeight)),'.');
@@ -63,27 +94,70 @@ subplot(133);  plot(rateMaxRHM+randn(size(rateMaxRHM))/20,...
                     diff(rateMaxRng(nniz(rateMaxRng,3,1),3,:),1,3)+randn(size(rateMaxRHM)),'.');
 
 
-figure();
-subplot(131);  
+rps = 100;
+pSc = 1/100;
+rSc = 1/20;
+hSc = 5;
+
+pSc = 0;
+rSc = 0;
+hSc = 0;
+
+
+FigDir = create_directory('/storage/gravio/figures/placefields'); 
+hax = gobjects([1,3]);
+hfig = figure();
+hfig.Units = 'centimeters';
+hfig.PaperPositionMode = 'auto';
+hax(1) = subplot(131);  
 hold('on');
-for i = 1:1,
-    plot(rateMaxPitch+randn(size(rateMaxPitch))/25,...
-         rateMaxHeight+randn(size(rateMaxHeight))*10,'.b');
+ind = rateRngCnt(:,1)<12&rateRngCnt(:,2)<6;
+out = [];
+for i = 1:rps,
+    %plot(rateMaxPitch(ind)+randn([sum(ind),1])/25,rateMaxHeight(ind)+randn([sum(ind),1])*10,'.b');
+    out = sum(cat(3,out,hist2([rateMaxPitch(ind)+randn([sum(ind),1])*pSc,rateMaxHeight(ind)+randn([sum(ind),1])*hSc],binsPitch,binsHeight)),3);
 end
+imagesc(binsPitch,binsHeight,out');
+axis('tight')
+xlabel('pitch (rad)')
+ylabel('height (mm)')
+title('Peak pitch vs height');
 
 
-subplot(132);  
+hax(2) = subplot(132);  
 hold('on');
-for i = 1:1,
-    plot(rateMaxPitch+randn(size(rateMaxPitch))/25,rateMaxRHM+randn(size(rateMaxRHM))/10,'.b');
+ind = rateRngCnt(:,1)<12&rateRngCnt(:,3)<15;
+out = [];
+for i = 1:rps,
+    %plot(rateMaxPitch(ind)+randn([sum(ind),1])/25,rateMaxRHM(ind)+randn([sum(ind),1])/10,'.b');
+    out = sum(cat(3,out,hist2([rateMaxPitch(ind)+randn([sum(ind),1])*pSc,rateMaxRHM(ind)+randn([sum(ind),1])*rSc],binsPitch,binsRHM)),3);
 end
+imagesc(binsPitch,binsRHM,out');
+axis('tight')
+xlabel('pitch (rad)');
+ylabel('rhm 6-12Hz (A.U.)');
+title('Peak pitch vs rhm');
 
-
-subplot(133);
+hax(3) = subplot(133);
 hold('on');
-for i = 1:1,
-    plot(rateMaxHeight+randn(size(rateMaxHeight))*10,rateMaxRHM+randn(size(rateMaxRHM))/10,'.b');
+ind = rateRngCnt(:,2)<6&rateRngCnt(:,3)<15;
+out = [];
+for i = 1:rps,    
+    %plot(rateMaxHeight(ind)+randn([sum(ind),1])*10,rateMaxRHM(ind)+randn([sum(ind),1])/10,'.b');
+    out = sum(cat(3,out,hist2([rateMaxHeight(ind)+randn([sum(ind),1])*hSc,rateMaxRHM(ind)+randn([sum(ind),1])*rSc],binsHeight,binsRHM)),3);
 end
+imagesc(binsHeight,binsRHM,out');
+axis('tight')
+xlabel('height (mm)');
+ylabel('rhm 6-12Hz (A.U.)');
+title('Peak height vs rhm');
+hfig.Position = [0.5,0.5,12,4];
+af(@(h) set(h,'Units','centimeters'), hax);
+af(@(h) set(h,'Position',[h.Position(1:2),2,2]), hax);
+FigName = ['pop_drzfields_jpdf'];
+print(gcf,'-depsc2',fullfile(FigDir,[FigName,'.eps']));
+print(gcf,'-dpng',  fullfile(FigDir,[FigName,'.png']));
+
 
 
 
@@ -93,22 +167,22 @@ hfig = figure();
 hfig.Units = 'centimeters';
 hfig.PaperPositionMode = 'auto';
 hax(1) = subplot(131);  
-plot(rateMaxPitch+randn(size(rateMaxPitch))/25,...
-     rateMaxHeight+randn(size(rateMaxHeight))*10,'.b','MarkerSize',1);
+ind = rateRngCnt(:,1)<12&rateRngCnt(:,2)<6;
+plot(rateMaxPitch(ind)+randn([sum(ind),1])/25,rateMaxHeight(ind)+randn([sum(ind),1])*10,'.b','MarkerSize',1);
 xlabel('pitch (rad)')
 ylabel('height (mm)')
 title('Peak pitch vs height');
 
 hax(2) = subplot(132);  
-plot(rateMaxPitch+randn(size(rateMaxPitch))/25,...
-     rateMaxRHM+randn(size(rateMaxRHM))/10,'.b','MarkerSize',1);
+ind = rateRngCnt(:,1)<12&rateRngCnt(:,3)<15;
+plot(rateMaxPitch(ind)+randn([sum(ind),1])/25,rateMaxRHM(ind)+randn([sum(ind),1])/10,'.b','MarkerSize',1);
 xlabel('pitch (rad)');
 ylabel('rhm 6-12Hz (A.U.)');
 title('Peak pitch vs rhm');
 
 hax(3) = subplot(133);
-plot(rateMaxHeight+randn(size(rateMaxHeight))*10,...
-     rateMaxRHM+randn(size(rateMaxRHM))/10,'.b','MarkerSize',1);
+ind = rateRngCnt(:,2)<6&rateRngCnt(:,3)<15;
+plot(rateMaxHeight(ind)+randn([sum(ind),1])*10,rateMaxRHM(ind)+randn([sum(ind),1])/10,'.b','MarkerSize',1);
 xlabel('height (mm)');
 ylabel('rhm 6-12Hz (A.U.)');
 title('Peak height vs rhm');

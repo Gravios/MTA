@@ -22,7 +22,7 @@ lfp = Trial.load('lfp',chans);
 %stc = Trial.load('stc','nn0317_PP');
 %stc = Trial.load('stc','nn0317');    
 
-stc = Trial.load('stc','NN0317R');
+stc = Trial.load('stc','msnn_ppsvd_raux');
 states = {'loc','rear','pause','groom','sit'};
 
 %wlfp = WhitenSignal(lfp.data,[],1);    
@@ -64,12 +64,17 @@ nyld.data = (clip(yld.data,0.01,100)-repmat(nanmedian(clip(yld.data,0.01,100)),[
     repmat(nanstd(clip(yld.data,0.01,100)),[yld.size(1),1,1]);    
 tl = [[0:tindShift-1]'./yld.sampleRate;tl+spectral.window/2/lfp.sampleRate];    
 
+%% Calculate clipped psd 1-40 Hz
+dnanThreshl = [prctile(reshape(10.*log10(yld.data),[],size(yld,3)),75)'];
+nanyld = yld.copy;
+nanyld.data = 10*log10(nanyld.data)>repmat(permute(dnanThreshl(:,1),[3,2,1]),yld.size([1,2]));
+
 
 %% compute high frequency stuff    
 th=[];    fh=[];    yh=[];
 spectral.nfft = 2^8;
 spectral.window = 2^7;
-spectral.freq = [40,250];
+spectral.freq = [30,130];
 parfor i = 1:lfp.size(2),
     [yh(:,:,i),fh(:,i),th(:,i)] = mtchglong(wlfp(:,i),spectral.nfft,lfp.sampleRate,spectral.window,spectral.window*0.875,[],[],[],spectral.freq);
 end
@@ -88,6 +93,51 @@ nyhd.data = bsxfun(@rdivide,...
 th = [[0:tindShift-1]'./yhd.sampleRate;th+spectral.window/2/lfp.sampleRate];
 try,delete(gcp('nocreate')),end
 
+dnanThresh = [prctile(reshape(10.*log10(yhd.data(:,fh(:,1)<130,:,:)),[],size(yld,3)),75)'];
+nanyhd = yhd.copy;
+nanyhd.data = 10*log10(nanyhd.data)>repmat(permute(dnanThresh(:,1),[3,2,1]),yhd.size([1,2]));
+
+fnyhd = nyhd.copy();
+fnyhd.filter('RectFilter',3,3);
+fnyhd.data = permute(fnyhd.data,[2,3,1]);
+fnyhd.filter('RectFilter',3,3);
+fnyhd.data = permute(fnyhd.data,[2,3,1]);
+fnyhd.filter('RectFilter',3,3);
+fnyhd.data = permute(fnyhd.data,[2,3,1]);
+
+fdnanThresh = [prctile(reshape(10.*log10(fnyhd.data(:,fh(:,1)<130,:,:)),[],size(yld,3)),75)'];
+fnanyhd = nyhd.copy();
+fnanyhd.data = 10*log10(fnanyhd.data)>repmat(permute(fdnanThresh(:,1),[3,2,1]),yhd.size([1,2]));
+
+
+sp = [];
+figure,
+sp(1) = subplot(211);  imagesc(th,fh,sq(fnyhd(:,:,5))'),  caxis([-1,3]),  colormap jet,  axis xy
+sp(2) = subplot(212);  imagesc(th,fh,sq(fnyhd(:,:,12))'),caxis([ -1,3]),  colormap jet,  axis xy
+linkaxes(sp,'xy');
+
+[gmins,gvals] = LocalMinimaN(-fnyhd.data(:,:,:),0,[5,5,1]);
+
+
+
+
+ind = 1:1000;
+sp = [];
+offset = 5
+figure,
+for c = 1:10
+    sp(end+1) = subplot(10,1,c);  
+    imagesc(th(ind),fh,sq(fnyhd(ind,:,c+offset))'),  caxis([-1,3]),  axis('xy');
+    colormap('jet');  
+    hold('on'); 
+    plot(th(gmins(gmins(:,3)==c+offset,1)),fh(gmins(gmins(:,3)==c+offset,2)),'*m')
+end
+linkaxes(sp,'xy');
+
+
+
+fxyz = xyz.copy;
+fxyz.filter('RectFilter',3,3);
 
 %% compute head speed    
 vxy = xyz.copy;
@@ -109,25 +159,27 @@ vxy.data = log10(vxy.data);
 
 
 
-%% Calculate clipped psd 1-40 Hz
-dnanThreshl = [prctile(reshape(10.*log10(yld.data),[],size(yld,3)),75)'];
-nanyld = yld.copy;
-nanyld.data = 10*log10(nanyld.data)>repmat(permute(dnanThreshl(:,1),[3,2,1]),yld.size([1,2]));
+
+%% Computing theta phase for all channels 
+tlfp = lfp.copy;
+tlfp.data = lfp(:,1:numel(chans));
+tlfp.resample(yhd);
+thetaPhase =  tlfp.phase;       
+tper = Trial.stc{'t'};
+tper.cast('TimeSeries');
+tper.resample(yhd);
+
+
+
+
+
 
 
 sp = [];
 figure,
-sp(1) = subplot(211);
-imagesc(th,fh,nyhd(:,1:32,18)'),
-caxis([-1,3]),
-colormap jet, 
-axis xy
-sp(2) = subplot(212);
-imagesc(th,fh,nanyhd(:,1:32,18)'),
-caxis([0,1]),
-colormap jet, 
-axis xy
-linkaxes(sp,'xy')
+sp(1) = subplot(211);  imagesc(th,fh,sq(nyhd(:,:,5))'),  caxis([-1,3]),  colormap jet,  axis xy
+sp(2) = subplot(212);  imagesc(th,fh,sq(nanyhd(:,:,5))'),caxis([ 0,1]),  colormap jet,  axis xy
+linkaxes(sp,'xy');
 
 
 
@@ -138,7 +190,7 @@ hfig.Position = [3,3,45,6];
 hfig.PaperPositionMode = 'auto';
 vstep = -2:0.5:1.5;
 for i = 1:numel(vstep)    
-    ind = stc{'s'}+[0.2,-0.2];
+    ind = stc{'r'}+[0.2,-0.2];
     ind.cast('TimeSeries',yld);
     ind = ind.data==1&vxyl(:,2)>0+vstep(i)&vxyl(:,2)<0.5+vstep(i);    
     subplot(1,numel(vstep),i);  
@@ -152,14 +204,61 @@ suptitle(['steady state spec count: ',Trial.filebase,' (1-40Hz)'])
 
 
 
+%% plot steady state spec count
+hfig = figure(9399349);
+hfig.Units = 'centimeters';
+hfig.Position = [3,3,45,6];
+hfig.PaperPositionMode = 'auto';
+vstep = -2:0.5:1.5;
+for i = 1:numel(vstep)    
+    ind = stc{'r'}+[0.1,-0.1];
+    ind.cast('TimeSeries',yhd);
+    ind = ind.data==1&vxyh(:,2)>0+vstep(i)&vxyh(:,2)<0.5+vstep(i);    
+    subplot(1,numel(vstep),i);  
+    imagesc(fh,1:32,sq(nansum(nanyhd(ind,:,1:numel(chans))))'./sum(ind));
+    caxis([0,.6]);
+    %colormap jet    
+    colormap parula    
+    xlabel('Frequency Hz')
+end
+suptitle(['steady state spec count: ',Trial.filebase,' (1-40Hz)'])
 
 
-%% Computing theta phase for all channels 
-tlfp = lfp.copy;
-tlfp.data = lfp(:,1:numel(chans));
-thetaPhase =  tlfp.phase;       
+
+
+
+f = fh<50;
+%f = 50<fh&fh<120;
+figure();
+ch = [1:4:32];
+for c = 1:numel(ch),    
+    subplot(1,numel(ch),c);
+    ind = sum(nanyhd(:,f,ch(c)),2)>0 & logical(tper.data);
+    hist2([vxyh(ind,1),thetaPhase(ind,6)],linspace(-2,2,20),linspace(-pi,pi,20));
+    colormap jet
+end
+
+bins = discretize(vxyh(:,2),linspace(-2,2,30));
+
+gcount = [];
+for f = 1:16,
+    for b = 1:29,
+        for c = 1:32,
+        gcount(b,f,c) = sum(nanyhd(bins==b,f,c));
+        end
+    end
+end
+
+figure,
+imagesc(linspace(-2,2,30),fh(1:16),gcount(:,:,10)');
+        
+    
+
+
 
 figure,imagesc(th,fh,10*log10(tyhd(:,:,30))')
+
+
 
 figure,
 imagesc(1:sum(nniz(thetaPhase)),1:numel(chans),thetaPhase(nniz(thetaPhase),:)');
@@ -169,11 +268,11 @@ colormap hsv
 
 
 
-% nan thresholds
-dnanThresh = [prctile(reshape(10.*log10(yhd.data),[],size(yld,3)),90)'];
-%             prctile(reshape(10.*log10(yhd.data),[],size(yld,3)),90)'];
-nanyhd = yhd.copy;
-nanyhd.data = 10*log10(nanyhd.data)>repmat(permute(dnanThresh(:,1),[3,2,1]),yhd.size([1,2]));
+% $$$ % nan thresholds
+% $$$ dnanThresh = [prctile(reshape(10.*log10(yhd.data),[],size(yld,3)),90)'];
+% $$$ %             prctile(reshape(10.*log10(yhd.data),[],size(yld,3)),90)'];
+% $$$ nanyhd = yhd.copy;
+% $$$ nanyhd.data = 10*log10(nanyhd.data)>repmat(permute(dnanThresh(:,1),[3,2,1]),yhd.size([1,2]));
 
 
 %% plot diagnostic time resolved psd and patchSD
@@ -193,19 +292,23 @@ linkaxes(sp,'xy')
 
 
 
-hfig = figure(93993491);clf
+hfig = figure(93993498);clf
 hfig.Units = 'centimeters';
 hfig.Position = [3,10,45,4];
 vstep = -2:0.5:1.5;
+sts = 'lrp';
+for s = 1:numel(sts),
 for i = 1:numel(vstep)
-    ind = stc{'p'}+[0.2,-0.2];
+    ind = stc{sts(s)}+[0.2,-0.2];
     ind.cast('TimeSeries',yhd);
     ind = ind.data==1&vxyh(:,2)>0+vstep(i)&vxyh(:,2)<0.5+vstep(i);    
-    subplot(1,numel(vstep),i);  
+    subplot2(3,numel(vstep),s,i);  
+    imagesc(fh,1:32,sq(nansum(nanyhd(ind,:,1:numel(chans))))'./sum(ind))    
     imagesc(fh,1:32,sq(nansum(nanyhd(ind,:,1:numel(chans))))'./sum(ind))
     caxis([0,1]);
     colormap jet    
     %colormap parula
+end
 end
 
 
@@ -236,7 +339,7 @@ makeGif(frms,['/storage/gravio//ownCloud/MjgEdER2016/spect_rear_trans',num2str(e
 
 
 %% plot bhv triggered clipped psd 
-OwnDir = '/storage/gravio/ownCloud/MjgEdER2016/';
+OwnDir = '/storage/gravio/nextcloud/MjgER2016/';
 FigDir = ['MeanPSD_bhv_',Trial.filebase];
 for sts='wrnpms',
     for evt = 1:2,

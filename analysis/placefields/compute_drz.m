@@ -19,25 +19,26 @@ function drz = compute_drz(Trial,varargin)
 defargs = struct('units',                  [],                                                   ...
                  'pft',                    [],                                                   ...
                  'pfstats',                [],                                                   ...
-                 'filtCutOffFreq',         2.5                                                   ...
+                 'filtCutOffFreq',         2.5,                                                  ...
+                 'marker',                 'nose'                                                ...
 );
-[units,pft,pfstats,filtCutOffFreq] = DefaultArgs(varargin,defargs,'--struct');
+[units,pft,pfstats,filtCutOffFreq,marker] = DefaultArgs(varargin,defargs,'--struct');
 %---------------------------------------------------------------------------------------------------
 
 %if isempty(pfstats),    pfstats = compute_pfstats_bs(Trial);    end
 
 %[mrt,mrp] = pft.maxRate(units,'mode','first');
 [mrt,mrp] = pft.maxRate(units);
-xyz = Trial.load('xyz');
+xyz = preproc_xyz(Trial,'trb');
 xyz.filter('ButFilter',3,filtCutOffFreq,'low');
 
 % Get the mean firing rate for each xy position along trajectory 
 wpmr = zeros(xyz.size(1),numel(units));
 [~,indx] = min(abs( repmat(pft.adata.bins{1}',xyz.size(1),1)...
-                    -repmat(xyz(:,Trial.trackingMarker,1),1,numel(pft.adata.bins{1}))),...
+                    -repmat(xyz(:,marker,1),1,numel(pft.adata.bins{1}))),...
                [],2);
 [~,indy] = min(abs( repmat(pft.adata.bins{2}',xyz.size(1),1)...
-                    -repmat(xyz(:,Trial.trackingMarker,2),1,numel(pft.adata.bins{2}))),...
+                    -repmat(xyz(:,marker,2),1,numel(pft.adata.bins{2}))),...
                [],2);
 
 rateMapIndex = sub2ind(pft.adata.binSizes',indx,indy);
@@ -55,7 +56,7 @@ peakPatchRate = mrt';
 for unit = units
     %peakPatchRate(1,end+1) = mean(pfstats.peakPatchRate(8,:,pfstats.cluMap==unit),'omitnan');
     %pfhxy = xyz(:,{'spine_middle','head_back'},:);
-    pfhxy = cat(2,xyz(:,{'head_front'},:),circshift(xyz(:,{'head_front'},:),round(xyz.sampleRate/5)));
+    pfhxy = cat(2,xyz(:,marker,:),circshift(xyz(:,marker,:),round(xyz.sampleRate/5)));
     pfhxy = cat(2,pfhxy,permute(repmat([mrp(unit==units,:),0],[size(xyz,1),1]),[1,3,2]));
     %pfhxy = cat(2,pfhxy,permute(repmat([fliplr(sq(mean(pfstats.peakPatchCOM(8,:,pfstats.cluMap==unit,:),'omitnan'))'),0],[size(xyz,1),1]),[1,3,2]));
     pfhxy = MTADxyz([],[],pfhxy,xyz.sampleRate);

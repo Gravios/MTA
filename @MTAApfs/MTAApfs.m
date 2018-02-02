@@ -74,8 +74,9 @@ classdef MTAApfs < hgsetget %< MTAAnalysis
 
         function Pfs = MTAApfs(Obj, varargin)     
             [units,states,overwrite,tag,binDims,SmoothingWeights,type,...
-             spkShuffle,posShuffle,numIter,xyzp,boundaryLimits,bootstrap,halfsample,shuffleBlockSize]=...
-            DefaultArgs(varargin,{[],'walk',0,[],[30,30],[1.2,1.2],'xy',0,0,1,MTADxyz([]),[],0,0,1});
+             spkShuffle,posShuffle,numIter,xyzp,boundaryLimits,bootstrap,halfsample,shuffleBlockSize,...
+             trackingMarker]=...
+            DefaultArgs(varargin,{[],'walk',0,[],[30,30],[1.2,1.2],'xy',0,0,1,MTADxyz([]),[],0,0,1,'nose'});
 
             units = units(:)';            
 
@@ -93,9 +94,8 @@ classdef MTAApfs < hgsetget %< MTAAnalysis
                     sampleRate = 10;
                     
                     if xyzp.isempty,
-                        xyz = Session.xyz.copy;
-                        xyz.load(Session);
-                        xyz.data = sq(xyz(:,Session.trackingMarker,1:numel(binDims)));
+                        xyz = preproc_xyz(Session,'trb');
+                        xyz.data = sq(xyz(:,trackingMarker,1:numel(binDims)));
                     else
                         xyz = xyzp;
                     end
@@ -132,7 +132,7 @@ classdef MTAApfs < hgsetget %< MTAAnalysis
                     Pfs.parameters.binDims = binDims;
                     Pfs.parameters.bootstrap = bootstrap;
                     
-                    Pfs.adata.trackingMarker = Session.trackingMarker;
+                    Pfs.adata.trackingMarker = trackingMarker;
                     Pfs.adata.bins = [];
                     if isempty(boundaryLimits),boundaryLimits = Session.maze.boundaries(1:numel(type),:);end
                     Pfs.adata.binSizes = round(abs(diff(boundaryLimits(1:numel(binDims),:),1,2))./binDims');
@@ -274,7 +274,7 @@ classdef MTAApfs < hgsetget %< MTAAnalysis
             sstpos = sq(xyz(pfsState,:));
             
 % LOAD Units into spk object;
-            Session.spk.create(Session,xyz.sampleRate,pfsState,units);
+            Session.spk.create(Session,xyz.sampleRate,pfsState,units,'deburst');
 
             i = 1;
             for unit=selected_units,

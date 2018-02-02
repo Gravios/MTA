@@ -9,9 +9,10 @@ function [pfs_dp,pfs_dh,pfs_dm] =  MjgER2016_drzfields(Trial,varargin)
 % DEFARGS ------------------------------------------------------------------------------------------
 defargs = struct('units',                          [],                                           ...
                  'overwrite',                      false,                                        ...
-                 'pfstats',                        []                                            ...
+                 'pfstats',                        [],                                           ...
+                 'marker',                         'nose'                                        ...
 );
-[units,overwrite,pfstats] = DefaultArgs(varargin,defargs,'--struct');
+[units,overwrite,pfstats,marker] = DefaultArgs(varargin,defargs,'--struct');
 %---------------------------------------------------------------------------------------------------
 
 
@@ -36,7 +37,7 @@ pft = pfs_2d_theta(Trial);
 
 
 if overwrite,
-    xyz = Trial.load('xyz');
+    xyz = preproc_xyz(Trial,'trb');
 % COMPUTE rhythmic head motion spectra
 % COMPUTE rhythmic head motion power within 5-12 Hz frequency band
     [rhm,fs,ts] = fet_rhm(Trial,[],'mtchglong');
@@ -47,7 +48,7 @@ if overwrite,
     % DIAGNOSTIC_FIG figure();  plot(rhmp.data);
 
 % COMPUTE direction rate zones
-    drz = compute_drz(Trial,units,pft);
+    drz = compute_drz(Trial,units,pft,pfstats,[],marker);
 end
 
 
@@ -90,7 +91,7 @@ pargs.boundaryLimits   = [-1,1;-10,350];
 pargs.binDims          = [0.1,20];
 if overwrite,
     pargs.overwrite = true;
-    pargs.xyzp = MTADxyz('data',[drz(:,1),xyz(:,'head_front',3)],'sampleRate',xyz.sampleRate);
+    pargs.xyzp = MTADxyz('data',[drz(:,1),xyz(:,'hcom',3)],'sampleRate',xyz.sampleRate);
     for u = 1:numel(units);
         pargs.units      = units(u);
         pargs.xyzp.data = [drz(:,u),xyz(:,'head_front',3)];

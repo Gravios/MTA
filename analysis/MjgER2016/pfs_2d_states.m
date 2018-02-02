@@ -5,7 +5,7 @@ function pfs = pfs_2d_states(Trial,varargin)
 defargs = struct('units',         [],                                                            ...
                  'stcMode',       'msnn_ppsvd_raux',                                             ...
                  'states',        {{'loc&theta','lloc&theta','hloc&theta','rear&theta',          ...
-                                    'pause&theta','lpause&theta','hpause&theta','theta-sit-groom'}},...
+                                    'pause&theta','lpause&theta','hpause&theta'}},...
                  'reportFig',     true,                                                          ...
                  'tag',           '',                                                            ...
                  'overwrite',     false                                                          ...
@@ -42,17 +42,13 @@ end
 
 % REDUCE clu list based on theta pfs max ratea
 if isempty(units)
-    pft = pfs_2d_theta(Trial);
-    mrt = pft.maxRate;
-    units = select_units(Trial,18);
-    units = units(mrt(pft.data.clu(units))>0.2);
+    units = select_placefields(Trial,18);
 end
 
 nsts = numel(states);
 
-
 %% Setup figure paths
-OwnDir = '/storage/gravio/nextcloud/MjgER2016/';
+OwnDir = '/storage/gravio/figures/placefields/';
 FigDir = ['pfs_2d_states_',Trial.filebase,'_',tag];
 mkdir(fullfile(OwnDir,FigDir));
 
@@ -60,12 +56,10 @@ mkdir(fullfile(OwnDir,FigDir));
 %% compute 3d place fields for the theta state
 pfs = {};
 for s = 1:nsts
-    defargs = get_default_args_MjgEdER2016('MTAApfs','struct');
+    defargs = get_default_args('MjgER2016','MTAApfs','struct');
     defargs.units = units;
     defargs.states = states{s};
-    defargs.numIter = 1;
-    defargs.halfsample = false;
-    defargs.overwrite = true;
+    defargs.overwrite = overwrite;
     defargs = struct2varargin(defargs);        
     pfs{s} = MTAApfs(Trial,defargs{:});      
 end
@@ -114,7 +108,7 @@ if reportFig
         end        
     end
 
-    %figure();plot(log10(Trial.nq.Refrac(units)+eps)+randn([numel(units),1]),max(maxPfsRate),'.')    
+    %figure();plot(log10(Trial.nq.Refrac(units)+eps)+randn([numel(units),1]),Trial.nq.SNR(units),'.')    
     
     
     %% Plot place fields sliced along z axis
@@ -184,13 +178,3 @@ if reportFig
     end
 
 end
-% $$$ units =[...
-% $$$      5     7    10    11    13    19    25    29    31    32    33    34    35 ...
-% $$$     36    37    38    41    42    43    46    47    48    49    50    51    53 ...
-% $$$     54    59    63    65    67    68    75    77    79    80    84    85    88 ...
-% $$$     89    90    92    93    94    95    98   100   104   105   106   107   108 ...
-% $$$    109   111   112   113   114   115   119   120   122   124   126   127   128 ...
-% $$$    129   130   131   132   134   135   136   137   138   139   140   141   145 ...
-% $$$    147   148   149   151   152   153   155   156   157   162   163   165   166 ...
-% $$$    167   168   169   172   173   174   175   178   179   181   185   187   191 ...
-% $$$    197   208   212   217   218   223   224   227   238   239   244   247   252];

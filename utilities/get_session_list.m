@@ -264,6 +264,7 @@ switch sessionList
     
     
   case 'ncp'
+    % DO NOT REBUILD: Paths are incorrect
     tmy_nlx = my_nlx;
     tmy_xyz = my_xyz;
         
@@ -329,6 +330,9 @@ switch sessionList
     Sessions(end+1) =    Sessions(end);
     Sessions(end).sessionName = 'Ed01-20140709';
 
+    Sessions(end+1) =    Sessions(end);
+    Sessions(end).sessionName = 'Ed01-20140717';
+
     % 9-10
     % Ed03 Sessions
     Sessions(end+1) =    Sessions(end);
@@ -347,6 +351,17 @@ switch sessionList
     Sessions(end).sessionName = 'Ed05-20140529';
     Sessions(end).mazeName    = 'ont';
 
+    Sessions(end+1) =    Sessions(end);
+    Sessions(end).sessionName = 'Ed10-20140816';
+    Sessions(end).mazeName    = 'cof';
+    Sessions(end).ncpChannel  = '66';    
+
+    Sessions(end+1) =    Sessions(end);    
+    Sessions(end).sessionName = 'Ed10-20140817';
+    Sessions(end).trialName   = 'gnd';
+    Sessions(end).includeSyncInd = [1:7];
+    
+    
 
   case 'MjgER2016',
     tmy_nlx = my_nlx;
