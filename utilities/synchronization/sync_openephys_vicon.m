@@ -1,5 +1,7 @@
 function Session = sync_openephys_vicon(Session,viconSampleRate)
-% Session = create(Session,TTLValue)
+% sync_openephys_vicon(Session,viconSampleRate)
+%
+%
 % Populate a Session with xyz data synchronized to
 % electrophysiological data based on an event file
 %
@@ -10,23 +12,15 @@ ERR.type = 'MTASession:create';
 ERR.msg  = ['SyncPeriods is empty, check event file that ' ...
             'the TTLValues corresponding to the recording ' ...
             'trials is equal to: %s'];
-try
-    Par = LoadPar(fullfile(Session.spath, [Session.name '.xml']));            
-catch
-    warning(['xml parameter file in the nlx folder may ' ...
-             'not exist'])
-end
 
-%% Because users make me cry 
-% $$$ delete(fullfile(Session.spath,['*',Session.maze.name,'.all*']));
-% $$$ delete(fullfile(Session.spath,['*.ses.*']));
-% $$$ delete(fullfile(Session.spath,['*.trl.*']));
-
+Par = LoadPar(fullfile(Session.spath, [Session.name '.xml']));            
 
 if exist('Par','var'),
-    %% Load single channel of lfp to check the exact number of samples
+% LOAD single channel of lfp to check the number of samples
     lfp = LoadBinary(fullfile(Session.spath, [Session.name '.lfp']),1,Par.nChannels,4)';
+% ASSIGN synchronization periods in sesconds as continuous time
     recordSync = [0,numel(lfp)./Par.lfpSampleRate];
+    
     lfpSyncPeriods = MTADepoch([],[],recordSync+[1/Par.lfpSampleRate,1/Par.lfpSampleRate],1,recordSync,0);
     clear('lfp');
     Session.lfp = MTADlfp(Session.spath,[Session.name '.lfp'],[],Par.lfpSampleRate,lfpSyncPeriods,0);    
@@ -52,12 +46,12 @@ end
 %% Organize the Sessions trials into a cell array
 %% Return the names of the markers
 if isempty(viconSampleRate),
-    [xyzData, markers, viconSampleRate] = concatViconFiles(Session);            
+    [xyzData, markers, viconSampleRate] = concatenate_vicon_files(Session);            
     if isempty(viconSampleRate),
         error('MTA:utilities:syncViconNlx:emptySampleRate');
     end
 else
-    [xyzData, markers] = concatViconFiles(Session);            
+    [xyzData, markers] = concatenate_vicon_files(Session);
 end
 
 %% Load VSK if possible 

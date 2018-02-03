@@ -1,66 +1,73 @@
 function Session = sync_nlx_vicon(Session,TTLValue,viconSampleRate)
-% Session = create(Session,TTLValue)
+%
 % Populate a Session with xyz data synchronized to
 % electrophysiological data based on an event file
 %
-% note - the event file must be located in the nlx folder
-%        of the MTA directory tree
+% suports a single subject.
+%   %NOTE - multi subject suport will be implemented at a later date
 %
-ERR.type = 'MTASession:create';            
+% note - the event file must be located in the nlx folder
+%
+%
+ERR.type = 'MTASession:create';
 ERR.msg  = ['SyncPeriods is empty, check event file that ' ...
             'the TTLValues corresponding to the recording ' ...
             'trials is equal to: %s'];
-try
-    Par = LoadPar(fullfile(Session.spath, [Session.name '.xml']));            
-catch
-    warning(['xml parameter file in the nlx folder may ' ...
-             'not exist'])
-end
 
-%% Because users make me cry 
-% $$$ delete(fullfile(Session.spath,['*',Session.maze.name,'.all*']));
-% $$$ delete(fullfile(Session.spath,['*.ses.*']));
-% $$$ delete(fullfile(Session.spath,['*.trl.*']));
+% LOAD Session parameter file
+% LOAD single channel of lfp to obtain the exact number of samples
+  % NOTE - should be able to compute this from information within
+  % parameter file and directory info
+% ASSIGN synchronization periods in sesconds as continuous time
+% CREATE Sync object for lfp
+Par = LoadPar(fullfile(Session.spath, [Session.name '.xml']));            
+lfp = LoadBinary(fullfile(Session.spath, [Session.name '.lfp']),1,Par.nChannels,4)';
+recordSync = [0,numel(lfp)./Par.lfpSampleRate];
+lfpSyncPeriods = 
+clear('lfp');
+Session.lfp = MTADlfp(Session.spath,             ... Path
+                      [Session.name '.lfp'],     ... File Name
+                      [],                        ... Data
+                      Par.lfpSampleRate,         ... Sample Rate
+                      MTADepoch([],[],           ... Sync Periods
+                                recordSync+[1/Par.lfpSampleRate,1/Par.lfpSampleRate],... Data
+                                1,                   ... Sample Rate
+                                recordSync,          ... Sync Periods
+                                0),                  ... Sync Origin
+                      0);%                           Sync Origin
+Session.lfp.filename = [Session.name '.lfp']; % NOTE - May be
+                                              % redundant
+% SET session master sample rate
+Session.sampleRate = Par.SampleRate;
 
-
-if exist('Par','var'),
-    %% Load single channel of lfp to check the exact number of samples
-    lfp = LoadBinary(fullfile(Session.spath, [Session.name '.lfp']),1,Par.nChannels,4)';
-    recordSync = [0,numel(lfp)./Par.lfpSampleRate];
-    lfpSyncPeriods = MTADepoch([],[],recordSync+[1/Par.lfpSampleRate,1/Par.lfpSampleRate],1,recordSync,0);
-    clear('lfp');
-    Session.lfp = MTADlfp(Session.spath,[Session.name '.lfp'],[],Par.lfpSampleRate,lfpSyncPeriods,0);    
-    Session.lfp.filename = [Session.name '.lfp'];
-    Session.sampleRate = Par.SampleRate;
-end
-
+% CREATE directories within current project folder
 if ~exist(Session.spath,'dir')
     if ~exist(Session.spath,'dir') && ...
         exist(fullfile(Session.path.data,'nlx',Session.name),'dir') && ...
         exist(fullfile(Session.path.data,'xyz',Session.name),'dir')
-        mkdir(Session.spath);
-        
+        create_directory(Session.spath);        
     else
         e.message    = ['Session: ' Session.name ', cannot be found or does not exist. ' ...
-                       'Check paths or see the README for the correct directory structure for the MTA toolbox.'];
+                       'Check paths or see the README for the correct directory structure ' ...
+                       'for the MTA toolbox.'];
         e.identifier = 'MTA:utilities:syncViconNlx:Session404';
         error(e);
     end
 end
 
 
-%% Organize the Sessions trials into a cell array
-%% Return the names of the markers
+% CONCATENATE xyz positions files
+% GET marker names from vsk file
+% CREATE marker model from vsk file
 if isempty(viconSampleRate),
-    [xyzData, markers, viconSampleRate] = concatViconFiles(Session);            
+    [xyzData, markers, viconSampleRate] = concatenate_vicon_files(Session);            
     if isempty(viconSampleRate),
         error('MTA:utilities:syncViconNlx:emptySampleRate');
     end
 else
-    [xyzData, markers] = concatViconFiles(Session);            
+    [xyzData, markers] = concatenate_vicon_files(Session);
 end
 
-%% Load VSK if possible 
 vsk_path = fullfile(Session.spath, [Session.name '-' Session.maze.name '.vsk']);
 if exist(vsk_path,'file'),
     model = MTAModel(vsk_path,'-vsk');
@@ -71,11 +78,14 @@ else
 end
 Session.model = model;
 
-%assert(exist([Session.spath Session.name '.all.evt'],'file'))
-% Load events
 
+
+% LOAD recording events
+% PARSE Start and stop times from event file
+% REMOVE non vicon related events
+% CONCATENATE start and stop events 
 events = LoadEvents(fullfile(Session.spath, [Session.name '.all.evt']));
-stopTTL = '0x0000';
+stopEventTTL = '0x0000';
 
 pfirstVStart = find(events.Clu==find(~cellfun(@isempty,regexp(events.Labels,TTLValue))),1,'first')-1;
 events.time(1:pfirstVStart)=[];
@@ -83,36 +93,21 @@ events.Clu(1:pfirstVStart)=[];
 events.description(1:pfirstVStart)=[];
 
 vstarts = events.time(events.Clu==find(~cellfun(@isempty,regexp(events.Labels,TTLValue))));
-vstops  = events.time(find(ismember(events.Clu,find(~cellfun(@isempty,regexp(events.Labels,stopTTL)))),numel(vstarts),'first'));
-tsRanges = [vstarts,vstops];
-            
-%% MUA HAHAHAHAHAAAaaaaaa 
-% but seriously it just finds the events with the TTLValue and then
-% the next event which corresponds to the stopTTL
-% $$$     tsRanges = [events.time(events.Clu==find(~cellfun(@isempty,regexp(events.Labels,TTLValue)))),...
-% $$$        events.time(find(events.Clu==find(~cellfun(@isempty,regexp(events.Labels,TTLValue))))+...
-% $$$ cell2mat(cellfun(@find,...                   
-% $$$ cellfun(@eq,...                   
-% $$$ cellfun(@subsref,repmat({events},numel(find(events.Clu==find(~cellfun(@isempty,regexp(events.Labels,TTLValue))))),1),cellfun(@substruct,...
-% $$$ repmat({'.'},numel(find(events.Clu==find(~cellfun(@isempty,regexp(events.Labels,TTLValue))))),1),...
-% $$$ repmat({'Clu'},numel(find(events.Clu==find(~cellfun(@isempty,regexp(events.Labels,TTLValue))))),1),...
-% $$$ repmat({'()'},numel(find(events.Clu==find(~cellfun(@isempty,regexp(events.Labels,TTLValue))))),1),...
-% $$$ mat2cell(cellfun(@colon,mat2cell(find(events.Clu==find(~cellfun(@isempty,regexp(events.Labels,TTLValue)))),ones(numel(find(events.Clu==find(~cellfun(@isempty,regexp(events.Labels,TTLValue))))),1),1),repmat({numel(events.Clu)},numel(find(events.Clu==find(~cellfun(@isempty,regexp(events.Labels,TTLValue))))),1),'Uniformoutput',false),ones(numel(find(events.Clu==find(~cellfun(@isempty,regexp(events.Labels,TTLValue))))),1),1),'Uniformoutput',false),'Uniformoutput',false),repmat({find(~cellfun(@isempty,regexp(events.Labels,stopTTL)))},numel(find(events.Clu==find(~cellfun(@isempty,regexp(events.Labels,TTLValue))))),1),'Uniformoutput',false),repmat({1},numel(find(events.Clu==find(~cellfun(@isempty,regexp(events.Labels,TTLValue))))),1),repmat({'first'},numel(find(events.Clu==find(~cellfun(@isempty,regexp(events.Labels,TTLValue))))),1),'uniformoutput',false))-1)];
+vstops  = events.time(find(ismember(events.Clu,find(~cellfun(@isempty,regexp(events.Labels,stopEventTTL)))),numel(vstarts),'first'));
+viconPeriods = [vstarts,vstops];
 
 
-%% Assign xyz data to nlx event epochs
-syncPeriods=[];
+% ASSIGN xyz data to start/stop periods
+viconSyncPeriods=[];
 xyzDataInd = [];
 for i=1:numel(xyzData),
     if ~isempty(xyzData{i})
-        for j=1:size(tsRanges,1),
-            %diff(tsRanges(j,:))-size(xyzData{i},1)/viconSampleRate
-            if abs(diff(tsRanges(j,:))*10-size(xyzData{i},1)/viconSampleRate*10)<0.2,
+        for j=1:size(viconPeriods,1),
+            if abs(diff(viconPeriods(j,:))*10-size(xyzData{i},1)/viconSampleRate*10)<0.2,
                 % ???Shift time back so index corresponds to
-                % syncPeriods(1) :-1/viconSampleRate???
-                syncPeriods(end+1,:) = tsRanges(j,:)-1/viconSampleRate;
-
-                tsRanges(tsRanges(j,1)>=tsRanges(:,1),:) = [];
+                % viconSyncPeriods(1) :-1/viconSampleRate???
+                viconSyncPeriods(end+1,:) = viconPeriods(j,:)-1/viconSampleRate;
+                viconPeriods(viconPeriods(j,1)>=viconPeriods(:,1),:) = [];
                 xyzDataInd(end+1) = i;
                 break;
             end
@@ -121,62 +116,75 @@ for i=1:numel(xyzData),
 end
 
 
-%% Error if no NLX events match xyzData
-assert(~isempty(syncPeriods),ERR.type,ERR.msg,TTLValue);
+% THROW error if no NLX events match xyzData
+assert(~isempty(viconSyncPeriods),ERR.type,ERR.msg,TTLValue);
 
-%% Select xyzData which match NLX events Pairs
+% SELECT xyzData which match NLX events Pairs
 xyzData = xyzData(xyzDataInd);
 
 
-%% Setup the Session Synchronization Periods
+% SETUP the Session Synchronization Periods
 % syncViconNlx - Sessions are synchronized to the period
 % between the start and end  of vicon recording
-Session.sync = MTADepoch(Session.spath,[Session.filebase '.sync.mat'],syncPeriods([1,end]),1,recordSync,0,[],[],[],'sync');
+Session.sync = MTADepoch(Session.spath,                      ... Path
+                         [Session.filebase '.sync.mat'],     ... FileName
+                         viconSyncPeriods([1,end]),               ... Data
+                         1,                                  ... Sample Rate
+                         recordSync,                         ... Sync Periods
+                         0,                                  ... Sync Origin
+                         [],                                 ... Type
+                         [],                                 ... Extension
+                         [],                                 ... Name
+                         'sync');%                               Label
 Session.sync.save(1);
 
 
-%% Concatenate all xyz pieces and fill gaps with zeros
+% CONCATENATE all xyz pieces and fill gaps with zeros
 nViconTrials = length(xyzData);
 xyzLengths = cellfun(@length,xyzData);
-xyz = zeros([ceil(diff(syncPeriods([1,end]))*viconSampleRate),size(xyzData{1},2),size(xyzData{1},3)]);
-syncXyzStart = round((syncPeriods(1:length(syncPeriods))-syncPeriods(1))*viconSampleRate+1);
-%syncShift = [0;floor(diff([syncPeriods(1:end-1,2) syncPeriods(2:end,1)],1,2)*viconSampleRate)];
+xyz = zeros([ceil(diff(viconSyncPeriods([1,end]))*viconSampleRate),size(xyzData{1},2),size(xyzData{1},3)]);
+syncXyzStart = round((viconSyncPeriods(1:length(viconSyncPeriods))-viconSyncPeriods(1))*viconSampleRate+1);
 for s=1:nViconTrials,
-% $$$     if syncShift(s),
-% $$$         xyz = cat(1,xyz,zeros(syncShift(s),size(xyzData{s},2),size(xyzData{s},3)));
-% $$$     end
-xyzseg = xyzData{s};
-xyzseg(xyzseg==0)=eps;
-xyz(syncXyzStart(s):syncXyzStart(s)+xyzLengths(s)-1,:,:) = xyzseg;
-% $$$     [size(xyz,1)/viconSampleRate+syncPeriods.data(1)+1/viconSampleRate,syncPeriods.data(s)]
-% $$$     diff([size(xyz,1)/viconSampleRate+syncPeriods.data(1)+1/viconSampleRate,syncPeriods.data(s)])
-% $$$     xyz = cat(1,xyz,xyzData{s});
+    xyzseg = xyzData{s};
+    xyzseg(xyzseg==0)=eps;
+    xyz(syncXyzStart(s):syncXyzStart(s)+xyzLengths(s)-1,:,:) = xyzseg;
 end
-%xyz(syncXyzStart(s)+xyzLengths(s):end,:,:)=1;
 xyz = double(xyz);
 
 
-%% MTASpk Object - holds all neuronal spiking information
+% INITIALIZE MTASpk Object - holds all neuronal spiking information
 Session.spk = MTASpk;
 Session.spk.create(Session);
 
-%% Update the synchronization periods of the LFP object
+
+% UPDATE the synchronization periods of the LFP object
 Session.lfp.sync.sync = Session.sync.copy;
 Session.lfp.origin =  Session.sync.data(1);
 
-%% MTAStateCollection object holds all behavioral sets of periods
+
+% INITIALIZE MTAStateCollection object, which holds all behavioral sets of periods
 Session.stc = MTAStateCollection(Session.spath,Session.filebase,'default',[],[],1);
 Session.stc.updateSync(Session.sync);
 Session.stc.updateOrigin(0);
 
 
-syncPeriods = MTADepoch([],[],syncPeriods,1,Session.sync.copy,0);
 
-Session.xyz = MTADxyz(Session.spath,Session.filebase,xyz,viconSampleRate,...
-                      syncPeriods,Session.sync.data(1),Session.model);                  
+% INITIALIZE MTADxyz object to contain vicon data
+Session.xyz = MTADxyz(Session.spath,            ... Path
+                      Session.filebase,         ... File Name
+                      xyz,                      ... Data
+                      viconSampleRate,          ... Sample Rate
+                      MTADepoch([],[],          ... Sync Periods
+                                viconSyncPeriods,    ... Data
+                                1,                   ... Sample Rate
+                                Session.sync.copy,   ... Sync Periods
+                                0),                  ... Sync Sync Origin
+                      Session.sync.data(1),     ... XYZ Sync Origin
+                      Session.model);%          ... model  
 Session.xyz.save;
 Session.xyz.clear;
 
+% INITIALIZE MTADang object for inter marker spherical coordinates
 Session.ang = MTADang(Session.spath,...
                       Session.filebase,...
                       [],...
@@ -185,8 +193,11 @@ Session.ang = MTADang(Session.spath,...
                       Session.xyz.origin,...
                       Session.model);
 
-Session.ufr = MTADufr(Session.spath,Session.filebase);
+% INITIALIZE MTADufr object to hold unit firing rates computed from MTASpk object
+Session.ufr = MTADufr(Session.spath,...
+                      Session.filebase);
 
+% INITIALIZE MTADfet object to hold feature data
 Session.fet = MTADfet(Session.spath,...
                       [],...
                       [],...
@@ -195,10 +206,7 @@ Session.fet = MTADfet(Session.spath,...
                       Session.sync.data(1),...
                       []);                  
 
-
 Session.save;
 Session.spk.clear;
-
-end
 
 

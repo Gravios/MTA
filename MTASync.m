@@ -1,10 +1,34 @@
 classdef MTASync < hgsetget
-
+% MTASync
+% Object containing the synchronization time periods of recording
+% systems relative to a primary recording system.
+%
+% Classes which contain MTASync objecs:
+%    MTASession:
+%      MTATrial
+%    MTAData:
+%      MTADxyz
+%      MTADang
+%      MTADlfp
+%      MTADufr
+%      MTADepoch
+%
+% Generally instantiated during the creation of a session
+%    see MTA:utilities:synchronization:sync_nlx_vicon.m
+%        MTA:utilities:synchronization:sync_openephys_vicon.m
+% 
+% NOTE: May be obsolete, replaced by MTADepoch?
+%
+    
     properties 
-        filename
-        path        % path to file containing object
+        %filename - string: filename build from MTASession information
+        filename    
+        %path - string: path to file containing object
+        path 
+        %ext - string: 3-4 character file extension for identification
         ext
-        data        % data
+        %data - numeric/MTASync: contains synchronization data
+        data        
     end
     
     methods

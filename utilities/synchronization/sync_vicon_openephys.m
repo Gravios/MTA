@@ -8,7 +8,7 @@ Session.spath = '/storage/javier/data/processed/xyz/JM11-20161126/';
 Session.maze.name = 'cof';
 Session.name = 'JM11-20161126';
 
-[xyzData, markers, viconSampleRate] = concatViconFiles(Session);            
+[xyzData, markers, viconSampleRate] = concatenate_vicon_files(Session);            
 
 xyzSampleRate = 199.997752;
 (diff(ThreshCross(lfp(:,13),1e4,1),1,2)-4)./1250-cellfun(@length,xyzData(1:5))'./xyzSampleRate
