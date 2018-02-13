@@ -3,12 +3,12 @@ function rateMap = plot(Pfs,varargin)
 % function rateMap = plot(Pfs,varargin)
 % plot placefield of the specified unit
 % varargin:
-%    unit                   [],                                                   
-%    nMode                  'mean',                                               
-%    ifColorbar             false,                                                
-%    maxRate                [],                                                   
+%    unit                   []
+%    nMode                  'mean'
+%    ifColorbar             false
+%    maxRate                []                                                   
 %    isCircular             true
-%    reqSigVals             false
+%    sigThresh              []
 %
 
 
@@ -81,15 +81,22 @@ switch numel(Pfs.parameters.type)
 
 % ASSIGN elements with nans a black color value
     rateMap(isnan(rateMap)) = -1;
-    imagesc(bin1,bin2,rateMap');
+    imagescnan({bin1,bin2,rateMap'},[0,maxRate],'linear',false,[0,0,0]);
+    
+    if ifColorbar,
+        colorbar();
+        caxis([0,maxRate])
+    end
+    
+    %imagesc(bin1,bin2,rateMap');
 
 % APPEND text which contains the maximum rate of the map
 % $$$     text(Pfs.adata.bins{1}(end)-250,Pfs.adata.bins{2}(end)-50,...
 % $$$          sprintf('%2.1f',max(rateMap(:))),'Color','w','FontWeight','bold','FontSize',8)
 % SET colormap with lowest value as black
-    colormap([0,0,0;parula]);
+%colormap([0,0,0;parula]);
 % ADJUST color scale
-    caxis([-1,maxRate]);
+%caxis([-1,maxRate]);
     axis('xy');
   
   case 3

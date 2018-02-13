@@ -28,6 +28,10 @@ function [handleImage, handleColorbar] = imagescnan(imageData, varargin)
 %                imageData has only NaN values
 % Evgeny Resnik: Added h2 as an optional output parameters to be able to
 %                change properties of colorbars (06.2012).
+% 
+% Justin Graboski: new colormapping scheme - needs more opts for over/under max/min
+% 
+
 % DEFARGS ------------------------------------------------------------------------------------------
 defargs = struct('colorLimits',               [],        ...
                  'dataType',                  'linear',  ...
@@ -77,6 +81,7 @@ switch dataType
   case 'linear'
     cm = colorMap(1000);
     bins = discretize(imageData,linspace([colorLimits,1000]));
+    bins(imageData>colorLimits(2)) = 1000;    
     finalImage = reshape(repmat(bins,[1,1,3]),[],3);
     finalImage(nniz(finalImage),:) = cm(finalImage(nniz(finalImage),1),:);
     finalImage(isnan(imageData(:)),:) = repmat(nanRGB,[sum(isnan(imageData(:))),1]);
@@ -125,12 +130,17 @@ end
 set(gca, 'ydir', 'reverse')
 
 handleImage    = gca;
-handleColorbar = SideBar;
-image(0,linspace([colorLimits,1000]), permute(cm, [1,3,2]));
-set(handleColorbar, 'ydir', 'normal');
-set(handleColorbar, 'xtick', []);
-set(handleColorbar, 'yaxislocation', 'right');
-axes(handleImage);
+
+if colorbarIsRequired,
+    handleColorbar = SideBar;
+    image(0,linspace([colorLimits,1000]), permute(cm, [1,3,2]));
+    set(handleColorbar, 'ydir', 'normal');
+    set(handleColorbar, 'xtick', []);
+    set(handleColorbar, 'yaxislocation', 'right');
+    axes(handleImage);
+end
+
+
 
 
 % END MAIN -----------------------------------------------------------------------------------------

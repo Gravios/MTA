@@ -779,3 +779,12 @@
 
 
 
+%% 2018 02 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+
+% req20180206 ----------------------------------------------------
+%  Status: active
+%  Type: Analysis
+%  Final_Forms: NA
+%  Description: check feature coregistration quality of xyz preprocessing
+%               algorithm modification SPLINE_SPINE_HEAD_EQD option
+%  Bugs: NA

@@ -15,26 +15,6 @@ function [xyz,ss] = preproc_xyz(Trial,varargin)
 %    trb
 % 
 
-% USE this example to make beter eqd 
-% $$$ format long g
-% $$$ fpath = 'Y:\Whaling\raw data\matlab\data cleaning\10m res\';
-% $$$ files = dir( fullfile(fpath,'txyzMLLW_*.txt') ); 
-% $$$ files = strcat(fpath,{files.name}');
-% $$$ f_txt=[];
-% $$$ for i=1:numel(files)
-% $$$     data = importdata(files{i});
-% $$$     total_length = arclength(data(:,2),data(:,3),data(:,4),'linear');
-% $$$     if total_length>10
-% $$$         newData= interparc(0:(10/total_length):1,data(:,2),data(:,3),data(:,4),'linear');
-% $$$         f_txt=[f_txt;newData];
-% $$$     else
-% $$$         N=.5;
-% $$$         newData= interparc(0:N:1, data(:,2), data(:,3),data(:,4),'linear');
-% $$$         f_txt=[f_txt;newData];
-% $$$     end
-% $$$ end
-% $$$ dlmwrite('10mres.txt',f_txt); 
-
 
 [procOpts,overwrite] = DefaultArgs(varargin,{{},false},true);
 Trial = MTATrial.validate(Trial);
@@ -50,6 +30,7 @@ if isempty(Trial.fet),
                         []);                  
 end
 % DELBLOCK end
+
 
 
 % XYZ Positions of Markers
@@ -96,20 +77,9 @@ while ~isempty(procOpts)
         if ~isempty(list_files(Trial.name,'.sehs.h')) && ~overwrite
             xyz = Trial.load('xyz','sehs');
         else
-            
-            
+                        
             xyz = Trial.load('xyz','trb');
-            %xyz.filter('ButFilter',3,50,'low');
             ss = fet_spline_spine(Trial,'3dssh','trb');                
-
-            % COM head Center of Mass
-            xyz.addMarker('hcom',...     Name
-                          [.7,0,.7],...  Color
-                          {{'head_back', 'hcom',[0,0,255]},... Sticks to visually connect
-                           {'head_left', 'hcom',[0,0,255]},... new marker to skeleton
-                           {'head_front','hcom',[0,0,255]},...
-                           {'head_right','hcom',[0,0,255]}},... 
-                             xyz.com(xyz.model.rb({'head_back','head_left','head_front','head_right'})));
             
             spineSegmentLength = MTADxyz('data',sqrt(sum(diff(ss.data,1,2).^2,3)),'sampleRate',xyz.sampleRate);
             nind = find(nniz(xyz));
@@ -181,8 +151,9 @@ while ~isempty(procOpts)
             
             %Trial = MTASession.validate(Trial.filebase);
             xyz = Trial.load('xyz','trb');
-            ss = fet_spline_spine(Trial,'3dssh','trb','overwrite',true);                
-
+            %ss = fet_spline_spine(Trial,'3dssh','trb','overwrite',true);
+            ss = fet_spline_spine(Trial,'3dssh','trb','overwrite',false);
+            
             % COM head Center of Mass
             xyz.addMarker('hcom',...     Name
                           [.7,0,.7],...  Color
@@ -191,18 +162,62 @@ while ~isempty(procOpts)
                            {'head_front','hcom',[0,0,255]},...
                            {'head_right','hcom',[0,0,255]}},... 
                              xyz.com(xyz.model.rb({'head_back','head_left','head_front','head_right'})));
+
+            targetMarkers = {'spine_lower','pelvis_root','spine_middle','spine_upper','hcom'};
+            numMarkers = numel(targetMarkers);
+            mid = xyz.model.gmi(targetMarkers);
             
-            mid = xyz.model.gmi({'spine_lower','pelvis_root','spine_middle','spine_upper','hcom'});
-            spineLength = MTADxyz('data',sqrt(sum(diff(ss.data,1,2).^2,3)),'sampleRate',xyz.sampleRate);
-            totalSpineLength = sum( spineLength.data ,2);
-            cumSpineLength = cumsum( spineLength.data ,2);
-            meanSpineLength = mean(totalSpineLength(nniz(totalSpineLength)));
-            nNewMarkers = 5;
-            for t = 1:spineLength.size(1)-1,
-                [~,xi,~] = NearestNeighbour(cumSpineLength(t,:),...
-                                            [0:nNewMarkers-1].*totalSpineLength(t)/(nNewMarkers-1),'both');
-                xyz.data(t,mid,:) = ss(t,xi,:);
+% REMOVE redundant markers
+            spineSegmentLength = MTADxyz('data',sqrt(sum(diff(ss.data,1,2).^2,3)),'sampleRate',xyz.sampleRate);
+            nind = find(nniz(xyz));
+            ssn = ss.copy();
+            ssn.data = zeros([size(ss,1),size(ss,2)-(numMarkers+1),size(ss,3)]);
+            markerInd = zeros([size(ss,1),numMarkers-2]);
+            for t = nind'
+                try,
+                nzind = [true,spineSegmentLength(t,:)]>1e-10;
+                zind = find(~nzind)-1;
+                nzind([zind]) = ~nzind([zind]);    
+                ssn.data(t,:,:) = ss(t,nzind,:);
+                markerInd(t,:) = zind-[1:numel(zind)].*2+spineSegmentLength(t,[zind-1])./ ...
+                    sum(reshape(spineSegmentLength(t,[zind-1,zind+1]),3,2),2)';
+                catch err, disp(err)
+                    markerInd(t,:) = markerInd(t-1,:);
+                end
             end
+
+            spineLength = zeros([size(ss,1),1]);
+            for t=nind',
+                spineLength(t) = arclength(ssn(t,:,1),ssn(t,:,2),ssn(t,:,3),'linear');
+            end
+
+            baseDist = (1:numMarkers-2)/(numMarkers-1)*median(spineLength(nind));
+            
+            ang = create(MTADang,Trial,xyz);
+            for m = 1:numel(targetMarkers)-2
+                meanTargetMarkerDist(m) = mean(ang(nniz(xyz),targetMarkers{m},targetMarkers{m+1},3));
+            end
+            
+            markerShiftDist = baseDist-cumsum(meanTargetMarkerDist);
+            
+
+            interpBlockSize = 2^13;
+            interVMarDist = max(spineLength)./interpBlockSize;
+            markerShiftIndex = markerShiftDist./interVMarDist;
+            
+            newData = zeros([size(ss,1),numMarkers-2,3]);
+            tempData = zeros([1,interpBlockSize,3]);
+            for t = nind',
+                mind = linspace(0,1,round(spineLength(t)/interVMarDist));
+                tempData(1,1:numel(mind),:) = interparc(mind,ssn(t,:,1),ssn(t,:,2),ssn(t,:,3),'linear');
+                for m = 1:numMarkers-2,
+                    [~,oriMarkerIndex]= min(sqrt(sum(bsxfun(@minus,tempData(1,1:numel(mind),:),xyz(t,mid(m+1),:)).^2,3)));
+                    newData(t,m,:) = tempData(1,mod(abs(round(oriMarkerIndex+markerShiftIndex(m))),numel(mind))+1,:);
+                end
+            end
+            
+            xyz.data(:,mid(2:end-1),:) = newData;
+            
             if isa(Trial,'MTATrial')
                 xyz.sync = Trial.sync.copy;
                 xyz.sync.sync = Trial.sync.copy;

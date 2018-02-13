@@ -117,7 +117,7 @@ classdef MTASession < hgsetget
             %-------------------------------------------------------------------------------------
             % LOAD paths from configuration folder, setup in MTAstartup->MTAConfiguration
             Session.path = load('MTAPaths.mat');
-
+            
             
             if isa(name,'MTASession'),
             % COPY MTASession object from 'name' to 'Session'
@@ -129,6 +129,7 @@ classdef MTASession < hgsetget
                     Session.(prop{i})=name.(prop{i});
                     end
                 end
+            elseif isempty(name), return;                 
             else
             % CREATE new session object
                 Session.name = name;

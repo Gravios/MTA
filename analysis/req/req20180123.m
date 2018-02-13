@@ -24,34 +24,22 @@ numStates = numel(states);
 
 cf(@(t) t.load('nq'), Trials);
 
-Trial = Trials{15}; %15,16,17,18
+
+for tind = 1:numel(Trials);
+Trial = Trials{tind}; %15,16,17,18
+
 
 units = select_placefields(Trial);
-
 xyz = preproc_xyz(Trial,'trb');
-pft = pfs_2d_theta(Trial,'overwrite',false);    
-
-
-ang = create(MTADang,Trial,xyz);
-
-% $$$ 
-% $$$ ind = [Trial.stc{'x+p+r'}];
-% $$$ figure();
-% $$$ subplot(121);plot(ang(ind,'hcom','nose',2),ang(ind,'spine_middle','spine_upper',2),'.');
-% $$$ subplot(122);plot(ang(ind,'hcom','nose',2),ang(ind,'spine_middle','hcom',2),'.');
-
-
+pft = pfs_2d_theta(Trial,'overwrite',false);
 pch = fet_HB_pitch(Trial);
-map_to_reference_session(pch,Trial,pitchReferenceTrial);    
-
-
+pch.map_to_reference_session(Trial,pitchReferenceTrial);
 drz = compute_drz(Trial,units,pft);%,pfstats);
-
 
 tper = [Trial.stc{'theta-groom-sit'}];
 tper.resample(xyz);
 
-overwrite = true;
+overwrite = false;
 
 drzState = {};
 for u = 1:numel(units);
@@ -138,23 +126,26 @@ pargs.overwrite = false;
 pfsArgs = struct2varargin(pargs);
 pfs_hbh = MTAApfs(Trial,pfsArgs{:});
 
-
-
+dspch = pch.copy();
+dspch.resample(5);
 dsxyz = xyz.copy();
-dsxyz.resample(12);
-dsang = create(MTADang,Trial,dsxyz);
+dsxyz.resample(5);
+
 
 hfig = figure(666002);
 hfig.Units = 'centimeters';
-hfig.Position = [0.5,0.5,35,16];
+%hfig.Position = [0.5,0.5,35,25];
+hfig.Position = [0.5,0.5,16,12];
 hfig.PaperPositionMode = 'auto';
 ny = 12;
 hax = gobjects([1,4]);
 for u = 1:numel(units), 
     clf();    
+    maxPfsRate = max([pft.maxRate(units(u)),pfs_hbh.maxRate(units(u),'isCircular',false)]);
+    
 % PLOT placefield rate map
-    hax(1) = subplot(221);  hold('on');  plot(pft,units(u));  colorbar();
-    plot(xyz(drzState{u},'nose',1),xyz(drzState{u},'nose',2),'.m','MarkerSize',1),
+    hax(1) = subplot(221);  hold('on');  plot(pft,units(u),'mean',true,maxPfsRate);
+    plot(dsxyz(drzState{u},'nose',1),dsxyz(drzState{u},'nose',2),'.m','MarkerSize',1),
     xlabel('mm');  xlim([-500,500]);
     ylabel('mm');  ylim([-500,500]);
     title(['Theta Place Field, unit:',num2str(units(u))]);
@@ -162,125 +153,10 @@ for u = 1:numel(units),
 % PLOT Rate map PITCH x HEIGHT | DRZ[-0.5,0.5]
     hax(2) = subplot(222);  
     hold('on');  
-    plot(pfs_bh,units(u),'isCircular',false);
-    colorbar();
-    
-    plot(dsang(drzState{u},'hcom','nose',2),dsang(drzState{u},'spine_middle','spine_upper',2),'.m','MarkerSize',1),
-    xlabel('head pitch (rad)');  xlim([-pi/2,pi/2]);
-    ylabel('head height (mm)');  ylim([-pi/2,pi/2]);
-    title('RateMap');
-
-% PLOT placefield rate map
-    hax(3) = subplot(223);  hold('on');  plot(pft,units(u),'snr');  colorbar();
-    plot(xyz(drzState{u},'nose',1),xyz(drzState{u},'nose',2),'.m','MarkerSize',1),
-    xlabel('mm');  xlim([-500,500]);
-    ylabel('mm');  ylim([-500,500]);
-    title(['Theta SNR Field, unit:',num2str(units(u))]);
-    
-% PLOT Rate map PITCH x HEIGHT | DRZ[-0.5,0.5]
-    hax(4) = subplot(224);  
-    hold('on');  
-    plot(pfs_bh,units(u),'snr',false,5,'isCircular',false);%1.5*pfs_bh.maxRate(units(u),false)
-    colorbar();
-    plot(dsang(drzState{u},'hcom','nose',2),dsang(drzState{u},'spine_middle','spine_upper',2),'.m','MarkerSize',1),
-    xlabel('head pitch (rad)');  xlim([-pi/2,pi/2]);
-    ylabel('head height (mm)');  ylim([-pi/2,pi/2]);
-    title('SNR Map');
-    
-% SAVE figure
-    drawnow();
-    FigName = ['rateMap_HPITCHxBPITCH','_',Trial.filebase,'_unit-',num2str(units(u))];
-    print(hfig,'-depsc2',fullfile(FigDir,[FigName,'.eps']));        
-    print(hfig,'-dpng',  fullfile(FigDir,[FigName,'.png']));
-end
-
-
-
-bhvccg = {}; sper = {};
-for sts = 1:numStates,
-    [bhvccg{sts},sper{sts}] = gen_bhv_ccg(Trial,statesCcg{sts},0.5,units,1);
-    sper{sts}{1}(sper{sts}{1}>ceil(size(xyz,1)./xyz.sampleRate.*1250)-1) = [];
-    sper{sts}{2}(sper{sts}{2}>ceil(size(xyz,1)./xyz.sampleRate.*1250)-1) = [];
-end
-
-bhvccgp = {}; sperp = {};
-for sts = 1:numStates,
-    [bhvccgp{sts},sperp{sts}] = gen_bhv_ccg(Trial,statesCcg{sts},0.5,units,4);
-    sperp{sts}{1}(sperp{sts}{1}>ceil(size(xyz,1)./xyz.sampleRate.*1250)-1) = [];
-    sperp{sts}{2}(sperp{sts}{2}>ceil(size(xyz,1)./xyz.sampleRate.*1250)-1) = [];
-end
-
-figure();
-plot(bhvccg{4},109,1)
-
-
-eds = linspace(-pi/2,pi/2,31);
-
-figure,
-for u = 1:numel(units),
-    clf();
-mrate = reshape(mean(sq(pfs_hbh.data.rateMap(:,u,:)),2,'omitnan'),31,31);
-subplot(221); hold('on');
-    imagescnan({eds,eds,mrate'});
-    axis('xy');
-    plot(circ_dist(dsang(drzState{u},'hcom','nose',2),dsang(drzState{u},'spine_middle','spine_upper',2)),...
-         dsang(drzState{u},'spine_middle','spine_upper',2),...
-         '.m','MarkerSize',1),
-    xlim([eds([1,end])]);
-    ylim([eds([1,end])]);
-
-scount = reshape(sum(~isnan(sq(pfs_hbh.data.rateMap(:,u,:))),2),31,31);
-subplot(222); 
-    imagescnan({eds,eds,scount'});
-    axis('xy');    
-
-mask = scount>990;
-mrate(~mask(:)) = nan;
-subplot(224); 
-    imagescnan({eds,eds,mrate'});
-    axis('xy');    
-    hold('on');
-    plot(circ_dist(dsang(drzState{u},'hcom','nose',2),dsang(drzState{u},'spine_middle','spine_upper',2)),...
-         dsang(drzState{u},'spine_middle','spine_upper',2),...
-         '.m','MarkerSize',1),
-    
-subplot(223); 
-    hold('on');
-    plot(pft,units(u),'mean',false,[],true,true);
-    plot(xyz(drzState{u},'nose',1),xyz(drzState{u},'nose',2),'.m','MarkerSize',1),
-    xlabel('mm');  xlim([-500,500]);
-    ylabel('mm');  ylim([-500,500]);
-    colorbar();
-    title(['Theta Place Field, unit:',num2str(units(u))]);
-waitforbuttonpress();
-end
-    
-%
-
-
-
-hfig = figure(666002);
-hfig.Units = 'centimeters';
-hfig.Position = [0.5,0.5,35,25];
-hfig.PaperPositionMode = 'auto';
-ny = 12;
-hax = gobjects([1,4]);
-for u = 1:numel(units), 
-    clf();    
-% PLOT placefield rate map
-    hax(1) = subplot(221);  hold('on');  plot(pft,units(u));  colorbar();
-    plot(xyz(drzState{u},'nose',1),xyz(drzState{u},'nose',2),'.m','MarkerSize',1),
-    xlabel('mm');  xlim([-500,500]);
-    ylabel('mm');  ylim([-500,500]);
-    title(['Theta Place Field, unit:',num2str(units(u))]);
-    
-% PLOT Rate map PITCH x HEIGHT | DRZ[-0.5,0.5]
-    hax(2) = subplot(222);  
-    hold('on');  
-    plot(pfs_hbh,units(u),'isCircular',false,'sigThresh',0.99);
+    plot(pfs_hbh,units(u),'mean',true,maxPfsRate,'isCircular',false,'sigThresh',0.99);
     colorbar();    
-    plot(circ_dist(dsang(drzState{u},'hcom','nose',2),dsang(drzState{u},'spine_middle','spine_upper',2)),...
-         dsang(drzState{u},'spine_middle','spine_upper',2),'.m','MarkerSize',1),
+    plot(circ_dist(dspch(drzState{u},3),dspch(drzState{u},1)),...
+         dspch(drzState{u},1),'.m','MarkerSize',1),
     xlabel('head-body pitch (rad)');  xlim([-pi/2,pi/2]);
     ylabel('body pitch (rad)');  ylim([-pi/2,pi/2]);
     title('RateMap');
@@ -288,8 +164,8 @@ for u = 1:numel(units),
 % PLOT placefield rate map
     hax(3) = subplot(223);  
     hold('on');  
-    plot(pft,units(u),'snr');  colorbar();
-    plot(xyz(drzState{u},'nose',1),xyz(drzState{u},'nose',2),'.m','MarkerSize',1),
+    plot(pft,units(u),'snr',true);
+    plot(dsxyz(drzState{u},'nose',1),dsxyz(drzState{u},'nose',2),'.m','MarkerSize',1),
     xlabel('mm');  xlim([-500,500]);
     ylabel('mm');  ylim([-500,500]);
     title(['Theta SNR Field, unit:',num2str(units(u))]);
@@ -297,18 +173,143 @@ for u = 1:numel(units),
 % PLOT Rate map PITCH x HEIGHT | DRZ[-0.5,0.5]
     hax(4) = subplot(224);  
     hold('on');  
-    plot(pfs_hbh,units(u),'snr',false,5,'isCircular',false,'sigThresh',0.99);
-    colorbar();
-    plot(circ_dist(dsang(drzState{u},'hcom','nose',2),dsang(drzState{u},'spine_middle','spine_upper',2)),...
-         dsang(drzState{u},'spine_middle','spine_upper',2),'.m','MarkerSize',1),
+    plot(pfs_hbh,units(u),'snr',true,5,'isCircular',false,'sigThresh',0.99);
+    plot(circ_dist(dspch(drzState{u},3),dspch(drzState{u},1)),...
+         dspch(drzState{u},1),'.m','MarkerSize',1),
     xlabel('head-body pitch (rad)');  xlim([-pi/2,pi/2]);
     ylabel('body pitch (rad)');  ylim([-pi/2,pi/2]);
     title('SNR Map');
     
+    af(@(h) set(h,'Units','centimeters'),            hax);    
+    af(@(h) set(h,'Position',[h.Position(1:2),2,2]), hax);
+    af(@(h) set(h.Title,'Units','pixels'),           hax);
+    af(@(h) set(h.Title,'Position',h.Title.Position+[0,20,0]),  hax);
 % SAVE figure
     drawnow();
     FigName = ['rateMap_BHPITCHxBPITCH','_',Trial.filebase,'_unit-',num2str(units(u))];
     print(hfig,'-depsc2',fullfile(FigDir,[FigName,'.eps']));        
     print(hfig,'-dpng',  fullfile(FigDir,[FigName,'.png']));
 end
+
+
+
+end
+
+% $$$ dsxyz = xyz.copy();
+% $$$ dsxyz.resample(12);
+% $$$ dsang = create(MTADang,Trial,dsxyz);
+% $$$ 
+% $$$ hfig = figure(666002);
+% $$$ hfig.Units = 'centimeters';
+% $$$ hfig.Position = [0.5,0.5,35,16];
+% $$$ hfig.PaperPositionMode = 'auto';
+% $$$ ny = 12;
+% $$$ hax = gobjects([1,4]);
+% $$$ for u = 1:numel(units), 
+% $$$     clf();    
+% $$$ % PLOT placefield rate map
+% $$$     hax(1) = subplot(221);  hold('on');  plot(pft,units(u));  colorbar();
+% $$$     plot(xyz(drzState{u},'nose',1),xyz(drzState{u},'nose',2),'.m','MarkerSize',1),
+% $$$     xlabel('mm');  xlim([-500,500]);
+% $$$     ylabel('mm');  ylim([-500,500]);
+% $$$     title(['Theta Place Field, unit:',num2str(units(u))]);
+% $$$     
+% $$$ % PLOT Rate map PITCH x HEIGHT | DRZ[-0.5,0.5]
+% $$$     hax(2) = subplot(222);  
+% $$$     hold('on');  
+% $$$     plot(pfs_bh,units(u),'isCircular',false);
+% $$$     colorbar();
+% $$$     
+% $$$     plot(dsang(drzState{u},'hcom','nose',2),dsang(drzState{u},'spine_middle','spine_upper',2),'.m','MarkerSize',1),
+% $$$     xlabel('head pitch (rad)');  xlim([-pi/2,pi/2]);
+% $$$     ylabel('head height (mm)');  ylim([-pi/2,pi/2]);
+% $$$     title('RateMap');
+% $$$ 
+% $$$ % PLOT placefield rate map
+% $$$     hax(3) = subplot(223);  hold('on');  plot(pft,units(u),'snr');  colorbar();
+% $$$     plot(xyz(drzState{u},'nose',1),xyz(drzState{u},'nose',2),'.m','MarkerSize',1),
+% $$$     xlabel('mm');  xlim([-500,500]);
+% $$$     ylabel('mm');  ylim([-500,500]);
+% $$$     title(['Theta SNR Field, unit:',num2str(units(u))]);
+% $$$     
+% $$$ % PLOT Rate map PITCH x HEIGHT | DRZ[-0.5,0.5]
+% $$$     hax(4) = subplot(224);  
+% $$$     hold('on');  
+% $$$     plot(pfs_bh,units(u),'snr',false,5,'isCircular',false);%1.5*pfs_bh.maxRate(units(u),false)
+% $$$     colorbar();
+% $$$     plot(dsang(drzState{u},'hcom','nose',2),dsang(drzState{u},'spine_middle','spine_upper',2),'.m','MarkerSize',1),
+% $$$     xlabel('head pitch (rad)');  xlim([-pi/2,pi/2]);
+% $$$     ylabel('head height (mm)');  ylim([-pi/2,pi/2]);
+% $$$     title('SNR Map');
+% $$$     
+% $$$ % SAVE figure
+% $$$     drawnow();
+% $$$     FigName = ['rateMap_HPITCHxBPITCH','_',Trial.filebase,'_unit-',num2str(units(u))];
+% $$$     print(hfig,'-depsc2',fullfile(FigDir,[FigName,'.eps']));        
+% $$$     print(hfig,'-dpng',  fullfile(FigDir,[FigName,'.png']));
+% $$$ end
+% $$$ 
+% $$$ 
+% $$$ 
+% $$$ bhvccg = {}; sper = {};
+% $$$ for sts = 1:numStates,
+% $$$     [bhvccg{sts},sper{sts}] = gen_bhv_ccg(Trial,statesCcg{sts},0.5,units,1);
+% $$$     sper{sts}{1}(sper{sts}{1}>ceil(size(xyz,1)./xyz.sampleRate.*1250)-1) = [];
+% $$$     sper{sts}{2}(sper{sts}{2}>ceil(size(xyz,1)./xyz.sampleRate.*1250)-1) = [];
+% $$$ end
+% $$$ 
+% $$$ bhvccgp = {}; sperp = {};
+% $$$ for sts = 1:numStates,
+% $$$     [bhvccgp{sts},sperp{sts}] = gen_bhv_ccg(Trial,statesCcg{sts},0.5,units,4);
+% $$$     sperp{sts}{1}(sperp{sts}{1}>ceil(size(xyz,1)./xyz.sampleRate.*1250)-1) = [];
+% $$$     sperp{sts}{2}(sperp{sts}{2}>ceil(size(xyz,1)./xyz.sampleRate.*1250)-1) = [];
+% $$$ end
+% $$$ 
+% $$$ figure();
+% $$$ plot(bhvccg{4},109,1)
+% $$$ 
+% $$$ 
+% $$$ eds = linspace(-pi/2,pi/2,31);
+% $$$ 
+% $$$ figure,
+% $$$ for u = 1:numel(units),
+% $$$     clf();
+% $$$ mrate = reshape(mean(sq(pfs_hbh.data.rateMap(:,u,:)),2,'omitnan'),31,31);
+% $$$ subplot(221); hold('on');
+% $$$     imagescnan({eds,eds,mrate'});
+% $$$     axis('xy');
+% $$$     plot(circ_dist(dsang(drzState{u},'hcom','nose',2),dsang(drzState{u},'spine_middle','spine_upper',2)),...
+% $$$          dsang(drzState{u},'spine_middle','spine_upper',2),...
+% $$$          '.m','MarkerSize',1),
+% $$$     xlim([eds([1,end])]);
+% $$$     ylim([eds([1,end])]);
+% $$$ 
+% $$$ scount = reshape(sum(~isnan(sq(pfs_hbh.data.rateMap(:,u,:))),2),31,31);
+% $$$ subplot(222); 
+% $$$     imagescnan({eds,eds,scount'});
+% $$$     axis('xy');    
+% $$$ 
+% $$$ mask = scount>990;
+% $$$ mrate(~mask(:)) = nan;
+% $$$ subplot(224); 
+% $$$     imagescnan({eds,eds,mrate'});
+% $$$     axis('xy');    
+% $$$     hold('on');
+% $$$     plot(circ_dist(dsang(drzState{u},'hcom','nose',2),dsang(drzState{u},'spine_middle','spine_upper',2)),...
+% $$$          dsang(drzState{u},'spine_middle','spine_upper',2),...
+% $$$          '.m','MarkerSize',1),
+% $$$     
+% $$$ subplot(223); 
+% $$$     hold('on');
+% $$$     plot(pft,units(u),'mean',false,[],true,true);
+% $$$     plot(xyz(drzState{u},'nose',1),xyz(drzState{u},'nose',2),'.m','MarkerSize',1),
+% $$$     xlabel('mm');  xlim([-500,500]);
+% $$$     ylabel('mm');  ylim([-500,500]);
+% $$$     colorbar();
+% $$$     title(['Theta Place Field, unit:',num2str(units(u))]);
+% $$$ waitforbuttonpress();
+% $$$ end
+% $$$     
+
+
 

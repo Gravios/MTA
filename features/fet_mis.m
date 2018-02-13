@@ -9,7 +9,7 @@ function [fet,featureTitles,featureDesc,Nmean,Nstd] = fet_mis(Trial,varargin)
 % DEFARGS ------------------------------------------------------------------------------------------
 defargs = struct('newSampleRate', 12,                       ...
                  'normalize'    , false,                    ...
-                 'procOpts'     , {{'SPLINE_SPINE_HEAD_EQI'}});
+                 'procOpts'     , {{'SPLINE_SPINE_HEAD_EQD'}});
 
 [newSampleRate,normalize,procOpts] = DefaultArgs(varargin,defargs,'--struct');
 %--------------------------------------------------------------------------------------------------

@@ -28,9 +28,9 @@ fet = MTADfet(Trial.spath,...
               Trial.sync.data(1),...
               [],'TimeSeries',[],'head referenced position and motion','fet_href_H','h');                  
 
+
 % PREPROC xyz
 % FILTER xyz
-
 xyz = preproc_xyz(Trial,procOpts);
 xyz.data(~nniz(xyz),:,:) = 0;
 xyz.filter('RectFilter',3,4);
@@ -92,25 +92,4 @@ end
 
 
 
-
-% $$$ 
-% $$$ hfig = figure(20392010);
-% $$$ set(hfig,'units','centimeters')
-% $$$ set(hfig,'Position',[11 0 32 25])
-% $$$ set(hfig,'PaperPositionMode','auto');
-% $$$ clf();
-% $$$ hold('on');
-% $$$ sind = 98000;
-% $$$ hline = gco;
-% $$$ mcolors = 'bgrm';
-% $$$ mlineWidth = ones([1,numel(mcolors)]); mlineWidth(end)=3;
-% $$$ mlineMarker = repmat({'none'},[1,numel(mcolors)]);
-% $$$ mlineMarker{end} = 'o';
-% $$$ for m = 1:size(nvec,2),
-% $$$     hline(end+1) = line([0,nvec(sind,m,1)],[0,nvec(sind,m,2)],[0,nvec(sind,m,3)],...
-% $$$                         'Color',mcolors(m),...
-% $$$                         'LineWidth',mlineWidth(m),...
-% $$$                         'Marker',mlineMarker{m});
-% $$$ end
-% $$$ daspect([1,1,1]);
 

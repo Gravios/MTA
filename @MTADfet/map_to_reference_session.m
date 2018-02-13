@@ -2,7 +2,7 @@ function features = map_to_reference_session(features,Trial,RefTrial,varargin)
 %function features = map_to_reference_session(features,Trial,RefTrial,varargin)
 %[normEachSyncEpoch,verbose] = DefaultArgs(varargin,{false,false},1);
 
-[normEachSyncEpoch,verbose] = DefaultArgs(varargin,{false,false},1);
+[rfet,normEachSyncEpoch,verbose] = DefaultArgs(varargin,{[],false,false},1);
 % If Trial is not a MTASession try loading it.
 Trial = MTATrial.validate(Trial);
 
@@ -246,21 +246,13 @@ tempFet = features.copy;
 features.resample(Trial.xyz.sampleRate);
 minimumOccupancy = 1; % seconds
 
-rfet = feval(features.label,RefTrial,features.sampleRate);
+if isempty(rfet),
+    rfet = feval(features.label,RefTrial,features.sampleRate);
+else
+    rfet.resample(features.sampleRate);
+end
 
 
-% This section was a waste of time
-% $$$ targetFeatureDomainBoundaries = prctile(features.data(nniz(features.data),fetInds'),[5,95]);
-% $$$ referencFeatureDomainBoundaries = prctile(rfet.data(nniz(rfet.data),fetInds'),[5,95]);
-% $$$ featureDomainBoundaries = [min([targetFeatureDomainBoundaries(1,:);referencFeatureDomainBoundaries(1,:)]);...
-% $$$                            max([targetFeatureDomainBoundaries(2,:);referencFeatureDomainBoundaries(2,:)])]';
-% $$$ [tarMean,tarStd,tarCnt,tarDom] = mean_embeded_feature_vbvh(features,   Trial,fetInds,featureDomainBoundaries);
-% $$$ [refMean,refStd,refCnt,refDom] = mean_embeded_feature_vbvh(rfet,    RefTrial,fetInds,featureDomainBoundaries);
-% -----
-%[tarMean,tarStd,tarKur] = mean_embeded_feature_vbvh(features,   Trial,fetInds,[],verbose);
-%[refMean,refStd,refKur] = mean_embeded_feature_vbvh(rfet,    RefTrial,fetInds,[],verbose);
-%[tarMean,tarStd,tarKur,tarCnt] = mean_embeded_feature_vbvhzbzh(features,   Trial,fetInds,[],verbose);
-%[refMean,refStd,refKur,refCnt] = mean_embeded_feature_vbvhzbzh(rfet,    RefTrial,fetInds,[],verbose);
 [tarMean,tarStd,tarKur,tarCnt] = mean_embeded_feature_vbvhza(features,   Trial,fetInds,[],verbose);
 [refMean,refStd,refKur,refCnt] = mean_embeded_feature_vbvhza(rfet,    RefTrial,fetInds,[],verbose);
 
