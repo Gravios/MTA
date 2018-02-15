@@ -7,11 +7,8 @@ function Session = create(Session,varargin)
 [TTLValue,dataLoggers,xyzSampleRate] = DefaultArgs(varargin,{'',{},[]});
 
 if     all(~cellfun(@isempty,regexpi(dataLoggers,{'nlx','vicon'})))
-    Session = syncViconNlx(Session,TTLValue,xyzSampleRate);
-
-    %elseif     all(~cellfun(@isempty,regexpi(dataLoggers,{'openephys','optitrack','fiber'})))
-    %    Session = sync_openephys_optitrack(Session,TTLValue,xyzSampleRate);
-
+    Session = sync_nlx_vicon(Session,TTLValue,xyzSampleRate);
+    
 elseif     all(~cellfun(@isempty,regexpi(dataLoggers,{'openephys','optitrack'})))
     Session = sync_openephys_optitrack_fiber(Session,TTLValue,xyzSampleRate);
 
@@ -21,6 +18,7 @@ elseif all(~cellfun(@isempty,regexpi(dataLoggers,{'blackrock','vicon'})))
 
 elseif all(~cellfun(@isempty,regexpi(dataLoggers,{'openephys','vicon'})))
     Session = sync_openephys_vicon(Session,xyzSampleRate);
+    
 elseif all(~cellfun(@isempty,regexpi(dataLoggers,{'vicon'})))
     Session = loadVicon(Session,xyzSampleRate);
 

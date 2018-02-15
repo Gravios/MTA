@@ -25,6 +25,8 @@ defargs = struct('units',                  [],                                  
 [units,pft,pfstats,filtCutOffFreq,marker] = DefaultArgs(varargin,defargs,'--struct');
 %---------------------------------------------------------------------------------------------------
 
+%global MTA_DIAGNOSTICS_PATH
+
 %if isempty(pfstats),    pfstats = compute_pfstats_bs(Trial);    end
 
 %[mrt,mrp] = pft.maxRate(units,'mode','first');
@@ -43,8 +45,7 @@ wpmr = zeros(xyz.size(1),numel(units));
 
 rateMapIndex = sub2ind(pft.adata.binSizes',indx,indy);
 for unit = units,
-    %rateMap = pft.plot(unit,1);
-    rateMap = pft.plot(unit,'mean');
+    rateMap = pft.plot(unit,'mean',[],false,0.99);
     wpmr(:,unit==units) = rateMap(rateMapIndex);
 end
 
@@ -80,5 +81,17 @@ pfd(abs(pfds(:))<pi/2)=1;
 % Calculate DRZ 
 %drz = pfd.*(1-bsxfun(@rdivide,wpmr,mrt'));
 drz = pfd.*(1-bsxfun(@rdivide,wpmr,peakPatchRate));
+
+% $$$ if MTA_DIAGNOSTIC_STATE
+% $$$     figDir = fullfile(Session.spath,'figures',mfilename);
+% $$$     create_directory(figDir);
+% $$$     ind = [Trial.stc{'theta'}];
+% $$$     for u = units,
+% $$$         plot(Pfs,92);
+% $$$         scatter(xyz(ind,'nose',1),xyz(ind,'nose',2),10,wpmr(ind,30));
+% $$$         scatter(xyz(ind,'nose',1),xyz(ind,'nose',2),10,drz(ind,u=units));
+% $$$     end
+% $$$ end
+
 
 

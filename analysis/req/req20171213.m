@@ -50,6 +50,7 @@ rateMaxRng    = nan([numTrials,max(cellfun('length',units)),numel(pfd{1}),2]);
 rateMaxRngCnt = nan([numTrials,max(cellfun('length',units)),numel(pfd{1})]);
 
 
+
 for t = 1:numTrials,
     for u = 1:numel(units{t}),
         for p = 1:numel(pfd{t}),
@@ -60,42 +61,57 @@ for t = 1:numTrials,
                 rateMaxRng(t,u,p,:) = cat(4,find([rateMap>[rateMaxVal(t,u,p)/2]]==1,1,'first'),...
                                             find([rateMap>[rateMaxVal(t,u,p)/2]]==1,1,'last'));
                 rateMaxRngCnt(t,u,p) = sum(isnan(rateMap(:)));
-
+            catch err
+                disp(err)
             end
             map(t,u,:) = cat(3,t,units{t}(u));
         end
     end
 end
 
-rateMaxVal    = sq(reshape(rateMaxVal,[],1,numel(pfd{1})));
-rateMaxInd    = sq(reshape(rateMaxInd,[],1,numel(pfd{1})));
-rateMaxRng    = sq(reshape(rateMaxRng,[],1,numel(pfd{1}),2));
-rateMaxRngCnt = sq(reshape(rateMaxRngCnt,[],1,numel(pfd{1})));
+si = cf(@(p) cf(@(p) p.data.si,p), pfd);
+si = cf(@(s) cat(1,s{:})', si)
+si = cat(1,si{:});
 
+% $$$ ind = 1:[numTrials*max(cellfun('length',units))];
+% $$$ for p = 1:numel(pfd{1}),
+% $$$     rateMaxValR(:,p) = subsref(rateMaxVal(:,:,p),substruct('()',{ind}));
+% $$$     rmi = rateMaxInd(:,:,p)';
+% $$$     rateMaxIndR(:,p) = rmi(:);
+% $$$ end
+% $$$ rateMaxIndR(:,p) = sq(reshape(rateMaxInd,1,[],numel(pfd{1})));
 
+rateMaxValR    = sq(reshape(permute(rateMaxVal,[2,1,3,4]),[],1,numel(pfd{1})));
+rateMaxIndR    = sq(reshape(permute(rateMaxInd,[2,1,3,4]),[],1,numel(pfd{1})));
+rateMaxRngR    = sq(reshape(permute(rateMaxRng,[2,1,3,4]),[],1,numel(pfd{1}),2));
+rateMaxRngCntR = sq(reshape(permute(rateMaxRngCnt,[2,1,3,4]),[],1,numel(pfd{1})));
 
-
-binsHPitch  = pfd{1}{1}.adata.bins{2};
-binsBPitch = pfd{1}{2}.adata.bins{2};
-%binsRHM    = pfd{3}{1}.adata.bins{2};
 bins = cf(@(p) p.adata.bins{2}, pfd{1});
 
 rateMax = {};
-rateMax{1}  = bins{1}(rateMaxInd(nniz(rateMaxInd),1));
-rateMax{2}  = bins{2}(rateMaxInd(nniz(rateMaxInd),2));
+rateMax{1}  = bins{1}(rateMaxIndR(nniz(rateMaxIndR),1));
+rateMax{2}  = bins{2}(rateMaxIndR(nniz(rateMaxIndR),2));
+rateMax{3}  = bins{3}(rateMaxIndR(nniz(rateMaxIndR),3));
+rateMax{4}  = bins{4}(rateMaxIndR(nniz(rateMaxIndR),4));
 
-rateRngCnt =  rateMaxRngCnt(nniz(rateMaxInd),:,:);
+rateRngCnt =  rateMaxRngCntR(nniz(rateMaxIndR),:,:);
 
-
-figure();  
-for i = 1:2,
-    subplot(1,2,i);  hist(rateMax{i}(rateRngCnt(:,i)<20),20);
+figure();hold('on')
+ind = rateRngCnt(:,3)<15&rateRngCnt(:,4)<15;
+for rep = 1:1
+plot(rateMax{4}(ind)+randn([sum(ind),1])/20,...
+     rateMax{3}(ind)+randn([sum(ind),1])/20,'.b','Markersize',3);
 end
+xlim([-pi/2,pi/2]);
+ylim([-pi/2,pi/2]);
 
-figure();  
-ind = rateRngCnt(:,1)<25&rateRngCnt(:,2)<25;
-plot(rateMax{2}(ind)+randn([sum(ind),1])/25,...
-     rateMax{1}(ind)+randn([sum(ind),1])/25,'.b');
+
+figure();hold('on')
+ind = (rateRngCnt(:,3)<15&rateRngCnt(:,4)<15)&(si(:,3)>1&si(:,4)>1);
+for rep = 1:1
+plot(rateMax{4}(ind)+randn([sum(ind),1])/20,...
+     rateMax{3}(ind)+randn([sum(ind),1])/20,'.b','Markersize',3);
+end
 xlim([-pi/2,pi/2]);
 ylim([-pi/2,pi/2]);
 
@@ -106,8 +122,8 @@ subplot(132);  hist(rateMaxHeight(rateRngCnt(:,2)<14),20);
 subplot(133);  hist(rateMaxRHM(rateRngCnt(:,3)<15),20);
 
 figure();
-subplot(131);  plot(rateMaxPitch+randn([sum(ind),1])/50,...
-                    diff(rateMaxRng(nniz(rateMaxRng,1,1),1,:),1,3)+randn(size(rateMaxPitch)),'.');
+subplot(131);  plot(rateMax{3}+randn([sum(ind),1])/50,...
+                    diff(rateMaxRng(nniz(rateMaxRngR,1,1),1,:),1,3)+randn(size(rateMaxPitch)),'.');
 subplot(132);  plot(rateMaxHeight+randn(size(rateMaxHeight))*10,...
                     diff(rateMaxRng(nniz(rateMaxRng,2,1),2,:),1,3)+randn(size(rateMaxHeight)),'.');
 subplot(133);  plot(rateMaxRHM+randn(size(rateMaxRHM))/20,...

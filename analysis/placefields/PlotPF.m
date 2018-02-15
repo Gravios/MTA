@@ -71,10 +71,10 @@ Smoother = exp(sum(-cat(ndims+1,sind{:}),ndims+1));
 Smoother = Smoother./sum(Smoother(:));
 
 
-SOcc = convn(Occupancy,Smoother,'same');
+SOcc   = convn(Occupancy, Smoother,'same');
 SCount = convn(SpikeCount,Smoother,'same');
-OccThresh = 0.1.^numel(binDims);%0.06;0.12;%
-                 %OccThresh = .03;%0.06;0.12;%
+OccThresh = 6*0.05.^numel(binDims);%0.06;0.12;%
+
 %% Find the total occupancy and each pixels 
 %% probability of occupancy
 gtind = SOcc>OccThresh;
@@ -86,15 +86,14 @@ POcc = Occupancy./TotOcc;
 
 %% Rate Map
 %RateMap = NaN(prod(Nbin),1);
-%RateMap(gtind) = SCount(gtind)./SOcc(gtind);
-%RateMap = RateMap(:);
-%RateMap(~gtind) = nan;
-RateMap = SpikeCount./Occupancy;
-RateMap(isnan(RateMap)) = 0;
-RateMap = convn(RateMap,Smoother,'same');
-%RateMap = nanconv(RateMap,Smoother);
+RateMap(gtind) = SCount(gtind)./SOcc(gtind);
 RateMap = RateMap(:);
 RateMap(~gtind) = nan;
+% $$$ RateMap = SpikeCount./Occupancy;
+% $$$ RateMap(isnan(RateMap)) = 0;
+% $$$ RateMap = convn(RateMap,Smoother,'same');
+% $$$ RateMap = RateMap(:);
+% $$$ RateMap(~gtind) = nan;
 %% Find the units overall mean rate given the 
 %% current state
 MRate = sum(SpikeCount(gtind))/TotOcc;

@@ -23,7 +23,6 @@ ERR.msg  = ['SyncPeriods is empty, check event file that ' ...
 Par = LoadPar(fullfile(Session.spath, [Session.name '.xml']));            
 lfp = LoadBinary(fullfile(Session.spath, [Session.name '.lfp']),1,Par.nChannels,4)';
 recordSync = [0,numel(lfp)./Par.lfpSampleRate];
-lfpSyncPeriods = 
 clear('lfp');
 Session.lfp = MTADlfp(Session.spath,             ... Path
                       [Session.name '.lfp'],     ... File Name
@@ -209,4 +208,4 @@ Session.fet = MTADfet(Session.spath,...
 Session.save;
 Session.spk.clear;
 
-
+create_directory(fullfile(Session.spath,'figures'));

@@ -13,7 +13,6 @@ defargs = struct('sessionList',                'MjgER2016',                     
 errMsgs.badStateColors = 'MTA:analysis:behavior:bhv_contour:StateColorsMismatch';
 errMsgs.badSessionList = 'MTA:analysis:behavior:bhv_contour:BadSessionList';
 
-
 assert(numel(states)==numel(stateColors),errMsgs.badStateColors);
 
 
@@ -28,28 +27,29 @@ pitchReferenceFeature = fet_HB_pitch(pitchReferenceTrial);
 pitchReferenceTrial = repmat({pitchReferenceTrial},[1,numTrials]);
 states = repmat({states},[1,numTrials]);
 
-
-
 Trials = af(@(s)        MTATrial.validate(s),                 sessionList);
 stc    = cf(@(t)        t.stc.copy(),                         Trials);
 pch    = cf(@(t,rt,rf)  fet_HB_pitchB(t,[],[],[],rt,rf),  ...
             Trials,pitchReferenceTrial,repmat({pitchReferenceFeature},[1,numTrials]));
 
-cf(@(p) set(p,'sampleRate',119.881035), pch );
+cf(@(p) set(p,'sampleRate',119.881035), pch);
 cf(@(p) resample(p,10), pch );
 
-
-
-
-
-
 for s = 1:numStates,
-    hout{s} = cf(@(p,s,sts)  hist2(p(resample([s{sts}],p),:),linspace(-pi/2,pi/2,50),linspace(-pi/2,pi/2,50)), ...
+    hout{s} = cf(@(p,s,sts)  hist2(p(resample([s{sts}],p),:),...
+                                   linspace(-pi/2,pi/2,50),...
+                                   linspace(-pi/2,pi/2,50)), ...
                  pch,stc,repmat({states{s}},[1,numTrials]));
 end
 
 % DIAGNOSTIC 
-figure,for t = 1:numel(hout{1}),clf();imagesc(hout{1}{t}');waitforbuttonpress();end
+if diagnostic
+figure,
+for t = 1:numel(hout{1}),clf();
+    imagesc(hout{1}{t}');
+    waitforbuttonpress();
+end
+end
 
 lpt = [stc{2}{'lloc+lpause&theta'}];
 lpt.resample(pch{2});

@@ -38,7 +38,8 @@ cf(@(t) t.load('nq'), Trials);
 % $$$ cf(@(t)  pfs_2d_theta(t,'overwrite',true),  Trials);
 % $$$ cf(@(t)  pfs_2d_states(t,'overwrite',true),  Trials);
 % $$$ cf(@(t)  compute_pfstats_bs(t,'overwrite',true),  Trials);
-% $$$ cf(@(t)  MjgER2016_drzfields(t,[],true), Trials);
+% $$$ cf(@(t)  MjgER2016_drzfields(t,[],true), Trials(17:18));
+cf(@(t)  pfd_2d_pp(t), Trials(18));
 
 % FOR each Trial -------------------------------------------------------------
 

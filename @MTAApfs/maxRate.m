@@ -1,6 +1,12 @@
 function [mxr,mxp] = maxRate(Pfs,varargin)
 % function [mxr,mxp] = maxRate(Pfs,varargin)
 % return the maximum firing rate and location of a unit(s)
+%
+%  VARARGIN:
+%    units                   []
+%    isCircular              true
+%    mode                    'mean'
+%
 
 
 % DEFARGS ------------------------------------------------------------------------------------------

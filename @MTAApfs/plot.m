@@ -18,9 +18,11 @@ defargs = struct('unit',                   [],                                  
                  'ifColorbar',             false,                                                ...
                  'maxRate',                [],                                                   ...
                  'isCircular',             true,                                                 ...
-                 'sigThresh',              []                                                    ...
+                 'sigThresh',              [],                                                   ...
+                 'flipAxes',               false                                                 ...
 );
-[unit,nMode,ifColorbar,maxRate,isCircular,sigThresh] = DefaultArgs(varargin,defargs,'--struct');
+[unit,nMode,ifColorbar,maxRate,isCircular,sigThresh,flipAxes] = ...
+    DefaultArgs(varargin,defargs,'--struct');
 %---------------------------------------------------------------------------------------------------
 
 
@@ -81,7 +83,11 @@ switch numel(Pfs.parameters.type)
 
 % ASSIGN elements with nans a black color value
     rateMap(isnan(rateMap)) = -1;
-    imagescnan({bin1,bin2,rateMap'},[0,maxRate],'linear',false,[0,0,0]);
+    if flipAxes,
+        imagescnan({bin2,bin1,fliplr(rot90(rateMap',-1))},[0,maxRate],'linear',false,[0,0,0]);
+    else
+        imagescnan({bin1,bin2,rateMap'},[0,maxRate],'linear',false,[0,0,0]);
+    end
     
     if ifColorbar,
         colorbar();
