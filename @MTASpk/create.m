@@ -84,3 +84,4 @@ end
 Spk.clu = Clu;
 Spk.res = Res;
 
+Spk.update_hash(sampleRate,mode);

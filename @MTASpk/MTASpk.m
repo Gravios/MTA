@@ -48,6 +48,9 @@ classdef MTASpk < hgsetget
         
         %sampleRate - double: the sampling rate to which the spike indicies correspond
         sampleRate    
+
+        %hash - string: hash modified by functions acting upon MTAData objects        
+        hash = 'zzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzz';
     end
     
     properties
