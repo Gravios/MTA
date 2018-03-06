@@ -6,10 +6,12 @@ sper = Trial.stc.filter(Trial.lfp.sampleRate,{state,{'exclusion',{state},2},{'du
 
 if ~iscell(sper), sper = mat2cell(sper,size(sper,1),[1,1]);end
 
-pft = pfs_2d_theta(Trial);    
-[~,mrp] = pft.maxRate();
-
-
+if numPartitions>1,
+    pft = pfs_2d_theta(Trial);    
+    [~,mrp] = pft.maxRate();
+else
+    mrp = [];
+end
 
 try,
     Bccg = MTAccg(Trial,                                              ... Trial              
@@ -17,7 +19,7 @@ try,
                   ['CCG around' state 'and offset'],                  ... Description              
                   sper,                                               ... ResTrain
                   {[state ' onset'],[state ' offset']},               ... CluTags
-                  units,                                                 ... units              
+                  units,                                              ... units              
                   true,                                               ... overwrite
                   [],                                                 ... rand_tag
                   'abs_dist',                                         ... method

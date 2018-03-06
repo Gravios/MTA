@@ -32,7 +32,7 @@ defArgs = struct('Fet',           'fet_tsne_rev15',...
 [Fet,sampleRate,Stc,states,initDims,nDims,...
  perplexity,ifNorm,ifReportFig,subset,overwrite] = DefaultArgs(varargin,defArgs,'--struct');
 
-% Load Features
+% LOAD Features
 if ischar(Fet),
     [Fet,fett,fetd] = feval(fet,Trial,sampleRate,ifNorm); % Load Feature matrix of the session
 elseif isa(Fet,'MTADfet')
@@ -44,7 +44,7 @@ else
     error('MTA:analysis:mta_tsne:UnknownFet');    
 end
 
-% Load State Collection
+% LOAD State Collection
 if ischar(Stc)
     Stc = Trial.load('stc',Stc);
 elseif ~isa(Stc,'MTAStateCollection'),
@@ -52,7 +52,7 @@ elseif ~isa(Stc,'MTAStateCollection'),
 end
     
 
-% Create Color Mapping 
+% CREATE Color Mapping 
 [asmat,labels,keys] =  stc2mat(Stc,Fet,states);              % Create NxK state matrix
 aind = sum(asmat,2)~=0;
 asmat = MTADfet('data',asmat,'sampleRate',Fet.sampleRate);   % Wrap state matrix in MTADxyz object
@@ -68,14 +68,14 @@ switch numel(states)
          0,1,0;...         
          1,0,0];
   otherwise
-    c = jet(numel(Stc.states));                                  % Create base colors
+    c = jet(numel(Stc.states));                              % Create base colors
 end
 
 csmat = asmat.copy;                                          % Copy object 
 csmat.data = c(csmat.data,:);                                % Fill N time points with corect colors
 
 
-% Select Range
+% SELECT Range
 ind = Stc{'a'}.cast('TimeSeries');                           % Set selection index - good periods {'gper','a'}
 ind.resample(Fet);
 
@@ -96,7 +96,7 @@ ind.data(isnan(ind.data))=0;
 ind.data = ind.data&sind&tind&aind&nniz(Fet);                          % Subselection
 
 
-% Build filepath
+% BUILD filepath
 figparm = ['tSNE-' Fet.label...
            '_sr_' num2str(sampleRate) ...
            '_subset_' num2str(subset(1)) '-' num2str(skip) '-' num2str(subset(2)) ...
@@ -107,7 +107,7 @@ figparm = ['tSNE-' Fet.label...
 filepath = fullfile(Trial.path.data,'analysis',[figparm,'.mat']);
 
 
-% Run tSNE or Load data
+% RUN tSNE or Load data
 if ~exist(filepath,'file')||overwrite
     mappedX = tsne(Fet(ind,:), [], nDims, initDims, perplexity);
     save(filepath,'states','mappedX','perplexity',...

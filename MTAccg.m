@@ -131,7 +131,13 @@ classdef  MTAccg
             partition_distMap = {};
 
             uRes = Trial.spk.res;
-            xyz = preproc_xyz(Trial,'trb');
+            try
+                xyz = preproc_xyz(Trial,'trb');
+            catch err
+                disp(err)
+                xyz = preproc_xyz(Trial);
+            end
+            
 
 
             %% Change res sampling rate to lfp.sampleRate and create

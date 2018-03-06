@@ -9,7 +9,7 @@
 sessionListName = 'MjgER2016';
 sessionList = get_session_list(sessionListName);
 pitchReferenceTrial = 'Ed05-20140529.ont.all';
-generateFigureParts = true;
+generateFigureParts = false;
 marker = 'nose';
 
 if generateFigureParts,
@@ -36,19 +36,19 @@ cf(@(t) t.load('nq'), Trials);
 
 % PROCESS session data
 % $$$ cf(@(t)  pfs_2d_theta(t,'overwrite',true),  Trials);
-% $$$ cf(@(t)  pfs_2d_states(t,'overwrite',true),  Trials);
+% $$$ cf(@(t)  pfs_2d_states(t,'states',{'hpause&theta'},'overwrite',true),  Trials);
 % $$$ cf(@(t)  compute_pfstats_bs(t,'overwrite',true),  Trials);
-% $$$ cf(@(t)  MjgER2016_drzfields(t,[],true), Trials(17:18));
-cf(@(t)  pfd_2d_pp(t), Trials(18));
+% $$$ cf(@(t)  MjgER2016_drzfields(t,[],true), Trials);
+% $$$ cf(@(t)  pfd_2d_pp(t), Trials);
 
 % FOR each Trial -------------------------------------------------------------
 
 hfig = figure(666001);
-hfig.Position = [273, 54, 1269, 681];
+hfig.Position = [1, 1, 1269, 681];
 hfig.PaperPositionMode = 'auto';
 ny = 12;
 
-for t = 1:numel(Trials),
+for t = 16:numel(Trials),
     clf();
 
 % LOAD Trial 
@@ -90,14 +90,8 @@ for t = 1:numel(Trials),
     spk.create(Trial,xyz.sampleRate,'theta',units,'deburst');    
     
 % LOAD placefields and subsampled estimate
-    for sts = 1:numStates,
-        da = get_default_args('MjgER2016','MTAApfs','struct');
-        da.units = units;
-        da.states = states{sts};
-        da.overwrite = false;
-        pfsArgs = struct2varargin(da);
-        pfs{sts} = MTAApfs(Trial,pfsArgs{:});
-    end    
+    pfs = pfs_2d_states(Trial,units);
+    pfs{end+1} = pft;
     
 % COMPUTE behavioral state occupancy maps
     stsocc = cell(size(states));
@@ -121,9 +115,8 @@ for t = 1:numel(Trials),
     end
     
 % LOAD DRZ fields
-    dfs = cell([1,3]);
-    [dfs{:}] = MjgER2016_drzfields(Trial,units,false);%,pfstats);
-    dfst = {'pitch','height','rhm'};
+    dfs = MjgER2016_drzfields(Trial,units,false);%,pfstats);
+    dfst = {'height','rhm','Bpitch','HBpitch'};
     
 % COMPUTE phase precession
     drzp = drz;    drzp(drzp<0)=nan;
@@ -361,10 +354,10 @@ for t = 1:numel(Trials),
 
 % TRANITION triggered histogram onset
 % TRANITION triggered histogram offset
-            sp(end+1) = subplot2(ny,numStates+2,[11,12],s+1); hold('on');            
-            plot(bhvccg{sts}.tbin,RectFilter(sq(bhvccg{s}.ccg(:,unit==bhvccg{s}.cluMap(:,1),:,1))))
-            %plot(bhvccg{s}.tbin,RectFilter(sq(bhvccg{s}.ccg(:,unit==bhvccg{s}.cluMap(:,1),:))));
-            ylim([0,mccgRate]);
+% $$$             sp(end+1) = subplot2(ny,numStates+2,[11,12],s+1); hold('on');            
+% $$$             plot(bhvccg{sts}.tbin,RectFilter(sq(bhvccg{s}.ccg(:,unit==bhvccg{s}.cluMap(:,1),:,1))))
+% $$$             %plot(bhvccg{s}.tbin,RectFilter(sq(bhvccg{s}.ccg(:,unit==bhvccg{s}.cluMap(:,1),:))));
+% $$$             ylim([0,mccgRate]);
 
 % WAVEFORM of unit
 % $$$             sp(end+1) = subplot2(ny,numStates+2,[9:12],s+1);

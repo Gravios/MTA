@@ -276,8 +276,12 @@ while ~isempty(procOpts)
         end
        
       case 'trb'
-        xyz = Trial.load('xyz','trb');
-    
+        try,
+            xyz = Trial.load('xyz','trb');
+        catch err
+            disp(err)
+            xyz = Trial.load('xyz');
+        end
     end
     procOpts(1) = [];
 end

@@ -1,5 +1,12 @@
 function Data = update_hash(Data,varargin)
-% if 
+% function Data = update_hash(Data,varargin)
+% 
+% 
+%
+% varargin:
+%    modificationHash: String(hash)
+%    
+
 if isempty(varargin),
     modificationHash = [];
 else

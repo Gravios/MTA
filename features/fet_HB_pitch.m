@@ -30,7 +30,14 @@ fet = MTADfet(Trial.spath,...
               [],'TimeSeries',[],'Head body pitch','fet_HB_pitch','b');                  
 
 % XYZ preprocessed 
-xyz = preproc_xyz(Trial,procOpts);
+try
+    xyz = preproc_xyz(Trial,procOpts);
+catch err
+    disp(err);
+    xyz = preproc_xyz(Trial);
+end
+
+    
 xyz.resample(newSampleRate);
 
 % ANG Filtered Intermarker angles 

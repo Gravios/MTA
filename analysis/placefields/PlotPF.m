@@ -1,14 +1,16 @@
-function [RateMap, Bins, SI, Spar] = PlotPF(Session,spkpos,pos,varargin)
+function [RateMap, Bins, SI, Spar] = PlotPF(Session,spkpos,pos,binDims,SmoothingWeights,type,bound_lims,posSampleRate)
 
-% DEFARGS ------------------------------------------------------------------------------------------
-defargs = struct('binDims',                                50,                                   ...
-                 'SmoothingWeights',                       [],                                   ...
-                 'type',                                   'xy',                                 ...
-                 'bound_lims',                             [],                                   ...
-                 'posSampleRate',                          Session.xyz.sampleRate                ...
-);
-[binDims,SmoothingWeights,type,bound_lims,posSampleRate] = DefaultArgs(varargin,defargs,'--struct');
-%---------------------------------------------------------------------------------------------------
+% $$$ % DEFARGS ------------------------------------------------------------------------------------------
+% $$$ defargs = struct('binDims',                                50,                                   ...
+% $$$                  'SmoothingWeights',                       [],                                   ...
+% $$$                  'type',                                   'xy',                                 ...
+% $$$                  'bound_lims',                             [],                                   ...
+% $$$                  'posSampleRate',                          Session.xyz.sampleRate                ...
+% $$$ );
+% $$$ [binDims,SmoothingWeights,type,bound_lims,posSampleRate] = DefaultArgs(varargin,defargs,'--struct');
+% $$$ %---------------------------------------------------------------------------------------------------
+
+
 
 
 
@@ -36,9 +38,9 @@ end
 
 % ROUND position
 % REMOVE bins outside the computational region
-Pos = round((pos-repmat(bound_lims(:,1)',size(pos,1),1)).*repmat(k',size(pos,1),1))+1;
+pos = round((pos-repmat(bound_lims(:,1)',size(pos,1),1)).*repmat(k',size(pos,1),1))+1;
 for i = 1:ndims   
-    Pos(Pos(:,i)<1|Pos(:,i)>Nbin(i)|~nniz(Pos),:) = [];
+    pos(pos(:,i)<1|pos(:,i)>Nbin(i)|~nniz(pos),:) = [];
 end
 
 if ndims==1,
@@ -48,7 +50,7 @@ else
 end
 
 % ACCUMULATE feature space occupancy in seconds
-Occupancy = accumarray(Pos,1,amsize)./posSampleRate;
+Occupancy = accumarray(pos,1,amsize)./posSampleRate;
 
 % ACCUMULATE spikes binned by feature space (e.g. xy coordinates)
 if ~isempty(spkpos),
@@ -83,6 +85,7 @@ SCount = convn(SpikeCount,Smoother,'same');
 % $$$ SCount = convn(SpikeCount,Smoother,'same');
 
 
+%OccThresh = 4*(mean(binDims)/200).^numel(binDims);
 OccThresh = 4*(10/200).^numel(binDims);
 
 %% Find the total occupancy and each pixels 
@@ -102,9 +105,9 @@ RateMap(~gtind) = nan;
 % COMPUTE unit mean rate given state
 MRate = sum(SpikeCount(gtind))/TotOcc;
 % COMPUTE Spatial Information
-if nargout >= 3,  SI = nansum(POcc(gtind).*(RateMap(gtind)./MRate).*log2(RateMap(gtind)./MRate));end
-% COMPUTE Spatial Sparsity
-if nargout >= 4,  Spar = 1/nansum(POcc(gtind).*RateMap(gtind).^2./MRate.^2);  end
-
+if nargout > 2,  
+    SI = nansum((RateMap(gtind)./MRate).*log2(RateMap(gtind)./MRate));
+    if nargout == 4,  Spar = 1/nansum(POcc(gtind).*RateMap(gtind).^2./MRate.^2);  end
+end
 % END MAIN -----------------------------------------------------------------------------------------
 

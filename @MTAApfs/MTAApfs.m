@@ -94,7 +94,13 @@ classdef MTAApfs < hgsetget %< MTAAnalysis
                     sampleRate = 10;
                     
                     if xyzp.isempty,
-                        xyz = preproc_xyz(Session,'trb');
+                        try,
+                            xyz = preproc_xyz(Session,'trb');
+                        catch err,
+                            disp(err)
+                            xyz = preproc_xyz(Session);
+                            trackingMarker = 'hcom';
+                        end
                         xyz.data = sq(xyz(:,trackingMarker,1:numel(binDims)));
                     else
                         xyz = xyzp;
@@ -274,14 +280,15 @@ classdef MTAApfs < hgsetget %< MTAAnalysis
             sstpos = sq(xyz(pfsState,:));
             
 % LOAD Units into spk object;
-            Session.spk.create(Session,xyz.sampleRate,pfsState,units,'deburst');
+            spk = Session.spk.copy;
+            spk.create(Session,xyz.sampleRate,pfsState,units,'deburst');
 
             i = 1;
             for unit=selected_units,
 
-                Pfs.data.clu(dind(i)) = Session.spk.map(unit,1);
-                Pfs.data.el(dind(i)) = Session.spk.map(unit,2);
-                Pfs.data.elClu(dind(i)) = Session.spk.map(unit,3);
+                Pfs.data.clu(dind(i))            = spk.map(unit,1);
+                Pfs.data.el(dind(i))             = spk.map(unit,2);
+                Pfs.data.elClu(dind(i))          = spk.map(unit,3);
                 Pfs.data.maxRate(:,dind(i))      = zeros([5,1]);
                 Pfs.data.maxRateInd(:,dind(i),:) = zeros([5,1,numel(binDims)]);
                 Pfs.data.maxRatePos(:,dind(i),:) = zeros([5,1,numel(binDims)]);
@@ -290,7 +297,7 @@ classdef MTAApfs < hgsetget %< MTAAnalysis
                 Pfs.data.si(:,dind(i))           = zeros([1,1]);
                 Pfs.data.spar(:,dind(i))         = zeros([1,1]);
                 
-                res = Session.spk(unit);
+                res = spk(unit);
                 %% Skip unit if too few spikes
                 if numel(res)>10,
 
@@ -351,6 +358,8 @@ classdef MTAApfs < hgsetget %< MTAAnalysis
                     tic; %disp(unit);
                     [Pfs.data.rateMap(:,dind(i),1), Pfs.adata.bins,Pfs.data.si(:,dind(i)),Pfs.data.spar(:,dind(i))] =  ...
                         PlotPF(Session,sstpos(sresind(:,1),:),sstpos,binDims,SmoothingWeights,type,boundaryLimits,xyz.sampleRate);
+                    [~, Pfs.adata.bins,~] =  ...
+                        PlotPF(Session,sstpos(sresind(:,1),:),sstpos,binDims,SmoothingWeights,type,boundaryLimits,xyz.sampleRate);
                     toc
 
 % COMPUTE Bootstrap
@@ -363,7 +372,8 @@ classdef MTAApfs < hgsetget %< MTAAnalysis
                                                                       binDims,...
                                                                       SmoothingWeights,...
                                                                       type,...
-                                                                      boundaryLimits);
+                                                                      boundaryLimits,...
+                                                                      xyz.sampleRate);
                         end;
                         toc
                     end;

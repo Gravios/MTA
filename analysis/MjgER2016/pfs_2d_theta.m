@@ -12,21 +12,18 @@ function pf = pfs_2d_theta(Trial,varargin)
 %
 
 
-% DEFARGS -------------------------------------------------------------------
-defargs = struct('numIter',      1,                                       ...
-                 'reportFig',    0,                                       ...
-                 'overwrite',    0                                        ...
+% DEFARGS ---------------------------------------------------------------------------------------
+defargs = struct('units',        Trial.spk.map(:,1),                                          ...
+                 'reportFig',    0,                                                           ...
+                 'overwrite',    0                                                            ...
 );
-
-[numIter,reportFig,overwrite] = DefaultArgs(varargin,defargs,'--struct');
-
+[units,reportFig,overwrite] = DefaultArgs(varargin,defargs,'--struct');
 % END DEFARGS -----------------------------------------------------------------------------------
 
 
 
 % DEFVARS ----------------------------------------------------------------------
 Trial= MTATrial.validate(Trial);    
-units = Trial.spk.map(:,1);
 
 
 % load theta periods

@@ -28,6 +28,38 @@ function Spk = create(Spk,Session,varargin)
 Spk.sampleRate = sampleRate;
 [Res, Clu, Map] = LoadCluRes(fullfile(Session.spath, Session.name));
 Spk.map = Map;
+
+% SELECT specific units
+if isempty(units),
+    cind = true(numel(Res),1);
+else
+    cind = find(ismember(Clu,units));
+end            
+Res = Res(cind);
+Clu = Clu(cind);
+
+switch mode
+% REMOVE burst tail spikes
+  case 'deburst'
+    nRes = [];
+    nClu = [];
+    thresh = round(0.008*Session.sampleRate);
+    if thresh==0,thresh =1;end
+    for u = unique(Clu)'
+        try                            
+            tRes   = Res(Clu==u);
+            bursts = SplitIntoBursts(tRes,thresh);
+            nRes   = [nRes; tRes(bursts)];
+            nClu   = [nClu; u.*ones(numel(bursts),1)];
+        end
+    end
+    Res = nRes;
+    Clu = nClu;
+  otherwise
+    % NOTHING
+end
+
+% RESAMPLE to target sampleRate
 Res = Res/Session.sampleRate*Spk.sampleRate;
 if Spk.sampleRate~=1
     Res = ceil(Res);
@@ -36,17 +68,7 @@ end
 [Res, ind] = SelectPeriods(Res,ceil(Session.sync([1,end])*Spk.sampleRate+1),'d',1,1);
 Clu = Clu(ind);
 
-%% Select specific units
-if isempty(units),
-    cind = true(numel(Res),1);
-else
-    cind = find(ismember(Clu,units));
-end            
-
-Res = Res(cind);
-Clu = Clu(cind);
-
-%% Select specific states
+% SELECT specific states
 if ~isempty(states);
     if ischar(states),
         [Res,sind] = SelectPeriods(Res,[Session.stc{states,Spk.sampleRate}.data],'d',1,0);
@@ -56,26 +78,6 @@ if ~isempty(states);
         [Res,sind] = SelectPeriods(Res,sst.data,'d',1,0);                   
     end
     Clu = Clu(sind);
-end
-
-%% Extra Modifications
-switch mode
-  case 'deburst'
-    nRes = [];
-    nClu = [];
-    thresh = round(10/1000*sampleRate);
-    if thresh==0,thresh =1;end
-    for u = unique(Clu)'
-        try                            
-            tRes = Res(Clu==u);
-            bresind = SplitIntoBursts(tRes,thresh);
-            nRes = [nRes; tRes(bresind)];
-            nClu = [nClu; u.*ones(numel(bresind),1)];
-        end
-    end
-    Res = nRes;
-    Clu = nClu;
-
 end
 
 

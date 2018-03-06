@@ -57,6 +57,8 @@ for t = 1:numel(tpos),
     for i = 1:ndims,
         sind{i} = sind{i}.^2/SmoothingWeights(i)^2/2;
     end
+
+    
     Smoother = exp(sum(-cat(ndims+1,sind{:}),ndims+1));
     Smoother = Smoother./sum(Smoother(:));
     occ = convn(occ,Smoother,'same');

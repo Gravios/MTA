@@ -788,3 +788,41 @@
 %  Description: check feature coregistration quality of xyz preprocessing
 %               algorithm modification SPLINE_SPINE_HEAD_EQD option
 %  Bugs: NA
+
+% req20180214 ----------------------------------------------------
+%  Status: active
+%  Type: Analysis
+%  Final_Forms: PlotPF.m:var:OccThresh
+%  Keywords: Placefields, PlotPF, Threshold
+%  Description: establish new criteria for placefield occupacy 
+%               threshold
+%  Bugs: Temporary threshold established.
+%        Replace with mean velocity map corrections.
+
+% req20180216 ----------------------------------------------------
+%  Status: active
+%  Type: Analysis
+%  Final_Forms: NA
+%  Keywords: Placefields, drz, behavioral transition
+%  Description: Computing the mean spike theta phase as a function
+%               of drz and behavior onset/offset
+%  Bugs: NA
+
+% req20180222 ----------------------------------------------------
+%  Status: active
+%  Type: Analysis
+%  Final_Forms: NA
+%  Keywords: Placefields, drz, mds, t-sne
+%  Description: Compute rate map of reduced dimesion subspace
+%               see fet_rds.m
+%  Bugs: NA
+
+% req20180227 ----------------------------------------------------
+%  Status: active
+%  Type: Diagnostic
+%  Final_Forms: NA
+%  Keywords: Placefields, sampleRate, bootstrap
+%  Description: placefield estimation as function of xyz samplerate
+%  Bugs: NA
+%  Notes: Reduced sample rate (16Hz) works sufficiently well and 
+%         saves computational resources 

@@ -1,8 +1,12 @@
 function [cpnts]=ClusterPP(varargin)
 %function [cpnts]=ClusterPP(varargin)
-%[figureId] = DefaultArgs(varargin,{gcf});    
 %
 %
+% varargin:
+%    figureId: Figure, gcf()
+%
+%
+    
 [figureId] = DefaultArgs(varargin,{gcf});
 
 setappdata(figureId,'oldFigName',get(figureId,'Name'));

@@ -20,7 +20,7 @@ defargs = struct('sessionListName', 'hand_labeled',      ...   String
                  'windowLength',     0.53386259,         ...   Seconds
                  'xyzPreprocOpts',   {{'LOAD_TRB_XYZ'}}, ...   Cellstr
                  'orientations',     [0,90],             ...   Degrees
-                 'maxNumComponents',    5,               ...   Numeric Int
+                 'maxNumComponents', 5,                  ...   Numeric Int
                  'mode',             'RUN',              ...   String
                  'tag',              ''                  ...   String
 );
@@ -76,7 +76,7 @@ embeddingWindow = repmat({round(windowLength.*newSampleRate)},1,numSessions);
 rotationAngles  = repmat({deg2rad(orientations)},1,numSessions);%[0,45,90,135]
 
 % LOAD basic data session data
-xyz    = cf(@(Trial) Trial.load('xyz')       , Trials);
+xyz    = cf(@(Trial)  preproc_xyz(Trial,'trb'),  Trials);
 cf(@(x,s) x.resample(s),xyz,sampleRate);
 
 % ADD virtual markers for body
@@ -87,12 +87,6 @@ cf(@(x,b) x.addMarker('bcom','data',b), xyz,bcom);
 cf(@(x,b) x.addMarker('fsl','data',ButFilter(x(:,'spine_lower',:),4,[0.5]./(x.sampleRate/2),'low')),xyz,bcom);
 clear('bcom');
 
-% ADD virtual markers for head
-rb    = cf(@(x)   x.model.rb({'head_back','head_left','head_front','head_right'}),xyz);
-hcom  = cf(@(x,r) x.com(r),xyz,rb);
-cf(@(x,h) x.addMarker('fhcom','data',ButFilter(h,4,[0.8]./(x.sampleRate/2),'low')),xyz,hcom);
-cf(@(x,h) x.addMarker('hcom','data',h), xyz,hcom);
-clear('hcom');
 
 
 % COMPUTE XY motion projections onto orthonormal body basis -------------------------------------------
@@ -105,7 +99,7 @@ tvec = cf(@(x,m,t) repmat(circshift(x(:,m,[1,2]),-(round(x.sampleRate*0.05)/2)).
           xyz,tmar,rotationAngles);
 
 % CREATE orthonormal body basis
-bodyUnitVector = cf(@(x,r) repmat(x(:,'fbcom',[1,2])-x(:,'fsl',[1,2]),1,1,1,numel(r)),xyz,rotationAngles);
+bodyUnitVector = cf(@(x,r) repmat(x(:,'spine_upper',[1,2])-x(:,'spine_lower',[1,2]),1,1,1,numel(r)),xyz,rotationAngles);
 rotMat = cf(@(t,m) reshape(repmat(permute([cos(t),-sin(t);...
                     sin(t),cos(t)],...
                                           [3,1,2]),...
@@ -139,7 +133,7 @@ walkFetRot = cf(@(w,m,s) nunity(w,[],m,s),...
 % EMBED wfet 
 wfet = cf(@(x) x.copy('empty'), xyz);
 cf(@(w,wfr) set(w,'data',[reshape(wfr,[],size(wfr,2)*size(wfr,3))]),wfet,walkFetRot);
-wfs  = cf(@(w,e) w.segs([],e),wfet,embeddingWindow);
+wfs  = cf(@(w,e) w.segs(1:size(w,1),e),wfet,embeddingWindow);
 wfs =  cf(@(w,e) circshift(w,e/2,2),wfs,embeddingWindow);
 wfs =  cf(@(w,x) MTADxyz('data',reshape(permute(w,[2,1,3]),size(w,2),[]),...
                          'sampleRate',x.sampleRate),wfs,xyz);
@@ -168,6 +162,7 @@ projectionScore = cf(@(w,v,nc) MTADxyz('data',multiprod(w.data,v(:,1:nc)),...
            repmat({maxNumComponents},1,numSessions));
 cf(@(f,x) set(f,'sync',x.sync.copy), projectionScore, xyz); 
 cf(@(f,x) set(f,'origin',x.origin),  projectionScore, xyz);
+cf(@(f,m) f.update_hash(m),  projectionScore, repmat({metadata},size(projectionScore)));
 
 if numel(projectionScore)==1,
     projectionScore = projectionScore{1};

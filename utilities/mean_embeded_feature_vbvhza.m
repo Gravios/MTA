@@ -19,7 +19,13 @@ czDom = {};
 
 % MAIN ---------------------------------------------------------------------------------------------
 
-xyz = preproc_xyz(Trial,'SPLINE_SPINE_HEAD_EQI');
+try,
+    xyz = preproc_xyz(Trial);
+catch err
+    disp(err)
+    xyz = preproc_xyz(Trial);
+end
+
 xyz.resample(Data);
 
 vxy = xyz.copy;

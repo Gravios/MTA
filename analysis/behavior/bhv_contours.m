@@ -1,13 +1,30 @@
-function hax = bhv_contours(varargin);
+function [C,H] = bhv_contours(varargin);
+%function [C,hax] = bhv_contours(varargin);
+% create contour map of feature jpdf
+%
+%
+% only works for fet_HB_pitchB for the moment
+
+global MTA_PROJECT_PATH
+
+diagnostic = false;
+
+% varargin = {};
 
 % DEFARGS ------------------------------------------------------------------------------------------
-defargs = struct('sessionList',                'MjgER2016',                                      ...
-                 'pitchReferenceTrial',        'Ed05-20140529.ont.all',                          ...
+defargs = struct('sessionListName',            'MjgER2016',                                      ...
+                 'featureSet',                 'fet_HB_pitchB',                                  ...
+                 'featureInd',                 [1,2],                                            ...
+                 'featureBin',                 {{linspace(-2,2,50),linspace(-2,2,50)}},          ...
+                 'referenceTrial',             'Ed05-20140529.ont.all',                          ...
                  'states',                     {{'lloc+lpause&theta','hloc+hpause&theta',        ...
                                                  'rear&theta'}},                                 ...
-                 'stateColors',                'wcr'                                             ...
+                 'stateColors',                'wcr',                                            ...
+                 'tag',                        '',                                               ...
+                 'overwrite',                  false                                             ...
 );
-[sessionList,pitchReferenceTrial,states,stateColors] = DefaultArgs(varargin,defargs,'--struct');
+[sessionList,featureSet,featureInd,featureBin,referenceTrial,states,stateColors,tag,overwrite] = ...
+    DefaultArgs(varargin,defargs,'--struct');
 %---------------------------------------------------------------------------------------------------
 
 errMsgs.badStateColors = 'MTA:analysis:behavior:bhv_contour:StateColorsMismatch';
@@ -15,69 +32,123 @@ errMsgs.badSessionList = 'MTA:analysis:behavior:bhv_contour:BadSessionList';
 
 assert(numel(states)==numel(stateColors),errMsgs.badStateColors);
 
-
-if ischar(sessionList),
-    sessionList = get_session_list(sessionList);
-elseif ~isstruct(sessionList),
+try,
+    sessionList = get_session_list(sessionListName);
+catch err, disp(err);
     error(errMsgs.badSessionList);
 end
-numTrials = numel(sessionList);
-numStates = numel(states);
-pitchReferenceFeature = fet_HB_pitch(pitchReferenceTrial);
-pitchReferenceTrial = repmat({pitchReferenceTrial},[1,numTrials]);
-states = repmat({states},[1,numTrials]);
 
-Trials = af(@(s)        MTATrial.validate(s),                 sessionList);
-stc    = cf(@(t)        t.stc.copy(),                         Trials);
-pch    = cf(@(t,rt,rf)  fet_HB_pitchB(t,[],[],[],rt,rf),  ...
-            Trials,pitchReferenceTrial,repmat({pitchReferenceFeature},[1,numTrials]));
 
-cf(@(p) set(p,'sampleRate',119.881035), pch);
-cf(@(p) resample(p,10), pch );
 
-for s = 1:numStates,
-    hout{s} = cf(@(p,s,sts)  hist2(p(resample([s{sts}],p),:),...
-                                   linspace(-pi/2,pi/2,50),...
-                                   linspace(-pi/2,pi/2,50)), ...
-                 pch,stc,repmat({states{s}},[1,numTrials]));
+% TAG creation -------------------------------------------------------------------------------------
+if isempty(tag),
+    tag = DataHash({sessionList,...
+                    featureSet,...
+                    featureInd,...
+                    featureBin,...                    
+                    referenceTrial,...
+                    states});
 end
+%---------------------------------------------------------------------------------------------------
+
+
+
+% MAIN ---------------------------------------------------------------------------------------------
+
+fileName = fullfile(MTA_PROJECT_PATH,'analysis',['bhv_contours','-',tag,'.mat']);
+if ~exist(fileName,'file') || overwrite,
+    
+    numTrials = numel(sessionList);
+    numStates = numel(states);
+
+% LOAD Trials
+% LOAD Behavior State Collections
+% LOAD Feature Sets
+    Trials = af(@(s)  MTATrial.validate(s),  sessionList);
+    Stc    = cf(@(T)  T.stc.copy(),          Trials);
+
+    
+% REMOVE third session: error in stc--------
+    if strcmp (sessionListName, 'MjgER2016')
+        Trials(3) = [];
+        Stc(3) = [];
+    end
+% REMOVE -----------------------------------
+
+
+    if ischar(featureSet) || ~all(isa(featureSet,'MTADfet')),
+        Fet    = cf(@(T,f,r)  feval(f,T,[],[],[],r),  ...
+                    Trials,...
+                    repmat({featureSet},size(Trials)),...
+                    repmat({referenceTrial},size(Trials)));
+    else
+        Fet = featureSet;
+    end
+    
+    cf(@(p) set(p,'sampleRate',119.881035), Fet);
+
+% ACCUMULATE 2d histograms
+    for s = 1:numStates,
+        hout{s} = cf(@(fetSet,stc,sts,fetInds,bins)                                        ...
+                     hist2(fetSet(stc{sts},fetInds),bins{:}),                              ...
+                     Fet,                                                                  ...
+                     Stc,                                                                  ...
+                     repmat({states{s}}, size(Trials)),                                    ...
+                     repmat({featureInd},size(Trials)),                                    ...
+                     repmat({featureBin},size(Trials)));
+    end
+
 
 % DIAGNOSTIC 
-if diagnostic
-figure,
-for t = 1:numel(hout{1}),clf();
-    imagesc(hout{1}{t}');
-    waitforbuttonpress();
-end
-end
-
-lpt = [stc{2}{'lloc+lpause&theta'}];
-lpt.resample(pch{2});
-figure,plot(pch{2}(lpt,1)),Lines(lpt.data(:),[],'k');
-
-figure,
-eds = linspace(-pi/2,pi/2,50);
-
-edgs    = {eds};
-edgs(2) = {eds};
-[edgs{:}] = get_histBinCenters(edgs);
-[X,Y] = meshgrid(edgs{:});
-F = [.05 .1 .05; .1 .4 .1; .05 .1 .05];
+    if diagnostic,
+        figure();  
+        for t = 1:numel(hout{2}),  
+            clf();  
+            for s = 1:numStates,
+                subplot(1,numStates,s);  imagesc(hout{s}{t}');  title(states{s})
+            end            
+            waitforbuttonpress();  
+        end
+        
+        %for s = 1:3,hout{s}(3) = [];end
+    end
+    
     
 
+% SET edges and smoothing parameters
+    figure,
+    edx = featureBin{1};
+    edy = featureBin{2};
+    edgs    = {edx};
+    edgs(2) = {edy};
+    [edgs{:}] = get_histBinCenters(edgs);
+    [X,Y] = meshgrid(edgs{:});
+    F = [.05 .1 .05; .1 .4 .1; .05 .1 .05];
+    
+    hax = gobjects([1,3]);
+    C = cell([1,3]);
+    H = cell([1,3]);
+    for s = 1:numStates,
+        hax(s) = subplot(1,numStates,s);
+        sout = nansum(cat(3,hout{s}{:}),3);
+        imagesc(edx,edy,sout');caxis([0,1000]);axis('xy');
+        hold('on');
+        o = conv2(sout,F,'same');
+        o = o/sum(o(:));
+        oPrct = 0;
+        oThresh = 0.1;
+        wCounter = 0;
+        while oPrct<0.95,
+            oPrct = sum(o(o(:)>oThresh));
+            oThresh = oThresh/1.5;
+            if wCounter > 100, break, end
+        end
+        [C{s},H{s}] = contour(X,Y,o',[oThresh,oThresh],'linewidth',0.5,'Color',stateColors(s));
+    end
 
-figure();
-hax = gobjecs([1,3]);
-for s = 1:numStates,
-    hax(s) = subplot(1,numStates,s);
-    sout = nansum(cat(3,hout{s}{:}),3);
-    imagesc(eds,eds,sout');caxis([0,15000]);axis('xy');
-    hold('on');
-    o = conv2(sout,F,'same');
-    contour(X,Y,o',[700,700],'linewidth',0.5,'Color',stateColors(s))
+    save(fileName,'H','C');
+else,
+    load(fileName);
 end
-af(@(h) set(h,'Units','centimeters'),  hax);
-af(@(h) set(h,'Position',[h.Position(1:2),2,2]),  hax);
 
-
-
+% END MAIN -----------------------------------------------------------------------------------------

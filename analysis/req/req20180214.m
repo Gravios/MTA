@@ -1,3 +1,12 @@
+% req20180214 ----------------------------------------------------
+%  Status: active
+%  Type: Analysis
+%  Final_Forms: NA
+%  Keywords: Placefields, PlotPF, Threshold
+%  Description: establish new criteria for placefield occupacy 
+%               threshold
+%  Bugs: NA
+
 Trial = MTATrial.validate('er01-20110719.cof.all');
 
 
@@ -86,13 +95,13 @@ ForAllSubplots(['grid(''on'');axis(''xy'')'])
 
 Trial = MTATrial.validate('jg05-20120317.cof.all');
 Trial.load('stc','msnn_ppsvd_raux');
+units = select_placefields(Trial);
 
 defargs = get_default_args('MjgER2016','MTAApfs','struct');
-defargs.units = [92,94];
-defargs.tag = 'prmsr'
+defargs.units = units;
 defargs.binDims = [10,10];
 defargs.SmoothingWeights = [3,3];
-defargs.states = 'rear&theta';
+defargs.states = 'theta-groom-sit';
 defargs.overwrite = true;
 defargs = struct2varargin(defargs);
 pf = MTAApfs(Trial,defargs{:});
@@ -115,3 +124,12 @@ subplot(221);plot(pf ,unit,'mean',true,[],false,0.5);
 subplot(222);plot(pfs,unit,'mean',true,[],false,0.5);
 subplot(223);plot(pf ,unit,'mean',true,[],false,0.95);
 subplot(224);plot(pfs,unit,'mean',true,[],false,0.95);
+
+
+figure();
+for u = units,
+    plot(pf,u,'mean',true,[],false,0.99);
+    waitforbuttonpress();
+end
+
+xyz = preproc_xyz(Trial,'trb');

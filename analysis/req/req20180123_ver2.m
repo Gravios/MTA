@@ -1,10 +1,10 @@
-
+% p(s|phi,z)
 
 
 % SET Analysis Parameters
-version = '3';
-overwrite = true;
-display = true;
+version = '4';
+overwrite = false;
+display = false;
 sessionListName = 'MjgER2016';
 figDir = create_directory('/storage/gravio/figures/analysis/placefields_nonSpatialFeatures'); 
 states = {'loc&theta','lloc&theta','hloc&theta','rear&theta',     ...
@@ -13,10 +13,12 @@ states = {'loc&theta','lloc&theta','hloc&theta','rear&theta',     ...
 statesCcg = {'loc','lloc','hloc','rear','pause','lpause','hpause',...
              'theta-groom-sit'};
 
+
+
 % LOAD session list
 % LOAD Trials
 % SELECT units for analysis
-% LOAD theta placefields
+% LOAD placefields
 sessionList = get_session_list(sessionListName);
 
 Trials  = af(@(S)  MTATrial.validate(S),   sessionList);
@@ -33,9 +35,7 @@ numTrials = numel(Trials);
 
 
 %% pfd_BPITCHxHPITCH %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
-analDir = ['BPITCHxHPITCH-v',version];
-create_directory(fullfile(figDir,analDir));
-
+analDir = 'BPITCHxHPITCH';
 pfd = {};
 pfindex = 1;
 for tind = 1:numTrials,
@@ -48,15 +48,16 @@ for tind = 1:numTrials,
     tper =[Trial.stc{'theta-groom-sit'}];
     tper.resample(xyz);
 
+
 % COMPUTE HPITCH x BPITCH | DRZ [-0.5,0.5]
     pargs = get_default_args('MjgER2016','MTAApfs','struct');
     pargs.units   = units{tind};
     pargs.numIter = 1001;
     pargs.halfsample = true;
-    pargs.tag            = ['DRZxHBPITCHxBPITCH_v',version];
+    pargs.tag            = 'DRZxHBPITCHxBPITCH_v4';
     pargs.boundaryLimits = [-2,2;-2,2];
-    pargs.binDims        = [0.1,0.1];
-    pargs.SmoothingWeights = [2,2];
+    pargs.binDims        = [0.2,0.2];
+    pargs.SmoothingWeights = [1.5,1.5];
     if overwrite,  
         pargs.overwrite = true;    
         pargs.xyzp = MTADxyz('data',pch.data,'sampleRate',xyz.sampleRate);
@@ -76,6 +77,7 @@ for tind = 1:numTrials,
     pargs.overwrite = false;
     pfsArgs = struct2varargin(pargs);
     pfd{tind,pfindex} = MTAApfs(Trial,pfsArgs{:});
+
 
 % VISUALIZE HPITCH x BPITCH | DRZ [-0.5,0.5]
     if display,
@@ -109,8 +111,8 @@ for tind = 1:numTrials,
             colorbar();    
             plot(dspch(drzState{u},2),...
                  dspch(drzState{u},1),'.m','MarkerSize',1),
-            xlabel('head-body pitch (rad)');  xlim([-2,pi/2]);
-            ylabel('body pitch (rad)');  ylim([-pi/2,2]);
+            xlabel('head-body pitch (rad)');  xlim([-pi/2,pi/2]);
+            ylabel('body pitch (rad)');  ylim([-pi/2,pi/2]);
             title('RateMap');
 
 % PLOT placefield rate map
@@ -128,8 +130,8 @@ for tind = 1:numTrials,
             plot(pfd{tind,pfindex},units{tind}(u),'snr',true,5,false,0.85,false);
             plot(dspch(drzState{u},2),...
                  dspch(drzState{u},1),'.m','MarkerSize',1),
-            xlabel('head-body pitch (rad)');  xlim([-2,pi/2]);
-            ylabel('body pitch (rad)');  ylim([-2,pi/2]);
+            xlabel('head-body pitch (rad)');  xlim([-pi/2,pi/2]);
+            ylabel('body pitch (rad)');  ylim([-pi/2,pi/2]);
             title('SNR Map');
 
 % FORMAT figure
@@ -176,17 +178,6 @@ hfig.Units = 'centimeters';
 hfig.Position = [0.5,0.5,20,6];
 hfig.PaperPositionMode = 'auto';
 
-% LOAD Behavioral state contours
-[stateContourMaps,stateContourHandles] = bhv_contours(sessionListName,                              ... sessionListName
-                                                  'fet_HB_pitchB',                                  ... featureSet
-                                                  [1,2],                                            ... featureInd
-                                                  {{linspace(-2,2,50),linspace(-2,2,50)}},          ... featureBin
-                                                  'Ed05-20140529.ont.all',                          ... referenceTrial
-                                                  {{'lloc+lpause&theta','hloc+hpause&theta',        ... states
-                                                    'rear&theta'}},                                 ...
-                                                  'wcr'                                             ... stateColors
-);
-
 
 nV = 5;
 hax = gobjects([1,5]);
@@ -212,15 +203,15 @@ figName = ['erpPCA_HPITCHxBPITCH_',version,'_',sessionListName];
 print(hfig,'-depsc2',fullfile(figDir,[figName,'.eps']));        
 print(hfig,'-dpng',  fullfile(figDir,[figName,'.png']));
 
-% ERPPCA HPITCHxBPITCH END ---------------------------------------------------------------------------
 
 
 
 
 
-%% erpPCA_HPITCHxBSPEED %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
-analDir = ['BPITCHxBSPEED-v',version];
-create_directory(fullfile(figDir,analDir));
+
+%% erpPCA_HPITCHxVEL %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+
+
 display = false;
 overwrite = false;
 pfindex = 2;
@@ -249,10 +240,10 @@ for tind = 1:numTrials,
     pargs.units   = units{tind};
     pargs.numIter = 101;
     pargs.halfsample = true;
-    pargs.tag            = ['DRZxHBPITCHxVEL_v',version];
+    pargs.tag            = 'DRZxHBPITCHxVEL_v4';
     pargs.boundaryLimits = [-2,2;-2,2];
-    pargs.binDims        = [0.1,0.1];
-    pargs.SmoothingWeights = [2,2];
+    pargs.binDims        = [0.2,0.2];
+    pargs.SmoothingWeights = [1.5,1.5];
     if overwrite,  
         pargs.overwrite = true;    
         pargs.xyzp = MTADxyz('data',fet.data,'sampleRate',xyz.sampleRate);
@@ -377,17 +368,8 @@ V = LR;
 reshape_eigen_vector = @(V,pfd) reshape(V(:,1),pfd{1}.adata.binSizes')';
 
 
-
 % LOAD Behavioral state contours
-[stateContourMaps,stateContourHandles] = bhv_contours(sessionListName,                              ... sessionListName
-                                                  'fet_HB_HPS',                                     ... featureSet
-                                                  [1,2],                                            ... featureInd
-                                                  {{linspace(-2,2,50),linspace(-2,2,50)}},          ... featureBin
-                                                  'Ed05-20140529.ont.all',                          ... referenceTrial
-                                                  {{'lloc+lpause&theta','hloc+hpause&theta',        ... states
-                                                    'rear&theta'}},                                 ...
-                                                  'wcr'                                             ... stateColors
-);
+[stateContourMaps,stateContourHandles] = bhv_contours(sessionListName);
 
 hfig = figure(666003);clf();
 hfig.Units = 'centimeters';
@@ -421,7 +403,7 @@ figName = ['erpPCA_HPITCHxVEL_',version,'_',sessionListName];
 print(hfig,'-depsc2',fullfile(figDir,[figName,'.eps']));        
 print(hfig,'-dpng',  fullfile(figDir,[figName,'.png']));
 
-% ERPPCA HPITCHxSPEED END -------------------------------------------------------------------------
+
 
 
 %% pfd matrix for anton %%
@@ -484,12 +466,11 @@ save('/storage/share/Projects/BehaviorPlaceCode/placefields_behaviorfields_for_a
 figure,imagesc(pfdHpitchBspeed.bins{:},sq(pfdHpitchBspeed.data(402,:,:))');
 
 
+%% pfd plot parts %%
 
-%% pfd plot parts %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
-% PARTS  
-
-analDir = ['parts-v',version];
+analDir = 'parts';
 create_directory(fullfile(figDir,analDir));
+
 
 for tind = 1:numTrials,
     hfig = figure(666004);
@@ -525,32 +506,32 @@ for tind = 1:numTrials,
         hold('on');  
         plot(pfd{tind,1},units{tind}(u),'mean',true,maxPfsRate,false,0.85,false);
         colorbar();    
-        xlabel('head-body pitch (rad)');  xlim([-2,2]);
-        ylabel('body pitch (rad)');  ylim([-2,2]);
+        xlabel('head-body pitch (rad)');  xlim([-2,pi/2]);
+        ylabel('body pitch (rad)');  ylim([-pi/2,pi/2]);
         title('RateMap');
 
         hax(4) = subplot(235);  
         hold('on');  
         plot(pfd{tind,1},units{tind}(u),'snr',true,5,false,0.85,false);
-        xlabel('head-body pitch (rad)');  xlim([-2,2]);
-        ylabel('body pitch (rad)');  ylim([-2,2]);
+        xlabel('head-body pitch (rad)');  xlim([-2,pi/2]);
+        ylabel('body pitch (rad)');  ylim([-pi/2,pi/2]);
         title('SNR Map');
 
-% PLOT Rate map HPITCH x BSPEED | DRZ [-0.5,0.5]
-% PLOT SNR  map HPITCH x BSPEED | DRZ [-0.5,0.5]        
+% PLOT Rate map PITCH x HEIGHT | DRZ [-0.5,0.5]
+% PLOT SNR  map PITCH x HEIGHT | DRZ [-0.5,0.5]        
         hax(5) = subplot(233);  
         hold('on');  
         plot(pfd{tind,2},units{tind}(u),'mean',true,maxPfsRate,false,0.85,false);
         colorbar();    
-        xlabel('head-body pitch (rad)');  xlim([-pi/2,2]);
+        xlabel('head-body pitch (rad)');  xlim([-2,pi/2]);
         ylabel('body pitch (rad)');  ylim([-2,2]);
         title('RateMap');
 
         hax(6) = subplot(236);  
         hold('on');  
         plot(pfd{tind,2},units{tind}(u),'snr',true,5,false,0.85,false);
-        xlabel('head-body pitch (rad)');  xlim([-pi/2,2]);
-        ylabel('body speed log(cm/s)');  ylim([-2,2]);
+        xlabel('head-body pitch (rad)');  xlim([-2,pi/2]);
+        ylabel('body pitch (rad)');  ylim([-2,2]);
         title('SNR Map');
         
         
@@ -559,7 +540,7 @@ for tind = 1:numTrials,
         % FORMAT figure
         af(@(h) set(h,'Units','centimeters'),            hax);    
         af(@(h) set(h,'Position',[h.Position(1:2),1.5,1.5]), hax(1:2));
-        af(@(h) set(h,'Position',[h.Position(1:2),1.5,1.5]), hax(3:end));        
+        af(@(h) set(h,'Position',[h.Position(1:2),1.5,1.32]), hax(3:end));        
         af(@(h) set(h.Title,'Units','pixels'),           hax);
         af(@(h) set(h.Title,'Position',h.Title.Position+[0,20,0]),  hax);
 

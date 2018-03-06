@@ -40,7 +40,7 @@ switch numel(Pfs.parameters.type)
 % RESTRICT rateMap area to within the maze radius
         width = Pfs.adata.binSizes(1);
         height = Pfs.adata.binSizes(2);
-        radius = round(Pfs.adata.binSizes(1)/2)-find(Pfs.adata.bins{1}<-420,1,'last');
+        radius = round(Pfs.adata.binSizes(1)/2)-find(Pfs.adata.bins{1}<-450,1,'last');
         centerW = width/2;
         centerH = height/2;
         [W,H] = meshgrid(1:width,1:height);           
@@ -57,6 +57,11 @@ switch numel(Pfs.parameters.type)
           case 'std' ,    rateMap = std(Pfs.data.rateMap(:,Pfs.data.clu==unit,:),[],3,'omitnan');
           case 'snr',     rateMap = mean(Pfs.data.rateMap(:,Pfs.data.clu==unit,:),3,'omitnan')...
                                     ./std(Pfs.data.rateMap(:,Pfs.data.clu==unit,:),[],3,'omitnan');
+                          rateMap(isinf(rateMap)) = nan;                          
+          case 'snrs',    
+            tStd = std(Pfs.data.rateMap(:,Pfs.data.clu==unit,:),[],3,'omitnan');
+            tStd(tStd<1) = 1;
+            rateMap = mean(Pfs.data.rateMap(:,Pfs.data.clu==unit,:),3,'omitnan')./tStd;
                           rateMap(isinf(rateMap)) = nan;                          
           case 'sig'
             rateMap = 1./sum((repmat(max(Pfs.data.rateMap(:,Pfs.data.clu==unit,:)),[size(Pfs.data.rateMap,1),1,1])...
@@ -91,7 +96,7 @@ switch numel(Pfs.parameters.type)
     
     if ifColorbar,
         colorbar();
-        caxis([0,maxRate])
+        caxis([0,maxRate]);
     end
     
     %imagesc(bin1,bin2,rateMap');

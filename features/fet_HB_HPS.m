@@ -1,4 +1,4 @@
-function [fet,featureTitles,featureDesc] = fet_HB_pitchB(Trial,varargin)
+function [fet,featureTitles,featureDesc] = fet_HB_HPS(Trial,varargin)
 % $$$ function [fet,featureTitles,featureDesc] = fet_head_pitch(Trial,varargin)
 % varargin:
 %     newSampleRate: numeric,  (Trial.xyz.sampleRate) - sample rate of xyz data
@@ -13,7 +13,7 @@ Trial = MTATrial.validate(Trial);
 % DEFARGS ------------------------------------------------------------------------------------------
 defargs = struct('newSampleRate'   , Trial.xyz.sampleRate,                                       ...
                  'normalize'       , false,                                                      ...
-                 'procOpts'        , {{}},                                                       ...
+                 'procOpts'        , {{'trb'}},                                                  ...
                  'referenceTrial'  , 'Ed05-20140529.ont.all',                                    ...
                  'referenceFeature', ''                                                          ...
 );
@@ -32,32 +32,35 @@ fet = MTADfet(Trial.spath,...
               newSampleRate,...
               Trial.sync.copy,...
               Trial.sync.data(1),...
-              [],'TimeSeries',[],'Head body pitch','fet_HB_pitch','b');                  
+              [],'TimeSeries',[],'Head pitch vs body speed','fet_HB_pitch','b');                  
 
 % XYZ preprocessed 
-% NONE
-xyz = Trial.load('xyz');
+xyz = preproc_xyz(Trial,procOpts);
+xyz.filter('RectFilter');
+vxy = xyz.vel({'spine_lower','hcom'},[1,2]);
+vxy.data(vxy.data<1e-3) = 1e-3;
+vxy.data = log10(vxy.data);
 
 % PITCHES 
 pch = fet_HB_pitch(Trial);
-if ~isempty(referenceTrial),
-% MAP to reference trial
-    pch.map_to_reference_session(Trial,referenceTrial,referenceFeature);
-end
+pch.map_to_reference_session(Trial,referenceTrial,referenceFeature);
 pch.resample(newSampleRate);
 
 % CONCATENATE features
-fet.data = [circ_dist(pch(:,3),pch(:,1)),pch(:,1)];
-
-
+fet.data = [circ_dist(pch(:,3),pch(:,1)),vxy.data];
 fet.data(~nniz(xyz),:)=0;
+
+% SET feature title and descriptions 
 featureTitles = {};
 featureDesc = {};
 if nargout>1,
     featureTitles(end+1) = {'Pitch HCHN-BMBU'};    
-    featureDesc(end+1) = {['head pitch relative to xy plane']};
-    featureTitles(end+1) = {'Pitch BMBU'};    
-    featureDesc(end+1) = {['upper body pitch relative to xy plane']};
+    featureDesc(end+1) = {['head pitch relative to xy plane subtracted by body pitch']};
+    featureTitles(end+1) = {'Speed xy BL'};
+    featureDesc(end+1) = {['log10 speed of lower body marker']};
+    featureTitles(end+1) = {'Speed xy HC'};
+    featureDesc(end+1) = {['log10 speed of head COM']};
+    
 end
 
 % END MAIN -----------------------------------------------------------------------------------------

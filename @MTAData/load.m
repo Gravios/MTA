@@ -13,16 +13,26 @@ if ~isempty(filename),
         Data.filename = filename;
         ds = load(Data.fpath);                    
     else
+% LIST files which contain the extension within Data.ext
         files = dir(Data.path);
         re = ['\.' Data.ext '\.'];
         stsFileList = {files(~cellfun(@isempty,regexp({files.name},re))).name};
         
+% GENERATE regular expression 
         if ~isempty(filename)
             re = ['\.' filename '\.'];                   
         else
             re = ['\.' Data.label '\.'];                   
         end
-        Data.filename = stsFileList{~cellfun(@isempty,regexp(stsFileList,re))};
+
+        filename = stsFileList(~cellfun(@isempty,regexp(stsFileList,re)));
+        if ~isempty(filename),  
+            Data.filename = filename{1};  
+        else,
+            error(struct('identifier','MTA:MTAData:load:FileNotFound',...
+                         'message',   'MTAData object file not found',...
+                         'stack',     dbstack));
+        end
         ds = load(Data.fpath);
     end
 else
