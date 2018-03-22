@@ -441,7 +441,7 @@ for offset = 0:ny:numel(units)-1,
         h = h+1;
         if numel(units) < u+offset,break;end;
         hax(u,h) = subplot2(ny,18,u,[5:6]);
-        plot(dfs{1},units(u+offset),'isCircular',false);
+        plot(dfs{1},units(u+offset),'mazeMaskFlag',false);
         if u~=ny, clear_axes_ticks(hax(u,h));
         else,     xlabel('mm');
             ylabel('mm');
@@ -452,7 +452,7 @@ for offset = 0:ny:numel(units)-1,
         h = h+1;        
         if numel(units) < u+offset,break;end;
         hax(u,h) = subplot2(ny,18,u,[7:8]);
-        plot(dfs{2},units(u+offset),'isCircular',false);
+        plot(dfs{2},units(u+offset),'mazeMaskFlag',false);
         if u~=ny, clear_axes_ticks(hax(u,h));
         else,     xlabel('mm');
             ylabel('mm');
@@ -463,7 +463,7 @@ for offset = 0:ny:numel(units)-1,
         h = h+1;        
         if numel(units) < u+offset,break;end;
         hax(u,h) = subplot2(ny,18,u,[9:10]);
-        plot(dfs{3},units(u+offset),'isCircular',false);
+        plot(dfs{3},units(u+offset),'mazeMaskFlag',false);
         if u~=ny, clear_axes_ticks(hax(u,h));
         else,     xlabel('mm');
             ylabel('mm');

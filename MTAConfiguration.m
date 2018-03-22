@@ -66,9 +66,21 @@ if ~exist(cfg,'dir'),
     mkdir(cfg);
 end
 
+
+% SETUP paths
 analysisDir = fullfile(MTA_PROJECT_PATH,'analysis');
 if ~exist(analysisDir,'dir'),
     mkdir(analysisDir);
+end
+
+matlabDir = fullfile(MTA_PROJECT_PATH,'matlab');
+if ~exist(matlabDir,'dir'),
+    mkdir(matlabDir);
+end
+
+classifiersDir = fullfile(MTA_PROJECT_PATH,'matlab','classifiers');
+if ~exist(classifiersDir,'dir'),
+    mkdir(classifiersDir);
 end
 
 analysisModelDir = fullfile(analysisDir,'models');
@@ -85,6 +97,18 @@ web = fullfile(cfg,'web');
 if ~exist(web,'dir')||overwrite
     copyfile(fullfile(mtap,'web'),web);
 end
+
+% final path layout
+%
+% ../root_dir/config/
+% ../root_dir/config/MTA
+% ../root_dir/config/MTA/arm
+% ../root_dir/config/MTA/web
+%
+% ../MTA_PROJECT_PATH/analysis
+% ../MTA_PROJECT_PATH/analysis/models
+% ../MTA_PROJECT_PATH/matlab
+% ../MTA_PROJECT_PATH/matlab/classifiers
 
 
 

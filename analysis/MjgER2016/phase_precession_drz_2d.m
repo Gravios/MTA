@@ -160,7 +160,7 @@ while unit~=-1,
         title(states{s})
         
         subplot2(ny,nsts,[4,5],s);
-        ratemap = pfs{s}.plot(unit,'isCircular',false);
+        ratemap = pfs{s}.plot(unit,'mazeMaskFlag',false);
         ratemap = ratemap.*mask;
         ratemap(isnan(ratemap)) = -1;
         imagesc(pfs{s}.adata.bins{1},pfs{s}.adata.bins{2},ratemap');

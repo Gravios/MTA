@@ -22,8 +22,12 @@ function [Stc,d_state,Model_Information,n_state] = bhv_nn(Trial,varargin)
 %   subset:      numeric, def - []
 
 
-% Constants
+
+global MTA_PROJECT_PATH
+
 MODEL_TYPE = 'NN';
+
+
 
 % Load Trial and or check if Trial is of the MTASession class
 if iscell(Trial)
@@ -70,7 +74,7 @@ nind = nniz(feature);
 % Create model filename based on the model name and the feature name
 % default modelName = ['MTAC_' Trial.stc.mode '_' MODEL_TYPE];
 modelName = [modelName '-' feature.label '-model.mat'];
-model_path = fileparts(mfilename('fullpath'));
+model_path = fullfile(MTA_PROJECT_PATH,'matlab','classifiers');%fileparts(mfilename('fullpath'));
 model_loc = fullfile(model_path,modelName);
 
 

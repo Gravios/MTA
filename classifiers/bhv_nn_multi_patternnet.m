@@ -18,6 +18,8 @@ function [varargout] = bhv_nn_multi_patternnet(Trial,varargin)
 %    labelingStats,
 %    labelingStatsMulti,
 
+global MTA_PROJECT_PATH
+
 MODEL_TYPE = 'NN_multiPN';
 
 Trial = MTATrial.validate(Trial);
@@ -171,7 +173,8 @@ for iter = 1:nIter,
         end
         if iter==1,
             model_out = model;
-            model_path = fileparts(mfilename('fullpath'));
+            model_path = fullfile(MTA_PROJECT_PATH,'matlab','classifiers');
+            %model_path = fileparts(mfilename('fullpath'));
             mkdir(fullfile(model_path,model));
             model = [model '/' model];
         end

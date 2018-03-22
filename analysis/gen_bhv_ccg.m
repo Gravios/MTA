@@ -1,5 +1,5 @@
 function  [Bccg,sper] = gen_bhv_ccg(Trial,varargin)
-[state,durThresh,units,numPartitions] = DefaultArgs(varargin,{'rear',1.5,[],4});
+[state,durThresh,units,numPartitions,pft] = DefaultArgs(varargin,{'rear',1.5,[],4,[]});
 
 
 sper = Trial.stc.filter(Trial.lfp.sampleRate,{state,{'exclusion',{state},2},{'duration',durThresh}});
@@ -7,7 +7,7 @@ sper = Trial.stc.filter(Trial.lfp.sampleRate,{state,{'exclusion',{state},2},{'du
 if ~iscell(sper), sper = mat2cell(sper,size(sper,1),[1,1]);end
 
 if numPartitions>1,
-    pft = pfs_2d_theta(Trial);    
+    if isempty(pft),  pft = pfs_2d_theta(Trial,units);  end
     [~,mrp] = pft.maxRate();
 else
     mrp = [];

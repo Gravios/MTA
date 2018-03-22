@@ -72,7 +72,7 @@ sunits = units(spCohere>0.985);
 
 ratemap=[];
 for u = 1:numel(sunits),
-    ratemap(:,:,u) = pfs{2,1}.plot(sunits(u),'isCircular',false);
+    ratemap(:,:,u) = pfs{2,1}.plot(sunits(u),'mazeMaskFlag',false);
 end
 
 

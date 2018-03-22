@@ -5,100 +5,91 @@ function units = select_units(varargin)
 % 15,'pyr','get',{'SpkWidthR','AmpSym'}});
 
 % DEFARGS ----------------------------------------------------------------------
-defargs = struct('sessionList',        {{'jg05-20120309.cof.all',            ...
-                                         'jg05-20120310.cof.all',            ...
-                                         'jg05-20120317.cof.all',            ...
-                                         'Ed10-20140817.cof.all',            ...
-                                         'Ed10-20140820.cof.all',            ...
-                                         'ER06-20130613.cof.all',            ...
-                                         'ER06-20130614.cof.all'}},          ...
-                 'eDistThreshold',     15,                                   ...
+defargs = struct('sessionList',        'MjgER2016',                          ...
                  'type',               'pyr',                                ...
-                 'mode',               'get',                                ...
-                 'nqFields',           {{'SpkWidthR','AmpSym'}}              ...
-);%-----------------------------------------------------------------------------
-
-
-
-
-[sessionList,eDistThreshold,type,mode,nqFields] = DefaultArgs(varargin,defargs,'--struct');
+                 'mode',               'get'                                 ...
+);
+[sessionList,type,mode] = DefaultArgs(varargin,defargs,'--struct');
+%-------------------------------------------------------------------------------
 
 
 % MAIN -------------------------------------------------------------------------
 
 
+% LOAD neuron quality data
 if iscell(sessionList),
-    for ses = 1:numel(sessionList),
-        Trial = MTATrial.validate(sessionList{ses});
-        try,
-            Trial.load('nq');
-        catch err
-            disp(err)
-            Trial.nq = NeuronQuality(Trial);
-        end
-        
-        nq{ses} = Trial.nq;
-    end
-    nq = cat(1,nq{:});
-    anq = CatStruct(nq);
-elseif isstruct(sessionList),
-    for ses = 1:numel(sessionList),
-        Trial = MTATrial.validate(sessionList(ses));
-        try,
-            Trial.load('nq');
-        catch err
-            disp(err)
-            Trial.nq = NeuronQuality(Trial);
-        end
-        
-        nq{ses} = Trial.nq;
-    end
-    nq = cat(1,nq{:});
-    anq = CatStruct(nq);
+    nq = cf(@(t)  get(t.load('nq'),'nq'),  ...
+            cf(@(s)  MTATrial.validate(s),  sessionList));
+    nq = CatStruct(cat(1,nq{:}));    
+elseif isstruct(sessionList)
+    nq = cf(@(t)  get(t.load('nq'),'nq'),  ...
+            af(@(s)  MTATrial.validate(s),  sessionList));
+    nq = CatStruct(cat(1,nq{:}));
 elseif ischar(sessionList)
-    Trial = MTATrial(sessionList);
-    Trial.load('nq');
-    anq = Trial.nq;
+    nq = cf(@(t)  get(t.load('nq'),'nq'),  ...
+            af(@(s)  MTATrial.validate(s),  get_session_list(sessionList)));
+    nq = CatStruct(cat(1,[nq{:}]));
 elseif isa(sessionList,'MTASession'),
-    Trial = sessionList;
-    Trial.load('nq');
-    anq = Trial.nq;
+    sessionList.load('nq');
+    nq = sessionList.nq;
 else
     error('select_units:unknown input type')
 end
 
+if ~exist(fullfile(MTASession([]).path.cfg,'unit_selection_criteria.mat'),'file')&&~strcmp(mode,'set');
+    % SET selection parameters
+    select_units([],[],'set');        
+end
 
 switch mode
   case 'get'
-    if exist(fullfile(Trial.path.cfg,'unit_selection_criteria.mat'),'file');
-        load(fullfile(Trial.path.cfg,'unit_selection_criteria.mat'));
-    else
-        %load(fullfile(Trial.path.cfg,'unit_selection_criteria.mat'));
-    end
-
-    nq_res = anq.(usp.fields{2})-polyval(usp.pram,anq.(usp.fields{1}));
-
+% LOAD selection parameters from file    
+    load(fullfile(MTASession([]).path.cfg,'unit_selection_criteria.mat'));    
+    nq_type    = nq.(usp.type.fields{2})   -polyval(usp.type.pram,   nq.(usp.type.fields{1}));
+    nq_quality = nq.(usp.quality.fields{2})-polyval(usp.quality.pram,nq.(usp.quality.fields{1}));
     switch type
       case 'pyr'
-        units = find(nq_res<0&anq.eDist>eDistThreshold)';
+        units = find(nq_type<0&nq_quality>0)';
       case 'int'
-        units = find(nq_res>0&anq.eDist>eDistThreshold)';
+        units = find(nq_type>0&nq_quality>0)';
+    end
+
+    
+  case 'all'
+% LOAD selection parameters from file    
+    load(fullfile(MTASession([]).path.cfg,'unit_selection_criteria.mat'));    
+    nq_type    = nq.(usp.type.fields{2})   -polyval(usp.type.pram,   nq.(usp.type.fields{1}));
+    switch type
+      case 'pyr'
+        units = find(nq_type<0)';
+      case 'int'
+        units = find(nq_type>0)';
     end
 
   case 'set'
-    figH = figure(48849);
-    plot(anq.(nqFields{1})(anq.eDist>eDistThreshold),anq.(nqFields{2})(anq.eDist>eDistThreshold),'.')
+    %nqFields = {'SpkWidthR','AmpSym'};
+    figH = figure(48849);clf();
+    plot(nq.(nqFields{1})(nq.eDist>eDistThreshold),nq.(nqFields{2})(nq.eDist>eDistThreshold),'.')
     title('Fit for hyperplane perpendicular to selected dimensions')
     xlabel(nqFields{1});
     ylabel(nqFields{2});
     pram = draw_lines(figH,'line_fit');
-    %saveas(figH,'/gpfs01/sirota/bach/homes/gravio/figures/Unit_Selection/spkWR_AmpSym.png');
-    %saveas(figH,'/gpfs01/sirota/bach/homes/gravio/figures/Unit_Selection/spkWR_AmpSym.fig');
 
-    usp.pram   = pram;
-    usp.fields = nqFields;
+    % nqFields = {'eDist','SNR'};    
+    figH = figure(48849);clf();
+    plot(nq.(nqFields{1})(nq.eDist>eDistThreshold),nq.(nqFields{2})(nq.eDist>eDistThreshold),'.')
+    title('Fit for hyperplane perpendicular to selected dimensions')
+    xlabel(nqFields{1});
+    ylabel(nqFields{2});
+    pramQ = draw_lines(figH,'line_fit');
+    
 
-    save(fullfile(Trial.path.cfg,'unit_selection_criteria.mat'),'usp','-v7.3');
+    usp.type.pram   = pram;
+    usp.type.fields = {'SpkWidthR','AmpSym'};
+    usp.quality.pram   = pramQ;
+    usp.quality.fields = {'eDist','SNR'};
+
+    save(fullfile(MTASession([]).path.cfg,'unit_selection_criteria.mat'),'usp','-v7.3');
     units = [];
 
 end

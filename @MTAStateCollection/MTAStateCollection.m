@@ -91,7 +91,13 @@ classdef MTAStateCollection < hgsetget
                     
                 else,% update the state collection mode and load
                     Stc.updateMode(nMode);
-                    ds = load(Stc.fpath);
+                    if exist(fullfile(Stc.path,nMode),'file')
+                        ds = load(Stc.fpath);
+                    else
+                        % Try to load Session stc of same mode
+                        Stc.filename = strrep(Stc.filename,['.',Session.trialName,'.'],'.all.');
+                        ds = load(Stc.fpath);
+                    end
                 end
 
                 Stc.states = {};

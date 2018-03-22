@@ -159,10 +159,10 @@ for unit = units,
     subplot(131); % placefield theta
     pft.plot(unit);
     subplot(132); % drz X pitch 
-    pfs_dp.plot(unit,'isCircular',false);
+    pfs_dp.plot(unit,'mazeMaskFlag',false);
     colorbar();
     subplot(133); % drz X height
-    pfs_dh.plot(unit,'isCircular',false);
+    pfs_dh.plot(unit,'mazeMaskFlag',false);
     colorbar();    
     waitforbuttonpress();
 end

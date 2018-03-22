@@ -23,19 +23,21 @@ defargs = struct('sessionListName',            'MjgER2016',                     
                  'tag',                        '',                                               ...
                  'overwrite',                  false                                             ...
 );
-[sessionList,featureSet,featureInd,featureBin,referenceTrial,states,stateColors,tag,overwrite] = ...
+[sessionListName,featureSet,featureInd,featureBin,referenceTrial,states,stateColors,tag,overwrite] = ...
     DefaultArgs(varargin,defargs,'--struct');
 %---------------------------------------------------------------------------------------------------
 
 errMsgs.badStateColors = 'MTA:analysis:behavior:bhv_contour:StateColorsMismatch';
 errMsgs.badSessionList = 'MTA:analysis:behavior:bhv_contour:BadSessionList';
 
-assert(numel(states)==numel(stateColors),errMsgs.badStateColors);
+assert(numel(states)==numel(stateColors),...
+       errMsgs.badStateColors,...
+       'Number of colors does not match number of states');
 
 try,
     sessionList = get_session_list(sessionListName);
 catch err, disp(err);
-    error(errMsgs.badSessionList);
+    error(errMsgs.badSessionList,'The session list name provided was not found');
 end
 
 
@@ -70,12 +72,13 @@ if ~exist(fileName,'file') || overwrite,
     
 % REMOVE third session: error in stc--------
     if strcmp (sessionListName, 'MjgER2016')
-        Trials(3) = [];
-        Stc(3) = [];
+        Trials(3:4) = [];
+        Stc(3:4) = [];
     end
 % REMOVE -----------------------------------
 
 
+% LOAD features
     if ischar(featureSet) || ~all(isa(featureSet,'MTADfet')),
         Fet    = cf(@(T,f,r)  feval(f,T,[],[],[],r),  ...
                     Trials,...
@@ -87,10 +90,11 @@ if ~exist(fileName,'file') || overwrite,
     
     cf(@(p) set(p,'sampleRate',119.881035), Fet);
 
+    
 % ACCUMULATE 2d histograms
     for s = 1:numStates,
         hout{s} = cf(@(fetSet,stc,sts,fetInds,bins)                                        ...
-                     hist2(fetSet(stc{sts},fetInds),bins{:}),                              ...
+                     hist2(fetSet(stc{[sts,'&gper']},fetInds),bins{:}),                     ...
                      Fet,                                                                  ...
                      Stc,                                                                  ...
                      repmat({states{s}}, size(Trials)),                                    ...
@@ -106,13 +110,13 @@ if ~exist(fileName,'file') || overwrite,
             clf();  
             for s = 1:numStates,
                 subplot(1,numStates,s);  imagesc(hout{s}{t}');  title(states{s})
+                axis('xy');
             end            
+            title(num2str(t))
             waitforbuttonpress();  
         end
-        
         %for s = 1:3,hout{s}(3) = [];end
     end
-    
     
 
 % SET edges and smoothing parameters
@@ -124,7 +128,8 @@ if ~exist(fileName,'file') || overwrite,
     [edgs{:}] = get_histBinCenters(edgs);
     [X,Y] = meshgrid(edgs{:});
     F = [.05 .1 .05; .1 .4 .1; .05 .1 .05];
-    
+
+% PLOT contours for each state
     hax = gobjects([1,3]);
     C = cell([1,3]);
     H = cell([1,3]);
@@ -146,8 +151,10 @@ if ~exist(fileName,'file') || overwrite,
         [C{s},H{s}] = contour(X,Y,o',[oThresh,oThresh],'linewidth',0.5,'Color',stateColors(s));
     end
 
+% SAVE contour objects
     save(fileName,'H','C');
 else,
+% LOAD contour objects
     load(fileName);
 end
 

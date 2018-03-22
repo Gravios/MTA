@@ -56,7 +56,7 @@ if display,
         for i = 1:4,
             subplotfit(i,4);cla
             imagesc(reshape(pfs{i}.data.rateMap(:,unit),35,60)),colorbar
-            %pfs{i}.plot(unit,'isCircular',false);
+            %pfs{i}.plot(unit,'mazeMaskFlag',false);
             title([pfs{i}.parameters.states,': ',num2str(unit)]);
         end
         unit = figure_controls(hfig,unit,units);

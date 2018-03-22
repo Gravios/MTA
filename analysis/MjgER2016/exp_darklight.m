@@ -132,7 +132,7 @@ set(hfig,'PaperPositionMode','auto');
 while unit~=-1,
     for i  = 1:2
         pf = pfs{i};
-        ratemap = pf.plot(unit,'isCircular',false);
+        ratemap = pf.plot(unit,'mazeMaskFlag',false);
         ratemap(isnan(ratemap)) = -1;
         for s = 1:numel(slices)
             if unit~=units(1),

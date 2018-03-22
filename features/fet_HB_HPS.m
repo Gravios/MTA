@@ -47,17 +47,23 @@ pch.map_to_reference_session(Trial,referenceTrial,referenceFeature);
 pch.resample(newSampleRate);
 
 % CONCATENATE features
-fet.data = [circ_dist(pch(:,3),pch(:,1)),vxy.data];
+fet.data = [circ_dist(pch(:,3),pch(:,1)),pch(:,1),vxy.data];
 fet.data(~nniz(xyz),:)=0;
 
 % SET feature title and descriptions 
 featureTitles = {};
 featureDesc = {};
 if nargout>1,
+    % 1. Head Pitch
     featureTitles(end+1) = {'Pitch HCHN-BMBU'};    
     featureDesc(end+1) = {['head pitch relative to xy plane subtracted by body pitch']};
+    % 2. Body Pitch
+    featureTitles(end+1) = {'Pitch BMBU'};    
+    featureDesc(end+1) = {['body pitch relative to xy plane']};
+    % 3. Body Speed
     featureTitles(end+1) = {'Speed xy BL'};
     featureDesc(end+1) = {['log10 speed of lower body marker']};
+    % 4. Head Speed
     featureTitles(end+1) = {'Speed xy HC'};
     featureDesc(end+1) = {['log10 speed of head COM']};
     

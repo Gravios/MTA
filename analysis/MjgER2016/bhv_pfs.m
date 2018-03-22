@@ -77,7 +77,7 @@ while unit~=-1,
         % Correct color of nans and plot place field
 
         % PFS plot
-        %ratemap = pf.plot(unit,'isCircular',false);
+        %ratemap = pf.plot(unit,'mazeMaskFlag',false);
 
         % PFK plot
         %ratemap = reshape(pf.data.rateMap(:,unit==pf.data.clu,1),fliplr(pf.adata.binSizes'));

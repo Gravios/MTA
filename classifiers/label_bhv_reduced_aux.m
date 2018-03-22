@@ -50,6 +50,8 @@ if sempty||overwrite,
         Stc.states(Stc.gsi('h')) = [];
         Stc.states(Stc.gsi('l')) = [];
     end
+    
+
 
     if isempty(pitchThreshold)
 % RETRIVE threshold from on pitch-rhm analysis
@@ -72,22 +74,28 @@ if sempty||overwrite,
     end    
     
 % INITIALIZE new states' objects with copy
-    wind = Stc{'x'}.copy;
-    lang = Stc{'x'}.copy;
-    hang = Stc{'x'}.copy;    
+    locPeriods = Stc{'x'};
+    wind = locPeriods.copy();
+    lang = locPeriods.copy();
+    hang = locPeriods.copy();    
 
 % CREATE low loc state
     lang.data = ThreshCross(pch(:,3)<pitchThreshold,.5,1);
     lang.label = 'lloc';
     lang.key = 'l';
+    lang.sampleRate = pch.sampleRate;
     lang.filename = [Trial.filebase '.sst.lloc.l.mat'];
+    lang.resample(locPeriods.sampleRate);
     Stc.states{end+1} = lang&wind.data;
+
 
 % CREATE high loc state
     hang.data = ThreshCross(pch(:,3)>pitchThreshold,.5,1);
     hang.label = 'hloc';
     hang.key = 'h';
+    hang.sampleRate = pch.sampleRate;    
     hang.filename = [Trial.filebase '.sst.hloc.h.mat'];
+    hang.resample(locPeriods.sampleRate);
     Stc.states{end+1} = hang&wind.data;
     
 end
@@ -122,22 +130,27 @@ if sempty||overwrite,
     end
     
 % INITIALIZE new states' objects with copy
-    wind = Stc{'p'}.copy;
-    lang = Stc{'p'}.copy;
-    hang = Stc{'p'}.copy;    
+    pausePeriods = Stc{'p'};
+    wind = pausePeriods.copy();
+    lang = pausePeriods.copy();
+    hang = pausePeriods.copy();
 
 % CREATE low pause state        
     lang.data = ThreshCross(pch(:,3)<pitchThreshold,.5,1);
     lang.label = 'lpause';
     lang.key = 'q';
+    lang.sampleRate = pch.sampleRate;    
     lang.filename = [Trial.filebase '.sst.lpause.q.mat'];
+    lang.resample(pausePeriods.sampleRate);
     Stc.states{end+1} = lang&wind.data;
 
 % CREATE high pause state    
     hang.data = ThreshCross(pch(:,3)>pitchThreshold,.5,1);
     hang.label = 'hpause';
     hang.key = 'j';
+    hang.sampleRate = pch.sampleRate;    
     hang.filename = [Trial.filebase '.sst.hpause.j.mat'];
+    hang.resample(pausePeriods.sampleRate);    
     Stc.states{end+1} = hang&wind.data;
     
 end

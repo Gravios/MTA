@@ -31,30 +31,49 @@ SampleRate = Par.SampleRate;
 SpkSamples = Par.SpkGrps(1).nSamples;
 GoodElectrodes=[];
 
-for el=Electrodes
-    if ~exist(fullfile(Session.spath,[Session.name '.clu.' num2str(el)]),'file') continue; end
-    Clu = LoadClu(fullfile(Session.spath,[Session.name '.clu.' num2str(el)]));
-    if max(Clu) > 1
-        GoodElectrodes = [GoodElectrodes, el];
+for el=Electrodes,
+    
+    if exist(fullfile(Session.spath,[Session.name '.clu.' num2str(el)]),'file') 
+% LOAD cluster file
+        Clu = LoadClu(fullfile(Session.spath,[Session.name '.clu.' num2str(el)]));   
+    else
+% SKIP cluster file        
+        continue; 
     end
+    
+    if max(Clu) > 1, 
+% CONCATENATE current electrode id to final list
+        GoodElectrodes = [GoodElectrodes, el]; 
+    end
+    
     if exist(fullfile(Session.spath,[Session.name '.spk.' num2str(el)]),'file')
-        nspk = FileLength(fullfile(Session.spath,[Session.name '.spk.' num2str(el)]))/2/length(Par.ElecGp{el})/SpkSamples;
-        if nspk ~= length(Clu)
+
+% COMPUTE spike count
+        nspk = FileLength(fullfile(Session.spath,[Session.name '.spk.' num2str(el)]))...
+               /2/length(Par.ElecGp{el})/SpkSamples;
+
+        if nspk ~= length(Clu),
+% THROW warning that spike count does NOT match clu count
             fprintf('%s - Electrode %d - length of spk file does not correspond to clu length\n\n',Session.name,el);
             nspk=-1;
         end
-    else
+    else,
+% SKIP spike file
         fprintf('%s - Electrode %d - length of spk file does not exist \n',Session.name,el);
         nspk=-1;
     end
 end
-%GoodElectrodes
-% for non-noise cluster do the rest
-%nq = struct;
+
+
+
 for el=GoodElectrodes
+% COMPUTE cluster qualities for electrodes with spikes
+% LOAD spike id (clu) file
+% LOAD spike time (res) file
     Clu = LoadClu(fullfile(Session.spath,[Session.name '.clu.' num2str(el)]));
     Res = load   (fullfile(Session.spath,[Session.name '.res.' num2str(el)]));
     
+% REMOVE artifact(0) and noise(1) clusters from "good" spikes
     uClu = setdiff(unique(Clu),[0 1]);
     nClu = length(uClu);
     
@@ -68,6 +87,8 @@ for el=GoodElectrodes
         myClu=find(Clu==1);
         
         if length(myClu)>0
+% LOAD enough spike to sample all clusters
+% CREATE represantative spike samples for good cells
             SampleSize = min(length(myClu),SampleSize);
             RndSample = sort(myClu(randsample(length(myClu),SampleSize)));
             mySpk = LoadSpkPartial(fullfile(Session.spath,[Session.name '.spk.' num2str(el)]),...
@@ -76,12 +97,17 @@ for el=GoodElectrodes
         else
             stdSpkNoise = 1;
         end
-        %load only enough spike to sample all clusters
-        % create represantative spikes sample for good cells
     end
-    avSpk =[]; stdSpk = [];SpatLocal=[];SpkWidthC=[];SpkWidthL=[];SpkWidthR=[];posSpk=[];FirRate = [];AvSpkAll=[];
-    leftmax=[]; rightmax=[];troughamp=[];troughSD=[];spkMaxchanAll=[];
-    for cnum=1:nClu
+    
+% INITIALIZE parameters of interest
+    avSpk     = [];  stdSpk        = [];  SpatLocal = [];
+    SpkWidthC = [];  SpkWidthL     = [];  SpkWidthR = [];
+    posSpk    = [];  FirRate       = [];  AvSpkAll  = [];
+    leftmax   = [];  rightmax      = [];  troughamp = [];
+    troughSD  = [];  spkMaxchanAll = [];
+
+    for cnum=1:nClu % FOR each cluster
+
         % get spike wavesdhapes and compute SNR
         if nspk>0 % if there was a .spk file 
             SampleSize = 1000;
@@ -89,12 +115,15 @@ for el=GoodElectrodes
             
             if length(myClu)>0
                 SampleSize = min(length(myClu),SampleSize);
-                RndSample = sort(myClu(randsample(length(myClu),SampleSize)));
-                mySpk = LoadSpkPartial(fullfile(Session.spath,[Session.name '.spk.' num2str(el)]),...
+                RndSample  = sort(myClu(randsample(length(myClu),SampleSize)));
+                
+                mySpk      = LoadSpkPartial(fullfile(Session.spath,[Session.name '.spk.' num2str(el)]),...
                                        length(Par.ElecGp{el}),SpkSamples,RndSample);
+                
                 avSpk(:,:,cnum) = sq(mean(mySpk, 3)) - repmat(sq(mean(mean(mySpk, 3),2)),1,size(mySpk,2)) ;
-                %remove the baseline
-                %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%updated to here                
+                
+                %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%updated to here
+                
                 stdSpk(:,:,cnum)  = sq(std(mySpk,0,3));% may not need it
                 
                 %find the channel of largest amp (positive or negative)

@@ -396,20 +396,37 @@ switch sessionList
     my_xyz = fullfile(tmy_xyz,'ER06');
     my_nlx = '/storage/evgeny/data/processed/ER06';    
     Sessions(end+1) = Sessions(end);    
-    Sessions(end).sessionName    = 'ER06-20130613';
+    Sessions(end).sessionName    = 'ER06-20130612';
     Sessions(end).xyz_host       = my_xyz;
     Sessions(end).nlx_host       = my_nlx;
     Sessions(end).xyzSampleRate  = 199.997752;
     Sessions(end).TTLValue       = 'Vicon start';
-    Sessions(end).includeSyncInd = [1,2,5,6,9,10];
+    Sessions(end).includeSyncInd = [1,3,4,6,7];
     Sessions(end).offsets        = [15,-15];
     Sessions(end).thetaRef     = [8:8:64,77,77,77,77];
 
+    Sessions(end+1) = Sessions(end);    
+    Sessions(end).sessionName    = 'ER06-20130613';
+    Sessions(end).includeSyncInd = [1,2,5,6,9,10];
     
-% $$$     Sessions(end+1) = Sessions(end);
-% $$$     Sessions(end).sessionName    = 'ER06-20130614';
-% $$$     Sessions(end).trialName      = 'gnd';
-% $$$     Sessions(end).includeSyncInd = [1:3,6:8,11,12];
+    Sessions(end+1) = Sessions(end);
+    Sessions(end).sessionName    = 'ER06-20130614';
+    Sessions(end).trialName      = 'gnd';
+    Sessions(end).includeSyncInd = [1:3,6:8,11,12];
+
+    
+% $$$     my_xyz = fullfile(tmy_xyz,'ER06');
+% $$$     my_nlx = '/storage/evgeny/data/processed/ER06';    
+% $$$     Sessions(end+1) = Sessions(end);    
+% $$$     Sessions(end).sessionName    = 'ER06-20130613';
+% $$$     Sessions(end).xyz_host       = my_xyz;
+% $$$     Sessions(end).nlx_host       = my_nlx;
+% $$$     Sessions(end).xyzSampleRate  = 199.997752;
+% $$$     Sessions(end).TTLValue       = 'Vicon start';
+% $$$     Sessions(end).includeSyncInd = [1,2,5,6,9,10];
+% $$$     Sessions(end).offsets        = [15,-15];
+% $$$     Sessions(end).thetaRef     = [8:8:64,77,77,77,77];
+
 
     % 11-12    
     % Ed10 sessions

@@ -1,8 +1,15 @@
-function Pfs = update_filename(Pfs,Session,varargin)
-Pfs.tag= varargin{1};
+function Pfs = update_filename(Pfs,varargin)
+if ~isempty(varargin),
+    Session = varargin{1};
+    if numel(varargin)>1,    
+        Pfs.tag  = varargin{2};
+    end
+end
 
-pfsState = Session.stc{Pfs.parameters.states,Session.xyz.sampleRate};
+
+
 if isempty(Pfs.tag)
+    pfsState = Session.stc{Pfs.parameters.states,Session.xyz.sampleRate};    
     binDimTag = num2str(Pfs.parameters.binDims);
     binDimTag(isspace(binDimTag)&isspace(circshift(binDimTag',1)'))=[];
     binDimTag(isspace(binDimTag)) = '_';
@@ -21,5 +28,12 @@ if isempty(Pfs.tag)
                     'bs' num2str(Pfs.parameters.bootstrap) 'sm' smwTag  ...
                     'bd' binDimTag '.mat'];
 else
-    Pfs.filename = [Session.filebase '.Pfs.' Pfs.tag '.mat'];
+    Pfs.filename = [Pfs.session.sessionName,'.',...
+                    Pfs.session.mazeName,'.'   ,...
+                    Pfs.session.trialName,'.'  ,...
+                    'Pfs.' Pfs.tag '.mat'];
 end
+
+
+
+

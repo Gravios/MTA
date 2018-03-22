@@ -16,9 +16,9 @@ marker = 'nose';
 
 
 if generateFigureParts,
-    FigDir = create_directory('/storage/gravio/figures/parts/placefields');
+    FigDir = create_directory('/storage/gravio/figures/analysis/parts/placefields');
 else,
-    FigDir = create_directory('/storage/gravio/figures/placefields'); 
+    FigDir = create_directory('/storage/gravio/figures/analysis/placefields'); 
 end        
         
 Trials  = af(@(t)  MTATrial.validate(t),   sessionList);
@@ -33,7 +33,7 @@ numStates = numel(states);
 
 cf(@(t) t.load('nq'), Trials);
 
-t = 1;
+t = 18;
 
 Trial = Trials{t};
 
@@ -45,6 +45,7 @@ ang = create(MTADang,Trial,xyz);                           % COMPUTE  Intermarke
 
 units = select_placefields(Trial);                         % SELECT   subset of hippocampal neurons with high spatial information
 pft = pfs_2d_theta(Trial,units);                           % COMPUTE  Expected Neuron firing rate given position in theta state
+pfs = pfs_2d_states(Trial,units);
 spk = create( Trial.spk.copy(), Trial, xyz.sampleRate,...  % LOAD     Spike identities and times
              'theta-groom-sit', units, 'deburst');         %                [ theta state; remove bursty spike ( isi < 10ms )]
 drz = compute_drz(Trial,units,pft);                        % COMPUTE  Directional Rate Zone
@@ -57,9 +58,9 @@ phz = lfp.phase([6,12]);                                   % COMPUTE  LFP theta 
 
 pch = fet_HB_pitchB(Trial);
 
-vxy = xyz.vel({'spine_lower','hcom'},[1,2]);               %
-axy = vxy.copy();                                          %
-axy.data = circshift(axy.data,-1)-circshift(axy.data,1);   %
+vxy = xyz.vel({'spine_lower','hcom'},[1,2]);               % 
+axy = vxy.copy();                                          % 
+axy.data = circshift(axy.data,-1)-circshift(axy.data,1);   % 
 vxy.data(vxy.data<1e-3) = 1e-4;                            % CLIP      lowerbound (<1e-3) of speed to 1e-4
 vxy.data = log10(vxy.data);                                % TRANSFORM speed to log10 scale
 
@@ -74,12 +75,12 @@ u = 1;
 % $$$ [p,th0,r,logZ,k,n] = RayleighTest(phz(spkll.res),spkll.clu);
 % $$$ figure,plot(th0,logZ,'.')
 
-% $$$ stsper = Trial.stc{'r'};
-% $$$ ststrans = xyz.copy('clear');
-% $$$ ststrans.data = nan([size(xyz,1),1]);
-% $$$ for period = stsper.data(2:end-1,2)',
-% $$$     ststrans.data(period-60:period+60) = linspace(-1,1,121);
-% $$$ end
+stsper = Trial.stc{'r'};
+ststrans = xyz.copy('clear');
+ststrans.data = nan([size(xyz,1),1]);
+for period = stsper.data(2:end-1,2)',
+    ststrans.data(period-60:period+60) = linspace(-1,1,121);
+end
 
 %fet = ststrans;
 %fet = pch;
@@ -127,3 +128,99 @@ end
 % $$$ %scatter(drz(res,unit==units),axy(res,1),20,phz(res,spk.map(unit==spk.map(:,1),2)),'filled')
 % $$$ colormap hsv
 
+
+
+% pfs drz x sts transition
+
+tags = {'DRZxSTSTRANS_ON','DRZxSTSTRANS_OFF'};
+for s = 1:numel(tags)
+
+    samples = round(xyz.sampleRate/2);
+    stsper = Trial.stc{'r'};
+    stsdiff = [[stsper.data(:,2);size(xyz,1)]-[0;stsper.data(:,1)]]';
+    trans = stsper.data(:,s)';
+    trans(stsdiff(s:end-2+s)<samples) = [];
+
+    ststrans = xyz.copy('empty');
+    ststrans.data = nan([size(xyz,1),1]);
+    for transition = trans,
+        ststrans.data(transition-samples:transition+samples) = linspace(-1,1,2*samples+1);
+    end
+    
+    fet = ststrans.copy();
+
+    pargs = get_default_args('MjgER2016','MTAApfs','struct');        
+    pargs.tag              = tags{s};
+    pargs.units            = units;
+    pargs.numIter          = 1001;
+    pargs.halfsample       = true;
+    pargs.overwrite        = true;
+    pargs.boundaryLimits   = [-1,1;-1,1];
+    pargs.binDims          = [0.1,0.1];
+    pargs.SmoothingWeights = [1.5,1.5];
+    pargs.autoSaveFlag     = false;
+
+    u = 1;        
+    fet.data = [fet.data,drz(:,u)];
+    pargs.xyzp   = fet;
+    pargs.units  = units(u);
+    pargs.states = MTADepoch([],[],ThreshCross(~isnan(ststrans.data),0.5,1),...% SELECT periods where drz
+                             fet.sampleRate,fet.sync.copy(),fet.origin,...
+                             'TimePeriods','sts',[],'tdrz','d');
+
+    pfsArgs = struct2varargin(pargs);
+    pfTemp = MTAApfs(Trial,pfsArgs{:});
+    pfTemp.save();
+    for u = 2:numel(units);
+        pargs.units  = units(u);    
+        fet           = ststrans.copy();
+        fet.data     = [fet.data,drz(:,u)];
+        pargs.xyzp   = fet;   
+        pargs.states = MTADepoch([],[],ThreshCross(~isnan(ststrans.data),0.5,1),...
+                                 fet.sampleRate,fet.sync.copy(),fet.origin,...
+                                 'TimePeriods','sts',[],'tdrz','d');
+        pfsArgs = struct2varargin(pargs);
+        pfTemp  = MTAApfs(pfTemp,pfsArgs{:});
+    end
+    pfTemp.save();        
+end
+
+
+
+[accg,tbins] = autoccg(Trial);
+pfd = {MTAApfs(Trial,'tag','DRZxSTSTRANS_ON'),MTAApfs(Trial,'tag','DRZxSTSTRANS_OFF'),MTAApfs(Trial,'tag','HBPITCHxBPITCH_v7')};
+
+
+nx = numel(pfs)+1+1+1+1+1;
+figure,
+for u = 1:numel(units),
+    maxPfsRate = max(cell2mat(cf(@(p,u) maxRate(p,u,false,'prctile99',0.5),...
+                                 [pfs,pfd],repmat({units(u)},[1,numel(pfs)+1+1+1]))));
+    subplot(1,nx,1);
+    bar(tbins,accg(:,units(u)));axis tight;
+    subplot(1,nx,2);        
+    plot(pft,units(u),'mean',false,...
+         [maxRate(pft,units(u),false,'prctile99',0.5)/2-0.2,...
+          maxRate(pft,units(u),false,'prctile99',0.5)/2],true,0.5,false,[],@jet);
+    title(num2str(units(u)));
+    
+    for s = 1:numel(pfs),
+        subplot(1,nx,s+2);
+        plot(pfs{s},units(u),1,false,[0,maxPfsRate],true,0.5,false,[],@jet);
+        title(pfs{s}.parameters.states);
+    end
+    subplot(1,nx,nx-2);
+    plot(pfd{1},units(u),1,false,[0,maxPfsRate],false,0.5,false,[],@jet);
+    title(pfd{1}.tag);
+    subplot(1,nx,nx-1);
+    plot(pfd{2},units(u),1,false,[0,maxPfsRate],false,0.5,false,[],@jet);
+    title(pfd{2}.tag);
+    subplot(1,nx,nx);    
+    plot(pfd{3},units(u),'mean',true,[0,maxPfsRate],false,0.5,false,[],@jet);
+    title(pfd{3}.tag);
+    cax = colorbar;
+    set(cax,'Position',cax.Position+[0.05,0,0,0])
+    
+    waitforbuttonpress();
+end
+ 

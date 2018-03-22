@@ -119,7 +119,7 @@ while unit~=-1,
         title(states{s})
 
         subplot2(9,nsts,[4,5],s);  hold('on');
-        pft.plot(unit,'mean',[],mrt(unit==pft.data.clu).*1.5,'isCircular',true);
+        pft.plot(unit,'mean',[],mrt(unit==pft.data.clu).*1.5,'mazeMaskFlag',true);
         %plot(pmp(unit==pft.data.clu,1),pmp(unit==pft.data.clu,2),'w*')
         plot(patchCOM(unit==units,1),patchCOM(unit==units,2),'w*')
         title(num2str(unit))
@@ -193,7 +193,7 @@ while unit~=-1,
         title(states{s})
 
         subplot2(9,nsts,[4,5],s);
-        pft.plot(unit,'mean',[],mrt(unit==pft.data.clu).*1.5,'isCircular',true);
+        pft.plot(unit,'mean',[],mrt(unit==pft.data.clu).*1.5,'mazeMaskFlag',true);
         hold on,plot(pmp(unit==pft.data.clu,1),pmp(unit==pft.data.clu,2),'w*')
         title(num2str(unit))
 
@@ -292,7 +292,7 @@ while unit~=-1,
         residuals(residuals<-pi) = residuals(residuals<-pi)+2*pi;
 
         if reportFig, 
-            subplot2(nsts,4,s,1); pft.plot(unit,'mean',[],mrt(unit).*1.5,'isCircular',true);
+            subplot2(nsts,4,s,1); pft.plot(unit,'mean',[],mrt(unit).*1.5,'mazeMaskFlag',true);
                                   ylabel(states{s});
             subplot2(nsts,4,s,2); 
                       plot(fitRange,R);   xlim([-pi,pi]); hold on

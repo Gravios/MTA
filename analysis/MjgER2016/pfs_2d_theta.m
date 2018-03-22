@@ -13,11 +13,12 @@ function pf = pfs_2d_theta(Trial,varargin)
 
 
 % DEFARGS ---------------------------------------------------------------------------------------
-defargs = struct('units',        Trial.spk.map(:,1),                                          ...
+defargs = struct('units',        Trial.spk.map(:,1)',                                         ...
                  'reportFig',    0,                                                           ...
-                 'overwrite',    0                                                            ...
+                 'overwrite',    0,                                                           ...
+                 'numIter',      []                                                           ...
 );
-[units,reportFig,overwrite] = DefaultArgs(varargin,defargs,'--struct');
+[units,reportFig,overwrite,numIter] = DefaultArgs(varargin,defargs,'--struct');
 % END DEFARGS -----------------------------------------------------------------------------------
 
 
@@ -49,12 +50,17 @@ catch
     state = 'theta';
 end
 
-defargs = get_default_args('MjgER2016','MTAApfs','struct');
-defargs.units = units;
-defargs.states = state;
-defargs.overwrite = overwrite;
-defargs = struct2varargin(defargs);
-pf = MTAApfs(Trial,defargs{:});
+pargs = get_default_args('MjgER2016','MTAApfs','struct');
+pargs.units = units;
+pargs.states = state;
+pargs.overwrite = overwrite;
+if ~isempty(numIter),
+    pargs.numIter = numIter;
+    pargs.halfsample = 0;
+end
+pfsArgs = struct2varargin(pargs);
+disp(['MTA:analysis:placefields:pfs_2d_theta:processing:' Trial.filebase]);
+pf = MTAApfs(Trial,pfsArgs{:});
 
 
 if reportFig
@@ -97,7 +103,7 @@ if reportFig
     i = 1;
     while unit~=-1,
         clf
-        ratemap = pf.plot(unit,'isCircular',false);
+        ratemap = pf.plot(unit,'mazeMaskFlag',false);
         ratemap(isnan(ratemap)) = -1;
         for s = 1:numel(slices)
             sp(i,s) = axes('Units',spOpts.units,...

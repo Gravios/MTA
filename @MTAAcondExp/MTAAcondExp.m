@@ -26,6 +26,7 @@ classdef MTAAcondExp < hgsetget
         %
             
         % PARAMETERS struct:
+        %    .stcMode
         %    .state
         %    .binDims
         %    .smoothingWeights

@@ -39,11 +39,11 @@ if exist(filename,'file') && ~overwrite
 else,
     spk = Trial.spk.copy();
     Trial.load('nq');    
-    pft = pfs_2d_theta(Trial); 
+    pft = pfs_2d_theta(Trial,[],false,true,1);
     mrt = pft.maxRate(spk.map(:,1));
-    units = select_units(Trial,18,'pyr');
+    units = select_units(Trial,'pyr');
     units = units(mrt(units)>0.5);
-    units = units(Trial.nq.SNR(units)>0.6&Trial.nq.Refrac(units)<0.001);
+    units = units(Trial.nq.Refrac(units)<0.001);
     spk.create(Trial,[],'theta-groom-sit',units,'deburst');
     spkCnt = accumarray(spk.clu,ones([numel(spk.clu),1]),[size(spk.map,1),1],@sum);
     units = units(spkCnt(units)>minSpkCnt);

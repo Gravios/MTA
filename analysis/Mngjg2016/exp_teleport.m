@@ -196,7 +196,7 @@ while unit~=-1,
             hold('on')
             pf = pfs{t,i};
 
-            ratemap = pf.plot(unit,'isCircular',false);
+            ratemap = pf.plot(unit,'mazeMaskFlag',false);
             ratemap(isnan(ratemap)) = -1;
             imagesc(pf.adata.bins{1},pf.adata.bins{2},ratemap');    
             text(pf.adata.bins{1}(end)-350,pf.adata.bins{2}(end)-50,...
@@ -374,7 +374,7 @@ while unit~=-1,
         pf = pfs{tr+1,i};
         subplot2(3,6,3,tr);
         hold('on')
-        ratemap = pf.plot(unit,'isCircular',false);
+        ratemap = pf.plot(unit,'mazeMaskFlag',false);
         minv = min(ratemap(:));
         maxv = sq(mRate(1,i,unit));
         ratemap(isnan(ratemap)) = minv-((maxv-minv)/20);
@@ -443,7 +443,7 @@ while unit~=-1,
         pf = pfs{t+1,i};
 
         hold on
-        ratemap = pf.plot(unit,'isCircular',false);
+        ratemap = pf.plot(unit,'mazeMaskFlag',false);
         minv = min(ratemap(:));
         maxv = sq(mRate(1,i,unit));
         ratemap(isnan(ratemap)) = minv-((maxv-minv)/20);
@@ -512,7 +512,7 @@ for unit = sunits
                        );
         
         hold('on')
-        ratemap = pf.plot(unit,'isCircular',false);
+        ratemap = pf.plot(unit,'mazeMaskFlag',false);
         minv = min(ratemap(:));
         maxv = sq(mRate(1,i,unit));
         ratemap(isnan(ratemap)) = minv-((maxv-minv)/20);
@@ -605,7 +605,7 @@ for unit = sunits
         hold('on')
 
         % Correct color of nans and plot place field
-        ratemap = pf.plot(unit,'isCircular',false);
+        ratemap = pf.plot(unit,'mazeMaskFlag',false);
         ratemap(isnan(ratemap)) = -1;
         imagesc(pf.adata.bins{1},pf.adata.bins{2},ratemap');    
         text(pf.adata.bins{1}(end)-350,pf.adata.bins{2}(end)-50,...

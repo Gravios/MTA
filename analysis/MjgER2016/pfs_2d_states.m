@@ -5,14 +5,14 @@ function pfs = pfs_2d_states(Trial,varargin)
 defargs = struct('units',         [],                                                            ...
                  'stcMode',       'msnn_ppsvd_raux',                                             ...
                  'states',        {{'loc&theta','lloc&theta','hloc&theta','rear&theta',          ...
-                                    'pause&theta','lpause&theta','hpause&theta'}},...
+                                    'pause&theta','lpause&theta','hpause&theta'}},               ...
                  'reportFig',     false,                                                         ...
                  'tag',           '',                                                            ...
-                 'overwrite',     false                                                          ...
-);%-------------------------------------------------------------------------------------------------
-
-[units,stcMode,states,reportFig,tag,overwrite] = DefaultArgs(varargin,defargs,'--struct');
-
+                 'overwrite',     false,                                                         ...
+                 'numIter',       []                                                             ...
+);
+[units,stcMode,states,reportFig,tag,overwrite,numIter] = DefaultArgs(varargin,defargs,'--struct');
+%---------------------------------------------------------------------------------------------------
 
 % TAG creation -------------------------------------------------------------------------------------
 % ID Vars - create hash tag
@@ -58,12 +58,17 @@ mkdir(fullfile(OwnDir,FigDir));
 %% compute 3d place fields for the theta state
 pfs = {};
 for s = 1:nsts
-    defargs = get_default_args('MjgER2016','MTAApfs','struct');
-    defargs.units = units;
-    defargs.states = states{s};
-    defargs.overwrite = overwrite;
-    defargs = struct2varargin(defargs);        
-    pfs{s} = MTAApfs(Trial,defargs{:});      
+    disp(['MTA:analysis:placefields:pfs_2d_states:processing:',Trial.filebase,':',states{s}]);
+    pargs = get_default_args('MjgER2016','MTAApfs','struct');
+    pargs.units = units;
+    pargs.states = states{s};
+    pargs.overwrite = overwrite;
+    if ~isempty(numIter),
+        pargs.numIter = numIter;
+        pargs.halfsample = 0;
+    end
+    pfsArgs = struct2varargin(pargs);        
+    pfs{s} = MTAApfs(Trial,pfsArgs{:});      
 end
 
 
@@ -73,6 +78,9 @@ if reportFig
     
     % Calculate auto correlogram of units
     [accg,tbins] = autoccg(MTASession.validate(Trial.filebase));
+    
+% LOAD unit quality information
+    Trial.load('nq');
 
 
     %% setup figure
@@ -126,7 +134,7 @@ if reportFig
         clf
         for s = 1:nsts
             pf = pfs{s};
-            ratemap = pf.plot(unit,'isCircular',false);
+            ratemap = pf.plot(unit,'mazeMaskFlag',false);
             ratemap(isnan(ratemap)) = -1;
             
             sp(i,s) = axes('Units',spOpts.units,...

@@ -56,7 +56,7 @@ mask(mask==0)=nan;
 % $$$         subplot(3,4,s)
 % $$$         hold('on')
 % $$$         pf = pfs{s};
-% $$$         ratemap = pf.plot(unit,'isCircular',true);
+% $$$         ratemap = pf.plot(unit,'mazeMaskFlag',true);
 % $$$         ratemap(isnan(ratemap)) = -1;
 % $$$         ratemap = ratemap.*mask;
 % $$$         imagesc(pf.adata.bins{1},pf.adata.bins{2},ratemap');    

@@ -826,3 +826,16 @@
 %  Bugs: NA
 %  Notes: Reduced sample rate (16Hz) works sufficiently well and 
 %         saves computational resources 
+
+
+
+
+%% 2018 03 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+
+% req20180309 ----------------------------------------------------
+%  Status: active
+%  Type: Analysis
+%  Final_Forms: NA
+%  Description: Distance vs drz restricted behavior field egenvector scores
+%               
+%  Bugs: NA

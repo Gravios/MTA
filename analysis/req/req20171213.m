@@ -28,13 +28,13 @@ highRateInds = -0.5 < pfd{1}{1}.adata.bins{1} & pfd{1}{1}.adata.bins{1} < 0.5;
 % $$$ subplot2(ny,nx,[1,2],[1,2]);
 % $$$ plot(pft{t},units{t}(u),[],true);
 % $$$ title(num2str(units{t}(u)));
-% $$$ rm = plot(pfd{1}{t},units{t}(u),'isCircular',false);
+% $$$ rm = plot(pfd{1}{t},units{t}(u),'mazeMaskFlag',false);
 % $$$ subplot2(ny,nx,[1],3);imagesc(pfd{1}{t}.adata.bins{1},pfd{1}{t}.adata.bins{2},rm');colorbar();axis('xy');
 % $$$ subplot2(ny,nx,[2],3);imagesc(pfd{1}{t}.adata.bins{1},pfd{1}{t}.adata.bins{2},bsxfun(@rdivide,rm,max(rm))');colorbar();axis('xy');
 % $$$ lrm = LocalMinima2(-rm,0,20);
 % $$$ hold('on');
 % $$$ scatter(pfd{1}{t}.adata.bins{1}(lrm(1)),pfd{1}{t}.adata.bins{2}(lrm(2)),20,'m','filled');
-% $$$ rm = plot(pfd{3}{t},units{t}(u),'isCircular',false);
+% $$$ rm = plot(pfd{3}{t},units{t}(u),'mazeMaskFlag',false);
 % $$$ subplot2(ny,nx,[1],4);imagesc(pfd{3}{t}.adata.bins{1},pfd{3}{t}.adata.bins{2},rm');colorbar();axis('xy');
 % $$$ subplot2(ny,nx,[2],4);imagesc(pfd{3}{t}.adata.bins{1},pfd{3}{t}.adata.bins{2},bsxfun(@rdivide,rm,max(rm))');colorbar();axis('xy');
 % $$$ lrm = LocalMinima2(-rm,0,20);
@@ -116,7 +116,7 @@ xlim([-pi/2,pi/2]);
 ylim([-pi/2,pi/2]);
 
 
-p = 1;t = 17;figure,for u = 1:numel(units{t}),clf();subplot(1,3,1);plot(pft{t},units{t}(u),'mean',true);subplot(132);plot(pfd{t}{p},units{t}(u),'mean',true,'isCircular',false);subplot(1,3,3);plot(pfd{t}{p+1},units{t}(u),'mean',true,'isCircular',false);waitforbuttonpress();end
+p = 1;t = 17;figure,for u = 1:numel(units{t}),clf();subplot(1,3,1);plot(pft{t},units{t}(u),'mean',true);subplot(132);plot(pfd{t}{p},units{t}(u),'mean',true,'mazeMaskFlag',false);subplot(1,3,3);plot(pfd{t}{p+1},units{t}(u),'mean',true,'mazeMaskFlag',false);waitforbuttonpress();end
 
 subplot(132);  hist(rateMaxHeight(rateRngCnt(:,2)<14),20);
 subplot(133);  hist(rateMaxRHM(rateRngCnt(:,3)<15),20);

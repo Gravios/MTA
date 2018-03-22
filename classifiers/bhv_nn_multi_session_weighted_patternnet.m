@@ -112,7 +112,8 @@ if isempty(model),
 end
 
 % CREATE model path from model name 
-modelPath = fullfile(fileparts(mfilename('fullpath')),model);
+%modelPath = fullfile(fileparts(mfilename('fullpath')),model);
+modelPath = fullfile(MTA_PROJECT_PATH,'matlab','classifiers',model);
 if ~exist(modelPath,'dir'),mkdir(modelPath);end
 disp(model);
 

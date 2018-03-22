@@ -179,9 +179,10 @@ pmask(pmask==0)=nan;
 
 
 
-rmap = plot(pftg,units(21),'mean',false,[],true,0.5);
+rmap = plot(pftg,94,'mean',false,[],true);
 rmask = double(isnan(rmap));
 rmap(isnan(rmap)) = 0;
+
 nmap = interp2(pftg.adata.bins{:},rmap,sind{:},'cubic');
 nmask = interp2(pftg.adata.bins{:},rmask,sind{:},'linear');
 rmap(rmask==1) = nan;
@@ -194,7 +195,7 @@ imagescnan(rot90(rmap))
 subplot(232);
 imagescnan(rot90(nmap'))
 subplot(233);
-plot(pftg,units(21),'mean',iColorbar,[],iCirc,0.9);
+plot(pftg,94,'mean',true,[],true);
 
 rmap = plot(pftg,units(21),'mean',false,[],true,0.9);
 rmask = double(isnan(rmap));

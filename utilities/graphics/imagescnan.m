@@ -9,13 +9,13 @@ function [handleImage, handleColorbar] = imagescnan(imageData, varargin)
 %      handleColorbar: colorbar graphics handle
 %
 % varargin:
-%      colorLimits: default = min/max
-%      dataType:                  'linear',  ...
-%                 'colorbarIsRequired',        false,     ...
-%                 'nanRGB',                    [1,0,0.8], ...
-%                 'gamma',                     1,         ...
-%                 'value',                     1,         ...
-%                 'colorMap',                  @parula    ...
+%      colorLimits:  Array[1x2] ([])       Set the color scale limits
+%      dataType:     String     ('linear') 
+%      colorbarFlag: Logical    (false)
+%      nanRGB:       Array[1x3] ([1,0,0.8)
+%      gamma:        Double     (1)
+%      value:        Double     (1)
+%      colorMap:     FunHandle  (@parula)
 %
 % if 'sym' then will make it +/- max(min,max)
 % nanRGB default = [1 0 0.8] (light gray)

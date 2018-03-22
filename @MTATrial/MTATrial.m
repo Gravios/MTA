@@ -1,54 +1,63 @@
 classdef MTATrial < MTASession
-% MTATrial(name,varargin) - Is a subclass of MTASession structured to organize 
-%   subsets of a parent session to aid in the analysis of neural and spatial data.
-%
-%   Ext: *.trl.mat
-%   Saved Trial object contain only basic information required to load subsets of
-%   a full session
+% MTATrial(name,varargin)
 % 
-%   name - string: Same name as the directory of the session
+% A subclass of MTASession structured to organize subsets of a parent session
+% to aid in the analysis of neural and spatial data.
+% 
+% Inputs ---------------------------------------------------------------------------------
+%
+%  name - string: Same name as the directory of the session
 %   
-%   -or- 
+%  -or- 
 %
-%   name - MTASession: The Session object from which data will be copied
-%
-%
-%   varargin:
-%     [trialName,mazeName,overwrite,sync]
-%
-%     trialName:       string,       designation of trial, the Trial representing 
-%                                    the full Session has the default name 'all'
-%
-%     mazeName:        string,       3-4 letter name of the testing arena 
-%                                    (e.g. 'rof' := rectangular open-field)
-%
-%     overwrite:       boolean,      flag to overwrite saved Trials
-%
-%     sync:            MTADepoch,    New sync object who data field
-%                                    contains new synchronization periods
-%                      numericArray, New periods to select from the
-%                                    MTASession object in secords
+%  name - MTASession: The Session object from which data will be copied
 %
 %
-%---------------------------------------------------------------------------------------------------------
-%   General Loading:
-%     
+%  varargin: [trialName,mazeName,overwrite,sync]
+%
+%    trialName:       string,       designation of trial, the Trial representing 
+%                                   the full Session has the default name 'all'
+%
+%    mazeName:        string,       3-4 letter name of the testing arena 
+%                                   (e.g. 'rof' := rectangular open-field)
+%
+%    overwrite:       boolean,      flag to overwrite saved Trials
+%
+%    sync:            MTADepoch,    New sync object who data field
+%                                   contains new synchronization periods
+%                     numericArray, New periods to select from the
+%                                   MTASession object in secords
+%
+%-- General Use --------------------------------------------------------------------------
+%
 %     Load from saved Trial,
 %     Trial = MTATrial(name,trialName);
+%
+%     Parse and load by filebase
+%     Trial = MTATrial.validate(filebase);
 %     
 %     Create new Trial,
 %     Trial = MTATrial(name,trialName,mazeName,overwrite,sync);
 %
-%---------------------------------------------------------------------------------------------------------
-%     examples:
-%       load saved Trial,
-%         Trial = MTATrial('jg05-20120309','all');
+%-- Examples -----------------------------------------------------------------------------
 %
-%       Create New Trial from a subset of the total session
-%         Trial = MTATrial('jg05-20120309','crt1','rof',false,[1,1000;1100,2100])
+%     load saved Trial,
+%       Trial = MTATrial('jg05-20120309','cof','all');
+%
+%     Parse and load saved Trial,
+%       Trial = MTATrial.validate('jg05-20120309.cof.all');
+%
+%     Create New Trial from a subset of the total session
+%       Trial = MTATrial('jg05-20120309','rof','crt1',false,[1,1000;1100,2100])
 %              
-%---------------------------------------------------------------------------------------------------------
-
+%-- Notes --------------------------------------------------------------------------------
+%
+%  Ext: *.trl.mat
+%
+%  Saved Trial object contain only basic information required to load subsets of a full 
+%  session
+%
+%
     methods 
         function Trial = MTATrial(Session,varargin)
             [mazeName,trialName,overwrite,sync] = DefaultArgs(varargin,{'cof','all',0,[]});

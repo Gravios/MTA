@@ -221,7 +221,7 @@ while unit~=-1,
             hold('on')
             pf = pfs{t,i};
 
-            ratemap = pf.plot(unit,'isCircular',false);
+            ratemap = pf.plot(unit,'mazeMaskFlag',false);
             ratemap = ratemap;            
             ratemap(isnan(ratemap)) = -1;
             imagesc(pf.adata.bins{1},pf.adata.bins{2},ratemap');    
@@ -340,7 +340,7 @@ while unit~=-1,
         pf = pfs{tr+1,i};
         subplot2(3,6,3,tr);
         hold('on')
-        ratemap = pf.plot(unit,'isCircular',false);
+        ratemap = pf.plot(unit,'mazeMaskFlag',false);
         minv = min(ratemap(:));
         maxv = sq(mRate(1,i,unit));
         ratemap(isnan(ratemap)) = minv-((maxv-minv)/20);
@@ -413,7 +413,7 @@ for unit = sunits
                        );
         
         hold('on')
-        ratemap = pf.plot(unit,'isCircular',false);
+        ratemap = pf.plot(unit,'mazeMaskFlag',false);
         ratemap(isnan(ratemap)) = -1;
         imagesc(pf.adata.bins{1},pf.adata.bins{2},ratemap');    
         text(pf.adata.bins{1}(end)-350,pf.adata.bins{2}(end)-50,...
@@ -488,7 +488,7 @@ dunits = units(spCohere>0.99);
 
 ratemap=[];
 for u = 1:numel(dunits),
-    ratemap(:,:,u) = pfs{2,1}.plot(dunits(u),'isCircular',false);
+    ratemap(:,:,u) = pfs{2,1}.plot(dunits(u),'mazeMaskFlag',false);
 end
 
 
@@ -763,7 +763,7 @@ if display,
             % Plot place fields
             sp(i+3) = subplot2(6,3,[k(i),k(i)+1],2);
             pf = pfs{i+1,3};
-            ratemap = pf.plot(units(u),'isCircular',false);
+            ratemap = pf.plot(units(u),'mazeMaskFlag',false);
             ratemap(isnan(ratemap)) = -1;
             imagesc(pf.adata.bins{1},pf.adata.bins{2},ratemap');    
 

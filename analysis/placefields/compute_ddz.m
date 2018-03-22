@@ -5,16 +5,38 @@ defargs = struct('units',                  [],                                  
                  'pft',                    [],                                                   ...
                  'pfstats',                [],                                                   ...
                  'filtCutOffFreq',         2.5,                                                  ...
-                 'marker',                 'nose'                                                ...
+                 'marker',                 'nose',                                               ...
+                 'interpPar',              struct('bins',{{linspace(-500,500,200)',              ...
+                                                           linspace(-500,500,200)'}},            ...
+                                                  'nanMaskThreshold', 0,                         ...
+                                                  'methodNanMap',     'linear',                  ...
+                                                  'methodRateMap',    'linear')                  ...
 );
-[units,pft,pfstats,filtCutOffFreq,marker] = DefaultArgs(varargin,defargs,'--struct');
+[units,pft,pfstats,filtCutOffFreq,marker,interpPar] = DefaultArgs(varargin,defargs,'--struct');
 %---------------------------------------------------------------------------------------------------
 
 %if isempty(pfstats),    pfstats = compute_pfstats_bs(Trial);    end
 
 dims = 2;
 
-[mrt,mrp] = pft.maxRate(units);
+%[mrt,mrp] = pft.maxRate(units);
+
+maxRatePos = nan([numel(units),2]);
+
+if isempty(interpPar),
+    bins = pft.adata.bins;
+else
+    bins = interpPar.bins;
+end
+
+for u = 1:numel(units),
+    rateMap = pft.plot(units(u),'mean',false,[],false,0.99,false,interpPar);
+    [~,mxp]  = max(rateMap(:));
+    mxp = Ind2Sub(cellfun(@numel,bins),mxp);
+    maxRatePos(u,:) = [bins{1}(mxp(:,1)), ...
+                       bins{2}(mxp(:,2))];
+end
+
 xyz = preproc_xyz(Trial,'trb');
 xyz.filter('ButFilter',3,filtCutOffFreq,'low');
 
@@ -25,7 +47,7 @@ pfdd = [];
 for unit = units
     pfhxy = cat(2,xyz(:,{'nose'},:),circshift(xyz(:,{'nose'},:),round(xyz.sampleRate/5)));
     %pfhxy = xyz(:,{'head_back','head_front'},:);
-    pfhxy = cat(2,pfhxy,permute(repmat([mrp(unit==units,:),0],[size(xyz,1),1]),[1,3,2]));
+    pfhxy = cat(2,pfhxy,permute(repmat([maxRatePos(unit==units,:),0],[size(xyz,1),1]),[1,3,2]));
     %pfhxy = cat(2,pfhxy,permute(repmat([fliplr(sq(mean(pfstats.peakPatchCOM(8,:,pfstats.cluMap==unit,:)))'),0],[size(xyz,1),1]),[1,3,2]));    
 
     pfhxy = MTADxyz([],[],pfhxy,xyz.sampleRate);

@@ -201,7 +201,7 @@ while unit~=-1,
         title(states{s})
         
         subplot2(9,nsts,[4,5],s);
-        pfs{s}.plot(unit,'mean',[],mrt(unit).*1.5,'isCircular',true);
+        pfs{s}.plot(unit,'mean',[],mrt(unit).*1.5,'mazeMaskFlag',true);
         text(pfs{s}.adata.bins{1}(end)-250,pfs{s}.adata.bins{2}(end)-50,...
              sprintf('%2.1f',pfs{s}.maxRate(unit)),'Color','w','FontWeight','bold','FontSize',10)
         hold on,plot(pmp{s}(unit==units,1),pmp{s}(unit==units,2),'w*')
@@ -233,5 +233,5 @@ end
 
 
 
-mrm = pfs{s}.plot(unit,'mean',[],mrt(unit).*1.5,'isCircular',true);
-srm = pfs{s}.plot(unit, 'std',[],mrt(unit).*1.5,'isCircular',true);
+mrm = pfs{s}.plot(unit,'mean',[],mrt(unit).*1.5,'mazeMaskFlag',true);
+srm = pfs{s}.plot(unit, 'std',[],mrt(unit).*1.5,'mazeMaskFlag',true);

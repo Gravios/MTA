@@ -62,7 +62,7 @@ unit = units(1);
 i = 1;
 while unit~=-1,
     clf
-    ratemap = pf.plot(unit,'isCircular',false);
+    ratemap = pf.plot(unit,'mazeMaskFlag',false);
     ratemap(isnan(ratemap)) = -1;
     for s = 1:numel(slices)
         sp(i,s) = axes('Units',spOpts.units,...

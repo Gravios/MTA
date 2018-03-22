@@ -1,5 +1,5 @@
 
-bins = pfd{1,1}.adata.bins;
+bins = pfd{1,pfindex}.adata.bins;
 
 % helper function to reshape eigenvectors
 reshape_eigen_vector = @(V,pfd) reshape(V(:,1),pfd{1}.adata.binSizes')';
@@ -9,32 +9,31 @@ reshape_eigen_vector = @(V,pfd) reshape(V(:,1),pfd{1}.adata.binSizes')';
     bhv_contours(sessionListName,                                  ... sessionListName
                  'fet_HB_pitchB',                                  ... featureSet
                  [1,2],                                            ... featureInd
-                 {{linspace(-2,2,50),linspace(-2,2,50)}},          ... featureBin
+                 {linspace(-2,2,50),linspace(-2,2,50)},            ... featureBin
                  'Ed05-20140529.ont.all',                          ... referenceTrial
-                 {{'lloc+lpause&theta','hloc+hpause&theta',        ... states
-                   'rear&theta'}},                                 ...
+                 {'lloc+lpause&theta','hloc+hpause&theta',         ... states
+                   'rear&theta'},                                  ...
                  'wcr'                                             ... stateColors
 );
 
-hfig = figure(666008);clf();
+hfig = figure(666011);clf();
 hfig.Units = 'centimeters';
-hfig.Position = [0.5,0.5,20,6];
+hfig.Position = [0.5,0.5,24,6];
 hfig.PaperPositionMode = 'auto';
 
-nV   = 5;
-hax  = gobjects([1,nV]);
-hcax = zeros([nV,2]);
-fpc  = cell([1,nV]);
-for i = 1:nV,
+hax  = gobjects([1,numComp+1]);
+hcax = zeros([numComp,2]);
+fpc  = cell([1,numComp]);
+for i = 1:numComp,
     fpc{i} = nan([zdims(1),1]);
-    fpc{i}(validDimsInds) = V(:,i);
+    fpc{i}(validDims{pfindex}) = LRG{pfindex}(:,i);
 end
 
 fpcMinMax = [min(cellfun(@min,fpc)),max(cellfun(@max,fpc))];
 
-for i = 1:nV,
-    hax(i) = subplot(1,nV,i);
-    imagescnan({bins{:},abs(reshape_eigen_vector(fpc,pfd))},...
+for i = 1:numComp,
+    hax(i) = subplot(1,numComp+1,i);
+    imagescnan({bins{:},abs(reshape_eigen_vector(fpc{i},pfd(1,pfindex)))},...
                fpcMinMax,'linear',false,[0,0,0],1,1);                % PRINT eigenvectors
     colorbar();                                           
     axis('xy');
@@ -43,13 +42,17 @@ for i = 1:nV,
     for s = 1:numel(stateContourHandles),                            % OVERLAY state Contours
         copyobj(stateContourHandles{s},hax(i));
     end
-    xlim([-pi/2,2]);
-    ylim([-2,pi/2]);
+    xlim([-2,pi/2]);
+    ylim([-pi/2,2]);
 end
-af(@(h) set(h,'Units','centimeters'),            hax);    
+hax(numComp+1) = subplot(1,numComp+1,numComp+1);
+plot(VT(1:numComp,4),'-+');
+xlim([0,numComp+1]);
+
+af(@(h) set(h,'Units','centimeters'),                hax);    
 af(@(h) set(h,'Position',[h.Position(1:2),1.5,1.5]), hax);
 
 
 figName = ['erpPCA_HPITCHxBPITCH_v',version,'_',sessionListName];
-print(hfig,'-depsc2',fullfile(figDir,[figName,'.eps']));        
-print(hfig,'-dpng',  fullfile(figDir,[figName,'.png']));
+print(hfig,'-depsc2',fullfile(figDir,analDir,[figName,'.eps']));        
+print(hfig,'-dpng',  fullfile(figDir,analDir,[figName,'.png']));

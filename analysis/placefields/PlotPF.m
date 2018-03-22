@@ -31,8 +31,10 @@ Bins = cell(1,ndims);
 k = Nbin./abs(diff(bound_lims,1,2));
 msize = round(abs(diff(bound_lims,1,2)).*k);
 for i = 1:ndims
-    Bins{i} = ([1:msize(i)]'-1)./repmat(k(i)',msize(i),1) ... 
-              +repmat(bound_lims(i,1),msize(i),1)+round(repmat(k(i)',msize(i),1).^-1/2);
+    Bins{i} = ([1:msize(i)]'-1)./repmat(k(i)',msize(i),1)+...
+               repmat(bound_lims(i,1),msize(i),1)+...
+               repmat(k(i)',msize(i),1).^-1/2;
+    %Bins{i} = linspace(bound_lims(i,1),bound_lims(i,2),Nbin(i));
 end
 
 
@@ -77,37 +79,51 @@ Smoother = exp(sum(-cat(ndims+1,sind{:}),ndims+1));
 Smoother = Smoother./sum(Smoother(:));
 
 % SMOOTH Occupancy
-SOcc   = convn(Occupancy, Smoother,'same');
 % SMOOTH Spike count
+SOcc   = convn(Occupancy, Smoother,'same');
 SCount = convn(SpikeCount,Smoother,'same');
 
-% $$$ SOcc   = convn(Occupancy, Smoother,'same');
-% $$$ SCount = convn(SpikeCount,Smoother,'same');
-
+% CREATE minimally smoothed occupancy map
+soc = Occupancy;
+soc(isnan(soc)) = 0;
+soc = RectFilter(soc',3,1);
+soc = RectFilter(soc',3,1);
 
 %OccThresh = 4*(mean(binDims)/200).^numel(binDims);
-OccThresh = 4*(10/200).^numel(binDims);
+gtind = soc > 4*(10/200).^numel(binDims);
+
 
 %% Find the total occupancy and each pixels 
 %% probability of occupancy
-gtind = SOcc>OccThresh;
+
 % TotOcc = sum(SOcc(gtind));
 % POcc = SOcc./TotOcc;
 TotOcc = sum(Occupancy(gtind));
 POcc = Occupancy./TotOcc;
 
 
-% COMPUTE RateMap
-RateMap(gtind) = SCount(gtind)./SOcc(gtind);
-RateMap = RateMap(:);
+% COMPUTE RateMap from smoothed spike and occupancy hists
+RateMap = SCount./SOcc;
 RateMap(~gtind) = nan;
+
+% COMPUTE smoothed rate map 
+srmap = SpikeCount./Occupancy;           
+srmap(~gtind) = nan;
+srmap(isnan(srmap)) = 10.^mean(log10(RateMap(:)),'omitnan');
+srmap = convn(srmap,Smoother,'same');
+
+RateMap = mean(cat(3,srmap,RateMap),3);
+RateMap = RateMap(:);
+
 
 % COMPUTE unit mean rate given state
 MRate = sum(SpikeCount(gtind))/TotOcc;
 % COMPUTE Spatial Information
 if nargout > 2,  
-    SI = nansum((RateMap(gtind)./MRate).*log2(RateMap(gtind)./MRate));
+    SI = nansum(POcc(gtind).*(RateMap(gtind)./MRate).*log2(RateMap(gtind)./MRate));    
+    %SI = nansum((RateMap(gtind)./MRate).*log2(RateMap(gtind)./MRate));
     if nargout == 4,  Spar = 1/nansum(POcc(gtind).*RateMap(gtind).^2./MRate.^2);  end
 end
+
 % END MAIN -----------------------------------------------------------------------------------------
 

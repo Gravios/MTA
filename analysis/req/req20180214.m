@@ -8,23 +8,30 @@
 %  Bugs: NA
 
 Trial = MTATrial.validate('er01-20110719.cof.all');
-
+Trial = MTATrial.validate('jg05-20120317.cof.all');
 
 dbstop at 86 in PlotPF.m
 
 defargs = get_default_args('MjgER2016','MTAApfs','struct');
+%defargs.units = [];
 defargs.units = 222;
-defargs.binDims = [10,10];
-defargs.SmoothingWeights = [2.5 2.5];
-defargs.states = 'loc&theta';
+%defargs.units = 31;
+%defargs.units = 61;
+%defargs.units = 78;
+defargs.binDims = [40,40];
+defargs.SmoothingWeights = [1.25,1.25];
+defargs.tag = 'test_PlotPF_new';
+defargs.states = 'theta-groom-sit';
 defargs.overwrite = true;
 defargs = struct2varargin(defargs);
-pf = MTAApfs(Trial,defargs{:});
+pfn = MTAApfs(Trial,defargs{:});
 
 
 % IN PlotPF.m --------------------------------------------------------------------------------
 SOcc = convn(Occupancy,Smoother,'same');
 SCount = convn(SpikeCount,Smoother,'same');
+
+
 
 
 OccupancyNan = Occupancy;
@@ -133,3 +140,76 @@ for u = units,
 end
 
 xyz = preproc_xyz(Trial,'trb');
+
+
+
+
+% 20180310 
+
+
+
+soc = Occupancy;
+soc(isnan(soc)) = 0;
+soc = RectFilter(soc',3,1);
+soc = RectFilter(soc',3,1);
+gtind = soc~=0;
+
+
+ormap = SpikeCount./Occupancy;           
+ormap(gtind) = 0;
+
+rmap = SpikeCount./Occupancy;           
+rmap(isnan(rmap)) = 0;
+rmap = convn(rmap,Smoother,'same');
+
+srmap = SpikeCount./Occupancy;           
+srmap(isnan(srmap)) = 10.^mean(log10(srmap(:)),'omitnan');
+srmap = convn(srmap,Smoother,'same');
+
+RateMap = SCount./SOcc;
+RateMap(~gtind) = nan;
+
+
+rmap(~gtind)=nan;
+srmap(~gtind)=nan;
+RateMap(~gtind) = nan;
+
+nx = 7;
+i = 1;
+cmax = [0,30];
+figure;
+subplot(1,nx,i);i=i+1;
+imagesc(Bins{:},mean(cat(3,srmap,RateMap),3)');
+%imagescnan({Bins{:},mean(cat(3,srmap,RateMap),3)'},cmax,[],true);
+subplot(1,nx,i);i=i+1;
+imagesc(Bins{:},srmap');
+
+subplot(1,nx,i);i=i+1;
+imagesc(Bins{:},rmap');
+%imagescnan({Bins{:},rmap'},cmax,[],true);
+subplot(1,nx,i);i=i+1;
+imagesc(Bins{:},RateMap');
+%imagescnan({Bins{:},RateMap'},cmax,[],true);
+subplot(1,nx,i);i=i+1;
+imagesc(SOcc');
+subplot(1,nx,i);i=i+1;
+imagesc(Occupancy');
+subplot(1,nx,i);i=i+1;
+imagesc(soc');
+
+
+figure,
+for u = pf.data.clu,
+    clf();
+    subplot(131);
+    plot(pf,u,'mean',true,[],false,0.9);    
+    subplot(132);
+    plot(pfn,u,'mean',true,[],false,0.9);    
+    subplot(133);
+    imagesc(pfn.adata.bins{:},[plot(pf,u,'mean',true,[],false,0.9)-plot(pfn,u,'mean',true,[],false,0.9)]');
+    colorbar();
+    title(num2str(u));
+    waitforbuttonpress();
+end
+
+% new PlotPF is accepted

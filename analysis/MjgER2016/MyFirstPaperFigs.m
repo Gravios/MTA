@@ -578,7 +578,7 @@ switch mode,
             title(states{s})
             
             subplot2(9,nsts,[4,5],s);
-            ratemap = pfs{s}.plot(unit,'isCircular',false);
+            ratemap = pfs{s}.plot(unit,'mazeMaskFlag',false);
             ratemap = ratemap.*mask;
             ratemap(isnan(ratemap)) = -1;
             imagesc(pfs{s}.adata.bins{1},pfs{s}.adata.bins{2},ratemap);
@@ -2963,7 +2963,7 @@ caxis([prctile(reshape(10.*log10(yhd(:,:,24))',[],1),40),...
             % Correct color of nans and plot place field
 
             % PFS plot
-            %ratemap = pf.plot(unit,'isCircular',false);
+            %ratemap = pf.plot(unit,'mazeMaskFlag',false);
 
             % PFK plot
             %ratemap = reshape(pf.data.rateMap(:,unit==pf.data.clu,1),fliplr(pf.adata.binSizes'));

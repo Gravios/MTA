@@ -13,11 +13,11 @@ ny = 12;
 hax = gobjects([1,4]);
 for u = 1:numel(units{tind}), 
     clf();    
-    maxPfsRate = max([pft{tind}.maxRate(units{tind}(u)),pfd{tind,pfindex}.maxRate(units{tind}(u),'isCircular',false)]);
+    maxPfsRate = max([pft.maxRate(units{tind}(u)),pfd{tind,pfindex}.maxRate(units{tind}(u),'mazeMaskFlag',false)]);
 
 % PLOT placefield RATE map
 % PLOT placefield SNR map
-    hax(1) = subplot(221);  hold('on');  plot(pft{tind},units{tind}(u),'mean',true,maxPfsRate,false,0.99);
+    hax(1) = subplot(221);  hold('on');  plot(pft,units{tind}(u),'mean',true,maxPfsRate,false,0.99);
     plot(dsxyz(drzState{u},'nose',1),dsxyz(drzState{u},'nose',2),'.m','MarkerSize',1),
     xlabel('mm');  xlim([-500,500]);
     ylabel('mm');  ylim([-500,500]);
@@ -25,7 +25,7 @@ for u = 1:numel(units{tind}),
 
     hax(3) = subplot(223);  
     hold('on');  
-    plot(pft{tind},units{tind}(u),'snr',true,[],false,0.99);
+    plot(pft,units{tind}(u),'snr',true,[],false,0.99);
     plot(dsxyz(drzState{u},'nose',1),dsxyz(drzState{u},'nose',2),'.m','MarkerSize',1),
     xlabel('mm');  xlim([-500,500]);
     ylabel('mm');  ylim([-500,500]);
@@ -38,19 +38,19 @@ for u = 1:numel(units{tind}),
     hold('on');  
     plot(pfd{tind,pfindex},units{tind}(u),'mean',true,maxPfsRate,false,0.85,false);
     colorbar();    
-    plot(dspch(drzState{u},2),...
-         dspch(drzState{u},1),'.m','MarkerSize',1),
-    xlabel('head-body pitch (rad)');  xlim([-pi/2,2]);
-    ylabel('body pitch (rad)');       ylim([-2,pi/2]);
+    plot(dspch(drzState{u},1),...
+         dspch(drzState{u},2),'.m','MarkerSize',1),
+    xlabel('head-body pitch (rad)');  xlim([-2,pi/2]);
+    ylabel('body pitch (rad)');       ylim([-pi/2,2]);
     title('RateMap');
 
     hax(4) = subplot(224);  
     hold('on');  
     plot(pfd{tind,pfindex},units{tind}(u),'snr',true,5,false,0.85,false);
-    plot(dspch(drzState{u},2),...
-         dspch(drzState{u},1),'.m','MarkerSize',1),
-    xlabel('head-body pitch (rad)');  xlim([-pi/2,2]);
-    ylabel('body pitch (rad)');       ylim([-2,pi/2]);
+    plot(dspch(drzState{u},1),...
+         dspch(drzState{u},2),'.m','MarkerSize',1),
+    xlabel('head-body pitch (rad)');  xlim([-2,pi/2]);
+    ylabel('body pitch (rad)');       ylim([-pi/2,2]);
     title('SNR Map');
 
 % FORMAT figure

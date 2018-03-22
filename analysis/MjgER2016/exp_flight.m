@@ -157,7 +157,7 @@ while unit~=-1,
     clf
     for i  = 1:3
         pf = pfs{i};
-        ratemap = pf.plot(unit,'isCircular',false);
+        ratemap = pf.plot(unit,'mazeMaskFlag',false);
         ratemap(isnan(ratemap)) = -1;
         for s = 1:numel(slices)
             sp(i,s) = axes('Units',spOpts.units,...
@@ -207,16 +207,16 @@ if display,
     while unit~=-1,
         sp = [];
         for i=1:numel(pfs),
-            mrxz(i) =  max(max(max(pfs{i}.plot(unit,'xz',1,'isCircular',false))));
+            mrxz(i) =  max(max(max(pfs{i}.plot(unit,'xz',1,'mazeMaskFlag',false))));
         end
 
         Nmrxz = max(mrxz);
         for i=1:numel(pfs),
             subplot2(numel(pfs),2,i,1);
-            pfs{i}.plot(unit,'xz',1,[0,mrxz],'isCircular',false); 
+            pfs{i}.plot(unit,'xz',1,[0,mrxz],'mazeMaskFlag',false); 
             title([pfs{i}.session.trialName,':',pfs{i}.parameters.states,': ',num2str(unit)]);
             subplot2(numel(pfs),2,i,2);
-            pfs{i}.plot(unit,'xy',1,[0,mrxz],'isCircular',false); 
+            pfs{i}.plot(unit,'xy',1,[0,mrxz],'mazeMaskFlag',false); 
         end
         saveas(gcf,fullfile('/gpfs01/sirota/home/gravio/',...
                             'figures','SFN2014',...
@@ -305,7 +305,7 @@ while unit~=-1,
     clf
     for i  = 1:3
         pf = pfs{i};
-        ratemap = pf.plot(unit,'isCircular',false);
+        ratemap = pf.plot(unit,'mazeMaskFlag',false);
         ratemap = ratemap.*mask;
         ratemap(isnan(ratemap)) = -1; 
         for s = 1:3

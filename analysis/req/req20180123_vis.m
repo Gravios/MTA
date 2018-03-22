@@ -16,7 +16,7 @@ ny = 12;
 hax = gobjects([1,4]);
 for u = 1:numel(units{tind}), 
     clf();    
-    maxPfsRate = max([pft.maxRate(units{tind}(u)),pfd{tind,pfindex}.maxRate(units{tind}(u),'isCircular',false)]);
+    maxPfsRate = max([pft.maxRate(units{tind}(u)),pfd{tind,pfindex}.maxRate(units{tind}(u),'mazeMaskFlag',false)]);
     
     % PLOT placefield rate map
     hax(1) = subplot(221);  hold('on');  plot(pft,units{tind}(u),'mean',true,maxPfsRate,false,0.99);
@@ -131,7 +131,7 @@ ny = 12;
 hax = gobjects([1,4]);
 for u = 1:numel(units{tind}), 
     clf();    
-    maxPfsRate = max([pft.maxRate(units{tind}(u)),pfd{tind,pfindex}.maxRate(units{tind}(u),'isCircular',false)]);
+    maxPfsRate = max([pft.maxRate(units{tind}(u)),pfd{tind,pfindex}.maxRate(units{tind}(u),'mazeMaskFlag',false)]);
     
     % PLOT placefield rate map
     hax(1) = subplot(221);  hold('on');  plot(pft,units{tind}(u),'mean',true,maxPfsRate,false,0.99);
