@@ -22,7 +22,7 @@ switch numel(varargin)
   otherwise         
     hfig = gcf;
     sper = Trial.stc{'r'};    
-    marker = Trial.trackingMarker;
+    marker = 'hcom';
 end
 
 try
@@ -32,7 +32,7 @@ catch
 end
 
 figure(hfig),hold on
-plot(xyz(:,Trial.trackingMarker,1),xyz(:,Trial.trackingMarker,2),'.');
+plot(xyz(:,'hcom',1),xyz(:,'hcom',2),'.');
 alims(gca,Trial.maze.visible_volume);
 try,
     plot(xyz(sper,marker,1),xyz(sper,marker,2),'.r');

@@ -120,7 +120,7 @@ classdef MTATrial < MTASession
                 
             end
             
-            Trial.trackingMarker = Session.trackingMarker;
+
             Trial.stc.updateSync(Trial.sync.copy);
             Trial.stc.updatePath(Trial.spath);
             props = properties(Trial);

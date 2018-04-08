@@ -3,15 +3,21 @@ function rateMap = plot(Pfs,varargin)
 % function rateMap = plot(Pfs,varargin)
 % plot placefield of the specified unit
 % varargin:
-%    unit                   []
-%    nMode                  'mean'
-%    ifColorbar             false
-%    maxRate                []                                                   
-%    mazeMaskFlag             true
-%    sigThresh:    Numeric, default: []
-%    flipAxesFlag: Logical, default: false
+%    unit - NumericArray: {[]}
 %
-%    interpPar:    Struct,  default = []
+%    mode - String: {x,'mean'} ploting method
+%
+%    rateReportMethod - String or Cellstr: {'','colorbar','text'}
+%
+%    maxRate - NumericArray: {[]}                                                   
+%
+%    mazeMaskFlag - Logical: {true} set bins to NAN based on mask
+%
+%    sigThresh - Numeric: {[]}
+%
+%    flipAxesFlag - Logical: {false}
+%
+%    interpPar - Struct: {[]}
 %
 %        bins:             cellArray[1,2]( Numeric [N,1] ) 
 %                Example: {linspace(-500,500,200)',linspace(-500,500,200)'}
@@ -35,7 +41,7 @@ function rateMap = plot(Pfs,varargin)
 % DEFARGS ------------------------------------------------------------------------------------------
 defargs = struct('unit',                   [],                                                   ...
                  'mode',                  'mean',                                                ...
-                 'colorbarFlag',           false,                                                ...
+                 'rateReportMethod',       '',                                                   ...
                  'maxRate',                [],                                                   ...
                  'mazeMaskFlag',           true,                                                 ...
                  'sigThresh',              [],                                                   ...
@@ -43,7 +49,7 @@ defargs = struct('unit',                   [],                                  
                  'interpPar',              [],                                                   ...
                  'colorMap',               @parula                                               ...
 );
-[unit,mode,colorbarFlag,maxRate,mazeMaskFlag,sigThresh,flipAxesFlag,interpPar,colorMap] =        ...
+[unit,mode,rateReportMethod,maxRate,mazeMaskFlag,sigThresh,flipAxesFlag,interpPar,colorMap] =        ...
     DefaultArgs(varargin,defargs,'--struct');
 %---------------------------------------------------------------------------------------------------
 
@@ -145,49 +151,58 @@ switch numel(Pfs.parameters.type)
         imagescnan({bins{:},rateMap'},maxRate,'linear',false,[0,0,0],[],[],colorMap);
     end
     
-    if colorbarFlag,
-        colorbar();
-        colormap(func2str(colorMap));
-        caxis([maxRate]);
+    if islogical(rateReportMethod) && rateReportMethod,
+        rateReportMethod = 'colorbar';
+    elseif islogical(rateReportMethod) && ~rateReportMethod,
+        rateReportMethod = '';
     end
     
-    %imagesc(bin1,bin2,rateMap');
+    if ~iscell(rateReportMethod)
+        rateReportMethod = {rateReportMethod};
+    end
+    
+    for method = rateReportMethod,
+        switch method{1}
+          case 'colorbar'
+            colorbar();
+            colormap(func2str(colorMap));
+            caxis([maxRate]);
+          case 'text'
+            text(Pfs.adata.bins{1}(end)-0.25*diff(Pfs.adata.bins{1}([1,end])),...
+                 Pfs.adata.bins{2}(end)-0.10*diff(Pfs.adata.bins{2}([1,end])),...
+                 sprintf('%2.1f',max(rateMap(:))),...
+                 'Color','w','FontWeight','bold','FontSize',8)
+        end
+    end
 
-% APPEND text which contains the maximum rate of the map
-% $$$     text(Pfs.adata.bins{1}(end)-250,Pfs.adata.bins{2}(end)-50,...
-% $$$          sprintf('%2.1f',max(rateMap(:))),'Color','w','FontWeight','bold','FontSize',8)
-% SET colormap with lowest value as black
-%colormap([0,0,0;parula]);
-% ADJUST color scale
-%caxis([-1,maxRate]);
     axis('xy');
   
-  case 3
-    c = eye(3);
-    r = [1.2,3,6];
-    rateMap = permute(reshape(Pfs.data.rateMap(:,Pfs.data.clu==unit,1),Pfs.adata.binSizes'),[1,2,3]);
-    if nargout>0,return,end
-    hrate = max(Pfs.data.rateMap(:,Pfs.data.clu==unit,1))/2;
-    [mind] = LocalMinimaN(-rateMap,-hrate,9);
-
-    m = find(ismember('xyz',mode));
-    o = find(~ismember([1,2,3],m));
-    ss = {};
-    if ~isempty(mind),
-        mind = mind(1,:);
-        ss{m(1)} = ':';
-        ss{m(2)} = ':';
-        ss{o}    = mind(o);
-        imagescnan({Pfs.adata.bins{m(1)},                                ... xaxis labels
-                    Pfs.adata.bins{m(2)},                                ... yaxis labels
-                    sq(nanmean(subsref(rateMap,substruct('()',ss)),o))'},... imagedata
-                   colorLimits,                                          ... color scale
-                   [],                                                   ... color scale mode
-                   colorbarFlag,                                         ... flag to add colorbar
-                   [0,0,0]                                               ... Nan color value
-        );
-        axis xy
-    end
+% $$$   case 3
+% $$$     c = eye(3);
+% $$$     r = [1.2,3,6];
+% $$$     rateMap = permute(reshape(Pfs.data.rateMap(:,Pfs.data.clu==unit,1),Pfs.adata.binSizes'),[1,2,3]);
+% $$$     if nargout>0,return,end
+% $$$     hrate = max(Pfs.data.rateMap(:,Pfs.data.clu==unit,1))/2;
+% $$$     [mind] = LocalMinimaN(-rateMap,-hrate,9);
+% $$$ 
+% $$$     m = find(ismember('xyz',mode));
+% $$$     o = find(~ismember([1,2,3],m));
+% $$$     ss = {};
+% $$$     if ~isempty(mind),
+% $$$         mind = mind(1,:);
+% $$$         ss{m(1)} = ':';
+% $$$         ss{m(2)} = ':';
+% $$$         ss{o}    = mind(o);
+% $$$         imagescnan({Pfs.adata.bins{m(1)},                                ... xaxis labels
+% $$$                     Pfs.adata.bins{m(2)},                                ... yaxis labels
+% $$$                     sq(nanmean(subsref(rateMap,substruct('()',ss)),o))'},... imagedata
+% $$$                    colorLimits,                                          ... color scale
+% $$$                    [],                                                   ... color scale mode
+% $$$                    colorbarFlag,                                         ... flag to add colorbar
+% $$$                    [0,0,0]                                               ... Nan color value
+% $$$         );
+% $$$         axis xy
+% $$$     end
 
 end
 

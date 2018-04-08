@@ -1,4 +1,4 @@
-function label_ripples(Trial,varargin)
+function Stc = label_ripples(Trial,varargin)
 %function label_ripples(Trial,varargin)
 %
 % Inputs: 

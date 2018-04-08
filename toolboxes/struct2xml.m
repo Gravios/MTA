@@ -169,7 +169,7 @@ function [str,succes] = val2str(val)
         return; %bugfix from H. Gsenger
     elseif (ischar(val))
         %do nothing
-    elseif (isnumeric(val))
+    elseif (isnumeric(val)||islogical(val))
         val = num2str(val);
     else
         succes = false;

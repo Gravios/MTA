@@ -38,22 +38,28 @@ classdef MTASession < hgsetget
 %-------------------------------------------------------------------------------------------------
 
     properties (SetAccess = public)
-        
-        %path - struct: holds all paths of the constructed data tree created by MTAConfiguration.m
-        path
-
-        %spath - struct: same as path but with Session name appended to the end
-        spath
 
         %filebase - string: full file head in the format name.(Maze.name).trialName
         filebase = '';
 
+        %spath - struct: same as path but with Session name appended to the end
+        spath
+        
+        %path - struct: holds all paths of the constructed data tree created by MTAConfiguration.m
+        path
+        
         %name - string: name of the directory holding session information
         name = '';
 
         %trialName - string: designation of trial the full Session has the default name 'all'
         trialName = '';
-
+        
+        %par - struct: contains parameter information regarding the recording systems, units ect...
+        parameters
+        
+        %sampleRate - double: Sample Rate of electrophysiological recording system
+        sampleRate     
+        
         %Maze - MTAMaze: Object containing all maze information
         maze
 
@@ -62,12 +68,6 @@ classdef MTASession < hgsetget
 
         %sync - MTADepoch: Loading periods relative to the primary recording system
         sync
-
-        %sampleRate - double: Sample Rate of electrophysiological recording system
-        sampleRate     
-
-        %trackingMarker - string: Marker name used for place field calculations
-        trackingMarker = 'head_front';
 
         %xyz - MTADxyz: (Time,Marker,Dimension) XYZ position of each marker 
         xyz 
@@ -97,6 +97,13 @@ classdef MTASession < hgsetget
         fbr 
 
     end
+    
+    properties (SetAccess = protected)
+        % parametersHash - String: used to detect changes to parameter structure before saving to file
+        parametersHash = 'zzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzz';
+        
+    end
+    
 
     methods
 
@@ -161,7 +168,9 @@ classdef MTASession < hgsetget
     methods (Static)
         function Session = validate(Session)
             
-            if isa(Session,'MTASession'),
+            if isa(Session,'MTATrial'),
+                Session = MTASession.validate(Session.filebase);
+            elseif isa(Session,'MTASession'),
                 return;
             elseif ischar(Session),
                 pat =['(?<sessionName>[a-z_A-Z]+\d{2,4}[-]\d{8,8})\.'...
