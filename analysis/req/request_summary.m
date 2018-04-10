@@ -817,6 +817,7 @@
 %               see fet_rds.m
 %  Bugs: NA
 
+
 % req20180227 ----------------------------------------------------
 %  Status: active
 %  Type: Diagnostic
@@ -832,6 +833,14 @@
 
 %% 2018 03 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 
+% req20180301 ----------------------------------------------------
+%  Status: active
+%  Type: Analysis
+%  Final_Forms: NA
+%  Description: lfp analysis cycle by cycle comparison
+%               
+%  Bugs: NA
+
 % req20180309 ----------------------------------------------------
 %  Status: active
 %  Type: Analysis
@@ -839,3 +848,43 @@
 %  Description: Distance vs drz restricted behavior field egenvector scores
 %               
 %  Bugs: NA
+
+% req20180319 ----------------------------------------------------
+%  Status: active
+%  Type: Analysis
+%  Final_Forms: NA
+%  Description: Compute z-score of randomly shuffled spike time chunks 
+%               projected on each eigen vector, as computed by 
+%               req20180123_ver5.m
+%  Bugs: NA
+
+% req20180322 ----------------------------------------------------
+%  Status: active
+%  Type: Utility
+%  Final_Forms: NA
+%  Description: Review unit placefields 
+%  Bugs: NA
+
+% req20180323 ----------------------------------------------------
+%  Status: active
+%  Type: Utility
+%  Final_Forms: NA
+%  Description: inter-session unit corregistration
+%  Bugs: NA
+
+
+
+
+% req20180123_ver5.m 
+% compute and decompose unit rate multidimensional tunning
+
+% req20180319.m
+% Compute z-score of randomly shuffled spike time chunks 
+% projected on each eigen vector, as computed by 
+% req20180123_ver5.m
+
+% req20180322.m
+% Review unit placefields
+
+% req20180323.m
+% inter-session unit corregistration
