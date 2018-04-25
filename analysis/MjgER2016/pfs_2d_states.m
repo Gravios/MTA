@@ -9,9 +9,11 @@ defargs = struct('units',         [],                                           
                  'reportFig',     false,                                                         ...
                  'tag',           '',                                                            ...
                  'overwrite',     false,                                                         ...
-                 'numIter',       []                                                             ...
+                 'numIter',       [],                                                            ...
+                 'spkMode',       'deburst'                                                      ...
 );
-[units,stcMode,states,reportFig,tag,overwrite,numIter] = DefaultArgs(varargin,defargs,'--struct');
+[units,stcMode,states,reportFig,tag,overwrite, numIter,spkMode] =                                ...
+    DefaultArgs(varargin,defargs,'--struct');
 %---------------------------------------------------------------------------------------------------
 
 % TAG creation -------------------------------------------------------------------------------------
@@ -20,7 +22,7 @@ defargs = struct('units',         [],                                           
 %    stcMode 
 %    states 
 if isempty(tag),
-    tag = DataHash(struct('stcMode',stcMode,'states',{states}));
+    tag = DataHash(struct('stcMode',stcMode,'states',{states}));    
 end
 %---------------------------------------------------------------------------------------------------
 
@@ -62,7 +64,9 @@ for s = 1:nsts
     pargs = get_default_args('MjgER2016','MTAApfs','struct');
     pargs.units = units;
     pargs.states = states{s};
+    pargs.spkMode = spkMode;
     pargs.overwrite = overwrite;
+    %pargs.tag = tag;
     if ~isempty(numIter),
         pargs.numIter = numIter;
         pargs.halfsample = 0;

@@ -20,7 +20,7 @@ for t = 1:numel(tpos),
     if isa(tpos{t},'MTADepoch');       
         xyz = Trial.load('xyz');
         posSampleRate = xyz.sampleRate;
-        pos = sq(xyz(tpos{t},Trial.trackingMarker,ismember('xyz',type)));
+        pos = sq(xyz(tpos{t},'head_front',ismember('xyz',type)));
     else
         pos = tpos{t};
     end

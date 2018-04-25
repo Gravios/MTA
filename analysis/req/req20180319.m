@@ -15,7 +15,7 @@ end
 
 pft = cf(@(T,u)  pfs_2d_theta(T,u,'overwrite',false),  Trials,units);
 
-[pfd,tags,eigVec,eigVar,eigScore,validDims,unitSubsets,unitIntersection] = req20180123_ver5(Trials);
+[pfd,tags,eigVec,eigVar,eigScore,validDims,unitSubsets,unitIntersection] = req20180123_ver5(Trials,'overwriteErpPCAFlag',true);
 
 pfdShuffled = {};
 
@@ -129,6 +129,10 @@ figure,imagesc(reshape_eigen_vector(fpc{1},pfd(1,pfindex)));axis('xy');
 reshape(,pfTemp.adata.binSizes')'.*reshape_eigen_vector(V,pfd(1,pfindex));
 
 
+
+% Compute z-score of randomly shuffled spike time chunks 
+%               projected on each eigen vector, as computed by 
+%               req20180123_ver5.m% Score from
 
 
 score = [];

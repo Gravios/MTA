@@ -116,11 +116,12 @@ classdef MTAApfs < hgsetget %< MTAAnalysis
                 'halfsample',                     0,                                             ...
                 'shuffleBlockSize',               1,                                             ...
                 'trackingMarker',                 'nose',                                        ...
-                'autoSaveFlag',                   true                                           ...
+                'autoSaveFlag',                   true,                                          ...
+                'spkMode',                        'deburst'                                      ...
             );            
             [units,states,overwrite,tag,binDims,SmoothingWeights,type,spkShuffle,posShuffle,     ...
              numIter,xyzp,boundaryLimits,bootstrap,halfsample,shuffleBlockSize,trackingMarker,   ...
-             autoSaveFlag] = DefaultArgs(varargin,defargs,'--struct');
+             autoSaveFlag,spkMode] = DefaultArgs(varargin,defargs,'--struct');
 %---------------------------------------------------------------------------------------------------
                 
 
@@ -152,6 +153,7 @@ classdef MTAApfs < hgsetget %< MTAAnalysis
 % SET parameters
                     Pfs.parameters.binDims    = binDims;                    
                     Pfs.parameters.type       = type;
+                    Pfs.parameters.spkMode    = spkMode;                    
                     Pfs.parameters.spkShuffle = spkShuffle;
                     Pfs.parameters.posShuffle = posShuffle;
                     Pfs.parameters.numIter    = numIter;
@@ -207,6 +209,7 @@ classdef MTAApfs < hgsetget %< MTAAnalysis
                     Session = MTATrial(Obj.session.sessionName,...
                                        Obj.session.mazeName,...
                                        Obj.session.trialName);
+
                     
 % RESET the independent variabels
                     if xyzp.isempty,
@@ -354,11 +357,11 @@ classdef MTAApfs < hgsetget %< MTAAnalysis
             
 % GET State Positions
             if pfsState.isempty,return,end
-            sstpos = sq(xyz(pfsState,:));
+            asstpos = sq(xyz(pfsState,:));
             
 % LOAD Units into spk object;
             spk = Session.spk.copy;
-            spk.create(Session,xyz.sampleRate,pfsState,units,'deburst');
+            spk.create(Session,xyz.sampleRate,pfsState,units,spkMode);
 
             i = 1;
             for unit=selected_units(:)',
@@ -376,9 +379,23 @@ classdef MTAApfs < hgsetget %< MTAAnalysis
                 
                 res = spk(unit);
                 %% Skip unit if too few spikes
-                if numel(res)>10,
+                if numel(res)>10
                     
-                    sstres = SelectPeriods(res,pfsState.data,'d',1,1);
+                    % SUPER annoying fix for probe shifts
+                    if ~isempty(spk.per) && any(spk.perInd(unit,:))
+                        spkPer = spk.per.copy();
+                        spkPer.data(~spk.perInd(unit,:),:) = [];
+                        resync(spkPer,Session);
+                        resample(spkPer,xyz);
+                        
+                        sstres = SelectPeriods(res,get(pfsState&spkPer,'data'),'d',1,1);
+                        cast(spkPer,'TimeSeries');
+                        spkPer = logical(SelectPeriods(spkPer.data,pfsState,'c',1,1));
+                        sstpos = asstpos(spkPer,:);
+                    else
+                        sstpos = asstpos;
+                        sstres = SelectPeriods(res,pfsState.data,'d',1,1);
+                     end
                     nSpk = size(sstres,1);
                     sresind = repmat(sstres,1,numIter);
 

@@ -56,38 +56,39 @@ fetInds{end+1}     = [1,3];
 pfdParam{end+1}    = {[-2,2;-2,2],[0.1,0.1],[1.5,1.5]};
 states{end+1}      = 'theta-groom-sit-rear';
 ranges{end+1}      = [950,1450];
-
-%3. BPITCHxBSPEED
-tags{end+1}        = 'BPITCHxBSPEED';
-fetSets{end+1}     = 'fet_HB_HPS';
-fetInds{end+1}     = [2,3];
-pfdParam{end+1}    = {[-2,2;-2,2],[0.1,0.1],[1.5,1.5]};
-states{end+1}      = 'theta-groom-sit';
-ranges{end+1}      = [1000,1450];
-
-%4. BPITCHxHSPEED
-tags{end+1}        = 'BPITCHxHSPEED';
-fetSets{end+1}     = 'fet_HB_HPS';
-fetInds{end+1}     = [2,4];
-pfdParam{end+1}    = {[-2,2;-2,2],[0.1,0.1],[1.5,1.5]};
-states{end+1}      = 'theta-groom-sit';
-ranges{end+1}      = [1000,1400];
-
-%5. HPITCHxRHM   
-tags{end+1}        = 'HPITCHxRHM';
-fetSets{end+1}     = 'fet_HB_HPR';
-fetInds{end+1}     = [1,2];
-pfdParam{end+1}    = {[-2,2;-9,-3],[0.1,0.2],[1.5,1.5]};
-states{end+1}      = 'theta-groom-sit-rear';
-ranges{end+1}      = [700,1100];
-                     
+% $$$ 
+% $$$ %3. BPITCHxBSPEED
+% $$$ tags{end+1}        = 'BPITCHxBSPEED';
+% $$$ fetSets{end+1}     = 'fet_HB_HPS';
+% $$$ fetInds{end+1}     = [2,3];
+% $$$ pfdParam{end+1}    = {[-2,2;-2,2],[0.1,0.1],[1.5,1.5]};
+% $$$ states{end+1}      = 'theta-groom-sit';
+% $$$ ranges{end+1}      = [1000,1450];
+% $$$ 
+% $$$ %4. BPITCHxHSPEED
+% $$$ tags{end+1}        = 'BPITCHxHSPEED';
+% $$$ fetSets{end+1}     = 'fet_HB_HPS';
+% $$$ fetInds{end+1}     = [2,4];
+% $$$ pfdParam{end+1}    = {[-2,2;-2,2],[0.1,0.1],[1.5,1.5]};
+% $$$ states{end+1}      = 'theta-groom-sit';
+% $$$ ranges{end+1}      = [1000,1400];
+% $$$ 
+% $$$ %5. HPITCHxRHM   
+% $$$ tags{end+1}        = 'HPITCHxRHM';
+% $$$ fetSets{end+1}     = 'fet_HB_HPR';
+% $$$ fetInds{end+1}     = [1,2];
+% $$$ pfdParam{end+1}    = {[-2,2;-9,-3],[0.1,0.2],[1.5,1.5]};
+% $$$ states{end+1}      = 'theta-groom-sit-rear';
+% $$$ ranges{end+1}      = [700,1100];
+% $$$                      
 
 
 % COMPUTE and DISPLAY drz restricted rate maps
 pfd = {};  validDims = {};  unitSubsets = {};  eigVect = {};  eigVar = {};  eigScore = {};
 
 for pfindex = 1:numel(tags),
-    create_directory(fullfile(figDir,[tags{pfindex},'_v',version]));    
+    create_directory(fullfile(figDir,[tags{pfindex},'_v',version]));  
+    analDir = [tags{pfindex},'_v',version];
     for tind = 1:numTrials,
         Trial = Trials{tind};
 % LOAD features

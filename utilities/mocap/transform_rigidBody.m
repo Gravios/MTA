@@ -32,7 +32,7 @@ else
 % CONVERT trial to session
     trialPeriodsByDefault = false;
     if isempty(periods), 
-        periods = Session.sync.copy(); 
+        periods = Session.sync.copy();         
         trialPeriodByDefault = true;
     end    
     Session = MTASession.validate([Session.name,'.',Session.maze.name,'.all']);
@@ -202,7 +202,7 @@ ijk = cell(1,3);
 mset = [1:7];
 for m = mset
     svxyz = log10(sq(vxyz(m,:,:,:)));
-    iopts = [ijk,{svxyz},{prctile(svxyz(nniz(svxyz(:))),3)}];
+    iopts = [ijk,{svxyz},{prctile(svxyz(nniz(svxyz(:))),2)}];
     isos(m) = isosurface(iopts{:});
 end
 

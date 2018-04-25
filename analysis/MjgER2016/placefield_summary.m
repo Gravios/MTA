@@ -23,6 +23,13 @@ end
 Trials  = af(@(t)  MTATrial.validate(t),   sessionList);
 
 
+% $$$ Sessions  = cf(@(t)  MTASession.validate(t.filebase),   Trials);
+% $$$ cf(@(s)  create(s.spk,s),   Sessions);
+% $$$ cf(@(s)  save(s),           Sessions);
+% $$$ clear('Sessions');
+% $$$ Trials  = af(@(t)  MTATrial.validate(t),   sessionList);
+
+
 states = {'loc&theta','lloc&theta','hloc&theta','rear&theta',     ...
           'pause&theta','lpause&theta','hpause&theta',            ...
           'theta-groom-sit'};
@@ -42,9 +49,15 @@ interpPar = struct('bins',{{linspace(-500,500,100),linspace(-500,500,100)}},    
 pfdVersion = '7';
 
 % PROCESS session data
+% $$$ cf(@(t)  compute_neuron_quality(t,[],[],[],true), Trials);
 % $$$ units  =  cf(@(t)  select_placefields(t,30,true),  Trials);
 % $$$ cf(@(t)  pfs_2d_theta(t,'overwrite',true),  Trials);
 % $$$ cf(@(t)  pfs_2d_states(t,'states',{'hpause&theta'},'overwrite',true),  Trials);
+% $$$ units  =  cf(@(t)  select_placefields(t,30,false),  Trials);
+% $$$ ind = 21:23;
+% $$$ cf(@(t,u)  pfs_2d_theta(t,u,false,true),  Trials(ind),units(ind));
+% $$$ cf(@(t,u)  pfs_2d_states(t,u,[],[],false,'',true),  Trials(ind),units(ind));
+% $$$ cf(@(t)    req20180123_ver5(t,[],'7',true), Trials(ind));
 % $$$ cf(@(t)  compute_pfstats_bs(t,'overwrite',true),  Trials);
 % $$$ cf(@(t)  MjgER2016_drzfields(t,[],true), Trials);
 % $$$ cf(@(t)  pfd_2d_pp(t), Trials);
@@ -52,6 +65,7 @@ pfdVersion = '7';
 % $$$ for t = 1:numel(Trials),
 % $$$      pft{t} = pfs_2d_theta(Trials{t},[],false,false,1);
 % $$$ end
+
 
 
 % FOR each Trial -------------------------------------------------------------
@@ -68,6 +82,7 @@ for t = 1:numel(Trials),
 % CREATE Trial directory in specified location
 % PRINT intent of trial processing
     Trial = Trials{t};    
+    Trial.load('nq');
     create_directory(fullfile(FigDir,Trial.filebase));
     disp(['Processing Trial: ' Trial.filebase]);
 
@@ -286,14 +301,14 @@ for t = 1:numel(Trials),
             
 % PLACEFIELDS MTAAknnpfs
             sp(end+1) = subplot2(ny,numStates+2,[1,2],s+1);
-            plot(pfs{s},unit,1,false,mpfsRate,true,[],false,interpPar,@jet);
+            plot(pfs{s},unit,1,'none',mpfsRate,true,[],false,interpPar,@jet);
             set(gca,'YTickLabel',{});set(gca,'XTickLabel',{});
             title(sprintf('Max Rate: %3.2f',pfsMaxRates(s)));
 
             
 % PLACEFIELDS MTAApfs
             sp(end+1) = subplot2(ny,numStates+2,[3,4],s+1);
-            plot(pfs{s},unit,'mean',false,mpfsRate,true,0.5,false,interpPar,@jet);
+            plot(pfs{s},unit,'mean','none',mpfsRate,true,0.5,false,interpPar,@jet);
             set(gca,'YTickLabel',{});set(gca,'XTickLabel',{});
             title(sprintf('Max Rate: %3.2f',pfsMaxRatesMean(s)));
             

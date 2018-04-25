@@ -886,5 +886,3 @@
 % req20180322.m
 % Review unit placefields
 
-% req20180323.m
-% inter-session unit corregistration

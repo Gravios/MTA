@@ -76,19 +76,19 @@ switch mode
     nSpk = [];
     thresh = round(10/1000*sampleRate);
     if thresh==0,thresh =1;end
-    for u = unique(Clu)'
+    for u = unique(clu)'
         try                            
             tRes = res(clu==u);
             tSpk = spk(clu==u,:,:);
             bresind = SplitIntoBursts(tRes,thresh);
             nRes = [nRes; tRes(bresind)];                        
             nClu = [nClu; u.*ones(numel(bresind),1)];
-            nSpk = cat(1,nSpk,tSpk(bresind));
+            nSpk = cat(1,nSpk,tSpk(bresind,:,:));
         end
     end
     res = nRes;
     clu = nClu;
-    spk = nSpk
+    spk = nSpk;
 
 end
 

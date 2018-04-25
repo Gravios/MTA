@@ -44,18 +44,49 @@ switch mode
     nRes = [];
     nClu = [];
     thresh = round(0.008*Session.sampleRate);
-    if thresh==0,thresh =1;end
     for u = unique(Clu)'
         try                            
             tRes   = Res(Clu==u);
-            bursts = SplitIntoBursts(tRes,thresh);
-            nRes   = [nRes; tRes(bursts)];
-            nClu   = [nClu; u.*ones(numel(bursts),1)];
+            burstResInd = SplitIntoBursts(tRes,thresh);
+            nRes   = [nRes; tRes(burstResInd)];
+            nClu   = [nClu; u.*ones(numel(burstResInd),1)];
         end
     end
     Res = nRes;
     Clu = nClu;
-  otherwise
+  case 'blge2'
+    nRes = [];
+    nClu = [];
+    thresh = round(0.008*Session.sampleRate);
+    blThresh = 2;    
+    for u = unique(Clu)'
+        try
+            tRes   = Res(Clu==u);
+            [burstResInd,burstLength] = SplitIntoBursts(tRes,thresh);
+            nRes   = [nRes; tRes(burstResInd(burstLength>=blThresh))];
+            nClu   = [nClu; u.*ones([sum(burstLength>=blThresh),1])];
+        end        
+    end
+    Res = nRes;
+    Clu = nClu;    
+    
+  case 'blge3'
+    nRes = [];
+    nClu = [];
+    thresh = round(0.008*Session.sampleRate);
+    blThresh = 3;
+    for u = unique(Clu)'
+        try
+            tRes   = Res(Clu==u);
+            [burstResInd,burstLength] = SplitIntoBursts(tRes,thresh);
+            nRes   = [nRes; tRes(burstResInd(burstLength>=blThresh))];
+            nClu   = [nClu; u.*ones([sum(burstLength>=blThresh),1])];
+        end        
+    end
+    Res = nRes;
+    Clu = nClu;    
+    
+  otherwise % default
     % NOTHING
 end
 

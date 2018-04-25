@@ -512,6 +512,12 @@ switch sessionList
     Sessions(end).sessionName =   'jg05-20120312';
     Sessions(end).thetaRef     = [8:8:40,46,53,61,repmat(72,[1,4])];
     Sessions(end+1) =   Sessions(end);
+    Sessions(end).sessionName =   'jg05-20120315';
+    Sessions(end).thetaRef     = [8:8:64,repmat(69,[1,4])];    
+    Sessions(end+1) =   Sessions(end);
+    Sessions(end).sessionName =   'jg05-20120316';
+    Sessions(end).thetaRef     = [8:8:64,repmat(69,[1,4])];        
+    Sessions(end+1) =   Sessions(end);
     Sessions(end).sessionName =   'jg05-20120317';
     Sessions(end).thetaRef     = [8:8:32,40,47,53,59,repmat(73,[1,4])];
 

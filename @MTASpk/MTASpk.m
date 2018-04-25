@@ -48,7 +48,7 @@ classdef MTASpk < hgsetget
         
         %sampleRate - double: the sampling rate to which the spike indicies correspond
         sampleRate    
-
+        
         %hash - string: hash modified by functions acting upon MTAData objects        
         hash = 'zzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzz';
     end
@@ -56,6 +56,12 @@ classdef MTASpk < hgsetget
     properties
         %map - matrix: Cluster/electrode mapping
         map
+        
+        %per - matrix: (nx2) numeric: computational periods of major shift events
+        per
+        
+        %perInd - matrix: (uxn) logical: included periods
+        perInd
         
         %type - string: Data type
         type

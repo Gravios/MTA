@@ -2,13 +2,13 @@ function pf = pfs_2d_theta(Trial,varargin)
 %function pf = pfs_2d_theta(Trial,varargin)
 %
 %  varargin:
-%    numIter:    numeric, Number of subsampled iterations (NOTE: 1st sample is full)
-%
 %    reportFig:  logical, flag 1:{save figures as pngs of each place field in a predefined location
 %                              0:{do nothing}
 %
 %    overwrite:  logical, flag 1:{recompute place fields}
 %                              0:{load place fields from file}
+%
+%    numIter:    numeric, Number of subsampled iterations (NOTE: 1st sample is full)
 %
 
 
