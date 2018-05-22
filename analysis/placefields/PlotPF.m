@@ -86,8 +86,12 @@ SCount = convn(SpikeCount,Smoother,'same');
 % CREATE minimally smoothed occupancy map
 soc = Occupancy;
 soc(isnan(soc)) = 0;
-soc = RectFilter(soc',3,1);
-soc = RectFilter(soc',3,1);
+if ndims==1,
+    soc = RectFilter(soc,3,1);
+elseif ndims==2,    
+    soc = RectFilter(soc',3,1);
+    soc = RectFilter(soc',3,1);
+end
 
 %OccThresh = 4*(mean(binDims)/200).^numel(binDims);
 gtind = soc > 4*(10/200).^numel(binDims);

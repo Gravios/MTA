@@ -45,10 +45,10 @@ if ~isempty(referenceTrial),
     pch.map_to_reference_session(Trial,referenceTrial,referenceFeature);
 end
 pch.resample(newSampleRate);
+xyz.resample(newSampleRate);
 
 % CONCATENATE features
 fet.data = [circ_dist(pch(:,3),pch(:,1)),pch(:,1)];
-
 
 fet.data(~nniz(xyz),:)=0;
 featureTitles = {};

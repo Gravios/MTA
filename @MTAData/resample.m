@@ -53,14 +53,19 @@ switch Data.type
         dataClass = class(Data.data);
         Data.data = double(Data.data);
     end
-    
+
+% $$$     if newSampleRate<Data.sampleRate, shift = 0;%1./Data.sampleRate;
+% $$$     else,                             shift = 0;
+% $$$     end
+
     if isMTA
-        ntvec = (1:DataObj.size(1))./newSampleRate;
+        ntvec = (1:DataObj.size(1))./newSampleRate;%+shift
+        %ntvec = (1:DataObj.size(1))./newSampleRate;
         xtvec = (1:Data.size(1))./Data.sampleRate;
         Data.data = interp1(xtvec,Data.data,ntvec,interpMethod);
         Data.sampleRate = newSampleRate;
     else
-        ntvec = (1:(Data.size(1)./Data.sampleRate.*newSampleRate))./newSampleRate;
+        ntvec = (1:(Data.size(1)./Data.sampleRate.*newSampleRate))./newSampleRate;%+shift
         xtvec = (1:Data.size(1))./Data.sampleRate;
         Data.data = interp1(xtvec,Data.data,ntvec,interpMethod);
         Data.sampleRate = newSampleRate;
@@ -71,6 +76,11 @@ switch Data.type
         Data.data(~nniz(Data.data)) = 0;
         Data.data = feval(dataClass,Data.data);
     end
+    
+    if isa(Data,'MTADepoch'),
+        Data.data(~nniz(Data.data)) = 0;
+    end
+    
     
   case 'TimePeriods'
     % Needs some more corrections for resampling

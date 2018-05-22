@@ -35,6 +35,22 @@ switch Data.type
         Data.update_hash(filterHash);
       case 'RectFilter'
         Data = RectFilter(Data,varargin{:});
+      case 'Custom'
+        filterObject = designfilt(varargin{:});        
+        filterHash = DataHash(filterObject);
+        nind = ~nniz(Data);
+        nd = [];
+        if sum(nind)>0,
+            nd = Data.data(nind,:,:,:,:);
+            Data.data(nind,:,:,:,:) = 0;
+        end
+        Data.data = filtfilt(filterObject,Data.data);
+        if ~isempty(nd),
+            Data.data(nind,:,:,:,:) = nd;
+        end
+        Data.update_hash(filterHash);
+
+        
         
       otherwise
         error('MTA:MTAData:filter:ModeNotFound');

@@ -46,6 +46,11 @@ classdef MTAApfs < hgsetget %< MTAAnalysis
 %  NOTES:
 %    hash - future version will include hash mod tracking
 %
+%-----------------------------------------------------------------------------
+%  UPDATES:
+%   X 20180515 (Justin Graboski) change preprocessing to always include first
+%              steps for partitioning the data into disjoint blocks
+%
         
     properties 
         %path - string: location of file containing MTAApfs object
@@ -58,7 +63,6 @@ classdef MTAApfs < hgsetget %< MTAAnalysis
         session = struct('sessionName', '',...
                          'trialName',   '',...
                          'mazeName',    '');
-
         
         %tag - string: unique identifier
         tag = '';
@@ -405,53 +409,53 @@ classdef MTAApfs < hgsetget %< MTAAnalysis
                     
                     if posShuffle,
                         % shifts the position of the res along the sstpos
-                        sresind = bsxfun(@plus,sstres,repmat(randi(round([-size(sstpos,1)/2,size(sstpos,1)/2]),1,numIter),numel(sstres),1));
+                        sresind = bsxfun(@plus,...
+                                         sstres,...
+                                         repmat(randi(round([-size(sstpos,1)/2,size(sstpos,1)/2]),1,numIter),...
+                                                [numel(sstres),1]));
                         % Wraps negative res to end of the sstpos vector
                         sresind(sresind<=0) = sresind(sresind<=0)+size(sstpos,1);                           
                         % Wraps res greater than the size of the sstpos vector
-                        sresind(sresind>size(sstpos,1)) = sresind(sresind>size(sstpos,1))-size(sstpos,1); ...
+                        sresind(sresind>size(sstpos,1)) = sresind(sresind>size(sstpos,1))-size(sstpos,1);
                     end                    
-                        
+                    
                     if bootstrap,
                         sresind = reshape(sresind(randi(nSpk,[round(nSpk.*bootstrap),numIter]),1),[],numIter);
                     end
                     
-                    
-                    if halfsample,
-                    
+
+                     if halfsample,
+% CHUNK data into uniform blocks of specified temporal length
                         samplesPerBlock = round(xyz.sampleRate*shuffleBlockSize);
-                        vlen = size(sstpos,1);
-                        trim = mod(vlen,samplesPerBlock);
-                        
-                        sstpos = sstpos(1:vlen-trim,:);
+                        blockCount      = (size(sstpos,1)-mod(size(sstpos,1),samplesPerBlock))/samplesPerBlock;
+% REMOVE positions and spikes which fall outside of the final block
+                        sstpos = sstpos(1:size(sstpos,1)-mod(size(sstpos,1),samplesPerBlock),:);
                         sresind(any(sresind>size(sstpos,1),2),:) = [];
                         sstres(sstres>size(sstpos,1)) = [];
 
-                        
-                        shuffleBlockCount = (vlen-trim)/samplesPerBlock;
-                        randSubsetSize =(shuffleBlockCount-mod(shuffleBlockCount,2))/2;
-                        shuffleBlockInd = reshape(1:size(sstpos,1),[],shuffleBlockCount);
-                        halfSampleBlockInd = zeros([numIter,randSubsetSize]);
-                        halfSampleInd = zeros([randSubsetSize*samplesPerBlock,numIter]);
+                        halfBlockCount  = (blockCount-mod(blockCount,2))/2;
+                        shuffleBlockInd = reshape(1:size(sstpos,1),[],blockCount);
+                        halfSampleBlockInd = zeros([numIter,halfBlockCount]);
+                        halfSampleInd = zeros([halfBlockCount*samplesPerBlock,numIter]);
                         
                         for j = 1:2:numIter,
-                            rp = randperm(shuffleBlockCount);
-                            halfSampleBlockInd(j  ,:) = rp(1:randSubsetSize);
-                            halfSampleBlockInd(j+1,:) = rp(randSubsetSize+1:2*randSubsetSize);
+% SPLIT blocks randomly into two groups as random half samples
+                            rp = randperm(blockCount);
+                            halfSampleBlockInd(j  ,:) = rp(1:halfBlockCount);
+                            halfSampleBlockInd(j+1,:) = rp(halfBlockCount+1:2*halfBlockCount);
                         end
                         
+% REBUILD 
                         for j = 1:numIter
                             halfSampleInd(:,j) = reshape(shuffleBlockInd(:,halfSampleBlockInd(j,:)),[],1);
                         end
-                        
-                        
                     else
                         halfSampleInd = repmat([1:size(sstpos,1)]',[1,numIter]);
                     end
-
-% COMPUTE Place Fields
+                    
+                    
+% COMPUTE Place Field, the first always uses all available data
                     tic; %disp(unit);
-
                     [Pfs.data.rateMap(:,dind(i),1), ... Rate Map
                      Pfs.adata.bins,                ... Bins
                      Pfs.data.si(:,dind(i)),        ... Spatial Information
@@ -465,30 +469,21 @@ classdef MTAApfs < hgsetget %< MTAAnalysis
                                boundaryLimits,                  ... Computational Boundaries
                                xyz.sampleRate                   ... Sample Rate
                     );
-
-                    %Not sure why this was here
-% $$$                     [~, Pfs.adata.bins,~] =  ...
-% $$$                         PlotPF(Session,sstpos(sresind(:,1),:),...
-% $$$                                sstpos,...
-% $$$                                binDims,...
-% $$$                                SmoothingWeights,...
-% $$$                                type,...
-% $$$                                boundaryLimits,xyz.sampleRate);
                     toc
 
 % COMPUTE Bootstrap
                     if numIter>1,
                         tic
                         for bsi = 2:numIter
-                             Pfs.data.rateMap(:,dind(i),bsi) = ...
-                                 PlotPF(Session,...
-                                        sstpos(sresind(ismember(sresind(:,bsi),halfSampleInd(:,bsi)),bsi),:),...
-                                        sstpos(halfSampleInd(:,bsi),:),...
-                                        binDims,...
-                                        SmoothingWeights,...
-                                        type,...
-                                        boundaryLimits,...
-                                        xyz.sampleRate...
+                            Pfs.data.rateMap(:,dind(i),bsi) = ...
+                                PlotPF(Session,...
+                                       sstpos(sresind(ismember(sresind(:,bsi),halfSampleInd(:,bsi)),bsi),:),...
+                                       sstpos(halfSampleInd(:,bsi),:),...
+                                       binDims,...
+                                       SmoothingWeights,...
+                                       type,...
+                                       boundaryLimits,...
+                                       xyz.sampleRate...
                             );
                         end%for bsi
                         toc

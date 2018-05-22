@@ -13,7 +13,7 @@ function rateMap = plot(Pfs,varargin)
 %
 %    mazeMaskFlag - Logical: {true} set bins to NAN based on mask
 %
-%    sigThresh - Numeric: {[]}
+%    sigThresh - Numeric: {[]} proportion of non nan values accepted in the resampled estimates
 %
 %    flipAxesFlag - Logical: {false}
 %
@@ -47,10 +47,12 @@ defargs = struct('unit',                   [],                                  
                  'sigThresh',              [],                                                   ...
                  'flipAxesFlag',           false,                                                ...
                  'interpPar',              [],                                                   ...
-                 'colorMap',               @parula                                               ...
+                 'colorMap',               @parula,                                              ...
+                 'mazeMask',               1,                                                    ...
+                 'nanColor',               [0,0,0]                                               ...
 );
-[unit,mode,rateReportMethod,maxRate,mazeMaskFlag,sigThresh,flipAxesFlag,interpPar,colorMap] =        ...
-    DefaultArgs(varargin,defargs,'--struct');
+[unit,mode,rateReportMethod,maxRate,mazeMaskFlag,sigThresh,flipAxesFlag,interpPar,colorMap,      ...
+     mazeMask,nanColor] = DefaultArgs(varargin,defargs,'--struct');
 %---------------------------------------------------------------------------------------------------
 
 
@@ -65,20 +67,25 @@ switch numel(Pfs.parameters.type)
     if isnumeric(mode)
         rateMap = Pfs.data.rateMap(:,Pfs.data.clu==unit,mode);    
     else
-        switch mode
-          case 'mean',    rateMap = mean(Pfs.data.rateMap(:,Pfs.data.clu==unit,:),3,'omitnan');
-          case 'std' ,    rateMap = std(Pfs.data.rateMap(:,Pfs.data.clu==unit,:),[],3,'omitnan');
-          case 'snr',     rateMap = mean(Pfs.data.rateMap(:,Pfs.data.clu==unit,:),3,'omitnan')...
-                                    ./std(Pfs.data.rateMap(:,Pfs.data.clu==unit,:),[],3,'omitnan');
+        if Pfs.parameters.numIter>1, 
+            ind = 2:Pfs.parameters.numIter;
+        else,
+            ind = 1;
+        end
+        switch mode            
+          case 'mean',    rateMap = mean(Pfs.data.rateMap(:,Pfs.data.clu==unit,ind),3,'omitnan');
+          case 'std' ,    rateMap = std(Pfs.data.rateMap(:,Pfs.data.clu==unit,ind),[],3,'omitnan');
+          case 'snr',     rateMap = mean(Pfs.data.rateMap(:,Pfs.data.clu==unit,ind),3,'omitnan')...
+                                    ./std(Pfs.data.rateMap(:,Pfs.data.clu==unit,ind),[],3,'omitnan');
                           rateMap(isinf(rateMap)) = nan;                          
           case 'snrs',    
-            tStd = std(Pfs.data.rateMap(:,Pfs.data.clu==unit,:),[],3,'omitnan');
+            tStd = std(Pfs.data.rateMap(:,Pfs.data.clu==unit,ind),[],3,'omitnan');
             tStd(tStd<1) = 1;
-            rateMap = mean(Pfs.data.rateMap(:,Pfs.data.clu==unit,:),3,'omitnan')./tStd;
+            rateMap = mean(Pfs.data.rateMap(:,Pfs.data.clu==unit,ind),3,'omitnan')./tStd;
                           rateMap(isinf(rateMap)) = nan;                          
           case 'sig'
             rateMap = 1./sum((repmat(max(Pfs.data.rateMap(:,Pfs.data.clu==unit,:)),[size(Pfs.data.rateMap,1),1,1])...
-                              -repmat(Pfs.data.rateMap(:,Pfs.data.clu==unit,1),[1,1,Pfs.parameters.numIter]))<0,3)';
+                     -repmat(Pfs.data.rateMap(:,Pfs.data.clu==unit,1),[1,1,Pfs.parameters.numIter]))<0,3)';
           otherwise
             rateMap = Pfs.data.rateMap(:,Pfs.data.clu==unit,1);
         end                    
@@ -119,17 +126,19 @@ switch numel(Pfs.parameters.type)
     end
     
 
-    mazeMask = 1;
+
     if mazeMaskFlag,
 % RESTRICT rateMap area to within the maze radius
-        width = binSizes(1);
-        height =binSizes(2);
-        radius = round(binSizes(1)/2)-find(bins{1}<-450,1,'last');
-        centerW = width/2;
-        centerH = height/2;
-        [W,H] = meshgrid(1:width,1:height);           
-        mazeMask = double(sqrt((W-centerW-.5).^2 + (H-centerH-.5).^2) < radius);
-        mazeMask(mazeMask==0)=nan;
+        if mazeMask==1,
+            width = binSizes(1);
+            height =binSizes(2);
+            radius = round(binSizes(1)/2)-find(bins{1}<-450,1,'last');
+            centerW = width/2;
+            centerH = height/2;
+            [W,H] = meshgrid(1:width,1:height);           
+            mazeMask = double(sqrt((W-centerW-.5).^2 + (H-centerH-.5).^2) < radius);
+            mazeMask(mazeMask==0)=nan;
+        end
     end
     rateMap = rateMap.*mazeMask;
     
@@ -143,12 +152,12 @@ switch numel(Pfs.parameters.type)
     if numel(maxRate)<2, maxRate = [0,maxRate]; end
 
 % ASSIGN elements with nans a black color value
-    rateMap(isnan(rateMap)) = -1;
+    %rateMap(isnan(rateMap)) = -1;
     if flipAxesFlag,
         bins = fliplr(bins(:)');
-        imagescnan({bins{:},fliplr(rot90(rateMap',-1))},maxRate,'linear',false,[0,0,0],[],[],colorMap);
+        imagescnan({bins{:},fliplr(rot90(rateMap',-1))},maxRate,'linear',false,nanColor,[],[],colorMap);
     else
-        imagescnan({bins{:},rateMap'},maxRate,'linear',false,[0,0,0],[],[],colorMap);
+        imagescnan({bins{:},rateMap'},maxRate,'linear',false,nanColor,[],[],colorMap);
     end
     
     if islogical(rateReportMethod) && rateReportMethod,

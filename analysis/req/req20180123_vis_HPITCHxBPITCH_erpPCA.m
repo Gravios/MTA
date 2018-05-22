@@ -1,3 +1,14 @@
+%Vars:
+% sessionListName
+% figDir
+% pfd
+% validDims
+% tags
+% numComp = 5;
+% pfindex = 1;
+% overwriteBhvContoursFlag = true;
+
+analDir = [tags{pfindex},'_v',version];
 
 bins = pfd{1,pfindex}.adata.bins;
 
@@ -13,7 +24,9 @@ reshape_eigen_vector = @(V,pfd) reshape(V(:,1),pfd{1}.adata.binSizes')';
                  'Ed05-20140529.ont.all',                          ... referenceTrial
                  {'lloc+lpause&theta','hloc+hpause&theta',         ... states
                    'rear&theta'},                                  ...
-                 'wcr'                                             ... stateColors
+                 'wcr',                                            ... stateColors
+                 '',                                               ... tag
+                 overwriteBhvContoursFlag                          ... overwrite
 );
 
 hfig = figure(666011);clf();
@@ -25,8 +38,8 @@ hax  = gobjects([1,numComp+1]);
 hcax = zeros([numComp,2]);
 fpc  = cell([1,numComp]);
 for i = 1:numComp,
-    fpc{i} = nan([zdims(1),1]);
-    fpc{i}(validDims{pfindex}) = LRG{pfindex}(:,i);
+    fpc{i} = nan([numel(validDims{pfindex}),1]);
+    fpc{i}(validDims{pfindex}) = eigVec{pfindex}(:,i);
 end
 
 fpcMinMax = [min(cellfun(@min,fpc)),max(cellfun(@max,fpc))];
@@ -46,7 +59,7 @@ for i = 1:numComp,
     ylim([-pi/2,2]);
 end
 hax(numComp+1) = subplot(1,numComp+1,numComp+1);
-plot(VT(1:numComp,4),'-+');
+plot(eigVar{pfindex}(1:numComp,4),'-+');
 xlim([0,numComp+1]);
 
 af(@(h) set(h,'Units','centimeters'),                hax);    

@@ -2,17 +2,16 @@ function pfs = pfs_2d_states(Trial,varargin)
 
 
 % DEFARGS ------------------------------------------------------------------------------------------
-defargs = struct('units',         [],                                                            ...
-                 'stcMode',       'msnn_ppsvd_raux',                                             ...
-                 'states',        {{'loc&theta','lloc&theta','hloc&theta','rear&theta',          ...
-                                    'pause&theta','lpause&theta','hpause&theta'}},               ...
-                 'reportFig',     false,                                                         ...
-                 'tag',           '',                                                            ...
-                 'overwrite',     false,                                                         ...
-                 'numIter',       [],                                                            ...
-                 'spkMode',       'deburst'                                                      ...
+defargs = struct('units',          [],                                                           ...
+                 'stcMode',        'msnn_ppsvd_raux',                                            ...
+                 'states',         {{'loc&theta','lloc&theta','hloc&theta','rear&theta',         ...
+                                     'pause&theta','lpause&theta','hpause&theta'}},              ...
+                 'reportFig',      false,                                                        ...
+                 'tag',            '',                                                           ...
+                 'overwrite',      false,                                                        ...
+                 'pfsArgsOverride',[]                                                            ...
 );
-[units,stcMode,states,reportFig,tag,overwrite, numIter,spkMode] =                                ...
+[units,stcMode,states,reportFig,tag,overwrite, pfsArgsOverride] =                                ...
     DefaultArgs(varargin,defargs,'--struct');
 %---------------------------------------------------------------------------------------------------
 
@@ -22,7 +21,7 @@ defargs = struct('units',         [],                                           
 %    stcMode 
 %    states 
 if isempty(tag),
-    tag = DataHash(struct('stcMode',stcMode,'states',{states}));    
+    tag = DataHash(struct('stcMode',stcMode,'pfsArgsOverride',pfsArgsOverride));
 end
 %---------------------------------------------------------------------------------------------------
 
@@ -60,17 +59,24 @@ mkdir(fullfile(OwnDir,FigDir));
 %% compute 3d place fields for the theta state
 pfs = {};
 for s = 1:nsts
-    disp(['MTA:analysis:placefields:pfs_2d_states:processing:',Trial.filebase,':',states{s}]);
+    if ischar(states{s}),
+        disp(['MTA:analysis:placefields:pfs_2d_states:processing:',Trial.filebase,':',states{s}]);
+    else
+        disp(['MTA:analysis:placefields:pfs_2d_states:processing:',Trial.filebase,':',states{s}.label]);
+    end
+    
     pargs = get_default_args('MjgER2016','MTAApfs','struct');
     pargs.units = units;
     pargs.states = states{s};
-    pargs.spkMode = spkMode;
-    pargs.overwrite = overwrite;
-    %pargs.tag = tag;
-    if ~isempty(numIter),
-        pargs.numIter = numIter;
-        pargs.halfsample = 0;
+    
+    if ~isempty(pfsArgsOverride) && isstruct(pfsArgsOverride),
+        for f = fieldnames(pfsArgsOverride)'
+            pargs.(f{1}) = pfsArgsOverride.(f{1});
+        end
     end
+    
+    pargs.overwrite = overwrite;    
+    %pargs.tag = DataHash({states{s},tag});
     pfsArgs = struct2varargin(pargs);        
     pfs{s} = MTAApfs(Trial,pfsArgs{:});      
 end
@@ -80,14 +86,14 @@ end
 % FIGURE 
 if reportFig
     
-    % Calculate auto correlogram of units
+% COMPUTE unit auto correlograms 
     [accg,tbins] = autoccg(MTASession.validate(Trial.filebase));
     
 % LOAD unit quality information
     Trial.load('nq');
 
 
-    %% setup figure
+% SETUP figure options
     spOpts.width  = 2;
     spOpts.height = 2;
     spOpts.ny = 1;
@@ -122,8 +128,6 @@ if reportFig
         end        
     end
 
-    %figure();plot(log10(Trial.nq.Refrac(units)+eps)+randn([numel(units),1]),Trial.nq.SNR(units),'.')    
-    
     
     %% Plot place fields sliced along z axis
     hfig = figure(393929);    

@@ -45,8 +45,11 @@ else
     if isempty(units), units = 1:spk.map(end,1);end
     
     % create convolution window 
-    swin = round(twin*DataObj.sampleRate);
-    gwin = ones([swin,1]);
+    swin = round(twin*DataObj.sampleRate);    
+    %gwin = ones([swin,1]);
+    winLength = round(3*DataObj.sampleRate);
+    gwin = gausswin(winLength,winLength/(twin*DataObj.sampleRate));
+    gwin = gwin./sum(gwin);
 
     % accumulate and convolve activity of each unit
     for unit = units(:)'
@@ -55,6 +58,8 @@ else
         res(res>dsize) = dsize;
         Data.data(:,unit==units) = conv(accumarray(res,1,[dsize,1])./twin,gwin,'same');
     end
+    Data.data = Data.data.*DataObj.sampleRate.*twin+eps;
+    Data.data(~nniz(DataObj),:) = 0;
     Data.origin = DataObj.origin;
     Data.sync = DataObj.sync;
 end

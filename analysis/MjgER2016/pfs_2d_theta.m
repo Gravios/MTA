@@ -13,12 +13,12 @@ function pf = pfs_2d_theta(Trial,varargin)
 
 
 % DEFARGS ---------------------------------------------------------------------------------------
-defargs = struct('units',        Trial.spk.map(:,1)',                                         ...
-                 'reportFig',    0,                                                           ...
-                 'overwrite',    0,                                                           ...
-                 'numIter',      []                                                           ...
+defargs = struct('units',          Trial.spk.map(:,1)',                                       ...
+                 'reportFig',      0,                                                         ...
+                 'overwrite',      0,                                                         ...
+                 'pfsArgsOverride',[]                                                         ...
 );
-[units,reportFig,overwrite,numIter] = DefaultArgs(varargin,defargs,'--struct');
+[units,reportFig,overwrite,pfsArgsOverride] = DefaultArgs(varargin,defargs,'--struct');
 % END DEFARGS -----------------------------------------------------------------------------------
 
 
@@ -54,9 +54,10 @@ pargs = get_default_args('MjgER2016','MTAApfs','struct');
 pargs.units = units;
 pargs.states = state;
 pargs.overwrite = overwrite;
-if ~isempty(numIter),
-    pargs.numIter = numIter;
-    pargs.halfsample = 0;
+if ~isempty(pfsArgsOverride) && isstruct(pfsArgsOverride),
+    for f = fieldnames(pfsArgsOverride)'
+        pargs.(f{1}) = pfsArgsOverride.(f{1});
+    end
 end
 pfsArgs = struct2varargin(pargs);
 disp(['MTA:analysis:placefields:pfs_2d_theta:processing:' Trial.filebase]);

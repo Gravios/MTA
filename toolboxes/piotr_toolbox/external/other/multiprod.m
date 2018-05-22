@@ -170,7 +170,7 @@ function c = multiprod(a, b, idA, idB)
 % OUTPUT    tested by:     Paolo de Leva                        2009 Feb 24
 % -------------------------------------------------------------------------
 
-error( nargchk(2, 4, nargin) ); % Allow 2 to 4 input arguments
+narginchk(2, 4); % Allow 2 to 4 input arguments
 switch nargin % Setting IDA and/or IDB
     case 2, idA = [1 2]; idB = [1 2];
     case 3, idB = idA;

@@ -1,4 +1,10 @@
 
+% vars:
+%    Trials
+%    units
+%    figDir
+%    
+
 
 analDir = ['parts-v',version];
 create_directory(fullfile(figDir,analDir));

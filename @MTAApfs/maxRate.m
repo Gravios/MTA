@@ -7,6 +7,8 @@ function [mxr,mxp] = maxRate(Pfs,varargin)
 %    isCircular              true
 %    mode                    'mean'
 %
+% interpolaiton only makes sense with extra filtering
+%
 
 
 % DEFARGS ------------------------------------------------------------------------------------------
@@ -20,25 +22,32 @@ defargs = struct('units',                  [],                                  
                                                   'methodNanMap',     'linear',                  ...
                                                   'methodRateMap',    'linear')                  ...
 );
-[units,mazeMaskFlag,mode,sigThresh,interPar] = DefaultArgs(varargin,defargs,'--struct');
+[units,mazeMaskFlag,mode,sigThresh,interpPar] = DefaultArgs(varargin,defargs,'--struct');
 %---------------------------------------------------------------------------------------------------
 
 
 % MAIN ---------------------------------------------------------------------------------------------
+
+if isempty(interpPar),
+    bins = pft.adata.bins;
+else
+    bins = interpPar.bins;
+end
+
 if isempty(units),
     units = sort(Pfs.data.clu');
 end
 if mazeMaskFlag,
-    width = Pfs.adata.binSizes(1);
-    height = Pfs.adata.binSizes(2);
-    radius = round(Pfs.adata.binSizes(1)/2)-find(Pfs.adata.bins{1}<-420,1,'last');
+    width = numel(bins{1});
+    height = numel(bins{2});
+    radius = round(numel(bins{1})/2)-find(bins{1}<-420,1,'last');
     centerW = width/2;
     centerH = height/2;
     [W,H] = meshgrid(1:width,1:height);           
     mask = double(sqrt((W-centerW-.5).^2 + (H-centerH-.5).^2) < radius);
     mask(mask==0)=nan;
     if numel(Pfs.parameters.type)>2,
-        mask = repmat(mask,[1,1,Pfs.adata.binSizes(3)]);
+        mask = repmat(mask,[1,1,numel(bins{3})]);
     end
     mask = reshape(mask,[],1);
 else
@@ -57,7 +66,13 @@ for u = units(:)',
             sigMask = sum(~isnan(Pfs.data.rateMap(:,Pfs.data.clu==u,:)),3)>Pfs.parameters.numIter*sigThresh;
         end 
         
-        rateMap = mean(Pfs.data.rateMap(:,Pfs.data.clu==u,:),3,'omitnan');
+
+        %rateMap = mean(Pfs.data.rateMap(:,Pfs.data.clu==u,:),3,'omitnan');
+        rateMap = Pfs.plot(u,'mean',false,[],false,0.99,false,interpPar);
+
+        rateMap = RectFilter(rateMap');
+        rateMap = RectFilter(rateMap');        
+        rateMap = rateMap(:);
         
         rateMap(~sigMask(:)) = nan;
             
@@ -94,14 +109,14 @@ for u = units(:)',
     end
 end
 
-mxp = Ind2Sub(Pfs.adata.binSizes',mxp);
+mxp = Ind2Sub(cellfun(@numel,bins),mxp);
 if numel(Pfs.parameters.type)>2,
-    mxp = [Pfs.adata.bins{1}(mxp(:,1)), ...
-           Pfs.adata.bins{2}(mxp(:,2)), ...
-           Pfs.adata.bins{3}(mxp(:,3))];                                
+    mxp = [bins{1}(mxp(:,1)), ...
+           bins{2}(mxp(:,2)), ...
+           bins{3}(mxp(:,3))];                                
 else
-    mxp = [Pfs.adata.bins{1}(mxp(:,1)), ...
-           Pfs.adata.bins{2}(mxp(:,2))];
+    mxp = [bins{1}(mxp(:,1)), ...
+           bins{2}(mxp(:,2))];
 end
 
 % END MAIN -----------------------------------------------------------------------------------------

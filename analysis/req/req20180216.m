@@ -22,7 +22,7 @@ else,
 end        
         
 Trials  = af(@(t)  MTATrial.validate(t),   sessionList);
-          cf(@(t)  t.load('nq'),           Trials);
+
 
 statesTheta = {'loc&theta','lloc&theta','hloc&theta','rear&theta',     ...
                'pause&theta','lpause&theta','hpause&theta',            ...
@@ -30,14 +30,16 @@ statesTheta = {'loc&theta','lloc&theta','hloc&theta','rear&theta',     ...
 states      = {'loc','lloc','hloc','rear','pause','lpause','hpause',...
                'theta-groom-sit'};
 numStates = numel(states);
+% LOAD theta placefields
+pft = cf(@(T,u)  pfs_2d_theta(T,u,'overwrite',false),  Trials,units);
+% LOAD BHV fields and stats
+[pfd,tags,eigVec,eigVar,eigScore,validDims,unitSubsets,unitIntersection,zrmMean,zrmStd] = req20180123_ver5(Trials,[],[],false,true);
 
-cf(@(t) t.load('nq'), Trials);
 
-t = 18;
+t = 20;
 
 Trial = Trials{t};
 
-%ncp = fet_ncp(Trial,[],[],66);
 
 xyz = preproc_xyz(Trial,'trb');                            % LOAD     Marker positions
 xyz.filter('RectFilter');                                  % FILTER   marker positions
@@ -54,7 +56,6 @@ ddz = compute_ddz(Trial,units,pft);                        % COMPUTE  Directiona
 lfp = Trial.load('lfp',sessionList(t).thetaRef);           % LOAD     Local Field Potential(LFP) of CA1pyr for each electrode shank
 lfp.resample(xyz);                                         % RESAMPLE LFP to match xyz
 phz = lfp.phase([6,12]);                                   % COMPUTE  LFP theta phase 
-%phz = ncp.phase([6,12]);
 
 pch = fet_HB_pitchB(Trial);
 
@@ -67,14 +68,112 @@ vxy.data = log10(vxy.data);                                % TRANSFORM speed to 
 spkll = create( Trial.spk.copy(), Trial, xyz.sampleRate,...  % LOAD     Spike identities and times
              'lloc&theta', [], 'deburst');         %                [ theta state; remove bursty spike ( isi < 10ms )]
 
-u = 1;
 
-% NCP Stuff
-% $$$ figure,
-% $$$ rose(phz(spkll(units(u))));
-% $$$ [p,th0,r,logZ,k,n] = RayleighTest(phz(spkll.res),spkll.clu);
-% $$$ figure,plot(th0,logZ,'.')
 
+binSize = 1;
+halfBins = 60;
+normalization = 'hz';
+u = [79,129];
+u = [79,119];
+u = [151,119];
+u = [79,85];
+u = [79,151];
+u = [119,85];
+u = [129,111];
+
+ 
+u = [151,85];
+u = [151,79];
+u = [151,119];
+
+u = [119,79];
+u = [102,85];
+u = [102,73];
+u = [73,85];
+
+u = [103,85];
+u = [31,139];
+u = [103,119];
+
+u = [80,35];
+u = [116,35];
+u = [116,80];
+u = [80,134];
+u = [116,134];
+u = [35,134];
+
+u = [63,104];
+
+u = [35,68];  %HL,H
+u = [68,80];  % H,L
+u = [68,81];  % H,L
+u = [80,81];  % L,L
+u = [68,116]; %
+u = [80,116];
+u = [81,116];
+u = [110,116]; %HL
+
+% OTL
+u = [83,104];
+
+% CTL
+u = [21,138]; % L,L
+u = [21,31]; % L,HL
+
+% OR
+u = [72,79]; % LH,H
+u = [79,111]; % H,HL
+u = [79,119]; % H,HLR
+u = [111,119]; % H,HLR
+u = [25,79];  % HL,H
+u = [25,111];  % HL,H
+u = [25,72];  % HL,H
+
+% OBR
+u = [28,109];% LP, LL
+u = [28,20];% LP, LLH
+u = [20,109];% LLH, LL
+u = [20,141];% LLH, LH
+u = [109,141];% LL, LH
+u = [20,140];% LLH, LLHP
+u = [109,105]; %LLH, LL
+u = [20,105]; %LLH, LL
+u = [141,98]; %LLH, H
+u = [105,98]; %LLH, H
+u = [59,144]; %LL, HL
+u = [59,141]; %LL, LH
+u = [20,113]; %LL, LH
+u = [59,105]; %LL, LL
+
+uRes = spk(u(1));
+uRes(ddz(uRes,u(1)==units)>300) = [];
+iRes = spk(u(2));
+iRes(ddz(iRes,u(1)==units)>300) = [];
+% $$$ 
+% $$$ uRes = spk(u(1));
+% $$$ iRes = spk(u(2));
+% $$$ 
+[tccg,tbin] = CCG([uRes;iRes],...
+                  [ones(size(uRes));2*ones(size(iRes))],...
+                  binSize,halfBins,spk.sampleRate,[1,2],normalization);
+figure,
+drawnow();
+set(gcf,'Position',[0,500,1000,400]);
+subplot(231);plot(pft,u(1),'mean',true,[],false,0.99);title(num2str(u(1)))
+subplot(232);plot(pft,u(2),'mean',true,[],false,0.99);title(num2str(u(2)))
+subplot(234);bar(tbin,tccg(:,1,1));xlim(tbin([1,end]));ylim([0,18]);
+subplot(235);bar(tbin,tccg(:,2,2));xlim(tbin([1,end]));ylim([0,18]);
+subplot(236);bar(tbin,tccg(:,1,2));xlim(tbin([1,end]));ylim([0,18]);
+
+
+figure,plot(drz(uRes,units==79),drz(uRes,units==119),'.');
+figure,plot(drz(uRes,units==79),drz(uRes,units==85),'.');
+figure,
+subplot(121);plot(drz(uRes,units==79),drz(uRes,units==119),'.');
+subplot(122);plot(drz(iRes,units==79),drz(iRes,units==119),'.');
+
+
+% SET state
 stsper = Trial.stc{'r'};
 ststrans = xyz.copy('clear');
 ststrans.data = nan([size(xyz,1),1]);
@@ -82,12 +181,13 @@ for period = stsper.data(2:end-1,2)',
     ststrans.data(period-60:period+60) = linspace(-1,1,121);
 end
 
-%fet = ststrans;
+fet = ststrans;
 %fet = pch;
-fet = vxy;
+%fet = vxy;
 binx = linspace([-1,1,10]);                                % SET  bins for x axis drz 
+biny = linspace([-1,1,10]);                                % SET  bins for y axis trans
 %biny = linspace([-2,pi/2,20]);                             % SET  bins for y axis speed
-biny = linspace([-2,2,20]);                                % SET  bins for y axis speed
+%biny = linspace([-2,2,20]);                                % SET  bins for y axis speed
 %biny = linspace([-0.5,0.5,10]);                            % SET  bins for y axis speed
 mphzDVSize = [numel(binx),numel(biny)];                    % NOTE final map size
 numIter = 1000;                                            % SET  count for bootstrap
@@ -96,12 +196,13 @@ for unit = units
     res = spk(unit);
     res(abs(ddz(res,unit==units))>250) = [];    
     subs = [discretize(drz(res,unit==units),binx),...
-            discretize(fet(res,2),biny)];
-    %mphz = phz(res,:);    
+            discretize(fet(res,1),biny)];
+
     mphz = phz(res,spk.map(unit==spk.map(:,1),2));
     mphz(any(isnan(subs),2)) = [];
     subs(any(isnan(subs),2),:) = [];
     if length(subs)>3,
+        
     mphzDV = accumarray(subs,mphz,mphzDVSize,@circ_mean,nan);    
     mphzDVOcc = accumarray(subs,ones([length(subs),1]),mphzDVSize,@sum);
     mphzDVBoot = nan([mphzDVSize,numIter]);
@@ -110,7 +211,7 @@ for unit = units
 % $$$         mphzDVBoot(:,:,boot) = accumarray(subs(ind,:),mphz(ind),mphzDVSize,@circ_mean,nan);
 % $$$     end
     clf();
-    subplot(1,4,[1,2]);plot(pft,unit,'mean',true,[],false,0.99);
+`    subplot(1,4,[1,2]);plot(pft,unit,'mean',true,[],false,0.99);
     subplot(143);imagescnan({binx,biny,mphzDVOcc'});axis('xy');
     subplot(144);imagescnan({binx,biny,mphzDV'},[-pi,pi],'circular',true,[0,0,0],1,1,@hsv);axis('xy');
 % $$$     subplot(144);imagesc(binx,biny,circ_mean(mphzDVBoot,[],3)');axis('xy');colormap('hsv');colorbar();

@@ -25,19 +25,19 @@ defargs = struct('units',                  [],                                  
                                                            linspace(-500,500,200)'}},            ...
                                                   'nanMaskThreshold', 0,                         ...
                                                   'methodNanMap',     'linear',                  ...
-                                                  'methodRateMap',    'linear')                  ...
+                                                  'methodRateMap',    'linear'),                 ...
+                 'feature',                ''                                                    ...
 );
-[units,pft,pfstats,filtCutOffFreq,marker,interpPar] = DefaultArgs(varargin,defargs,'--struct');
+[units,pft,pfstats,filtCutOffFreq,marker,interpPar,feature]=DefaultArgs(varargin,defargs,'--struct');
 %---------------------------------------------------------------------------------------------------
-
-%global MTA_DIAGNOSTICS_PATH
 
 %if isempty(pfstats),    pfstats = compute_pfstats_bs(Trial);    end
 
-%[mrt,mrp] = pft.maxRate(units,'mode','first');
-%[mrt,mrp] = pft.maxRate(units);
-xyz = preproc_xyz(Trial,'trb');
-xyz.filter('ButFilter',3,filtCutOffFreq,'low');
+if isempty(feature),
+    feature = preproc_xyz(Trial,'trb');
+    feature.filter('ButFilter',3,filtCutOffFreq,'low');
+    feature.data = sq(feature(:,marker,[1,2]));
+end
 
 
 if isempty(interpPar),
@@ -46,14 +46,13 @@ else
     bins = interpPar.bins;
 end
 
-
 % Get the mean firing rate for each xy position along trajectory 
-wpmr = zeros(xyz.size(1),numel(units));
-[~,indx] = min(abs( repmat(bins{1}',xyz.size(1),1)...
-                    -repmat(xyz(:,marker,1),1,numel(bins{1}))),...
+wpmr = zeros(feature.size(1),numel(units));
+[~,indx] = min(abs( repmat(bins{1}(:)',feature.size(1),1)...
+                    -repmat(feature(:,1),1,numel(bins{1}))),...
                [],2);
-[~,indy] = min(abs( repmat(bins{2}',xyz.size(1),1)...
-                    -repmat(xyz(:,marker,2),1,numel(bins{2}))),...
+[~,indy] = min(abs( repmat(bins{2}(:)',feature.size(1),1)...
+                    -repmat(feature(:,2),1,numel(bins{2}))),...
                [],2);
 
 rateMapIndex = sub2ind(cellfun(@numel,bins),indx,indy);
@@ -75,18 +74,18 @@ peakPatchRate = [];
 peakPatchRate = maxRate;
 for unit = units
     %peakPatchRate(1,end+1) = mean(pfstats.peakPatchRate(8,:,pfstats.cluMap==unit),'omitnan');
-    %pfhxy = xyz(:,{'spine_middle','head_back'},:);
-    pfhxy = cat(2,xyz(:,marker,:),circshift(xyz(:,marker,:),round(xyz.sampleRate/5)));
-    pfhxy = cat(2,pfhxy,permute(repmat([drzCenter(unit==units,:),0],[size(xyz,1),1]),[1,3,2]));
+    %pfhxy = feature(:,{'spine_middle','head_back'},:);
+    pfhxy = cat(2,permute(feature.data,[1,3,2]),circshift(permute(feature.data,[1,3,2]),round(feature.sampleRate/5)));
+    pfhxy = cat(2,pfhxy,permute(repmat(drzCenter(unit==units,:),[size(feature,1),1]),[1,3,2]));
     %pfhxy = cat(2,pfhxy,permute(repmat([fliplr(sq(mean(pfstats.peakPatchCOM(8,:,pfstats.cluMap==unit,:),'omitnan'))'),0],[size(xyz,1),1]),[1,3,2]));
-    pfhxy = MTADxyz([],[],pfhxy,xyz.sampleRate);
+    pfhxy = MTADxyz([],[],pfhxy,feature.sampleRate);
     
-    cor = cell(1,3);
-    [cor{:}] = cart2pol(pfhxy(:,2,1)-pfhxy(:,1,1),pfhxy(:,2,2)-pfhxy(:,1,2),pfhxy(:,2,3)-pfhxy(:,1,3));
+    cor = cell(1,2);
+    [cor{:}] = cart2pol(pfhxy(:,2,1)-pfhxy(:,1,1),pfhxy(:,2,2)-pfhxy(:,1,2));
     cor = cell2mat(cor);
     
-    por = cell(1,3);
-    [por{:}] = cart2pol(pfhxy(:,3,1)-pfhxy(:,1,1),pfhxy(:,3,2)-pfhxy(:,1,2),pfhxy(:,3,3)-pfhxy(:,1,3));
+    por = cell(1,2);
+    [por{:}] = cart2pol(pfhxy(:,3,1)-pfhxy(:,1,1),pfhxy(:,3,2)-pfhxy(:,1,2));
     por = cell2mat(por);
     
     pfds(:,unit==units) = circ_dist(cor(:,1),por(:,1));
@@ -107,8 +106,8 @@ drzScore = pfd.*(1-bsxfun(@rdivide,wpmr,peakPatchRate));
 % $$$     ind = [Trial.stc{'theta'}];
 % $$$     for u = units,
 % $$$         plot(Pfs,92);
-% $$$         scatter(xyz(ind,'nose',1),xyz(ind,'nose',2),10,wpmr(ind,30));
-% $$$         scatter(xyz(ind,'nose',1),xyz(ind,'nose',2),10,drz(ind,u=units));
+% $$$         scatter(feature(ind,'nose',1),feature(ind,'nose',2),10,wpmr(ind,30));
+% $$$         scatter(feature(ind,'nose',1),feature(ind,'nose',2),10,drz(ind,u=units));
 % $$$     end
 % $$$ end
 

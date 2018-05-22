@@ -1,4 +1,4 @@
-function [pfd,tags,eigVec,eigVar,eigScore,validDims,unitSubsets,unitIntersection] = req20180123_ver5(varargin)
+function [pfd,tags,eigVec,eigVar,eigScore,validDims,unitSubsets,unitIntersection,zrmMean,zrmStd] = req20180123_ver5(varargin)
 
 %varargin = {};
 % DEFARGS ------------------------------------------------------------------------------------------
@@ -7,11 +7,12 @@ defargs = struct('Trials',                        {{}},                         
                  'version',                       '7',                                           ...
                  'overwritePfdFlag',              false,                                         ...
                  'overwriteErpPCAFlag',           false,                                         ...
+                 'overwriteBhvContoursFlag',      false,                                         ...
                  'display',                       false,                                         ...
                  'figDir',  '/storage/gravio/figures/analysis/placefields_nonSpatialFeatures'    ...
 );
-[Trials,sessionListName,version,overwritePfdFlag,overwriteErpPCAFlag,display,figDir] =           ...
-    DefaultArgs(varargin,defargs,'--struct');
+[Trials,sessionListName,version,overwritePfdFlag,overwriteErpPCAFlag,overwriteBhvContoursFlag,   ...
+        display,figDir] = DefaultArgs(varargin,defargs,'--struct');
 %---------------------------------------------------------------------------------------------------
 
 create_directory(figDir); 
@@ -30,8 +31,6 @@ elseif isempty(Trials)||numel(Trials)==numel(sessionList),% don't mess up here
 end
 
 
-
-
 numTrials = numel(Trials);
 numComp = 5;
 numUnits = sum(cellfun(@numel,units));
@@ -47,7 +46,7 @@ fetSets{end+1}     = 'fet_HB_pitchB';
 fetInds{end+1}     = [1,2];
 pfdParam{end+1}    = {[-2,2;-2,2],[0.1,0.1],[1.5,1.5]};
 states{end+1}      = 'theta-groom-sit';
-ranges{end+1}      = [1100,1450];
+ranges{end+1}      = [1100,1550];%1450];
 
 %2. HPITCHxBSPEED
 tags{end+1}        = 'HBPITCHxBSPEED';
@@ -56,6 +55,15 @@ fetInds{end+1}     = [1,3];
 pfdParam{end+1}    = {[-2,2;-2,2],[0.1,0.1],[1.5,1.5]};
 states{end+1}      = 'theta-groom-sit-rear';
 ranges{end+1}      = [950,1450];
+
+%2. 'BSPEEDxHSPEED'
+% $$$ tags{end+1}        = 'BSPEEDxHSPEED';
+% $$$ fetSets{end+1}     = 'fet_HB_HPS';
+% $$$ fetInds{end+1}     = [3,4];
+% $$$ pfdParam{end+1}    = {[-2,2;-2,2],[0.1,0.1],[1.5,1.5]};
+% $$$ states{end+1}      = 'theta-groom-sit-rear';
+% $$$ ranges{end+1}      = [950,1550];
+
 % $$$ 
 % $$$ %3. BPITCHxBSPEED
 % $$$ tags{end+1}        = 'BPITCHxBSPEED';
@@ -107,7 +115,7 @@ for pfindex = 1:numel(tags),
                 Trial,                                               ... Trial
                 fet,                                                 ... xyzp
                 [tags{pfindex},'_v',version],                        ... analysis tag
-                units{tind},                                         ... units                                
+                units{tind},                                         ... units
                 drz,                                                 ... directed rate zones
                 tper,                                                ... theta periods
                 pfdParam{pfindex}{:}                                 ... 
@@ -122,15 +130,18 @@ for pfindex = 1:numel(tags),
 end%for pfindex
 
 
-% COMPUTE erpPCA 
+%% bhv space erpPCA %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 if (nargout>2||display) && numel(sessionList)==numel(Trials),
+% COMPUTE erpPCA on units firing rates conditioned on behavioral space
     for pfindex = 1:numel(tags),
-        [eigVec{pfindex},eigScore{pfindex},eigVar{pfindex},unitSubsets{pfindex},validDims{pfindex}] = ...
+        [eigVec{pfindex},eigScore{pfindex},eigVar{pfindex},...
+         unitSubsets{pfindex},validDims{pfindex},zrmMean{pfindex},zrmStd{pfindex}] = ...
             req20180123_pfd_erpPCA(pfd,units,ranges{pfindex},pfindex,numComp,overwriteErpPCAFlag);
-        if display||overwriteErpPCAFlag, eval(['req20180123_vis_',tags{pfindex},'_erpPCA']); end          
+% PLOT eigenvectors with behavioral state contours
+        if display||overwriteErpPCAFlag, eval(['req20180123_vis_',tags{pfindex},'_erpPCA']); end
     end
     
-    % GET intersections of units common to each erpPCA analysis
+% GET intersections of units common to each erpPCA analysis
     unitIntersection = unitSubsets{1};
     for pfindex = 2:numel(tags),
         unitIntersection = intersect(unitIntersection,unitSubsets{pfindex});

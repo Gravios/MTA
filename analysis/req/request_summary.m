@@ -782,7 +782,7 @@
 %% 2018 02 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 
 % req20180206 ----------------------------------------------------
-%  Status: active
+%  Status: retired
 %  Type: Analysis
 %  Final_Forms: NA
 %  Description: check feature coregistration quality of xyz preprocessing
@@ -790,7 +790,7 @@
 %  Bugs: NA
 
 % req20180214 ----------------------------------------------------
-%  Status: active
+%  Status: retired
 %  Type: Analysis
 %  Final_Forms: PlotPF.m:var:OccThresh
 %  Keywords: Placefields, PlotPF, Threshold
@@ -870,6 +870,20 @@
 %  Type: Utility
 %  Final_Forms: NA
 %  Description: inter-session unit corregistration
+%  Bugs: NA
+
+
+
+
+
+%% 2018 04 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+
+% req20180427 ----------------------------------------------------
+%  Status: active
+%  Type: Analysis
+%  Final_Forms: NA
+%  Description: behavior restricted place fields without rear adjacent time 
+%               periods
 %  Bugs: NA
 
 

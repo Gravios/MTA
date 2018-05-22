@@ -143,7 +143,7 @@ if ~exist(fileName,'file') || overwrite,
         oPrct = 0;
         oThresh = 0.1;
         wCounter = 0;
-        while oPrct<0.95,
+        while oPrct<0.925,
             oPrct = sum(o(o(:)>oThresh));
             oThresh = oThresh/1.5;
             if wCounter > 100, break, end
