@@ -1,25 +1,29 @@
 
 
-% LOAD Data
-MjgER2016_load_data
-%  Variables:
-%      Trials
-%      units
-%      cluSessionMap
-%      pitchReferenceTrial
-%      FigDir
-%      sessionListName
-%      sessionList
-%      states
-%      numStatesg
-%      interpParPfsp
-%      interpParDfs
-%
-%  Functions:
-%      reshape_eigen_vector
+% F3A1 unit ccg
+% F3A2 
+
+pfindex = 1;
+
+% LOAD variables:
+%  Trials
+%  units
+%  cluSessionMap
+%  pitchReferenceTrial
+%  FigDir
+%  sessionListName
+%  sessionList
+%  states
+%  numStates
+%  interpParPfsp
+%  interpParDfs
+% LOAD helper functions:
+%  reshape_eigen_vector()
+MjgER2016_load_data();
 
 
-% Pairwise unit ccg 
+
+% F3A1 Pairwise unit ccg 
 % 1. find placefields' centers
 % 2. compute distance matrix of placefield centers
 % 3. find midpoint between placefields which have centers less than 20 cm apart
@@ -29,6 +33,7 @@ MjgER2016_load_data
 % 7. convert transformed trajectories to polar coordinates
 % 8. compute ccg asymmetry for angle-distance pairs or just time-distance 
 %    separeted by travel direction
+
 
 
 % LOAD theta state placefields
@@ -249,211 +254,49 @@ end
 
 
 
+
+%% SEE MjgER2016F3V1_ccgXstate.m
 % EXA State segmented ccgs
-
-binSize = 1;
-halfBins = 12;
-normalization = 'hz';
-
-
-mccg = zeros([2*halfBins+1,0,1,1]);
-sccg = zeros([2*halfBins+1,0,1,1]);
-occg = zeros([2*halfBins+1,0,1,1]);
-unitPairs = [];
-
-for tind = 1:numel(Trials),
-nunits = numel(units{tind});
-
-for i=1:nunits-1,
-    for j = i+1:nunits,
-        d = pdist2(mpos(i,:),mpos(j,:),'euclidean');
-        if d<=200,
-            unitPairs = cat(1,unitPairs,[tind,units{tind}([i,j])]);
-            midpoint = sum(mpos([i,j],:))./2;
-            
-% $$$             clf();
-% $$$ % PLOT Place fields
-% $$$             subplot(431); hold('on');
-% $$$             plot(pft{tind},units{tind}(i),1,true,[],true);
-% $$$             plot(mpos(i,1),mpos(i,2),'*m');
-% $$$             plot(midpoint(1),midpoint(2),'*g');
-% $$$             subplot(433); hold('on');
-% $$$             plot(pft{tind},units{tind}(j),1,true,[],true);
-% $$$             plot(mpos(j,1),mpos(j,2),'*m'); 
-% $$$             plot(midpoint(1),midpoint(2),'*g');
-
-% PLOT Behavior fields
-% $$$             subplot(434); plot(pfd{1},units{tind}(i),1,true,[],false);            
-% $$$             subplot(436); plot(pfd{1},units{tind}(j),1,true,[],false);
-% CONSTRUCT basis based on the midpoint and second placefield center
-            pfsPairBasis = mpos(j,:)-midpoint;
-            pfsPairBasis = pfsPairBasis./sqrt(sum(pfsPairBasis.^2));
-            pfsPairBasis = [pfsPairBasis',pfsPairBasis([2,1])'];
-% ROTATE traj coordinates
-            pfhxy = multiprod(feature.data,pfsPairBasis,[2],[1,2]);
-            pfhxy = cat(2,permute(pfhxy,[1,3,2]),circshift(permute(pfhxy,[1,3,2]),round(feature.sampleRate/5)));
-% COMPUTE derivative of trajectory in pfs reference frame
-            dpfhxy = sq(diff(pfhxy,1,2));
-            pcor = cell([1,2]);
-            [pcor{:}] = cart2pol(dpfhxy(:,1),dpfhxy(:,2));
-            th = pcor{1}+pi+eds(2)/2;
-
-            pfhxyH = multiprod(xyz(:,{'hcom','head_front'},:),pfsPairBasis,[2],[1,2]);
-% COMPUTE derivative of trajectory in pfs reference frame
-            pcorH = cell([1,2]);
-            [pcorH{:}] = cart2pol(pfhxyH(:,1),pfhxyH(:,2));
-            thH = pcorH{1}+pi+eds(2)/2;
-
-            ii = units{tind}(i)==units{tind};
-            jj = units{tind}(j)==units{tind};
-
-            mccg(:,end+1,b,s) = zeros([2*halfBins+1,1,1,1]);
-            sccg(:,end+1,b,s) = zeros([2*halfBins+1,1,1,1]);
-            occg(:,end+1,b,s) = zeros([2*halfBins+1,1,1,1]);
-
-            for s = 1:numel(states),
-                iRes = spk(units{tind}(i));
-                jRes = spk(units{tind}(j));
-                iRes = SelectPeriods(iRes,Trials{tind}.stc{states{s},xyz.sampleRate},'d',1,0);
-                jRes = SelectPeriods(jRes,Trials{tind}.stc{states{s},xyz.sampleRate},'d',1,0);
-                for b = 1:numel(eds)-1,
-                    grind = eds(b) <= th(iRes,1) & th(iRes,1) <= eds(b+1);
-                    grjnd = eds(b) <= th(jRes,1) & th(jRes,1) <= eds(b+1);
-                    if sum(grind)&sum(grjnd),
-                        [tccg,tbin] = CCG([iRes(grind);jRes(grjnd)],...
-                                          [ones([sum(grind),1]);2*ones([sum(grjnd),1])],...
-                                          binSize,halfBins,spk.sampleRate,[1,2],normalization);
-                    else
-                        tccg = zeros([halfBins*2+1,2,2]);
-                    end
-                    mccg(:,end,b,s) = filt_fun(tccg(:,1,2));
-                    sccg(:,end,b,s) = filt_fun(tccg(:,1,1));
-                    occg(:,end,b,s) = filt_fun(tccg(:,2,2));
-                end
-            end
-
-% $$$             subplot2(8,3,[5:8],1);
-% $$$             imagesc(tbin,eds-pi-eds(2)/2,sccg');axis('tight');axis('xy');
-% $$$             subplot2(8,3,[5:8],2);
-% $$$             imagesc(tbin,eds-pi-eds(2)/2,bsxfun(@rdivide,mccg,max(mccg))');axis('tight');axis('xy')
-% $$$ 
-% $$$             Lines(0,[],'m');                
-% $$$             subplot2(8,3,[5:8],3);
-% $$$             imagesc(tbin,eds-pi-eds(2)/2,occg');axis('tight');axis('xy');
-% $$$             
-% $$$             colormap('jet');
-% $$$             drawnow();
-% $$$             waitforbuttonpress();
-        end
-    end
-end
-end
-
-
-
-figure,
-for u = 1:size(unitPairs,1),
-    for s = 1:numel(states),
-        subplot(numel(states),1,s);
-        imagesc(tbin,eds-pi-eds(2)/2,sq(mccg(:,u,:,s))');axis('tight');axis('xy')
-        title([states{s},': ',num2str(unitPairs(u,1)),' vs ',num2str(unitPairs(u,2))]);
-    end
-    waitforbuttonpress();
-end
-
 
 
 
 % LONG time scale
 
+% GET Behavior scores ------------------------------------------------------------------------------
+MjgER2016_load_bhv_erpPCA_scores();
+% END GET Behavior scores ------------------------------------------------------------------------------
 
-% GET Behavior scores
 
-pfindex = 1;
-
-pfdShuffled =  cf(@(t,g) MTAApfs(t,'tag',g), Trials, repmat({'HBPITCHxBPITCH_shuffled'},size(Trials)));
-
+%
 % GET bhv rate maps
-rmaps = cf(@(p,u) mean(p.data.rateMap(:,ismember(p.data.clu,u),:),3,'omitnan'), pfd(:,pfindex),units');
-clu =  cf(@(p,u) p.data.clu(:,ismember(p.data.clu,u),:), pfd(:,pfindex),units');    
-tlu =  cf(@(i,u) repmat(i,size(u)), mat2cell(1:numel(units),1,ones([1,numel(units)])),units);
-rmaps = cat(2, rmaps{:});   
-clu = cat(2, clu{:});    
-tlu = cat(2, tlu{:});    
-clu = [tlu',clu'];
-[~,rind] = sortrows(clu);
-rmaps = rmaps(:,rind);
-rmaps = rmaps(validDims{pfindex},unitSubsets{pfindex});
-rmaps(isnan(rmaps)) = 0;
+pmaps = cf(@(p,u)  mean(p.data.rateMap(:,ismember(p.data.clu,u),:),3,'omitnan'),pft,units);
+clu   = cf(@(p,u)  p.data.clu(:,ismember(p.data.clu,u),:), pft,units);
+tlu   = cf(@(i,u)  repmat(i,size(u)), mat2cell(1:numel(units),1,ones([1,numel(units)])),units);
 
-rmapsShuffledMean = cf(@(p,u) mean(p.data.rateMap(:,ismember(p.data.clu,u),:),3,'omitnan'), pfdShuffled',units');
-clu =  cf(@(p,u) p.data.clu(:,ismember(p.data.clu,u),:), pfdShuffled',units');    
-tlu =  cf(@(i,u) repmat(i,size(u)), mat2cell(1:numel(units),1,ones([1,numel(units)])),units);
-rmapsShuffledMean = cat(2, rmapsShuffledMean{:});   
-clu = cat(2, clu{:});    
-tlu = cat(2, tlu{:});    
-clu = [tlu',clu'];
-[~,rind] = sortrows(clu);
-rmapsShuffledMean = rmapsShuffledMean(:,rind);
-rmapsShuffledMean = rmapsShuffledMean(validDims{pfindex},unitSubsets{pfindex});
-rmapsShuffledMean(isnan(rmapsShuffledMean)) = 0;
-
-rmapsShuffled = cf(@(p,u) p.data.rateMap(:,ismember(p.data.clu,u),:), pfdShuffled',units');
-clu =  cf(@(p,u) p.data.clu(:,ismember(p.data.clu,u),:), pfdShuffled',units');    
-tlu =  cf(@(i,u) repmat(i,size(u)), mat2cell(1:numel(units),1,ones([1,numel(units)])),units);
-rmapsShuffled = cat(2, rmapsShuffled{:});   
-clu = cat(2, clu{:});    
-tlu = cat(2, tlu{:});    
-clu = [tlu',clu'];
-[~,rind] = sortrows(clu);
-rmapsShuffled = rmapsShuffled(:,rind,:);
-rmapsShuffled = rmapsShuffled(validDims{pfindex},unitSubsets{pfindex},:);
-rmapsShuffled(isnan(rmapsShuffled)) = 0;
-
-D = cov(rmapsShuffledMean');
-LR = eigVec{pfindex};
-% compute rotated FS coefficients        
-FSCFr = LR * inv(LR' * LR);          % this is pseudo-inverse of LR
-% rescale rotated FS coefficients by the corresponding SDs 
-rk = size(FSCFr,2);%rank(D,1e-4);       % why not on D? would save on corrcoef(X) computation
-FSCFr = FSCFr .* repmat(sqrt(diag(D)),1,rk);
-% compute rotated factor scores from the normalized raw data and  the
-% corresponding rescaled factor score coefficients
-rsMean = mean(rmapsShuffledMean');
-rsStd  = std( rmapsShuffledMean');
-
-% MEAN shuffled score
-FSrM =  ((rmapsShuffledMean'-rsMean)./rsStd) * FSCFr;
-
-% MEAN normal score
-FSrC =  ((rmaps'-rsMean)./rsStd) * FSCFr;
-
-FSrS = [];
-for i = 1:pfd{1}.parameters.numIter
-    FSrS(:,:,end+1) =  ((rmapsShuffled(:,:,i)'-rsMean)./rsStd) * FSCFr;
-end
-fsrsMean = mean(FSrS,3);
-fsrsStd = std(FSrS,[],3);
-
-fsrcz = (FSrC-fsrsMean)./fsrsStd;
+pmaps = cat(2, pmaps{:});
+clu   = cat(2, clu{:});
+tlu   = cat(2, tlu{:});
+clu   = [tlu',clu'];
+[~,pind] = sortrows(clu);
+pmaps = pmaps(:,pind);
+pmaps = pmaps(nniz(pmaps),unitSubsets{pfindex});
+%pmaps(isnan(pmaps)) = 0;
 
 
-sigUnits = any(abs(fsrcz(:,1:3))>=1.96,2);
-cc = FSrC(:,[2,1,3])+0.75;
-cc(~sigUnits,:) = repmat([0.75,0.75,0.75],[sum(~sigUnits),1]);
 
-
-% GET mds map of behavior space
-D = pdist(FSrC(:,1:3));
-mapa = mdscale(D,2);
-
-% $$$ figure();
-% $$$ scatter(-mapa(:,2),mapa(:,1),10,cc,'filled')
-mapa = [-mapa(:,2),mapa(:,1)];
-
-
+% $$$ sigUnits = any(abs(fsrcz(:,1:3))>=1.96,2);
+% $$$ cc = FSrC(:,[2,1,3])+0.75;
+% $$$ cc(~sigUnits,:) = repmat([0.75,0.75,0.75],[sum(~sigUnits),1]);
+% $$$ 
+% $$$ % GET mds map of behavior space
+% $$$ D = pdist(FSrC(:,1:3));
+% $$$ mapa = mdscale(D,2);
+% $$$ 
+% $$$ % $$$ scatter(-mapa(:,2),mapa(:,1),10,cc,'filled')
+% $$$ mapa = [-mapa(:,2),mapa(:,1)];
 
 cluSessionMapSubset = cluSessionMap(unitSubsets{1},:);
+pairUids   = [];
 pairClus   = [];
 pairSDist  = [];
 pairBDist  = [];
@@ -465,138 +308,123 @@ pairFSrC   = [];
 pairMDSs   = [];
 
 
-for tind = 1:23,
-    disp(['MjgER2016F4V1:tind:',num2str(tind)]);
-xyz = preproc_xyz(Trials{tind},'trb');
-xyz.filter('RectFilter');
-xyz.filter('ButFilter',5,2.5,'low');
-vxy = xyz.vel('spine_lower');
-feature = xyz.copy();
-feature.data = sq(feature(:,'nose',[1,2]));
-spk = Trials{tind}.spk.copy();
-spk = create(spk,Trials{tind},xyz.sampleRate,'theta-groom-sit',units{tind},'deburst'); 
 
-unitSubset = cluSessionMapSubset(cluSessionMapSubset(:,1)==tind,2);
-[mrate,mpos] = pft{tind}.maxRate(unitSubset,true,'mean',0.9);
-
+pairCnt = 1;
+unitCumCnt = 0;
 epochs = [];
-binSize = 5;
-halfBins = 100;
+binSize = 10;
+halfBins = 50;
 normalization = 'hz';
-
-% figure;
-eds = linspace(0,2*pi,3);
+eds = linspace(-pi,pi,3);
 filt_fun = @(x) RectFilter(x,11,3);
-mccg = [];sccg = [];occg = [];
+mccg = zeros([2*halfBins+1,10000,2]);
 
-nunits = numel(unitSubset);
-for i=1:nunits-1,
-    for j = i+1:nunits,
-        
-        d = pdist2(mpos(i,:),mpos(j,:),'euclidean');
-        if d<=400,
-            pairClus = cat(1,pairClus,[tind,unitSubset([i,j])']);
-            pairSDist = cat(1,pairSDist,d);
-            
-            pairEigs = cat(1,pairEigs,permute(eigScore{1}(ismember(cluSessionMapSubset, ...
-                                                              [[tind;tind],unitSubset([i,j])],'rows'),1:3),[3,1,2]));
-            pairFSrC = cat(1,pairFSrC,permute(FSrC(ismember(cluSessionMapSubset,[[tind;tind],unitSubset([i,j])],'rows'),1:3),[3,1,2]));
-            pairMDSs = cat(1,pairMDSs,permute(mapa(ismember(cluSessionMapSubset,[[tind;tind],unitSubset([i,j])],'rows'),:),[3,1,2]));
-            pairBDist = cat(1,pairBDist,...
-                            sqrt(sum(diff(sq(pairEigs(end,:,:))...
-                                          ).^2)));
-            midpoint = sum(mpos([i,j],:))./2;
-            
-% $$$             clf();
-% $$$             subplot(431);
-% $$$             plot(pft{tind},unitSubset(i),1,true,[],true);
-% $$$             hold('on');
-% $$$             plot(mpos(i,1),mpos(i,2),'*m');
-% $$$             plot(midpoint(1),midpoint(2),'*g');            
-% $$$             subplot(433);
-% $$$             plot(pft{tind},unitSubset(j),1,true,[],true);
-% $$$             hold('on');            
-% $$$             plot(mpos(j,1),mpos(j,2),'*m');
-% $$$             plot(midpoint(1),midpoint(2),'*g');
-% $$$ 
-% $$$             subplot(434);
-% $$$             plot(pfd{tind,1},unitSubset(i),1,true,[],false);            
-% $$$             subplot(436);
-% $$$             plot(pfd{tind,1},unitSubset(j),1,true,[],false);
+for tind = 1:numel(Trials),
+    disp(['MjgER2016F4V1:tind:',num2str(tind)]);
+    tic
+    xyz = preproc_xyz(Trials{tind},'trb');
+    xyz.filter('RectFilter');
+    xyz.filter('ButFilter',5,1,'low');
+    vxy = xyz.vel('spine_lower');
+    feature = xyz.copy();
+    feature.data = sq(feature(:,'nose',[1,2]));
+    spk = Trials{tind}.spk.copy();
+    spk = create(spk,Trials{tind},xyz.sampleRate,'theta-groom-sit',units{tind},'deburst'); 
 
-            pfsPairBasis = mpos(j,:)-midpoint;
-            pfsPairBasis = pfsPairBasis./sqrt(sum(pfsPairBasis.^2));
-            pfsPairBasis = [pfsPairBasis',pfsPairBasis([2,1])'];
+    unitSubset = cluSessionMapSubset(cluSessionMapSubset(:,1)==tind,2);
+    [mrate,mpos] = pft{tind}.maxRate(unitSubset,true,'mean',0.9);
+
+    nunits = numel(unitSubset);
+
+     for i=1:nunits-1,
+        for j = i+1:nunits,
+            
+            d = pdist2(mpos(i,:),mpos(j,:),'euclidean');
+            if d<=400,
+                pairUids  = cat(1,pairUids,[i,j]+unitCumCnt);
+                pairClus = cat(1,pairClus,[tind,unitSubset([i,j])']);
+                pairSDist = cat(1,pairSDist,d);
+                pairEigs = cat(1,pairEigs,permute(eigScore{1}(pairUids(end,:),1:3),[3,1,2]));
+                pairFSrC = cat(1,pairFSrC,permute(FSrC(pairUids(end,:),1:3),[3,1,2]));
+                pairMDSs = cat(1,pairMDSs,permute(mapa(pairUids(end,:),:),[3,1,2]));
+                pairBDist = cat(1,pairBDist,sqrt(sum(diff(sq(pairEigs(end,:,:))).^2)));
+                midpoint = sum(mpos([i,j],:))./2;
+
+% COMPUTE the bais which represents the midpoint pair of placefields with major axis in the direction of second field
+                pfsPairBasis = mpos(j,:)-midpoint;
+                pfsPairBasis = pfsPairBasis./sqrt(sum(pfsPairBasis.^2));
+                pfsPairBasis = [pfsPairBasis',pfsPairBasis([2,1])'];
+
 % ROTATE traj coordinates
-            pfhxy = multiprod(feature.data,pfsPairBasis,[2],[1,2]);
-            pfhxy = cat(2,permute(pfhxy,[1,3,2]),circshift(permute(pfhxy,[1,3,2]),round(feature.sampleRate/5)));
+                pfhxy = multiprod(feature.data,pfsPairBasis,[2],[1,2]);
+                pfhxy = cat(2,permute(pfhxy,[1,3,2]),circshift(permute(pfhxy,[1,3,2]),round(feature.sampleRate/5)));
+
 % COMPUTE derivative of trajectory in pfs reference frame
-            dpfhxy = sq(diff(pfhxy,1,2));
-            pcor = cell([1,2]);
-            [pcor{:}] = cart2pol(dpfhxy(:,1),dpfhxy(:,2));
-            th = pcor{1}+pi+eds(2)/2;
+                dpfhxy = sq(diff(pfhxy,1,2));
+                pcor = cell([1,2]);  [pcor{:}] = cart2pol(dpfhxy(:,1),dpfhxy(:,2));
+                th = pcor{1};
+                pfhxyH = multiprod(xyz(:,{'hcom','head_front'},:),pfsPairBasis,[2],[1,2]);
 
-            pfhxyH = multiprod(xyz(:,{'hcom','head_front'},:),pfsPairBasis,[2],[1,2]);
 % COMPUTE derivative of trajectory in pfs reference frame
-            pcorH = cell([1,2]);
-            [pcorH{:}] = cart2pol(pfhxyH(:,1),pfhxyH(:,2));
-            thH = pcorH{1}+pi+eds(2)/2;
-            
-            ii = unitSubset(i)==unitSubset;
-            jj = unitSubset(j)==unitSubset;
+                pcorH = cell([1,2]);
+                [pcorH{:}] = cart2pol(pfhxyH(:,1),pfhxyH(:,2));
+                thH = pcorH{1};
 
-            iRes = spk(unitSubset(i));
-            jRes = spk(unitSubset(j));
+% SELECT spikes of units
+                ii = unitSubset(i)==unitSubset;
+                jj = unitSubset(j)==unitSubset;
+                iRes = spk(unitSubset(i));
+                jRes = spk(unitSubset(j));
 
-            for b = 1:numel(eds)-1,
-                grind = eds(b) <= th(iRes,1) & th(iRes,1) <= eds(b+1);
-                grjnd = eds(b) <= th(jRes,1) & th(jRes,1) <= eds(b+1);
-                            
-                if sum(grind)&sum(grjnd),
-                    [tccg,tbin] = CCG([iRes(grind);jRes(grjnd)],...
-                                      [ones([sum(grind),1]);2*ones([sum(grjnd),1])],...
-                                      binSize,halfBins,spk.sampleRate,[1,2],normalization);
-                else
-                    tccg = zeros([halfBins*2+1,2,2]);
+% SPLIT the trajectories into paralel or perpendicular travel relative to place field pair
+                for b = 1:numel(eds)-1,
+                    grind = eds(b) <= th(iRes,1) & th(iRes,1) <= eds(b+1);
+                    grjnd = eds(b) <= th(jRes,1) & th(jRes,1) <= eds(b+1);
+
+% COMPUTE CCG of units for trajectories moving in specified direction
+                    if sum(grind)&sum(grjnd),
+                        [tccg,tbin] = CCG([iRes(grind);jRes(grjnd)],...
+                                          [ones([sum(grind),1]);2*ones([sum(grjnd),1])],...
+                                          binSize,halfBins,spk.sampleRate,[1,2],normalization);
+                    else
+                        tccg = zeros([halfBins*2+1,2,2]);
+                    end
+                    mccg(:,pairCnt,b) = filt_fun(tccg(:,1,2));
                 end
-                mccg(:,b) = filt_fun(tccg(:,1,2));
-                sccg(:,b) = filt_fun(tccg(:,1,1));
-                occg(:,b) = filt_fun(tccg(:,2,2));
+% ITERATE pair counter
+                pairCnt = pairCnt + 1;
             end
-            
-            [pkAmp,pkInd] = max(mean([mccg(:,1),flipud(mccg(:,2))],2));
-            mmAmp = max(mean([mccg(:,1),flipud(mccg(:,2))]));
-            pairPkAmp = cat(1,pairPkAmp,pkAmp);
-            pairMmAmp = cat(1,pairMmAmp,mmAmp);
-            pairPkTime = cat(1,pairPkTime,tbin(pkInd));
-% $$$ 
-% $$$             subplot2(8,3,[5:8],1);
-% $$$             imagesc(tbin,eds-pi-eds(2)/2,sccg');axis('tight');axis('xy');
-% $$$             subplot2(8,3,[5:8],2);
-% $$$             hold('on');
-% $$$             %imagesc(tbin,eds-pi-eds(2)/2,bsxfun(@rdivide,mccg,max(mccg))');axis('tight');axis('xy')
-% $$$             %bar(tbin,mccg(:,1,1));axis('tight');            
-% $$$             stairs(tbin,mccg(:,1));axis('tight');
-% $$$             stairs(tbin,mccg(:,2));axis('tight');             
-% $$$             %imagesc(tbin,eds-pi-eds(2)/2,mccg');axis('tight');axis('xy');
-% $$$             Lines(0,[],'m');                
-% $$$             subplot2(8,3,[5:8],3);
-% $$$             imagesc(tbin,eds-pi-eds(2)/2,occg');axis('tight');axis('xy');
-% $$$ 
-% $$$             colormap('jet');
-% $$$             drawnow();
-% $$$             waitforbuttonpress();
-
         end
     end
+     
+% ADD nunits to cumulative unit counter
+    unitCumCnt = unitCumCnt + nunits;
+
+    toc();%Trials
+end%for Trials
+
+mccg(:,[size(pairUids,1)+1]:end,:) = [];
+
+[pairPkAmp,pairPkInd] = max(cat(3,mccg(1:halfBins,:,1),...
+                                  mccg(halfBins+2:end,:,1),...
+                                  mccg(1:halfBins,:,2),...
+                                  mccg(halfBins+2:end,:,2)));
+pairPkAmp = sq(pairPkAmp);  pairPkInd = sq(pairPkInd);
+
+pairMmAmp = max(mean(cat(3,mccg(1:halfBins,:,1),mccg(halfBins+2:end,:,1),mccg(1:halfBins,:,2),mccg(halfBins+2:end,:,2))),[],3)';
+pairPkTime = tbin(pairPkInd);
+
+pairCC = [];
+for u = 1:size(pairUids,1),
+    pairCC(u,:,:) = corrcoef(rmaps(:,pairUids(u,:)));
 end
+pairCC = pairCC(:,1,2);
 
+pairDCC = [];
+for u = 1:size(pairUids,1),
+    pairDCC(u,:,:) = corrcoef(pmaps(:,pairUids(u,:)));
 end
-  
-
-
-
-
+pairDCC = pairDCC(:,1,2);
 
 
 % F3A1 --------------------------------------------------------------------
@@ -608,93 +436,205 @@ end
 % F-scores computed in MTA:analysis:MjgER2016:MjgER2016F2V2:F2D1
 
 
-
 % HELPER FUNCITONS --------------------------------------------------------
 shuffle = @(x) x(randperm(numel(x)));
 %--------------------------------------------------------------------------
 
-
-
-shiftx = 1;
-shifty = 1;
-mdist = circ_dist(atan2(pairFSrC(:,1,1)+shiftx,pairFSrC(:,1,3)+shifty),...
-                  atan2(pairFSrC(:,2,1)+shiftx,pairFSrC(:,2,3)+shifty));
-mdistLabel = 'FSr';
-
-shiftx = 0;
-shifty = 0;
-mdist = circ_dist(atan2(pairMDSs(:,1,1)+shiftx,pairMDSs(:,1,2)+shifty),...
-                  atan2(pairMDSs(:,2,1)+shiftx,pairMDSs(:,2,2)+shifty));
-mdistLabel = 'MDS';
-
-% $$$ shiftx = 1.1;
-% $$$ shifty = 0.6;
-% $$$ mdist = circ_dist(atan2(pairEigs(:,1,1)+shiftx,pairEigs(:,1,3)+shifty),...
-% $$$                   atan2(pairEigs(:,2,1)+shiftx,pairEigs(:,2,3)+shifty));
-
-
-ind =  log10(pairMmAmp)>-3;
-% $$$ ind = ~any(pairEigs(:,:,2)>0&pairEigs(:,:,1)<-0.5,2);
-% $$$ ind = all([ismember(pairClus(:,[1,2]) ,cluSessionMapSubset(sigUnits,:)),...
-% $$$            ismember(pairClus(:,[1,3]) ,cluSessionMapSubset(sigUnits,:))],2);
-% $$$ ind = any(pairFSrC(:,:,2)<0,2);
+% $$$ figure();
+% $$$ plot3(reshape(pairFSrC(:,:,1),[],1),...
+% $$$       reshape(pairFSrC(:,:,2),[],1),...
+% $$$       reshape(pairFSrC(:,:,3),[],1),...
+% $$$       '.');
+% $$$ 
+% $$$ shiftx = 1;
+% $$$ shifty = 1;
+% $$$ mdist = circ_dist(atan2(pairFSrC(:,1,1)+shiftx,pairFSrC(:,1,3)+shifty),...
+% $$$                   atan2(pairFSrC(:,2,1)+shiftx,pairFSrC(:,2,3)+shifty));
+% $$$ mdistLabel = 'FSr';
+% $$$ shiftx = 0;
+% $$$ shifty = 0;
+% $$$ mdist = pairCC;
+% $$$ mdistLabel = 'cc';
+% $$$ 
+% $$$ shiftx = 0;
+% $$$ shifty = 0;
+% $$$ mdist = sqrt(sum(([pairFSrC(:,1,1)+shiftx,pairFSrC(:,1,3)+shifty] ...
+% $$$                  -[pairFSrC(:,2,1)+shiftx,pairFSrC(:,2,3)+shifty]).^2,2));
+% $$$ mdistLabel = 'FSrd';
+% $$$ 
+% $$$ shiftx = 0;
+% $$$ shifty = 0;
+% $$$ mdist = circ_dist(atan2(pairMDSs(:,1,1)+shiftx,pairMDSs(:,1,2)+shifty),...
+% $$$                   atan2(pairMDSs(:,2,1)+shiftx,pairMDSs(:,2,2)+shifty));
+% $$$ mdistLabel = 'MDS';
+% $$$ ind =  log10(pairMmAmp)>-3;
+%ind = ~any(pairEigs(:,:,2)>1,2)&log10(pairMmAmp)>-3;
+mdist = pairCC;
 
 figure();
 subplot(321);
 hold('on');
-% $$$ plot(pairFSrC(ind,1,1)+shiftx,pairFSrC(ind,1,2)+shifty,'.');
-% $$$ plot(pairFSrC(ind,2,1)+shiftx,pairFSrC(ind,2,2)+shifty,'.');
-plot(pairMDSs(ind,1,1),pairMDSs(ind,1,2),'.');
-plot(pairMDSs(ind,2,1),pairMDSs(ind,2,2),'.');
+plot(pairFSrC(ind,1,1)+shiftx,pairFSrC(ind,1,3)+shifty,'.');
+plot(pairFSrC(ind,2,1)+shiftx,pairFSrC(ind,2,3)+shifty,'.');
+% $$$ plot(pairMDSs(ind,1,1),pairMDSs(ind,1,2),'.');
+% $$$ plot(pairMDSs(ind,2,1),pairMDSs(ind,2,2),'.');
 % $$$ plot(pairEigs(ind,1,1)+shiftx,pairEigs(ind,1,3)+shifty,'.');
 % $$$ plot(pairEigs(ind,2,1)+shiftx,pairEigs(ind,2,3)+shifty,'.');
 grid('on');
 subplot(322);
-rose(mdist(ind)),
+hist(mdist,100)
 drawnow();
 
 
-%ind = pairPkAmp>0.5;
-%ind = log10(pairMmAmp)>-3&all(pairEigs(:,:,2)<1,2);
-%ind = all(pairEigs(:,:,2)<0.5,2);
-%ind = all(pairEigs(:,:,1)>0,2)&all(pairEigs(:,:,3)>0,2);
-%edx = linspace(0,40,5);
-
 edx = [0,15,25,32.5,37,40];
-%edx = [0,20,27.5,32.5,35,38,40];
 nx = numel(edx);
-% $$$ nx = 2;
-% $$$ edx = [0,20];
-
-%edy = linspace(-pi,pi,21);
-
-ny = 16
-edy = linspace(-pi,pi,ny);
-% $$$ XMin = -pi;
-% $$$ XMax =  pi;
-% $$$ mycdf = @(x) cdf('norm',x,0,1);
-% $$$ probspace = @(CDF, XMin, XMax, N) arrayfun( @(p) max(fsolve( @(x) CDF(x)-p,...
-% $$$                                                   [-0.01, 0.01],...
-% $$$                                                   optimoptions('fsolve','Algorithm','trust-region'))), linspace(0,1,N) );
-% $$$ edy = probspace(mycdf,0.02,0.98,ny);
-
+ny = 11;
+%edy = linspace(-pi,pi,ny);
+edy = linspace(-1,1,ny);
 
 indx = discretize(pairSDist/10,edx);
-%indy = discretize(pairBDist(ind),edy);
 indy = discretize(mdist,edy);
-
 ind = ~isnan(indx)&~isnan(indy)&ind;
 
-%A = ACCUMARRAY(SUBS,VAL,SZ,FUN)
 
-%vals = pairMmAmp(ind);
 subs = [indx(ind),indy(ind)];
 vals = pairMmAmp(ind);
-%vals = pairPkAmp(ind);
 sz   = [numel(edx)-1,numel(edy)-1];
+
 ecratem = accumarray(subs,vals,sz,@mean);
 ecrates = accumarray(subs,vals,sz,@std);
 ecratec = accumarray(subs,ones([sum(ind),1]),sz,@sum);
+
+ecratemr = [];
+ecratesr = [];
+for i = 1:1000,
+    vals = pairMmAmp(ind);
+    for j = 1:nx-1,  vals(subs(:,1)==j) = shuffle(vals(subs(:,1)==j));  end
+    ecratemr = cat(3,ecratemr,accumarray(subs,vals,sz,@mean));
+    ecratesr = cat(3,ecratesr,accumarray(subs,vals,sz,@std));
+end
+
+ecratemdr = [];
+ecratesdr = [];
+for i = 1:1000,
+    vals = pairMmAmp(ind);
+    for j = 1:ny-1,  vals(subs(:,2)==j) = shuffle(vals(subs(:,2)==j));  end
+    ecratemdr = cat(3,ecratemdr,accumarray(subs,vals,sz,@mean));
+    ecratesdr = cat(3,ecratesdr,accumarray(subs,vals,sz,@std));
+end
+
+xbins = edx(1:end-1)+abs(diff(edx)/2);
+ybins = edy(1:end-1)+abs(diff(edy)/2);
+
+
+subplot(3,2,3);
+imagescnan(1:numel(xbins),1:numel(ybins),ecratem');
+colorbar();
+caxis([0,1.5]);
+set(gca,'XTick',[0:numel(xbins)]+0.5)
+set(gca,'XTickLabels',edx);
+xlabel('Distance (cm)');
+set(gca,'YTick',[1:numel(ybins)])
+set(gca,'YTickLabels',round(ybins,3));
+ylabel([mdistLabel,' inter-placefield corrcoef'])
+axis('xy');
+title('Mean XCORR magnitude')
+
+subplot(3,2,4);
+imagesc(1:numel(xbins),1:numel(ybins),ecrates');
+colorbar();
+caxis([0,1.5]);
+set(gca,'XTick',[0:numel(xbins)]+0.5)
+set(gca,'XTickLabels',edx);
+xlabel('Distance (cm)');
+set(gca,'YTick',[1:numel(ybins)])
+set(gca,'YTickLabels',round(ybins,3));
+ylabel([mdistLabel,' inter-placefield corrcoef'])
+axis('xy');
+title('Std XCORR magnitude')
+
+subplot(3,2,5);
+%plot(1:numel(ybins),((ecratem-mean(ecratemr,3))./std(ecratemr,[],3))');grid('on');
+imagesc(1:numel(xbins),1:numel(ybins),((ecratem-mean(ecratemr,3))./std(ecratemr,[],3))');
+colorbar();
+caxis([-4,4]);
+set(gca,'XTick',[0:numel(xbins)]+0.5)
+set(gca,'XTickLabels',edx);
+xlabel('Distance (cm)');
+set(gca,'YTick',[1:numel(ybins)])
+set(gca,'YTickLabels',round(ybins,3));
+ylabel([mdistLabel,' inter-placefield corrcoef'])
+axis('xy');
+title('zscore of shuffled Mean XCORR magnitude')
+
+subplot(3,2,6);
+%plot(1:numel(ybins),((ecrates-mean(ecratesr,3))./std(ecratesr,[],3))');grid('on')
+imagesc(1:numel(xbins),1:numel(ybins),((ecrates-mean(ecratesr,3))./std(ecratesr,[],3))');
+colorbar();
+caxis([-4,4]);
+set(gca,'XTick',[0:numel(xbins)]+0.5)
+set(gca,'XTickLabels',edx);
+set(gca,'YTick',[1:numel(ybins)])
+set(gca,'YTickLabels',round(ybins,3));
+axis('xy');
+title('zscore of shuffled Std XCORR magnitude')
+
+
+ 
+
+
+
+% COMPUTE R stats for circlar distances
+
+indx = discretize(pairSDist/10,edx);
+ind = ~isnan(indx);
+
+r = [];
+for x = 1:numel(edx),
+    xind = indx==x;
+    r(x) = sum(pairMmAmp(xind).*exp(i.*mdist(xind)),'omitnan')./sum(pairMmAmp(xind),'omitnan');
+end
+
+rs = [];
+sMdist = nan([2000,numel(edx),1000]);
+sMmAmp = nan([2000,numel(edx),1000]);
+for x = 1:numel(edx),
+    xind = indx==x;   
+    for j = 1:1000,
+        sMdist(1:sum(xind),x,j) = shuffle(mdist(xind));
+        sMmAmp(1:sum(xind),x,j) = pairMmAmp(xind);
+        rs(x,j) = sum(pairMmAmp(xind).*exp(i.*sMdist(nniz(sMdist(:,x,j)),x,j)),'omitnan')./...
+                  sum(pairMmAmp(xind),'omitnan');
+    end
+end
+sMdist = reshape(sMdist,[],1000);
+sMmAmp = reshape(sMmAmp,[],1000);
+sMdist(isnan(sMdist(:,1)),:) = [];
+sMmAmp(isnan(sMmAmp(:,1)),:) = [];
+rps = sum(sMmAmp.*exp(i.*sMdist),'omitnan')./sum(sMmAmp,'omitnan');
+rp = sum(pairMmAmp.*exp(i.*mdist),'omitnan')./sum(pairMmAmp,'omitnan');
+rpz = (abs(rp)-mean(abs(rps)))./std(abs(rps));
+
+% RESULTS F3A1
+
+%  zscore               rpz:15.2
+%  zscore   edx: 0  -  15    rz: 7.09
+%               15  -  25        8.74
+%               25  -  32.5      7.11
+%               32.5-  37        5.29
+%               37  -  40        5.27
+
+
+
+figure,hist(abs(rs(1,:)),100)
+rz = (abs(r')-mean(abs(rs),2))./std(abs(rs),[],2);
+
+figure,plot(edx,rz)
+
+ecrater = accumarray(subs,vals,sz,);
+
+% $$$ ecrates = accumarray(subs,vals,sz,@std);
+% $$$ ecratec = accumarray(subs,ones([sum(ind),1]),sz,@sum);
 
 ecratemr = [];
 ecratesr = [];
@@ -725,98 +665,177 @@ end
 xbins = edx(1:end-1)+abs(diff(edx)/2);
 ybins = edy(1:end-1)+abs(diff(edy)/2);
 
- 
-subplot(3,2,3);
-imagesc(1:numel(xbins),1:numel(ybins),ecratem');
-colorbar();
-caxis([0,1]);
-set(gca,'XTick',[0:numel(xbins)]+0.5)
-set(gca,'XTickLabels',edx);
-xlabel('Distance (cm)');
-set(gca,'YTick',[1:numel(ybins)])
-set(gca,'YTickLabels',round(ybins,3));
-ylabel([mdistLabel,' inter-placefield angle (rad)'])
-axis('xy');
-title('Mean XCORR magnitude')
-
-subplot(3,2,4);
-imagesc(1:numel(xbins),1:numel(ybins),ecrates');
-colorbar();
-caxis([0,1]);
-set(gca,'XTick',[0:numel(xbins)]+0.5)
-set(gca,'XTickLabels',edx);
-xlabel('Distance (cm)');
-set(gca,'YTick',[1:numel(ybins)])
-set(gca,'YTickLabels',round(ybins,3));
-ylabel([mdistLabel,' inter-placefield angle (rad)'])
-axis('xy');
 
 
-subplot(3,2,5);
-%plot(1:numel(ybins),((ecratem-mean(ecratemr,3))./std(ecratemr,[],3))');grid('on');
-imagesc(1:numel(xbins),1:numel(ybins),((ecratem-mean(ecratemr,3))./std(ecratemr,[],3))');
-colorbar();
-caxis([-4,4]);
-set(gca,'XTick',[0:numel(xbins)]+0.5)
-set(gca,'XTickLabels',edx);
-set(gca,'YTick',[1:numel(ybins)])
-set(gca,'YTickLabels',round(ybins,3));
-axis('xy');
+% COMPUTE R stats for circlar distances -------------------------------------------------------
 
+edy = linspace(-1,1,7);
+edx = linspace(0,40,7);
 
-subplot(3,2,6);
-%plot(1:numel(ybins),((ecrates-mean(ecratesr,3))./std(ecratesr,[],3))');grid('on')
-imagesc(1:numel(xbins),1:numel(ybins),((ecrates-mean(ecratesr,3))./std(ecratesr,[],3))');
-colorbar();
-caxis([-4,4]);
-set(gca,'XTick',[0:numel(xbins)]+0.5)
-set(gca,'XTickLabels',edx);
-set(gca,'YTick',[1:numel(ybins)])
-set(gca,'YTickLabels',round(ybins,3));
-axis('xy');
+%indx = discretize(pairDCC,edy);
+indx = discretize(pairSDist/10,edx);
+indy = discretize(mdist,edy);
 
+nxbins = numel(edy)-1;
+%nxbins = numel(edx)-1;
+nybins = numel(edy)-1;
 
-subplot(3,2,5);
-imagesc(1:numel(xbins),1:numel(ybins),((ecratem-mean(ecratemr,3))./std(ecratemr,[],3))');
-colorbar();
-caxis([-4,4]);
-set(gca,'XTick',[0:numel(xbins)]+0.5)
-set(gca,'XTickLabels',edx);
-set(gca,'YTick',[1:numel(ybins)])
-set(gca,'YTickLabels',round(ybins,3));
-axis('xy');
+% COMPUTE Sum of squares for 
+% requires:
+%   mean ccg magnitude of each bin
 
-subplot(3,2,6);
-imagesc(1:numel(xbins),1:numel(ybins),((ecrates-mean(ecratesr,3))./std(ecratesr,[],3))');
-colorbar();
-caxis([-4,4]);
-set(gca,'XTick',[0:numel(xbins)]+0.5)
-set(gca,'XTickLabels',edx);
-set(gca,'YTick',[1:numel(ybins)])
-set(gca,'YTickLabels',round(ybins,3));
-axis('xy');
+condExpCcgsFSdistXBdist = nan([nxbins,nybins]);
+%rssModel = nan([nxbins,nybins]);
+%rssModelCol = nan([nxbins,1]);
+for x = 1:nxbins,
+    for y = 1:nybins,
+        xind = indx==x&indy==y;
+
+        if sum(xind)>1,
+            %condExpCcgsFSdistXBdist(x,y) = mean(pairMmAmp(xind));            
+            condExpCcgsFSdistXBdist(x,y) = mean(max(pairPkAmp(xind,:),[],2));        
+            %rssModel(x,y) = sum((pairMmAmp(xind)-condExpCcgsFSdistXBdist(x,y)).^2);
+        end
+    end
+    xind = indx==x;
+    %rssModelCol(x) = sum((pairMmAmp(xind)-condExpCcgsFSdistXBdist(sub2ind(size(condExpCcgsFSdistXBdist),repmat(x,[sum(xind),1]),indy(xind)))).^2,'omitnan');
+end
+
+% $$$ [ti,tj] = ind2sub(size(condExpCcgsFSdistXBdist),(indx(1)-1)*nxbins+indy(1))
+% $$$ [ti]    = sub2ind(size(condExpCcgsFSdistXBdist),repmat(x,[sum(xind),1]),indy(xind));
+% $$$ [ti]    = (indx(1)-1)*nxbins+indy(1);
+
+figure();imagesc(edx,edy,condExpCcgsFSdistXBdist');axis('xy');
 
 
 
+sMmAmp = nan([2000,nxbins,1000]);
+sMdist = nan([2000,nxbins,1000]);
+sSdist = nan([2000,nxbins,1000]);
+for x = 1:nxbins,
+    xind = indx==x;
+    nXind = sum(xind);
+    for j = 1:1000,
+        sMmAmp(1:nXind,x,j) = shuffle(pairMmAmp(xind));
+        sMdist(1:nXind,x,j) =             mdist(xind);
+        sSdist(1:nXind,x,j) =         pairSDist(xind)/10;
+    end
+end
 
 
+sMmAmp = reshape(sMmAmp,[],1000);
+sMdist = reshape(sMdist,[],1000);
+sSdist = reshape(sSdist,[],1000);
+
+sMmAmp(isnan(sMmAmp(:,1)),:) = [];
+sMdist(isnan(sMdist(:,1)),:) = [];
+sSdist(isnan(sSdist(:,1)),:) = [];
+
+% COMPUTE residual sum of squares for each shuffle along the rows of condExpCcgsFSdistXBdist 
+% RSS = ∑(x-x̄)² 
+
+
+rssShuffled = nan([nxbins,nybins,1000]);
+rssShuffledCol = nan([nxbins,1000]);
+for j = 1:1000,
+    indx = discretize(sSdist(:,j),edx);
+    indy = discretize(sMdist(:,j),edy);
+    for x = 1:nxbins,
+        for y = 1:nybins,
+            xyind = indx==x&indy==y;
+            rssShuffled(x,y,j) = sum((sMmAmp(xyind,j)-condExpCcgsFSdistXBdist(x,y)).^2);
+        end
+        xind = indx==x;
+        rssShuffledCol(x,j) = sum((sMmAmp(xind,j)-condExpCcgsFSdistXBdist(sub2ind(size(condExpCcgsFSdistXBdist),repmat(x,[sum(xind),1]),indy(xind)))).^2,'omitnan');
+    end
+end
 
 figure();
-hold('on');
-plot(ybins,ecratem(1,:));
-plot(ybins,ecratemr(1,:));
-grid('on');
-daspect([1,1,1])
+subplot(221);  imagesc(mean(rssModel,3)');       axis('xy');  colorbar();
+subplot(223);  imagesc(mean(rssShuffled,3)');    axis('xy');  colorbar();
+subplot(224);  imagesc(std(rssShuffled,[],3)');  axis('xy');  colorbar();
+
+
+zsModelCol = (rssModelCol-mean(rssShuffledCol,2))./std(rssShuffledCol,[],2);
+
+figure();
+plot(mean(condExpCcgsFSdistXBdist,2));
 
 
 
+X = [pairSDist/100,mdist];
+bhat = inv(X'*X)*X'*pairMmAmp;
+yhat = X*bhat;
+
+rerr = pairMmAmp - yhat;
+
+ind = pairMmAmp~=0;
+
+[beta,Sigma,E,CovB,logL] = mvregress([pairSDist(ind)/10,mdist(ind)],pairMmAmp(ind));
+[beta,Sigma,E,CovB,logL] = mvregress([pairSDist(ind)/10,mdist(ind)],log10(pairMmAmp(ind)+1));
+[beta,Sigma,E,CovB,logL] = mvregress([pairSDist(ind)/10,mdist(ind)],log10(max(pairPkAmp(ind,:),[],2)+1));
+[beta,Sigma,E,CovB,logL] = mvregress([pairDCC(ind),mdist(ind)],log10(pairMmAmp(ind)+1));
+
+[beta,Sigma,E,CovB,logL] = mvregress([pairSDist/10,mdist],pairMmAmp);
+
+%mse = mean(sqrt(E.^2));
+
+figure,plot3(pairDCC(ind),mdist(ind),log10(pairMmAmp(ind)+1),'.');
+figure,plot3(pairDCC(ind),mdist(ind),log10(max(pairPkAmp(ind,:),[],2)+1),'.');
+figure,plot3(pairSDist(ind)./10,mdist(ind),log10(max(pairPkAmp(ind,:),[],2)+1),'.');
+xlabel('DistCC');ylabel('BhvCC');zlabel('log10(CCG+1)');
+figure,plot3(pairSDist/10,mdist,pairMmAmp,'.');
+figure,plot3(pairSDist/10,mdist,pairMmAmp,'.');
+
+for j = 1:1000,
+    [betaShuffled(:,j),~,~,~,lugLShuffled(j)] = mvregress([sSdist(:,j)/10,sMdist(:,j)],sMmAmp(:,j));
+end
+
+(beta-mean(betaShuffled,2))./std(betaShuffled,[],2)
+
+rps = sum(sMmAmp.*exp(i.*sMdist),'omitnan')./sum(sMmAmp,'omitnan');
+rp = sum(pairMmAmp.*exp(i.*mdist),'omitnan')./sum(pairMmAmp,'omitnan');
+rpz = (abs(rp)-mean(abs(rps)))./std(abs(rps));
 
 
-figure,hist2([shuffle(pairPkAmp(ind)),shuffle(mdist(ind))],50,50)
+% RESULTS F3A1
 
 
+figure,hist(abs(rs(1,:)),100)
+rz = (abs(r')-mean(abs(rs),2))./std(abs(rs),[],2);
 
-figure,hold('on');
-plot(ecratem(:,:,1),'b')
-plot(sq(ecratemr(:,:,1:20)),'r')
+figure,plot(edx,rz)
 
+ecrater = accumarray(subs,vals,sz,);
+
+% $$$ ecrates = accumarray(subs,vals,sz,@std);
+% $$$ ecratec = accumarray(subs,ones([sum(ind),1]),sz,@sum);
+
+ecratemr = [];
+ecratesr = [];
+for i = 1:1000,
+    %subs = [shuffle(subs(:,1)),shuffle(subs(:,2))];
+    vals = pairMmAmp(ind);
+    for j = 1:nx-1
+        vals(subs(:,1)==j) = shuffle(vals(subs(:,1)==j));
+    end
+    ecratemr = cat(3,ecratemr,accumarray(subs,vals,sz,@mean));
+    ecratesr = cat(3,ecratesr,accumarray(subs,vals,sz,@std));
+end
+
+
+ecratemdr = [];
+ecratesdr = [];
+for i = 1:1000,
+    %subs = [shuffle(subs(:,1)),shuffle(subs(:,2))];
+    vals = pairMmAmp(ind);
+    for j = 1:ny-1,
+        vals(subs(:,2)==j) = shuffle(vals(subs(:,2)==j));
+    end
+    ecratemdr = cat(3,ecratemdr,accumarray(subs,vals,sz,@mean));
+    ecratesdr = cat(3,ecratesdr,accumarray(subs,vals,sz,@std));
+end
+
+%pecrate = accumarray([indx,indy],pairPkAmp(ind),[10,10],@mean);
+xbins = edx(1:end-1)+abs(diff(edx)/2);
+ybins = edy(1:end-1)+abs(diff(edy)/2);

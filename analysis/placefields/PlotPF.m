@@ -116,7 +116,7 @@ srmap(~gtind) = nan;
 srmap(isnan(srmap)) = 10.^mean(log10(RateMap(:)),'omitnan');
 srmap = convn(srmap,Smoother,'same');
 
-RateMap = mean(cat(3,srmap,RateMap),3);
+RateMap = mean(cat(ndims+1,srmap,RateMap),ndims+1);
 RateMap = RateMap(:);
 
 

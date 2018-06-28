@@ -1,5 +1,5 @@
 function flist = list_files(SessionName,varargin)
-%function listFiles(SessionName,fileExt)
+%function list_files(SessionName,fileExt)
 if ~isempty(varargin),    fileExt = varargin{1};     varargin(1) = [];    
 else,                     fileExt = '.*';            end;   
 if ~isempty(varargin),    returnType =  varargin{1}; varargin(1) = [];

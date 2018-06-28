@@ -1,6 +1,8 @@
 function [drzScore,drzCenter] = compute_drz(Trial,varargin)
 %function [drzScore,drzCenter] = compute_drz(Trial,varargin)
 %
+%  
+%
 %  colapse 2d place field 
 %
 %  varargin:
@@ -13,7 +15,12 @@ function [drzScore,drzCenter] = compute_drz(Trial,varargin)
 %
 %    filtCutOffFreq - Numeric: frequency cutoff for position filtering
 %
-
+%    marker - String: name of marker used if feature is empty
+%
+%    interpPar - Struct: contains interpolation parameters for higher resolution placefields
+%
+%    feature - NumericMatrix[Nx2]: trajectories to be compressed to 1 dimension
+%
 
 % DEFARGS ------------------------------------------------------------------------------------------
 defargs = struct('units',                  [],                                                   ...
@@ -34,19 +41,23 @@ defargs = struct('units',                  [],                                  
 %if isempty(pfstats),    pfstats = compute_pfstats_bs(Trial);    end
 
 if isempty(feature),
+% LOAD xyz as feature set
+% SELECT xy plane of specified marker as feature    
     feature = preproc_xyz(Trial,'trb');
     feature.filter('ButFilter',3,filtCutOffFreq,'low');
     feature.data = sq(feature(:,marker,[1,2]));
 end
 
 
+% SET bins for estimation of placefield centers
 if isempty(interpPar),
     bins = pft.adata.bins;
 else
     bins = interpPar.bins;
 end
 
-% Get the mean firing rate for each xy position along trajectory 
+
+% FIND bin index given position
 wpmr = zeros(feature.size(1),numel(units));
 [~,indx] = min(abs( repmat(bins{1}(:)',feature.size(1),1)...
                     -repmat(feature(:,1),1,numel(bins{1}))),...
@@ -55,39 +66,37 @@ wpmr = zeros(feature.size(1),numel(units));
                     -repmat(feature(:,2),1,numel(bins{2}))),...
                [],2);
 
+% CONSTRUCT map of expected rate given position
+% ESTIMATE placefield centers
+maxRate      = nan([numel(units),1]);
+drzCenter    = nan([numel(units),2]);
 rateMapIndex = sub2ind(cellfun(@numel,bins),indx,indy);
-maxRate = [];
 for u = 1:numel(units),
     rateMap = pft.plot(units(u),'mean',false,[],false,0.99,false,interpPar);
     wpmr(:,u) = rateMap(rateMapIndex);
-
     [maxRate(u),mxp]  = max(rateMap(:));
     mxp = Ind2Sub(cellfun(@numel,bins),mxp);
-    drzCenter(u,:) = [bins{1}(mxp(:,1)), ...
-                       bins{2}(mxp(:,2))];
+    drzCenter(u,:) = [bins{1}(mxp(:,1)), bins{2}(mxp(:,2))];
 end
 
-% Get the rat's heading 
+% COMPUTE the trajectory heading
 pfds = [];
 pfdd = [];
 peakPatchRate = [];
-peakPatchRate = maxRate;
+peakPatchRate = maxRate';
 for unit = units
-    %peakPatchRate(1,end+1) = mean(pfstats.peakPatchRate(8,:,pfstats.cluMap==unit),'omitnan');
-    %pfhxy = feature(:,{'spine_middle','head_back'},:);
     pfhxy = cat(2,permute(feature.data,[1,3,2]),circshift(permute(feature.data,[1,3,2]),round(feature.sampleRate/5)));
     pfhxy = cat(2,pfhxy,permute(repmat(drzCenter(unit==units,:),[size(feature,1),1]),[1,3,2]));
-    %pfhxy = cat(2,pfhxy,permute(repmat([fliplr(sq(mean(pfstats.peakPatchCOM(8,:,pfstats.cluMap==unit,:),'omitnan'))'),0],[size(xyz,1),1]),[1,3,2]));
     pfhxy = MTADxyz([],[],pfhxy,feature.sampleRate);
-    
+% SUBSTRACT reference trajectory from second trajectory    
     cor = cell(1,2);
     [cor{:}] = cart2pol(pfhxy(:,2,1)-pfhxy(:,1,1),pfhxy(:,2,2)-pfhxy(:,1,2));
-    cor = cell2mat(cor);
-    
+    cor = cell2mat(cor);    
+% SUBSTRACT placefield center from positions        
     por = cell(1,2);
     [por{:}] = cart2pol(pfhxy(:,3,1)-pfhxy(:,1,1),pfhxy(:,3,2)-pfhxy(:,1,2));
     por = cell2mat(por);
-    
+% TRANSFORM from Cartesian to polar coordinates    
     pfds(:,unit==units) = circ_dist(cor(:,1),por(:,1));
     pfdd(:,unit==units) = por(:,2);
     
@@ -96,7 +105,7 @@ pfd = zeros(size(pfds));
 pfd(abs(pfds(:))>=pi/2)=-1;
 pfd(abs(pfds(:))<pi/2)=1;
 
-% Calculate DRZ 
+% CALCULATE DRZ 
 %drz = pfd.*(1-bsxfun(@rdivide,wpmr,mrt'));
 drzScore = pfd.*(1-bsxfun(@rdivide,wpmr,peakPatchRate));
 

@@ -59,46 +59,45 @@ defargs = struct('unit',                   [],                                  
 % MAIN ---------------------------------------------------------------------------------------------
 
 if isempty(unit),unit=Pfs.data.clu(1);end
+
+if isnumeric(mode)
+    rateMap = Pfs.data.rateMap(:,Pfs.data.clu==unit,mode);    
+else
+    if Pfs.parameters.numIter>1, 
+        ind = 2:Pfs.parameters.numIter;
+    else,
+        ind = 1;
+    end
+    switch mode            
+      case 'mean',    rateMap = mean(Pfs.data.rateMap(:,Pfs.data.clu==unit,ind),3,'omitnan');
+      case 'std' ,    rateMap = std(Pfs.data.rateMap(:,Pfs.data.clu==unit,ind),[],3,'omitnan');
+      case 'snr',     rateMap = mean(Pfs.data.rateMap(:,Pfs.data.clu==unit,ind),3,'omitnan')...
+            ./std(Pfs.data.rateMap(:,Pfs.data.clu==unit,ind),[],3,'omitnan');
+        rateMap(isinf(rateMap)) = nan;                          
+      case 'snrs',    
+        tStd = std(Pfs.data.rateMap(:,Pfs.data.clu==unit,ind),[],3,'omitnan');
+        tStd(tStd<1) = 1;
+        rateMap = mean(Pfs.data.rateMap(:,Pfs.data.clu==unit,ind),3,'omitnan')./tStd;
+        rateMap(isinf(rateMap)) = nan;                          
+      case 'sig'
+        rateMap = 1./sum((repmat(max(Pfs.data.rateMap(:,Pfs.data.clu==unit,:)),[size(Pfs.data.rateMap,1),1,1])...
+                          -repmat(Pfs.data.rateMap(:,Pfs.data.clu==unit,1),[1,1,Pfs.parameters.numIter]))<0,3)';
+      otherwise
+        rateMap = Pfs.data.rateMap(:,Pfs.data.clu==unit,1);
+    end                    
+end
+
+% COMPUTE rateMap output type    
+if ~isempty(sigThresh) && Pfs.parameters.numIter > 1,
+    sigMask = sum(~isnan(Pfs.data.rateMap(:,Pfs.data.clu==unit,:)),3)>Pfs.parameters.numIter*sigThresh;
+    rateMap(~sigMask(:)) = nan;
+end 
+
+% RESHAPE rateMap from 1D to ND
+rateMap = reshape(rateMap,Pfs.adata.binSizes');
+
 switch numel(Pfs.parameters.type)
   case 2
-
-
-% COMPUTE rateMap output type
-    if isnumeric(mode)
-        rateMap = Pfs.data.rateMap(:,Pfs.data.clu==unit,mode);    
-    else
-        if Pfs.parameters.numIter>1, 
-            ind = 2:Pfs.parameters.numIter;
-        else,
-            ind = 1;
-        end
-        switch mode            
-          case 'mean',    rateMap = mean(Pfs.data.rateMap(:,Pfs.data.clu==unit,ind),3,'omitnan');
-          case 'std' ,    rateMap = std(Pfs.data.rateMap(:,Pfs.data.clu==unit,ind),[],3,'omitnan');
-          case 'snr',     rateMap = mean(Pfs.data.rateMap(:,Pfs.data.clu==unit,ind),3,'omitnan')...
-                                    ./std(Pfs.data.rateMap(:,Pfs.data.clu==unit,ind),[],3,'omitnan');
-                          rateMap(isinf(rateMap)) = nan;                          
-          case 'snrs',    
-            tStd = std(Pfs.data.rateMap(:,Pfs.data.clu==unit,ind),[],3,'omitnan');
-            tStd(tStd<1) = 1;
-            rateMap = mean(Pfs.data.rateMap(:,Pfs.data.clu==unit,ind),3,'omitnan')./tStd;
-                          rateMap(isinf(rateMap)) = nan;                          
-          case 'sig'
-            rateMap = 1./sum((repmat(max(Pfs.data.rateMap(:,Pfs.data.clu==unit,:)),[size(Pfs.data.rateMap,1),1,1])...
-                     -repmat(Pfs.data.rateMap(:,Pfs.data.clu==unit,1),[1,1,Pfs.parameters.numIter]))<0,3)';
-          otherwise
-            rateMap = Pfs.data.rateMap(:,Pfs.data.clu==unit,1);
-        end                    
-    end
-    
-    if ~isempty(sigThresh) && Pfs.parameters.numIter > 1,
-        sigMask = sum(~isnan(Pfs.data.rateMap(:,Pfs.data.clu==unit,:)),3)>Pfs.parameters.numIter*sigThresh;
-        rateMap(~sigMask(:)) = nan;
-    end 
-
-    
-% RESHAPE rateMap from 1D to 2D
-    rateMap = reshape(rateMap,Pfs.adata.binSizes(1),Pfs.adata.binSizes(2));
 
     if ~isempty(interpPar),
 % INTERPOLATE ratemap 
@@ -212,7 +211,30 @@ switch numel(Pfs.parameters.type)
 % $$$         );
 % $$$         axis xy
 % $$$     end
+  case 4
 
+    if ~isempty(interpPar),
+% INTERPOLATE ratemap 
+        interpGrids= cell([1,numel(interpPar.bins)]);
+% WARNING!!! Double check for non symetric placefields due to the incongruence between
+%            meshgrid and ndgrid.
+        [interpGrids{:}] = ndgrid(interpPar.bins{:});
+
+        nanMask = double(isnan(rateMap));
+% Shold I use mean rate again for zeros interpolation?        
+        rateMap(isnan(rateMap)) = 0;
+
+        rateMap        = interpn(Pfs.adata.bins{:},rateMap,interpGrids{:},interpPar.methodRateMap);
+        interpdNanMask = interpn(Pfs.adata.bins{:},nanMask,interpGrids{:},interpPar.methodNanMap);
+
+% SMOOTH edges with interpolated nan mask
+        rateMap(interpdNanMask>interpPar.nanMaskThreshold) = nan;
+% CORRECT for cubic undershoot 
+        rateMap(rateMap<0) = 0;
+    end
+    
+    rateMap = rateMap.*mazeMask;
+    
 end
 
 % END MAIN -----------------------------------------------------------------------------------------

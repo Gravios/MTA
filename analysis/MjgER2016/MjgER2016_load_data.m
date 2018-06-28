@@ -9,7 +9,7 @@
 %      sessionListName
 %      sessionList
 %      states
-%      numStatesg
+%      numStates
 %      interpParPfsp
 %      interpParDfs
 %

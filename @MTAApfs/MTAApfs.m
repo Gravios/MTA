@@ -406,63 +406,73 @@ classdef MTAApfs < hgsetget %< MTAAnalysis
                     if spkShuffle
                         % implement spkshuffle
                     end
-                    
-                    if posShuffle,
-                        % shifts the position of the res along the sstpos
-                        sresind = bsxfun(@plus,...
-                                         sstres,...
-                                         repmat(randi(round([-size(sstpos,1)/2,size(sstpos,1)/2]),1,numIter),...
-                                                [numel(sstres),1]));
-                        % Wraps negative res to end of the sstpos vector
-                        sresind(sresind<=0) = sresind(sresind<=0)+size(sstpos,1);                           
-                        % Wraps res greater than the size of the sstpos vector
-                        sresind(sresind>size(sstpos,1)) = sresind(sresind>size(sstpos,1))-size(sstpos,1);
-                    end                    
-                    
+
                     if bootstrap,
                         sresind = reshape(sresind(randi(nSpk,[round(nSpk.*bootstrap),numIter]),1),[],numIter);
                     end
                     
 
-                     if halfsample,
 % CHUNK data into uniform blocks of specified temporal length
-                        samplesPerBlock = round(xyz.sampleRate*shuffleBlockSize);
-                        blockCount      = (size(sstpos,1)-mod(size(sstpos,1),samplesPerBlock))/samplesPerBlock;
+                    samplesPerBlock = round(xyz.sampleRate*shuffleBlockSize);
+                    blockCount      = (size(sstpos,1)-mod(size(sstpos,1),samplesPerBlock))/samplesPerBlock;
 % REMOVE positions and spikes which fall outside of the final block
-                        sstpos = sstpos(1:size(sstpos,1)-mod(size(sstpos,1),samplesPerBlock),:);
-                        sresind(any(sresind>size(sstpos,1),2),:) = [];
-                        sstres(sstres>size(sstpos,1)) = [];
+                    sstpos = sstpos(1:size(sstpos,1)-mod(size(sstpos,1),samplesPerBlock),:);
+                    sresind(any(sresind>size(sstpos,1),2),:) = [];
+                    sstres(sstres>size(sstpos,1)) = [];
 
+                    
+                    if posShuffle,                        
+% $$$                         % shifts the position of the res along the sstpos
+% $$$                         sresind = bsxfun(@plus,...
+% $$$                                          sstres,...
+% $$$                                          repmat(randi(round([-size(sstpos,1)/2,size(sstpos,1)/2]),1,numIter),...
+% $$$                                                 [numel(sstres),1]));
+% $$$                         % Wraps negative res to end of the sstpos vector
+% $$$                         sresind(sresind<=0) = sresind(sresind<=0)+size(sstpos,1);                           
+% $$$                         % Wraps res greater than the size of the sstpos vector
+% $$$                         sresind(sresind>size(sstpos,1)) = sresind(sresind>size(sstpos,1))-size(sstpos,1);
+                        shuffle_positions = @(p) permute(reshape(subsref(reshape(permute(p,[3,1,2]),...
+                                                                                 samplesPerBlock,[],size(p,2)),...
+                                                                         substruct('()',{':',randperm(size(p,1)./samplesPerBlock)',':'})),...
+                                                         [],1,size(p,2)),...
+                                                         [1,3,2]);
+                    else,
+                        shuffle_positions = @(p) p;
+                    end                    
+
+                    if halfsample,
+% INDEX blocks for halfsampling
                         halfBlockCount  = (blockCount-mod(blockCount,2))/2;
                         shuffleBlockInd = reshape(1:size(sstpos,1),[],blockCount);
                         halfSampleBlockInd = zeros([numIter,halfBlockCount]);
                         halfSampleInd = zeros([halfBlockCount*samplesPerBlock,numIter]);
-                        
                         for j = 1:2:numIter,
 % SPLIT blocks randomly into two groups as random half samples
                             rp = randperm(blockCount);
                             halfSampleBlockInd(j  ,:) = rp(1:halfBlockCount);
                             halfSampleBlockInd(j+1,:) = rp(halfBlockCount+1:2*halfBlockCount);
                         end
-                        
-% REBUILD 
+% REBUILD half samples from blocks
                         for j = 1:numIter
                             halfSampleInd(:,j) = reshape(shuffleBlockInd(:,halfSampleBlockInd(j,:)),[],1);
                         end
                     else
                         halfSampleInd = repmat([1:size(sstpos,1)]',[1,numIter]);
                     end
+
+                    
                     
                     
 % COMPUTE Place Field, the first always uses all available data
                     tic; %disp(unit);
+                    sstposf = shuffle_positions(sstpos);
                     [Pfs.data.rateMap(:,dind(i),1), ... Rate Map
                      Pfs.adata.bins,                ... Bins
                      Pfs.data.si(:,dind(i)),        ... Spatial Information
                      Pfs.data.spar(:,dind(i))]   =  ... Sparsity
                         PlotPF(Session,                         ... MTASession Object
-                               sstpos(sresind(:,1),:),          ... Spike Postion
-                               sstpos,                          ... Marker Postion
+                               sstposf(sresind(:,1),:),         ... Spike Postion
+                               sstposf,                         ... Marker Postion
                                binDims,                         ... Bin Dimensions
                                SmoothingWeights,                ... Weights
                                type,                            ... Type {'xy','xyz' ...}
@@ -475,10 +485,11 @@ classdef MTAApfs < hgsetget %< MTAAnalysis
                     if numIter>1,
                         tic
                         for bsi = 2:numIter
+                            sstposf = shuffle_positions(sstpos);
                             Pfs.data.rateMap(:,dind(i),bsi) = ...
                                 PlotPF(Session,...
-                                       sstpos(sresind(ismember(sresind(:,bsi),halfSampleInd(:,bsi)),bsi),:),...
-                                       sstpos(halfSampleInd(:,bsi),:),...
+                                       sstposf(sresind(ismember(sresind(:,bsi),halfSampleInd(:,bsi)),bsi),:),...
+                                       sstposf(halfSampleInd(:,bsi),:),...
                                        binDims,...
                                        SmoothingWeights,...
                                        type,...
