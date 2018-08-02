@@ -23,13 +23,12 @@ mocapSyncPeriods = ThreshCross(abs((mocapSyncPulse-mean(mocapSyncPulse))./max(mo
 mocapSyncPeriods = reshape(round(mean(mocapSyncPeriods,2)),2,[])';
 
 
-camSyncPulse = LoadBinary(fullfile(Session.spath,[Session.name,'.lfp']),...
-                          camSyncPulseChan,Par.nChannels,4)';
-camSyncInds = LocalMinima(-camSyncPulse,4,-1e4);
 
-
-
-mocapSampleRate = 1/(mean(diff( camSyncInds ))./Par.lfpSampleRate);
+% $$$ camSyncPulse = LoadBinary(fullfile(Session.spath,[Session.name,'.lfp']),...
+% $$$                           camSyncPulseChan,Par.nChannels,4)';
+% $$$ camSyncInds = LocalMinima(-camSyncPulse,4,-1e4);
+% $$$ mocapSampleRate = 1/(mean(diff( camSyncInds ))./Par.lfpSampleRate);
+mocapSampleRate = camSyncPulseChan;
 
 
 
@@ -87,6 +86,9 @@ Session.model = model;
 tsRanges = mocapSyncPeriods/Par.lfpSampleRate;
 
 
+%mocapSampleRate = mean([size(xyzData{1},1);size(xyzData{2},1)]./diff(tsRanges,1,2));
+
+
 %% Assign xyz data to nlx event epochs
 syncPeriods=[];
 xyzDataInd = [];
@@ -106,7 +108,7 @@ for i=1:numel(xyzData),
         end
     end
 end
-
+ 
 
 %% Error if no NLX events match xyzData
 assert(~isempty(syncPeriods),ERR.type,ERR.msg,recSyncPulseChan);
@@ -185,30 +187,30 @@ Session.fet = MTADfet(Session.spath,...
                       Session.sync.copy,...
                       Session.sync.data(1),...
                       []);                  
-
-% CREATE fiber object
-Session.fbr = MTADfbr(Session.spath,...
-                      Session.filebase,...
-                      [],...
-                      Par.lfpSampleRate,...
-                      Session.xyz.sync,...
-                      Session.xyz.origin,...
-                      []);
-fbrParts = load(fullfile(Session.spath,[Session.name,'.fbr.mat']));
-
-Session.fbr.data = zeros([numel(mocapSyncPulse),size(fbrParts.fbr(1).fbr,1)]);
-
-numFbrParts = length(fbrParts.fbr);
-fbrShift = cumsum([0,fbrParts.fbr(1:end-1).photo_time]);
-for s=1:numFbrParts,
-    fbrseg = fbrParts.fbr(s).fbr;
-    fbrseg(fbrseg==0)=eps;
-    Session.fbr.data([1:length(fbrseg)]+fbrShift(s),:) = fbrseg';
-end
-Session.fbr.data = double(Session.fbr.data);
-fbrData = Session.fbr.data;
-save(fullfile(Session.spath,[Session.name,'.fbr']),'fbrData');
-Session.fbr.clear();
+% $$$ 
+% $$$ % CREATE fiber object
+% $$$ Session.fbr = MTADfbr(Session.spath,...
+% $$$                       Session.filebase,...
+% $$$                       [],...
+% $$$                       Par.lfpSampleRate,...
+% $$$                       Session.xyz.sync,...
+% $$$                       Session.xyz.origin,...
+% $$$                       []);
+% $$$ fbrParts = load(fullfile(Session.spath,[Session.name,'.fbr.mat']));
+% $$$ 
+% $$$ Session.fbr.data = zeros([numel(mocapSyncPulse),size(fbrParts.fbr(1).fbr,1)]);
+% $$$ 
+% $$$ numFbrParts = length(fbrParts.fbr);
+% $$$ fbrShift = cumsum([0,fbrParts.fbr(1:end-1).photo_time]);
+% $$$ for s=1:numFbrParts,
+% $$$     fbrseg = fbrParts.fbr(s).fbr;
+% $$$     fbrseg(fbrseg==0)=eps;
+% $$$     Session.fbr.data([1:length(fbrseg)]+fbrShift(s),:) = fbrseg';
+% $$$ end
+% $$$ Session.fbr.data = double(Session.fbr.data);
+% $$$ fbrData = Session.fbr.data;
+% $$$ save(fullfile(Session.spath,[Session.name,'.fbr']),'fbrData');
+% $$$ Session.fbr.clear();
 
 Session.save;
 Session.spk.clear;

@@ -3,7 +3,7 @@ function Data = create(Data,Session,varargin)
 %
 % Calculate the instantaneous firing rate of individual units
 %
-[DataObj,state,units,twin,overwrite] = DefaultArgs(varargin,{Session.lfp,[],[],0.05,0});
+[DataObj,state,units,twin,overwrite,mode] = DefaultArgs(varargin,{Session.lfp,[],[],0.05,false,'gauss'});
 
 if isa(DataObj,'MTAApfs'),
     %nv units
@@ -32,7 +32,7 @@ else
     spk.create(Session,DataObj.sampleRate,state,units);
 
     
-    if ~DataObj.isempty,
+    if ~isempty(DataObj),
         dsize = DataObj.size(1);
     else
         dsize = diff(round(DataObj.sync.sync([1,end])*DataObj.sampleRate+1));
@@ -44,11 +44,20 @@ else
     % If no units were provided load all units
     if isempty(units), units = 1:spk.map(end,1);end
     
-    % create convolution window 
+    % create convolution window     
     swin = round(twin*DataObj.sampleRate);    
+
     %gwin = ones([swin,1]);
-    winLength = round(3*DataObj.sampleRate);
-    gwin = gausswin(winLength,winLength/(twin*DataObj.sampleRate));
+    switch mode
+        case 'gauss'
+        winLength = round(3*DataObj.sampleRate);
+        gwin = gausswin(winLength,winLength/(twin*DataObj.sampleRate));
+      case 'boxcar'
+        gwin = ones([swin,1]);
+      case 'count'
+        gwin = 1;
+        twin = 1;
+    end
     gwin = gwin./sum(gwin);
 
     % accumulate and convolve activity of each unit
@@ -59,8 +68,9 @@ else
         Data.data(:,unit==units) = conv(accumarray(res,1,[dsize,1])./twin,gwin,'same');
     end
     Data.data = Data.data.*DataObj.sampleRate.*twin+eps;
+    %Data.data = Data.data+eps;
     Data.data(~nniz(DataObj),:) = 0;
     Data.origin = DataObj.origin;
     Data.sync = DataObj.sync;
 end
-end
+

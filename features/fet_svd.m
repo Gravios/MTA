@@ -5,37 +5,22 @@ function [fet] = fet_svd(Trial,varargin)
 % $$$                  'procOpts'     , {'SPLINE_SPINE_HEAD_EQD'});
 
 
-defargs = struct('newSampleRate', 12,                       ...
+defargs = struct('newSampleRate', [],                       ...
                  'normalize'    , false,                    ...
                  'procOpts'     , {'SPLINE_SPINE_HEAD_EQD'});
 
 [newSampleRate,normalize,procOpts] = DefaultArgs(varargin,defargs,'--struct');
 
+xyz = preproc_xyz(Trial,procOpts);
 
 % INIT Feature
 fet = MTADfet(Trial.spath,...
               [],...
               [],...
-              newSampleRate,...
+              xyz.sampleRate,...
               Trial.sync.copy,...
               Trial.sync.data(1),...
-              [],'TimeSeries',[],'req20160310_selected_features','fet_mis','m');                  
-
-xyz = Trial.load('xyz','trb');
-rb = xyz.model.rb({'spine_lower','pelvis_root','spine_middle','spine_upper'});
-hcom = xyz.com(rb);
-xyz.addMarker('fbcom',[.7,1,.7],{{'head_back','head_front',[0,0,1]}},...
-              ButFilter(hcom,4,[1]./(xyz.sampleRate/2),'low'));
-xyz.addMarker('bcom',[.7,1,.7],{{'head_back','head_front',[0,0,1]}},hcom);
-xyz.addMarker('fsl',[.7,1,.7],{{'head_back','head_front',[0,0,1]}},...
-              ButFilter(xyz(:,'spine_lower',:),4,[1.5]./(xyz.sampleRate/2),'low'));
-rb = xyz.model.rb({'head_back','head_left','head_front','head_right'});
-hcom = xyz.com(rb);
-xyz.addMarker('hcom',[.7,1,.7],{{'head_back','head_front',[0,0,1]}},hcom);
-xyz.addMarker('fhcom',[.7,1,.7],{{'head_back','head_front',[0,0,1]}},...
-              ButFilter(hcom,4,[1.5]./(xyz.sampleRate/2),'low'));
-clear('hcom');
-ang = create(MTADang,Trial,xyz);
+              [],'TimeSeries',[],'features svd or erpPCA','fet_svd','s');
 
 
 
@@ -53,7 +38,7 @@ zvec(~nniz(zvec(:)))=0;
 
 unvec = [];
 rotationAngles = deg2rad([0,45,90,135]);
-mvec = xyz(:,'fbcom',[1,2])-xyz(:,'fsl',[1,2]);
+mvec = xyz(:,'spine_upper',[1,2])-xyz(:,'spine_lower',[1,2]);
 for theta = rotationAngles,
     rotMat = repmat(permute([cos(theta),-sin(theta);sin(theta),cos(theta)],[3,1,2]),[size(mvec,1),1,1]);
     unvec(:,end+1,:) = bsxfun(@rdivide,multiprod(mvec,rotMat,[2,3],[2,3]),sqrt(sum(mvec.^2,3)));
@@ -67,7 +52,6 @@ for t = rotationAngles;
 end
 
 
-
 embeddingWindow = round(0.5*xyz.sampleRate);
 embeddingWindow = embeddingWindow+mod(embeddingWindow,2);
 
@@ -77,37 +61,36 @@ nz = nniz(xyz);
 % svd
 bhvPeriods = Trial.stc{'w+n'};
 wfet = xyz.copy;
-wfet.data= zeros([size(xyz,1),size(walkFetRot,2)*size(walkFetRot,3)]);
+wfet.data= zeros([size(xyz,1),size(walkFetRot,2)*size(walkFetRot,3)+size(zvec,2)]);
 wfet.data(nz,:) = [reshape(walkFetRot(nz,:),[],size(walkFetRot,2)*size(walkFetRot,3)),zvec(nz,:)];
-wfs = wfet.segs([],embeddingWindow);
+wfs = wfet.segs(1:size(wfet,1),embeddingWindow);
 wfs = circshift(wfs,embeddingWindow/2,2);
 wfs = MTADxyz('data',reshape(permute(wfs,[2,1,3]),size(wfs,2),[]),'sampleRate',xyz.sampleRate);
 wfs.data(isnan(wfs.data(:))) = 0;
-[Uw,Sw,Vw] = svd(wfs(bhvPeriods,:),0);
 
-%figure,for i = 1:25,subplot(5,5,i);imagesc(reshape(Vw(:,i),[],size(wfet,2))'),end
+[Uw,Sw,Vw] = svd(wfs(bhvPeriods,:),0);
+%[LU, LR, FSr, VT] = erpPCA(wfs(bhvPeriods,:),10,200);
+%figure,imagesc(reshape(LR(:,1),60,[])')
 
 fetW = MTADxyz('data',wfs.data*Vw(:,1),'sampleRate',xyz.sampleRate);
-for i = 1:25,fetW.data(:,i) = wfs.data*Vw(:,i);end
-
-%% Rear
-% compute rear features (shift required)
-bhvPeriods = Trial.stc{'r+m'};
-rfet = xyz.copy;
-rfet.data= zeros([size(xyz,1),numel(tmar)]);
-rfet.data(nz,:) = xyz(nz,tmar,3);
-rfs = rfet.segs([],embeddingWindow);
-rfs = circshift(rfs,embeddingWindow/2,2);
-rfs = MTADxyz('data',reshape(permute(rfs,[2,1,3]),size(rfs,2),[]),'sampleRate',xyz.sampleRate);
-[Ur,Sr,Vr] = svd(rfs(bhvPeriods,:),0);
-
-%figure,for i = 1:25,subplot(5,5,i);imagesc(reshape(Vr(:,i),[],size(rfet,2))'),end
-
-fetR = MTADxyz('data',rfs.data*Vr(:,1),'sampleRate',xyz.sampleRate);
-for i = 1:15,fetR.data(:,i) = rfs.data*Vr(:,i);end
-
-
-fet.data = [fetW.data,fetR.data];
+fetT = MTADxyz('data',wfs.data*Vw(:,2),'sampleRate',xyz.sampleRate);
+% $$$ 
+% $$$ %% Rear
+% $$$ % compute rear features (shift required)
+% $$$ bhvPeriods = Trial.stc{'r+m'};
+% $$$ rfet = xyz.copy;
+% $$$ rfet.data= zeros([size(xyz,1),numel(tmar)]);
+% $$$ rfet.data(nz,:) = xyz(nz,tmar,3);
+% $$$ rfs = rfet.segs([],embeddingWindow);
+% $$$ rfs = circshift(rfs,embeddingWindow/2,2);
+% $$$ rfs = MTADxyz('data',reshape(permute(rfs,[2,1,3]),size(rfs,2),[]),'sampleRate',xyz.sampleRate);
+% $$$ [Ur,Sr,Vr] = svd(rfs(bhvPeriods,:),0);
+% $$$ 
+% $$$ %figure,for i = 1:25,subplot(5,5,i);imagesc(reshape(Vr(:,i),[],size(rfet,2))'),end
+% $$$ 
+% $$$ fetR = MTADxyz('data',rfs.data*Vr(:,1),'sampleRate',xyz.sampleRate);
+% $$$ for i = 1:15,fetR.data(:,i) = rfs.data*Vr(:,i);end
+fet.data = [fetW.data,fetT.data];
 
 
 

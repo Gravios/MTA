@@ -4,15 +4,18 @@ function [markers,sticks,markerConnections,traj] = plotSkeleton(Trial,xyz,ind,va
 
 defargs = struct('plotType',           'line',...
                  'ang',                [],   ...
+                 'skeletonMarkers',    {{'spine_lower', 'pelvis_root',...
+                                        'spine_middle','spine_upper','head_back'...
+                                        'head_left','head_front','head_right'}},...
                  'trajectoryPeriod',   [0,0],...
-                 'trajectoryMarkers',  {'spine_lower','pelvis_root',...
-                                        'spine_middle','spine_upper',...
-                                        'head_left','head_right'},...
+                 'trajectoryMarkers',  {{'spine_lower','pelvis_root',...
+                                         'spine_middle','spine_upper',...
+                                         'head_left','head_right'}},...
                  'hax',                gca...
 );
 
 
-[plotType,ang,trajectoryPeriod,trajectoryMarkers,hax] = DefaultArgs(varargin,defargs,'--struct');
+[plotType,ang,skeletonMarkers,trajectoryPeriod,trajectoryMarkers,hax] = DefaultArgs(varargin,defargs,'--struct');
 
 
 if strcmp(class(hax),'matlab.ui.Figure'),hax = gca; end
@@ -21,16 +24,23 @@ Rx = @(theta) [1,0,0;0,cos(theta),-sin(theta);0,sin(theta),cos(theta)];
 Ry = @(theta) [cos(theta),0,sin(theta);0,1,0;-sin(theta),0,cos(theta)];
 Rz = @(theta) [cos(theta),-sin(theta),0;sin(theta),cos(theta),0;0,0,1];
 
+
+skeletonMarkersInds = xyz.model.gmi(skeletonMarkers);
+
 traj = [];
 markerConnections=[];
-for i = 1:length(xyz.model.Connections)
-    markerConnections= cat(1,markerConnections,....
-                           [xyz.model.gmi(xyz.model.Connections{i}.marker1),xyz.model.gmi(xyz.model.Connections{i}.marker2)]);
+for i = 1:length(xyz.model.Connections),
+    tempMarkerConnection = [xyz.model.gmi(xyz.model.Connections{i}.marker1),...
+                            xyz.model.gmi(xyz.model.Connections{i}.marker2)];
+    if all(ismember(tempMarkerConnection,skeletonMarkersInds)),
+        markerConnections = cat(1,markerConnections,tempMarkerConnection);
+    end    
 end
 
-sticks = repmat({0},1,length(xyz.model.Connections));
+sticks = repmat({0},1,length(markerConnections));
+ 
 
-for l=1:length(xyz.model.Connections), 
+for l=1:length(markerConnections), 
     switch plotType
       case 'line'
         sticks{l} =animatedline([xyz.data(ind(end),markerConnections(l,1),1),...
@@ -92,38 +102,39 @@ marker_options.style ='o' ;
 marker_options.size = 8 ;
 marker_options.erase = 'none'; %{none|xor|background}
 markers = repmat({0},1,xyz.model.N);
-for l=1:xyz.model.N,
+for l=1:numel(skeletonMarkers),
     switch plotType
       case 'line'
-        markers{l} =animatedline([xyz.data(ind(end),l,1),xyz.data(ind(end),l,1)],...
-                         [xyz.data(ind(end),l,2),xyz.data(ind(end),l,2)],...
-                         [xyz.data(ind(end),l,3),xyz.data(ind(end),l,3)]);
+        markers{l} = animatedline(...
+                         [xyz.data(ind(end),skeletonMarkersInds(l),1),xyz.data(ind(end),skeletonMarkersInds(l),1)],...
+                         [xyz.data(ind(end),skeletonMarkersInds(l),2),xyz.data(ind(end),skeletonMarkersInds(l),2)],...
+                         [xyz.data(ind(end),skeletonMarkersInds(l),3),xyz.data(ind(end),skeletonMarkersInds(l),3)]);
         set(markers{l},'Parent',hax, ...
-                       'Tag',xyz.model.Markers{l}.name,...
+                       'Tag',xyz.model.Markers{skeletonMarkersInds(l)}.name,...
                        'Marker'         , marker_options.style, ...
-                       'MarkerEdgeColor', xyz.model.Markers{l}.color./255, ...
+                       'MarkerEdgeColor', xyz.model.Markers{skeletonMarkersInds(l)}.color./255, ...
                        'MarkerSize'     , marker_options.size, ...
-                       'MarkerFaceColor', xyz.model.Markers{l}.color./255, ...
+                       'MarkerFaceColor', xyz.model.Markers{skeletonMarkersInds(l)}.color./255, ...
                        'Visible','on');
 
       case 'surface'
 
         [xx,yy,zz] = meshgrid(-15:15,-15:15,-15:15);
         rr = sqrt(xx.^2 + yy.^2 + zz.^2);
-        xx = xx+xyz.data(ind(end),l,1);
-        yy = yy+xyz.data(ind(end),l,2);
-        zz = zz+xyz.data(ind(end),l,3);
+        xx = xx+xyz.data(ind(end),skeletonMarkersInds(l),1);
+        yy = yy+xyz.data(ind(end),skeletonMarkersInds(l),2);
+        zz = zz+xyz.data(ind(end),skeletonMarkersInds(l),3);
         % # calculate distance from center of the cube
 
         % # create the isosurface by thresholding at a iso-value of 10
         markers{l} = patch(isosurface(xx,yy,zz,rr,10));
         isonormals(xx,yy,zz,rr,markers{l});
         %set(markers{l}, 'VertexNormals', isonormals(xx,yy,zz,rr,markers{l}));
-        set(markers{l}, 'FaceColor', xyz.model.Markers{l}.color./255,...
+        set(markers{l}, 'FaceColor', xyz.model.Markers{skeletonMarkersInds(l)}.color./255,...
                         'EdgeColor', 'none','Parent',hax);
-% $$$                         'XData',get(markers{l},'XData')+xyz.data(ind(end),l,1),...
-% $$$                         'YData',get(markers{l},'YData')+xyz.data(ind(end),l,2),...
-% $$$                         'ZData',get(markers{l},'ZData')+xyz.data(ind(end),l,3));
+% $$$                         'XData',get(markers{l},'XData')+xyz.data(ind(end),skeletonMarkersInds(l),1),...
+% $$$                         'YData',get(markers{l},'YData')+xyz.data(ind(end),skeletonMarkersInds(l),2),...
+% $$$                         'ZData',get(markers{l},'ZData')+xyz.data(ind(end),skeletonMarkersInds(l),3));
 
     end
 end
@@ -133,6 +144,10 @@ end
 % $$$ hfloor = surface(xf,yf,zf,repmat(permute([0,0,0],[1,3,2]),[size(xf),1]),'edgecolor','none');
 
 daspect(hax,[1 1 1]);
-c = camlight;
-c.Parent = hax;
-lighting(hax,'phong')
+if isempty(findobj(hax,'Type','Light')),
+    c = camlight;
+    c.Parent = hax;    
+    lighting(hax,'phong');
+end
+    
+    

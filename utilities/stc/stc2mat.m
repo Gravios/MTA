@@ -16,6 +16,7 @@ smat = zeros([Data.size(1),nsts]);
 keys = {};
 labels = {};
 g = 1;
+sts = {};
 
 if numel(states)==1&&iscell(states)
     try,
@@ -24,7 +25,9 @@ if numel(states)==1&&iscell(states)
         sts = {Stc.states{1}};
     end
 else
-    sts = Stc(states{:});        
+    for s = 1:numel(states)
+        sts{s} = Stc{states{s},Data.sampleRate};        
+    end
 end
 
 for tper = sts
@@ -37,6 +40,4 @@ for tper = sts
         labels(g) = {tper.label};
     end
     g = g+1;
-
-end
 end

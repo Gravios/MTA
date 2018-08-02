@@ -1,3 +1,12 @@
+% req20180319 ----------------------------------------------------
+%  Status: active
+%  Type: Analysis
+%  Author: Justin Graboski
+%  Final_Forms: NA
+%  Description: Compute z-score of randomly shuffled spike time chunks 
+%               projected on each eigen vector, as computed by 
+%               req20180123_ver5.m
+%  Bugs: NA
 
 
 

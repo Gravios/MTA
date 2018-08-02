@@ -1,5 +1,5 @@
-function [drzScore,drzCenter] = compute_drz(Trial,varargin)
-%function [drzScore,drzCenter] = compute_drz(Trial,varargin)
+function [drzScore,drzCenter] = compute_hrz(Trial,varargin)
+%function [drzScore,drzCenter] = compute_hrz(Trial,varargin)
 %
 %  
 %
@@ -47,6 +47,8 @@ if isempty(pfm),
     pfm = pft;
 end
 
+xyz = preproc_xyz(Trial,'trb');
+
 if isempty(feature),
 % LOAD xyz as feature set
 % SELECT xy plane of specified marker as feature    
@@ -55,12 +57,7 @@ if isempty(feature),
     feature.filter('ButFilter',3,filtCutOffFreq,'low');
     feature.data = sq(feature(:,marker,[1,2]));
     feature.data(~nind,:) = 0; % BUG: patch
-elseif isa(feature,'MTADxyz'),
-    nind = nniz(feature);
-    feature.filter('ButFilter',3,filtCutOffFreq,'low');
-    feature.data = sq(feature(:,marker,[1,2]));
-    feature.data(~nind,:) = 0; % BUG: patch
-else    
+else
     nind = nniz(feature);
 end
 
@@ -98,7 +95,7 @@ pfds = zeros([size(feature,1),1]);
 pfdd = zeros([size(feature,1),1]);
 peakPatchRate = maxRate'.*maxRateScaleFactor;
 for unit = units
-    pfhxy = cat(2,permute(feature.data(nind,[1,2]),[1,3,2]),circshift(permute(feature.data(nind,[1,2]),[1,3,2]),round(feature.sampleRate/5)));
+    pfhxy = cat(2,permute(feature.data(nind,[1,2]),[1,3,2]),xyz(nind,'hcom',[1,2]));
     pfhxy = cat(2,pfhxy,permute(repmat(drzCenter(unit==units,:),[sum(nind),1]),[1,3,2]));
     pfhxy = MTADxyz([],[],pfhxy,feature.sampleRate);
 % SUBSTRACT reference trajectory from second trajectory    

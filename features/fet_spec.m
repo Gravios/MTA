@@ -16,9 +16,10 @@ defargs = struct('mode',                    'mtchglong',                        
                  'wsig',                    true,                                                ...
                  'sampleRate',              120,                                                 ...
                  'defspec',                 def_spec_parm(fet),                                  ...
-                 'overwrite',               true                                                 ...
+                 'overwrite',               true,                                                ...
+                 'flagCrossSpec',           false                                                ...
 );
-[mode,wsig,sampleRate,defspec,overwrite] = DefaultArgs(varargin,defargs,'--struct');
+[mode,wsig,sampleRate,defspec,overwrite,flagCrossSpec] = DefaultArgs(varargin,defargs,'--struct');
 %---------------------------------------------------------------------------------------------------
 
 
@@ -77,7 +78,7 @@ switch mode
     
 
     svout = cell([1,nargout-3]);
-    [ys,fs,ts,svout{:}] = spec(str2func(mode),data,parspec);
+    [ys,fs,ts,svout{:}] = spec(str2func(mode),data,parspec,flagCrossSpec);
 
 
     % Modify time stamps and spec; add padding (0's)

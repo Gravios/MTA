@@ -852,6 +852,7 @@
 % req20180319 ----------------------------------------------------
 %  Status: active
 %  Type: Analysis
+%  Author: Justin Graboski
 %  Final_Forms: NA
 %  Description: Compute z-score of randomly shuffled spike time chunks 
 %               projected on each eigen vector, as computed by 
@@ -861,6 +862,7 @@
 % req20180322 ----------------------------------------------------
 %  Status: active
 %  Type: Utility
+%  Author: Justin Graboski
 %  Final_Forms: NA
 %  Description: Review unit placefields 
 %  Bugs: NA
@@ -868,6 +870,7 @@
 % req20180323 ----------------------------------------------------
 %  Status: active
 %  Type: Utility
+%  Author: Justin Graboski
 %  Final_Forms: NA
 %  Description: inter-session unit corregistration
 %  Bugs: NA
@@ -881,6 +884,7 @@
 % req20180427 ----------------------------------------------------
 %  Status: active
 %  Type: Analysis
+%  Author: Justin Graboski
 %  Final_Forms: NA
 %  Description: behavior restricted place fields without rear adjacent time 
 %               periods
