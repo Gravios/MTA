@@ -98,7 +98,7 @@ pfds = zeros([size(feature,1),1]);
 pfdd = zeros([size(feature,1),1]);
 peakPatchRate = maxRate'.*maxRateScaleFactor;
 for unit = units
-    pfhxy = cat(2,permute(feature.data(nind,[1,2]),[1,3,2]),circshift(permute(feature.data(nind,[1,2]),[1,3,2]),round(feature.sampleRate/5)));
+    pfhxy = cat(2,permute(feature.data(nind,[1,2]),[1,3,2]),circshift(permute(feature.data(nind,[1,2]),[1,3,2]),1));%round(feature.sampleRate/5)
     pfhxy = cat(2,pfhxy,permute(repmat(drzCenter(unit==units,:),[sum(nind),1]),[1,3,2]));
     pfhxy = MTADxyz([],[],pfhxy,feature.sampleRate);
 % SUBSTRACT reference trajectory from second trajectory    

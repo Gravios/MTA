@@ -1,11 +1,39 @@
-function [P,phzStats,Rmax,drzHCnt] = MjgER2016_phasePrecession(Trial,drz,ddz,phz,spk,units)
+function [P,phzStats,Rmax] = MjgER2016_phasePrecession(Trial,varargin)
 %function [P,phzStats,Rmax] = MjgER2016_phasePrecession(Trial,drz,ddz,phz,spk,units)
 %
 % Compute phase precession coefficients between distance restricted drz and lfp phase
 % 
+% Varargin:
+%
+%    drz:        directional rate zones
+%    ddz:        directional distance zones
+%    phz:        Local field potential phase
+%    spk:        MTASpk object which holds spike events
+%    units:      list of units for computation
+%    distThresh: limit phase precession analysis to specified radius around placefield center
+%    mResults:   number of best fits to be returned
+%
 % Output:
 %
 %    P - NumericMatrix[(number of units), 1, : 
+%    phzStats - 
+%    Rmax -
+%    drzHCnt - 
+
+
+% DEFARGS ------------------------------------------------------------------------------------------
+defargs = struct('drz',                            [],                                           ...
+                 'ddz',                            [],                                           ...
+                 'phz',                            [],                                           ...
+                 'spk',                            [],                                           ...
+                 'units',                          [],                                           ...
+                 'distThresh',                     250,                                          ...
+                 'mResults',                       3,                                            ...
+                 'fitRange',                       -pi:0.01:pi);
+
+
+[drz,ddz,phz,spk,units,distThresh,mResults,fitRange]  = DefaultArgs(varargin,defargs,'--struct');
+%---------------------------------------------------------------------------------------------------
 
 if isempty(phz),
     error('MTA_ANALYSIS_ERROR','MTA:analysis:MjgER2016:MjgER2016_phasePrecession:PhaseAbsent');
@@ -17,15 +45,13 @@ end
 
 
 % use unit 33 from Ed10-20140817.cof.gnd
-distThresh = 250;
-mResults   = 3;
-fitRange   = -pi:0.01:pi;
-P          = nan([numel(units),mResults,2]);
-phzStats   = nan([numel(units),mResults,2]);
-s          = 1;
-Rmax       = nan([numel(units),mResults]);
 
-drzHCnt    = zeros([numel(units),10]);
+P          = nan([numel(units),2,mResults]);
+phzStats   = nan([numel(units),2,mResults]);
+s          = 1;
+Rmax       = nan([numel(units),1,mResults]);
+
+%drzHCnt    = zeros([numel(units),10]);
 
 % GET res
 
@@ -33,25 +59,27 @@ for unit = units;
 % GET unit index
     uind = find(unit==units);
     
+    if ~isempty(spk),
 % GET spikes times of unit    
 % REMOVE spikes outside of position acquisition periods
 % REMOVE spikes outside of distance threshold
-    res = spk(unit);
-    res(res>size(drz,1))=[];
-    ares=res;
-    ares(ddz(ares,uind)< distThresh) = [];
-    res (ddz(res, uind)>=distThresh) = [];            
-
+        res = spk(unit);
+        res(res>size(drz,1))=[];
+        res (abs(ddz(res, uind))>=distThresh) = [];            
 % SKIP fitting parameters if too few spikes
-    if numel(res)<10,
-        continue;
-    end    
-    
+        if numel(res)<10,
+            continue;
+        end        
 % GET direction rate zone (DRZ) values at times of spikes ( see Huxter(2008) )
 % GET phase values at times of spikes   
 % IGNORE spikes where drz or phase are nans
-    drzspk = drz(res,uind);
-    phzspk = phz(res,spk.map(unit==spk.map(:,1),2));    
+        drzspk = drz(res,uind);
+        phzspk = phz(res,spk.map(unit==spk.map(:,1),2));    
+    else,% compute phase precession for single unit
+        drzspk = drz(abs(ddz)<=distThresh);
+        phzspk = phz(abs(ddz)<=distThresh);
+    end
+        
     gind = ~isnan(drzspk)&~isnan(phzspk);
 
 % SKIP fitting parameters if too few spikes
@@ -60,26 +88,25 @@ for unit = units;
     end    
     
 
-    drzHCnt(uind,:) = histcounts(drzspk,linspace(-1,1,11));
+    %drzHCnt(uind,:) = histcounts(drzspk,linspace(-1,1,11));
 
 
     lin = drzspk(gind); 
     circ = phzspk(gind);
-    x=[min(lin),max(lin)];
-
+    
     cosPart = sum(cos(bsxfun(@minus,circ,2*pi*bsxfun(@times,fitRange,lin))),1);
     sinPart = sum(sin(bsxfun(@minus,circ,2*pi*bsxfun(@times,fitRange,lin))),1);
+    
     R = sqrt((cosPart./length(circ)).^2+...
              (sinPart./length(circ)).^2 );
-
 
     [lmi,lmv] = LocalMinima(-R',0,0,mResults);
 
     lmid = find(~isnan(lmi));
     % Rmax fit quality 
-    Rmax(uind,lmid) = R(lmi(lmid));
+    Rmax(uind,1,lmid) = R(lmi(lmid));
     % P:  Regression Parm: [Slope,Offset]
-    P(uind,lmid,:) = [fitRange(lmi(lmid))',atan2(sinPart(lmi(lmid)),cosPart(lmi(lmid)))'];
+    P(uind,:,lmid) = [fitRange(lmi(lmid))',atan2(sinPart(lmi(lmid)),cosPart(lmi(lmid)))'];
 
     % Collect residuals of the theta model for each state
     phi = nan([numel(lin),mResults]);

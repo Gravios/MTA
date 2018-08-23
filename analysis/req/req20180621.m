@@ -183,7 +183,7 @@ labelDRZ = 'DRZ';
 saveLabel = 'drz_x_fsvd';
 
 
-binsTrans = linspace(-pi/2,pi/2,binDims(2));
+binsTrans = linspace(-.6,0.4,binDims(2));
 binsTransInd = discretize(spkpch(:,2),binsTrans);
 labelTrans = 'Head Pitch (rad)';
 binsDrz = linspace(-1,1,binDims(1));
@@ -231,7 +231,8 @@ saveLabel = ['drz_x_',states{sind},'ON'];
 
 %sigUnitsBhv = true([size(FSrC,1),1]);
 %sigUnitsBhv = any(FSrC(:,[1,3])>=-0.5,2);
-sigUnitsBhv = any(FSrC(:,[1,3])>=-0.5,2);
+sigUnitsBhv = any(FSrC(:,[1,3])>=-0,2);
+sigUnitsBhv = any(fsrcz(:,[1,3])>=2,2);
 %sigUnitsBhv = any(FSrC(:,[2])<0,2);
 
 
@@ -239,7 +240,7 @@ ind = nniz(binsTransInd)&nniz(binsDrzInd)           ...
       & spkstc(:,1)                                     ... theta
       &~spkstc(:,9)                                     ... not groom
       &~spkstc(:,10)                                    ... not sit
-      &~spkstc(:,4)                                     ... not rear
+      ... &~spkstc(:,4)                                     ... not rear
       & ismember(spkmap,cluSessionSubset(sigUnitsBhv,:),'rows');
 A = accumarray([binsDrzInd(ind),binsTransInd(ind)],spkphz(ind),[numel(binsDrz)-1,numel(binsTrans)-1],@circ_mean);
 S = accumarray([binsDrzInd(ind),binsTransInd(ind)],spkphz(ind),[numel(binsDrz)-1,numel(binsTrans)-1],@circ_std);

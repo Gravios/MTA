@@ -1,4 +1,29 @@
 function pfs = pfs_2d_states(Trial,varargin)
+%function pfs = pfs_2d_states(Trial,varargin)
+%
+% Load/compute specified units' placefields of a Trial (MTATrial) object.
+% placefields are computed with the horizontal (xy) plane using periods during the hippocampal 
+% each listed state.
+%
+% Trial: MTATrial, Trial object 
+%
+%  Varargin:
+%    units:      numeric, subset of unit cluster ids.
+%
+%    stcMode:    string,    name of state collection from which states are called
+%
+%    states:     cellArray, list of states in the order
+%           
+%    reportFig:  logical,   flag 1: save figures as pngs of each place field in a predefined location
+%                                0: return placefield object without creating figures
+%
+%    overwrite:  logical,   flag 1: recompute place fields
+%                                0: load place fields from file
+%
+%    numIter:    numeric, Number of subsampled iterations (NOTE: 1st sample is full)
+%
+%    pfsArgsOverride: struct, (see MTAApfs input arguments)
+%
 
 
 % DEFARGS ------------------------------------------------------------------------------------------

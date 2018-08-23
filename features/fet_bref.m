@@ -1,5 +1,5 @@
 function [fet,featureTitles,featureDesc,Nmean,Nstd] = fet_bref(Trial,varargin)
-% function [fet,featureTitles,featureDesc,Nmean,Nstd] = fet_mis(Trial,varargin)
+% function [fet,featureTitles,featureDesc,Nmean,Nstd] = fet_bref(Trial,varargin)
 % 
 % varargin:
 %     newSampleRate: numeric,  (Trial.xyz.sampleRate) - sample rate of xyz data

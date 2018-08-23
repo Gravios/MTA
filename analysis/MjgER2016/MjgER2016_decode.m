@@ -1,268 +1,400 @@
 
 
 
-global MTA_PROJECT_PATH
-addpath /storage/antsiro/data/lab/homes_of_alumni/marcel/scripts/fwdrebayesiandecodingtools/
-addpath /storage/antsiro/data/lab/homes_of_alumni/marcel/scripts/tempScripts/
-addpath /storage/antsiro/data/lab/homes_of_alumni/marcel/scripts/aux/
-
 MjgER2016_load_data();
 
-% $$$ if ~exist('pfd','var'), [pfd,tags,eigVec,eigVar,eigScore,validDims,unitSubsets,unitIntersection,zrmMean,zrmStd] = req20180123_ver5(Trials);  end
-% $$$ numComp = size(eigVec{1},2);
-% $$$ pfindex = 1;
-% $$$ MjgER2016_load_bhv_erpPCA_scores();
-% $$$ % output:
-% $$$ %    fsrcz
-% $$$ %    FSrC
-% $$$ %    rmaps
-% $$$ clear('pfd','tags','eigVec','eigVar','eigScore','validDims','zrmMean','zrmStd',...
-% $$$       'clu','tlu','rind','D','LR','FSCFr','rsMean','rsStd','pfdShuffled','rmapsShuffledMean',...
-% $$$       'rmapsShuffled','FSrM','FSrS','fsrsMean','fsrsStd','fsrsMean','fsrsStd');
+if ~exist('pfd','var'), [pfd,tags,eigVec,eigVar,eigScore,validDims,unitSubsets,unitIntersection,zrmMean,zrmStd] = req20180123_ver5(Trials);  end
+numComp = size(eigVec{1},2);
+pfindex = 1;
+MjgER2016_load_bhv_erpPCA_scores();
+% output:
+%    fsrcz
+%    FSrC
+%    rmaps
+clear('pfd','tags','eigVec','eigVar','eigScore','validDims','zrmMean','zrmStd',...
+      'clu','tlu','rind','D','LR','FSCFr','rsMean','rsStd','pfdShuffled','rmapsShuffledMean',...
+      'rmapsShuffled','FSrM','FSrS','fsrsMean','fsrsStd','fsrsMean','fsrsStd');
 
 
-
-for trialIndex =  [1:4,6,7,17,18,20:23];
-
+trialIndex = 20;    
 Trial = Trials{trialIndex}; 
 unitSubset = units{trialIndex};
-decodingSampleRate = 10;
-
-pfstype = 'xyhb';
-%pfstype = 'xy';
-
-% COMPUTE Ndim placefield
-if strcmp(pfstype,'xyhb'),
-    xyz = preproc_xyz(Trial,'SPINE_SPLINE_HEAD_EQI');
-    xyz.resample(16);
-    fet = fet_HB_pitchB(Trial,16);
-    xyzp = copy(fet);
-    xyzp.data = cat(2,sq(xyz(:,'nose',[1,2])),xyzp.data);
-    pfsArgs = struct('units',              unitSubset,                           ...
-                     'states',             'theta-groom-sit',                    ...
-                     'overwrite',          false,                                ...
-                     'tag',                '',                                   ...
-                     'binDims',            [ 100, 100,0.4,0.4],                  ...
-                     'SmoothingWeights',   [0.8,0.8,0.8,0.8],                    ...
-                     'type',               'xyhb',                               ...
-                     'spkShuffle',         false,                                ...
-                     'posShuffle',         false,                                ...
-                     'numIter',            1000,                                 ...
-                     'xyzp',               xyzp,                                 ...
-                     'boundaryLimits',     [-500,500;-500,500;-2,2;-2,2],        ...
-                     'bootstrap',          false,                                ...
-                     'halfsample',         true                                  ...
-                     );
-    pfsArgs = struct2varargin(pfsArgs);
-    pfs = MTAApfs(Trial,pfsArgs{:});    
-    interpParPfsNdim = struct('bins',{{linspace(-500,500,50),...
-                                       linspace(-500,500,50),...
-                                       linspace(  -2,  2,50),...
-                                       linspace(  -2,  2,50)}},...
-                              'nanMaskThreshold', 0.1,...
-                              'methodNanMap',     'linear',...
-                              'methodRateMap',    'linear');
-     
-elseif strcmp(pfstype,'xy')
-    pfs = pfs_2d_theta(Trial,unitSubset);
-    interpParPfsNdim = struct('bins',{{linspace(-500,500,50),...
-                                       linspace(-500,500,50)}},...
-                              'nanMaskThreshold', 0.1,...
-                              'methodNanMap',     'linear',...
-                              'methodRateMap',    'linear');
-    
-end
 
 
-
-
-% SET interpolation parameters
-
-
-pfsBins = cell([1,4]);
-if ~isempty(interpParPfsNdim),
-    pfsBins(1:numel(interpParPfsNdim.bins)) = interpParPfsNdim.bins;
-else,
-    pfsBins = pfs.adata.bins;
-end
-pfsBinsDims = cellfun(@numel,pfsBins);
-pfsBinsDims(pfsBinsDims==0) = 1;
-pfsBins(cellfun(@isempty,pfsBins)) = [];
-
-% $$$ figure,
-% $$$ for u = 1:numel(pfs.data.clu),
-% $$$ clf();
-% $$$ srmap = pfs.plot(unitSubset(u),'mean',false,[],false,0.25,false,interpParPfsNdim,@jet,mazeMask);
-% $$$ subplot2(8,6,1,[1,2]);
-% $$$ plot(pft,unitSubset(u),'mean',true,[],false);
-% $$$ title(num2str(u));
-% $$$ rmax = pft.maxRate(unitSubset(u));
-% $$$ for i = 0:5,
-% $$$ for j = 0:6,    
-% $$$     subplot2(8,6,j+2,i+1);
-% $$$     imagescnan({pfsBins{1},pfsBins{2},srmap(:,:,i*3+20,j*3+15)'},[0,rmax],[],true,'colorMap',@jet);axis('xy');
-% $$$ end
-% $$$ end
-% $$$ waitforbuttonpress();
-% $$$ end
-% $$$ mrt = pft.maxRate(unitSubset);
-
-
-
+% LOAD state collection
+% LOAD subject position object
 stc = Trial.load('stc','msnn_ppsvd_raux');
-xyz = resample(preproc_xyz(Trial,'trb'),decodingSampleRate);
-lfp = Trial.load('lfp',72);
-fet = fet_HB_pitchB(Trial,decodingSampleRate);
-ufr = Trial.ufr.copy;
-ufr = ufr.create(Trial,lfp,'',unitSubset,0.02,true,'count');
-%ufr = ufr.create(Trial,xyz,'gper',unitSubset,0.025,true);
+xyz = resample(preproc_xyz(Trial,'trb'),sampleRate);
 
 
-% TEST N-dimensional interpolation and masking of rate map
-% $$$ 
-% $$$ %srmap = srmap.*mask;
-% $$$ figure,
-% $$$ rmax = pft.maxRate(unitSubset(u));
-% $$$ subplot(121);
-% $$$ imagescnan({pfsBins{1},pfsBins{2},sq(srmap(:,:,25,25))'},[0,rmax],[],true,'colorMap',@jet);axis('xy');
-% $$$ subplot(122);
-% $$$ imagescnan({pfsBins{3},pfsBins{4},sq(srmap(30,20,:,:))'},[0,rmax],[],true,'colorMap',@jet);axis('xy');
+% LOAD lfp
+% COMPUTE theta LFP phase
+lfp = load(Trial,'lfp',72);
+phz = lfp.phase([5,12]);
+phz.data = unwrap(phz.data);
+phz.resample(xyz);    
+phz.data = mod(phz.data+pi,2*pi)-pi;
+lfp.resample(xyz);    
 
-    
-    
-% CREATE spatial mask
-width = numel(pfsBins{1});
-height = numel(pfsBins{2});
-radius = round(numel(pfsBins{1})/2)-find(pfsBins{1}<-440,1,'last');
-centerW = width/2;
-centerH = height/2;
-[W,H] = meshgrid(1:width,1:height);           
-circMask = repmat(double(sqrt((W-centerW-.5).^2 + (H-centerH-.5).^2) < radius),...
-                  [1,1,pfsBinsDims(3:4)]);
+% COMPUTE speed
+vxy = vel(filter(copy(xyz),'ButFilter',3,2.5,'low'),{'spine_lower','hcom'},[1,2]);
+vxy.data(vxy.data<1e-3) = 1e-3;
+vxy.data = log10(vxy.data);
 
-if strcmp(pfstype,'xyhb'),
-    % CREATE behavioral mask
-    % LOAD bhv analysis vars
-    ds = load(fullfile(MTA_PROJECT_PATH,'analysis','req20180123_pfd_erpPCA-HBPITCHxBPITCH_v7.mat'));
-    if ~exist('pfb','var'),  pfb = MTAApfs(Trial,'tag',['HBPITCHxBPITCH_v7']);  end
-    interpParPfb = struct('bins',{{pfsBins{3},...
-                                   pfsBins{4}}},...
-                          'nanMaskThreshold', 0.01,...
-                          'methodNanMap',     'linear',...
-                          'methodRateMap',    'linear');
-    bhvMask = zeros([cellfun(@numel,pfb.adata.bins)]);
-    bhvMask(ds.vDims) = 1;
-    interpGrids = cell([1,numel(interpParPfb.bins)]);
-    [interpGrids{:}] = ndgrid(interpParPfb.bins{:});
-    bhvMask = interpn(pfb.adata.bins{:},bhvMask,interpGrids{:},interpParPfb.methodRateMap);
-    bhvMask(isnan(bhvMask)) = 0;
-    sinterpGrids = interpGrids;
-    SmoothingWeights = [0.1,0.1];
-    for i = 1:ndims(sinterpGrids),
-        sinterpGrids{i} = sinterpGrids{i}.^2/SmoothingWeights(i)^2/2;
-    end
-    Smoother = exp(sum(-cat(ndims(sinterpGrids)+1,sinterpGrids{:}),ndims(sinterpGrids)+1));
-    Smoother = Smoother./sum(Smoother(:));
-    bhvMask   = convn(bhvMask, Smoother,'same');
-    bhvMask = double(bhvMask>0.05);
-    bhvMask = repmat(permute(bhvMask,[3,4,1,2]),...
-                     [pfsBinsDims(1:2),1,1]);
-else
-    bhvMask = 1;    
-end
+% LOAD pitch and 
+fet = fet_HB_pitchB(Trial,sampleRate);
+
+bvec = circshift(xyz(:,'hcom',[1,2]),-round(sampleRate.*0.05))-xyz(:,'hcom',[1,2]);
+bvec = sq(bsxfun(@rdivide,bvec,sqrt(sum(bvec.^2,3))));
+bvec = cat(3,bvec,sq(bvec)*[0,-1;1,0]);
 
 
-% CREATE rate map mask
-mazeMask = circMask.*bhvMask;
-mazeMask(mazeMask==0)=nan;
+% CONVERT MTAStateCollection into a state matrix 
+stcm = stc2mat(stc,xyz,states);
 
 
-% ACCUMULATE rate maps for bayesian decoding
-rateMap = zeros([cell2mat(cf(@numel,pfsBins)),0]);
-for u = 1:numel(unitSubset),
-    trm = pfs.plot(unitSubset(u),'mean',false,[],false,0.25,false,interpParPfsNdim,[],mazeMask);
-    rateMap = cat(numel(pfsBins)+1,rateMap,trm);
-end
-
-% REDUCE prior dimensionality
-mapSize = size(rateMap);
-erows = {};
-grows = {};
-eeCount = [];
-for i = 1:ndims(rateMap)-1;
-    eeCount(:,i) = sum(reshape(permute(isnan(rateMap),[i,find(~ismember(1:ndims(rateMap),i))]),mapSize(i),[]),2);
-    erows{i}(:) = eeCount(:,i)==prod(mapSize(~ismember(1:ndims(rateMap),i)));
-    grows{i}(:) = eeCount(:,i)~=prod(mapSize(~ismember(1:ndims(rateMap),i)));
-end
-grows{end+1} = ones([1,numel(unitSubset)]);
-erows{end+1} = ones([1,numel(unitSubset)]);
-
-% MANUAL Reduction of a few dims Matrix size is too big
-% jg05-20120310
-% $$$ grows{1}([27:28]) = 0;
-% $$$ erows{1}([27:28]) = 1;
-% $$$ grows{2}([3,4,27:28]) = 0;
-% $$$ erows{2}([3,4,27:28]) = 1;
-% jg05-20120312
-% $$$ grows{2}(27:28) = 0;
-% $$$ erows{2}(27:28) = 1;
-gpfsBins = {};
-for i = 1:ndims(rateMap)-1;
-    gpfsBins{i} = pfsBins{i}(grows{i});
-end
-
-smap = rateMap(grows{:});
-smap = rateMap;
-for i = 1:ndims(rateMap)-1,
-    smap(erows{i},:,:,:,:) = [];
-    smap = permute(smap,[2:ndims(rateMap),1]);
-end
-smap = permute(smap,[2:ndims(rateMap),1]);
+sampleRate = 250;   % Hz
+spikeWindow = 0.250; % ms
+mode = 'xy'; % alt vals: 'xyhb'
 
 
-% COMPUTE Posterior distribution base on ratemaps and unit firing rates
-smap(isnan(smap)) = 0;
-atE = [];
-clear('tE');
+ufr = load(Trial,'ufr',xyz,[],unitSubset,spikeWindow,true,'gauss');    
+unitInclusion = sum(ufr.data>0.2,2);
 
-bufferSize = 1000;
-i = 1;
-%tE = decode_bayesian_poisson(smap,ufr.data(1+(bufferSize*(i-1)):bufferSize*i,:)'-eps);
+[posEstCom,posEstMax,posteriorMax] = bhv_decode(Trial,sampleRate,unitSubset,mode,[],[],spikeWindow);
 
 
-g = decode_bayesian_poisson(smap,ufr.data(1,:)');
-atE = cat(ndims(tE),atE,tE);
 
-% SELECT ripples
-rper = stc{'g',ufr.sampleRate};
-rufr = ufr(rper,:);
-atE =  decode_bayesian_poisson(smap,rufr(1:5000,:)');
+ind = unitInclusion>2 & any(stcm==4&stcm~=2,2) & posteriorMax>0.005;
 
-% ESTIMATE positions from posterior
-tpos = nan([size(tE,ndims(tE)),ndims(tE)-1]);
-binsE = {};
-for i = 1:numel(pfs.adata.bins),  binsE{i} = pfsBins{i}(grows{i});  end
-gbins = cell([1,numel(pfsBins)]); 
-[gbins{:}] = ndgrid(binsE{:});
-gbins = cat(numel(gbins)+1,gbins{:});
-ss = substruct('()',[repmat({':'},[1,ndims(gbins)-1]),{1}]);
+%ind = ':';
 
-for tind = 1:size(tE,ndims(tE)),
-    ss.subs{end} = tind;
-    tpos(tind,:) = sum(reshape(gbins.*repmat(subsref(tE,ss),[ones([1,ndims(gbins)-1]),...
-                        size(gbins,ndims(gbins))]),...
-                               [],size(gbins,ndims(gbins))));
-end
-
-
-%[~sort(reshape(atE(:,:,:,:,100),[],1));
-
+%derror = posEstMax;
+derror = posEstCom;
 figure()
-subplot(311);  plot(tpos(:,[1,2]));  %Lines([0;cumsum(diff([rper.data,1,2))],[],'k');
-subplot(312);  plot(tpos(:,[3,4]));  %Lines([0;cumsum(diff(rper.data,1,2))],[],'k');
-subplot(313);  imagesc(rufr(1:tind,:)');  %Lines([0;cumsum(diff(rper.data,1,2))],[],'k');
+subplot(511);  plot(derror(ind,[1]));  %Lines([0;cumsum(diff([rper.data,1,2))],[],'k');
+hold('on');    plot(xyz(ind,'hcom',1),'k');
+subplot(512);  plot(derror(ind,[2]));  %Lines([0;cumsum(diff(rper.data,1,2))],[],'k');
+hold('on');    plot(xyz(ind,'hcom',2),'k');
 linkaxes(findobj(gcf,'Type','Axes'),'x');
 
+subplot(513);  plot(derror(ind,[3]));  %Lines([0;cumsum(diff([rper.data,1,2))],[],'k');
+hold('on');    plot(fet(ind,1),'k');
+subplot(514);  plot(derror(ind,[4]));  %Lines([0;cumsum(diff(rper.data,1,2))],[],'k');
+hold('on');    plot(fet(ind,2),'k');
+subplot(515);  %plot(mufr(ind));  %Lines([0;cumsum(diff(rper.data,1,2))],[],'k');
+hold('on');    plot(posteriorMax(ind)*10);
+linkaxes(findobj(gcf,'Type','Axes'),'x');
+clear('derror');
+
+
+%% some plots of stuff
+
+ind = unitInclusion>=4& any(stcm==1&stcm~=2,2) &  posteriorMax>0.002;%  & any(stcm==1,2); %&stcm~=2,2)% & (vhp.da
+sum(ind)
+% $$$ ind(randi([1,size(ind,1)],round(size(ind,1)),1)) = 0;
+% $$$ ind(randi([1,size(ind,1)],round(size(ind,1)),1)) = 0;
+% $$$ ind(randi([1,size(ind,1)],round(size(ind,1)),1)) = 0;
+% $$$ ind(randi([1,size(ind,1)],round(size(ind,1)),1)) = 0;
+% $$$ sum(ind)
+
+decError = multiprod(posEstCom(ind,[1,2])-sq(xyz(ind,'hcom',[1,2])),bvec(ind,:,:),2,[2,3]);
+decError = decError(:,1);
+%decError = sqrt(sum((sq(xyz(ind,'hcom',[1,2]))-posEstCom(ind,[1,2])).^2,2)).*sign(decError);
+
+figure();
+
+subplot(231),
+plot(phz(ind,1),decError,'.');title('position error')
+%hist2([[phz(ind,1);phz(ind,1)+pi*2],[log10(decError);log10(decError)]],linspace(-pi,pi*3,30),linspace(1,3,35));title('position error')
+hist2([[phz(ind,1);phz(ind,1)+pi*2],[(decError);(decError)]],linspace(-pi,pi*3,30),linspace(-200,200,50));title('position error')
+subplot(234),hold('on');
+%plot([phz(ind,1);phz(ind,1)+pi*2],[log10(decError);log10(decError)],'.b','MarkerSize',5);
+plot([phz(ind,1);phz(ind,1)+pi*2],[(decError);(decError)],'.b','MarkerSize',1);
+title('position error')
+xlim([-pi,pi*3]);
+%ylim([1,3]);
+ylim([-200,200]);
+ylabel('log10(mm)');
+xlabel('theta phase');
+
+decError = sqrt(sum((sq(fet(ind,1))-posEstCom(circshift(ind,0),3)).^2,2));
+subplot(232),
+%hist2([[phz(ind,1);phz(ind,1)+pi*2],[log10(decError);log10(decError)]],linspace(-pi,pi*3,30),linspace(-2,0.25,15));
+hist2([[phz(ind,1);phz(ind,1)+pi*2],[(decError);(decError)]],linspace(-pi,pi*3,30),linspace(0,1,15));
+title('head pitch error')
+subplot(235),
+%plot([phz(ind,1);phz(ind,1)+pi*2],log10([decError;decError]),'.b','MarkerSize',5);
+plot([phz(ind,1);phz(ind,1)+pi*2],[(decError);(decError)],'.b','MarkerSize',5);
+title('head pitch error')
+xlim([-pi,pi*3]);
+%ylim([-2,0.25]);
+ylim([0,1]);
+ylabel('log10(rad)');
+xlabel('theta phase');
+
+
+decError = sqrt(sum((sq(fet(ind,2))-posEstCom(ind,4)).^2,2));
+subplot(233),
+%hist2([[phz(ind,1);phz(ind,1)+pi*2],log10([decError;decError])],linspace(-pi,pi*3,30),linspace(-2,-0,15));
+hist2([[phz(ind,1);phz(ind,1)+pi*2],[(decError);(decError)]],linspace(-pi,pi*3,30),linspace(0,0.4,15));
+title('body pitch error')
+subplot(236),
+%plot([phz(ind,1);phz(ind,1)+pi*2],log10([decError;decError]),'.b','MarkerSize',5);
+%plot(linpspace(-pi,pi*3,30),accumarray(discretize([phz(ind,1);phz(ind,1)+pi*2],linpspace(-pi,pi*3,30)),log10([decError;decError]),
+plot([phz(ind,1);phz(ind,1)+pi*2],[(decError);(decError)],'.b','MarkerSize',5);
+title('body pitch error')
+xlim([-pi,pi*3]);
+%ylim([-2,-0]);
+ylim([0,0.5]);
+ylabel('log10(rad)');
+xlabel('theta phase');
+
+
+figure,plot(mind)
+
+figure,psot(ep
+decError = sqrt(sum((sq(xyz(ind,'hcom',[1,2]))-posEstCom(ind,[1,2])).^2,2));
+
+
+figure();
+imagesc(phasevals,shiftvals/40,eposTPRError)
+axis('xy');
+
+
+
+
+shiftvals = -round(sampleRate*2):round(sampleRate/50):round(sampleRate*2);
+% SET time bins
+slidingTimeWindowSize = round(sampleRate*1);
+timevals = 1:size(xyz,1);
+timevals(~nniz(xyz)) = [];
+timevals = timevals(1:slidingTimeWindowSize:numel(timevals));
+timeBinInds  = discretize([1:size(xyz,1)]',timevals);
+badTimeBinInds = find(diff(timevals)>slidingTimeWindowSize)+1;
+timeBinInds(ismember(timeBinInds,badTimeBinInds)) = 0;
+% SET phase bins
+phasevals = linspace(-pi,pi,13);
+phaseBinInds = discretize(phz.data,phasevals);
+% SET speed bins
+speedvals = linspace(0,1.8,7);
+speedBinInds = discretize(vxy(:,2),speedvals);
+
+eposTPRErrorXY = nan([numel(timevals)-1,numel(shiftvals),numel(phasevals)-1,numel(speedvals)-1]);
+%eposTPRErrorHP = nan([numel(timevals)-1,numel(shiftvals),numel(phasevals)-1,numel(speedvals)-1]);
+%eposTPRErrorBP = nan([numel(timevals)-1,numel(shiftvals),numel(phasevals)-1,numel(speedvals)-1]);
+
+eposTPRErrorXYTrj = nan([numel(timevals)-1,numel(shiftvals),numel(phasevals)-1,numel(speedvals)-1,2]);
+
+meanTPRSpeed = nan([numel(timevals)-1,numel(phasevals)-1,numel(speedvals)-1]);
+meanTPRPostMax = nan([numel(timevals)-1,numel(phasevals)-1,numel(speedvals)-1]);
+meanTPRPhase = nan([numel(timevals)-1,numel(phasevals)-1,numel(speedvals)-1]);
+
+for time = 1:numel(timevals)-2,
+    %tic
+    disp([num2str(time),' of ',num2str(numel(timevals)-3)])
+
+    timeWindow = time-2:time+2;
+    
+    timeWindowIndex = ismember(timeBinInds,timeWindow);
+
+    txyz = sq(xyz(timeWindowIndex,'nose',[1,2]));
+    tvxy = vxy(timeWindowIndex,2);
+    tbvec = bvec(timeWindowIndex,:,:);    
+    tposteriorMax = posteriorMax(timeWindowIndex);
+    tphz = phz(timeWindowIndex);    
+    
+    tind =   unitInclusion(timeWindowIndex)>=3  ...
+             & stcm(timeWindowIndex,1)==1       ...
+             & stcm(timeWindowIndex,2)~=2       ...
+             & timeBinInds((timeWindowIndex))==time...
+             & tposteriorMax>0.002;
+
+    tempPhaseBinInds = phaseBinInds(timeWindowIndex);
+    tempSpeedBinInds = speedBinInds(timeWindowIndex);
+
+    eposThetaPhaseRes = nan([size(tind,1),2]);
+    eposThetaPhaseRes(timeBinInds(timeWindowIndex)==time,:) = posEstCom(timeBinInds==time,1:2);
+    %eposThetaPhaseRes(timeBinInds(timeWindowIndex)==time,:) = posEstMax(timeBinInds==time,1:2);
+% $$$     eposThetaPhaseRes = nan([size(tind,1),size(posEstCom,2)]);
+% $$$     eposThetaPhaseRes(timeBinInds(timeWindowIndex)==time,:) = posEstCom(timeBinInds==time,1:2);
+
+    for speed = 1:numel(speedvals)-1,   
+        for phase = 1:numel(phasevals)-1,   
+            ind = tind  &  tempPhaseBinInds==phase  &  tempSpeedBinInds==speed;
+            
+            if sum(ind)>3
+                meanTPRSpeed(time,phase,speed) = mean(tvxy(ind));
+                meanTPRPostMax(time,phase,speed) = mean(tposteriorMax(ind));
+                meanTPRPhase(time,phase,speed) = circ_mean(tphz(ind));
+                tepos = eposThetaPhaseRes;
+                tepos(~ind,:) = nan;
+
+
+                                    
+                for shift = 1:numel(shiftvals)
+                    eposTPRErrorXYTrj(time,shift,phase,speed,:) = ...
+                       mean(multiprod(circshift(tepos(:,1:2),shiftvals(shift))-txyz,tbvec,2,[2,3]),'omitnan');
+                    
+                    eposTPRErrorXY(time,shift,phase,speed) = ...
+                        mean(sqrt(sum((txyz-circshift(tepos,shiftvals(shift))).^2,2)),'omitnan');
+
+% $$$                     %                    eposTPRErrorHP(time,shift,phase,speed) = mean(sqrt(sum((fet(:,1) ...
+% $$$                                        -circshift(eposThetaPhaseRes(:,3),shiftvals(shift))).^2,2)),'omitnan');
+% $$$                     %eposTPRErrorBP(time,shift,phase,speed) = mean(sqrt(sum((fet(:,2)...
+% $$$                                        -circshift(eposThetaPhaseRes(:,4),shiftvals(shift))).^2,2)),'omitnan');
+                end
+            end
+        end
+    end
+    %toc
+end
+
+
+
+% $$$ figure();
+% $$$ for speed = 1:numel(speedvals)-1,
+% $$$ subplot2(2,numel(speedvals)-1,1,speed);    
+% $$$     imagesc(phasevals,shiftvals/sampleRate,eposTPRErrorXY(:,:,speed));axis('xy');
+% $$$ caxis([100,300])
+% $$$ subplot2(2,numel(speedvals)-1,2,speed);
+% $$$     imagesc(phasevals,shiftvals/sampleRate0,1./(bsxfun(@rdivide,eposTPRErrorXY(:,:,speed),min( ...
+% $$$         eposTPRErrorXY(:,:,speed)))+eps));axis('xy');
+% $$$     title(num2str(mean(10.^speedvals(speed:speed+1))))
+% $$$ end
+
+
+
+derror = eposTPRErrorXY;
+%derror = abs(eposTPRErrorXYTrj(:,1));
+% $$$ derror = eposTPRErrorBP;
+% $$$ derror = eposTPRErrorHP;
+
+mind = [];
+minv = [];
+%for time = 1:numel(timevals)-1,
+for t = 1:time
+    for speed = 1:numel(speedvals)-1,
+        %[~,mind(t,speed,:)] = max(RectFilter(RectFilter(1./(bsxfun(@rdivide,sq(derror(t,:,:,speed)),min(sq(derror(t,:,:,speed))))+eps)',3,1)',3,1));
+        [minv(t,speed,:),mind(t,speed,:)] = min(RectFilter(RectFilter(sq(derror(t,:,:,speed))',3,1)',3,1));
+    end
+end
+mind(mind==0) = nan;
+minv(minv==0) = nan;
+
+
+shiftTimeBins = shiftvals(2:end)./sampleRate;
+
+figure;
+for s = 1:numel(speedvals)-1,   
+    for p = 1:numel(phasevals)-1,   
+        subplot2(numel(phasevals)-1,numel(speedvals)-1,p,s);
+
+        ind = mind(:,s,p)~=1&mind(:,s,p)~=201;
+
+        bar(shiftTimeBins,histc(shiftTimeBins(mind(ind,s,p)),shiftTimeBins),'histc');
+        %hist2([shiftTimeBins(mind(ind,s,p))',minv(ind,s,p)],linspace(-1,2,30),linspace(40,800,6));
+% $$$         hist2([shiftTimeBins(mind(ind,s,p))',minv(ind,s,p)],linspace(-1,2,30),linspace(40,800,6));
+        Lines(median(shiftTimeBins(mind(ind,s,p)),'omitnan'),[],'g');
+        Lines(0,[],'m');
+
+% $$$         scatter(log10(eposTPRErrorXY([ind;false;false],50,p,s)),log10(minv(ind,s,p)),5, ...
+% $$$                 shiftTimeBins(mind(ind,s,p)),'filled');
+% $$$         xlim([1,2.7]);
+% $$$         ylim([1,2.7]);
+        
+% $$$         scatter(log10([1;1;eposTPRErrorXY([ind;false;false],50,p,s,1)]),...
+% $$$                 [1;1;log10(minv(ind,s,p))],5, ...
+% $$$                 shiftTimeBins([1;150;mind(ind,s,p)]),'filled');
+% $$$         xlim([1,2.7]);
+% $$$         ylim([1,2.7]);
+% $$$         scatter(([0;0;eposTPRErrorXYTrj([ind;false;false],50,p,s,1)]),...
+% $$$                 [1;1;log10(minv(ind,s,p))],5, ...
+% $$$                 shiftTimeBins([1;150;mind(ind,s,p)]),'filled');
+% $$$         xlim([-400,400]);
+% $$$         ylim([1,2.7]);
+        
+        xlim(shiftvals([1,end])./sampleRate);
+        ylim([0,30]);
+        if s==1,ylabel(num2str(mean(phasevals([p:p+1]))));end
+        if p==(numel(phasevals)-1),xlabel(num2str(speedvals([s:s+1])));end
+            
+    end
+end
+
+
+
+
+% $$$ 
+% $$$ cm = reshape(permute(repmat(jet(numel(shiftvals)-1),[1,1,20]),[1,3,2]),[],3);
+% $$$ figure();
+% $$$ scatter(reshape(repmat(phasevals(1:end-1),[numel(shiftvals)-1,1]),[],1),shiftvals(reshape(mind,[],1))/40,20,cm,'filled');
+
+figure();
+imagesc(phasevals,speedvals,(mind-40)/40)
+axis('xy');
+caxis([-0.4,0.4]);
+
+imagesc(phasevals,shiftvals/40,1./(bsxfun(@rdivide,eposTPRErrorXY(:,:,18),min(eposTPRErrorXY(:,:,18)))+eps));axis('xy');
+
+figure();
+subplot(131);
+imagesc(phasevals,shiftvals/40,1./(bsxfun(@rdivide,eposTPRErrorXY,min(eposTPRErrorXY))+eps));axis('xy');
+subplot(132);
+imagesc(phasevals,shiftvals/40,1./(bsxfun(@rdivide,eposTPRErrorHP,min(eposTPRErrorHP))+eps));axis('xy');
+subplot(133);
+imagesc(phasevals,shiftvals/40,1./(bsxfun(@rdivide,eposTPRErrorBP,min(eposTPRErrorBP))+eps));axis('xy');
+
+
+
+
+
+
+
+% OLD 
+% $$$ 
+% $$$ figure();
+% $$$ for speed = 1:numel(speedvals)-1,
+% $$$ subplot2(2,numel(speedvals)-1,1,speed);    
+% $$$     imagesc(phasevals,shiftvals/40,eposTPRErrorXY(:,:,speed));axis('xy');
+% $$$ caxis([100,300])
+% $$$ subplot2(2,numel(speedvals)-1,2,speed);
+% $$$     imagesc(phasevals,shiftvals/40,1./(bsxfun(@rdivide,eposTPRErrorXY(:,:,speed),min( ...
+% $$$         eposTPRErrorXY(:,:,speed)))+eps));axis('xy');
+% $$$     title(num2str(mean(10.^speedvals(speed:speed+1))))
+% $$$ end
+% $$$ 
+% $$$ 
+% $$$ mind = [];
+% $$$ for speed = 1:numel(speedvals)-1,
+% $$$ [~,mind(speed,:)] = max(RectFilter(RectFilter(1./(bsxfun(@rdivide,eposTPRErrorXY(:,:,speed),min(eposTPRErrorXY(:,:,speed)))+eps)',3,1)',3,1));
+% $$$ end
+% $$$ % $$$ 
+% $$$ % $$$ cm = reshape(permute(repmat(jet(numel(shiftvals)-1),[1,1,20]),[1,3,2]),[],3);
+% $$$ % $$$ figure();
+% $$$ % $$$ scatter(reshape(repmat(phasevals(1:end-1),[numel(shiftvals)-1,1]),[],1),shiftvals(reshape(mind,[],1))/40,20,cm,'filled');
+% $$$ 
+% $$$ figure();
+% $$$ imagesc(phasevals,speedvals,(mind-40)/40)
+% $$$ axis('xy');
+% $$$ caxis([-0.4,0.4]);
+% $$$ 
+% $$$ imagesc(phasevals,shiftvals/40,1./(bsxfun(@rdivide,eposTPRErrorXY(:,:,18),min(eposTPRErrorXY(:,:,18)))+eps));axis('xy');
+% $$$ 
+% $$$ figure();
+% $$$ subplot(131);
+% $$$ imagesc(phasevals,shiftvals/40,1./(bsxfun(@rdivide,eposTPRErrorXY,min(eposTPRErrorXY))+eps));axis('xy');
+% $$$ subplot(132);
+% $$$ imagesc(phasevals,shiftvals/40,1./(bsxfun(@rdivide,eposTPRErrorHP,min(eposTPRErrorHP))+eps));axis('xy');
+% $$$ subplot(133);
+% $$$ imagesc(phasevals,shiftvals/40,1./(bsxfun(@rdivide,eposTPRErrorBP,min(eposTPRErrorBP))+eps));axis('xy');
+
+
+
+
+
+
+    
 
 
 % CREATE video of decoding
@@ -862,9 +994,8 @@ end
 
 stcm = stc2mat(stc,xyz,states);
 
-timeSpec = [1:size(ys,1)]./ys.sampleRate;
-
-cmapLims = [1,2.5;1,2.5;1,3;1,3.5];
+% $$$ timeSpec = [1:size(ys,1)]./ys.sampleRate;
+% $$$ cmapLims = [1,2.5;1,2.5;1,3;1,3.5];
 
 figure();
 
@@ -1037,7 +1168,7 @@ seq.obsPathAngPPC = nan([size(seq.periods,1),1]);
 seq.decPathAngPPC = nan([size(seq.periods,1),1]);
 
 
-
+< 
 dvxy = vxy.data;
 dxyz = xyz(:,'nose',[1,2]);
 depos = permute(epos,[1,3,2]);
@@ -1191,3 +1322,75 @@ Lines([],log10(200),'m');
 
 
 
+
+
+% PROJECTION 
+
+% GENERATE orthogonal basis, origin: head's center of mass
+nz = -cross(xyz(:,'head_back',:)-hcom,xyz(:,'head_left',:)-hcom);
+nz = bsxfun(@rdivide,nz,sqrt(sum((nz).^2,3))); 
+ny = cross(nz,xyz(:,'head_back',:)-hcom);
+ny = bsxfun(@rdivide,ny,sqrt(sum((ny).^2,3)));
+nx = cross(ny,nz);
+nx = bsxfun(@rdivide,nx,sqrt(sum((nx).^2,3)));
+
+if theta ~= 0,
+    evec = cat(2,nx,ny,nz);
+    j =1:3;
+    headNorm = bsxfun(@rdivide,sq(evec(:,rotationAxisInd,:)),sqrt(sum(evec(:,rotationAxisInd,:).^2,3)));
+    headKron = reshape(repmat(headNorm',3,1).*headNorm(:,j(ones(3,1),:)).',[3,3,size(headNorm,1)]);
+    j = [ 0,-1, 1;...
+          1, 0,-1;...
+          -1, 1, 0];
+    k = [1,3,2;...
+         3,1,1;...
+         2,1,1];
+    headCPM = reshape(headNorm(:,k)',3,3,size(headNorm,1)).*repmat(j,[1,1,size(headNorm,1)]);
+
+% CREATE rotation matrix
+    j = 1:3;
+    headRotMat = cos(theta)*repmat(eye(3),[1,1,size(headNorm,1)])...
+        +sin(theta)*headCPM...
+        +(1-cos(theta))*headKron;
+
+% SET matrix
+    ovec = evec(:,1,:);
+% ROTATE Basis
+    nx = permute(sum(headRotMat.*permute(reshape(nx(:,j(ones(3,1),:)),[size(headNorm,1),3,3]),[2,3,1]),2),[3,2,1]);
+    ny = permute(sum(headRotMat.*permute(reshape(ny(:,j(ones(3,1),:)),[size(headNorm,1),3,3]),[2,3,1]),2),[3,2,1]);
+    nz = permute(sum(headRotMat.*permute(reshape(nz(:,j(ones(3,1),:)),[size(headNorm,1),3,3]),[2,3,1]),2),[3,2,1]);
+end
+
+
+
+% DIAGNOSTIC figures ------------------------------------------------------------------------------
+
+% $$$ figure,
+% $$$ for u = 1:numel(pfs.data.clu),
+% $$$ clf();
+% $$$ srmap = pfs.plot(unitSubset(u),'mean',false,[],false,0.25,false,interpParPfsNdim,@jet,mazeMask);
+% $$$ subplot2(8,6,1,[1,2]);
+% $$$ plot(pft,unitSubset(u),'mean',true,[],false);
+% $$$ title(num2str(u));
+% $$$ rmax = pft.maxRate(unitSubset(u));
+% $$$ for i = 0:5,
+% $$$ for j = 0:6,    
+% $$$     subplot2(8,6,j+2,i+1);
+% $$$     imagescnan({pfsBins{1},pfsBins{2},srmap(:,:,i*3+20,j*3+15)'},[0,rmax],[],true,'colorMap',@jet);axis('xy');
+% $$$ end
+% $$$ end
+% $$$ waitforbuttonpress();
+% $$$ end
+% $$$ mrt = pft.maxRate(unitSubset);
+
+
+
+% TEST N-dimensional interpolation and masking of rate map
+% $$$ 
+% $$$ %srmap = srmap.*mask;
+% $$$ figure,
+% $$$ rmax = pft.maxRate(unitSubset(u));
+% $$$ subplot(121);
+% $$$ imagescnan({pfsBins{1},pfsBins{2},sq(srmap(:,:,25,25))'},[0,rmax],[],true,'colorMap',@jet);axis('xy');
+% $$$ subplot(122);
+% $$$ imagescnan({pfsBins{3},pfsBins{4},sq(srmap(30,20,:,:))'},[0,rmax],[],true,'colorMap',@jet);axis('xy');

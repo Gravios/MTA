@@ -54,21 +54,20 @@ else
         gwin = gausswin(winLength,winLength/(twin*DataObj.sampleRate));
       case 'boxcar'
         gwin = ones([swin,1]);
+        gwin = gwin./sum(gwin);
       case 'count'
         gwin = 1;
         twin = 1;
     end
-    gwin = gwin./sum(gwin);
 
     % accumulate and convolve activity of each unit
     for unit = units(:)'
         res = spk.res(spk.clu==unit);
         res(res==0) = 1;
         res(res>dsize) = dsize;
-        Data.data(:,unit==units) = conv(accumarray(res,1,[dsize,1])./twin,gwin,'same');
+        Data.data(:,unit==units) = conv(accumarray(res,1,[dsize,1]),gwin,'same')+eps;
     end
-    Data.data = Data.data.*DataObj.sampleRate.*twin+eps;
-    %Data.data = Data.data+eps;
+
     Data.data(~nniz(DataObj),:) = 0;
     Data.origin = DataObj.origin;
     Data.sync = DataObj.sync;

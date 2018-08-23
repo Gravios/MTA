@@ -24,9 +24,11 @@ MjgER2016_load_data();
 
 for trialIndex =  [1:4,6,7,17,18,20:23];
 
+%trialIndex = 20;
+    
 Trial = Trials{trialIndex}; 
 unitSubset = units{trialIndex};
-decodingSampleRate = 10;
+decodingSampleRate = 40;
 
 pfstype = 'xyhb';
 %pfstype = 'xy';
@@ -111,11 +113,18 @@ pfsBins(cellfun(@isempty,pfsBins)) = [];
 
 stc = Trial.load('stc','msnn_ppsvd_raux');
 xyz = resample(preproc_xyz(Trial,'trb'),decodingSampleRate);
-lfp = Trial.load('lfp',72);
+stcm = stc2mat(stc,xyz,states);
+lfp = resample(Trial.load('lfp',72),xyz);
+lfp = Trial.load('lfp',72)
+lfp.resample(xyz);
+phz = phase(lfp,[5,12]);
+phz.data = unwrap(phz.data);
+phz.resample(xyz);
+phz.data = mod(phz.data+pi,2*pi)-pi;
+
 fet = fet_HB_pitchB(Trial,decodingSampleRate);
 ufr = Trial.ufr.copy;
-ufr = ufr.create(Trial,lfp,'',unitSubset,0.02,true,'count');
-%ufr = ufr.create(Trial,xyz,'gper',unitSubset,0.025,true);
+ufr = ufr.create(Trial,xyz,[],unitSubset,0.04,true,'count');
 
 
 % TEST N-dimensional interpolation and masking of rate map
@@ -222,47 +231,132 @@ smap = permute(smap,[2:ndims(rateMap),1]);
 
 % COMPUTE Posterior distribution base on ratemaps and unit firing rates
 smap(isnan(smap)) = 0;
-atE = [];
 clear('tE');
 
+posEstCom = [];
+posEstMax = [];
+posteriorMax = [];
+
 bufferSize = 1000;
-i = 1;
-%tE = decode_bayesian_poisson(smap,ufr.data(1+(bufferSize*(i-1)):bufferSize*i,:)'-eps);
+for i = 1:ceil(size(ufr,1)/bufferSize)
+    if i == ceil(size(ufr,1)/bufferSize),
+        ind = [1+bufferSize*(i-1)] : [bufferSize*(i-1)+mod(size(ufr,1),bufferSize)];
+    else        
+        ind = [1+bufferSize*(i-1)] : [bufferSize*i];
+    end
+    
+    tE = decode_bayesian_poisson(smap,ufr.data(ind,:)'-eps);
+    tESize = size(tE);
 
 
-g = decode_bayesian_poisson(smap,ufr.data(1,:)');
-atE = cat(ndims(tE),atE,tE);
+% ESTIMATE positions from posterior center of mass
+    tpos = nan([size(tE,ndims(tE)),ndims(tE)-1]);
+    binsE = {};
+    for bin = 1:numel(pfs.adata.bins),  
+        binsE{bin} = pfsBins{bin}(grows{bin});  
+    end
+    gbins = cell([1,numel(pfsBins)]); 
+    [gbins{:}] = ndgrid(binsE{:});
+    gbins = cat(numel(gbins)+1,gbins{:});
+    ss = substruct('()',[repmat({':'},[1,ndims(gbins)-1]),{1}]);
+    for tind = 1:size(tE,ndims(tE)),
+        ss.subs{end} = tind;
+        tpos(tind,:) = sum(reshape(gbins.*repmat(subsref(tE,ss),[ones([1,ndims(gbins)-1]),...
+                            size(gbins,ndims(gbins))]),...
+                                   [],size(gbins,ndims(gbins))));
+    end
 
-% SELECT ripples
-rper = stc{'g',ufr.sampleRate};
-rufr = ufr(rper,:);
-atE =  decode_bayesian_poisson(smap,rufr(1:5000,:)');
 
-% ESTIMATE positions from posterior
-tpos = nan([size(tE,ndims(tE)),ndims(tE)-1]);
-binsE = {};
-for i = 1:numel(pfs.adata.bins),  binsE{i} = pfsBins{i}(grows{i});  end
-gbins = cell([1,numel(pfsBins)]); 
-[gbins{:}] = ndgrid(binsE{:});
-gbins = cat(numel(gbins)+1,gbins{:});
-ss = substruct('()',[repmat({':'},[1,ndims(gbins)-1]),{1}]);
+% ESTIMATE positions from posterior max
+    mpos = nan([size(tE,ndims(tE)),ndims(tE)-1]);
+    apos = nan([size(tE,ndims(tE)),1]);
+    for tind = 1:size(tE,ndims(tE)),
+        [tval,tbin] = max(reshape(tE(:,:,:,:,tind),[],1));
+        maxInd = cell([1,ndims(tE)-1]);    
+        [maxInd{:}] = ind2sub(tESize(1:ndims(tE)-1),tbin);
+        tbin = cell2mat(maxInd);
+        if ~isempty(tbin),
+            mpos(tind,:) = [gpfsBins{1}(tbin(1)),gpfsBins{2}(tbin(2)),gpfsBins{3}(tbin(3)),gpfsBins{4}(tbin(4))];
+            apos(tind)   = tE(tbin(1),tbin(2),tbin(3),tbin(4),tind);
+        end
+    end
+    
+% ACCUMULATE position estimates
+    posEstCom    = cat(1,posEstCom,tpos);
+    posEstMax    = cat(1,posEstMax,mpos);
+    posteriorMax = cat(1,posteriorMax,apos);
 
-for tind = 1:size(tE,ndims(tE)),
-    ss.subs{end} = tind;
-    tpos(tind,:) = sum(reshape(gbins.*repmat(subsref(tE,ss),[ones([1,ndims(gbins)-1]),...
-                        size(gbins,ndims(gbins))]),...
-                               [],size(gbins,ndims(gbins))));
 end
-
 
 %[~sort(reshape(atE(:,:,:,:,100),[],1));
 
+mufr = unity(mean(ufr.data-eps,2));
+
+unitInclusion = sum(logical(ufr(:,:)-eps),2);
+statePeriods = any(stcm==7|stcm==7,2);
+statePeriods = any(stcm==6|stcm==6,2);
+
+
+ind = mufr>1  &  posteriorMax>0.5  & any(stcm==4,2);
+
+
 figure()
-subplot(311);  plot(tpos(:,[1,2]));  %Lines([0;cumsum(diff([rper.data,1,2))],[],'k');
-subplot(312);  plot(tpos(:,[3,4]));  %Lines([0;cumsum(diff(rper.data,1,2))],[],'k');
-subplot(313);  imagesc(rufr(1:tind,:)');  %Lines([0;cumsum(diff(rper.data,1,2))],[],'k');
+subplot(511);  plot(posEstCom(ind,[1]));  %Lines([0;cumsum(diff([rper.data,1,2))],[],'k');
+hold('on');    plot(xyz(ind,'hcom',1),'k');
+subplot(512);  plot(posEstCom(ind,[2]));  %Lines([0;cumsum(diff(rper.data,1,2))],[],'k');
+hold('on');    plot(xyz(ind,'hcom',2),'k');
+subplot(513);  plot(posEstCom(ind,[3]));  %Lines([0;cumsum(diff([rper.data,1,2))],[],'k');
+hold('on');    plot(fet(ind,1),'k');
+subplot(514);  plot(posEstCom(ind,[4]));  %Lines([0;cumsum(diff(rper.data,1,2))],[],'k');
+hold('on');    plot(fet(ind,2),'k');
+subplot(515);  plot(mufr(ind));  %Lines([0;cumsum(diff(rper.data,1,2))],[],'k');
+hold('on');    plot(posteriorMax(ind)*10);
 linkaxes(findobj(gcf,'Type','Axes'),'x');
 
+
+ind = mufr>0.5  &  posteriorMax>0.2  & any(stcm==1,2);
+figure();
+ 
+decError = sqrt(sum((sq(xyz(ind,'hcom',[1,2]))-posEstCom(ind,[1,2])).^2,2));
+subplot(231),
+plot(phz(ind,1),decError,'.');title('position error')
+hist2([[phz(ind,1);phz(ind,1)+pi*2],[log10(decError);log10(decError)]],linspace(-pi,pi*3,50),linspace(1,3,25));title('position error')
+subplot(234),hold('on');
+plot([phz(ind,1);phz(ind,1)+pi*2],[log10(decError);log10(decError)],'.b','MarkerSize',2);
+title('position error')
+
+xlim([-pi,pi*3]);
+ylim([1,3]);
+ 
+decError = sqrt(sum((sq(fet(ind,1))-posEstCom(ind,3)).^2,2));
+subplot(232),
+hist2([[phz(ind,1);phz(ind,1)+pi*2],[log10(decError);log10(decError)]],linspace(-pi,pi*3,50),linspace(-2,0.5,25));
+title('head pitch error')
+subplot(235),
+plot([phz(ind,1);phz(ind,1)+pi*2],[log10(decError);log10(decError)],'.b','MarkerSize',2);
+title('head pitch error')
+xlim([-pi,pi*3]);
+ylim([-2,0.5]);
+
+decError = sqrt(sum((sq(fet(ind,2))-posEstCom(ind,4)).^2,2));
+subplot(233),
+hist2([[phz(ind,1);phz(ind,1)+pi*2],[log10(decError);log10(decError)]],linspace(-pi,pi*3,50),linspace(-2,0.5,25));
+title('body pitch error')
+subplot(236),
+plot([phz(ind,1);phz(ind,1)+pi*2],[log10(decError);log10(decError)],'.b','MarkerSize',2);
+title('body pitch error')
+xlim([-pi,pi*3]);
+ylim([-2,0.5]);
+
+
+
+
+
+
+for p = thetaPeaks = 
+    
+
+    
 
 
 % CREATE video of decoding
@@ -1037,7 +1131,7 @@ seq.obsPathAngPPC = nan([size(seq.periods,1),1]);
 seq.decPathAngPPC = nan([size(seq.periods,1),1]);
 
 
-
+< 
 dvxy = vxy.data;
 dxyz = xyz(:,'nose',[1,2]);
 depos = permute(epos,[1,3,2]);
@@ -1191,3 +1285,41 @@ Lines([],log10(200),'m');
 
 
 
+
+
+% PROJECTION 
+
+% GENERATE orthogonal basis, origin: head's center of mass
+nz = -cross(xyz(:,'head_back',:)-hcom,xyz(:,'head_left',:)-hcom);
+nz = bsxfun(@rdivide,nz,sqrt(sum((nz).^2,3))); 
+ny = cross(nz,xyz(:,'head_back',:)-hcom);
+ny = bsxfun(@rdivide,ny,sqrt(sum((ny).^2,3)));
+nx = cross(ny,nz);
+nx = bsxfun(@rdivide,nx,sqrt(sum((nx).^2,3)));
+
+if theta ~= 0,
+    evec = cat(2,nx,ny,nz);
+    j =1:3;
+    headNorm = bsxfun(@rdivide,sq(evec(:,rotationAxisInd,:)),sqrt(sum(evec(:,rotationAxisInd,:).^2,3)));
+    headKron = reshape(repmat(headNorm',3,1).*headNorm(:,j(ones(3,1),:)).',[3,3,size(headNorm,1)]);
+    j = [ 0,-1, 1;...
+          1, 0,-1;...
+          -1, 1, 0];
+    k = [1,3,2;...
+         3,1,1;...
+         2,1,1];
+    headCPM = reshape(headNorm(:,k)',3,3,size(headNorm,1)).*repmat(j,[1,1,size(headNorm,1)]);
+
+% CREATE rotation matrix
+    j = 1:3;
+    headRotMat = cos(theta)*repmat(eye(3),[1,1,size(headNorm,1)])...
+        +sin(theta)*headCPM...
+        +(1-cos(theta))*headKron;
+
+% SET matrix
+    ovec = evec(:,1,:);
+% ROTATE Basis
+    nx = permute(sum(headRotMat.*permute(reshape(nx(:,j(ones(3,1),:)),[size(headNorm,1),3,3]),[2,3,1]),2),[3,2,1]);
+    ny = permute(sum(headRotMat.*permute(reshape(ny(:,j(ones(3,1),:)),[size(headNorm,1),3,3]),[2,3,1]),2),[3,2,1]);
+    nz = permute(sum(headRotMat.*permute(reshape(nz(:,j(ones(3,1),:)),[size(headNorm,1),3,3]),[2,3,1]),2),[3,2,1]);
+end

@@ -168,7 +168,7 @@ classdef MTAStateCollection < hgsetget
         end
         
         function Stc = addState(Stc,path,filename,data,sampleRate,sync,origin,varargin)            
-        %Stc = addState(Stsc,key,label,state)
+        %Stc = addState(Stc,path,filename,data,sampleRate,sync,origin,key,label,state)
         %
         %   Stc - MTAStateCollection: object containing state epochs
         %
@@ -180,6 +180,9 @@ classdef MTAStateCollection < hgsetget
         %   data - numericArray: (event,[start,stop]) Periods
         %           in which the state occurs @ xyzSampleRate
         %
+        %   sampleRate
+        %   sync
+        %   origin
             if isa(path,'MTADepoch'),
                  if ~isempty(Stc.gsi(path.label))&&~isempty(Stc.gsi(path.key)),
                      return

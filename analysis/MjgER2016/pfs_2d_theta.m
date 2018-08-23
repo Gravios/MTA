@@ -1,12 +1,18 @@
-function pf = pfs_2d_theta(Trial,varargin)
-%function pf = pfs_2d_theta(Trial,varargin)
+function pfs = pfs_2d_theta(Trial,varargin)
+%function pft = pfs_2d_theta(Trial,varargin)
+%
+% Load/compute specified unit placefields of a Trial (MTATrial) object.
+% placefields are computed with the horizontal (xy) plane using periods during the hippocampal 
+% theta state.
 %
 %  varargin:
-%    reportFig:  logical, flag 1:{save figures as pngs of each place field in a predefined location
-%                              0:{do nothing}
+%    units:      numeric, subset of unit cluster ids.
+% 
+%    reportFig:  logical, flag 1: save figures as pngs of each place field in a predefined location
+%                              0: return placefield object without creating figures
 %
-%    overwrite:  logical, flag 1:{recompute place fields}
-%                              0:{load place fields from file}
+%    overwrite:  logical, flag 1: recompute place fields
+%                              0: load place fields from file
 %
 %    numIter:    numeric, Number of subsampled iterations (NOTE: 1st sample is full)
 %
@@ -61,7 +67,7 @@ if ~isempty(pfsArgsOverride) && isstruct(pfsArgsOverride),
 end
 pfsArgs = struct2varargin(pargs);
 disp(['MTA:analysis:placefields:pfs_2d_theta:processing:' Trial.filebase]);
-pf = MTAApfs(Trial,pfsArgs{:});
+pfs = MTAApfs(Trial,pfsArgs{:});
 
 
 if reportFig

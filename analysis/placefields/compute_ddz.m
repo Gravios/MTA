@@ -53,7 +53,15 @@ if isempty(feature),
     feature = preproc_xyz(Trial,'trb');
     feature.filter('ButFilter',3,filtCutOffFreq,'low');
     feature.data = sq(feature(:,marker,[1,2]));
+elseif isa(feature,'MTADxyz'),
+    nind = nniz(feature);
+    feature.filter('ButFilter',3,filtCutOffFreq,'low');
+    feature.data = sq(feature(:,marker,[1,2]));
+    feature.data(~nind,:) = 0; % BUG: patch
+else    
+    nind = nniz(feature);
 end
+
 
 % ESTIMATE placefield centers
 drzCenter = nan([numel(units),2]);

@@ -32,7 +32,7 @@ defargs = struct('mode',           {{,'hangle','bhangle','bspeed','hspeed','NCPp
 
 
 xyz = preproc_xyz(Trial,xyzProcOpts);
-xyz.filter('ButFilter',3,2.4,'low');
+
 
 disp(['bhv_rhm_ncp_distrb: ' Trial.filebase])
 
@@ -41,12 +41,37 @@ stc = Trial.load('stc',stcMode);
 
 
 % LOAD Rythmic Head Motion(RHM) feature
+ang = create(MTADang,Trial,xyz);
+rhm = xyz.copy();
+rhm.data = [ang(:,'spine_lower','spine_middle',3)-ang(:,'spine_lower','spine_upper',3)];
+rhm.filter('RectFilter',3,5);
+rhm.data = diff(rhm.data);
+rhm.filter('RectFilter',3,5);
+rhm.data = [0;diff(rhm.data);0];
+rhm.data(~nniz(rhm.data(:))) = 1;
+
+
+brf = fet_bref(Trial,[],[],'trb');
+b = brf.copy();
+b.data = brf(:,22)-sum(bsxfun(@times,brf(:,[16,18,20]),[1/4,1/4,1/2]),2);
+b.filter('RectFilter',3,5);
+b.data = [0;diff(b.data)];
+rhm = b.copy();
+rhm.data(~nniz(rhm.data(:))) = 1;
+
+
 rhm = fet_rhm(Trial);
 rhm.resample(xyz);
 rhm.data(~nniz(rhm.data(:))) = 1;
 
+
+
 % LOAD Nasal Cavity Pressure(NCP) feature
 ncp = fet_ncp(Trial,rhm,'mta',ncpChannel);
+
+
+xyz.filter('ButFilter',3,2.4,'low');
+
 
 % $$$ figure,plot(vh(stc{'p'},2),ncpFreq(stc{'p'}),'.');
 % WHITEN RHM and NCP for spectral comparison (PSD&CSD)
@@ -62,7 +87,7 @@ sparm = struct('nFFT'     ,2^(p),...
                'nOverlap' ,2^(p-1)*.875,...
                'FreqRange',[.5,20]);
 
-[ys,fs,ts] = fet_spec(Trial,rhm,'mtcsdglong',false,[],sparm);
+[ys,fs,ts] = fet_spec(Trial,rhm,'mtcsdglong',false,[],sparm,[],true);
 
 
 % GET smoothed speed of the Body
@@ -88,12 +113,14 @@ chan_labels = {'RHM','NCP'};
 
 figH = figure(gen_figure_id);
 figH.Units = 'centimeters';
-figH.Position = [1,1,30,20];
+figH.Position = [1,1,40,35];
+h = gobjects([1,0]);
 for s = 1;
 
     clf;
     %sind = stc.states{s}.copy;
-    sind = stc{'a-m-s'};%+[1,-1];
+    %sind = stc{'a-m-s'};%+[1,-1];
+    sind = stc{'a-m'};%+[1,-1];    
     %sind = stc{'w+n+p'};%+[1,-1];
     %sind = stc{'a&w'};%+[1,-1];
     %sind = stc{'w+q'}+[1,-1];
@@ -126,7 +153,7 @@ for s = 1;
             %ind = ncp_maxpow(sind)>ncpThreshold&ind;
             vhs = ang(sind,'spine_lower','spine_upper',2);
             vhs = vhs(ind);
-            vhlim = [-1.5, 1.5];
+            vhlim = [0,pi/2];
             vh_label = 'Body Pitch';
             vh_units = 'rad';
           case 'bhangle'
@@ -134,7 +161,7 @@ for s = 1;
             ang = ang.create(Trial,xyz);
             ind = nniz(ang(sind,'spine_upper','head_front',2));
             %ind = ncp_maxpow(sind)>ncpThreshold&ind;
-            vhs = ang(sind,'spine_lower','spine_upper',2);
+            vhs = ang(sind,'spine_upper','head_front',2);
             vhs = vhs(ind);
             vhlim = [-1.5, 1.5];
             vh_label = 'Body Pitch';
@@ -177,7 +204,7 @@ for s = 1;
         vys = nys(sind,:,:,:);
         vys = vys(ind,:,:,:);
 
-
+% COMPUTE mean spectral power conditioned on feature
         vbins = 30;
         vedgs = linspace(vhlim(1),vhlim(2),vbins);
         %vedgs = prctile(vhs,linspace(1,99,vbins));
@@ -202,14 +229,16 @@ for s = 1;
         clear ind;
 
         vsc = [];
+        vsp = [];        
         for i = edges,
-            ind = i(1)>=vhs&vhs<i(2);
+            ind = i(1)<=vhs&vhs<i(2);
             if sum(ind)<10, continue,end
             for j = 1:size(yss,3),
                 for k = 1:size(yss,3),
                     if sum(ind)~=0,
                         if k~=j,
                             vsc(find(i(1)==edges(1,:)),:,k,j) = nanmean(abs(yss(ind,:,k,j)))./nanmean(sqrt(yss(ind,:,k,k).*yss(ind,:,j,j)));
+                            vsp(find(i(1)==edges(1,:)),:,k,j) = circ_mean(atan(imag(yss(ind,:,k,j))./real(yss(ind,:,k,j))));
                         else
                             vsc(find(i(1)==edges(1,:)),:,k,j) = nanmean(yss(ind,:,k,j));
                         end
@@ -224,35 +253,42 @@ for s = 1;
 
         
         %% RHM psd
-        subplot2(3,numel(mode),1,m);
+        subplot2(4,numel(mode),1,m);
         imagesc(vedgs,fs,mrv(:,:,1)',[0,max(prctile(mrv(nniz(mrv),:,1),[95]),[],2)]);,axis xy
         title({[chan_labels{1} ' mean PSD Binned by '],[ vh_label]})
         xlabel(['Binned ' vh_label ' (' vh_units ')']);
         ylabel('Frequency Hz')
-        h = colorbar;
-        h.Position(1) = h.Position(1) +.05;
+        h(end+1) = colorbar;
+
         caxis([-1.5,1.5])
 
         %% NCP psd
-        subplot2(3,numel(mode),2,m);        
+        subplot2(4,numel(mode),2,m);        
         imagesc(vedgs,fs,mrv(:,:,2)',[0,max(prctile(mrv(nniz(mrv),:,2),[95]),[],2)]);,axis xy
         title({[chan_labels{2} ' mean PSD Binned by '],[ vh_label]})
         xlabel(['Binned ' vh_label ' (' vh_units ')']);
         ylabel('Frequency Hz')
-        h = colorbar;
-        h.Position(1) = h.Position(1) +.05;
+        h(end+1) = colorbar;
         caxis([-1.5,1.5])
 
         %% RHM NCP coherence
-        subplot2(3,numel(mode),3,m);
+        subplot2(4,numel(mode),3,m);
         imagesc(edges(1,:),fs,vsc(:,:,1,2)');,axis xy,
         title({[chan_labels{1} ' & '],[ chan_labels{2} ' coherence']})
         xlabel(['Binned ' vh_label ' (' vh_units ')']);
         ylabel('Frequency Hz')
-        h = colorbar;
-        h.Position(1) = h.Position(1) +.05;
-        caxis([0.5,1]);
+        h(end+1) = colorbar;
+        caxis([0.4,1]);
 
+        %% RHM NCP mean phase spec        
+        subplot2(4,numel(mode),4,m);
+        imagesc(edges(1,:),fs,vsp(:,:,1,2)');,axis xy,
+        title({[chan_labels{1} ' & '],[ chan_labels{2} ' coherence']})
+        xlabel(['Binned ' vh_label ' (' vh_units ')']);
+        ylabel('Frequency Hz')
+        h(end+1) = colorbar;
+        caxis([-1,1]);
+        
 % $$$         subplot2(numel(mode),4,m,4);
 % $$$         bar(vedgs,N,'histc')
 % $$$         ylabel('Count')
@@ -260,6 +296,7 @@ for s = 1;
 
     end
     colormap jet;
+    af(@(haxc) set(haxc,'Position',[haxc.Position(1)+.02,haxc.Position(2:4)]), h);    
 
 % $$$     reportfig(fullfile(Trial.path.data,'figures'),figH, ...
 % $$$               'FileName',['mean_Coherence_RHM_NCP_X_' strjoin(mode,'_')],...
