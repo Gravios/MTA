@@ -1,4 +1,4 @@
-function [P,phzStats,Rmax] = MjgER2016_phasePrecession(Trial,varargin)
+function [P,phzStats,Rmax,rho] = MjgER2016_phasePrecession(Trial,varargin)
 %function [P,phzStats,Rmax] = MjgER2016_phasePrecession(Trial,drz,ddz,phz,spk,units)
 %
 % Compute phase precession coefficients between distance restricted drz and lfp phase
@@ -28,8 +28,8 @@ defargs = struct('drz',                            [],                          
                  'spk',                            [],                                           ...
                  'units',                          [],                                           ...
                  'distThresh',                     250,                                          ...
-                 'mResults',                       3,                                            ...
-                 'fitRange',                       -pi:0.01:pi);
+                 'mResults',                       1,                                            ...
+                 'fitRange',                       -pi:0.001:pi);
 
 
 [drz,ddz,phz,spk,units,distThresh,mResults,fitRange]  = DefaultArgs(varargin,defargs,'--struct');
@@ -44,20 +44,22 @@ if isempty(drz),
 end
 
 
+
 % use unit 33 from Ed10-20140817.cof.gnd
 
 P          = nan([numel(units),2,mResults]);
 phzStats   = nan([numel(units),2,mResults]);
 s          = 1;
 Rmax       = nan([numel(units),1,mResults]);
+rho        = nan([numel(units),1,mResults]);
 
 %drzHCnt    = zeros([numel(units),10]);
 
 % GET res
 
-for unit = units;
+for uind = 1:numel(units);
 % GET unit index
-    uind = find(unit==units);
+    unit = units(uind);
     
     if ~isempty(spk),
 % GET spikes times of unit    
@@ -74,7 +76,7 @@ for unit = units;
 % GET phase values at times of spikes   
 % IGNORE spikes where drz or phase are nans
         drzspk = drz(res,uind);
-        phzspk = phz(res,spk.map(unit==spk.map(:,1),2));    
+        phzspk = phz(res,spk.map(unit==spk.map(:,1),2));            
     else,% compute phase precession for single unit
         drzspk = drz(abs(ddz)<=distThresh);
         phzspk = phz(abs(ddz)<=distThresh);
@@ -100,23 +102,36 @@ for unit = units;
     R = sqrt((cosPart./length(circ)).^2+...
              (sinPart./length(circ)).^2 );
 
-    [lmi,lmv] = LocalMinima(-R',0,0,mResults);
+    [lmi,~] = LocalMinima(-R',0,0,mResults);
 
     lmid = find(~isnan(lmi));
     % Rmax fit quality 
     Rmax(uind,1,lmid) = R(lmi(lmid));
     % P:  Regression Parm: [Slope,Offset]
-    P(uind,:,lmid) = [fitRange(lmi(lmid))',atan2(sinPart(lmi(lmid)),cosPart(lmi(lmid)))'];
+    P(uind,:,lmid) = permute([2*pi*fitRange(lmi(lmid))',atan2(sinPart(lmi(lmid)),cosPart(lmi(lmid)))'],[3,2,1]);
 
     % Collect residuals of the theta model for each state
     phi = nan([numel(lin),mResults]);
     for r = lmid',
-        [phi(:,r)] = polyval([2*pi;1].*sq(P(uind,r,:)),lin);
+        [phi(:,r)] = polyval([2*pi;1].*sq(P(uind,:,r))',lin);
     end
     residuals = bsxfun(@minus,circ,phi);
     residuals(residuals>pi) = residuals(residuals>pi)-2*pi;
     residuals(residuals<-pi) = residuals(residuals<-pi)+2*pi;
 
-    phzStats(uind,:,:) = [circ_mean(residuals);circ_std(residuals)]';
+    phzStats(uind,:,:) = [circ_mean(residuals);circ_std(residuals)];
 
+% COMPUTE circular-linear correlation coefficient
+    linC = mod(abs(P(uind,1,1))*lin,2*pi);
+    circMean = atan2(sum(sin(circ)),sum(cos(circ)));
+    linCMean = atan2(sum(sin(linC)),sum(cos(linC)));
+    rho(uind,1,lmid) = sum(sin(circ-circMean).*sin(linC-linCMean))...
+               ./sqrt(sum(sin(circ-circMean).^2).*sum(sin(linC-linCMean).^2));
+    
 end
+
+% $$$ figure,
+% $$$ hold('on');
+% $$$ plot([lin,lin],[circ,circ+2*pi],'b.')
+% $$$ plot([-1,1],P(uind,1,1)*[-1,1]+P(uind,2,1),'-m','LineWidth',1)
+% $$$ plot([-1,1],P(uind,1,1)*[-1,1]+P(uind,2,1)+2*pi,'-m','LineWidth',1)

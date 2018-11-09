@@ -21,7 +21,7 @@ if ~exist(filePath,'file')||overwrite,
     [~,rind] = sortrows(clu);
     rmaps = rmaps(:,rind);
     
-% SUM total non nan values per map
+% SUM total nan values per map
     smnd  = sum(isnan(rmaps),1);
     unitSubset = find(...                               % SELECT units with good sampling
                       range(1)<smnd&smnd<range(2)&...   %   SELECT unit subset by range of valid element count 
@@ -29,7 +29,7 @@ if ~exist(filePath,'file')||overwrite,
     zrmaps = rmaps(:,unitSubset);                       % SELECT a subset of rate maps by units
     zdims = size(zrmaps);                               % NOTE the dimensions of the original vector space
     zrmaps(isnan(zrmaps)) = 0;                          % SET all nan valued elements to zeros
-    vDims = sum(zrmaps==0,2)<zdims(2)/3;                % SELECT subspace {2/3 non-zero samples} 
+    vDims = sum(zrmaps==0,2)<zdims(2)/4;                % SELECT subspace {2/3 non-zero samples} 
     zrmaps = zrmaps(vDims,:);                           % REDUCE to selected subspace
                                                         % DECOMPOSE rate maps
     
@@ -44,3 +44,27 @@ else
     load(filePath);
 end
 
+
+% DIAGNOSTIC plots
+% $$$ figure
+% $$$ for i = 1:5,
+% $$$     evmap = zeros(pfd{1}.adata.binSizes');
+% $$$     evmap(vDims) = LR(:,i);
+% $$$     subplot(1,6,i);
+% $$$     imagesc(pfd{1}.adata.bins{:},evmap');axis('xy')
+% $$$ end
+% $$$ subplot(166);
+% $$$ plot(VT(1:5,4),'*')
+% $$$ 
+% $$$ figure
+% $$$ for i = 1:numel(unitSubset),,
+% $$$     evmap = zeros(pfd{1}.adata.binSizes');
+% $$$     evmap(vDims) = zrmaps(:,i);
+% $$$ clf();
+% $$$     imagesc(pfd{1}.adata.bins{:},evmap');axis('xy')
+% $$$     title(num2str(clu(unitSubset(i),:)))
+% $$$     waitforbuttonpress();
+% $$$ end
+% $$$ figure,plot3(FSr(:,1),FSr(:,2),FSr(:,3),'.')
+% $$$ ind = FSr(:,2)<0;
+% $$$ figure,plot3(FSr(ind,1),FSr(ind,3),FSr(ind,4),'.')

@@ -22,6 +22,8 @@ function Data = resample(Data,DataObj,varargin)
 % 
 
 %Data = Data.copy;
+    
+if isempty(DataObj), return; end
 switch Data.type
   case 'TimeSeries'
     [interpMethod] = DefaultArgs(varargin,{'spline'},true);

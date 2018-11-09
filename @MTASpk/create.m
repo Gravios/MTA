@@ -85,6 +85,9 @@ switch mode
     end
     Res = nRes;
     Clu = nClu;    
+  case 'first_spike_theta'
+    % get first spike of each theta cycle
+    
     
   otherwise % default
     % NOTHING

@@ -9,7 +9,7 @@
 %  Bugs: NA
 
 
-
+version = '9';
 sessionListName = 'MjgER2016';
 sessionList = get_session_list(sessionListName);
 Trials = af(@(s) MTATrial.validate(s), sessionList);
@@ -26,24 +26,38 @@ end
 
 pft = cf(@(T,u)  pfs_2d_theta(T,u,'overwrite',false),  Trials,units);
 
-[pfd,tags,eigVec,eigVar,eigScore,validDims,unitSubsets,unitIntersection,zrmMean,zrmStd] = req20180123_ver5(Trials,[],[],false,true);
+[pfd,tags,eigVec,eigVar,eigScore,validDims,unitSubsets,unitIntersection,zrmMean,zrmStd] = req20180123_ver5(Trials,[],version);
 
 pfdShuffled = {};
 
 
 %% COMPUTE/LOAD pfd shuffled %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 
-tind = 19;
+%tind = 19;
 pfindex = 1;
 tags={}; fetSets={}; fetInds={}; pfdParam={}; states={}; ranges={};
-tags{end+1}        = ['HBPITCHxBPITCH_shuffled'];
+
+%1. HPITCHxBPITCH v 7
+% $$$ tags{end+1}        = ['HBPITCHxBPITCH_shuffled'];
+% $$$ fetSets{end+1}     = 'fet_HB_pitchB';
+% $$$ fetInds{end+1}     = [1,2];
+% $$$ boundaryLimits     = [-2,2;-2,2];
+% $$$ binDims            = [0.1,0.1];
+% $$$ SmoothingWeights   = [1.5,1.5];
+% $$$ states{end+1}      = 'theta-groom-sit';
+% $$$ ranges{end+1}      = [1100,1450];
+
+
+%1. HPITCHxBPITCH v8
+tags{end+1}        = ['HBPITCHxBPITCH_shuffled_v',version];
 fetSets{end+1}     = 'fet_HB_pitchB';
 fetInds{end+1}     = [1,2];
-boundaryLimits     = [-2,2;-2,2];
-binDims            = [0.1,0.1];
-SmoothingWeights   = [1.5,1.5];
+boundaryLimits     = [-2.25,1;-0.5,2];
+binDims            = [0.2,0.2];
+SmoothingWeights   = [1.1,1.1];
 states{end+1}      = 'theta-groom-sit';
-ranges{end+1}      = [1100,1450];
+ranges{end+1}      = [0,110];%[1100,1550];%1450];
+
 
 for tind = 1:numel(Trials),
     Trial = Trials{tind};
@@ -97,7 +111,7 @@ for tind = 1:numel(Trials),
 end
 
 pfdShuffled =  cf(@(t,g) MTAApfs(t,'tag',g), Trials, repmat(tags(pfindex),size(Trials)));
-pfdShuffled =  cf(@(t,g) MTAApfs(t,'tag',g), Trials, repmat({'HBPITCHxBPITCH_shuffled'},size(Trials)));
+%pfdShuffled =  cf(@(t,g) MTAApfs(t,'tag',g), Trials, repmat({'HBPITCHxBPITCH_shuffled'},size(Trials)));
 
 
 %% COMPUTE ZSCORE OF erpPCA FSTAT %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
@@ -132,8 +146,6 @@ clu = [tlu',clu'];
 rmapsShuffledMean = rmapsShuffledMean(:,rind);
 rmapsShuffledMean = rmapsShuffledMean(validDims{pfindex},unitSubsets{pfindex});
 rmapsShuffledMean(isnan(rmapsShuffledMean)) = 0;
-
-
 
 rmapsShuffled = cf(@(p,u) p.data.rateMap(:,ismember(p.data.clu,u),:), pfdShuffled',units');
 clu =  cf(@(p,u) p.data.clu(:,ismember(p.data.clu,u),:), pfdShuffled',units');    
@@ -784,3 +796,32 @@ hax.FaceColor = 'r';
 hax.EdgeColor = 'r';
 hax.FaceAlpha = 0.4;
 hax.EdgeAlpha = 0.4;
+
+
+% significance with correction
+cf(@(Trial) Trial.load('nq'), Trials);
+
+edist = cf(@(t,u) t.nq.eDist(u),Trials,units);
+edist = cat(1,edist{:});
+
+sed = edist(unitSubsets{1});
+
+
+ind = sed>25;
+
+alpha = 0.05;
+% APPLY Sidák correction
+sig = 1-(1-alpha).^(1/size(fsrcz,1));
+P = @(z) erfc(-z/sqrt(2))/2;
+z = @(p) -sqrt(2) * erfcinv(p*2);
+zthresh = -z(sig);
+sum(any(abs(fsrcz(ind,1:3))>zthresh,2))./size(fsrcz(ind,:),1)
+
+sum(fsrcz(ind,1)>zthresh)./size(fsrcz(ind,1),1)
+sum(fsrcz(ind,2)>zthresh)./size(fsrcz(ind,1),1)
+sum(fsrcz(ind,3)>zthresh)./size(fsrcz(ind,1),1)
+
+ind = ':';
+sum(fsrcz(ind,1)>zthresh)./size(fsrcz,1)+sum(fsrcz(ind,2)>zthresh)./size(fsrcz,1)+sum(fsrcz(ind,3)>zthresh)./size(fsrcz,1)
+
+sum(fsrcz(ind,1)>zthresh)./size(fsrcz(ind,1),1)+sum(fsrcz(ind,2)>zthresh)./size(fsrcz(ind,1),1)+sum(fsrcz(ind,3)>zthresh)./size(fsrcz(ind,1),1)

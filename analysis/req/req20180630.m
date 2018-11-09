@@ -1,5 +1,19 @@
+% req20180630 ----------------------------------------------------
+%  Status: active
+%  Type: Analysis
+%  Author: Justin Graboski
+%  Final_Forms: NA
+%  Description: validate erpPCA eigenvectors of behavioral placefields
+%  Bugs: NA
+
+% Load and preprocess data
+% Generate resampled and surrogate data sets
+% Concatenation of eigenvectors from different data treatments
+% Matching and sorting eigenvectors 
 
 
+
+%% Load and preprocess data
 
 % LOAD session data
 MjgER2016_load_data();
@@ -12,6 +26,9 @@ pfindex = 1;
 
 % LOAD behavioral scores
 MjgER2016_load_bhv_erpPCA_scores();
+
+
+%% Generate resampled and surrogate data sets
 
 % GENERATE gaussian smoothing kernel with std of # bins <- smoothingWeight
 smoothingWeights = [0.05,0.05];
@@ -28,14 +45,16 @@ for i = 1:ndims(bins),  sind{i} = sind{i}.^2/smoothingWeights(i)^2/2;  end
 smootherWide = exp(sum(-cat(ndims(bins)+1,sind{:}),ndims(bins)+1));
 smootherWide = smootherWide./sum(smootherWide(:));
 
+
+% HELPER function for sample randomization
 shuffle_bmap = @(m) circshift(circshift(m,randi(size(m,1)),1),randi(size(m,2)),2);
 
-
-% GET Pfd information
+% GET behavior field information
 binSizes = pfd{1}.adata.binSizes';
 bins =  pfd{1}.adata.bins;
 
-% SELECT behavior field
+
+% GENERATE bootstrapped eigenvectors based on two-thirds sample
 VTR = [];
 LRR = [];
 numIter = 100;
@@ -87,8 +106,7 @@ for n = 1:numIter,
 end
 
 
-
-% SELECT behavior field
+% GENERATE bootstrapped eigenvectors based on two-thirds sample
 bmapOriginal = zeros(size(rmaps));    
 for u = 1:size(rmaps,2)
     bmap = zeros([binSizes]); 
@@ -111,6 +129,7 @@ for u = 1:size(rmaps,2)
     bmapMergeShuffleSmoothFull(~validDims{1}) = 0;
     bmapOriginal(:,u) = bmapMergeShuffleSmoothFull(validDims{1});
 end
+
 VTO = [];
 LRO = [];
 for n = 1:numIter,
@@ -120,34 +139,15 @@ for n = 1:numIter,
     LRO = cat(3,LRO,LR);
 end
 
-% $$$ randPermInd = randperm(size(bmapOriginal,2));
-% $$$ [U,S,V] = svd(rmaps(:,randPermInd(1:500))',0);            % COMPUTE covariance-based PCA with Varimax rotation
-
-fpcs  = cell([1,10]);
-for i = 1:10,
-    fpcs{i} = nan([numel(validDims{pfindex}),1]);
-    fpcs{i}(validDims{pfindex}) = V(:,i);
-end
-
-
-figure;
-for i = 1:10,  
-    subplot(1,11,i);  imagesc(bins{:},reshape_eigen_vector(fpcs{i},pfd));axis('xy');  title(['Original PC',num2str(i)]);
-end
-subplot(1,11,11);hold('on');plot(diag(S(1:10,1:10)),'r-+');
-
-
-
-
-
 LRop = [];
 VTop = [];
 for n = 1:100,
-randPermInd = randperm(size(bmapOriginal,2));
-[~,LR,FSr,VT] = erpPCA(bmapOriginal(:,randPermInd(1:400))',numComp);            % COMPUTE covariance-based PCA with Varimax rotation
-LRop = cat(3,LRop,LR);
-VTop = cat(2,VTop,VT(1:50,4));
+    randPermInd = randperm(size(bmapOriginal,2));
+    [~,LR,FSr,VT] = erpPCA(bmapOriginal(:,randPermInd(1:400))',numComp);            % COMPUTE covariance-based PCA with Varimax rotation
+    LRop = cat(3,LRop,LR);
+    VTop = cat(2,VTop,VT(1:50,4));
 end
+
 
 figure,
 for n =  1:5,
@@ -155,22 +155,22 @@ for n =  1:5,
 end
 
 
-k = 5;
-fpct  = cell([1,numComp]);
-for n = 1:4
-    for i = 1:numComp,
-        fpct{i} = nan([numel(validDims{pfindex}),1]);
-        fpct{i}(validDims{pfindex}) = LRop(:,i,n+10);
-        subplot(5,5,k+i)
-        imagesc(bins{:},reshape_eigen_vector(fpct{i},pfd));axis('xy');  title(['Original PC',num2str(i)]);    
-    end
-    k = k+5;
-end
+% $$$ % PLOT eigenvectors
+% $$$ k = 5;
+% $$$ fpct  = cell([1,numComp]);
+% $$$ for n = 1:4
+% $$$     for i = 1:numComp,
+% $$$         fpct{i} = nan([numel(validDims{pfindex}),1]);
+% $$$         fpct{i}(validDims{pfindex}) = LRop(:,i,n+10);
+% $$$         subplot(5,5,k+i)
+% $$$         imagesc(bins{:},reshape_eigen_vector(fpct{i},pfd));axis('xy');  title(['Original PC',num2str(i)]);    
+% $$$     end
+% $$$     k = k+5;
+% $$$ end
 
 
 
-
-
+% RESHAPE eigenvectors into behavioral space
 fpc  = cell([1,numComp]);
 for i = 1:numComp,
     fpc{i} = nan([numel(validDims{pfindex}),1]);
@@ -185,7 +185,6 @@ for i = 1:numComp,
     end
 end
 
-
 fpcShuff  = cell([1,numComp]);
 for i = 1:numComp,
     fpcShuff{i} = nan([numel(validDims{pfindex}),numIter]);
@@ -195,66 +194,104 @@ for i = 1:numComp,
 end
 
 
-figure();
-subplot(4,5,1);  imagesc(bins{:},bmap');axis('xy');                               title('Original Map')
-subplot(4,5,2);  imagesc(smootherWide); axis('xy');                               title('Smoothing Kernel')
-subplot(4,5,3);  imagesc(bins{:},bmapSmooth');axis('xy');                         title('Smoothed Background Map');
-subplot(4,5,4);  imagesc(bins{:},bmapMerge');axis('xy');                          title('Merged Original and Background Map');
-subplot(4,5,5);  imagesc(binSubset{:},bmapMergeSubset');  axis('xy');             title('Merged Map Subset');
-subplot(4,5,10);  imagesc(binSubset{:},bmapMergeSubsetShuffle');  axis('xy');     title('Random Circular Shift');
-subplot(4,5,9);  imagesc(smootherNarrow);                                         title('Smoothing Kernel');
-subplot(4,5,8);  imagesc(binSubset{:},bmapMergeSubsetShuffleSmooth');  axis('xy');title('Smoothed Shifted Map')
-subplot(4,5,7);  imagesc(bins{:},bmapMergeShuffleSmoothFull(:,:,1)');  axis('xy');title('Full Shifted Map')
+
+% DIAGNOSTIC figure
+% $$$ figure();
+% $$$ subplot(4,5,1);  imagesc(bins{:},bmap');axis('xy');                               title('Original Map')
+% $$$ subplot(4,5,2);  imagesc(smootherWide); axis('xy');                               title('Smoothing Kernel')
+% $$$ subplot(4,5,3);  imagesc(bins{:},bmapSmooth');axis('xy');                         title('Smoothed Background Map');
+% $$$ subplot(4,5,4);  imagesc(bins{:},bmapMerge');axis('xy');                          title('Merged Original and Background Map');
+% $$$ subplot(4,5,5);  imagesc(binSubset{:},bmapMergeSubset');  axis('xy');             title('Merged Map Subset');
+% $$$ subplot(4,5,10);  imagesc(binSubset{:},bmapMergeSubsetShuffle');  axis('xy');     title('Random Circular Shift');
+% $$$ subplot(4,5,9);  imagesc(smootherNarrow);                                         title('Smoothing Kernel');
+% $$$ subplot(4,5,8);  imagesc(binSubset{:},bmapMergeSubsetShuffleSmooth');  axis('xy');title('Smoothed Shifted Map')
+% $$$ subplot(4,5,7);  imagesc(bins{:},bmapMergeShuffleSmoothFull(:,:,1)');  axis('xy');title('Full Shifted Map')
+% $$$ 
+% $$$ for i = 1:4,  subplot(4,5,10+i);  imagesc(bins{:},reshape_eigen_vector(fpc{i},pfd));axis('xy');  title(['Original PC',num2str(i)]);end
+% $$$ subplot(4,5,15);hold('on');plot(VT(1:10,end),'r-+');plot(mean(VTR(1:10,:),2),'b-+'); title('Eigenvalues');
+% $$$ legend({'Original','Shifted'});
+% $$$ 
+% $$$ for i = 1:4,  subplot(4,5,15+i);  imagesc(bins{:},reshape_eigen_vector(fpce{i},pfd));axis('xy');  title(['Shifted PC',num2str(i)]);end
+% $$$ subplot(4,5,20); plot((VT(1:20,4)-mean(VTR(i,1:32)))./std(VTR(i,1:32)),'b-+');                    title('z-score oriXshft');
+% $$$ 
+% $$$ print(gcf,'-dpng',fullfile('/storage/share/Projects/BehaviorPlaceCode/bhv_decomp',...
+% $$$                              'eigenspectrum_rmap_random_shifts.png'));
+% $$$ print(gcf,'-depsc2',fullfile('/storage/share/Projects/BehaviorPlaceCode/bhv_decomp',...
+% $$$                              'eigenspectrum_rmap_random_shifts.eps'));
 
 
-for i = 1:4,  subplot(4,5,10+i);  imagesc(bins{:},reshape_eigen_vector(fpc{i},pfd));axis('xy');  title(['Original PC',num2str(i)]);end
-subplot(4,5,15);hold('on');plot(VT(1:10,end),'r-+');plot(mean(VTR(1:10,:),2),'b-+'); title('Eigenvalues');
-legend({'Original','Shifted'});
-
-for i = 1:4,  subplot(4,5,15+i);  imagesc(bins{:},reshape_eigen_vector(fpce{i},pfd));axis('xy');  title(['Shifted PC',num2str(i)]);end
-subplot(4,5,20); plot((VT(1:20,4)-mean(VTR(i,1:32)))./std(VTR(i,1:32)),'b-+');                    title('z-score oriXshft');
 
 
-print(gcf,'-dpng',fullfile('/storage/share/Projects/BehaviorPlaceCode/bhv_decomp',...
-                             'eigenspectrum_rmap_random_shifts.png'));
-print(gcf,'-depsc2',fullfile('/storage/share/Projects/BehaviorPlaceCode/bhv_decomp',...
-                             'eigenspectrum_rmap_random_shifts.eps'));
 
-
+%% Concatenation of eigenvectors from different data treatments
 
 reshape_eigen_vector_bs = @(vec) permute(reshape(vec(:,:),pfd{1}.adata.binSizes(1),pfd{1}.adata.binSizes(2),[]),[2,1,3,4]);
- 
-ovec = [];
+
+% CONCATENATE eigenvectors of original data
+eigenVecOri = [];
 for i = 1:5,
-    ovec = cat(3,ovec,reshape_eigen_vector(fpc{i},pfd));
+    eigenVecOri = cat(3,eigenVecOri,reshape_eigen_vector(fpc{i},pfd));
 end
-ovec(isnan(ovec)) = 0;
- 
-evec = [];
+eigenVecOri(isnan(eigenVecOri)) = 0;
+% CONCATENATE eigenvectors of bootstrapped original data
+eigenVecBs = [];
 for i = 1:5,
-    evec = cat(4,evec,reshape_eigen_vector_bs(fpcOriBs{i}));
+    eigenVecBs = cat(4,eigenVecBs,reshape_eigen_vector_bs(fpcOriBs{i}));
 end
-evec(isnan(evec)) = 0;
-
-svec = [];
+eigenVecBs(isnan(eigenVecBs)) = 0;
+% CONCATENATE eigenvectors of shuffled data
+eigenVecShuff = [];
 for i = 1:5,
-    svec = cat(4,svec,reshape_eigen_vector_bs(fpcShuff{i}));
+    eigenVecShuff = cat(4,eigenVecShuff,reshape_eigen_vector_bs(fpcShuff{i}));
 end
-svec(isnan(svec)) = 0;
+eigenVecShuff(isnan(eigenVecShuff)) = 0;
 
 
 
 
+%% Matching and sorting eigenvectors 
 
+% FAILED METHOD
+% TITLE       : Match eigenvectors XCORR
+% DESCRIPTION : cross correlation to match similar eigenvectors
+% ASSUMPTIONS : All major eigenvectors have most of their weights loaded locally in the form of a gaussian distribution
+% $$$ vscale = abs(diff(bins{1}(1:2)));
+% $$$ distanceOriBs = [];
+% $$$ xcorrOriBs = [];
+% $$$ for n = 1:numIter,
+% $$$     for j = 1:5,
+% $$$         for k = 1:5,
+% $$$ % FIND shift where xcorr is maximized 
+% $$$             [lm,m] = LocalMinimaN(-xcorr2(eigenVecOri(:,:,j),eigenVecBs(:,:,n,k)),0,100);
+% $$$             xcorrOriBs(j,k,n) = -m;
+% $$$ % COMPUTE distance of shift
+% $$$             distanceOriBs(j,k,n) = sqrt(sum([vscale*(lm(1)-40),vscale*(lm(2)-40)].^2));
+% $$$         end
+% $$$     end
+% $$$ end
+% $$$ figure,
+% $$$ subplot(221);imagesc(mvec(:,:,end)');
+% $$$ subplot(222);imagesc(cvec(:,:,end)');
+% $$$ subplot(223);imagesc(xcorrOriBs(:,:,end)');
+% $$$ subplot(224);imagesc(distanceOriBs(:,:,end)');
+% POF        : non peak values were large enough to influence the cross correlation, such that the
+%            | resulting shift did not reflect the relationship between eigenvector peaks.
+
+
+% ACTIVE METHOD
+% TITLE       : Match eigenvectors LM
+% DESCRIPTION : eigenvector Local Maxima to match similar eigenvectors
+% ASSUMPTIONS : All major eigenvectors have most of their weights loaded locally in the form of a gaussian distribution
+distanceOriBs = [];
 vscale = abs(diff(bins{1}(1:2)));
-cOEvec = [];
-mOEvec = [];
 for n = 1:numIter,
     for j = 1:5,
         for k = 1:5,
-            [lm,m] = LocalMinimaN(-xcorr2(ovec(:,:,j),evec(:,:,n,k)),0,100);
-            mOEvec(j,k,n) = -m;
-            cOEvec(j,k,n) = sqrt(sum([vscale*(lm(1)-40),vscale*(lm(2)-40)].^2));
+% FIND shift where xcorr is maximized 
+            [lmOri] = LocalMinima2(-eigenVecOri(:,:,j),0,100);
+            [lmBs]  = LocalMinima2(-eigenVecBs(:,:,n,k),0,100);
+% COMPUTE distance of shift
+            distanceOriBs(j,k,n) = sqrt(sum([lmOri-lmBs].^2)).*vscale;
         end
     end
 end
@@ -262,33 +299,28 @@ end
 
 
 
-figure,
-subplot(221);imagesc(mvec(:,:,end)');
-subplot(222);imagesc(cvec(:,:,end)');
-subplot(223);imagesc(mOEvec(:,:,end)');
-subplot(224);imagesc(cOEvec(:,:,end)');
 
-
-% minimize 
+% SORT bootstrapped eigenvectors to match original eigenvectors
 bmatch = [];
-cOEvecSorted = [];
-evecSorted = [];
+distanceOriBsSorted = [];
+eigenVecBsSorted = [];
 for n = 1:numIter,
     for j = 1:5,    
         if j == 1,
-            [~,bmatch(j,n)] = min(cOEvec(j,:,n));
+            [~,bmatch(j,n)] = min(distanceOriBs(j,:,n));
         elseif j == 5,
             bmatch(j,n) = find(~ismember(1:5,bmatch(1:j-1,n)));
         else,
-            [~,m] = min(cOEvec(j,~ismember(1:5,bmatch(1:j-1,n)),n));
+            [~,m] = min(distanceOriBs(j,~ismember(1:5,bmatch(1:j-1,n)),n));
             % m is a subset
             msubset = find(~ismember(1:5,bmatch(1:j-1,n)));
             bmatch(j,n) = msubset(m);
         end
-        cOEvecSorted(j,n) = cOEvec(j,bmatch(j,n),n);
-        evecSorted(:,:,n,j) = evec(:,:,n,bmatch(j,n));
+        distanceOriBsSorted(j,n) = distanceOriBs(j,bmatch(j,n),n);
+        eigenVecBsSorted(:,:,n,j) = eigenVecBs(:,:,n,bmatch(j,n));
     end
 end
+
 
 
 
@@ -298,7 +330,7 @@ mvec = [];
 for n = 1:numIter,
     for j = 1:5,
         for k = 1:5,
-            [lm,m] = LocalMinimaN(-xcorr2(evecSorted(:,:,n,j),svec(:,:,n,k)),0,100);
+            [lm,m] = LocalMinimaN(-xcorr2(eigenVecOri(:,:,j),eigenVecShuff(:,:,n,k)),0,100);
             mvec(j,k,n) = -m;
             cvec(j,k,n) = sqrt(sum([vscale*(lm(1)-40),vscale*(lm(2)-40)].^2));
         end
@@ -308,8 +340,9 @@ end
 
 
 
-% minimize 
+% SORT shuffled eigenvectors according to best fit to original eigenvector
 bmatch = [];
+eigenVecShuffSorted = [];
 sOEvecSorted = [];
 for n = 1:numIter,
     for j = 1:5,    
@@ -323,7 +356,8 @@ for n = 1:numIter,
             msubset = find(~ismember(1:5,bmatch(1:j-1,n)));
             bmatch(j,n) = msubset(m);
         end
-        cvecSorted(j,n) = cvec(j,bmatch(j,n),n);
+        sOEvecSorted(j,n) = cvec(j,bmatch(j,n),n);        
+        eigenVecShuffSorted(:,:,j,n) = eigenVecShuff(:,:,n,bmatch(j,n));
     end
 end
 
@@ -331,13 +365,21 @@ eds = linspace(0,1.2,100);
 figure,
 bar(eds,histc(cvecSorted(3,:),eds),'histc');
 
+figure();
+hist(sOEvecSorted(3,:),100)
+
+figure();
+subplot(131);imagesc(eigenVecOri(:,:,1)');
+subplot(132);imagesc(eigenVecShuff(:,:,1)');
 
 
 
+
+j = 97;
 figure,
-for n = 1:5, subplot(3,5,n);  imagesc(evec(:,:,1,n));end
-for n = 1:5, subplot(3,5,n+5);imagesc(svec(:,:,1,n));end
-for n = 1:5, subplot(3,5,n+10);imagesc(ovec(:,:,n));end
+for n = 1:5, subplot(3,5,n);  imagesc(eigenVecBs(:,:,j,n));end
+for n = 1:5, subplot(3,5,n+5);imagesc(eigenVecShuff(:,:,j,n));end
+for n = 1:5, subplot(3,5,n+10);imagesc(eigenVecOri(:,:,n));end
     
 
 testbinSizes = [20,20];

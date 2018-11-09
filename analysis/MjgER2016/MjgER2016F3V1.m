@@ -318,10 +318,13 @@ normalization = 'hz';
 eds = linspace(-pi,pi,3);
 filt_fun = @(x) RectFilter(x,11,3);
 mccg = zeros([2*halfBins+1,10000,2]);
+%state = 'theta-groom-sit';
+state = 'spw-theta';
 
 for tind = 1:numel(Trials),
     disp(['MjgER2016F4V1:tind:',num2str(tind)]);
     tic
+    if isempty([Trial.stc{state}]);continue;end;
     xyz = preproc_xyz(Trials{tind},'trb');
     xyz.filter('RectFilter');
     xyz.filter('ButFilter',5,1,'low');
@@ -329,7 +332,7 @@ for tind = 1:numel(Trials),
     feature = xyz.copy();
     feature.data = sq(feature(:,'nose',[1,2]));
     spk = Trials{tind}.spk.copy();
-    spk = create(spk,Trials{tind},xyz.sampleRate,'theta-groom-sit',units{tind},'deburst'); 
+    spk = create(spk,Trials{tind},xyz.sampleRate,state,units{tind},'deburst'); 
 
     unitSubset = cluSessionMapSubset(cluSessionMapSubset(:,1)==tind,2);
     [mrate,mpos] = pft{tind}.maxRate(unitSubset,true,'mean',0.9);
@@ -730,7 +733,6 @@ sSdist = reshape(sSdist,[],1000);
 sMmAmp(isnan(sMmAmp(:,1)),:) = [];
 sMdist(isnan(sMdist(:,1)),:) = [];
 sSdist(isnan(sSdist(:,1)),:) = [];
-
 % COMPUTE residual sum of squares for each shuffle along the rows of condExpCcgsFSdistXBdist 
 % RSS = ∑(x-x̄)² 
 

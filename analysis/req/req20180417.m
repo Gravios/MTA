@@ -1,4 +1,12 @@
-% My wife hates me day :(
+% req20180417 ----------------------------------------------------
+%  Status: inactive
+%  Type: Analysis
+%  Author: Justin Graboski
+%  Final_Forms: NA
+%  Description: despiked placefield and burst fields
+%               
+%  Bugs: NA
+
 
 Trial = MTATrial.validate('jg05-20120310.cof.all');
 units = Trial.spk.map(:,1)';

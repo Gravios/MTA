@@ -794,7 +794,7 @@ plot(uiphz(:)*10+50);
 
 
 ufr = Trial.ufr.copy;
-ufr = ufr.create(Trial,xyz,'',unitSubset,0.04,true,'gauss');
+ufr = ufr.create(Trial,xyz,'',unitSubset,0.01,true,'gauss');
 
 xyn = xyz.copy();
 xyn.data = sq(xyz(:,'nose',[1,2]));
@@ -812,9 +812,16 @@ specArgs = struct('nFFT',2^11,...
    
 [ys,fs,ts] = fet_spec(Trial,lfp,[],[],[],specArgs);
 
+figure,
+imagesc(ts,fs,log10(ys(:,:,1)));
+
 lys = ys.copy;
 lys.data = mean(log10(ys(:,fs<15,2)),2);
 lys.resample(xyz);
+
+lds = ys.copy;
+lds.data = mean(log10(ys(:,5<fs & fs<12,4)),2)./mean(log10(ys(:,12<fs&fs<18,4)),2);
+lds.resample(xyz);
 
 lrs = ys.copy;
 lrs.data = mean(log10(ys(:,5<fs&fs<12,3)),2)./mean(log10(ys(:,5<fs&fs<12,4)),2);
@@ -822,10 +829,52 @@ lrs.resample(xyz);
 
 uind = sum(ufr.data-eps,2)~=0&nniz(xyz);
 
+bins = ones([1,30000]).*0.004;
+tEn = decode_bayesian_poisson(smap,(ufr(1:30000,:)'./70),'bins',bins,'baseline',0.01);
+
+mtEn = max(reshape(tEn,[],30000));
+
+
+% ESTIMATE positions from posterior
+eposn = nan([size(tEn,ndims(tEn)),ndims(tEn)-1]);
+binsE = {};
+for i = 1:numel(pfs.adata.bins),  binsE{i} = pfsBins{i}(grows{i});  end
+gbins = cell([1,numel(pfsBins)]); 
+[gbins{:}] = ndgrid(binsE{:});
+gbins = cat(numel(gbins)+1,gbins{:});
+ss = substruct('()',[repmat({':'},[1,ndims(gbins)-1]),{1}]);
+
+for tind = 1:size(tEn,ndims(tEn)),
+    ss.subs{end} = tind;
+    eposn(tind,:) = sum(reshape(gbins.*repmat(subsref(tEn,ss),[ones([1,ndims(gbins)-1]),...
+                        size(gbins,ndims(gbins))]),...
+                               [],size(gbins,ndims(gbins))));
+end
+
+
+
+figure,
+hold('on');
+
+for t = 1:30000,    
+    if mtEn(t)<0.002||unitInclusion(t)<3, continue, end
+    %if unitInclusion(t)<3, continue, end
+    i = imagesc(gpfsBins{:},tEn(:,:,t)');
+    p = plot(xyz(t,'hcom',1),xyz(t,'hcom',2),'*m');
+    g = plot(eposn(t,1),eposn(t,2),'*g');
+    drawnow();
+    pause(0.05);
+    delete(i);
+    delete(p);
+    delete(g);
+end
+
+
+
 tE = decode_bayesian_poisson(smap,(ufr(:,:)'));%,'bins',bins,'baseline',0.001);
 
-%tE(:,:,uind) = tE;
-%tE(:,:,~uind) = 0;
+
+
 
 
 
@@ -1004,13 +1053,43 @@ end
 % mean speed of segment
 
 
-tper = [stc{'theta',xyz.sampleRate}];
-sequencePeriods = ThreshCross(mufr,1,5);
+tper = [stc{'theta',ufr.sampleRate}];
+%sequencePeriods = ThreshCross(RectFilter(apos,11,3),0.2,5);
+sequencePeriods = ThreshCross(unitInclusion+apos,3.2,5); 
 % REMOVE theta periods
-sequencePeriods(WithinRanges(mean(sequencePeriods,2),tper.data),:) = [];
+%sequencePeriods(WithinRanges(mean(sequencePeriods,2),tper.data),:) = [];
+
+
+lastPosition = [0,0];
+newSeqPer = [];
+seqStart = 1;
+seqEnd = 1;
+trmSeqPer = sequencePeriods;
+ipd = [];
+for p = 1:size(sequencePeriods,1),
+    segInd = sequencePeriods(p,1):sequencePeriods(p,2);
+    segInd = segInd(apos(segInd)>0.1);
+    if isempty(segInd),
+        trmSeqPer(p,:) = nan;
+        continue;
+    elseif 100 < sqrt(sum((epos(segInd(1),:)-lastPosition).^2,2)),
+        newSeqPer = cat(1,newSeqPer,[sequencePeriods(seqStart,1),sequencePeriods(seqEnd,2)]);
+        seqStart = p;        
+    end
+    seqEnd = p;            
+    lastPosition = epos(segInd(end),:);
+    ipd(p) =sqrt(sum((epos(segInd(1),:)-lastPosition).^2,2));
+end
+trmSeqPer(isnan(trmSeqPer(:,1)),:) = [];
+newSeqPer(1,:) = [];
+
+
+
+ysg.resample(xyz);
 
 
 seq.sampleRate = xyz.sampleRate;
+%seq.periods = newSeqPer;
 seq.periods = sequencePeriods;
 
 seq.duration = nan([size(seq.periods,1),1]);
@@ -1035,6 +1114,12 @@ seq.decPathAngStd = nan([size(seq.periods,1),1]);
 
 seq.obsPathAngPPC = nan([size(seq.periods,1),1]);
 seq.decPathAngPPC = nan([size(seq.periods,1),1]);
+seq.errorMean = nan([size(seq.periods,1),1]);
+seq.errorMin = nan([size(seq.periods,1),1]);
+seq.lysMean = nan([size(seq.periods,1),1]);
+seq.lrsMean = nan([size(seq.periods,1),1]);
+seq.ldsMean = nan([size(seq.periods,1),1]);
+seq.ysgMean = nan([size(seq.periods,1),15,4]);
 
 
 
@@ -1050,12 +1135,12 @@ for p = 1:size(seq.periods,1),
         seq.obsDistance(p) = sqrt(sum(diff(dxyz(segInd([1,end]),1,:)).^2,3));
         seq.decDistance(p) = sqrt(sum(diff(depos(segInd([1,end]),1,:)).^2,3));
 
-        mdiffXYZ = repmat(dxyz(segInd,1,:),[1,numel(segInd),1])-repmat(permute(dxyz(segInd,1,:),[2,1,3]),[numel(segInd),1,1]);    
-        mdiffXYZ = repmat(dxyz(segInd,1,:),[1,numel(segInd),1])-repmat(permute(dxyz(segInd,1,:),[2,1,3]),[numel(segInd),1,1]);    
+        mdiffXYZ = repmat(dxyz(segInd,1,:),[1,numel(segInd),1])-repmat(permute(dxyz(segInd,1,:),[2,1,3]),[numel(segInd),1,1]);
+        mdiffXYZ = repmat(dxyz(segInd,1,:),[1,numel(segInd),1])-repmat(permute(dxyz(segInd,1,:),[2,1,3]),[numel(segInd),1,1]);
         mdistXYZ = sqrt(sum(mdiffXYZ.^2,3));
 
-        mdiffEpos = repmat(depos(segInd,1,:),[1,numel(segInd),1])-repmat(permute(depos(segInd,1,:),[2,1,3]),[numel(segInd),1,1]);    
-        mdiffEpos = repmat(depos(segInd,1,:),[1,numel(segInd),1])-repmat(permute(depos(segInd,1,:),[2,1,3]),[numel(segInd),1,1]);    
+        mdiffEpos = repmat(depos(segInd,1,:),[1,numel(segInd),1])-repmat(permute(depos(segInd,1,:),[2,1,3]),[numel(segInd),1,1]);
+        mdiffEpos = repmat(depos(segInd,1,:),[1,numel(segInd),1])-repmat(permute(depos(segInd,1,:),[2,1,3]),[numel(segInd),1,1]);
         mdistEpos = sqrt(sum(mdiffEpos.^2,3));    
 
         seq.obsPathDistMean(p) = mean(diag(mdistXYZ,1));
@@ -1091,19 +1176,39 @@ for p = 1:size(seq.periods,1),
         end
         seq.decDiffMax(p) = max(mdistEpos(mdistEpos(:)~=0));
         
-        seq.meanError(p)   = mean(sqrt(sum([depos(segInd,1,:)-dxyz(segInd,1,:)].^2,3)));
+        seq.lysMean(p) = mean(lys(segInd));
+        seq.lrsMean(p) = mean(lrs(segInd));        
+        seq.ldsMean(p) = mean(lds(segInd));                
+        
+        seq.ysgMean(p,:,:) = mean(log10(ysg(segInd,:,:)));
+        
+        seq.errorMean(p)   = mean(sqrt(sum([depos(segInd,1,:)-dxyz(segInd,1,:)].^2,3)));
+        seq.errorMin(p)   = min(sqrt(sum([depos(segInd,1,:)-dxyz(segInd,1,:)].^2,3)));        
     end
     
 end
 
 
-figure,
-figure();plot(seq.obsPathAngPPC,log10(seq.obsDiffMean),'.')
+
+figure();plot(seq.lysMean,log10(seq.obsDiffMean),'.')
+figure();plot(seq.lrsMean,log10(seq.obsDiffMean),'.')
+
+
+notTheta = ~WithinRanges(mean(sequencePeriods,2),tper.data)&nniz(abs(seq.ysgMean(:,1,3)))&abs(seq.lysMean(:))>1.9;
+notTheta = ~WithinRanges(mean(sequencePeriods,2),tper.data)&abs(seq.lysMean(:))>1.9;
+
+%plot(log10(seq.decPathDistMean(notTheta)),seq.ysgMean(notTheta,1,3),'.')
+hist2([(seq.decPathAngPPC(notTheta)),abs(seq.ysgMean(notTheta,6,4))],linspace(0.2,1,20),linspace(2.7,4.4,20));
+hist2([log10(seq.decDiffStd(notTheta)),abs(seq.ysgMean(notTheta,6,4))],linspace(0.2,3,20),linspace(2.7,4.4,20));
+hist2([log10(seq.decPathDistStd(notTheta)),abs(seq.ysgMean(notTheta,1,3))],linspace(0,3,20),linspace(2.7,4.1,20));
+hist2([log10(seq.errorMin(notTheta)),abs(seq.lysMean(notTheta))],linspace(1,3,25),linspace(1,2.6,25));
+hist2([log10(seq.errorMean(notTheta)),abs(seq.lysMean(notTheta))],linspace(1.5,3,25),linspace(1,2.6,25));
 
 figure();
 hold('on');
 plot(seq.obsPathAngPPC,log10(seq.obsPathDistMean),'.')
 plot(seq.decPathAngPPC,log10(seq.decPathDistMean),'.')
+
 
 figure();
 subplot(121);
@@ -1120,11 +1225,12 @@ hfig = figure();
 sp = gobjects([0,1]);
 sp(end+1) = subplot(221);
 hold('on');
-scatter(seq.decPathAngPPC,log10(seq.decPathDistMean),8,seq.duration,'filled')
+scatter(log10(seq.errorMean),log10(seq.errorMin),3,log10(seq.duration),'filled')
+%scatter(seq.decPathAngPPC,log10(seq.decPathDistMean),8,log10(seq.duration),'filled')
 sp(end+1) = subplot(222);
 hold('on');
-scatter(seq.obsPathAngPPC,log10(seq.obsPathDistMean),8,seq.duration,'filled')
-linkaxes(get(gcf,'Children'),'xy');
+scatter(seq.lysMean,log10(seq.obsDiffMean),3,log10(seq.duration),'filled')
+%linkaxes(get(gcf,'Children'),'xy');
 drawnow();
 c = gobjects([1,numel(sp)]);;
 xy = [0,0];
@@ -1139,7 +1245,8 @@ while isempty(hfig.CurrentCharacter)||hfig.CurrentCharacter~='q',
 % GET axes Data
     axData = [sp(axind).Children.XData',sp(axind).Children.YData'];
 % FIND closest point to currsor on left mouse button down
-    [~,mind]=min(sqrt(sum(bsxfun(@minus,xy,axData).^2,2)));
+    dist =sqrt(sum(bsxfun(@minus,xy,axData).^2,2));
+    [~,mind]=min(dist);
 % PLOT Posterior
     segInd = seq.periods(mind,1):seq.periods(mind,2);
     segInd = segInd(apos(segInd)>0.1);
@@ -1155,6 +1262,13 @@ while isempty(hfig.CurrentCharacter)||hfig.CurrentCharacter~='q',
     quiver(xyn(segInd,1), xyn(segInd,2),...
              cos(ang(segInd,'head_back','head_front',1))*100,...
              sin(ang(segInd,'head_back','head_front',1))*100,0,'Color',[1,1,1]);
+    
+    subplot(224);
+    
+    pd = prctile(dist,5);
+    
+    scatter(log10(seq.errorMean(dist<pd)),log10(seq.errorMin(dist<pd)),3,log10(seq.duration(dist<pd)),'filled');
+
     axes(sp(axind));
 % HIGHLIGHT selected unit on current subplot
     c(axind) = circle(axData(mind,1),axData(mind,2),0.25,'g');
@@ -1191,3 +1305,85 @@ Lines([],log10(200),'m');
 
 
 
+slfp = filter(resample(Trial.load('lfp',[65:96]),xyz),'ButFilter',4,[1,35],'bandpass');
+rhm = resample(fet_rhm(Trial),xyz);
+
+
+stc.states(stc.gsi('events')) = [];
+stc.addState([],[],seq.periods,ufr.sampleRate,ufr.sync,ufr.origin,'events','d');
+
+hfig = figure();
+sp = gobjects([0,1]);
+sp(end+1) = subplot2(6,4,1,[1:3]);
+imagesc([1:size(vxy,1)]'./vxy.sampleRate,1:size(ufr,2),ufr.data');
+% $$$ for s = 2:4,
+% $$$     sp(s) = subplot2(6,4,s,[1:3]);
+% $$$     imagesc(ts,fs,log10(ys(:,:,s))');    
+% $$$     axis('xy');
+% $$$     %caxis(cmapLimsGamma(s,:));
+% $$$     colormap(gca,'jet');
+% $$$     hold('on');
+% $$$     plot([1:size(lfp,1)]./lfp.sampleRate,nunity(lfp.data(:,s))*2+10);    
+% $$$ end
+sp(end+1) = subplot2(6,4,2:4,[1:3]);
+hold('on');
+imagesc([1:size(slfp,1)]./slfp.sampleRate,1:32,slfp.data');
+plot([1:size(rhm,1)]'./rhm.sampleRate,nunity(rhm.data),'k');
+for chan = [7,12,20,29];
+    plot([1:size(slfp,1)]'./slfp.sampleRate,-nunity(slfp.data(:,chan))+chan,'m');
+end
+colormap(gca,'jet');
+caxis([-20000,20000]);
+axis('ij');
+
+sp(end+1) = subplot2(6,4,5,[1:3]);cla();
+hold('on');
+plot([[1:size(vxy,1)]'./vxy.sampleRate,[1:size(vxy,1)]'./vxy.sampleRate],vxy.data)
+% $$$ for s = 1:numel(sunits)
+% $$$     plot([1:size(vxy,1)]'./xyz.sampleRate,ones([numel(spk(sunits(s))),1])./s,'*m');
+% $$$ end
+plot([1:size(vxy,1)]'./vxy.sampleRate,apos,'-m');
+plot([1:size(vxy,1)]'./vxy.sampleRate,lds.data,'-b');
+plot([1:size(vxy,1)]'./vxy.sampleRate,lrs.data,'-r');
+plot([1:size(vxy,1)]'./vxy.sampleRate,lys.data,'-m');
+legend({'body speed','head speed','max posterior','lm theta-delta','rad/lm ratio','pyr <20hz mean PSD'})
+sp(end+1) = subplot2(6,4,6,[1:3]);
+haxSTS = plotSTC(stc,1,[],[{'events'},fliplr(states)],[,'k',fliplr('rbcgkmy')]);
+haxSTS.YTickLabel = [{'events'},fliplr(states)];
+xlabel('Time (s)');
+linkaxes(get(gcf,'Children'),'x');
+
+
+c = gobjects([1,numel(sp)]);;
+xy = [0,0];
+axData = mean([stc{'events',1}.data],2);
+while isempty(hfig.CurrentCharacter)||hfig.CurrentCharacter~='q',
+    waitforbuttonpress();
+% GET current subplot index    
+    axind = find(arrayfun(@isequal,sp,repmat([gca],size(sp))));
+    if axind == numel(sp),    
+% GET time of currsor on left mouse button down within current subplot    
+        t = sp(axind).CurrentPoint(1,1);
+% FIND closest point to currsor on left mouse button down
+        dist =sqrt(sum(bsxfun(@minus,t,axData).^2,2));
+        [~,mind]=min(dist);
+% PLOT Posterior
+        segInd = seq.periods(mind,1):seq.periods(mind,2);
+        segInd = segInd(unitInclusion(segInd)>1);
+        if numel(segInd)>5,
+            subplot2(6,4,[1,2],4);
+            imagesc(gpfsBins{:},sum(tE(:,:,segInd),3)');
+            caxis([0,0.75]);
+            colormap(gca,'hot');
+            axis('xy');
+            hold('on');    
+            plot(epos(segInd,1),epos(segInd,2),'m','LineWidth',2);
+            plot(epos(segInd(1),1),epos(segInd(1),2),'c*','MarkerSize',10);    
+            plot(xyn(segInd,1), xyn(segInd,2),'g*','MarkerSize',3);
+            quiver(xyn(segInd,1), xyn(segInd,2),...
+                   cos(ang(segInd,'head_back','head_front',1))*100,...
+                   sin(ang(segInd,'head_back','head_front',1))*100,0,'Color',[1,1,1]);
+        end
+        axes(sp(axind));
+    end    
+end

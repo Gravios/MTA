@@ -94,7 +94,7 @@ mccg = zeros([2*halfBins+1,10000,2]);
 distThreshold = 400;
 
 
-for tind = 1:numel(Trials),
+for tind = 17:numel(Trials),
     disp(['MjgER2016F3V1_ccg_distXbhv:tind:',num2str(tind)]);
     tic
     xyz = preproc_xyz(Trials{tind},'trb');
@@ -107,7 +107,6 @@ for tind = 1:numel(Trials),
     spk = create(spk,Trials{tind},xyz.sampleRate,'theta-groom-sit',units{tind},'deburst'); 
     
 
-
     unitSubset = cluSessionMapSubset(cluSessionMapSubset(:,1)==tind,2);
     ddz = compute_ddz(Trials{tind},unitSubset',pft{tind});
     
@@ -115,57 +114,57 @@ for tind = 1:numel(Trials),
 
     nunits = numel(unitSubset);
 
-     for i=1:nunits-1,
-        for j = i+1:nunits,
-            
-            d = pdist2(mpos(i,:),mpos(j,:),'euclidean');
-            if d<=distThreshold,
-                pairUids  = cat(1,pairUids,[i,j]+unitCumCnt);
-                pairClus = cat(1,pairClus,[tind,unitSubset([i,j])']);
-                pairSDist = cat(1,pairSDist,d);
-                pairEigs = cat(1,pairEigs,permute(eigScore{1}(pairUids(end,:),1:3),[3,1,2]));
-                pairFSrC = cat(1,pairFSrC,permute(FSrC(pairUids(end,:),1:3),[3,1,2]));
-                pairMDSs = cat(1,pairMDSs,permute(mapa(pairUids(end,:),:),[3,1,2]));
-                pairBDist = cat(1,pairBDist,sqrt(sum(diff(sq(pairEigs(end,:,:))).^2)));
-                midpoint = sum(mpos([i,j],:))./2;
+    for i=1:nunits-1,
+       for j = i+1:nunits,
+           d = pdist2(mpos(i,:),mpos(j,:),'euclidean');
+           if d<=distThreshold,
+               keyboard();
+               pairUids  = cat(1,pairUids,[i,j]+unitCumCnt);
+               pairClus = cat(1,pairClus,[tind,unitSubset([i,j])']);
+               pairSDist = cat(1,pairSDist,d);
+               pairEigs = cat(1,pairEigs,permute(eigScore{1}(pairUids(end,:),1:3),[3,1,2]));
+               pairFSrC = cat(1,pairFSrC,permute(FSrC(pairUids(end,:),1:3),[3,1,2]));
+               %pairMDSs = cat(1,pairMDSs,permute(mapa(pairUids(end,:),:),[3,1,2]));
+               pairBDist = cat(1,pairBDist,sqrt(sum(diff(sq(pairEigs(end,:,:))).^2)));
+               midpoint = sum(mpos([i,j],:))./2;
 
 % COMPUTE the bais which represents the midpoint pair of placefields with major axis in the direction of second field
-                pfsPairBasis = mpos(j,:)-midpoint;
-                pfsPairBasis = pfsPairBasis./sqrt(sum(pfsPairBasis.^2));
-                pfsPairBasis = [pfsPairBasis',pfsPairBasis([2,1])'];
+               pfsPairBasis = mpos(j,:)-midpoint;
+               pfsPairBasis = pfsPairBasis./sqrt(sum(pfsPairBasis.^2));
+               pfsPairBasis = [pfsPairBasis',pfsPairBasis([2,1])'];
 
 % ROTATE traj coordinates
-                pfhxy = multiprod(feature.data,pfsPairBasis,[2],[1,2]);
-                pfhxy = cat(2,permute(pfhxy,[1,3,2]),circshift(permute(pfhxy,[1,3,2]),round(feature.sampleRate/5)));
+               pfhxy = multiprod(feature.data,pfsPairBasis,[2],[1,2]);
+               pfhxy = cat(2,permute(pfhxy,[1,3,2]),circshift(permute(pfhxy,[1,3,2]),round(feature.sampleRate/5)));
 
 % COMPUTE derivative of trajectory in pfs reference frame
-                dpfhxy = sq(diff(pfhxy,1,2));
-                pcor = cell([1,2]);  [pcor{:}] = cart2pol(dpfhxy(:,1),dpfhxy(:,2));
-                th = pcor{1};
-                pfhxyH = multiprod(xyz(:,{'hcom','head_front'},:),pfsPairBasis,[2],[1,2]);
+               dpfhxy = sq(diff(pfhxy,1,2));
+               pcor = cell([1,2]);  [pcor{:}] = cart2pol(dpfhxy(:,1),dpfhxy(:,2));
+               th = pcor{1};
+               pfhxyH = multiprod(xyz(:,{'hcom','head_front'},:),pfsPairBasis,[2],[1,2]);
 
 % COMPUTE derivative of trajectory in pfs reference frame
-                pcorH = cell([1,2]);
-                [pcorH{:}] = cart2pol(pfhxyH(:,1),pfhxyH(:,2));
-                thH = pcorH{1};
+               pcorH = cell([1,2]);
+               [pcorH{:}] = cart2pol(pfhxyH(:,1),pfhxyH(:,2));
+               thH = pcorH{1};
 
 % SELECT spikes of units
-                ii = unitSubset(i)==unitSubset;
-                jj = unitSubset(j)==unitSubset;
-                iRes = spk(unitSubset(i));
-                jRes = spk(unitSubset(j));
+               ii = unitSubset(i)==unitSubset;
+               jj = unitSubset(j)==unitSubset;
+               iRes = spk(unitSubset(i));
+               jRes = spk(unitSubset(j));
 % RESTRICT to spikes within distThreshold
-                iRes = iRes(abs(ddz(iRes,i))<=distThreshold);
-                jRes = jRes(abs(ddz(jRes,j))<=distThreshold);
+               iRes = iRes(abs(ddz(iRes,i))<=distThreshold);
+               jRes = jRes(abs(ddz(jRes,j))<=distThreshold);
 
 % SPLIT the trajectories into paralel or perpendicular travel relative to place field pair
-                for b = 1:numel(eds)-1,
-                    grind = eds(b) <= th(iRes,1) & th(iRes,1) <= eds(b+1);
-                    grjnd = eds(b) <= th(jRes,1) & th(jRes,1) <= eds(b+1);
+               for b = 1:numel(eds)-1,
+                   grind = eds(b) <= th(iRes,1) & th(iRes,1) <= eds(b+1);
+                   grjnd = eds(b) <= th(jRes,1) & th(jRes,1) <= eds(b+1);
 
 % COMPUTE CCG of units for trajectories moving in specified direction
                     if sum(grind)&sum(grjnd),
-                        [tccg,tbin] = CCG([iRes(grind);jRes(grjnd)],...
+                        [tccg,tbin,pairs] = CCG([iRes(grind);jRes(grjnd)],...
                                           [ones([sum(grind),1]);2*ones([sum(grjnd),1])],...
                                           binSize,halfBins,spk.sampleRate,[1,2],normalization);
                     else

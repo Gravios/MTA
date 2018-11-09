@@ -1,10 +1,25 @@
 function [pfd,tags,eigVec,eigVar,eigScore,validDims,unitSubsets,unitIntersection,zrmMean,zrmStd] = req20180123_ver5(varargin)
+%function  req20180123_ver5(varargin)
+% 
+% T := number of Trials
+% S := number of 
+% Outputs:
+%    pfd,              CellArray of MTAApfs-Object :[Tx
+%    tags,             CellArray of String-Char    :
+%    eigVec,           CellArray of Matrix-Numeric :
+%    eigVar,           CellArray of Matrix-Numeric :
+%    eigScore,         CellArray of Matrix-Numeric :
+%    validDims,        CellArray of Matrix-Numeric :
+%    unitSubsets,      CellArray of Matrix-Numeric :
+%    unitIntersection, Matrix-Numeric :
+%    zrmMean, 
+%    zrmStd
 
 %varargin = {};
 % DEFARGS ------------------------------------------------------------------------------------------
 defargs = struct('Trials',                        {{}},                                          ...
                  'sessionListName',               'MjgER2016',                                   ...
-                 'version',                       '7',                                           ...
+                 'version',                       '9',                                           ...
                  'overwritePfdFlag',              false,                                         ...
                  'overwriteErpPCAFlag',           false,                                         ...
                  'overwriteBhvContoursFlag',      false,                                         ...
@@ -44,17 +59,25 @@ tags={}; fetSets={}; fetInds={}; pfdParam={}; states={}; ranges={};
 tags{end+1}        = ['HBPITCHxBPITCH'];
 fetSets{end+1}     = 'fet_HB_pitchB';
 fetInds{end+1}     = [1,2];
-pfdParam{end+1}    = {[-2,2;-2,2],[0.1,0.1],[1.5,1.5]};
+pfdParam{end+1}    = {[-2.25,1;-0.5,2],[0.2,0.2],[1.1,1.1]};
 states{end+1}      = 'theta-groom-sit';
-ranges{end+1}      = [1100,1550];%1450];
+ranges{end+1}      = [0,110];%[1100,1550];%1450];
 
-%2. HPITCHxBSPEED
-tags{end+1}        = 'HBPITCHxBSPEED';
-fetSets{end+1}     = 'fet_HB_HPS';
-fetInds{end+1}     = [1,3];
-pfdParam{end+1}    = {[-2,2;-2,2],[0.1,0.1],[1.5,1.5]};
-states{end+1}      = 'theta-groom-sit-rear';
-ranges{end+1}      = [950,1450];
+% $$$ %2. HPITCHxBSPEED
+% $$$ tags{end+1}        = 'HBPITCHxBSPEED';
+% $$$ fetSets{end+1}     = 'fet_HB_HPS';
+% $$$ fetInds{end+1}     = [1,3];
+% $$$ pfdParam{end+1}    = {[-2.25,1;-3,2],[0.1,0.1],[0.8,0.8]};
+% $$$ states{end+1}      = 'theta-groom-sit-rear';
+% $$$ ranges{end+1}      = [650,1350];
+% $$$ 
+% $$$ %2. HPITCHxHSPEED
+% $$$ tags{end+1}        = 'HBPITCHxHSPEED';
+% $$$ fetSets{end+1}     = 'fet_HB_HPS';
+% $$$ fetInds{end+1}     = [1,4];
+% $$$ pfdParam{end+1}    = {[-2.25,1;-3,2],[0.1,0.1],[0.8,0.8]};
+% $$$ states{end+1}      = 'theta-groom-sit-rear';
+% $$$ ranges{end+1}      = [650,1350];
 
 %2. 'BSPEEDxHSPEED'
 % $$$ tags{end+1}        = 'BSPEEDxHSPEED';
@@ -109,7 +132,7 @@ for pfindex = 1:numel(tags),
             fet = feval(fetSets{pfindex},Trial);
             fet.data = fet(:,fetInds{pfindex});
         end    
-% COMPUTE pfd HBPITCHxBSPEED
+% COMPUTE pfd 
         if overwritePfdFlag,  
             [drzState] = req20180123_pfd_compute(                    ... COMUTE DRZ selected rate Maps
                 Trial,                                               ... Trial
@@ -120,7 +143,18 @@ for pfindex = 1:numel(tags),
                 tper,                                                ... theta periods
                 pfdParam{pfindex}{:}                                 ... 
             );
+            [drzStateShuff] = req20180123_pfd_shuffled(              ... COMUTE DRZ selected rate Maps
+                Trial,                                               ... Trial
+                fet,                                                 ... xyzp
+                [tags{pfindex},'_v',version],                        ... analysis tag
+                units{tind},                                         ... units
+                drz,                                                 ... directed rate zones
+                tper,                                                ... theta periods
+                pfdParam{pfindex}{:}                                 ... 
+            );
         end
+        
+        
 % LOAD pfds        
         pfd{tind,pfindex} = MTAApfs(Trial,'tag',[tags{pfindex},'_v',version]);    
 % PLOT pfds    

@@ -50,8 +50,22 @@
 %     fsrcz    - matrix[U x V](Numeric); normalized fscores
 
 
+version = '9';
 
-filename = fullfile(MTASession([]).path.data,'analysis','MjgER2016_erpPCA_scores.mat');
+%pfdParameters
+% $$$ tags{end+1}        = ['HBPITCHxBPITCH_shuffled_v',version];
+% $$$ fetSets{end+1}     = 'fet_HB_pitchB';
+% $$$ fetInds{end+1}     = [1,2];
+% $$$ boundaryLimits     = [-2.25,1;-0.5,2];
+% $$$ binDims            = [0.2,0.2];
+% $$$ SmoothingWeights   = [1.1,1.1];
+% $$$ states{end+1}      = 'theta-groom-sit';
+% $$$ ranges{end+1}      = [0,110];%[1100,1550];%1450];
+
+
+
+
+filename = fullfile(MTASession([]).path.data,'analysis',['MjgER2016_erpPCA_scores_v' version '.mat']);
 
 if exist(filename,'file'),
     load(filename);
@@ -60,7 +74,7 @@ else,
 
     if ~exist('pfd','var'),
         [pfd,tags,eigVec,eigVar,eigScore,validDims,unitSubsets,unitIntersection,zrmMean,zrmStd] = ...
-            req20180123_ver5(Trials,[],[],false,false);
+            req20180123_ver5(Trials,sessionList,version,false,false);
     end
 
     % LOAD shuffled drz restricted behavior fields 

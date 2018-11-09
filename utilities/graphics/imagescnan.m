@@ -54,8 +54,8 @@ if iscell(imageData)
     imageData = imageData{3};
 else
 % ASSIGN image axes' domains
-    Xax = [1:size(imageData,1)];
-    Yax = [1:size(imageData,2)];
+    Xax = [1:size(imageData,2)];
+    Yax = [1:size(imageData,1)];
 end
 
 if ~isreal(imageData)
@@ -81,7 +81,8 @@ switch dataType
   case 'linear'
     cm = colorMap(1000);
     bins = discretize(imageData,linspace([colorLimits,1000]));
-    bins(imageData>colorLimits(2)) = 1000;    
+    bins(~isnan(imageData)&imageData>=colorLimits(2)) = 1000-1;    
+    bins(~isnan(imageData)&imageData<=colorLimits(1)) = 1;        
     finalImage = reshape(repmat(bins,[1,1,3]),[],3);
     finalImage(nniz(finalImage),:) = cm(finalImage(nniz(finalImage),1),:);
     finalImage(isnan(imageData(:)),:) = repmat(nanRGB,[sum(isnan(imageData(:))),1]);
@@ -123,7 +124,7 @@ try
 % DISPLAY image in current axis
     image(Xax,Yax,finalImage);
 catch
-    fprintf('\nimage(hsv2rgb(Hsv)) failed. Trying image(abs(hsv2rgb(Hsv)))\n')
+    fprintf('\nimage(hsv2rgb(Hsv)) failed. Trying image(abs(hsv2rgb(Hsv)))\n');
     image(Xax,Yax,abs(finalImage));
 end
 

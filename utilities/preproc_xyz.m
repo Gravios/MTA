@@ -291,15 +291,30 @@ if nargout>1,
 end
 
 
-% COM lower Body Center of Mass
-xyz.addMarker('bcom',...     Name
-              [.7,0,.7],...  Color
-              {{'spine_lower', 'acom',[0,0,255]},... Sticks to visually connect
-               {'pelvis_root', 'acom',[0,0,255]},... new marker to skeleton
-               {'spine_middle','acom',[0,0,255]}},...
-              xyz.com(xyz.model.rb({'spine_lower','pelvis_root','spine_middle'})));
+% ADD marker: lower Body Center of Mass
+if sum(~cellfun(@isempty,...
+                regexp(xyz.model.ml,...
+                       '(spine_lower)|(pelvis_root)|(spine_middle)|(spine_upper)')))==4,
+    xyz.addMarker('bcom',...     Name
+    [.7,0,.7],...  Color
+    {{'spine_lower', 'acom',[0,0,255]},... Sticks to visually connect
+     {'pelvis_root', 'acom',[0,0,255]},... new marker to skeleton
+     {'spine_middle','acom',[0,0,255]}},...
+        xyz.com(xyz.model.rb({'spine_lower','pelvis_root','spine_middle'})));
 
-% COM head Center of Mass
+    % ADD marker: subject Center of Mass              
+    xyz.addMarker('acom',...    Name
+    [.7,0,.7],... Color
+    {{'spine_lower', 'acom',[0,0,255]},... Sticks to visually connect
+     {'pelvis_root', 'acom',[0,0,255]},... new marker to skeleton
+     {'spine_middle','acom',[0,0,255]},...
+     {'spine_upper', 'acom',[0,0,255]},...
+     {'head_back',   'acom',[0,0,255]},...
+     {'head_front',  'acom',[0,0,255]}},...
+        xyz.com(xyz.model.rb({'spine_lower','pelvis_root','spine_middle','spine_upper','head_back','head_front'})));
+end
+
+% ADD marker: head Center of Mass
 xyz.addMarker('hcom',...     Name
               [.7,0,.7],...  Color
               {{'head_back', 'hcom',[0,0,255]},... Sticks to visually connect
@@ -308,16 +323,6 @@ xyz.addMarker('hcom',...     Name
                {'head_right','hcom',[0,0,255]}},... 
               xyz.com(xyz.model.rb({'head_back','head_left','head_front','head_right'})));
 
-% COM subject Center of Mass              
-xyz.addMarker('acom',...    Name
-              [.7,0,.7],... Color
-              {{'spine_lower', 'acom',[0,0,255]},... Sticks to visually connect
-               {'pelvis_root', 'acom',[0,0,255]},... new marker to skeleton
-               {'spine_middle','acom',[0,0,255]},...
-               {'spine_upper', 'acom',[0,0,255]},...
-               {'head_back',   'acom',[0,0,255]},...
-               {'head_front',  'acom',[0,0,255]}},...
-              xyz.com(xyz.model.rb({'spine_lower','pelvis_root','spine_middle','spine_upper','head_back','head_front'})));
 
               
 

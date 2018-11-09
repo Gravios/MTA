@@ -15,19 +15,28 @@ mkdir(fullfile(OwnDir,FigDir));
 
 
 %% compute 3d place fields for the theta state
-pf = MTAApfs(Trial,[],'theta',...
-             false,...
-             'numIter',1,...
-             'binDims',[20,20,20],...
-             'type','xyz',...
-             'SmoothingWeights',[2.2,2.2,2.2]);
+pf = MTAApfs(Trial,                               ... MTATrial
+             [],                                  ... units
+             'theta',                             ... state label
+             false,                               ... overwrite
+             'numIter',1,                         ... number of iterations
+             'binDims',[100,100,30],              ... feature dimensions
+             'type','xyz',                        ... string to identify save file
+             'SmoothingWeights',[0.8,0.8,0.8]);   ... smoothing weights (bins per std)
 
 
 
 if reportFig
 
+    interpParPfs = struct('bins',{{linspace(-500,500,50),...
+                                   linspace(-500,500,50),...
+                                   linspace( -60,360,60)}},...
+                          'nanMaskThreshold', 0.1,...
+                          'methodNanMap',     'cubic',...
+                          'methodRateMap',    'cubic');
+
     %% setup figure
-    slices = 1:2:pf.adata.binSizes(end);%min(cellfun(@(x) x.binSizes(end),pfs));
+    slices = 1:4:numel(interpParPfs.bins{end});%min(cellfun(@(x) x.binSizes(end),pfs));
 
     
 % $$$     if strcmp(Trial.maze.shape,'rectangle'),
@@ -53,18 +62,6 @@ if reportFig
     figOpts.position = [1,1,(spOpts.height+round(spOpts.padding/2))*spOpts.ny+figOpts.headerPadding+figOpts.footerPadding,...
                         (spOpts.width+round(spOpts.padding/2)) *spOpts.nx+round(spOpts.padding/2)];
 
-    width = pf.adata.binSizes(1);
-    height = pf.adata.binSizes(2);
-    radius = round(pf.adata.binSizes(1)/2)-find(pf.adata.bins{1}<-420,1,'last');
-    centerW = width/2;
-    centerH = height/2;
-    [W,H] = meshgrid(1:width,1:height);           
-    mask = double(sqrt((W-centerW-.5).^2 + (H-centerH-.5).^2) < radius);
-    mask(mask==0)=nan;
-    if strcmp(Trial.maze.shape,'rectangle'),
-        mask(:) = 1;
-    end    
-
 
 
     %% Plot place fields sliced along z axis
@@ -73,13 +70,20 @@ if reportFig
     hfig.Units    = 'centimeters';
     hfig.Position = [1,1,40,6];
     hfig.PaperPositionMode = 'auto';
+    interpParPfs = struct('bins',{{linspace(-500,500,50),...
+                                   linspace(-500,500,50),...
+                                   linspace( -60,360,60)}},...
+                          'nanMaskThreshold', 0.1,...
+                          'methodNanMap',     'cubic',...
+                          'methodRateMap',    'cubic');
 
+    
     autoincr = true;
     unit = units(1);
     i = 1;
     while unit~=-1,
         clf
-        ratemap = pf.plot(unit,'mazeMaskFlag',false);
+        ratemap = pf.plot(unit,'mean','mazeMaskFlag',false,'interpPar',interpParPfs);
         ratemap(isnan(ratemap)) = -1;
         for s = 1:numel(slices)
             sp(i,s) = axes('Units',spOpts.units,...
@@ -89,14 +93,14 @@ if reportFig
                                 spOpts.height]...
                            );
             hold('on')
-            imagesc(pf.adata.bins{1},pf.adata.bins{2},ratemap(:,:,slices(s)).*mask');    
+            imagescnan({interpParPfs.bins{1},interpParPfs.bins{2},ratemap(:,:,slices(s))'});    
             axis xy
             colormap([0,0,0;parula]);
-            caxis([-1,max(ratemap(:).*reshape(repmat(mask,[1,1,size(ratemap,3)]),[],1))]);
-            title(num2str(round(pf.adata.bins{3}(slices(s)))))
+            caxis([-1,max(ratemap(:))]);
+            title(num2str(round(interpParPfs.bins{3}(slices(s)))))
             axis tight            
-            text(pf.adata.bins{1}(round(numel(pf.adata.bins{1}).*0.7)),...
-                 pf.adata.bins{2}(round(numel(pf.adata.bins{2}).*0.9)),...
+            text(interpParPfs.bins{1}(round(numel(interpParPfs.bins{1}).*0.7)),...
+                 interpParPfs.bins{2}(round(numel(interpParPfs.bins{2}).*0.9)),...
                  sprintf('%2.1f',max(max(ratemap(:,:,slices(s))))),...
                  'Color','w',...
                  'FontWeight','bold',...

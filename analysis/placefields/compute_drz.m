@@ -1,5 +1,5 @@
-function [drzScore,drzCenter] = compute_drz(Trial,varargin)
-%function [drzScore,drzCenter] = compute_drz(Trial,varargin)
+function [drzScore,drzCenter,pfds] = compute_drz(Trial,varargin)
+%function [drzScore,drzCenter,pfds] = compute_drz(Trial,varargin)
 %
 %  
 %
@@ -35,9 +35,10 @@ defargs = struct('units',                  [],                                  
                                                   'methodRateMap',    'linear'),                 ...
                  'feature',                '',                                                   ...
                  'pfm',                    [],                                                   ...
-                 'maxRateScaleFactor',     1                                                     ...
+                 'maxRateScaleFactor',     1,                                                    ...
+                 'sampleRate',             []                                                    ...
 );
-[units,pft,pfstats,filtCutOffFreq,marker,interpPar,feature,pfm,maxRateScaleFactor] =             ...
+[units,pft,pfstats,filtCutOffFreq,marker,interpPar,feature,pfm,maxRateScaleFactor,sampleRate] =  ...
     DefaultArgs(varargin,defargs,'--struct');
 %---------------------------------------------------------------------------------------------------
 
@@ -51,16 +52,20 @@ if isempty(feature),
 % LOAD xyz as feature set
 % SELECT xy plane of specified marker as feature    
     feature = preproc_xyz(Trial,'trb');
+    feature.resample(sampleRate);        
     nind = nniz(feature);
     feature.filter('ButFilter',3,filtCutOffFreq,'low');
     feature.data = sq(feature(:,marker,[1,2]));
     feature.data(~nind,:) = 0; % BUG: patch
 elseif isa(feature,'MTADxyz'),
+    feature = copy(feature);
+    feature.resample(sampleRate);        
     nind = nniz(feature);
     feature.filter('ButFilter',3,filtCutOffFreq,'low');
     feature.data = sq(feature(:,marker,[1,2]));
     feature.data(~nind,:) = 0; % BUG: patch
 else    
+    feature.resample(sampleRate);        
     nind = nniz(feature);
 end
 

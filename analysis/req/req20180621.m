@@ -12,18 +12,19 @@ distThresh = 300;
 
 spkmap = [];
 spkdrz = [];
+spkhrz = [];
 spkpch = [];
 spkhgt = [];
 spksvd = [];
 spkphz = [];
 spkvxy = [];
-nspkstc = [];
+spkstc = [];
 spkfbr = [];
-snnpksvd = [];
+spksvd = [];
 spkavl = [];
 spktrans = repmat({[]},[2,numel(states)]);
 
-for tind = 1:numel(Trials);
+for tind = 1:16;%numel(Trials)
     Trial = Trials{tind};
     unitSubset = units{tind};
     xyz = preproc_xyz(Trial,'trb');
@@ -53,11 +54,16 @@ for tind = 1:numel(Trials);
     % LOAD units
     spk = Trial.load('spk',xyz.sampleRate,'gper',unitSubset,'deburst');
     pft = pfs_2d_theta(Trial,unitSubset);
-    drz = compute_drz(Trial,unitSubset,pft);
+    drz = compute_drz(Trial,unitSubset,pft,[],20);   
     ddz = compute_ddz(Trial,unitSubset,pft);
+    hrz = compute_hrz(Trial,unitSubset,pft,[],20);    
     lfp = Trial.load('lfp',sessionList(tind).thetaRef);
+    phz = lfp.phase([5,13]);    
+    phz.data = unwrap(phz.data);
+    phz.resample(xyz);    
+    phz.data = mod(phz.data+pi,2*pi)-pi;
     lfp.resample(xyz);
-    phz = lfp.phase([5,13]);
+
     
     stcm = stc2mat(stc,xyz,states);
     
@@ -108,10 +114,11 @@ for tind = 1:numel(Trials);
         spkpch = cat(1,spkpch,fet(res,:));        
         spkvxy = cat(1,spkvxy,vxy(res,:));        
         spkfbr = cat(1,spkfbr,fbr(res,:));        
-        spksvd = cat(1,spksvd,fsvd(res,:));
+        %spksvd = cat(1,spksvd,fsvd(res,:));
         spkavl = cat(1,spkavl,avl(res,:));        
         spkhgt = cat(1,spkhgt,xyz(res,'nose',3));
         spkdrz = cat(1,spkdrz,drz(res,unit));
+        spkhrz = cat(1,spkhrz,hrz(res,unit));        
         spkphz = cat(1,spkphz,phz(res,spk.map(unitSubset(unit)==spk.map(:,1),2)));        
         for state = 1:numel(states),
             for s = 1:2,
@@ -120,6 +127,7 @@ for tind = 1:numel(Trials);
         end
     end
 end
+
 
 figure,plot3(spkdrz{end},spktrans{1,3},spkphz{end},'.');
 
@@ -137,6 +145,7 @@ MjgER2016_load_bhv_erpPCA_scores();
 %    fsrcz
 %    FSrC
 %    rmaps
+
 sigUnits = any(abs(fsrcz(:,1:3))>=1.96,2);
 cc = FSrC(:,[2,1,3])+0.75;
 cc(~sigUnits,:) = repmat([0.75,0.75,0.75],[sum(~sigUnits),1]);
@@ -163,7 +172,7 @@ end
 
 
 figure();
-binDims = [20,20];
+binDims = [30,20];
 
 binsTrans = linspace(-pi/2,pi/2,binDims(2));
 binsTransInd = discretize(spkpch(:,2),binsTrans);
@@ -183,8 +192,8 @@ labelDRZ = 'DRZ';
 saveLabel = 'drz_x_fsvd';
 
 
-binsTrans = linspace(-.6,0.4,binDims(2));
-binsTransInd = discretize(spkpch(:,2),binsTrans);
+binsTrans = linspace(-1,0.6,binDims(2));
+binsTransInd = discretize(spkpch(:,1),binsTrans);
 labelTrans = 'Head Pitch (rad)';
 binsDrz = linspace(-1,1,binDims(1));
 binsDrzInd  =  discretize(spkdrz,binsDrz);
@@ -199,82 +208,151 @@ binsDrzInd  =  discretize(spkdrz,binsDrz);
 labelDRZ = 'DRZ';
 saveLabel = 'drz_x_height';
 
-binsTrans = linspace(-1,1.8,binDims(2));
-binsTransInd = discretize(log10(spkvxy(:,2)),binsTrans);
-labelTrans = 'Head Speed log10(cm/s)';
-binsDrz = linspace(-1,1,binDims(1));
-binsDrzInd  =  discretize(spkdrz,binsDrz);
-labelDRZ = 'DRZ';
-saveLabel = 'drz_x_hspeed';
+clf();
+ny = 4;
+for y = 1:ny,
+    switch y
+      case 1
+      % DRZ X Head Speed
+        binsTrans = linspace(-0.5,1.9,binDims(2));
+        binsTransInd = discretize(log10(spkvxy(:,2)),binsTrans);
+        labelTrans = 'Head Speed log10(cm/s)';
+        binsDrz = linspace(-1,1,binDims(1));
+        binsDrzInd  =  discretize(spkdrz,binsDrz);
+        %binsDrzInd  =  discretize(spkdrz,binsDrz);
+        labelDRZ = 'DRZ';
+        aveLabel = 'drz_x_hspeed';
+      case 2
+        % HRZ X Head Speed
+        binsTrans = linspace(-0.5,1.9,binDims(2));
+        binsTransInd = discretize(log10(spkvxy(:,2)),binsTrans);
+        labelTrans = 'Head Speed log10(cm/s)';
+        binsDrz = linspace(-1,1,binDims(1));
+        binsDrzInd  =  discretize(spkhrz,binsDrz);
+        labelDRZ = 'HRZ';
+        saveLabel = 'hrz_x_hspeed';
+      case 3
+        % DRZ X Body Speed
+        binsTrans = linspace(-0.5,1.9,binDims(2));
+        binsTransInd = discretize(log10(spkvxy(:,1)),binsTrans);
+        labelTrans = 'Body Speed log10(cm/s)';
+        binsDrz = linspace(-1,1,binDims(1));
+        binsDrzInd  =  discretize(spkdrz,binsDrz);
+        labelDRZ = 'DRZ';
+        saveLabel = 'drz_x_bspeed';
+      case 4
+        % HRZ X Body Speed
+        binsTrans = linspace(-0.5,1.9,binDims(2));
+        binsTransInd = discretize(log10(spkvxy(:,1)),binsTrans);
+        labelTrans = 'Body Speed log10(cm/s)';
+        binsDrz = linspace(-1,1,binDims(1));
+        binsDrzInd  =  discretize(spkhrz,binsDrz);
+        labelDRZ = 'HRZ';
+        saveLabel = 'hrz_x_bspeed';
+    end
 
 
-binsTrans = linspace(-1,1.8,binDims(2));
-binsTransInd = discretize(log10(spkvxy(:,1)),binsTrans);
-labelTrans = 'Body Speed log10(cm/s)';
-binsDrz = linspace(-1,1,binDims(1));
-binsDrzInd  =  discretize(spkdrz,binsDrz);
-labelDRZ = 'DRZ';
-saveLabel = 'drz_x_bspeed';
+% $$$ sind = 9;
+% $$$ binsTrans = linspace(-1,1,binDims(2));
+% $$$ binsTransInd =  discretize(spktrans{1,sind},binsTrans);
+% $$$ labelTrans = [states{sind},' state onset'];
+% $$$ binsDrz = linspace(-1,1,binDims(1));
+% $$$ binsDrzInd  =  discretize(spkdrz,binsDrz);
+% $$$ labelDRZ = 'DRZ';
+% $$$ saveLabel = ['drz_x_',states{sind},'ON'];
 
 
-
-sind = 9;
-binsTrans = linspace(-1,1,binDims(2));
-binsTransInd =  discretize(spktrans{1,sind},binsTrans);
-labelTrans = [states{sind},' state onset'];
-binsDrz = linspace(-1,1,binDims(1));
-binsDrzInd  =  discretize(spkdrz,binsDrz);
-labelDRZ = 'DRZ';
-saveLabel = ['drz_x_',states{sind},'ON'];
-
-              
 
 %sigUnitsBhv = true([size(FSrC,1),1]);
 %sigUnitsBhv = any(FSrC(:,[1,3])>=-0.5,2);
-sigUnitsBhv = any(FSrC(:,[1,3])>=-0,2);
-sigUnitsBhv = any(fsrcz(:,[1,3])>=2,2);
+%sigUnitsBhv = any(FSrC(:,[1,3])>=-0,2);
+%sigUnitsBhv = any(fsrcz(:,[1,3])>=2,2);
 %sigUnitsBhv = any(FSrC(:,[2])<0,2);
-
+%sigUnitsBhv = any(FSrC(:,[2])<=-0,2);
+%sigUnitsBhv = true([size(fsrcz,1),1]);
+%sigUnitsBhv = all(fsrcz(:,[1,3])>-2,2)&all(fsrcz(:,[1,3])<2,2)&any(fsrcz(:,[2])<2,2);
+%sigUnitsBhv = any(fsrcz(:,[1])>1,2);
+%sigUnitsBhv = any(fsrcz(:,[2])<0,2);
 
 ind = nniz(binsTransInd)&nniz(binsDrzInd)           ...
-      & spkstc(:,1)                                     ... theta
-      &~spkstc(:,9)                                     ... not groom
-      &~spkstc(:,10)                                    ... not sit
-      ... &~spkstc(:,4)                                     ... not rear
-      & ismember(spkmap,cluSessionSubset(sigUnitsBhv,:),'rows');
+& spkstc(:,1)                                     ... theta
+&~spkstc(:,9)                                     ... not groom
+&~spkstc(:,10)                                    ... not sit
+&~spkstc(:,4);                                     ... not rear
+%& ismember(spkmap,cluSessionSubset(sigUnitsBhv,:),'rows');
 A = accumarray([binsDrzInd(ind),binsTransInd(ind)],spkphz(ind),[numel(binsDrz)-1,numel(binsTrans)-1],@circ_mean);
 S = accumarray([binsDrzInd(ind),binsTransInd(ind)],spkphz(ind),[numel(binsDrz)-1,numel(binsTrans)-1],@circ_std);
 C = accumarray([binsDrzInd(ind),binsTransInd(ind)],ones([sum(ind),1]),[numel(binsDrz)-1,numel(binsTrans)-1],@sum);
 
 
-clf();
-subplot(131);imagesc(binsDrz,binsTrans,A');axis('xy');colormap(gca,'hsv');
+%A(A<0) = A(A<0)+2*pi;
+
+subplot2(ny,3,y,1);imagesc(binsDrz,binsTrans,A');axis('xy');colormap(gca,'hsv');
 xlabel(labelDRZ);ylabel(labelTrans);
 cax = colorbar();ylabel(cax,'Mean Theta Phase');
-subplot(132);imagesc(binsDrz,binsTrans,S');colorbar();axis('xy');colormap(gca,'default');
+subplot2(ny,3,y,2);imagesc(binsDrz,binsTrans,S');colorbar();axis('xy');colormap(gca,'default');
 xlabel(labelDRZ);ylabel(labelTrans);
 cax = colorbar();ylabel(cax,'STD Theta Phase');
-subplot(133);imagesc(binsDrz,binsTrans,C');colorbar();axis('xy');colormap(gca,'default');
+subplot2(ny,3,y,3);imagesc(binsDrz,binsTrans,C');colorbar();axis('xy');colormap(gca,'default');
 xlabel(labelDRZ);ylabel(labelTrans);
 cax = colorbar();ylabel(cax,'Count');
 
+end
+
+
 hax = findobj(gcf,'Type','Axes');
 af(@(h) set(h,'Units','centimeters'),  hax);
-af(@(h) set(h,'Position',[h.Position(1:2),4,4]),  hax);
+af(@(h) set(h,'Position',[h.Position(1:2),2.5,2.5]),  hax);
 
 print(gcf,'-depsc2',...
       ['/storage/share/Projects/BehaviorPlaceCode/phase_precession/',...
-       ['pp_pop_',saveLabel,'.eps']]);
+       ['pp_pop_drz_hrz.eps']]);
 print(gcf,'-dpng',...
       ['/storage/share/Projects/BehaviorPlaceCode/phase_precession/',...
-       ['pp_pop_',saveLabel,'.png']]);
+       ['pp_pop_drz_hrz.png']]);
 
 
 
 
 
+binsTrans = linspace(-0.55,1.5,binDims(2));
+binsTransInd = discretize(spkpch(:,2),binsTrans);
+labelTrans = 'Body Pitch (rad)';
+binsDrz = linspace(-1,1,binDims(1));
+binsDrzInd  =  discretize(spkhrz,binsDrz);
+labelDRZ = 'HRZ';
+saveLabel = 'hrz_x_bpitch';
+ 
 
-%sigUnits = any(abs(fsrcz(:,1:3))>=1.96,2);
+%sigUnitsBhv = all(fsrcz(:,[1,3])>-2,2)&all(fsrcz(:,[1,3])<2,2)&any(fsrcz(:,[2])<2,2);
+
+
+ind = nniz(binsTransInd)&nniz(binsDrzInd)           ...
+& spkstc(:,1)                                     ... theta
+&~spkstc(:,9)                                     ... not groom
+&~spkstc(:,10)                                    ... not sit
+& spkstc(:,4);                                     ... not rear
+%& ismember(spkmap,cluSessionSubset(sigUnitsBhv,:),'rows');
+A = accumarray([binsDrzInd(ind),binsTransInd(ind)],spkphz(ind),[numel(binsDrz)-1,numel(binsTrans)-1],@circ_mean);
+S = accumarray([binsDrzInd(ind),binsTransInd(ind)],spkphz(ind),[numel(binsDrz)-1,numel(binsTrans)-1],@circ_std);
+C = accumarray([binsDrzInd(ind),binsTransInd(ind)],ones([sum(ind),1]),[numel(binsDrz)-1,numel(binsTrans)-1],@sum);
+
+figure();
+%subplot2(ny,3,y,1);
+subplot(131);
+imagesc(binsDrz,binsTrans,A');axis('xy');colormap(gca,'hsv');
+xlabel(labelDRZ);ylabel(labelTrans);
+cax = colorbar();ylabel(cax,'Mean Theta Phase');
+%subplot2(ny,3,y,2);
+subplot(132);
+imagesc(binsDrz,binsTrans,S');colorbar();axis('xy');colormap(gca,'default');
+xlabel(labelDRZ);ylabel(labelTrans);
+cax = colorbar();ylabel(cax,'STD Theta Phase');
+%subplot2(ny,3,y,3);
+subplot(133);
+imagesc(binsDrz,binsTrans,C');colorbar();axis('xy');colormap(gca,'default');
+xlabel(labelDRZ);ylabel(labelTrans);
+cax = colorbar();ylabel(cax,'Count');
 
 
 

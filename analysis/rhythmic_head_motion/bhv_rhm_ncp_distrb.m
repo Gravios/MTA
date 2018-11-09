@@ -1,4 +1,4 @@
-function [figH] = bhv_rhm_ncp_distrb(Trial,varargin)
+function [hfig] = bhv_rhm_ncp_distrb(Trial,varargin)
 %function bhv_rhm_ncp_distrb(Trial,varargin)
 %
 %
@@ -14,10 +14,13 @@ function [figH] = bhv_rhm_ncp_distrb(Trial,varargin)
 %
 %    stcMode:   string  - Def('auto_wbhr'), 
 
-Trial = MTATrial.validate(Trial);
 
 % DEFARGS ------------------------------------------------------------------------------------------
-defargs = struct('mode',           {{,'hangle','bhangle','bspeed','hspeed','NCPpow','RHMpow'}},  ...
+Trial = MTATrial.validate(Trial);
+
+defargs = struct('rhm',            fet_rhm(Trial),                                               ...
+                 'mode',           {{,'hangle','bhangle','bspeed','hspeed','NCPpow','RHMpow'}},  ...
+                 'state',          'a-m-s',                                                      ...
                  'ncpThreshold',   [],                                                           ...
                  'ncpChannel',     2,                                                            ...
                  'stcMode',        'msnn_ppsvd',                                                 ...
@@ -25,7 +28,7 @@ defargs = struct('mode',           {{,'hangle','bhangle','bspeed','hspeed','NCPp
                  'xyzProcOpts',    {'SPLINE_SPINE_HEAD_EQI'}                                     ...
 );
 
-[mode,ncpThreshold,ncpChannel,stcMode,p,xyzProcOpts] = DefaultArgs(varargin,defargs,'--struct');
+[rhm,mode,state,ncpThreshold,ncpChannel,stcMode,p,xyzProcOpts] = DefaultArgs(varargin,defargs,'--struct');
 %---------------------------------------------------------------------------------------------------
 
 
@@ -42,25 +45,9 @@ stc = Trial.load('stc',stcMode);
 
 % LOAD Rythmic Head Motion(RHM) feature
 ang = create(MTADang,Trial,xyz);
-rhm = xyz.copy();
-rhm.data = [ang(:,'spine_lower','spine_middle',3)-ang(:,'spine_lower','spine_upper',3)];
-rhm.filter('RectFilter',3,5);
-rhm.data = diff(rhm.data);
-rhm.filter('RectFilter',3,5);
-rhm.data = [0;diff(rhm.data);0];
-rhm.data(~nniz(rhm.data(:))) = 1;
 
+%rhm = fet_rbm(Trial);
 
-brf = fet_bref(Trial,[],[],'trb');
-b = brf.copy();
-b.data = brf(:,22)-sum(bsxfun(@times,brf(:,[16,18,20]),[1/4,1/4,1/2]),2);
-b.filter('RectFilter',3,5);
-b.data = [0;diff(b.data)];
-rhm = b.copy();
-rhm.data(~nniz(rhm.data(:))) = 1;
-
-
-rhm = fet_rhm(Trial);
 rhm.resample(xyz);
 rhm.data(~nniz(rhm.data(:))) = 1;
 
@@ -109,18 +96,20 @@ rhm_maxpow = MTADlfp('data',max(nys(:,fs>13&fs>5,1,1),[],2),'sampleRate',ys.samp
 ncp_maxpow = MTADlfp('data',max(nys(:,fs>13&fs>5,2,2),[],2),'sampleRate',ys.sampleRate);
 
     
-chan_labels = {'RHM','NCP'};
+chan_labels = {rhm.label,ncp.label};
+ 
+hfig = figure(gen_figure_id);
+hfig.Units = 'centimeters';
+hfig.Position = [1,1,40,25];
 
-figH = figure(gen_figure_id);
-figH.Units = 'centimeters';
-figH.Position = [1,1,40,35];
-h = gobjects([1,0]);
 for s = 1;
 
+    sax = gobjects([1,0]);
+    h = gobjects([1,0]);
     clf;
     %sind = stc.states{s}.copy;
-    %sind = stc{'a-m-s'};%+[1,-1];
-    sind = stc{'a-m'};%+[1,-1];    
+    sind = stc{state};%+[1,-1];
+    %sind = stc{'a-m'};%+[1,-1];    
     %sind = stc{'w+n+p'};%+[1,-1];
     %sind = stc{'a&w'};%+[1,-1];
     %sind = stc{'w+q'}+[1,-1];
@@ -253,37 +242,44 @@ for s = 1;
 
         
         %% RHM psd
-        subplot2(4,numel(mode),1,m);
+        sax = subplot2(4,numel(mode),1,m);
+        sax.Units = 'Centimeters';
+        sax.Position = [sax.Position(1:2),3,2];
         imagesc(vedgs,fs,mrv(:,:,1)',[0,max(prctile(mrv(nniz(mrv),:,1),[95]),[],2)]);,axis xy
-        title({[chan_labels{1} ' mean PSD Binned by '],[ vh_label]})
+        title({[chan_labels{1} ' Mean PSD Binned by '],[ vh_label]})
         xlabel(['Binned ' vh_label ' (' vh_units ')']);
         ylabel('Frequency Hz')
         h(end+1) = colorbar;
-
         caxis([-1.5,1.5])
 
         %% NCP psd
-        subplot2(4,numel(mode),2,m);        
+        sax = subplot2(4,numel(mode),2,m);        
+        sax.Units = 'Centimeters';
+        sax.Position = [sax.Position(1:2),3,2];
         imagesc(vedgs,fs,mrv(:,:,2)',[0,max(prctile(mrv(nniz(mrv),:,2),[95]),[],2)]);,axis xy
-        title({[chan_labels{2} ' mean PSD Binned by '],[ vh_label]})
+        title({[chan_labels{2} ' Mean PSD binned by '],[ vh_label]})
         xlabel(['Binned ' vh_label ' (' vh_units ')']);
         ylabel('Frequency Hz')
         h(end+1) = colorbar;
         caxis([-1.5,1.5])
 
         %% RHM NCP coherence
-        subplot2(4,numel(mode),3,m);
+        sax = subplot2(4,numel(mode),3,m);
+        sax.Units = 'Centimeters';
+        sax.Position = [sax.Position(1:2),3,2];        
         imagesc(edges(1,:),fs,vsc(:,:,1,2)');,axis xy,
-        title({[chan_labels{1} ' & '],[ chan_labels{2} ' coherence']})
+        title({[chan_labels{1} ' & ',chan_labels{2} ],['Mean Coherence']})
         xlabel(['Binned ' vh_label ' (' vh_units ')']);
         ylabel('Frequency Hz')
         h(end+1) = colorbar;
-        caxis([0.4,1]);
+        caxis([0.25,1]);
 
         %% RHM NCP mean phase spec        
-        subplot2(4,numel(mode),4,m);
+        sax = subplot2(4,numel(mode),4,m);
+        sax.Units = 'Centimeters';
+        sax.Position = [sax.Position(1:2),3,2];
         imagesc(edges(1,:),fs,vsp(:,:,1,2)');,axis xy,
-        title({[chan_labels{1} ' & '],[ chan_labels{2} ' coherence']})
+        title({[chan_labels{1} ' & ',chan_labels{2} ],['Mean Phase Difference']})
         xlabel(['Binned ' vh_label ' (' vh_units ')']);
         ylabel('Frequency Hz')
         h(end+1) = colorbar;
@@ -295,12 +291,23 @@ for s = 1;
 % $$$         xlabel(['Binned ' vh_label ' (' vh_units ')']);
 
     end
-    colormap jet;
-    af(@(haxc) set(haxc,'Position',[haxc.Position(1)+.02,haxc.Position(2:4)]), h);    
 
-% $$$     reportfig(fullfile(Trial.path.data,'figures'),figH, ...
-% $$$               'FileName',['mean_Coherence_RHM_NCP_X_' strjoin(mode,'_')],...
-% $$$               'Comment',[Trial.filebase ':BhvState: ' stc.states{s}.label],...
-% $$$               'Resolution',200,...
-% $$$               'SaveFig',true)
+    fax = axes('Position',[0,0,1,1],'Visible','off','Units','centimeters');
+    xlim([0,hfig.Position(3)]);
+    ylim([0,hfig.Position(4)]);
+
+    text(hfig.Position(3)*0.05,hfig.Position(4)*.95,...
+         {[Trial.filebase       ],...
+          ['states: ',sind.label]});
+
+    
+    colormap jet;
+    af(@(haxc) set(haxc,'Position',[haxc.Position(1)+.04,haxc.Position(2),0.01,haxc.Position(4)]), h);    
+
+    print(hfig,'-depsc2',...
+          fullfile('/storage/share/Projects/BehaviorPlaceCode/sensory',...
+           ['bhv_rhm_ncp_distrb-',Trial.filebase,'-',rhm.label,'.eps']));
+    print(hfig,'-dpng',...
+          fullfile('/storage/share/Projects/BehaviorPlaceCode/sensory',...
+           ['bhv_rhm_ncp_distrb-',Trial.filebase,'-',rhm.label,'.png']));
 end

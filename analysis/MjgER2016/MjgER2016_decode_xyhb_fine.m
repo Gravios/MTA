@@ -1,3 +1,9 @@
+% MjgER2016_decode_xyhb_fine
+%
+% Bayesian decoding of position and behavioral features
+% 
+% 
+%
 
 
 
@@ -23,19 +29,20 @@ unitSubset = units{trialIndex};
 sampleRate = 250;   % Hz
 spikeWindow = 0.025; % ms
 mode = 'xyhb'; % alt vals: 'xy'
-posteriorMaxThresh = 0.01;
 
+states = {'theta','rear','hloc','hpause','lloc','lpause','groom','sit','ripple'};
 
 % LOAD state collection
 % LOAD subject position object
 stc = Trial.load('stc','msnn_ppsvd_raux');
 xyz = resample(preproc_xyz(Trial,'trb'),sampleRate);
-
+fxyz = filter(copy(xyz),'ButFilter',3,20,'low');
 
 % LOAD lfp
 % COMPUTE theta LFP phase
 lfp = load(Trial,'lfp',72);
-phz = lfp.phase([5,12]);
+%lfp = load(Trial,'lfp',84);
+phz = lfp.phase([6,12]);
 phz.data = unwrap(phz.data);
 phz.resample(xyz);    
 phz.data = mod(phz.data+pi,2*pi)-pi;
@@ -48,8 +55,19 @@ vxy.data = log10(vxy.data);
 
 % LOAD pitch and 
 fet = fet_HB_pitchB(Trial,sampleRate);
+fet = fet_HB_pitch(Trial);
+fet.map_to_reference_session(Trial,'Ed05-20140529.ont.all');
+tfet = fet.copy();
+fet.data = fet(:,3);
+ffet = filter(copy(fet),'ButFilter',3,1,'low');
 
-bvec = circshift(xyz(:,'hcom',[1,2]),-round(sampleRate.*0.05))-xyz(:,'hcom',[1,2]);
+tvec = circshift(fxyz(:,'hcom',[1,2]),-round(sampleRate.*0.05))-fxyz(:,'hcom',[1,2]);
+tvec = sq(bsxfun(@rdivide,tvec,sqrt(sum(tvec.^2,3))));
+tvec = cat(3,tvec,sq(tvec)*[0,-1;1,0]);
+hvec = fxyz(:,'head_front',[1,2])-fxyz(:,'head_back',[1,2]);
+hvec = sq(bsxfun(@rdivide,hvec,sqrt(sum(hvec.^2,3))));
+hvec = cat(3,hvec,sq(hvec)*[0,-1;1,0]);
+bvec = fxyz(:,'spine_lower',[1,2])-fxyz(:,'spine_upper',[1,2]);
 bvec = sq(bsxfun(@rdivide,bvec,sqrt(sum(bvec.^2,3))));
 bvec = cat(3,bvec,sq(bvec)*[0,-1;1,0]);
 
@@ -60,27 +78,32 @@ stcm = stc2mat(stc,xyz,states);
 ufr = load(Trial,'ufr',xyz,[],unitSubset,spikeWindow,true,'gauss');    
 unitInclusion = sum(ufr.data>0.2,2);
 
-[posEstCom,posEstMax,posteriorMax] = bhv_decode(Trial,sampleRate,unitSubset,mode,[],[],spikeWindow);
+[posEstCom,posEstMax,posteriorMax] = bhv_decode(Trial,sampleRate,unitSubset,mode,[],[],spikeWindow,true);
+
+[posEstCom,posEstMax,posEstSax,posteriorMax] = bhv_decode(Trial,250,unitSubset,'xyh',[],[],0.025,false);
+[posEstCom,posEstMax,posEstSax,posteriorMax] = bhv_decode(Trial,250,unitSubset,'xyhi',[],[],0.025,false);
+[posEstCom,posEstMax,posEstSax,posteriorMax] = bhv_decode(Trial,250,unitSubset,'xyb',[],[],0.025,false);
+[posEstCom,posEstMax,posEstSax,posteriorMax] = bhv_decode(Trial,250,unitSubset,'xyz',[],[],0.025,false);
 
 
+[posEstCom,posEstMax,posEstSax,posteriorMax] = bhv_decode(Trial,250,unitSubset,'xyhi',[],[],0.125,false);
 
-ind = unitInclusion>2 & any(stcm==4&stcm~=2,2) & posteriorMax>0.005;
+ind = unitInclusion>=4 & any(stcm==1,2) & posteriorMax>0.001;
+sum(ind)
 
 %ind = ':';
 
 %derror = posEstMax;
-derror = posEstCom;
+derror = posEstSax;
 figure()
 subplot(511);  plot(derror(ind,[1]));  %Lines([0;cumsum(diff([rper.data,1,2))],[],'k');
 hold('on');    plot(xyz(ind,'hcom',1),'k');
 subplot(512);  plot(derror(ind,[2]));  %Lines([0;cumsum(diff(rper.data,1,2))],[],'k');
 hold('on');    plot(xyz(ind,'hcom',2),'k');
-linkaxes(findobj(gcf,'Type','Axes'),'x');
-
 subplot(513);  plot(derror(ind,[3]));  %Lines([0;cumsum(diff([rper.data,1,2))],[],'k');
 hold('on');    plot(fet(ind,1),'k');
-subplot(514);  plot(derror(ind,[4]));  %Lines([0;cumsum(diff(rper.data,1,2))],[],'k');
-hold('on');    plot(fet(ind,2),'k');
+%subplot(514);  plot(derror(ind,[4]));  %Lines([0;cumsum(diff(rper.data,1,2))],[],'k');
+%hold('on');    plot(fet(ind,2),'k');
 subplot(515);  %plot(mufr(ind));  %Lines([0;cumsum(diff(rper.data,1,2))],[],'k');
 hold('on');    plot(posteriorMax(ind)*10);
 linkaxes(findobj(gcf,'Type','Axes'),'x');
@@ -88,81 +111,233 @@ clear('derror');
 
 
 %% some plots of stuff
+ind = ':';
+decError = [multiprod(posEstSax(ind,[1,2])-sq(xyz(ind,'hcom',[1,2])),hvec(ind,:,:),2,[2,3]),fet(ind,1)-posEstSax(ind,3)];
+decError(~(unitInclusion>=2 & any(stcm==1,2) & posteriorMax>0.0005)) = nan;
 
-ind = unitInclusion>=4& any(stcm==1&stcm~=2,2);
-ind = unitInclusion>=4& any(stcm==1&stcm~=2,2) &  posteriorMax>0.01;%  & any(stcm==1,2); %&stcm~=2,2)% & (vhp.da
+figure,
+hold('on');
+plot(ang(:,'head_back','head_front',1));
+plot(atan2(decError(:,2),decError(:,1)),'.r');
+plot(phz(:,1),'c')
+
+figure();
+ns = 6;
+%decError = [multiprod(posEstCom(:,[1,2])-sq(xyz(:,'hcom',[1,2])),hvec(:,:,:),2,[2,3]),fet(:,1)-posEstCom(:,3)];
+decError = [multiprod(posEstSax(:,[1,2])-sq(xyz(:,'hcom',[1,2])),hvec(:,:,:),2,[2,3]),fet(:,1)-posEstSax(:,3)];
+for s = 1:ns; %states
+    cind = unitInclusion>=5 & posteriorMax>0.001;
+    sind =      stcm(:,1)   ...
+        &  any(stcm(:,s),2);
+
+    ind = cind&sind;
+
+    % Forward decoding projection onto head
+    subplot2(ns,3,s,1);
+    hist2([[phz(ind,1);phz(ind,1)+2*pi],[decError(ind,1);decError(ind,1)]],linspace(-pi,pi*3,50),linspace(-300,300,50));
+    title('forward projection')
+    ylim([-300,300]);
+    ylabel({states{s},'mm'});
+    xlabel('theta phase');
+    % Lateral decoding projection onto head
+    subplot2(ns,3,s,2);
+    hist2([[phz(ind,1);phz(ind,1)+2*pi],[decError(ind,2);decError(ind,2)]],linspace(-pi,pi*3,50),linspace(-300,300,50));
+    title('lateral projection')
+    ylabel('mm');
+    xlabel('theta phase');
+
+    % Pitch decoding error
+    subplot2(ns,3,s,3);
+    %ind = ind&circ_dist(circshift(ffet(:,1),-1),ffet(:,1))>0.0004;
+    hist2([[phz(ind,1);phz(ind,1)+2*pi],[decError(ind,3);decError(ind,3)]],linspace(-pi,pi*3,50),linspace(-pi/3,pi/3,75));
+    title('head pitch projection');
+    ylabel('rad');
+    xlabel('theta phase');
+end
+
+
+figure
+%decError = [multiprod(posEstCom(:,[1,2])-sq(xyz(:,'hcom',[1,2])),hvec(:,:,:),2,[2,3]),fet(:,1)-posEstCom(:,3)];
+decError = [multiprod(posEstSax(:,[1,2])-sq(xyz(:,'hcom',[1,2])),hvec(:,:,:),2,[2,3]),fet(:,1)-posEstSax(:,3)];
+%decError = [multiprod(posEstMax(:,[1,2])-sq(xyz(:,'hcom',[1,2])),hvec(:,:,:),2,[2,3]),fet(:,1)-posEstMax(:,3)];
+cind = unitInclusion>=4 & posteriorMax>0.001;
+sind =      stcm(:,1)   ...
+    &  (stcm(:,3)==3|stcm(:,5)==5);
+ind = cind&sind;
+ind = ind&circ_dist(circshift(ffet(:,1),-1),ffet(:,1))>0.0001;
+subplot(121);
+hist2([[phz(ind,1);phz(ind,1)+2*pi],[decError(ind,3);decError(ind,3)]],linspace(-pi,pi*3,50),linspace(-pi/3,pi/3,75));
+ind = cind&sind;
+ind = ind&circ_dist(circshift(ffet(:,1),-1),ffet(:,1))<-0.0001;
+subplot(122);
+hist2([[phz(ind,1);phz(ind,1)+2*pi],[decError(ind,3);decError(ind,3)]],linspace(-pi,pi*3,50),linspace(-pi/3,pi/3,75));
+
+
+figure,plot([fet.data,posEstSax(:,3).*double(unitInclusion>=3)])
+
+
+s = 1:6;
+cind = unitInclusion>=3 & posteriorMax>0.0001;
+sind =      stcm(:,1)   ...
+         &  stcm(:,s)   ...    
+         & ~stcm(:,2)   ...
+         & ~stcm(:,7)   ...          
+         & ~stcm(:,8);
+
+ind = cind&sind;
 sum(ind)
-% $$$ ind(randi([1,size(ind,1)],round(size(ind,1)),1)) = 0;
-% $$$ ind(randi([1,size(ind,1)],round(size(ind,1)),1)) = 0;
-% $$$ ind(randi([1,size(ind,1)],round(size(ind,1)),1)) = 0;
-% $$$ ind(randi([1,size(ind,1)],round(size(ind,1)),1)) = 0;
-% $$$ sum(ind)
-
-decError = multiprod(posEstCom(ind,[1,2])-sq(xyz(ind,'hcom',[1,2])),bvec(ind,:,:),2,[2,3]);
-decError = decError(:,1);
-%decError = sqrt(sum((sq(xyz(ind,'hcom',[1,2]))-posEstCom(ind,[1,2])).^2,2)).*sign(decError);
-
-figure();
-
-subplot(231),
-plot(phz(ind,1),decError,'.');title('position error')
-%hist2([[phz(ind,1);phz(ind,1)+pi*2],[log10(decError);log10(decError)]],linspace(-pi,pi*3,30),linspace(1,3,35));title('position error')
-hist2([[phz(ind,1);phz(ind,1)+pi*2],[(decError);(decError)]],linspace(-pi,pi*3,30),linspace(-200,200,50));title('position error')
-subplot(234),hold('on');
-%plot([phz(ind,1);phz(ind,1)+pi*2],[log10(decError);log10(decError)],'.b','MarkerSize',5);
-plot([phz(ind,1);phz(ind,1)+pi*2],[(decError);(decError)],'.b','MarkerSize',1);
-title('position error')
-xlim([-pi,pi*3]);
-%ylim([1,3]);
-ylim([-200,200]);
-ylabel('log10(mm)');
-xlabel('theta phase');
-
-decError = sqrt(sum((sq(fet(ind,1))-posEstCom(circshift(ind,0),3)).^2,2));
-subplot(232),
-%hist2([[phz(ind,1);phz(ind,1)+pi*2],[log10(decError);log10(decError)]],linspace(-pi,pi*3,30),linspace(-2,0.25,15));
-hist2([[phz(ind,1);phz(ind,1)+pi*2],[(decError);(decError)]],linspace(-pi,pi*3,30),linspace(0,1,15));
-title('head pitch error')
-subplot(235),
-%plot([phz(ind,1);phz(ind,1)+pi*2],log10([decError;decError]),'.b','MarkerSize',5);
-plot([phz(ind,1);phz(ind,1)+pi*2],[(decError);(decError)],'.b','MarkerSize',5);
-title('head pitch error')
-xlim([-pi,pi*3]);
-%ylim([-2,0.25]);
-ylim([0,1]);
-ylabel('log10(rad)');
-xlabel('theta phase');
 
 
-decError = sqrt(sum((sq(fet(ind,2))-posEstCom(ind,4)).^2,2));
-subplot(233),
-%hist2([[phz(ind,1);phz(ind,1)+pi*2],log10([decError;decError])],linspace(-pi,pi*3,30),linspace(-2,-0,15));
-hist2([[phz(ind,1);phz(ind,1)+pi*2],[(decError);(decError)]],linspace(-pi,pi*3,30),linspace(0,0.4,15));
-title('body pitch error')
-subplot(236),
-%plot([phz(ind,1);phz(ind,1)+pi*2],log10([decError;decError]),'.b','MarkerSize',5);
-%plot(linpspace(-pi,pi*3,30),accumarray(discretize([phz(ind,1);phz(ind,1)+pi*2],linpspace(-pi,pi*3,30)),log10([decError;decError]),
-plot([phz(ind,1);phz(ind,1)+pi*2],[(decError);(decError)],'.b','MarkerSize',5);
-title('body pitch error')
-xlim([-pi,pi*3]);
-%ylim([-2,-0]);
-ylim([0,0.5]);
-ylabel('log10(rad)');
-xlabel('theta phase');
+% plot the 
+
+hfig = figure();
+% STATE - locomotion
+nPart = 6
+speedInd = 2
+
+clf();
+hfig.Units = 'centimeters';
+hfig.Position = [0,0,30,5*nPart];
+for v = 1:nPart
+    y = nPart-v+1;
+    % select data with in speed partition v
+    ind = cind  &  sind  ...
+                &  vxy(:,speedInd)>modelTraj.partitions(v)   ...
+                &  vxy(:,speedInd)<modelTraj.partitions(v+1);
+% REFERENCE trajectory coordinate system
+    %decError = multiprod(posEstCom(ind,[1,2])-sq(xyz(ind,'hcom',[1,2])),tvec(ind,:,:),2,[2,3]);
+    decError = multiprod(decPos(ind,[1,2])-sq(xyz(ind,'hcom',[1,2])),tvec(ind,:,:),2,[2,3]);
+    
+    % Anterior-Posterior axis
+    subplot2(nPart,6,y,1);
+    % JPDF phase X error
+    hist2([[decError(:,1);decError(:,1)],...
+           [phz(ind,1);phz(ind,1)+pi*2]],...
+          linspace(-300,300,40),...
+          linspace(-pi,pi*3,30)); 
+    line([-300,300],polyval(modelTraj.parameters(v,:),[-300,300])-2*pi,'Color','m');    
+    line([-300,300],polyval(modelTraj.parameters(v,:),[-300,300]),     'Color','m');
+    line([-300,300],polyval(modelTraj.parameters(v,:),[-300,300])+2*pi,'Color','m');
+    title(['rho: ',num2str(modelTraj.rho(v))]);
+    xlabel('mm');
+    ylabel('theta phase');
+    Lines(0,[],'k');
+% medial-lateral axis
+    subplot2(nPart,6,y,2);
+    hist2([[decError(:,2);decError(:,2)],...
+           [phz(ind,1);phz(ind,1)+pi*2]],...
+          linspace(-300,300,40),...
+          linspace(-pi,pi*3,30)); 
+    xlabel('mm');
+    ylabel('theta phase');
+    Lines(0,[],'k');
+% direction
+    subplot2(nPart,6,y,3);
+    hist2([[atan2([decError(:,2);decError(:,2)],...
+                  [decError(:,1);decError(:,1)])],...
+           [phz(ind,1);phz(ind,1)+pi*2]],...
+          linspace(-pi,pi,40),...
+          linspace(-pi,pi*3,30)); 
+    xlabel('yaw');
+    ylabel('theta phase');
+    Lines(0,[],'k');
+% REFERENCE head coordinate system
+    %decError = multiprod(posEstCom(ind,[1,2])-sq(xyz(ind,'hcom',[1,2])),hvec(ind,:,:),2,[2,3]);    
+    decError = multiprod(decPos(ind,[1,2])-sq(xyz(ind,'hcom',[1,2])),hvec(ind,:,:),2,[2,3]);    
+    subplot2(nPart,6,y,4);
+    hist2([[decError(:,1);decError(:,1)],...
+          [phz(ind,1);phz(ind,1)+pi*2]],...
+          linspace(-300,300,40),...
+          linspace(-pi,pi*3,30)); 
+    line([-300,300],polyval(modelHead.parameters(v,:),[-300,300])-2*pi,'Color','m');
+    line([-300,300],polyval(modelHead.parameters(v,:),[-300,300]),'Color','m');
+    line([-300,300],polyval(modelHead.parameters(v,:),[-300,300])+2*pi,'Color','m');
+    
+    title(['rho: ',num2str(modelHead.rho(v))]);
+    xlabel('mm');
+    ylabel('theta phase');
+    Lines(0,[],'k');
+% lateral
+    subplot2(nPart,6,y,5);
+    hist2([[decError(:,2);decError(:,2)],...
+           [phz(ind,1);phz(ind,1)+pi*2]],...
+          linspace(-300,300,40),...
+          linspace(-pi,pi*3,30)); 
+    xlabel('mm');
+    ylabel('theta phase');
+    Lines(0,[],'k');
+% yaw
+    subplot2(nPart,6,y,6);
+    hist2([atan2([decError(:,2);decError(:,2)],...
+                 [decError(:,1);decError(:,1)]),...
+          [phz(ind,1);phz(ind,1)+pi*2]],...
+          linspace(-pi,pi,40),...
+          linspace(-pi,pi*3,30));
+    Lines(0,[],'k');
+    xlabel('yaw');
+    ylabel('theta phase');
+end
 
 
-figure,plot(mind)
 
-figure,psot(ep
-decError = sqrt(sum((sq(xyz(ind,'hcom',[1,2]))-posEstCom(ind,[1,2])).^2,2));
+ForAllSubplots('hax=gca;hax.Units=''centimeters'';hax.Position(3:4)=[3,2];')
+
+af(@(hax) set(hax,'Position',hax.Position+[0,-2,0,0]), findobj(gcf,'Type','Axes'));
+
+axPos = cell2mat([get(findobj(gcf,'Type','Axes'),'Position')]);
+axYPos = unique(axPos(:,2));
+
+fax = axes('Position',[0,0,1,1],'Visible','off','Units','centimeters');
+xlim([0,hfig.Position(3)]);
+ylim([0,hfig.Position(4)]);
+Lines(hfig.Position(3)/2+0.2,[],'k');
+
+Lines([],axYPos+3,'k');
+
+for v = 1:nPart, 
+    text(1,axYPos(nPart-v+1)+1,...
+         {[tag,' speed:'],...
+          num2str(modelTraj.partitions(nPart-v+2)),...
+          '',...
+          num2str(modelTraj.partitions(nPart-v+1))},...
+         'Rotation',0);
+end
+
+ht = text(hfig.Position(3).*0.3,hfig.Position(4)*.9,...
+          'Head Movement Basis', 'HorizontalAlignment','center');
+ht = text(hfig.Position(3).*0.7,hfig.Position(4)*.9,...
+          'Head Direction Basis','HorizontalAlignment','center');
+
+text(1,hfig.Position(4)*.95,...
+     {[Trial.filebase,': locomation and pause'],...
+      ['unitInclusion >= 2'],...
+      [ 'posteriorMax >  0.003'],...
+      ['JPDF of projected decoded positions and theta phase,'],...
+      ['partition over equal partitions of ' tag ' speed']})
+
+print(hfig,'-depsc2',...
+      ['/storage/share/Projects/BehaviorPlaceCode/decode/',...
+       ['dc_decodedXthetaPhaseX',tag,'Speed_',mode,'_',Trial.filebase,'.eps']]);
+print(hfig,'-dpng',...
+      ['/storage/share/Projects/BehaviorPlaceCode/decode/',...
+      ['dc_decodedXthetaPhaseX',tag,'Speed_',mode,'_',Trial.filebase,'.png']]);
+
+% SAVE vars
+    save(fullfile(Trial.spath,...
+                  [Trial.filebase,'_dc_decodedXthetaPhaseX',tag,'Speed_',mode,'.mat']),...
+         'modelTraj',...
+         'modelHead');
 
 
-figure();
-imagesc(phasevals,shiftvals/40,eposTPRError)
-axis('xy');
 
 
 
+
+
+
+% TEMPORAL shift analysis
+% find point in trajectory closest to decoded point
+% report time shift and distance
 
 shiftvals = -round(sampleRate*2):round(sampleRate/50):round(sampleRate*2);
 % SET time bins
@@ -181,8 +356,8 @@ speedvals = linspace(0,1.8,7);
 speedBinInds = discretize(vxy(:,2),speedvals);
 
 eposTPRErrorXY = nan([numel(timevals)-1,numel(shiftvals),numel(phasevals)-1,numel(speedvals)-1]);
-eposTPRErrorHP = nan([numel(timevals)-1,numel(shiftvals),numel(phasevals)-1,numel(speedvals)-1]);
-eposTPRErrorBP = nan([numel(timevals)-1,numel(shiftvals),numel(phasevals)-1,numel(speedvals)-1]);
+%eposTPRErrorHP = nan([numel(timevals)-1,numel(shiftvals),numel(phasevals)-1,numel(speedvals)-1]);
+%eposTPRErrorBP = nan([numel(timevals)-1,numel(shiftvals),numel(phasevals)-1,numel(speedvals)-1]);
 
 eposTPRErrorXYTrj = nan([numel(timevals)-1,numel(shiftvals),numel(phasevals)-1,numel(speedvals)-1,2]);
 
@@ -199,7 +374,6 @@ for time = 1:numel(timevals)-2,
     timeWindowIndex = ismember(timeBinInds,timeWindow);
 
     txyz = sq(xyz(timeWindowIndex,'nose',[1,2]));
-    tfet = fet(timeWindowIndex,:);
     tvxy = vxy(timeWindowIndex,2);
     tbvec = bvec(timeWindowIndex,:,:);    
     tposteriorMax = posteriorMax(timeWindowIndex);
@@ -209,13 +383,16 @@ for time = 1:numel(timevals)-2,
              & stcm(timeWindowIndex,1)==1       ...
              & stcm(timeWindowIndex,2)~=2       ...
              & timeBinInds((timeWindowIndex))==time...
-             & tposteriorMax>posteriorMaxThresh;
+             & tposteriorMax>0.002;
 
     tempPhaseBinInds = phaseBinInds(timeWindowIndex);
     tempSpeedBinInds = speedBinInds(timeWindowIndex);
 
-    eposThetaPhaseRes = nan([size(tind,1),size(posEstCom,2)]);
-    eposThetaPhaseRes(timeBinInds(timeWindowIndex)==time,:) = posEstCom(timeBinInds==time,:);
+    eposThetaPhaseRes = nan([size(tind,1),2]);
+    eposThetaPhaseRes(timeBinInds(timeWindowIndex)==time,:) = posEstCom(timeBinInds==time,1:2);
+    %eposThetaPhaseRes(timeBinInds(timeWindowIndex)==time,:) = posEstMax(timeBinInds==time,1:2);
+% $$$     eposThetaPhaseRes = nan([size(tind,1),size(posEstCom,2)]);
+% $$$     eposThetaPhaseRes(timeBinInds(timeWindowIndex)==time,:) = posEstCom(timeBinInds==time,1:2);
 
     for speed = 1:numel(speedvals)-1,   
         for phase = 1:numel(phasevals)-1,   
@@ -232,15 +409,15 @@ for time = 1:numel(timevals)-2,
                                     
                 for shift = 1:numel(shiftvals)
                     eposTPRErrorXYTrj(time,shift,phase,speed,:) = ...
-                       mean(multiprod(circshift(tepos(:,[1,2]),shiftvals(shift))-txyz,tbvec,2,[2,3]),'omitnan');
+                       mean(multiprod(circshift(tepos(:,1:2),shiftvals(shift))-txyz,tbvec,2,[2,3]),'omitnan');
                     
                     eposTPRErrorXY(time,shift,phase,speed) = ...
-                        mean(sqrt(sum((txyz-circshift(tepos(:,[1,2]),shiftvals(shift))).^2,2)),'omitnan');
+                        mean(sqrt(sum((txyz-circshift(tepos,shiftvals(shift))).^2,2)),'omitnan');
 
-                    eposTPRErrorHP(time,shift,phase,speed) = mean(sqrt(sum((tfet(:,1) ...
-                                       -circshift(eposThetaPhaseRes(:,3),shiftvals(shift))).^2,2)),'omitnan');
-                    eposTPRErrorBP(time,shift,phase,speed) = mean(sqrt(sum((tfet(:,2)...
-                                       -circshift(eposThetaPhaseRes(:,4),shiftvals(shift))).^2,2)),'omitnan');
+% $$$                     %                    eposTPRErrorHP(time,shift,phase,speed) = mean(sqrt(sum((fet(:,1) ...
+% $$$                                        -circshift(eposThetaPhaseRes(:,3),shiftvals(shift))).^2,2)),'omitnan');
+% $$$                     %eposTPRErrorBP(time,shift,phase,speed) = mean(sqrt(sum((fet(:,2)...
+% $$$                                        -circshift(eposThetaPhaseRes(:,4),shiftvals(shift))).^2,2)),'omitnan');
                 end
             end
         end
@@ -288,7 +465,7 @@ for s = 1:numel(speedvals)-1,
     for p = 1:numel(phasevals)-1,   
         subplot2(numel(phasevals)-1,numel(speedvals)-1,p,s);
 
-        ind = mind(:,s,p)~=1&mind(:,s,p)~=241;
+        ind = mind(:,s,p)~=1&mind(:,s,p)~=201;
 
         bar(shiftTimeBins,histc(shiftTimeBins(mind(ind,s,p)),shiftTimeBins),'histc');
         %hist2([shiftTimeBins(mind(ind,s,p))',minv(ind,s,p)],linspace(-1,2,30),linspace(40,800,6));
@@ -1134,7 +1311,9 @@ end
 
 
 tper = [stc{'theta',xyz.sampleRate}];
-sequencePeriods = ThreshCross(mufr,1,5);
+%sequencePeriods = ThreshCross(unitInclusion,1,5);
+sequencePeriods = [stc{'ripple',xyz.sampleRate}.data];
+
 % REMOVE theta periods
 sequencePeriods(WithinRanges(mean(sequencePeriods,2),tper.data),:) = [];
 
@@ -1166,13 +1345,14 @@ seq.obsPathAngPPC = nan([size(seq.periods,1),1]);
 seq.decPathAngPPC = nan([size(seq.periods,1),1]);
 
 
-< 
+posteriorMaxThr = 0.00001;
+
 dvxy = vxy.data;
 dxyz = xyz(:,'nose',[1,2]);
-depos = permute(epos,[1,3,2]);
+depos = permute(posEstCom,[1,3,2]);
 for p = 1:size(seq.periods,1),
     segInd = seq.periods(p,1):seq.periods(p,2);
-    segInd = segInd(apos(segInd)>0.1);
+    segInd = segInd(posteriorMax(segInd)>posteriorMaxThr);
 
     if numel(segInd)>5,
         seq.duration(p) = diff(segInd([1,end]));
@@ -1220,7 +1400,7 @@ for p = 1:size(seq.periods,1),
         end
         seq.decDiffMax(p) = max(mdistEpos(mdistEpos(:)~=0));
         
-        seq.meanError(p)   = mean(sqrt(sum([depos(segInd,1,:)-dxyz(segInd,1,:)].^2,3)));
+        seq.meanError(p)   = mean(sqrt(sum([depos(segInd,1,[1,2])-dxyz(segInd,1,:)].^2,3)));
     end
     
 end
@@ -1271,19 +1451,35 @@ while isempty(hfig.CurrentCharacter)||hfig.CurrentCharacter~='q',
     [~,mind]=min(sqrt(sum(bsxfun(@minus,xy,axData).^2,2)));
 % PLOT Posterior
     segInd = seq.periods(mind,1):seq.periods(mind,2);
-    segInd = segInd(apos(segInd)>0.1);
+    segInd = segInd(posteriorMax(segInd)>0.00001);
+    
     subplot(223);
-    imagesc(gpfsBins{:},sum(tE(:,:,segInd),3)');
-    caxis([0,0.75]);
-    colormap('hot');
+    cla();
+    hold('on');
+    plot(posEstCom(segInd,1),posEstCom(segInd,2))
+    plot(posEstMax(segInd,1),posEstMax(segInd,2))    
+    %imagesc(gpfsBins{:},sum(tE(:,:,segInd),3)');
+    %caxis([0,0.75]);
+    %colormap('hot');
     axis('xy');
     hold('on');    
-    plot(epos(segInd,1),epos(segInd,2),'m','LineWidth',2);
-    plot(epos(segInd(1),1),epos(segInd(1),2),'c*','MarkerSize',10);    
-    plot(xyn(segInd,1), xyn(segInd,2),'g*','MarkerSize',3);
-    quiver(xyn(segInd,1), xyn(segInd,2),...
-             cos(ang(segInd,'head_back','head_front',1))*100,...
-             sin(ang(segInd,'head_back','head_front',1))*100,0,'Color',[1,1,1]);
+    plot(posEstCom(segInd,1),posEstCom(segInd,2),'m','LineWidth',2);
+    plot(posEstCom(segInd(1),1),posEstCom(segInd(1),2),'c*','MarkerSize',10);    
+    xlim([-500,500]);    
+    ylim([-500,500]);        
+% $$$     plot(xyn(segInd,1), xyn(segInd,2),'g*','MarkerSize',3);
+% $$$     quiver(xyn(segInd,1), xyn(segInd,2),...
+% $$$              cos(ang(segInd,'head_back','head_front',1))*100,...
+% $$$              sin(ang(segInd,'head_back','head_front',1))*100,0,'Color',[1,1,1]);
+
+    subplot(224);
+    cla();    
+    hold('on');
+    plot(posEstCom(segInd,3),posEstCom(segInd,4));
+    plot(posEstMax(segInd,3),posEstMax(segInd,4));
+    xlim([-1,1.5]);
+    ylim([-0.8,1.8]);
+    
     axes(sp(axind));
 % HIGHLIGHT selected unit on current subplot
     c(axind) = circle(axData(mind,1),axData(mind,2),0.25,'g');
@@ -1392,3 +1588,13 @@ end
 % $$$ imagescnan({pfsBins{1},pfsBins{2},sq(srmap(:,:,25,25))'},[0,rmax],[],true,'colorMap',@jet);axis('xy');
 % $$$ subplot(122);
 % $$$ imagescnan({pfsBins{3},pfsBins{4},sq(srmap(30,20,:,:))'},[0,rmax],[],true,'colorMap',@jet);axis('xy');
+
+% bhv_decode testing figures
+
+figure,
+plot((1:size(fet,1))./fet.sampleRate,fet(:,3));
+hold('on');
+ind = posteriorMax>0.001;
+pt = (1:size(posEstSax,1));
+plot(pt(ind)./sampleRate,posEstSax(ind,3),'.');
+

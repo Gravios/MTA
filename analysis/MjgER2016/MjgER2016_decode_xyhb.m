@@ -62,6 +62,7 @@ unitInclusion = sum(ufr.data>0.2,2);
 
 [posEstCom,posEstMax,posteriorMax] = bhv_decode(Trial,sampleRate,unitSubset,mode,[],[],spikeWindow);
 
+[posEstCom,posEstMax,posteriorMax] = bhv_decode(Trial,sampleRate,unitSubset,mode,[],[],spikeWindow);
 
 
 ind = unitInclusion>2 & any(stcm==4&stcm~=2,2) & posteriorMax>0.005;

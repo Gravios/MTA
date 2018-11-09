@@ -36,7 +36,6 @@ xyz.data(~nniz(xyz),:,:) = 0;
 xyz.filter('RectFilter',3,4);
 rb = xyz.model.rb({'head_back','head_left','head_front','head_right'});
 hcom = xyz.com(rb);
-fhcom = ButFilter(hcom,3,[3]./(xyz.sampleRate/2),'low');
 
 % GENERATE orthogonal basis, origin: head's center of mass
 nz = -cross(xyz(:,'head_back',:)-hcom,xyz(:,'head_left',:)-hcom);

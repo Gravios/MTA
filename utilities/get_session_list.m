@@ -385,13 +385,14 @@ switch sessionList
                          'xOffSet',       0,                ...
                          'yOffSet',       0,                ...
                          'stcMode',      'msnn_ppsvd_raux', ...
-                         'thetaRef',    [8:8:64]          ...
+                         'thetaRef',     [8:8:64],          ...
+                         'thetaRefGeneral',8                ...
     );
 
     Sessions(end+1) = Sessions(end);
     Sessions(end).sessionName = 'er01-20110721';
 
-    % 3-4    
+    % 3-5
     % ER06 Sessions
     my_xyz = fullfile(tmy_xyz,'ER06');
     my_nlx = '/storage/evgeny/data/processed/ER06';    
@@ -402,12 +403,13 @@ switch sessionList
     Sessions(end).xyzSampleRate  = 199.997752;
     Sessions(end).TTLValue       = 'Vicon start';
     Sessions(end).includeSyncInd = [1,3,4,6,7];
-    Sessions(end).offsets        = [15,-15];
-    Sessions(end).thetaRef     = [8:8:64,77,77,77,77];
-
+    Sessions(end).offsets        = [0,0];
+    Sessions(end).thetaRef       = [8:8:64,77,77,77,77];
+    Sessions(end).thetaRefGeneral = 8;
+    
     Sessions(end+1) = Sessions(end);    
     Sessions(end).sessionName    = 'ER06-20130613';
-    Sessions(end).includeSyncInd = [1,2,5,6,9,10];
+    Sessions(end).includeSyncInd = [];
     
     Sessions(end+1) = Sessions(end);
     Sessions(end).sessionName    = 'ER06-20130614';
@@ -415,20 +417,9 @@ switch sessionList
     Sessions(end).includeSyncInd = [1:3,6:8,11,12];
 
     
-% $$$     my_xyz = fullfile(tmy_xyz,'ER06');
-% $$$     my_nlx = '/storage/evgeny/data/processed/ER06';    
-% $$$     Sessions(end+1) = Sessions(end);    
-% $$$     Sessions(end).sessionName    = 'ER06-20130613';
-% $$$     Sessions(end).xyz_host       = my_xyz;
-% $$$     Sessions(end).nlx_host       = my_nlx;
-% $$$     Sessions(end).xyzSampleRate  = 199.997752;
-% $$$     Sessions(end).TTLValue       = 'Vicon start';
-% $$$     Sessions(end).includeSyncInd = [1,2,5,6,9,10];
-% $$$     Sessions(end).offsets        = [15,-15];
-% $$$     Sessions(end).thetaRef     = [8:8:64,77,77,77,77];
 
 
-    % 11-12    
+    % 6-8    
     % Ed10 sessions
     my_xyz = fullfile(tmy_xyz,'Ed10');
     my_nlx = '/storage/eduardo/data/processed/nlx/Ed10';
@@ -440,6 +431,7 @@ switch sessionList
     Sessions(end).TTLValue    = '0x0002';
     Sessions(end).includeSyncInd = [];    
     Sessions(end).thetaRef     = [8:8:32];
+    Sessions(end).thetaRefGeneral = 8;    
 
     Sessions(end).sessionName = 'Ed10-20140816';
     Sessions(end).trialName   = 'all';
@@ -451,7 +443,7 @@ switch sessionList
     Sessions(end).includeSyncInd = [1:7];
 
 
-    % 13-23
+    % 9-23
     % jg04 sessions
     my_nlx = tmy_nlx;
     my_xyz = fullfile(my_xyz,'jg04');
@@ -466,6 +458,7 @@ switch sessionList
     Sessions(end).TTLValue      = '0x4000';
     Sessions(end).includeSyncInd = [];    
     Sessions(end).project       = 'general';
+    Sessions(end).thetaRefGeneral = 8;        
 
     Sessions(end+1) = Sessions(end);
     Sessions(end).sessionName = 'jg04-20120129';
@@ -501,25 +494,38 @@ switch sessionList
     Sessions(end).TTLValue    = '0x0040';
     Sessions(end).includeSyncInd = [];
     Sessions(end).thetaRef     = [8:8:64,repmat(69,[1,5])];
+    Sessions(end).thetaRefGeneral = 69;        
     
     Sessions(end+1) =   Sessions(end);
-    Sessions(end).sessionName =   'jg05-20120310';
+    Sessions(end).sessionName  = 'jg05-20120310';
     Sessions(end).thetaRef     = [8:8:64,repmat(69,[1,4])];    
+    Sessions(end).thetaRefGeneral = 69;
+    Sessions(end).offsets      = [8,0];
     Sessions(end+1) =   Sessions(end);
-    Sessions(end).sessionName =   'jg05-20120311';  
+    Sessions(end).sessionName  = 'jg05-20120311';  
     Sessions(end).thetaRef     = [8:8:32,37,43,49,57,repmat(68,[1,4])];
+    Sessions(end).thetaRefGeneral = 68;
+    Sessions(end).offsets      = [10,0];    
     Sessions(end+1) =   Sessions(end);
-    Sessions(end).sessionName =   'jg05-20120312';
-    Sessions(end).thetaRef     = [8:8:40,46,53,61,repmat(72,[1,4])];
+    Sessions(end).sessionName  = 'jg05-20120312';
+    Sessions(end).thetaRef     = [8:8:40,46,53,61,repmat(69,[1,4])];
+    Sessions(end).thetaRefGeneral = 69;
+    Sessions(end).offsets      = [15,0];        
     Sessions(end+1) =   Sessions(end);
-    Sessions(end).sessionName =   'jg05-20120315';
+    Sessions(end).sessionName  = 'jg05-20120315';
     Sessions(end).thetaRef     = [8:8:64,repmat(69,[1,4])];    
+    Sessions(end).thetaRefGeneral = 69;
+    Sessions(end).offsets      = [10,-10];            
     Sessions(end+1) =   Sessions(end);
-    Sessions(end).sessionName =   'jg05-20120316';
+    Sessions(end).sessionName  = 'jg05-20120316';
     Sessions(end).thetaRef     = [8:8:64,repmat(69,[1,4])];        
+    Sessions(end).thetaRefGeneral = 69;
     Sessions(end+1) =   Sessions(end);
-    Sessions(end).sessionName =   'jg05-20120317';
+    Sessions(end).sessionName  = 'jg05-20120317';
     Sessions(end).thetaRef     = [8:8:32,40,47,53,59,repmat(73,[1,4])];
+    Sessions(end).thetaRefGeneral = 73;    
+    Sessions(end).offsets      = [12,0];
+    
 
   case 'BHV_S4H5',
     tmy_nlx = my_nlx;

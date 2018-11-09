@@ -32,7 +32,7 @@ catch
 end
 
 figure(hfig),hold on
-plot(xyz(:,'hcom',1),xyz(:,'hcom',2),'.');
+plot(xyz(:,'head_front',1),xyz(:,'head_front',2),'.');
 alims(gca,Trial.maze.visible_volume);
 try,
     plot(xyz(sper,marker,1),xyz(sper,marker,2),'.r');

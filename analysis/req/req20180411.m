@@ -1,3 +1,11 @@
+% req20180411 ----------------------------------------------------
+%  Status: inactive
+%  Type: Analysis
+%  Author: Justin Graboski
+%  Final_Forms: NA
+%  Description: Spike waveform stability between fields (kinda)
+%               
+%  Bugs: NA
 
 Trial = MTATrial.validate('jg05-20120317.cof.all');
 Trial = MTATrial.validate('jg05-20120310.cof.all');

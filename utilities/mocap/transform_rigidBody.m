@@ -275,10 +275,6 @@ nxyz.addMarker('head_neck',...
                bsxfun(@plus,nx*mpoint(2)+ny*mpoint(1)+nz*mpoint(3),xyz(:,'hcom',:))...
 );
 
-if display,
-    scatter3(mpoint(:,1),mpoint(:,2),mpoint(:,3),200,'filled');
-    saveas(hfig,fullfile(Session.spath,'figures',[mfilename,'_diagnostic.fig']));
-end
 
 % REPLACE data of each head marker with shifted position around neck
 nxyz.data(:,nxyz.model.gmi('head_back'),:) =  ...
@@ -297,6 +293,12 @@ nxyz.key  = 't';
 nxyz.name = 'tr_corrected_head';
 nxyz.updateFilename(Session);      
 nxyz.save;
+
+
+if display,
+    scatter3(mpoint(:,1),mpoint(:,2),mpoint(:,3),200,'filled');
+    saveas(hfig,fullfile(Session.spath,'figures',[mfilename,'_diagnostic.fig']),'fig');
+end
 
 
 % $$$ FileName_fine = fullfile(Session.spath,[Session.filebase '.xyz-shift_fine_',func2str(scoreFunction.fun),'.mat']);

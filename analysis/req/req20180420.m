@@ -1,3 +1,11 @@
+% req20180420 ----------------------------------------------------
+%  Status: retired
+%  Type: Diagnostic
+%  Author: Justin Graboski
+%  Final_Forms: NA
+%  Description: place field check in the session jg05-20120311 where large 
+%               shift in probe position occurred 
+%  Bugs: NA
 
 
 Trial = MTATrial.validate('jg05-20120311.cof.all');

@@ -1,4 +1,7 @@
 
+% HCOM: head center of mass
+% PP: Phase precession 
+
 %% 2015 07 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 % format: v0.1
 
@@ -726,7 +729,7 @@
 %  Status: active
 %  Type: Analysis
 %  Final_Forms: NA
-%  Description: Phase precession analysis
+%  Description: PP analysis
 %  Bugs: NA
 
 
@@ -903,4 +906,85 @@
 
 % req20180322.m
 % Review unit placefields
+
+
+
+%% 2018 06 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+
+% req20180630 ----------------------------------------------------
+%  Status: active
+%  Type: Analysis
+%  Author: Justin Graboski
+%  Final_Forms: NA
+%  Description: validate erpPCA eigenvectors of behavioral placefields
+%  Bugs: NA
+
+
+
+%% 2018 08 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+
+% req20180826 ----------------------------------------------------
+%  Status: active
+%  Type: Analysis
+%  Author: Justin Graboski
+%  Final_Forms: NA
+%  Description: within state PP as function of 
+%               {drz, body pitch, head pitch}
+%
+%  Bugs: NA
+
+
+
+
+%% 2018 09 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+
+% req20180900 ----------------------------------------------------
+%  Status: active
+%  Type: Analysis
+%  Author: Justin Graboski
+%  Final_Forms: NA
+%  Description: 
+%  Bugs: NA
+
+% req20180919
+%  Status: active
+%  Type: Analysis
+%  Author: Justin Graboski
+%  Final_Forms: NA
+%  Project: MjgER2016:placefields
+%  Description: Theta PP of a place cells spiking activity seems to be independent of 
+%               non spatial modulators of firing rate.
+%  Protocol: 
+%    1. select only first one or two spikes of each theta cycle.
+%    2  compute placefields
+
+% req20180921
+%  Tags: interneuron ratemaps
+%  Status: active
+%  Type: Analysis
+%  Author: Justin Graboski
+%  Final_Forms: NA
+%  Project: MjgER2016:placefields
+%  Description: Interneurons are behaviorally modulated. Plot 4d ratemap in xyhb space
+%  Protocol: 
+%    1. select interneurons
+%    2  compute ratemaps
+
+
+% req20180926
+%  Tags: egocentric PP
+%  Status: active
+%  Type: Analysis
+%  Author: Justin Graboski
+%  Final_Forms: NA
+%  Project: MjgER2016:placefields
+%  Description: Phase precession in an egocentric cooridinate system. During immobilitiy units
+%               still phase precess relative to the place field center. A velocity vector of
+%               the HCOM is too small which flips the standard drz's sign randomly 
+%  Protocol: 
+%    1. select interneurons
+%    2  compute ratemaps
+% 
+%  Figures: 
+%    1. 
 

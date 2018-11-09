@@ -11,9 +11,12 @@ Trial = MTATrial.validate(Trial);
 % DEFARGS ------------------------------------------------------------------------------------------
 defargs = struct('newSampleRate', Trial.xyz.sampleRate,                                          ...
                  'normalize'    , false,                                                         ...
-                 'procOpts'     , {'trb'}                                                        ...
+                 'procOpts'     , {'SPLINE_SPINE_HEAD_EQD'},                                     ...
+                 'referenceTrial'  , 'Ed05-20140529.ont.all',                                    ...
+                 'referenceFeature', ''                                                          ...                 
 );
-[newSampleRate,normalize,procOpts] = DefaultArgs(varargin,defargs,'--struct');
+[newSampleRate,normalize,procOpts,referenceTrial,referenceFeature] =                             ...
+    DefaultArgs(varargin,defargs,'--struct');
 %--------------------------------------------------------------------------------------------------
 
 
@@ -24,7 +27,7 @@ defargs = struct('newSampleRate', Trial.xyz.sampleRate,                         
 fet = MTADfet(Trial.spath,...
               [],...
               [],...
-              newSampleRate,...
+              Trial.xyz.sampleRate,...
               Trial.sync.copy,...
               Trial.sync.data(1),...
               [],'TimeSeries',[],'Head body pitch','fet_HB_pitch','b');                  
@@ -37,16 +40,17 @@ catch err
     xyz = preproc_xyz(Trial);
 end
 
-    
-xyz.resample(newSampleRate);
+
 
 % ANG Filtered Intermarker angles 
 ang = create(MTADang,Trial,xyz);
 
 % CAT feature
-fet.data = [ang(:,'spine_middle','spine_upper',2),...
+%fet.data = [ang(:,'spine_middle','spine_upper',2),...
+fet.data = [ang(:,'pelvis_root','spine_upper',2),...
             ang(:,'spine_upper','hcom',2),...
             ang(:,'hcom','nose',2)];
+
 
 fet.data(~nniz(xyz),:)=0;
 featureTitles = {};
@@ -60,5 +64,14 @@ if nargout>1,
     featureTitles(end+1) = {'Pitch HBHF'};    
     featureDesc(end+1) = {['head pitch relative to xy plane']};
 end
+
+
+if ~isempty(referenceTrial),
+% MAP to reference trial
+    fet.map_to_reference_session(Trial,referenceTrial,referenceFeature);
+end
+
+fet.resample(newSampleRate);
+
 
 % END MAIN -----------------------------------------------------------------------------------------

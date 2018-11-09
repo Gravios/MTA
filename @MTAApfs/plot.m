@@ -1,8 +1,11 @@
-
-function rateMap = plot(Pfs,varargin)
-% function rateMap = plot(Pfs,varargin)
+function ratemap = plot(Pfs,varargin)
+% function ratemap = plot(Pfs,varargin)
 % plot placefield of the specified unit
-% varargin:
+%
+% IN:
+%    Pfs - MTAApfs: ratemap analysis object
+% 
+% VARARGIN:
 %    unit - NumericArray: {[]}
 %
 %    mode - String: {x,'mean'} ploting method
@@ -34,6 +37,9 @@ function rateMap = plot(Pfs,varargin)
 %                Options: see interp2
 %
 %    colorMap:     FuncHandle, @parula function handle for the colormap 
+%
+% OUT:
+%    ratemap - NumericMatrix: matrix containing the ratemap of the requested unit
 
 
 
@@ -61,7 +67,7 @@ defargs = struct('unit',                   [],                                  
 if isempty(unit),unit=Pfs.data.clu(1);end
 
 if isnumeric(mode)
-    rateMap = Pfs.data.rateMap(:,Pfs.data.clu==unit,mode);    
+    ratemap = Pfs.data.rateMap(:,Pfs.data.clu==unit,mode);    
 else
     if Pfs.parameters.numIter>1, 
         ind = 2:Pfs.parameters.numIter;
@@ -69,32 +75,32 @@ else
         ind = 1;
     end
     switch mode            
-      case 'mean',    rateMap = mean(Pfs.data.rateMap(:,Pfs.data.clu==unit,ind),3,'omitnan');
-      case 'std' ,    rateMap = std(Pfs.data.rateMap(:,Pfs.data.clu==unit,ind),[],3,'omitnan');
-      case 'snr',     rateMap = mean(Pfs.data.rateMap(:,Pfs.data.clu==unit,ind),3,'omitnan')...
+      case 'mean',    ratemap = mean(Pfs.data.rateMap(:,Pfs.data.clu==unit,ind),3,'omitnan');
+      case 'std' ,    ratemap = std(Pfs.data.rateMap(:,Pfs.data.clu==unit,ind),[],3,'omitnan');
+      case 'snr',     ratemap = mean(Pfs.data.rateMap(:,Pfs.data.clu==unit,ind),3,'omitnan')...
             ./std(Pfs.data.rateMap(:,Pfs.data.clu==unit,ind),[],3,'omitnan');
-        rateMap(isinf(rateMap)) = nan;                          
+        ratemap(isinf(ratemap)) = nan;                          
       case 'snrs',    
         tStd = std(Pfs.data.rateMap(:,Pfs.data.clu==unit,ind),[],3,'omitnan');
         tStd(tStd<1) = 1;
-        rateMap = mean(Pfs.data.rateMap(:,Pfs.data.clu==unit,ind),3,'omitnan')./tStd;
-        rateMap(isinf(rateMap)) = nan;                          
+        ratemap = mean(Pfs.data.rateMap(:,Pfs.data.clu==unit,ind),3,'omitnan')./tStd;
+        ratemap(isinf(ratemap)) = nan;                          
       case 'sig'
-        rateMap = 1./sum((repmat(max(Pfs.data.rateMap(:,Pfs.data.clu==unit,:)),[size(Pfs.data.rateMap,1),1,1])...
+        ratemap = 1./sum((repmat(max(Pfs.data.rateMap(:,Pfs.data.clu==unit,:)),[size(Pfs.data.rateMap,1),1,1])...
                           -repmat(Pfs.data.rateMap(:,Pfs.data.clu==unit,1),[1,1,Pfs.parameters.numIter]))<0,3)';
       otherwise
-        rateMap = Pfs.data.rateMap(:,Pfs.data.clu==unit,1);
+        ratemap = Pfs.data.rateMap(:,Pfs.data.clu==unit,1);
     end                    
 end
 
-% COMPUTE rateMap output type    
+% COMPUTE ratemap output type    
 if ~isempty(sigThresh) && Pfs.parameters.numIter > 1,
     sigMask = sum(~isnan(Pfs.data.rateMap(:,Pfs.data.clu==unit,:)),3)>Pfs.parameters.numIter*sigThresh;
-    rateMap(~sigMask(:)) = nan;
+    ratemap(~sigMask(:)) = nan;
 end 
 
-% RESHAPE rateMap from 1D to ND
-rateMap = reshape(rateMap,Pfs.adata.binSizes');
+% RESHAPE ratemap from 1D to ND
+ratemap = reshape(ratemap,Pfs.adata.binSizes');
 
 switch numel(Pfs.parameters.type)
   case 2
@@ -104,18 +110,18 @@ switch numel(Pfs.parameters.type)
         interpGrids= cell([1,numel(interpPar.bins)]);
         [interpGrids{:}] = ndgrid(interpPar.bins{:});
 
-        nanMask = double(isnan(rateMap));
+        nanMask = double(isnan(ratemap));
 % Shold I use mean rate again for zeros interpolation?        
-        rateMap(isnan(rateMap)) = 0;
+        ratemap(isnan(ratemap)) = 0;
 
 
-        rateMap        = interp2(Pfs.adata.bins{:},rateMap',interpGrids{:},interpPar.methodRateMap);
+        ratemap        = interp2(Pfs.adata.bins{:},ratemap',interpGrids{:},interpPar.methodRateMap);
         interpdNanMask = interp2(Pfs.adata.bins{:},nanMask',interpGrids{:},interpPar.methodNanMap);
 
 % SMOOTH edges with interpolated nan mask
-        rateMap(interpdNanMask>interpPar.nanMaskThreshold) = nan;
+        ratemap(interpdNanMask>interpPar.nanMaskThreshold) = nan;
 % CORRECT for cubic undershoot 
-        rateMap(rateMap<0) = 0;
+        ratemap(ratemap<0) = 0;
 
         bins = interpPar.bins;
         binSizes = cellfun(@numel,interpPar.bins);
@@ -127,7 +133,7 @@ switch numel(Pfs.parameters.type)
 
 
     if mazeMaskFlag,
-% RESTRICT rateMap area to within the maze radius
+% RESTRICT ratemap area to within the maze radius
         if mazeMask==1,
             width = binSizes(1);
             height =binSizes(2);
@@ -139,24 +145,24 @@ switch numel(Pfs.parameters.type)
             mazeMask(mazeMask==0)=nan;
         end
     end
-    rateMap = rateMap.*mazeMask;
+    ratemap = ratemap.*mazeMask;
     
     
     
     if nargout>0,return,end
 
 % ASSIGN maximum rate of colormap
-    if isempty(maxRate), maxRate = max(rateMap(:)); end
+    if isempty(maxRate), maxRate = max(ratemap(:)); end
     if isnan(maxRate), maxRate = 0; end    
     if numel(maxRate)<2, maxRate = [0,maxRate]; end
 
 % ASSIGN elements with nans a black color value
-    %rateMap(isnan(rateMap)) = -1;
+    %ratemap(isnan(ratemap)) = -1;
     if flipAxesFlag,
         bins = fliplr(bins(:)');
-        imagescnan({bins{:},fliplr(rot90(rateMap',-1))},maxRate,'linear',false,nanColor,[],[],colorMap);
+        imagescnan({bins{:},fliplr(rot90(ratemap',-1))},maxRate,'linear',false,nanColor,[],[],colorMap);
     else
-        imagescnan({bins{:},rateMap'},maxRate,'linear',false,nanColor,[],[],colorMap);
+        imagescnan({bins{:},ratemap'},maxRate,'linear',false,nanColor,[],[],colorMap);
     end
     
     if islogical(rateReportMethod) && rateReportMethod,
@@ -178,20 +184,43 @@ switch numel(Pfs.parameters.type)
           case 'text'
             text(Pfs.adata.bins{1}(end)-0.25*diff(Pfs.adata.bins{1}([1,end])),...
                  Pfs.adata.bins{2}(end)-0.10*diff(Pfs.adata.bins{2}([1,end])),...
-                 sprintf('%2.1f',max(rateMap(:))),...
+                 sprintf('%2.1f',max(ratemap(:))),...
                  'Color','w','FontWeight','bold','FontSize',8)
         end
     end
 
     axis('xy');
   
-% $$$   case 3
+  case 3
+
+    if ~isempty(interpPar),
+% INTERPOLATE ratemap 
+        interpGrids= cell([1,numel(interpPar.bins)]);
+% WARNING!!! Double check for non symetric placefields due to the incongruence between
+%            meshgrid and ndgrid.
+        [interpGrids{:}] = ndgrid(interpPar.bins{:});
+
+        nanMask = double(isnan(ratemap));
+% Shold I use mean rate again for zeros interpolation?        
+        ratemap(isnan(ratemap)) = 0;
+
+        ratemap        = interpn(Pfs.adata.bins{:},ratemap,interpGrids{:},interpPar.methodRateMap);
+        interpdNanMask = interpn(Pfs.adata.bins{:},nanMask,interpGrids{:},interpPar.methodNanMap);
+
+% SMOOTH edges with interpolated nan mask
+        ratemap(interpdNanMask>interpPar.nanMaskThreshold) = nan;
+% CORRECT for cubic undershoot 
+        ratemap(ratemap<0) = 0;
+    end
+    
+    ratemap = ratemap.*mazeMask;
+    
 % $$$     c = eye(3);
 % $$$     r = [1.2,3,6];
-% $$$     rateMap = permute(reshape(Pfs.data.rateMap(:,Pfs.data.clu==unit,1),Pfs.adata.binSizes'),[1,2,3]);
+% $$$     ratemap = permute(reshape(Pfs.data.rateMap(:,Pfs.data.clu==unit,1),Pfs.adata.binSizes'),[1,2,3]);
 % $$$     if nargout>0,return,end
 % $$$     hrate = max(Pfs.data.rateMap(:,Pfs.data.clu==unit,1))/2;
-% $$$     [mind] = LocalMinimaN(-rateMap,-hrate,9);
+% $$$     [mind] = LocalMinimaN(-ratemap,-hrate,9);
 % $$$ 
 % $$$     m = find(ismember('xyz',mode));
 % $$$     o = find(~ismember([1,2,3],m));
@@ -203,7 +232,7 @@ switch numel(Pfs.parameters.type)
 % $$$         ss{o}    = mind(o);
 % $$$         imagescnan({Pfs.adata.bins{m(1)},                                ... xaxis labels
 % $$$                     Pfs.adata.bins{m(2)},                                ... yaxis labels
-% $$$                     sq(nanmean(subsref(rateMap,substruct('()',ss)),o))'},... imagedata
+% $$$                     sq(nanmean(subsref(ratemap,substruct('()',ss)),o))'},... imagedata
 % $$$                    colorLimits,                                          ... color scale
 % $$$                    [],                                                   ... color scale mode
 % $$$                    colorbarFlag,                                         ... flag to add colorbar
@@ -220,20 +249,20 @@ switch numel(Pfs.parameters.type)
 %            meshgrid and ndgrid.
         [interpGrids{:}] = ndgrid(interpPar.bins{:});
 
-        nanMask = double(isnan(rateMap));
+        nanMask = double(isnan(ratemap));
 % Shold I use mean rate again for zeros interpolation?        
-        rateMap(isnan(rateMap)) = 0;
+        ratemap(isnan(ratemap)) = 0;
 
-        rateMap        = interpn(Pfs.adata.bins{:},rateMap,interpGrids{:},interpPar.methodRateMap);
+        ratemap        = interpn(Pfs.adata.bins{:},ratemap,interpGrids{:},interpPar.methodRateMap);
         interpdNanMask = interpn(Pfs.adata.bins{:},nanMask,interpGrids{:},interpPar.methodNanMap);
 
 % SMOOTH edges with interpolated nan mask
-        rateMap(interpdNanMask>interpPar.nanMaskThreshold) = nan;
+        ratemap(interpdNanMask>interpPar.nanMaskThreshold) = nan;
 % CORRECT for cubic undershoot 
-        rateMap(rateMap<0) = 0;
+        ratemap(ratemap<0) = 0;
     end
     
-    rateMap = rateMap.*mazeMask;
+    ratemap = ratemap.*mazeMask;
     
 end
 

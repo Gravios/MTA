@@ -1,6 +1,7 @@
 function angles = transform_origin(Session,varargin)               
 %angles = transformOrigin(Session, xyz, origin, orientationVector, vectorTranSet)   
-[xyz,origin,orientationVector,vectorTranSet] = DefaultArgs(varargin,{Session.xyz.copy,'head_back','head_front',{'head_left','head_right'}});
+[xyz,origin,orientationVector,vectorTranSet] = ....
+    DefaultArgs(varargin,{Session.xyz.copy,'head_back','head_front',{'head_left','head_right'}});
 
 if xyz.isempty,
     xyz.load(Session);

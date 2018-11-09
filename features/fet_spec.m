@@ -2,12 +2,24 @@ function [rhm,varargout] = fet_spec(Trial,fet,varargin)
 % [rhm,varargout] = fet_spec(Trial,fet,varargin)
 %
 %[mode,wsig,sampleRate,defspec,overwrite] = ...
-%    DefaultArgs(varargin,{'raw',true,120,...
-%                    struct('nFFT',2^9,'Fs',fet.sampleRate,...
+%    
+% Varargin:
+%    mode:          String,           name of spectral function in labbox::TF
+%    wsig:          Logical,          flag to whiten signal with autoregressive model
+%    sampleRate:    Numeric,          (ignored) output sample rate
+%    defspec:       Struct,           FFT parameters
+%    overwrite:     Numeric,          overwrite AR model
+%    flagCrossSpec: Logical,          compute cross channel spec/cohere/phase
+%
+% Default Varargin:
+%    mode,                'mtchglong'
+%    wsig,                true
+%    sampleRate,          120    
+%    defspec,             struct('nFFT',2^9,'Fs',fet.sampleRate,...
 %                           'WinLength',2^7,'nOverlap',2^7*.875,...
 %                           'FreqRange',[1,40]),...
-%                    true});
-%                'flagCrossSpec',           false                                                ...    
+%    overwrite,           true
+%    flagCrossSpec,       false                                               
 %
 %
 parspec = empty_spec;

@@ -1,10 +1,10 @@
-function [Stc] = label_bhv_shake(Stc,Trial,varargin);
+function [Stc] = label_bhv_shake(Stc,Trial,varargin)
 % function [Stc] = label_bhv_shake(Trial,Stc,varargin);
 % feature set: fet_bref
 
 % DEFARGS ------------------------------------------------------------------------------------------
 defargs = struct(...
-    'eigenVectorIndices',     [2:4],...    
+    'eigenVectorIndices',     2:4,...    
     'param', struct('sessionList',            'hand_labeled',...
                     'referenceTrial',         'jg05-20120317.cof.all',...
                     'featureSet',             'fet_bref',...
@@ -30,7 +30,7 @@ if isempty(Trial),
     sessionList = get_session_list(param.sessionList);                    
 elseif ischar(Trial),
     sessionList = get_session_list(Trial);                    
-else,
+else
     sessionList = {Trial}; 
 end
 
@@ -40,9 +40,9 @@ embeddingWindow = repmat({param.embeddingWindow},1,numSessions);
 trimWindow = repmat({[ param.embeddingWindow./4./param.sampleRate,...
                       -param.embeddingWindow./4./param.sampleRate]},1,numSessions);
 
-normalizationParameters = struct('sessionList',   param.sessionList   ,...
-                                 'referenceTrial',param.referenceTrial,...
-                                 'featureSet',    param.featureSet);
+% normalizationParameters = struct('sessionList',   param.sessionList   ,...
+%                                  'referenceTrial',param.referenceTrial,...
+%                                  'featureSet',    param.featureSet);
 
 svdParameters = struct('sessionList',            param.sessionList,            ...
                        'referenceTrial',         param.referenceTrial,         ...
@@ -56,7 +56,7 @@ svdParameters = struct('sessionList',            param.sessionList,            .
 
 % TAG creation -------------------------------------------------------------------------------------
 % ID Vars - create hash tag
-normalizationTag = DataHash(normalizationParameters);
+%normalizationTag = DataHash(normalizationParameters);
 svdTag           = DataHash(svdParameters);
 %---------------------------------------------------------------------------------------------------
 
@@ -76,7 +76,7 @@ if isempty(Stc),
     Stc = cf(@(t)  t.load('stc'),  Trials);
 elseif ~iscell(Stc) && isa(Stc,'MTAStateCollection'),
     Stc = {Stc};
-elseif ischar(Stc) & numSessions>1,
+elseif ischar(Stc) && numSessions>1,
     Stc = cf(@(t,s)  t.load('stc',s), Trials,repmat({Stc},[1,numSessions]));
 elseif ischar(Stc),    
     Stc = {Trial.load('stc',Stc)};
@@ -88,7 +88,7 @@ end
 xyz    = cf(@(t)   preproc_xyz(t)         , Trials);
          cf(@(x,s) x.resample(s)          , xyz,sampleRate);
 fxyz   = cf(@(x)   x.copy()               , xyz);
-         cf(@(f)   f.filter('ButFilter',5,[2.4],'low'),  fxyz);
+         cf(@(f)   f.filter('ButFilter',5,2.4,'low'),  fxyz);
 
 % LOAD and MAP Features to reference session
 features = cf(@(t,p)   feval(p.featureSet,t),  Trials,repmat({param},[1,numSessions]));
@@ -189,7 +189,7 @@ if display,
     % TIME vectors
     ts =  cf(@(x)    [1:size(x,1)]./x.sampleRate,     xyz);
     
-    figure,plot(shakeFeature{1}.data),Lines(Stc{1}{'k'}(:),[],'r');
+    figure,plot(sfet{1}.data),Lines(Stc{1}{'k'}(:),[],'r');
     skon = cf(@(f,s) f(s{'k',f.sampleRate}(:,1)),sfet,Stc);
     skoff = cf(@(f,s) f(s{'k',f.sampleRate}(:,2)),sfet,Stc);
     skdia = cf(@(f,s) f(round(mean(s{'k',f.sampleRate}.data,2))),sfet,Stc);

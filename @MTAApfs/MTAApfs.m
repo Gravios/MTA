@@ -102,7 +102,7 @@ classdef MTAApfs < hgsetget %< MTAAnalysis
             if ischar(Obj)||isstruct(Obj),
                Obj = MTATrial.validate(Obj);
             end
-% DEFARGS ------------------------------------------------------------------------------------------    
+% DEFARGS ------------------------------------------------------------------------------------------ 
             defargs = struct(                                                                    ...
                 'units',                          [],                                            ...
                 'states',                         'walk',                                        ...
@@ -121,11 +121,13 @@ classdef MTAApfs < hgsetget %< MTAAnalysis
                 'shuffleBlockSize',               1,                                             ...
                 'trackingMarker',                 'nose',                                        ...
                 'autoSaveFlag',                   true,                                          ...
-                'spkMode',                        'deburst'                                      ...
+                'spkMode',                        'deburst',                                     ...
+                'spk',                            [],                                            ...
+                'compute_pfs',                    @PlotPF                                        ...
             );            
             [units,states,overwrite,tag,binDims,SmoothingWeights,type,spkShuffle,posShuffle,     ...
              numIter,xyzp,boundaryLimits,bootstrap,halfsample,shuffleBlockSize,trackingMarker,   ...
-             autoSaveFlag,spkMode] = DefaultArgs(varargin,defargs,'--struct');
+             autoSaveFlag,spkMode,spk,compute_pfs] = DefaultArgs(varargin,defargs,'--struct');
 %---------------------------------------------------------------------------------------------------
                 
 
@@ -188,7 +190,7 @@ classdef MTAApfs < hgsetget %< MTAAnalysis
 % SET the epochs
                     if ischar(states),
                         Pfs.parameters.states = states;
-                        pfsState = Session.stc{states}.copy();
+                        pfsState = Session.stc{states,xyz.sampleRate};
                         pfsState.resample(xyz);
                     elseif isa(states,'MTAData'),
                         pfsState = states.copy;
@@ -360,12 +362,21 @@ classdef MTAApfs < hgsetget %< MTAAnalysis
             
             
 % GET State Positions
-            if pfsState.isempty,return,end
-            asstpos = sq(xyz(pfsState,:));
-            
+
+            returnFlag = false;
+            if ~isempty(pfsState),
+                asstpos = sq(xyz(pfsState,:));                
 % LOAD Units into spk object;
-            spk = Session.spk.copy;
-            spk.create(Session,xyz.sampleRate,pfsState,units,spkMode);
+                if isempty(spk)
+                    spk = Session.spk.copy;
+                    spk.create(Session,xyz.sampleRate,pfsState,units,spkMode);
+                end
+            else
+                spk = Session.spk.copy;
+                returnFlag = true;
+            end
+
+            
 
             i = 1;
             for unit=selected_units(:)',
@@ -380,6 +391,11 @@ classdef MTAApfs < hgsetget %< MTAAnalysis
                 Pfs.data.meanRate(:,dind(i))     = zeros([1,1]);
                 Pfs.data.si(:,dind(i))           = zeros([1,1]);
                 Pfs.data.spar(:,dind(i))         = zeros([1,1]);
+                
+                if returnFlag,
+                    continue
+                end
+                
                 
                 res = spk(unit);
                 %% Skip unit if too few spikes
@@ -470,14 +486,14 @@ classdef MTAApfs < hgsetget %< MTAAnalysis
                      Pfs.adata.bins,                ... Bins
                      Pfs.data.si(:,dind(i)),        ... Spatial Information
                      Pfs.data.spar(:,dind(i))]   =  ... Sparsity
-                        PlotPF(Session,                         ... MTASession Object
-                               sstposf(sresind(:,1),:),         ... Spike Postion
-                               sstposf,                         ... Marker Postion
-                               binDims,                         ... Bin Dimensions
-                               SmoothingWeights,                ... Weights
-                               type,                            ... Type {'xy','xyz' ...}
-                               boundaryLimits,                  ... Computational Boundaries
-                               xyz.sampleRate                   ... Sample Rate
+                        compute_pfs(Session,                         ... MTASession Object
+                                    sstposf(sresind(:,1),:),         ... Spike Postion
+                                    sstposf,                         ... Marker Postion
+                                    binDims,                         ... Bin Dimensions
+                                    SmoothingWeights,                ... Weights
+                                    type,                            ... Type {'xy','xyz' ...}
+                                    boundaryLimits,                  ... Computational Boundaries
+                                    xyz.sampleRate                   ... Sample Rate
                     );
                     toc
 
@@ -487,14 +503,14 @@ classdef MTAApfs < hgsetget %< MTAAnalysis
                         for bsi = 2:numIter
                             sstposf = shuffle_positions(sstpos);
                             Pfs.data.rateMap(:,dind(i),bsi) = ...
-                                PlotPF(Session,...
-                                       sstposf(sresind(ismember(sresind(:,bsi),halfSampleInd(:,bsi)),bsi),:),...
-                                       sstposf(halfSampleInd(:,bsi),:),...
-                                       binDims,...
-                                       SmoothingWeights,...
-                                       type,...
-                                       boundaryLimits,...
-                                       xyz.sampleRate...
+                                compute_pfs(Session,...
+                                            sstposf(sresind(ismember(sresind(:,bsi),halfSampleInd(:,bsi)),bsi),:),...
+                                            sstposf(halfSampleInd(:,bsi),:),...
+                                            binDims,...
+                                            SmoothingWeights,...
+                                            type,...
+                                            boundaryLimits,...
+                                            xyz.sampleRate...
                             );
                         end%for bsi
                         toc
@@ -520,6 +536,10 @@ classdef MTAApfs < hgsetget %< MTAAnalysis
             
         end%function MTAApfs
 
-    end%methods
+end%methods
+
+%methods
+%purge_tagged_savefile
+%end
     
 end%classdef MTAApfs

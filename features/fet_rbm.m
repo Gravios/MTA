@@ -6,50 +6,27 @@ function [rhm,varargout] = fet_rbm(Trial,varargin)
 % 
 %
 
-parspec = empty_spec;
-xyz = Trial.load('xyz');
-%xyz = Trial.load('xyz','seh');
-%xyz.data(isnan(xyz.data(:)))=0;
+% DEFARGS ------------------------------------------------------------------------------------------
 varargout = cell([1,nargout-1]);
 
-[sampleRate,mode,wsig,defspec,overwrite,newSR,type] = DefaultArgs(varargin,{'xyz','mta',1,def_spec_parm(xyz),false,[],'mta'});
+Trial = MTATrial.validate(Trial);
+
+parspec = empty_spec;
+xyz = Trial.load('xyz');
+
+defargs = struct('sampleRate',                            'xyz',                                 ...
+                 'mode',                                  'mta',                                 ...
+                 'wsig',                                  true,                                  ...
+                 'defspec',                               def_spec_parm(xyz),                    ...
+                 'overwrite',                             false,                                 ...
+                 'newSR',                                 [],                                    ...
+                 'type',                                  'mta'                                  ...
+);
+
+[sampleRate,mode,wsig,defspec,overwrite,newSR,type] = DefaultArgs(varargin,defargs,'--struct');
+%---------------------------------------------------------------------------------------------------
 
 fs = []; ts = [];
-
-% create a ridgid body model
-rb = xyz.model.rb({'head_back','head_left','head_front','head_right'});
-% find the center of mass of the model
-hcom = xyz.com(rb);
-% add coordinates of the model's center of mass to the xyz object
-xyz.addMarker('fhcom',[.7,1,.7],{{'head_back','head_front',[0,0,1]}},ButFilter(hcom,3,[1]./(xyz.sampleRate/2),'low'));
-xyz.addMarker('hcom',[128,255,128],{{'head_back','head_front',[0,0,1]}},hcom);
-
-
-
-rb = xyz.model.rb({'spine_lower','pelvis_root','spine_middle'});
-bcom = xyz.com(rb);
-xyz.addMarker('fbcom',[.7,1,.7],{{'head_back','head_front',[0,0,1]}},...
-              ButFilter(bcom,4,[1]./(xyz.sampleRate/2),'low'));
-xyz.addMarker('bcom',[.7,1,.7],{{'head_back','head_front',[0,0,1]}},bcom);
-xyz.addMarker('fsl',[.7,1,.7],{{'head_back','head_front',[0,0,1]}},...
-              ButFilter(xyz(:,'spine_lower',:),4,[1.5]./(xyz.sampleRate/2),'low'));
-xyz.addMarker('fsm',[.7,1,.7],{{'head_back','head_front',[0,0,1]}},...
-              ButFilter(xyz(:,'spine_middle',:),4,[1.5]./(xyz.sampleRate/2),'low'));
-xyz.addMarker('fsu',[.7,1,.7],{{'head_back','head_front',[0,0,1]}},...
-              ButFilter(xyz(:,'spine_upper',:),4,[1.5]./(xyz.sampleRate/2),'low'));
-
-rb = xyz.model.rb({'pelvis_root','spine_middle','spine_upper'});
-bcom = xyz.com(rb);
-xyz.addMarker('fbucom',[.7,1,.7],{{'head_back','head_front',[0,0,1]}},...
-              ButFilter(bcom,4,[1]./(xyz.sampleRate/2),'low'));
-xyz.addMarker('bucom',[.7,1,.7],{{'head_back','head_front',[0,0,1]}},bcom);
-xyz.addMarker('fsl',[.7,1,.7],{{'head_back','head_front',[0,0,1]}},...
-              ButFilter(xyz(:,'spine_lower',:),4,[1.5]./(xyz.sampleRate/2),'low'));
-xyz.addMarker('fsm',[.7,1,.7],{{'head_back','head_front',[0,0,1]}},...
-              ButFilter(xyz(:,'spine_middle',:),4,[1.5]./(xyz.sampleRate/2),'low'));
-xyz.addMarker('fsu',[.7,1,.7],{{'head_back','head_front',[0,0,1]}},...
-              ButFilter(xyz(:,'spine_upper',:),4,[1.5]./(xyz.sampleRate/2),'low'));
-
 
 % if xyz sampling rat e is greater than 120 Hz then resample it to 120 Hz
 if ischar(sampleRate), sampleRate = Trial.(sampleRate).sampleRate;end
@@ -58,36 +35,27 @@ if isa(sampleRate,'MTAData'),
 elseif sampleRate > 120, 
     xyz.resample(120); 
 end
-xyz.filter('ButFilter',3,20,'low');
-
 
 ang = create(MTADang,Trial,xyz);
 ang.data(~nniz(xyz(:,1,1)),:,:,:) = 0;
 
-
 fet = xyz.copy;
-%bang = ang(:,'hbx','fhcom',3);
-%bang = ButFilter(ang(:,'fsm','spine_upper',3),4,[0.8,20]./(xyz.sampleRate/2),'bandpass');
-bang = ButFilter(ang(:,'pelvis_root','spine_upper',3),4,[0.5,20]./(xyz.sampleRate/2),'bandpass');
-%bang = ButFilter(ang(:,'fbcom','spine_upper',3),4,[0.5,20]./(xyz.sampleRate/2),'bandpass');
-%bang = ButFilter(ang(:,'fbcom','spine_upper',3),4,[0.8]./(xyz.sampleRate/2),'high');
-%bang = ButFilter(ang(:,'bucom','fsl',3),4,[0.8]./(xyz.sampleRate/2),'high');
-%bang = ang(:,'hbx','fhbte',3);
-%bang = ang(:,'hbx','hcom',2);
-%bang = ang(:,'hbt','fhcom',3);
 
-fet.data = bang;
-%fet.data = [0;diff(bang)];
-%fet.data = [0;ButFilter(diff(bang),3,[.1,20]/(ang.sampleRate/2),'bandpass')];
+fet.data = [ang(:,'spine_lower','spine_middle',3)-ang(:,'spine_lower','spine_upper',3)];
+fet.filter('RectFilter',3,5);
+fet.data = diff(fet.data);
+fet.filter('RectFilter',3,5);
+fet.data = [0;diff(fet.data);0];
+fet.data(~nniz(fet.data(:))) = 1;
 
 switch mode
   case 'mta'
     rhm = MTADfet.encapsulate(Trial,...
                               fet.data,...
                               fet.sampleRate,...
-                              'rhythmic head motion feature',...
-                              'rhm',...
-                              'r');
+                              'rhythmic body motion',...
+                              'rbm',...
+                              'b');
   case 'raw'
     rhm = fet.data;
   otherwise

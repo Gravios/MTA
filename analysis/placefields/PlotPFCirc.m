@@ -1,4 +1,4 @@
-function [ratemap, Bins, spatialInformation, sparsity] = PlotPF(Session,spkpos,pos,binDims,SmoothingWeights,type,bound_lims,posSampleRate)
+function [ratemap, Bins, spatialInformation, sparsity] = PlotPFCirc(Session,spkpos,pos,binDims,SmoothingWeights,type,bound_lims,posSampleRate)
 
 % $$$ % DEFARGS ------------------------------------------------------------------------------------------
 % $$$ defargs = struct('binDims',                                50,                                   ...
@@ -80,8 +80,10 @@ Smoother = Smoother./sum(Smoother(:));
 
 % SMOOTH occupancy
 % SMOOTH Spike count
-SOcc   = convn(occupancy, Smoother,'same');
-SCount = convn(spikeCount,Smoother,'same');
+SOcc   = convn(repmat(occupancy,[1,3]), Smoother,'same');
+SOcc   = SOcc(:,Nbin(2)+1:Nbin(2)*2);
+SCount = convn(repmat(spikeCount,[1,3]),Smoother,'same');
+SCount = SCount(:,Nbin(2)+1:Nbin(2)*2);
 
 % CREATE minimally smoothed occupancy map
 soc = occupancy;
@@ -113,14 +115,14 @@ ratemap(~gtind) = nan;
 % COMPUTE unit mean rate given state
 MRate = sum(spikeCount(gtind))/totalOcc;
 
-% COMPUTE smoothed rate map 
-srmap = spikeCount./occupancy;           
-srmap(~gtind) = nan;
-srmap(isnan(srmap)) = 10.^mean(log10(ratemap(:)),'omitnan');
-srmap = convn(srmap,Smoother,'same');
-
-% AVERAGE 
-ratemap = mean(cat(ndims+1,srmap,ratemap),ndims+1);
+% $$$ % COMPUTE smoothed rate map 
+% $$$ srmap = spikeCount./occupancy;           
+% $$$ srmap(~gtind) = nan;
+% $$$ srmap(isnan(srmap)) = 10.^mean(log10(ratemap(:)),'omitnan');
+% $$$ srmap = convn(srmap,Smoother,'same');
+% $$$ 
+% $$$ % AVERAGE 
+% $$$ ratemap = mean(cat(ndims+1,srmap,ratemap),ndims+1);
 ratemap = ratemap(:);
 
 

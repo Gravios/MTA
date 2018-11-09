@@ -1,4 +1,7 @@
-
+% MjgER2016_decode_xy
+%
+% Section 1. Loading data and decoding position
+% Session 2. Plot 
 
 
 MjgER2016_load_data();
@@ -14,141 +17,770 @@ MjgER2016_load_bhv_erpPCA_scores();
 clear('pfd','tags','eigVec','eigVar','eigScore','validDims','zrmMean','zrmStd',...
       'clu','tlu','rind','D','LR','FSCFr','rsMean','rsStd','pfdShuffled','rmapsShuffledMean',...
       'rmapsShuffled','FSrM','FSrS','fsrsMean','fsrsStd','fsrsMean','fsrsStd');
+ 
 
-
-trialIndex = 20;    
-Trial = Trials{trialIndex}; 
-unitSubset = units{trialIndex};
-
+% SET analysis parameters
 sampleRate = 250;   % Hz
-spikeWindow = 0.025; % ms
-mode = 'xyhb'; % alt vals: 'xy'
-posteriorMaxThresh = 0.01;
+spikeWindow = 0.02; % ms [0.75,0.05,0.025,0.02,0.015]
+mode = 'xy'; % alt vals: 'xy'
+posteriorMaxThreshold = 0.001;
 
 
+statesPfs = {'theta-groom-sit','rear&theta','hloc&theta','hpause&theta','lloc&theta',...
+          'lpause&theta'};
+
+states = {'theta','rear','hloc','hpause','lloc','lpause','groom','sit'};%,'ripple'};
+
+
+thetaPerPeak = resample(cast([Trial.stc{'theta-groom-sit'}],'TimeSeries'),xyz);
+thetaPerTrgh = copy(thetaPerPeak);
+
+thetaPerPeak.label = 'thetaPeak';
+thetaPerPeak.data(phz.data<0) = 0;
+thetaPerPeak = cast(thetaPerPeak,'TimePeriods');
+
+thetaPerTrgh.label = 'thetaTrgh';
+thetaPerTrgh.data(phz.data>0) = 0;
+thetaPerTrgh = cast(thetaPerTrgh,'TimePeriods');
+
+
+%-LOAD-DATA------------------------------------------------------------------------------%
+
+% DECODE position from placefields and unit firing rate for all sessions
+cf(@(t,u)  bhv_decode(t,sampleRate,u,mode,[],[],spikeWindow,true),  Trials, units);
+
+% LOAD Trial
+trialIndex = 18;
+Trial = Trials{trialIndex}; 
+% SELECT units
+unitSubset = units{trialIndex};
 % LOAD state collection
-% LOAD subject position object
 stc = Trial.load('stc','msnn_ppsvd_raux');
+% LOAD subject position object
 xyz = resample(preproc_xyz(Trial,'trb'),sampleRate);
-
-
+fxyz = filter(copy(xyz),'ButFilter',3,20,'low');
+% COMPUTE polar coordinates of horizontal position
+mazeCenterDist = sqrt(sum(xyz(:,'hcom',[1,2]).^2,3));
+mazeCenterAng = circ_dist(atan2(xyz(:,'hcom',2),xyz(:,'hcom',1)),...
+                atan2(diff(xyz(:,{'hcom','nose'},2),1,2),diff(xyz(:,{'hcom','nose'},1),1,2)));
 % LOAD lfp
+lfp = load(Trial,'lfp',sessionList(trialIndex).thetaRefGeneral);
 % COMPUTE theta LFP phase
-lfp = load(Trial,'lfp',72);
-phz = lfp.phase([5,12]);
+phz = lfp.phase([6,12]);
 phz.data = unwrap(phz.data);
 phz.resample(xyz);    
 phz.data = mod(phz.data+pi,2*pi)-pi;
 lfp.resample(xyz);    
-
 % COMPUTE speed
 vxy = vel(filter(copy(xyz),'ButFilter',3,2.5,'low'),{'spine_lower','hcom'},[1,2]);
 vxy.data(vxy.data<1e-3) = 1e-3;
 vxy.data = log10(vxy.data);
+%fvxy = vel(filter(copy(xyz),'ButFilter',3,1.5,'low'),{'spine_lower','hcom'},[1,2]);
+
 
 % LOAD pitch and 
 fet = fet_HB_pitchB(Trial,sampleRate);
-
-bvec = circshift(xyz(:,'hcom',[1,2]),-round(sampleRate.*0.05))-xyz(:,'hcom',[1,2]);
+% COMPUTE head motion basis
+tvec = circshift(fxyz(:,'hcom',[1,2]),-round(sampleRate.*0.05))-fxyz(:,'hcom',[1,2]);
+tvec = sq(bsxfun(@rdivide,tvec,sqrt(sum(tvec.^2,3))));
+tvec = cat(3,tvec,sq(tvec)*[0,-1;1,0]);
+hvec = fxyz(:,'head_front',[1,2])-fxyz(:,'head_back',[1,2]);
+hvec = sq(bsxfun(@rdivide,hvec,sqrt(sum(hvec.^2,3))));
+hvec = cat(3,hvec,sq(hvec)*[0,-1;1,0]);
+bvec = fxyz(:,'spine_lower',[1,2])-fxyz(:,'spine_upper',[1,2]);
 bvec = sq(bsxfun(@rdivide,bvec,sqrt(sum(bvec.^2,3))));
 bvec = cat(3,bvec,sq(bvec)*[0,-1;1,0]);
+% LOAD THETA place fields
+pft = pfs_2d_theta(Trial,unitSubset);
+% COMPUTE DRZ
+[hrz,~,hrang] = compute_hrz(Trial,unitSubset,pft,'sampleRate',sampleRate);
+[drz,~,drang] = compute_drz(Trial,unitSubset,pft,'sampleRate',sampleRate);
+[ddz,~] = compute_ddz(Trial,unitSubset,pft,'sampleRate',sampleRate);
+
 
 % CONVERT MTAStateCollection into a state matrix 
 stcm = stc2mat(stc,xyz,states);
-
-
+% COMPUTE unit firing rate
 ufr = load(Trial,'ufr',xyz,[],unitSubset,spikeWindow,true,'gauss');    
 unitInclusion = sum(ufr.data>0.2,2);
-
-[posEstCom,posEstMax,posteriorMax] = bhv_decode(Trial,sampleRate,unitSubset,mode,[],[],spikeWindow);
-
-
-
-ind = unitInclusion>2 & any(stcm==4&stcm~=2,2) & posteriorMax>0.005;
-
-%ind = ':';
-
-%derror = posEstMax;
-derror = posEstCom;
-figure()
-subplot(511);  plot(derror(ind,[1]));  %Lines([0;cumsum(diff([rper.data,1,2))],[],'k');
-hold('on');    plot(xyz(ind,'hcom',1),'k');
-subplot(512);  plot(derror(ind,[2]));  %Lines([0;cumsum(diff(rper.data,1,2))],[],'k');
-hold('on');    plot(xyz(ind,'hcom',2),'k');
-linkaxes(findobj(gcf,'Type','Axes'),'x');
-
-subplot(513);  plot(derror(ind,[3]));  %Lines([0;cumsum(diff([rper.data,1,2))],[],'k');
-hold('on');    plot(fet(ind,1),'k');
-subplot(514);  plot(derror(ind,[4]));  %Lines([0;cumsum(diff(rper.data,1,2))],[],'k');
-hold('on');    plot(fet(ind,2),'k');
-subplot(515);  %plot(mufr(ind));  %Lines([0;cumsum(diff(rper.data,1,2))],[],'k');
-hold('on');    plot(posteriorMax(ind)*10);
-linkaxes(findobj(gcf,'Type','Axes'),'x');
-clear('derror');
+% LOAD spikes
+spk = Trial.load('spk',sampleRate,'',unitSubset,'deburst');
 
 
-%% some plots of stuff
+unitCountLeft = hrang<0&unitInclusion;
+unitCountRight = hrang>=0&unitInclusion;
 
-ind = unitInclusion>=4& any(stcm==1&stcm~=2,2);
-ind = unitInclusion>=4& any(stcm==1&stcm~=2,2) &  posteriorMax>0.01;%  & any(stcm==1,2); %&stcm~=2,2)% & (vhp.da
-sum(ind)
-% $$$ ind(randi([1,size(ind,1)],round(size(ind,1)),1)) = 0;
-% $$$ ind(randi([1,size(ind,1)],round(size(ind,1)),1)) = 0;
-% $$$ ind(randi([1,size(ind,1)],round(size(ind,1)),1)) = 0;
-% $$$ ind(randi([1,size(ind,1)],round(size(ind,1)),1)) = 0;
-% $$$ sum(ind)
+% DECODE position from placefields and unit firing rate
+overwrite = false;
+[posEstCom,posEstMax,posEstSax,posteriorMax] = bhv_decode(Trial,sampleRate,unitSubset,mode,[],[],spikeWindow,overwrite);
 
-decError = multiprod(posEstCom(ind,[1,2])-sq(xyz(ind,'hcom',[1,2])),bvec(ind,:,:),2,[2,3]);
-decError = decError(:,1);
+%-END-LOAD-DATA------------------------------------------------------------------------------%
+
+
+% START SECTION ------------------------------------------------------------------------------------
+% Section 2: phase precession (drz X theta phase) color coded as circular distance between head 
+%            direction and vector to placefield center.
+% CURRENT : there exists high rate place fields which demonstrate both distance and angle coding in the
+%           the phase of theta.
+% TO DO   : create a list of high rate units which show this phenomena
+
+
+% OMIT points where rat faceing away from the maze center near the boundary. 
+thresholds.mazeCenterDist = 380;
+thresholds.mazeCenterAng = pi/2;
+cind =    mazeCenterDist < thresholds.mazeCenterDist  |  abs(mazeCenterAng) < thresholds.mazeCenterAng ;
+
+% PLOT Place field along side the theta phase as a function of drz. Points colored as heading
+%      to place field
+figure();
+for unit = unitSubset,
+    subplot(331),
+    plot(pft,unit,'mean',true,[],true);
+    title(['unit: ',num2str(unit)]);
+    res = spk(unit);
+    sres = res(WithinRanges(res,[stc{'x&t',sampleRate}.data]));
+    sres = sres(abs(ddz(sres,unit==unitSubset))<250 & cind(sres));
+    
+    subplot(332),
+    scatter([drz(sres,unit==unitSubset);drz(sres,unit==unitSubset)],...
+         [phz(sres);phz(sres)+2*pi],10,abs([drang(sres,unit==unitSubset);drang(sres,unit==unitSubset)]), ...
+            'filled');
+    colorbar();    
+    sres = res(WithinRanges(res,[stc{'x&t',sampleRate}.data]));
+    sres = sres(abs(ddz(sres,unit==unitSubset))<250);    
+    subplot(333),
+    scatter([hrz(sres,unit==unitSubset);hrz(sres,unit==unitSubset)],...
+         [phz(sres);phz(sres)+2*pi],10,abs([hrang(sres,unit==unitSubset);hrang(sres,unit==unitSubset)]),'filled');
+    colorbar();    
+    sres = res(WithinRanges(res,[stc{'p&t',sampleRate}.data]));
+    sres = sres(abs(ddz(sres,unit==unitSubset))<250);    
+    subplot(335),
+    scatter([drz(sres,unit==unitSubset);drz(sres,unit==unitSubset)],...
+         [phz(sres);phz(sres)+2*pi],10,abs([drang(sres,unit==unitSubset);drang(sres,unit==unitSubset)]),'filled');
+    colorbar();
+    sres = res(WithinRanges(res,[stc{'p&t',sampleRate}.data]));
+    sres = sres(abs(ddz(sres,unit==unitSubset))<250);    
+    subplot(336),
+    scatter([hrz(sres,unit==unitSubset);hrz(sres,unit==unitSubset)],...
+         [phz(sres);phz(sres)+2*pi],10,abs([hrang(sres,unit==unitSubset);hrang(sres,unit==unitSubset)]), ...
+            'filled');
+    colorbar();    
+    sres = res(WithinRanges(res,[stc{'r&t',sampleRate}.data]));
+    sres = sres(abs(ddz(sres,unit==unitSubset))<250);    
+    subplot(338),
+    scatter([drz(sres,unit==unitSubset);drz(sres,unit==unitSubset)],...
+         [phz(sres);phz(sres)+2*pi],10,[fet(sres,2);fet(sres,2)],'filled');
+    colorbar();
+    sres = res(WithinRanges(res,[stc{'r&t',sampleRate}.data]));
+    sres = sres(abs(ddz(sres,unit==unitSubset))<250);    
+    subplot(339),
+    scatter([hrz(sres,unit==unitSubset);hrz(sres,unit==unitSubset)],...
+         [phz(sres);phz(sres)+2*pi],10,[fet(sres,2);fet(sres,2)], ...
+            'filled');
+    colorbar();
+    colormap('jet');
+    waitforbuttonpress();
+end
+
+% section 2
+% END SECTION --------------------------------------------------------------------------------------
+
+
+
+% DIAGNOSTICS 
+% $$$ overwrite = false;
+% $$$ [decPosC_long,decPosM_long,desPosS_long,posteriorMax_long] = ...
+% $$$     bhv_decode(Trial,sampleRate,unitSubset,mode,[],[],0.75,overwrite);
+% $$$ [decPosC_short,decPosM_short,desPosS_short,posteriorMax_short] = ...
+% $$$     bhv_decode(Trial,sampleRate,unitSubset,mode,[],[],0.02,overwrite);
+% $$$ % REVIEW decoded output
+% $$$ ff = sq(xyz(:,'head_back',[1,2]));
+% $$$ nf = size(ff,2);
+% $$$ figure,
+% $$$ for s = 1:nf
+% $$$     subplot(nf+1,1,s);
+% $$$     hold('on');
+% $$$     plot(ff(:,s))
+% $$$     plot(posEstCom(:,s));
+% $$$     plot(posEstMax(:,s));
+% $$$     plot(posEstSax(:,s));    
+% $$$ end
+% $$$ subplot(nf+1,1,nf+1);
+% $$$ plot(unitInclusion)
+% $$$ linkaxes(findobj(gcf,'Type','Axes'),'x');
+% $$$ % EXPLORE the decoded positions' angle to head position 
+% $$$ ang = create(MTADang,Trial,filter(copy(xyz),'RectFilter',3,3));
+% $$$ ind = ':';
+% $$$ decError = [multiprod(posEstSax(ind,[1,2])-sq(xyz(ind,'hcom',[1,2])),hvec(ind,:,:),2,[2,3])];
+% $$$ decError(~(unitInclusion>=2  & posteriorMax>0.002)) = nan;
+% $$$ hxy = fet_href_H(Trial,sampleRate);
+% $$$ figure,
+% $$$ subplot(3,1,[1,2]);
+% $$$ hold('on');
+% $$$ %plot(circ_dist(circshift(ang(:,'head_back','head_front',1),-1),ang(:,'head_back','head_front',1)).*ang.sampleRate);
+% $$$ plot(hxy(:,2)./10);
+% $$$ %plot(diff(RectFilter(circ_dist(circshift(ang(:,'head_back','head_front',1),-1),ang(:,'head_back','head_front',1)),3,3).*ang.sampleRate));
+% $$$ plot(atan2(decError(:,2),decError(:,1)),'.r');
+% $$$ plot(phz(:,1),'c')
+% $$$ Lines([],0,'k');
+% $$$ Lines([],-pi,'k');
+% $$$ Lines([],pi,'k');
+% $$$ Lines([],pi/2,'b');
+% $$$ Lines([],-pi/2,'b');
+% $$$ ylim([-10,10])
+% $$$ subplot(3,1,[3]);
+% $$$ plotSTC(stc,ang.sampleRate,[],fliplr({'rear','loc','pause'}),fliplr('rbk'));
+% $$$ ylim([0,4]);
+% $$$ linkaxes(findobj(gcf,'Type','Axes'),'x')
+
+
+
+% START section ------------------------------------------------------------------------------------
+% Section 3: Theta phase as a function of decoded spatial representation projected onto 2d 
+%            orthonormal basis aligned to the head, partitioned by behavioral state.
+
+thresholds.unitInclusion = 2;
+thresholds.posteriorMax = 0.002;
+thresholds.mazeCenterDist = 380;
+thresholds.mazeCenterAng = pi/2;
+
+cind =   unitInclusion  >=  thresholds.unitInclusion         ...
+       & posteriorMax   >   thresholds.posteriorMax          ...
+       & (  mazeCenterDist      <  thresholds.mazeCenterDist ...
+         |  abs(mazeCenterAng)  <  thresholds.mazeCenterAng  );
+
+
+normalize = @(out) bsxfun(@rdivide,out,max(out,[],2)); tagNormalization = 'ColumnMax';
+normalize = @(out) out; tagNormalization = 'None';
+hfig = figure();
+pause(0.2);
+hfig.Position =[0, 0, 775, 1400];
+pause(0.2);
+ns = 6;
+for s = 1:ns; %states
+sind =      stcm(:,1)   ...
+         &  any(stcm(:,s),2);
+ind = cind&sind;
+
+decError = multiprod(posEstSax(ind,[1,2])-sq(mean(xyz(ind,'hcom',[1,2]),2)),hvec(ind,:,:),2,[2,3]);
+%decError = multiprod(posEstCom(ind,[1,2])-sq(xyz(ind,'hcom',[1,2])),hvec(ind,:,:),2,[2,3]);
+% Forward decoding projection onto head
+subplot2(ns,3,s,1);
+out = hist2([[decError(:,1);decError(:,1)],...
+             [phz(ind,1);phz(ind,1)+2*pi]],...
+            linspace(-300,300,50), ...
+            linspace(-pi,3*pi,30));
+imagesc(linspace(-300,300,50),linspace(-pi,pi*3,30),normalize(out)');axis('xy');
+title('forward projection')
+xlabel('mm');
+ylabel({states{s},'theta phase'});
+% Lateral decoding projection onto head
+subplot2(ns,3,s,2);
+out = hist2([[decError(:,2);decError(:,2)],...
+             [phz(ind,1);phz(ind,1)+2*pi]],...
+            linspace(-300,300,50), ...
+            linspace(-pi,3*pi,30));
+imagesc(linspace(-300,300,50),linspace(-pi,pi*3,30),normalize(out)');axis('xy');
+title('lateral projection')
+xlabel('mm');
+ylabel('theta phase');
+% Lateral decoding projection onto head
+decAng = atan2(decError(:,2),decError(:,1));
+subplot2(ns,3,s,3);
+out = hist2([[decAng(:,1);decAng(:,1)],...
+             [phz(ind,1);phz(ind,1)+2*pi]],...
+            linspace(-pi,pi,50), ...
+            linspace(-pi,3*pi,30));
+imagesc(linspace(-pi,pi,50),linspace(-pi,3*pi,30),normalize(out)');axis('xy');
+title('angle of projection')
+xlabel('rad');
+ylabel('theta phase');
+end
+
+hax = findobj(hfig,'Type','Axes');
+af(@(ax) set(ax,'Units','centimeters'), hax);
+af(@(ax) set(ax,'Position',[ax.Position(1:2),2.5,2.5]), hax);
+
+fax = axes('Position',[0,0,1,1],'Visible','off','Units','centimeters');
+xlim([0,hfig.Position(3)]);
+ylim([0,hfig.Position(4)]);
+text( 100,hfig.Position(4)-60,{['Theta phase as a function of projected decoded position on to head frame of reference.'],...
+          ['Normalization: ',tagNormalization],...
+          ['Session: ',Trial.filebase],...
+          ['Constrants:'],...
+          ['unitInclusion >= ',num2str(thresholds.unitInclusion) ],...
+          ['posteriorMax  >  ',num2str(thresholds.posteriorMax)  ],...
+          ['(mazeCenterDist < ',num2str(thresholds.mazeCenterDist),...
+           ' | abs(mazeCenterAng) < ',num2str(thresholds.mazeCenterAng)]});
+
+print(hfig,'-depsc2',...
+      ['/storage/share/Projects/BehaviorPlaceCode/decode/',...
+       ['dc_decodedXthetaPhaseXstates_',Trial.filebase,'_Norm-',tagNormalization,'.eps']]);
+print(hfig,'-dpng',...
+      ['/storage/share/Projects/BehaviorPlaceCode/decode/',...
+      ['dc_decodedXthetaPhaseXstates_',Trial.filebase,'_Norm-',tagNormalization,'.png']]);
+
+% Section 3
+% START SECTION ------------------------------------------------------------------------------------
+
+
+
+% START SECTION ------------------------------------------------------------------------------------
+% Section 4: Theta phase as a function of decoded spatial representation projected onto 2d 
+%            orthonormal basis aligned to the head, partitioned by speed, and omitting rearing 
+%            periods.
+
+% ANALYSIS -----------------------------------------------------------------------------------------
+% CIRCULAR LINEAR correlation between theta phase (LFP{pyr,5-12Hz}) and projection
+%   of the decoded position on longitudinal axis of the head
+
+% DEFINITIONS ----
+% DPTR : decoded head position in head trajectory reference frame (DPTR) 
+% DPHR : decoded head position in head reference frame (DPHR) 
+% TP   : Theta phase
+
+
+cind =   unitInclusion  >=  thresholds.unitInclusion         ...
+       & posteriorMax   >   thresholds.posteriorMax          ...
+       & (  mazeCenterDist      <  thresholds.mazeCenterDist ...
+         |  abs(mazeCenterAng)  <  thresholds.mazeCenterAng  );
+
+sind =      stcm(:,1)   ...   
+         & ~stcm(:,2)   ...
+         & ~stcm(:,8)   ...          
+         & ~stcm(:,7);         
+
+sum(cind&sind)
+
+decPos = posEstCom(:,[1,2]);
+%decPos = posEstSax(:,[1,2]);
+
+tags = {'body','head'};
+speedInd = 2,
+for speedInd = 1:2,
+
+    
+    tag = tags{speedInd};
+
+% COMPUTE the circular-linear correlation of DPTR vs TP
+    % SETUP data struct to collect model parameters across speed partions
+    clear('modelTraj'); 
+    modelTraj.partitions = prctile(vxy(sind,speedInd),linspace(0,100,7));
+    % VISUALDOC partitioning of head speed space
+% $$$     figure,
+% $$$     hist(vxy(sind,speedInd),1000)
+% $$$     Lines(modelTraj.partitions,[],'r');
+    % SET fiting resolution and range
+    fitRes = 10000;
+    fitRange = linspace(-2*pi,2*pi,fitRes);
+    % FIT circular linear model for each speed partition 
+    for v = 1:numel(modelTraj.partitions)-1,
+        ind = cind  &  sind      ...
+              &  vxy(:,speedInd)>modelTraj.partitions(v)       ...
+              &  vxy(:,speedInd)<modelTraj.partitions(v+1);
+        % COMPUTE projection of the decoded position on longitudinal axis of the head
+        decError = multiprod(decPos(ind,[1,2])-sq(xyz(ind,'hcom',[1,2])),tvec(ind,:,:),2,[2,3]);
+        decPhase = phz(ind,1);
+        % ASSIGN inputs
+        lin = decError(:,1);
+        circ = decPhase;
+        % TRANSFORM linear and circular components into cos and sin parts
+        cosPart = sum(cos(bsxfun(@minus,circ,2*pi*lin*fitRange)),1);
+        sinPart = sum(sin(bsxfun(@minus,circ,2*pi*lin*fitRange)),1);
+        R = sqrt((cosPart./length(circ)).^2 + ...
+                 (sinPart./length(circ)).^2 );
+        [lmi,lmv] = LocalMinima(-R',round(fitRes/10),0,1);
+        % SAVE model parameters
+        modelTraj.R(v) = R(lmi); % R: fit quality 
+        modelTraj.parameters(v,:) = [2*pi*fitRange(lmi),... %Regression Parm : Slope
+                            atan2(sinPart(lmi),cosPart(lmi))];%: Offset
+                                                              % COMPUTE circular-linear correlation coefficient
+        linC = mod(abs(modelTraj.parameters(v,1))*lin,2*pi);
+        circMean = atan2(sum(sin(circ)),sum(cos(circ)));
+        linCMean = atan2(sum(sin(linC)),sum(cos(linC)));
+        modelTraj.rho(v) = sum(sin(circ-circMean).*sin(linC-linCMean))...
+            ./sqrt(sum(sin(circ-circMean).^2).*sum(sin(linC-linCMean).^2));
+    end
+
+% COMPUTE the circular-linear correlation of DPHR vs TP
+    clear('modelHead'); 
+    modelHead.partitions = modelTraj.partitions;
+    % SET fiting resolution and range
+    fitRes = 10000;
+    fitRange = linspace(-pi,pi,fitRes);
+    % FIT circular linear model for each speed partition 
+    for v = 1:numel(modelHead.partitions)-1,
+        ind = cind  &  sind      ...
+              &  vxy(:,speedInd)>modelHead.partitions(v)       ...
+              &  vxy(:,speedInd)<modelHead.partitions(v+1);
+        % COMPUTE projection of the decoded position on longitudinal axis of the head
+        decError = multiprod(decPos(ind,[1,2])-sq(xyz(ind,'hcom',[1,2])),hvec(ind,:,:),2,[2,3]);
+        decPhase = phz(ind,1);
+        % ASSIGN inputs
+        lin = decError(:,1);
+        circ = decPhase;
+        % TRANSFORM linear and circular components into cos and sin parts
+        cosPart = sum(cos(bsxfun(@minus,circ,2*pi*bsxfun(@times,fitRange,lin))),1);
+        sinPart = sum(sin(bsxfun(@minus,circ,2*pi*bsxfun(@times,fitRange,lin))),1);
+        R = sqrt((cosPart./length(circ)).^2+...
+                 (sinPart./length(circ)).^2 );
+        [lmi,lmv] = LocalMinima(-R',round(fitRes/10),0,1);
+        % SAVE model parameters
+        modelHead.R(v) = R(lmi); % R: fit quality 
+        modelHead.parameters(v,:) = [2*pi*fitRange(lmi)',... %Regression Parm : Slope
+                            atan2(sinPart(lmi),cosPart(lmi))'];%: Offset
+
+        linC = mod(abs(modelHead.parameters(v,1))*lin,2*pi);
+        circMean = atan2(sum(sin(circ)),sum(cos(circ)));
+        linCMean = atan2(sum(sin(linC)),sum(cos(linC)));
+        modelHead.rho(v) = sum(sin(circ-circMean).*sin(linC-linCMean))...
+            ./sqrt(sum(sin(circ-circMean).^2).*sum(sin(linC-linCMean).^2));
+    end
+
+
+
+% VISUALIZE circular-linear relation ship between over range of speeds
+    hfig = figure();
+    % STATE - locomotion
+    nPart = numel(modelTraj.partitions)-1;
+
+    clf();
+    hfig.Units = 'centimeters';
+    hfig.Position = [0,0,30,5*nPart];
+    for v = 1:nPart
+        y = nPart-v+1;
+        % select data with in speed partition v
+        ind = cind  &  sind  ...
+              &  vxy(:,speedInd)>modelTraj.partitions(v)   ...
+              &  vxy(:,speedInd)<modelTraj.partitions(v+1);
+        % REFERENCE trajectory coordinate system
+        %decError = multiprod(posEstCom(ind,[1,2])-sq(xyz(ind,'hcom',[1,2])),tvec(ind,:,:),2,[2,3]);
+        decError = multiprod(decPos(ind,[1,2])-sq(xyz(ind,'hcom',[1,2])),tvec(ind,:,:),2,[2,3]);
+        
+        % Anterior-Posterior axis
+        subplot2(nPart,6,y,1);
+        % JPDF phase X error
+        hist2([[decError(:,1);decError(:,1)],...
+               [phz(ind,1);phz(ind,1)+pi*2]],...
+              linspace(-300,300,40),...
+              linspace(-pi,pi*3,30)); 
+        line([-300,300],polyval(modelTraj.parameters(v,:),[-300,300])-2*pi,'Color','m');    
+        line([-300,300],polyval(modelTraj.parameters(v,:),[-300,300]),     'Color','m');
+        line([-300,300],polyval(modelTraj.parameters(v,:),[-300,300])+2*pi,'Color','m');
+        title(['rho: ',num2str(modelTraj.rho(v))]);
+        xlabel('mm');
+        ylabel('theta phase');
+        Lines(0,[],'k');
+        % medial-lateral axis
+        subplot2(nPart,6,y,2);
+        hist2([[decError(:,2);decError(:,2)],...
+               [phz(ind,1);phz(ind,1)+pi*2]],...
+              linspace(-300,300,40),...
+              linspace(-pi,pi*3,30)); 
+        xlabel('mm');
+        ylabel('theta phase');
+        Lines(0,[],'k');
+        % direction
+        subplot2(nPart,6,y,3);
+        hist2([[atan2([decError(:,2);decError(:,2)],...
+                      [decError(:,1);decError(:,1)])],...
+               [phz(ind,1);phz(ind,1)+pi*2]],...
+              linspace(-pi,pi,40),...
+              linspace(-pi,pi*3,30)); 
+        xlabel('yaw');
+        ylabel('theta phase');
+        Lines(0,[],'k');
+        % REFERENCE head coordinate system
+        %decError = multiprod(posEstCom(ind,[1,2])-sq(xyz(ind,'hcom',[1,2])),hvec(ind,:,:),2,[2,3]);    
+        decError = multiprod(decPos(ind,[1,2])-sq(xyz(ind,'hcom',[1,2])),hvec(ind,:,:),2,[2,3]);    
+        subplot2(nPart,6,y,4);
+        hist2([[decError(:,1);decError(:,1)],...
+               [phz(ind,1);phz(ind,1)+pi*2]],...
+              linspace(-300,300,40),...
+              linspace(-pi,pi*3,30)); 
+        line([-300,300],polyval(modelHead.parameters(v,:),[-300,300])-2*pi,'Color','m');
+        line([-300,300],polyval(modelHead.parameters(v,:),[-300,300]),'Color','m');
+        line([-300,300],polyval(modelHead.parameters(v,:),[-300,300])+2*pi,'Color','m');
+        
+        title(['rho: ',num2str(modelHead.rho(v))]);
+        xlabel('mm');
+        ylabel('theta phase');
+        Lines(0,[],'k');
+        % lateral
+        subplot2(nPart,6,y,5);
+        hist2([[decError(:,2);decError(:,2)],...
+               [phz(ind,1);phz(ind,1)+pi*2]],...
+              linspace(-300,300,40),...
+              linspace(-pi,pi*3,30)); 
+        xlabel('mm');
+        ylabel('theta phase');
+        Lines(0,[],'k');
+        % yaw
+        subplot2(nPart,6,y,6);
+        hist2([atan2([decError(:,2);decError(:,2)],...
+                     [decError(:,1);decError(:,1)]),...
+               [phz(ind,1);phz(ind,1)+pi*2]],...
+              linspace(-pi,pi,40),...
+              linspace(-pi,pi*3,30));
+        Lines(0,[],'k');
+        xlabel('yaw');
+        ylabel('theta phase');
+    end
+
+
+    ForAllSubplots('hax=gca;hax.Units=''centimeters'';hax.Position(3:4)=[3,2];')
+
+    af(@(hax) set(hax,'Position',hax.Position+[0,-2,0,0]), findobj(gcf,'Type','Axes'));
+
+    axPos = cell2mat([get(findobj(gcf,'Type','Axes'),'Position')]);
+    axYPos = unique(axPos(:,2));
+
+    fax = axes('Position',[0,0,1,1],'Visible','off','Units','centimeters');
+    xlim([0,hfig.Position(3)]);
+    ylim([0,hfig.Position(4)]);
+    Lines(hfig.Position(3)/2+0.2,[],'k');
+
+    Lines([],axYPos+3,'k');
+
+    for v = 1:nPart, 
+        text(1,axYPos(nPart-v+1)+1,...
+             {[tag,' speed:'],...
+              num2str(modelTraj.partitions(nPart-v+2)),...
+              '',...
+              num2str(modelTraj.partitions(nPart-v+1))},...
+             'Rotation',0);
+    end
+
+    ht = text(hfig.Position(3).*0.3,hfig.Position(4)*.9,...
+              'Head Movement Basis', 'HorizontalAlignment','center');
+    ht = text(hfig.Position(3).*0.7,hfig.Position(4)*.9,...
+              'Head Direction Basis','HorizontalAlignment','center');
+
+    
+    text(1,hfig.Position(4)*.95,...
+         {[Trial.filebase,': locomation and pause'],...
+          ['unitInclusion >= ',num2str(thresholds.unitInclusion) ],...
+          ['posteriorMax  >  ',num2str(thresholds.posteriorMax)  ],...
+          ['JPDF of projected decoded positions and theta phase,'],...
+          ['partition over equal partitions of ' tag ' speed'    ],...
+          ['(mazeCenterDist < ',num2str(thresholds.mazeCenterDist),...
+           ' | abs(mazeCenterAng) < ',num2str(thresholds.mazeCenterAng)]});
+
+    print(hfig,'-depsc2',...
+          ['/storage/share/Projects/BehaviorPlaceCode/decode/',...
+           ['dc_decodedXthetaPhaseX',tag,'Speed_',mode,'_',Trial.filebase,'.eps']]);
+    print(hfig,'-dpng',...
+          ['/storage/share/Projects/BehaviorPlaceCode/decode/',...
+           ['dc_decodedXthetaPhaseX',tag,'Speed_',mode,'_',Trial.filebase,'.png']]);
+
+% SAVE vars
+    save(fullfile(Trial.spath,...
+                  [Trial.filebase,'_dc_decodedXthetaPhaseX',tag,'Speed_',mode,'.mat']),...
+         'modelTraj',...
+         'modelHead');
+end
+
+
+% Section 4
+% END SECTION ------------------------------------------------------------------------------------
+
+
+
+
+
+% ANALYSIS ----------------------------------------------------------------------------------------%
+
+% DECODED values
+
+uphz = phz.copy;
+uphz.data = unwrap(phz.data);
+uphz.data = discretize(uphz.data,-pi:pi:uphz(end));
+
+cind = unitInclusion>=2 & posteriorMax>0.002;
+sind =     stcm(:,1)   ...   
+         & ~stcm(:,2)              ...
+         & ~stcm(:,8)            ...          
+         & ~stcm(:,7);            
+sum(cind&sind)
+ind = cind&sind&phz.data>-pi&phz.data<0;
+ind(ind) = 
+
+%decError = multiprod(posEstCom(ind,[1,2])-sq(xyz(ind,'hcom',[1,2])),tvec(ind,:,:),2,[2,3]);
+decError = multiprod(posEstCom(ind,[1,2])-sq(xyz(ind,'hcom',[1,2])),hvec(ind,:,:),2,[2,3]);    
+
+cm = accumarray(uphz.data(ind),,[max(uphz.data),1],@circ_mean);
+cs = accumarray(uphz.data(ind),exp(i*atan2(decError(:,2),decError(:,1))),[max(uphz.data),1],@mean);
+cp = accumarray(uphz.data(ind),atan2(decError(:,2),decError(:,1)),[max(uphz.data),1],@PPC);
+cn = accumarray(uphz.data(ind),1,[max(uphz.data),1],@sum);
+
+figure,
+%scatter(cm,abs(cs),5,cn,'filled');
+scatter(cm(cn>3),cp(cn>3),5,cn(cn>3),'filled');
+colormap('jet');
+colorbar;
+caxis([3,10]);
+
+decError = multiprod(posEstCom(:,[1,2])-sq(xyz(:,'hcom',[1,2])),hvec(:,:,:),2,[2,3]);    
+figure();
+hold('on');
+plot(atan2(decError(:,2),decError(:,1)))
+plot(phz.data);
+plot(unitInclusion/10-10)
+plot(decError(:,2),decError(:,1))
+%%
+
+cind = unitInclusion>=4 & posteriorMax>0.001;% & stcm(:,7)~=7;%
+ 
+sum(cind)
+
+
 %decError = sqrt(sum((sq(xyz(ind,'hcom',[1,2]))-posEstCom(ind,[1,2])).^2,2)).*sign(decError);
 
-figure();
 
-subplot(231),
-plot(phz(ind,1),decError,'.');title('position error')
-%hist2([[phz(ind,1);phz(ind,1)+pi*2],[log10(decError);log10(decError)]],linspace(-pi,pi*3,30),linspace(1,3,35));title('position error')
-hist2([[phz(ind,1);phz(ind,1)+pi*2],[(decError);(decError)]],linspace(-pi,pi*3,30),linspace(-200,200,50));title('position error')
-subplot(234),hold('on');
-%plot([phz(ind,1);phz(ind,1)+pi*2],[log10(decError);log10(decError)],'.b','MarkerSize',5);
-plot([phz(ind,1);phz(ind,1)+pi*2],[(decError);(decError)],'.b','MarkerSize',1);
+hfig = figure();
+hfig.Units = 'centimeters';
+hfig.Position = [2,7,50,30];
+% STATE - locomotion
+ind = cind & stcm(:,1)==1&(stcm(:,5)==5|stcm(:,3)==3)&stcm(:,2)~=2;
+% frontal
+subplot(261),
+decError = multiprod(posEstCom(ind,[1,2])-sq(xyz(ind,'hcom',[1,2])),tvec(ind,:,:),2,[2,3]);
+%decError = multiprod(posEstMax(ind,[1,2])-sq(xyz(ind,'hcom',[1,2])),tvec(ind,:,:),2,[2,3]);
+hist2([[phz(ind,1);phz(ind,1)+pi*2],[decError(:,1);decError(:,1)]],...
+      linspace(-pi,pi*3,30),linspace(-400,400,75)); 
 title('position error')
-xlim([-pi,pi*3]);
-%ylim([1,3]);
-ylim([-200,200]);
-ylabel('log10(mm)');
+ylabel('mm');
 xlabel('theta phase');
 
-decError = sqrt(sum((sq(fet(ind,1))-posEstCom(circshift(ind,0),3)).^2,2));
-subplot(232),
-%hist2([[phz(ind,1);phz(ind,1)+pi*2],[log10(decError);log10(decError)]],linspace(-pi,pi*3,30),linspace(-2,0.25,15));
-hist2([[phz(ind,1);phz(ind,1)+pi*2],[(decError);(decError)]],linspace(-pi,pi*3,30),linspace(0,1,15));
-title('head pitch error')
-subplot(235),
-%plot([phz(ind,1);phz(ind,1)+pi*2],log10([decError;decError]),'.b','MarkerSize',5);
-plot([phz(ind,1);phz(ind,1)+pi*2],[(decError);(decError)],'.b','MarkerSize',5);
-title('head pitch error')
-xlim([-pi,pi*3]);
-%ylim([-2,0.25]);
+% lateral
+subplot(262),
+hist2([[phz(ind,1);phz(ind,1)+pi*2],[decError(:,2);decError(:,2)]],...
+      linspace(-pi,pi*3,30),linspace(-400,400,75)); 
+title('position error')
+ylabel('mm');
+xlabel('theta phase');
+
+% direction
+subplot(263),
+hist2([[phz(ind,1);phz(ind,1)+pi*2],atan2([decError(:,2);decError(:,2)],...
+                                          [decError(:,1);decError(:,1)])],...
+      linspace(-pi,pi*3,30),linspace(-pi,pi,75)); 
+title('position error')
+ylabel('yaw');
+xlabel('theta phase');
+
+
+
+% STATE - locomotion 
+% CONDITION - head direction
+% frontal
+subplot(264),
+decError = multiprod(posEstCom(ind,[1,2])-sq(xyz(ind,'hcom',[1,2])),hvec(ind,:,:),2,[2,3]);
+%decError = multiprod(posEstMax(ind,[1,2])-sq(xyz(ind,'hcom',[1,2])),tvec(ind,:,:),2,[2,3]);
+hist2([[phz(ind,1);phz(ind,1)+pi*2],[decError(:,1);decError(:,1)]],...
+      linspace(-pi,pi*3,30),linspace(-400,400,75)); 
+title('position error')
+ylabel('mm');
+xlabel('theta phase');
+
+% lateral
+subplot(265),
+hist2([[phz(ind,1);phz(ind,1)+pi*2],[decError(:,2);decError(:,2)]],...
+      linspace(-pi,pi*3,30),linspace(-400,400,75)); 
+title('position error')
+ylabel('mm');
+xlabel('theta phase');
+
+% direction
+subplot(266),
+hist2([[phz(ind,1);phz(ind,1)+pi*2],atan2([decError(:,2);decError(:,2)],...
+                                          [decError(:,1);decError(:,1)])],...
+      linspace(-pi,pi*3,30),linspace(-pi,pi,75)); 
+title('position error')
+ylabel('yaw');
+xlabel('theta phase');
+
+
+% STATE -Pause
+ind = cind & stcm(:,1)==1&(stcm(:,4)==4|stcm(:,6)==6)&stcm(:,2)~=2;
+% frontal 
+decError = multiprod(posEstCom(ind,[1,2])-sq(xyz(ind,'hcom',[1,2])),tvec(ind,:,:),2,[2,3]);
+subplot(267),
+hist2([[phz(ind,1);phz(ind,1)+pi*2],[decError(:,1);decError(:,1)]],...
+      linspace(-pi,pi*3,30),linspace(-400,400,75)); 
+title('position error')
+ylabel('mm');
+xlabel('theta phase');
+
+% lateral
+subplot(268),
+hist2([[phz(ind,1);phz(ind,1)+pi*2],[decError(:,2);decError(:,2)]],...
+      linspace(-pi,pi*3,30),linspace(-400,400,75)); 
+title('position error')
+ylabel('mm');
+xlabel('theta phase');
+
+% direction
+subplot(269),
+hist2([[phz(ind,1);phz(ind,1)+pi*2],atan2([decError(:,2);decError(:,2)],...
+                                          [decError(:,1);decError(:,1)])],...
+      linspace(-pi,pi*3,30),linspace(-pi,pi,75)); 
+title('position error')
+ylabel('yaw');
+xlabel('theta phase');
+
+
+% STATE - locomotion 
+% CONDITION - head direction
+% frontal
+subplot(2,6,10),
+decError = multiprod(posEstCom(ind,[1,2])-sq(xyz(ind,'hcom',[1,2])),hvec(ind,:,:),2,[2,3]);
+hist2([[phz(ind,1);phz(ind,1)+pi*2],[decError(:,1);decError(:,1)]],...
+      linspace(-pi,pi*3,30),linspace(-400,400,75)); 
+title('position error')
+ylabel('mm');
+xlabel('theta phase');
+
+% lateral
+subplot(2,6,11),
+hist2([[phz(ind,1);phz(ind,1)+pi*2],[decError(:,2);decError(:,2)]],...
+      linspace(-pi,pi*3,30),linspace(-400,400,75)); 
+title('lateral error')
+ylabel('mm');
+xlabel('theta phase');
+
+% direction
+subplot(2,6,12),
+hist2([[phz(ind,1);phz(ind,1)+pi*2],atan2([decError(:,2);decError(:,2)],...
+                                          [decError(:,1);decError(:,1)])],...
+      linspace(-pi,pi*3,30),linspace(-pi,pi,75)); 
+title('position error')
+ylabel('yaw');
+xlabel('theta phase');
+
+ForAllSubplots('caxis([0,255])');
+%ForAllSubplots('caxis([0,55])');
+ForAllSubplots('hax=gca;hax.Units=''centimeters'';hax.Position(3:4)=[4,8];')
+
+fax = axes('Position',[0,0,1,1],'Visible','off');
+
+Lines(0.5,[],'k');
+Lines([],0.5,'k');
+xlim([0,1]);
 ylim([0,1]);
-ylabel('log10(rad)');
-xlabel('theta phase');
 
+ht = text(0.25,0.9, 'Head Movement Basis', 'HorizontalAlignment','center');
+ht = text(0.75,0.9, 'Head Direction Basis','HorizontalAlignment','center');
+ht = text(0.05,0.75,'Locomotion',          'HorizontalAlignment','center','Rotation',90);
+ht = text(0.05,0.25,'Pause',               'HorizontalAlignment','center','Rotation',90);
 
-decError = sqrt(sum((sq(fet(ind,2))-posEstCom(ind,4)).^2,2));
-subplot(233),
-%hist2([[phz(ind,1);phz(ind,1)+pi*2],log10([decError;decError])],linspace(-pi,pi*3,30),linspace(-2,-0,15));
-hist2([[phz(ind,1);phz(ind,1)+pi*2],[(decError);(decError)]],linspace(-pi,pi*3,30),linspace(0,0.4,15));
-title('body pitch error')
-subplot(236),
-%plot([phz(ind,1);phz(ind,1)+pi*2],log10([decError;decError]),'.b','MarkerSize',5);
-%plot(linpspace(-pi,pi*3,30),accumarray(discretize([phz(ind,1);phz(ind,1)+pi*2],linpspace(-pi,pi*3,30)),log10([decError;decError]),
-plot([phz(ind,1);phz(ind,1)+pi*2],[(decError);(decError)],'.b','MarkerSize',5);
-title('body pitch error')
-xlim([-pi,pi*3]);
-%ylim([-2,-0]);
-ylim([0,0.5]);
-ylabel('log10(rad)');
-xlabel('theta phase');
+print(gcf,'-depsc2',...
+      ['/storage/share/Projects/BehaviorPlaceCode/decode/',...
+       ['dc_error_headingXthetaPhase_',mode,'_',Trial.filebase,'.eps']]);
+print(gcf,'-dpng',...
+      ['/storage/share/Projects/BehaviorPlaceCode/decode/',...
+       ['dc_error_headingXthetaPhase_',mode,'_',Trial.filebase,'.png']]);
+
 
 
 figure,plot(mind)
@@ -181,8 +813,6 @@ speedvals = linspace(0,1.8,7);
 speedBinInds = discretize(vxy(:,2),speedvals);
 
 eposTPRErrorXY = nan([numel(timevals)-1,numel(shiftvals),numel(phasevals)-1,numel(speedvals)-1]);
-eposTPRErrorHP = nan([numel(timevals)-1,numel(shiftvals),numel(phasevals)-1,numel(speedvals)-1]);
-eposTPRErrorBP = nan([numel(timevals)-1,numel(shiftvals),numel(phasevals)-1,numel(speedvals)-1]);
 
 eposTPRErrorXYTrj = nan([numel(timevals)-1,numel(shiftvals),numel(phasevals)-1,numel(speedvals)-1,2]);
 
@@ -191,7 +821,7 @@ meanTPRPostMax = nan([numel(timevals)-1,numel(phasevals)-1,numel(speedvals)-1]);
 meanTPRPhase = nan([numel(timevals)-1,numel(phasevals)-1,numel(speedvals)-1]);
 
 for time = 1:numel(timevals)-2,
-    %tic
+    tic
     disp([num2str(time),' of ',num2str(numel(timevals)-3)])
 
     timeWindow = time-2:time+2;
@@ -199,9 +829,8 @@ for time = 1:numel(timevals)-2,
     timeWindowIndex = ismember(timeBinInds,timeWindow);
 
     txyz = sq(xyz(timeWindowIndex,'nose',[1,2]));
-    tfet = fet(timeWindowIndex,:);
     tvxy = vxy(timeWindowIndex,2);
-    tbvec = bvec(timeWindowIndex,:,:);    
+    ttvec = tvec(timeWindowIndex,:,:);    
     tposteriorMax = posteriorMax(timeWindowIndex);
     tphz = phz(timeWindowIndex);    
     
@@ -209,13 +838,13 @@ for time = 1:numel(timevals)-2,
              & stcm(timeWindowIndex,1)==1       ...
              & stcm(timeWindowIndex,2)~=2       ...
              & timeBinInds((timeWindowIndex))==time...
-             & tposteriorMax>posteriorMaxThresh;
+             & tposteriorMax>0.002;
 
     tempPhaseBinInds = phaseBinInds(timeWindowIndex);
     tempSpeedBinInds = speedBinInds(timeWindowIndex);
 
-    eposThetaPhaseRes = nan([size(tind,1),size(posEstCom,2)]);
-    eposThetaPhaseRes(timeBinInds(timeWindowIndex)==time,:) = posEstCom(timeBinInds==time,:);
+    eposThetaPhaseRes = nan([size(tind,1),2]);
+    eposThetaPhaseRes(timeBinInds(timeWindowIndex)==time,:) = posEstCom(timeBinInds==time,1:2);
 
     for speed = 1:numel(speedvals)-1,   
         for phase = 1:numel(phasevals)-1,   
@@ -232,20 +861,15 @@ for time = 1:numel(timevals)-2,
                                     
                 for shift = 1:numel(shiftvals)
                     eposTPRErrorXYTrj(time,shift,phase,speed,:) = ...
-                       mean(multiprod(circshift(tepos(:,[1,2]),shiftvals(shift))-txyz,tbvec,2,[2,3]),'omitnan');
+                       mean(multiprod(circshift(tepos(:,1:2),shiftvals(shift))-txyz,ttvec,2,[2,3]),'omitnan');
                     
                     eposTPRErrorXY(time,shift,phase,speed) = ...
-                        mean(sqrt(sum((txyz-circshift(tepos(:,[1,2]),shiftvals(shift))).^2,2)),'omitnan');
-
-                    eposTPRErrorHP(time,shift,phase,speed) = mean(sqrt(sum((tfet(:,1) ...
-                                       -circshift(eposThetaPhaseRes(:,3),shiftvals(shift))).^2,2)),'omitnan');
-                    eposTPRErrorBP(time,shift,phase,speed) = mean(sqrt(sum((tfet(:,2)...
-                                       -circshift(eposThetaPhaseRes(:,4),shiftvals(shift))).^2,2)),'omitnan');
+                        mean(sqrt(sum((txyz-circshift(tepos,shiftvals(shift))).^2,2)),'omitnan');
                 end
             end
         end
     end
-    %toc
+    toc
 end
 
 
@@ -271,7 +895,7 @@ derror = eposTPRErrorXY;
 mind = [];
 minv = [];
 %for time = 1:numel(timevals)-1,
-for t = 1:time
+for t = 1:size(derror,1)
     for speed = 1:numel(speedvals)-1,
         %[~,mind(t,speed,:)] = max(RectFilter(RectFilter(1./(bsxfun(@rdivide,sq(derror(t,:,:,speed)),min(sq(derror(t,:,:,speed))))+eps)',3,1)',3,1));
         [minv(t,speed,:),mind(t,speed,:)] = min(RectFilter(RectFilter(sq(derror(t,:,:,speed))',3,1)',3,1));
@@ -288,37 +912,51 @@ for s = 1:numel(speedvals)-1,
     for p = 1:numel(phasevals)-1,   
         subplot2(numel(phasevals)-1,numel(speedvals)-1,p,s);
 
-        ind = mind(:,s,p)~=1&mind(:,s,p)~=241;
+        ind = mind(:,s,p)~=1&mind(:,s,p)~=201;
 
-        bar(shiftTimeBins,histc(shiftTimeBins(mind(ind,s,p)),shiftTimeBins),'histc');
-        %hist2([shiftTimeBins(mind(ind,s,p))',minv(ind,s,p)],linspace(-1,2,30),linspace(40,800,6));
-% $$$         hist2([shiftTimeBins(mind(ind,s,p))',minv(ind,s,p)],linspace(-1,2,30),linspace(40,800,6));
-        Lines(median(shiftTimeBins(mind(ind,s,p)),'omitnan'),[],'g');
-        Lines(0,[],'m');
+        %hist2([shiftTimeBins(mind(ind,s,p))',minv(ind,s,p)],linspace(-1,2,30),linspace(40,400,6));
+% $$$         hist2([shiftTimeBins(mind(ind,s,p))',eposTPRErrorXY(ind,100,p,s,1)],...
+% $$$               linspace(-2,2,40),linspace(40,300,8));
+% $$$         scatter([-2;-2;shiftTimeBins(mind(ind,s,p))'],[0;0;eposTPRErrorXY(ind,100,p,s,1)],...
+% $$$               5,[0;400;minv(ind,s,p)],'filled');
+% $$$         Lines(mean(shiftTimeBins(mind(ind,s,p)),'omitnan'),[],'m');
+% $$$         xlim([-2,2]);
+% $$$         ylim([0,250]);
+% $$$         Lines(0,[],'k');
 
-% $$$         scatter(log10(eposTPRErrorXY([ind;false;false],50,p,s)),log10(minv(ind,s,p)),5, ...
-% $$$                 shiftTimeBins(mind(ind,s,p)),'filled');
-% $$$         xlim([1,2.7]);
-% $$$         ylim([1,2.7]);
+% $$$         bar(shiftTimeBins,histc(shiftTimeBins(mind(ind,s,p)),shiftTimeBins),'histc');
+% $$$         Lines(mean(shiftTimeBins(mind(ind,s,p)),'omitnan'),[],'g');
+% $$$         Lines(0,[],'m');
+% $$$         xlim(shiftvals([1,end])./sampleRate);
+% $$$         ylim([0,15]);
         
-% $$$         scatter(log10([1;1;eposTPRErrorXY([ind;false;false],50,p,s,1)]),...
+
+        scatter(log10(eposTPRErrorXY([ind;false;false],100,p,s)),log10(minv(ind,s,p)),10, ...
+                shiftTimeBins(mind(ind,s,p)),'filled');
+        xlim([1,2.7]);
+        ylim([1,2.7]);
+        
+% $$$         scatter(log10([1;1;eposTPRErrorXY([ind;false;false],100,p,s,1)]),...
 % $$$                 [1;1;log10(minv(ind,s,p))],5, ...
 % $$$                 shiftTimeBins([1;150;mind(ind,s,p)]),'filled');
-% $$$         xlim([1,2.7]);
-% $$$         ylim([1,2.7]);
+% $$$         line([0,3],[0,3],'Color','k');
+% $$$         xlim([0,3]);
+% $$$         ylim([0,3]);
+        
 % $$$         scatter(([0;0;eposTPRErrorXYTrj([ind;false;false],50,p,s,1)]),...
 % $$$                 [1;1;log10(minv(ind,s,p))],5, ...
 % $$$                 shiftTimeBins([1;150;mind(ind,s,p)]),'filled');
 % $$$         xlim([-400,400]);
 % $$$         ylim([1,2.7]);
         
-        xlim(shiftvals([1,end])./sampleRate);
-        ylim([0,30]);
         if s==1,ylabel(num2str(mean(phasevals([p:p+1]))));end
         if p==(numel(phasevals)-1),xlabel(num2str(speedvals([s:s+1])));end
             
     end
 end
+colormap('jet');
+ForAllSubplots('caxis([-1,1])');
+linkaxes(findobj(gcf,'Type','Axes'),'xy')
 
 
 
@@ -1322,41 +1960,33 @@ Lines([],log10(200),'m');
 
 
 
-% PROJECTION 
-
-% GENERATE orthogonal basis, origin: head's center of mass
-nz = -cross(xyz(:,'head_back',:)-hcom,xyz(:,'head_left',:)-hcom);
-nz = bsxfun(@rdivide,nz,sqrt(sum((nz).^2,3))); 
-ny = cross(nz,xyz(:,'head_back',:)-hcom);
-ny = bsxfun(@rdivide,ny,sqrt(sum((ny).^2,3)));
-nx = cross(ny,nz);
-nx = bsxfun(@rdivide,nx,sqrt(sum((nx).^2,3)));
-
-if theta ~= 0,
-    evec = cat(2,nx,ny,nz);
-    j =1:3;
-    headNorm = bsxfun(@rdivide,sq(evec(:,rotationAxisInd,:)),sqrt(sum(evec(:,rotationAxisInd,:).^2,3)));
-    headKron = reshape(repmat(headNorm',3,1).*headNorm(:,j(ones(3,1),:)).',[3,3,size(headNorm,1)]);
-    j = [ 0,-1, 1;...
-          1, 0,-1;...
-          -1, 1, 0];
-    k = [1,3,2;...
-         3,1,1;...
-         2,1,1];
-    headCPM = reshape(headNorm(:,k)',3,3,size(headNorm,1)).*repmat(j,[1,1,size(headNorm,1)]);
-
-% CREATE rotation matrix
-    j = 1:3;
-    headRotMat = cos(theta)*repmat(eye(3),[1,1,size(headNorm,1)])...
-        +sin(theta)*headCPM...
-        +(1-cos(theta))*headKron;
-
-% SET matrix
-    ovec = evec(:,1,:);
-% ROTATE Basis
-    nx = permute(sum(headRotMat.*permute(reshape(nx(:,j(ones(3,1),:)),[size(headNorm,1),3,3]),[2,3,1]),2),[3,2,1]);
-    ny = permute(sum(headRotMat.*permute(reshape(ny(:,j(ones(3,1),:)),[size(headNorm,1),3,3]),[2,3,1]),2),[3,2,1]);
-    nz = permute(sum(headRotMat.*permute(reshape(nz(:,j(ones(3,1),:)),[size(headNorm,1),3,3]),[2,3,1]),2),[3,2,1]);
+% effect of acceleration sign on decoding head project
+eds = linspace(-300,300,500);
+phzBins = linspace(-pi,pi,8);
+figure();
+for m = 1:2,
+    for p = 1:numel(phzBins)-1,
+        subplot2(numel(phzBins)-1,2,p,m);
+        hold('on');
+        ind = nniz(decError) & (sign([0;diff(fvxy(:,m))])==-1) & fvxy(:,m)>5 ...
+              & stcm(:,1) & ~stcm(:,2) ...
+              & phz(:,1)>phzBins(p) & phz(:,1)<phzBins(p+1);
+        hax = bar(eds,histc(decError(ind,1),eds),'histc');
+        Lines(median(decError(ind,1),'omitnan'),[],'c');
+        hax.EdgeColor = 'none';
+        hax.FaceColor = 'c';
+        hax.EdgeAlpha = 0.3;
+        hax.FaceAlpha = 0.3;
+        ind = nniz(decError) & (sign([0;diff(fvxy(:,m))])==1) &  fvxy(:,m)>5 ...
+              & stcm(:,1) & ~stcm(:,2) ...
+              & phz(:,1)>phzBins(p) & phz(:,1)<phzBins(p+1);
+        hax = bar(eds,histc(decError(ind,1),eds),'histc');
+        Lines(median(decError(ind,1),'omitnan'),[],'r');
+        hax.EdgeColor = 'none';
+        hax.FaceColor = 'r';
+        hax.EdgeAlpha = 0.3;
+        hax.FaceAlpha = 0.3;
+    end
 end
 
 
@@ -1392,3 +2022,6 @@ end
 % $$$ imagescnan({pfsBins{1},pfsBins{2},sq(srmap(:,:,25,25))'},[0,rmax],[],true,'colorMap',@jet);axis('xy');
 % $$$ subplot(122);
 % $$$ imagescnan({pfsBins{3},pfsBins{4},sq(srmap(30,20,:,:))'},[0,rmax],[],true,'colorMap',@jet);axis('xy');
+
+
+

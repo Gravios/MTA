@@ -85,6 +85,7 @@ Session.model = model;
 % CONCATENATE start and stop events 
 events = LoadEvents(fullfile(Session.spath, [Session.name '.all.evt']));
 stopEventTTL = '0x0000';
+%stopEventTTL = 'TTL Input on AcqSystem1_0 board 0 port 1 value \(0x0000\)\.'
 
 pfirstVStart = find(events.Clu==find(~cellfun(@isempty,regexp(events.Labels,TTLValue))),1,'first')-1;
 events.time(1:pfirstVStart)=[];
@@ -92,7 +93,23 @@ events.Clu(1:pfirstVStart)=[];
 events.description(1:pfirstVStart)=[];
 
 vstarts = events.time(events.Clu==find(~cellfun(@isempty,regexp(events.Labels,TTLValue))));
-vstops  = events.time(find(ismember(events.Clu,find(~cellfun(@isempty,regexp(events.Labels,stopEventTTL)))),numel(vstarts),'first'));
+vstops  = events.time(find(ismember(events.Clu,find(~cellfun(@isempty,regexp(events.Labels,stopEventTTL))))));
+
+
+
+if numel(vstops) ~= numel(vstarts),
+    s = 1;
+    while (numel(vstops) ~= numel(vstarts)) &  (s < numel(vstarts)),
+        if (vstops(s) - vstarts(s)) < 0
+            vstops(s) = [];
+        else
+            s = s + 1;
+        end
+        
+    end
+    vstops = vstops(1:numel(vstarts));
+end
+
 viconPeriods = [vstarts,vstops];
 
 

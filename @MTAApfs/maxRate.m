@@ -1,4 +1,4 @@
-function [mxr,mxp] = maxRate(Pfs,varargin)
+function [mxr,mxp,fo] = maxRate(Pfs,varargin)
 % function [mxr,mxp] = maxRate(Pfs,varargin)
 % return the maximum firing rate and location of a unit(s)
 %
@@ -20,9 +20,10 @@ defargs = struct('units',                  [],                                  
                                                            linspace(-500,500,200)'}},            ...
                                                   'nanMaskThreshold', 0,                         ...
                                                   'methodNanMap',     'linear',                  ...
-                                                  'methodRateMap',    'linear')                  ...
+                                                  'methodRateMap',    'linear'),                 ...
+                 'fitStartPoint',          []                                                    ...
 );
-[units,mazeMaskFlag,mode,sigThresh,interpPar] = DefaultArgs(varargin,defargs,'--struct');
+[units,mazeMaskFlag,mode,sigThresh,interpPar,fitStartPoint] = DefaultArgs(varargin,defargs,'--struct');
 %---------------------------------------------------------------------------------------------------
 
 
@@ -56,9 +57,44 @@ end
 
 mxr = nan(numel(units),1);
 mxp = nan(numel(units),1);
-
+fo  = cell(numel(units),1);
 for u = units(:)',
     switch mode
+% $$$       case 'mean-gaussfit'
+% $$$         switch numel(Pfs.adata.bins),
+% $$$           case 1
+% $$$             g = fittype( @(A,xa,xo,x) A.*exp(-(xa.*(x-xo).^2)),'independent',{'x', 'y'},'dependent', 'z' ); 
+% $$$             fitStartPoint = [8,0.00001,0];
+% $$$           case 2
+% $$$             g = fittype( @(A,xa,ya,xya,xo,yo,x,y) A.*exp(-(xa.*(x-xo).^2+xya.*(x-xo).*(y-yo)+ya.*(y-yo).^2)),...
+% $$$                        'independent',{'x', 'y'},'dependent', 'z' ); 
+% $$$             fitStartPoint = [100,0.00001,0.0000001,0.00001,0,0];
+% $$$           case 3                        
+% $$$             g = fittype( @(A,xa,ya,za,xya,xza,zya,xyza,xo,yo,zo,x,y,z) ...
+% $$$                          A.*exp(-(xa.*(x-xo).^2+xya.*(x-xo).*(y-yo)+xza.*(x-xo).*(z-zo)+zya.*(z-zo).*(y-yo) ...
+% $$$                                   +xyza.*(x-xo).*(z-zo).*(y-yo)+ya.*(y-yo).^2)),...
+% $$$                        'independent',{'x', 'y','z'},'dependent', 'f'); 
+% $$$         end
+% $$$         
+% $$$         [mxp,mxr] = LocalMinimaN();
+% $$$ 
+% $$$         sigMask = [];
+% $$$         if ~isempty(sigThresh) && Pfs.parameters.numIter > 1,
+% $$$             sigMask = sum(~isnan(Pfs.data.rateMap(:,Pfs.data.clu==u,:)),3)>Pfs.parameters.numIter*sigThresh;
+% $$$         end 
+% $$$ 
+% $$$         %rateMap = mean(Pfs.data.rateMap(:,Pfs.data.clu==u,:),3,'omitnan');
+% $$$         rateMap = Pfs.plot(u,'mean',false,[],false,0.99,false,interpPar);
+% $$$ 
+% $$$         rateMap = RectFilter(rateMap');
+% $$$         rateMap = RectFilter(rateMap');        
+% $$$         rateMap = rateMap(:);
+% $$$         
+% $$$         rateMap(~sigMask(:)) = nan;
+% $$$             
+% $$$         if size(rateMap,2)==0,  rateMap = nan([size(Pfs.data.rateMap,1),1]);  end
+% $$$         [mxr(u==units),mxp(u==units)] = max(rateMap.*mask);
+        
       case 'mean'        
 
         sigMask = [];
