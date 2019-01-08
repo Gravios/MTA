@@ -19,7 +19,7 @@ function [pfd,tags,eigVec,eigVar,eigScore,validDims,unitSubsets,unitIntersection
 % DEFARGS ------------------------------------------------------------------------------------------
 defargs = struct('Trials',                        {{}},                                          ...
                  'sessionListName',               'MjgER2016',                                   ...
-                 'version',                       '9',                                           ...
+                 'version',                       '13',                                           ...
                  'overwritePfdFlag',              false,                                         ...
                  'overwriteErpPCAFlag',           false,                                         ...
                  'overwriteBhvContoursFlag',      false,                                         ...
@@ -47,7 +47,7 @@ end
 
 
 numTrials = numel(Trials);
-numComp = 5;
+numComp = 10;
 numUnits = sum(cellfun(@numel,units));
 
 
@@ -55,13 +55,59 @@ numUnits = sum(cellfun(@numel,units));
 tags={}; fetSets={}; fetInds={}; pfdParam={}; states={}; ranges={};
 %pfdParam = { boudaries   binDims   sweights };
 
-%1. HPITCHxBPITCH
+
+%1. HPITCHxBPITCH version 13 running
 tags{end+1}        = ['HBPITCHxBPITCH'];
 fetSets{end+1}     = 'fet_HB_pitchB';
 fetInds{end+1}     = [1,2];
-pfdParam{end+1}    = {[-2.25,1;-0.5,2],[0.2,0.2],[1.1,1.1]};
+pfdParam{end+1}    = {[-1.8,1;-0.8,2],[0.1,0.1],[2,2]};
 states{end+1}      = 'theta-groom-sit';
-ranges{end+1}      = [0,110];%[1100,1550];%1450];
+ranges{end+1}      = [0,300];
+
+
+%1. HPITCHxBPITCH version 12 running
+% $$$ tags{end+1}        = ['HBPITCHxBPITCH'];
+% $$$ fetSets{end+1}     = 'fet_HB_pitchB';
+% $$$ fetInds{end+1}     = [1,2];
+% $$$ pfdParam{end+1}    = {[-2,1;-0.5,2],[0.5,0.5],[]};
+% $$$ states{end+1}      = 'theta-groom-sit';
+% $$$ ranges{end+1}      = [0,20];
+
+
+%1. HPITCHxBPITCH version 12 running
+% $$$ tags{end+1}        = ['HBPITCHxBPITCH'];
+% $$$ fetSets{end+1}     = 'fet_HB_pitchB';
+% $$$ fetInds{end+1}     = [1,2];
+% $$$ pfdParam{end+1}    = {[-2,1;-0.5,2],[0.5,0.5],[]};
+% $$$ states{end+1}      = 'theta-groom-sit';
+% $$$ ranges{end+1}      = [0,20];
+
+
+%1. HPITCHxBPITCH version 11 -- failed: need bigger bins
+% $$$ tags{end+1}        = ['HBPITCHxBPITCH'];
+% $$$ fetSets{end+1}     = 'fet_HB_pitchB';
+% $$$ fetInds{end+1}     = [1,2];
+% $$$ pfdParam{end+1}    = {[-2,1;-0.5,2],[0.25,0.25],[]};
+% $$$ states{end+1}      = 'theta-groom-sit';
+% $$$ ranges{end+1}      = [0,80];
+
+
+%1. HPITCHxBPITCH version 10
+% $$$ tags{end+1}        = ['HBPITCHxBPITCH'];
+% $$$ fetSets{end+1}     = 'fet_HB_pitchB';
+% $$$ fetInds{end+1}     = [1,2];
+% $$$ pfdParam{end+1}    = {[-2.25,1;-0.5,2],[0.25,0.25],[0.8,0.8]};
+% $$$ states{end+1}      = 'theta-groom-sit';
+% $$$ ranges{end+1}      = [0,60];
+
+
+%1. HPITCHxBPITCH version 9
+% $$$ tags{end+1}        = ['HBPITCHxBPITCH'];
+% $$$ fetSets{end+1}     = 'fet_HB_pitchB';
+% $$$ fetInds{end+1}     = [1,2];
+% $$$ pfdParam{end+1}    = {[-2.25,1;-0.5,2],[0.2,0.2],[1.1,1.1]};
+% $$$ states{end+1}      = 'theta-groom-sit';
+% $$$ ranges{end+1}      = [0,110];%[1100,1550];%1450];
 
 % $$$ %2. HPITCHxBSPEED
 % $$$ tags{end+1}        = 'HBPITCHxBSPEED';
@@ -127,6 +173,7 @@ for pfindex = 1:numel(tags),
             pft = pfs_2d_theta(Trial);
             xyz = preproc_xyz(Trial,'trb');
             drz = compute_drz(Trial,units{tind},pft);
+            ddz = compute_ddz(Trial,units{tind},pft);
             tper =[Trial.stc{states{pfindex}}];        
             tper.resample(xyz);        
             fet = feval(fetSets{pfindex},Trial);
@@ -140,6 +187,7 @@ for pfindex = 1:numel(tags),
                 [tags{pfindex},'_v',version],                        ... analysis tag
                 units{tind},                                         ... units
                 drz,                                                 ... directed rate zones
+                ddz,                                                 ... directed distance zones
                 tper,                                                ... theta periods
                 pfdParam{pfindex}{:}                                 ... 
             );
@@ -149,6 +197,7 @@ for pfindex = 1:numel(tags),
                 [tags{pfindex},'_v',version],                        ... analysis tag
                 units{tind},                                         ... units
                 drz,                                                 ... directed rate zones
+                ddz,                                                 ... directed distance zones                
                 tper,                                                ... theta periods
                 pfdParam{pfindex}{:}                                 ... 
             );

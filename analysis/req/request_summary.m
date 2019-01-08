@@ -880,9 +880,34 @@
 
 
 
-
-
 %% 2018 04 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+
+% req20180411 ----------------------------------------------------
+%  Status: inactive
+%  Type: Analysis
+%  Author: Justin Graboski
+%  Final_Forms: NA
+%  Description: Spike waveform stability between fields (kinda)
+%               
+%  Bugs: NA
+
+% req20180417 ----------------------------------------------------
+%  Status: inactive
+%  Type: Analysis
+%  Author: Justin Graboski
+%  Final_Forms: NA
+%  Description: despiked placefield and burst fields
+%               
+%  Bugs: NA
+
+% req20180420 ----------------------------------------------------
+%  Status: retired
+%  Type: Diagnostic
+%  Author: Justin Graboski
+%  Final_Forms: NA
+%  Description: place field check in the session jg05-20120311 where large 
+%               shift in probe position occurred 
+%  Bugs: NA
 
 % req20180427 ----------------------------------------------------
 %  Status: active
@@ -895,21 +920,15 @@
 
 
 
-
-% req20180123_ver5.m 
-% compute and decompose unit rate multidimensional tunning
-
-% req20180319.m
-% Compute z-score of randomly shuffled spike time chunks 
-% projected on each eigen vector, as computed by 
-% req20180123_ver5.m
-
-% req20180322.m
-% Review unit placefields
-
-
-
 %% 2018 06 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+
+% req20180629 ----------------------------------------------------
+%  Status: retired
+%  Type: Analysis
+%  Author: Justin Graboski
+%  Final_Forms: NA
+%  Description: population phase precession as function of drz and behaviors
+%  Bugs: NA
 
 % req20180630 ----------------------------------------------------
 %  Status: active

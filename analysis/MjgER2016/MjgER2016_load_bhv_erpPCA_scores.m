@@ -1,4 +1,4 @@
-
+% MjgER2016_load_bhv_erpPCA_scores.m
 % DEFINITIONS
 % drzrbhv field: directional rate zone restriced behavioral tuning curves
 
@@ -50,7 +50,7 @@
 %     fsrcz    - matrix[U x V](Numeric); normalized fscores
 
 
-version = '9';
+version = '13';
 
 %pfdParameters
 % $$$ tags{end+1}        = ['HBPITCHxBPITCH_shuffled_v',version];
@@ -72,13 +72,17 @@ if exist(filename,'file'),
 else,
     pfindex = 1;
 
+    if ~exist('Trials','var'),
+        MjgER2016_load_data();
+    end
+
     if ~exist('pfd','var'),
         [pfd,tags,eigVec,eigVar,eigScore,validDims,unitSubsets,unitIntersection,zrmMean,zrmStd] = ...
             req20180123_ver5(Trials,sessionList,version,false,false);
     end
 
     % LOAD shuffled drz restricted behavior fields 
-    pfdShuffled =  cf(@(t,g) MTAApfs(t,'tag',g), Trials, repmat({'HBPITCHxBPITCH_shuffled'},size(Trials)));
+    pfdShuffled =  cf(@(t,g) MTAApfs(t,'tag',g), Trials, repmat({['HBPITCHxBPITCH_v',version,'-shuffled']},size(Trials)));
 
     % GET bhv rate maps
     rmaps = cf(@(p,u) mean(p.data.rateMap(:,ismember(p.data.clu,u),:),3,'omitnan'), pfd(:,pfindex),units');

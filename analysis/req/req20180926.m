@@ -1,11 +1,11 @@
-% req20180921
+% req20180926
 %  Tags: 
 %  Status: active
 %  Type: Analysis
 %  Author: Justin Graboski
 %  Final_Forms: NA
 %  Project: MjgER2016:placefields
-%  Description: Interneurons are behaviorally modulated. Plot 4d ratemap in xyhb space
+%  Description: egocentric pfs spk position 
 %  Protocol: 
 %    1. 
 %    2  compute ratemaps
@@ -23,6 +23,18 @@ states = {'theta','rear','hloc','hpause','lloc','lpause','groom','sit'};%,'rippl
 thresholds.mazeCenterDist = 380;
 thresholds.mazeCenterAng = pi/2;
 
+
+if ~exist('pfd','var'), [pfd,tags,eigVec,eigVar,eigScore,validDims,unitSubsets,unitIntersection,zrmMean,zrmStd] = req20180123_ver5(Trials);  end
+numComp = size(eigVec{1},2);
+pfindex = 1;
+MjgER2016_load_bhv_erpPCA_scores();
+% output:
+%    fsrcz
+%    FSrC
+%    rmaps
+clear('pfd','tags','eigVec','eigVar','eigScore','validDims','zrmMean','zrmStd',...
+      'clu','tlu','rind','D','LR','FSCFr','rsMean','rsStd','pfdShuffled','rmapsShuffledMean',...
+      'rmapsShuffled','FSrM','FSrS','fsrsMean','fsrsStd','fsrsMean','fsrsStd');
 
 
 dataFilePath = fullfile(MTA_PROJECT_PATH,'analysis',...

@@ -23,7 +23,6 @@ sparsity = [];
 ndims = numel(binDims);
 if isempty(bound_lims),  bound_lims = Trial.maze.boundaries(ismember('xyz',type),:);  end
 Nbin = round(abs(diff(bound_lims,1,2))./binDims');
-if isempty(SmoothingWeights),  SmoothingWeights = Nbin./30;  end
 
 
 % INITIALIZE bins
@@ -72,29 +71,46 @@ for i = 1:ndims,
     sind{i} = linspace(-round(msize(i)/2),round(msize(i)/2),msize(i));
 end
 [sind{:}] = ndgrid(sind{:});
-for i = 1:ndims,
-    sind{i} = sind{i}.^2/SmoothingWeights(i)^2/2;
-end
-Smoother = exp(sum(-cat(ndims+1,sind{:}),ndims+1));
-Smoother = Smoother./sum(Smoother(:));
+%NEW
+%sind = reshape(cat(ndims+1,sind{:}),[],ndims);
+%SmoothingWeightsMatrix = diag(SmoothingWeights);
+%Smoother = exp((sind'*inv(SmoothingWeightsMatrix)*sind)./2)./sqrt((2.*pi).^ndims.*prod(SmoothingWeights);
+%OLD 
+if ~isempty(SmoothingWeights),
+    for i = 1:ndims,
+        sind{i} = sind{i}.^2/SmoothingWeights(i)^2/2;
+    end
+    Smoother = exp(sum(-cat(ndims+1,sind{:}),ndims+1));
+    Smoother = Smoother./sum(Smoother(:));
 
 % SMOOTH occupancy
 % SMOOTH Spike count
-SOcc   = convn(occupancy, Smoother,'same');
-SCount = convn(spikeCount,Smoother,'same');
+    SOcc   = convn(occupancy, Smoother,'same');
+    SCount = convn(spikeCount,Smoother,'same');
 
 % CREATE minimally smoothed occupancy map
-soc = occupancy;
-soc(isnan(soc)) = 0;
-if ndims==1,
-    soc = RectFilter(soc,3,1);
-elseif ndims==2,    
-    soc = RectFilter(soc',3,1);
-    soc = RectFilter(soc',3,1);
+    soc = occupancy;
+    soc(isnan(soc)) = 0;
+    if ndims==1,
+        soc = RectFilter(soc,3,1);
+    elseif ndims>=2,    
+        dshift = circshift(1:ndims,-1);
+        for t = 1:2,
+            for s =1:ndims    
+                soc = RectFilter(permute(soc,dshift),3,1);
+            end
+        end
+    end
+    
+else
+    SOcc   = occupancy;
+    SCount = spikeCount;
+    soc = occupancy;
 end
 
 %OccThresh = 4*(mean(binDims)/200).^numel(binDims);
-gtind = soc > 2*(10/200).^numel(binDims);
+gtind = soc > 2*(10/150).^numel(binDims);
+%gtind = soc > 2*(10/200).^numel(binDims);
 
 
 %% Find the total occupancy and each pixels 
@@ -109,28 +125,32 @@ pOcc = occupancy./totalOcc;
 % COMPUTE ratemap from smoothed spike and occupancy hists
 ratemap = SCount./SOcc;
 ratemap(~gtind) = nan;
+ratemap = ratemap(:);
 
 % COMPUTE unit mean rate given state
 MRate = sum(spikeCount(gtind))/totalOcc;
 
-% COMPUTE smoothed rate map 
-srmap = spikeCount./occupancy;           
-srmap(~gtind) = nan;
-srmap(isnan(srmap)) = 10.^mean(log10(ratemap(:)),'omitnan');
-srmap = convn(srmap,Smoother,'same');
 
-% AVERAGE 
-ratemap = mean(cat(ndims+1,srmap,ratemap),ndims+1);
-ratemap = ratemap(:);
+% $$$ if ~isempty(SmoothingWeights),
+% $$$ % COMPUTE smoothed rate map     
+% $$$     srmap = spikeCount./occupancy;           
+% $$$     srmap(~gtind) = nan;
+% $$$     srmap(isnan(srmap)) = 10.^mean(log10(ratemap(:)),'omitnan');
+% $$$     srmap = convn(srmap,Smoother,'same');
+% $$$ % AVERAGE ratemap
+% $$$     ratemap = mean(cat(ndims+1,srmap,ratemap),ndims+1);
+% $$$ end
+% $$$ ratemap = ratemap(:);
 
 
-if nargout > 2,  
+if nargout >= 3,  
 % COMPUTE Spatial Information    
-    spatialInformation = nansum(pOcc(gtind).*(ratemap(gtind)./MRate).*log2(ratemap(gtind)./MRate));
-    %spatialInformation = nansum((ratemap(gtind)./MRate).*log2(ratemap(gtind)./MRate));
-    %if nargout == 4,  sparsity = 1/nansum(pOcc(gtind).*ratemap(gtind).^2./MRate.^2);  end
+    spatialInformation = nansum(1/sum(double(gtind(:))).*(ratemap(gtind)./MRate)...
+                                .*log2(ratemap(gtind)./MRate));
     if nargout == 4,
-        sparsity = nansum(pOcc(gtind).*ratemap(gtind)).^2./nansum(pOcc(gtind).*ratemap(gtind).^2);
+% COMPUTE Sparsity        
+        sparsity = nansum(1/sum(double(gtind(:))).*ratemap(gtind)).^2 ...
+            ./nansum(1/sum(double(gtind(:))).*ratemap(gtind).^2);
     end    
 end
 

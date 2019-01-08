@@ -30,6 +30,14 @@ MjgER2016_load_bhv_erpPCA_scores();
 
 %% Generate resampled and surrogate data sets
 
+% GET behavior field information
+binSizes = pfd{1}.adata.binSizes';
+bins =  pfd{1}.adata.bins;
+
+% HELPER function for sample randomization
+shuffle_bmap = @(m) circshift(circshift(m,randi(size(m,1)),1),randi(size(m,2)),2);
+
+
 % GENERATE gaussian smoothing kernel with std of # bins <- smoothingWeight
 smoothingWeights = [0.05,0.05];
 sind = cell(1,ndims(bins));
@@ -45,13 +53,6 @@ for i = 1:ndims(bins),  sind{i} = sind{i}.^2/smoothingWeights(i)^2/2;  end
 smootherWide = exp(sum(-cat(ndims(bins)+1,sind{:}),ndims(bins)+1));
 smootherWide = smootherWide./sum(smootherWide(:));
 
-
-% HELPER function for sample randomization
-shuffle_bmap = @(m) circshift(circshift(m,randi(size(m,1)),1),randi(size(m,2)),2);
-
-% GET behavior field information
-binSizes = pfd{1}.adata.binSizes';
-bins =  pfd{1}.adata.bins;
 
 
 % GENERATE bootstrapped eigenvectors based on two-thirds sample

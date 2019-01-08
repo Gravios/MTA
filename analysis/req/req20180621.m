@@ -1,3 +1,10 @@
+% req20180621 ----------------------------------------------------
+%  Status: active
+%  Type: Analysis
+%  Author: Justin Graboski
+%  Final_Forms: NA
+%  Description: group phase precession stats
+%  Bugs: NA
 
 
 MjgER2016_load_data();

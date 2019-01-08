@@ -1,3 +1,10 @@
+% req20180629 ----------------------------------------------------
+%  Status: retired
+%  Type: Analysis
+%  Author: Justin Graboski
+%  Final_Forms: NA
+%  Description: population phase precession as function of drz and behaviors
+%  Bugs: NA
 
 Trial = MTATrial.validate('jg05-20120312.cof.all');
 channels = 64:96;

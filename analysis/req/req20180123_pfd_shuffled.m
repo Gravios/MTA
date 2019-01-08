@@ -1,10 +1,10 @@
-function [drzState] = req20180123_pfd_shuffled(Trial,xyzp,tag,units,drz,tper,boundaryLimits,binDims,SmoothingWeights);
+function [drzState] = req20180123_pfd_shuffled(Trial,xyzp,tag,units,drz,ddz,tper,boundaryLimits,binDims,SmoothingWeights);
 
 
 Trial = MTATrial.validate(Trial);
 
 pargs = get_default_args('MjgER2016','MTAApfs','struct');        
-pargs.tag              = tag;
+pargs.tag              = [tag,'-shuffled'];
 pargs.units            = units;
 pargs.numIter          = 1001;
 pargs.posShuffle       = true;
@@ -19,7 +19,7 @@ pargs.autoSaveFlag     = false;
 
 drzState = {};
 u = 1;        
-dper = MTADepoch([],[],ThreshCross(-0.5<drz(:,u)&drz(:,u)<0.5,0.5,1),...% SELECT periods where drz
+dper = MTADepoch([],[],ThreshCross(abs(drz(:,u))<0.8 & ddz(:,u)<250,0.5,1),...% SELECT periods where drz
                  xyzp.sampleRate,xyzp.sync.copy(),xyzp.origin,'TimePeriods','sts',[],'tdrz','d');
 drzState{u} = dper&tper;
 pargs.units  = units(u);
@@ -27,11 +27,11 @@ pargs.states = drzState{u};
 pfsArgs = struct2varargin(pargs);
 pfTemp = MTAApfs(Trial,pfsArgs{:});
 pfTemp.save();
-for u = 2:numel(units{tind});
-    dper = MTADepoch([],[],ThreshCross(-0.5<drz(:,u)&drz(:,u)<0.5,0.5,1),...% SELECT periods where drz
+for u = 2:numel(units);
+    dper = MTADepoch([],[],ThreshCross(abs(drz(:,u))<0.8 & ddz(:,u)<250,0.5,1),...% SELECT periods where drz
                      xyzp.sampleRate,xyzp.sync.copy(),xyzp.origin,'TimePeriods','sts',[],'tdrz','d');
     drzState{u} = dper&tper;
-    pargs.units  = units{tind}(u);
+    pargs.units  = units(u);
     pargs.states = drzState{u};
     pfsArgs = struct2varargin(pargs);
     try
