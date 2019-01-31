@@ -17,6 +17,9 @@ classdef MTASession < hgsetget
 %     dataLogger:       string, name/id of the system(s) to record subject
 %
 %     xyzSampleRate:   numeric, samples per second for xyz tracking
+%                      Vicon(M): 119.881035 Hz
+%                      Vicon(V): 199.997752 Hz or 149.9974321 Hz
+%                      Optitrack: duno
 %
 %-------------------------------------------------------------------------------------------------
 %   General Loading:

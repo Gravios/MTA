@@ -1,5 +1,5 @@
-function [drzScore,drzCenter,pfds] = compute_hrz(Trial,varargin)
-%function [drzScore,drzCenter] = compute_hrz(Trial,varargin)
+function [drzScore,fieldCenter,pfds] = compute_hrz(Trial,varargin)
+%function [drzScore,fieldCenter] = compute_hrz(Trial,varargin)
 %
 %  
 %
@@ -86,7 +86,7 @@ end
 
 % CONSTRUCT map of expected rate given position
 maxRate      = nan([numel(units),1]);
-drzCenter    = nan([numel(units),2]);
+fieldCenter    = nan([numel(units),2]);
 wpmr = zeros(feature.size(1),numel(units));
 for u = 1:numel(units),
     featureCA = mat2cell(feature(nind,:),sum(nind),ones([1,size(feature,2)]));
@@ -101,7 +101,7 @@ wpmr(wpmr<0) = 0;
 for u = 1:numel(units),
     [~,mxp] = max(reshape(pft.plot(units(u),'mean',false,[],false,0.99,false,interpPar),[],1));
     mxp = Ind2Sub(cellfun(@numel,bins),mxp);
-    drzCenter(u,:) = [bins{1}(mxp(:,1)), bins{2}(mxp(:,2))];
+    fieldCenter(u,:) = [bins{1}(mxp(:,1)), bins{2}(mxp(:,2))];
 end
 
 % COMPUTE the trajectory heading
@@ -110,7 +110,7 @@ pfdd = zeros([size(feature,1),1]);
 peakPatchRate = maxRate'.*maxRateScaleFactor;
 for unit = units
     pfhxy = cat(2,permute(feature.data(nind,[1,2]),[1,3,2]),xyz(nind,'hcom',[1,2]));
-    pfhxy = cat(2,pfhxy,permute(repmat(drzCenter(unit==units,:),[sum(nind),1]),[1,3,2]));
+    pfhxy = cat(2,pfhxy,permute(repmat(fieldCenter(unit==units,:),[sum(nind),1]),[1,3,2]));
     pfhxy = MTADxyz([],[],pfhxy,feature.sampleRate);
 % SUBSTRACT reference trajectory from second trajectory    
     cor = cell(1,2);

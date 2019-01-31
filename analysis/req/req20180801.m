@@ -2,6 +2,102 @@
 % spk
 % phz
 % drz
+MjgER2016_load_data();
+t = 20; % 'jg05-20120312'
+Trial      = Trials{t}
+unitSubset = units{t};
+sampleRate = 250;
+stc = Trial.load('stc','msnn_ppsvd_raux');
+states = {'theta','rear','hloc','hpause','lloc','lpause','groom','sit','ripple'};
+
+spk = Trial.spk.copy();
+spk.create(Trial,sampleRate,[],[],'deburst');
+
+xyz = resample(preproc_xyz(Trial,'trb'),sampleRate);
+fxyz = filter(copy(xyz),'ButFilter',3,20,'low');
+vxy = vel(filter(copy(xyz),'ButFilter',3,0.5,'low'),{'spine_lower','head_right'},[1,2]);
+stcm = stc2mat(stc,xyz,states);
+
+hvec = fxyz(:,'head_front',[1,2])-fxyz(:,'head_back',[1,2]);
+hvec = sq(bsxfun(@rdivide,hvec,sqrt(sum(hvec.^2,3))));
+hvec = cat(3,hvec,sq(hvec)*[0,-1;1,0]);
+
+
+lfp = Trial.load('lfp',[68,72,76,82]);
+%lfp = load(Trial,'lfp',[69,72,78,84]);%sessionList(tind).thetaRef);
+phz = lfp.phase([4,10]);
+phz.data = unwrap(phz.data);
+phz.resample(xyz);    
+phz.data = mod(phz.data+pi,2*pi)-pi;
+lfp.resample(xyz);    
+
+specArgs = struct('nFFT',2^9,...
+                  'Fs',  lfp.sampleRate,...
+                  'WinLength',2^8,...
+                  'nOverlap',2^8*0.875,...
+                  'NW',3,...
+                  'Detrend',[],...
+                  'nTapers',[],...
+                  'FreqRange',[1,40]);
+   
+[ys,fs,ts] = fet_spec(Trial,lfp,[],[],[],specArgs);
+
+figure,
+imagesc(ts,fs,log10(ys(:,:,1))');axis xy
+
+lys = ys.copy;
+lys.data = mean(log10(ys(:,fs<10,2)),2);
+lys.resample(xyz);
+flys = filter(copy(lys),'ButFilter',5,0.25,'low');
+
+lts = ys.copy;
+%tspecm = bsxfun(@rdivide,log10(ys(:,fs<15,4)),mean(log10(ys(:,fs<15,4)),2));
+tspecm = bsxfun(@rdivide,ys(:,fs<12,4),mean(ys(:,fs<12,4),2));
+lts.data = sum(1/numel(fs<12).*tspecm.*log2(tspecm),2);
+lts.resample(xyz);
+figure,plot((1:numel(lys.data))./sampleRate,log2(lts.data))
+flts = filter(copy(lts),'ButFilter',5,0.25,'low');
+
+lds = ys.copy;
+lds.data = mean(log10(ys(:,5<fs & fs<12,2)),2)./mean(log10(ys(:,(12<fs&fs<18)|(1<fs&fs<4),2)),2);
+lds.resample(xyz);
+
+lrs = ys.copy;
+lrs.data = mean(log10(ys(:,5<fs&fs<10,2)),2)./mean(log10(ys(:,5<fs&fs<10,4)),2);
+lrs.resample(xyz);
+
+% SPEC LFP 
+sitIndPer = ThreshCross(double(flys<3&logical(stcm(:,8))),0.5,0);
+%sitIndPer = ThreshCross(double(flys<2.9&logical(stcm(:,8))&flts.data<0.1),0.5,0);
+%sitIndPer = ThreshCross(double(flys<2.9&logical(stcm(:,8))&vxy.data<3),0.5,0);
+figure,
+hax = tight_subplot(6,1,0,0.1);
+for s = 1:4,
+    axes(hax(s));
+    imagesc(ts,fs,log10(ys(:,:,s))'),axis('xy');
+    caxis([min(lys(stc{'s'}))-0.5,5]);
+    colormap('jet');
+    Lines(sitIndPer(:,1)./sampleRate,[],'m'); 
+    Lines(sitIndPer(:,2)./sampleRate,[],'k'); 
+end
+axes(hax(5));
+hold('on');
+plot((1:size(vxy,1))./sampleRate,vxy.data(:,1));
+plot((1:size(vxy,1))./sampleRate,vxy.data(:,2));
+plot((1:size(vxy,1))./sampleRate,(lrs.data(:,1).*2).^4,'r');
+Lines([],5,'k');
+drawnow();
+axes(hax(6));
+plotSTC(stc,1,'text',{'rear','walk','turn','pause','groom','sit'},'rbgcym');
+linkaxes(hax,'x');
+ylim(hax(5),[0,10]);
+hax(5).YTickLabelMode = 'auto';
+hax(6).XTickLabelMode = 'auto';
+% $$$ set(hax(5),'YTickLabels',hax(5).YTick)
+% $$$ hax(5).YTickMode = 'auto';
+
+
+
 
 % find main region of sitting
 ny = 2;
@@ -19,13 +115,85 @@ plot(xyz(ind,'nose',1),xyz(ind,'nose',2),'.');
 xlim([-500,500]);
 ylim([-500,500]);
 
+pft = pfs_2d_theta(Trial,unitSubset);
+[drz,~,drang] = compute_drz(Trial,unitSubset,pft,'sampleRate',sampleRate);
+drz = MTADfet.encapsulate(Trial,drz,sampleRate,'drz','drz','d');
+
 % get units which have peak drz greater than 0.3 where y < -100
 unitsGroom = unitSubset(mean(1-abs(drz(stc{'m'},:)))>0.2);
 unitsSit   = unitSubset(mean(1-abs(drz(stc{'s'},:)))>0.2);
 
 
+[posEstCom,posEstMax,posEstSax,posteriorMax] = bhv_decode(Trial,250,unitSubset,'xy',[],[],0.025,false);
 
-munits = unitSubset(1:69);
+posError = MTADfet.encapsulate(Trial,sqrt(sum((posEstCom-sq(xyz(:,'hcom',[1,2]))).^2,2)),sampleRate,'poserr','perr','e');
+
+posError = MTADfet.encapsulate(Trial,sqrt(sum((posEstCom-sq(xyz(:,'hcom',[1,2]))).^2,2)),sampleRate,'poserr','perr','e');
+
+decError = [multiprod(posEstCom(:,[1,2])-sq(xyz(:,'hcom',[1,2])),hvec(:,:,:),2,[2,3])];
+decError = [multiprod(posEstSax(:,[1,2])-sq(xyz(:,'hcom',[1,2])),hvec(:,:,:),2,[2,3])];
+decError = [multiprod(posEstMax(:,[1,2])-sq(xyz(:,'hcom',[1,2])),hvec(:,:,:),2,[2,3])];
+
+figure,
+ind = logical(stcm(:,8));
+hist2([lys(ind),lrs(ind)],100,100)
+
+% JPDF lys lts lrs
+%p_hist = @(ind) hist2([lys(ind),log10(lts(ind))],linspace(2.5,4,100),linspace(-3,0,100));
+p_hist = @(ind) hist2([lys(ind),lds(ind)],linspace(2.5,4,100),linspace(0.8,1.3,100));
+%p_hist = @(ind) hist2([lys(ind),lrs(ind)],linspace(2.5,4,100),linspace(0.7,1.2,100));
+figure,
+for s = 1:size(stcm,2),
+    ind = logical(stcm(:,s));
+    subplot(3,4,s);    p_hist(ind);    grid('on');    title(states{s});
+end
+ind = nniz(lts);
+subplot(3,4,s+1);    p_hist(ind);    grid('on');    title('all');
+
+
+
+
+
+% DECERROR vs spec feature
+ind = logical(stcm(:,8));
+figure();hist2([lys(ind),posError(ind)],linspace(2,5,100),100)
+
+% LM Theta phase preference 
+figure();
+for u = 1:numel(unitsSit)
+    res = spk(unitsSit(u));
+    res = res(flys(res)<3.2&logical(stcm(res,8)));
+    subplot(2,numel(unitsSit),u);
+    plot(pft,unitsSit(u),'mean',[],[],true);
+    subplot(2,numel(unitsSit),u+numel(unitsSit));
+    rose(phz(res,4));
+end
+
+
+
+ind = logical(stcm(:,8));
+figure();hist2([flys(ind),posError(ind)],100,100)
+
+phzCorrLMtoPYR = circ_mean(diff(phz(stc{'w'},[1,4]),1,2));
+
+figure();
+sitInd = flys<3&logical(stcm(:,8))&posteriorMax>0.005;%&flts.data<0.1;
+tphz = circ_dist(phz(sitInd,4),phzCorrLMtoPYR);
+phzBins = linspace(-pi,pi,20);
+errBins = linspace(-300,300,20);
+subplot(221);hist2([tphz,decError(sitInd,1)],phzBins,errBins);
+subplot(222);hist2([tphz,decError(sitInd,2)],phzBins,errBins);
+errBins = linspace(0,300,10);
+subplot(223);hist2([tphz,abs(decError(sitInd,1))],phzBins,errBins);
+subplot(224);hist2([tphz,abs(decError(sitInd,2))],phzBins,errBins);
+
+
+
+figure,
+subplot(121);plot(phz(sitInd,4),abs(decError(sitInd,1)),'.')
+subplot(122);plot(phz(sitInd,4),abs(decError(sitInd,2)),'.')
+
+munits = unitSubset;
 hfig = figure();
 hfig.Units = 'centimeters';
 hfig.Position = [1,1,40,30];

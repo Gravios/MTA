@@ -38,6 +38,8 @@ function ratemap = plot(Pfs,varargin)
 %
 %    colorMap:     FuncHandle, @parula function handle for the colormap 
 %
+%    nanColor:     NumericArray: {[0,0,0]} normalized rgb values for nan elements
+%
 % OUT:
 %    ratemap - NumericMatrix: matrix containing the ratemap of the requested unit
 
@@ -182,7 +184,7 @@ switch numel(Pfs.parameters.type)
             colormap(func2str(colorMap));
             caxis([maxRate]);
           case 'text'
-            text(Pfs.adata.bins{1}(end)-0.25*diff(Pfs.adata.bins{1}([1,end])),...
+            text(Pfs.adata.bins{1}(end)-0.35*diff(Pfs.adata.bins{1}([1,end])),...
                  Pfs.adata.bins{2}(end)-0.10*diff(Pfs.adata.bins{2}([1,end])),...
                  sprintf('%2.1f',max(ratemap(:))),...
                  'Color','w','FontWeight','bold','FontSize',8)

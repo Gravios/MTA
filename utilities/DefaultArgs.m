@@ -17,6 +17,9 @@ function varargout = DefaultArgs(Args, DefArgs, varargin)
 % then compaired to all string variables in Args. Matching string inputs
 % will have the subsequent variable set as its value.
 %
+% Update: golbal variable 'AP' is now recongnized as super default
+% If AP
+%
 % Modes:
 %    Static
 %  
@@ -52,14 +55,20 @@ function varargout = DefaultArgs(Args, DefArgs, varargin)
 
 %% Set DefaultArgs' default args
 
+global AP;
+
+% QUERY debugging for the function calling DefaultArgs if AP exists
+if ~isempty(AP),  
+    dbss = dbstack;  
+end
+
+
 
 % IF varargin is empty, setup path to the m-file calling, hereafter known as CMF, DefaultsArgs.
-if numel(varargin)>0,    
-
-    switch varargin{1}
-      
+if numel(varargin)>0,
+    
+    switch varargin{1} 
       case '--struct'
-        
 % ASSIGN default aguments fields in order to varargout cell array
         varargout = {};
         defaultArgFields = fields(DefArgs);
@@ -72,6 +81,7 @@ if numel(varargin)>0,
         numInputArgs = numel(Args);
         index = 1;
         nameValueMode = false;
+        
         while index <= numInputArgs
             
             if ischar(Args{index}) && isfield(DefArgs,Args{index}),
@@ -80,9 +90,9 @@ if numel(varargin)>0,
                 varargout(outputIndex) = Args(index+1);
                 index = index+2;
                 nameValueMode = true;
-                
-            elseif nameValueMode, error('MTA:utilities:set_default_args:MissingNameValuePair');
-            
+
+            elseif nameValueMode, 
+                error('MTA:utilities:set_default_args:MissingNameValuePair');
             else,
 % ASSIGN next position in Args to varargout assuming correct order
                 if ~isempty(Args{index})
@@ -90,15 +100,32 @@ if numel(varargin)>0,
                 end
                 index = index+1;
             end
-        end
-        return;
+        end        
 
-      otherwise
+% OVERRIDE default args if AP is present and relevant to the function which called DefaultArgs
+        if ~isempty(AP) && isfield(AP,dbss(2).name),
+            for field  = fieldnames(AP.(dbss(2).name)),
+                outputIndex = ~cell2mat(cf(@isempty,regexp(field,cf(@(x) ['^',x,'$'],defaultArgFields'))));
+                varargout{outputIndex} = AP.(dbss(2).name).(field{1});
+            end
+        end
+        
+        
+        return
+        
+      otherwise    
+
         FuncPath = varargin{1};        
     end
 else
     FuncPath = dbstack('-completenames'); 
 end
+
+
+
+
+
+
 
 % THROW error if output count doesn't equal the number of default args
 assert( nargout==numel(DefArgs), ...
@@ -166,7 +193,7 @@ if numel(FuncPath)>1,
 
 % PARSE variable names from excerpt -------------------------------------------------------
 % FIND the line where DefaultArgs exists
-    dfa_index = find(~cellfun(@isempty,regexpi(FSC,'defaultargs','once')),1);
+    dfa_index = find(~cellfun(@isempty,regexp(FSC,'DefaultArgs\(','once')),1);
 
     outind = [];
     tind = dfa_index;
@@ -277,4 +304,14 @@ else
             varargout(i) = {Args{i}};
         end
     end
+    
 end
+
+% OVERRIDE default args if AP is present and relevant to the function which called DefaultArgs
+if ~isempty(AP) && isfield(AP,dbss(2).name),
+    for field  = fieldnames(AP.(dbss(2).name)),
+        outputIndex = ~cell2mat(cf(@isempty,regexp(field,cf(@(x) ['^',x,'$'],ParsedArgs'))));
+        varargout{outputIndex} = AP.(dbss(2).name).(field{1});
+    end
+end
+

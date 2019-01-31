@@ -1,5 +1,9 @@
 function Session = sync_openephys_optitrack(Session,recSyncPulseChan,camSyncPulseChan)
-
+% function Session = sync_openephys_optitrack(Session,recSyncPulseChan,camSyncPulseChan)
+%
+% Populate a Session with xyz data synchronized to
+% electrophysiological data based on an synchronized events
+%
 % find following values for synchronization
 % syncPeriods
 % mocapSampleRate

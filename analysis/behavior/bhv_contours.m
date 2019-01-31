@@ -92,9 +92,11 @@ if ~exist(fileName,'file') || overwrite,
 
     
 % ACCUMULATE 2d histograms
+% NOTE may break due to the nonzero part of the anon func, no comment -_-
     for s = 1:numStates,
         hout{s} = cf(@(fetSet,stc,sts,fetInds,bins)                                        ...
-                     hist2(fetSet(stc{[sts,'&gper']},fetInds),bins{:}),                     ...
+                     hist2(reshape(nonzeros(fetSet(stc{[sts,'&gper']},fetInds)),[],2),      ...
+                           bins{:}),                                                       ...
                      Fet,                                                                  ...
                      Stc,                                                                  ...
                      repmat({states{s}}, size(Trials)),                                    ...
@@ -136,17 +138,17 @@ if ~exist(fileName,'file') || overwrite,
     for s = 1:numStates,
         hax(s) = subplot(1,numStates,s);
         sout = nansum(cat(3,hout{s}{:}),3);
-        imagesc(edx,edy,sout');caxis([0,1000]);axis('xy');
+        imagesc(edx,edy,sout');caxis([0,2000]);axis('xy');
         hold('on');
         o = conv2(sout,F,'same');
         o = o/sum(o(:));
         oPrct = 0;
         oThresh = 0.1;
         wCounter = 0;
-        while oPrct<0.925,
+        while oPrct<0.8,
             oPrct = sum(o(o(:)>oThresh));
-            oThresh = oThresh/1.5;
-            if wCounter > 100, break, end
+            oThresh = oThresh/1.1;
+            if wCounter > 1200, break, end
         end
         [C{s},H{s}] = contour(X,Y,o',[oThresh,oThresh],'linewidth',0.5,'Color',stateColors(s));
     end

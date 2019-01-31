@@ -150,12 +150,23 @@ dtgmori = var(bsxfun(@minus,efet,mefet),[],2);
 
 % SELECT Good periods if none are provided
 switch mode
+  case 'AUTO_THRESH'
+    nind = nniz(efet);
+    eper = ThreshCross(dtgmori,0.2,round(xyz.sampleRate/8));    
+    eid = zeros(size(nind))';    
+    for e = 1:size(eper,1),
+        errorInd = zeros(size(nind));
+        errorInd(eper(e,1):eper(e,2)) = true;
+        eid(nind&errorInd)=e;        
+    end
+    
   case 'EMGM'
     % em-gaussian mixture model
     nind = nniz(efet)&log10(dtgmori)>-0.5;
     [teid,emgmModel,emgmLlh] = mixGaussEm(efet(nind,:)',40);
     eid = zeros(size(nind))';
     eid(nind)=teid;
+    
   case 'MANUAL'
     % Use gui to select error periods and attempt to correct
     % Create 1-d distance metric for detecting errors

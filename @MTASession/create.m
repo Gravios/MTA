@@ -17,7 +17,7 @@ elseif all(~cellfun(@isempty,regexpi(dataLoggers,{'blackrock','vicon'})))
              'for Blackrock, thank you and have a nice day'])
 
 elseif all(~cellfun(@isempty,regexpi(dataLoggers,{'openephys','vicon'})))
-    Session = sync_openephys_vicon(Session,xyzSampleRate);
+    Session = sync_openephys_vicon(Session,TTLValue,xyzSampleRate);
     
 elseif all(~cellfun(@isempty,regexpi(dataLoggers,{'vicon'})))
     Session = loadVicon(Session,xyzSampleRate);

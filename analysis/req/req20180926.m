@@ -15,11 +15,13 @@ global MTA_PROJECT_PATH;
 
 MjgER2016_load_data();
 
+overwrite = false;
 
 % SET analysis parameters
 sampleRate = 250;   % Hz
 states = {'theta','rear','hloc','hpause','lloc','lpause','groom','sit'};%,'ripple'};
         
+
 thresholds.mazeCenterDist = 380;
 thresholds.mazeCenterAng = pi/2;
 
@@ -203,7 +205,6 @@ if ~exist(dataFilePath,'file')||overwrite,
          'pfmd'  ,          ...     
          'unitSessionMap',  ...
          'ucount'        ,  ...
-         'pfsTag'        ,  ...
          'subjectId');
 else,
     load(dataFilePath);
@@ -1095,7 +1096,6 @@ print(hfigPop,'-dpng',...
                      
                      
 % Subject Population egocentric phase precession binned by angular speed and speed
-plotFitFlag = false;
 
 subjectId = 'er01';
 subjectInds = [1:2];
@@ -1145,6 +1145,7 @@ angBinCnt = 2;
 spcBinCnt = 20;
 phzBinCnt = 20;
 spdBinCnt = 12;
+angInd = 1;
 spdInd = 2;
 colorMode = 'speed';
 colorMap = @jet;
@@ -1160,7 +1161,7 @@ stateInd = [3,4,5];
 
 thresholds.mazeCenterDist = 400;
 thresholds.mazeCenterAng = pi/2;
-
+plotFitFlag = false;
 
 hfigPop = figure();
 hfig = figure();
@@ -1206,7 +1207,7 @@ ind =   cind & tind & sind & pind & nniz(phzv) & nniz(hind);
 spdBins = [prctile(vxya(ind&cind&vxya(:,spdInd)>-2&vxya(:,spdInd)<1.9,2),linspace(0,100,spdBinCnt+1))];
 spdBinc = (spdBins(1:end-1)+spdBins(2:end))./2;
 vind = discretize(vxya(:,spdInd),spdBins); 
-if spdBinCnt>1,  partitionTag = [partitionTag,' ',speedTags{speedInd},';']; end
+if spdBinCnt>1,  partitionTag = [partitionTag,' ',speedTags{spdInd},';']; end
 
 % SET angular speed bins
 % DISCRETIZE Angular speed
@@ -1298,7 +1299,7 @@ for s = 1:numel(spdBinc),
                 xlim([0,1]);ylim([0,1]);
                 
                 %print(hfig,'-depsc2',fullfile(figPath,[figName,'.eps']));
-                print(hfig,'-dpng',  fullfile(figPath,[figName,'.png']));
+                %print(hfig,'-dpng',  fullfile(figPath,[figName,'.png']));
             end
             clear('fax');
         else
@@ -1319,6 +1320,8 @@ title({'Head Centered - Head Coordinates',partitionTag,colorMapTag});
 zlabel('theta phase (deg)');
 xlabel('logitudinal (mm)');
 ylabel('lateral (mm)');
+
+
 % $$$         Lines(hfig.Position(3)/2+0.2,[],'k');
 % $$$ vlabel = {};
 % $$$ for s = 1:numel(speedBinc),
