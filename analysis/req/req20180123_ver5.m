@@ -14,6 +14,8 @@ function [pfd,tags,eigVec,eigVar,eigScore,validDims,unitSubsets,unitIntersection
 %    unitIntersection, Matrix-Numeric :
 %    zrmMean, 
 %    zrmStd
+%
+% The structure of this analysis pipeline is sub-optimal 
 
 %varargin = {};
 % DEFARGS ------------------------------------------------------------------------------------------
@@ -219,7 +221,8 @@ if (nargout>2||display) && numel(sessionList)==numel(Trials),
     for pfindex = 1:numel(tags),
         [eigVec{pfindex},eigScore{pfindex},eigVar{pfindex},...
          unitSubsets{pfindex},validDims{pfindex},zrmMean{pfindex},zrmStd{pfindex}] = ...
-            req20180123_pfd_erpPCA(pfd,units,ranges{pfindex},pfindex,numComp,overwriteErpPCAFlag);
+            req20180123_pfd_erpPCA(pfd,units,[tags{pfindex},'_v',version],ranges{pfindex},...
+                                   pfindex,numComp,overwriteErpPCAFlag);
 % PLOT eigenvectors with behavioral state contours
         if display||overwriteErpPCAFlag, eval(['req20180123_vis_',tags{pfindex},'_erpPCA']); end
     end

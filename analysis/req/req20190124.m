@@ -9,10 +9,31 @@
 %    Protocol:
 %    Figures: /storage/gravio/figures/analysis/placefields_bhv
 
-global ANAL_PARM
+
+%clear('-global','AP');
+global AP
+
+
+% LOAD Trial data
+% Vars
+sessionListName = 'MjgER2016';
+tag             = 'hbpptbpFS1v4';
+
+% COMPUTE behavior rate maps over theta phases
+AP.req20181106.Trials          = Trials;
+AP.req20181106.units           = units;
+AP.req20181106.sessionListName = sessionListName;
+AP.req20181106.tag             = tag;
+
+% COMPUTE factors of behavior rate over theta phases
+AP.req20181119.sessionListName = sessionListName;
+AP.req20181119.tag             = tag;
+
+
+
 
 % FIGURE Opts ----------------------------------------------------------------
-FigDir = create_directory('/storage/gravio/figures/analysis/placefields_bhv');
+FigDir = create_directory(['/storage/gravio/figures/analysis/placefields_bhv_',tag]);
 
 pageHeight = 21.0;
 pageWidth  = 29.7;
@@ -28,7 +49,7 @@ ypos = fliplr(0.5:(pheight+xpad):pageHeight-3.7);
 
 hfig = figure(666002);
 hfig.Units = 'centimeters';
-hfig.Position = [1, 1, pageWidth,pageHeight];
+hfig.Position = [2, 2, pageWidth,pageHeight];
 hfig.PaperPositionMode = 'auto';
 hfig.PaperType = 'A4';
 hfig.PaperUnits = 'centimeters';
@@ -54,7 +75,7 @@ sampleRate = 250;   % Hz
 states = {'theta','rear','hloc','hpause','lloc','lpause','groom','sit'};%,'ripple'};
 
 pft = cf(@(Trial)  pfs_2d_theta(Trial),  Trials);
-pfs = cf(@(Trial) MTAApfs(Trial,'tag','hbpptbpFS1v3'), Trials);
+pfs = cf(@(Trial) MTAApfs(Trial,'tag','hbpptbpFS1v4'), Trials);
 pfb = cf(@(Trial,unitSubset)  pfs_2d_states(Trial),  Trials,units);
 pftp = cf(@(Trial) MTAApfs(Trial,'tag','tp'), Trials);
 
@@ -63,7 +84,7 @@ if ~exist('pfd','var'), ...
         req20180123_ver5(Trials,[],'13');  
 end
 
-req20181119();% -> eigVals, eigVec, eigScrs, eigVars, eSpi, FSrBhvThp
+[eigVecs, eigScrs, eigVars, eSpi, FSrBhvThp] = req20181119();
 req20190122();% -> bhvInfoTS, tshifts
 
 nanColor = [0.1,0.1,0.1];
@@ -71,7 +92,7 @@ nanColor = [0.1,0.1,0.1];
 
 % FIGURE : Behavioral theta phase decomposition Examples -------------------------------------------%
 
-for t = 20:23;
+for t = 1:23;
     Trial = Trials{t}; 
     unitSubset = units{t};
     Trial.load('nq');

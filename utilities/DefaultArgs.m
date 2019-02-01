@@ -104,8 +104,8 @@ if numel(varargin)>0,
 
 % OVERRIDE default args if AP is present and relevant to the function which called DefaultArgs
         if ~isempty(AP) && isfield(AP,dbss(2).name),
-            for field  = fieldnames(AP.(dbss(2).name)),
-                outputIndex = ~cell2mat(cf(@isempty,regexp(field,cf(@(x) ['^',x,'$'],defaultArgFields'))));
+            for field  = fieldnames(AP.(dbss(2).name))',
+                outputIndex = ~cell2mat(cf(@isempty,regexp(field{1},cf(@(x) ['^',x,'$'],defaultArgFields'))));
                 varargout{outputIndex} = AP.(dbss(2).name).(field{1});
             end
         end
@@ -309,7 +309,7 @@ end
 
 % OVERRIDE default args if AP is present and relevant to the function which called DefaultArgs
 if ~isempty(AP) && isfield(AP,dbss(2).name),
-    for field  = fieldnames(AP.(dbss(2).name)),
+    for field  = fieldnames(AP.(dbss(2).name))',
         outputIndex = ~cell2mat(cf(@isempty,regexp(field,cf(@(x) ['^',x,'$'],ParsedArgs'))));
         varargout{outputIndex} = AP.(dbss(2).name).(field{1});
     end

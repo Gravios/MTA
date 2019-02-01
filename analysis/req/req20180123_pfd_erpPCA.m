@@ -1,9 +1,9 @@
-function [LR,FSr,VT,unitSubset,vDims,zrmMean,zrmStd] = req20180123_pfd_erpPCA(pfd,units,range,pfindex,numComp,overwrite)
+function [LR,FSr,VT,unitSubset,vDims,zrmMean,zrmStd] = req20180123_pfd_erpPCA(pfd,units,tag,range,pfindex,numComp,overwrite)
 
 global MTA_PROJECT_PATH
 
 
-filePath = fullfile(MTA_PROJECT_PATH,'analysis',['req20180123_pfd_erpPCA-',pfd{1,pfindex}.tag,'.mat']);
+filePath = fullfile(MTA_PROJECT_PATH,'analysis',['req20180123_pfd_erpPCA-',tag,'.mat']);
 
 
 if ~exist(filePath,'file')||overwrite,

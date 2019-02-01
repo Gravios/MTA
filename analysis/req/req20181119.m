@@ -1,4 +1,4 @@
-function [eigVecs, eigScrs, eigVars, eSpi] = req20181119(varargin);
+function [eigVecs, eigScrs, eigVars, eSpi, FSrBhvThp, metaData] = req20181119(varargin);
 %  Tags: behavior ratemap theta phase
 %  Status: active
 %  Type: Analysis
@@ -28,109 +28,59 @@ global MTA_PROJECT_PATH;
 % DEFARGS ------------------------------------------------------------------------------------------
 defargs = struct('Trials',                        {{}},                                          ...
                  'sessionListName',               'MjgER2016',                                   ...
-                 'version',                       '4',                                           ...
+                 'tag',                           'hbpptbpFS1v4',                                ...
                  'units',                         [],                                            ...
                  'sampleRate',                    250,                                           ...
                  'stcMode',                       'msnn_ppsvd_raux',                             ...
-                 'states',                        {'theta','rear','hloc','hpause',               ...
-                                                   'lloc','lpause','groom','sit'},               ...
+                 'states',                        {{'theta','rear','hloc','hpause',              ...
+                                                   'lloc','lpause','groom','sit'}},              ...
                  'feature_fcn',                   @fet_HB_pitchB,                                ...
                  'overwriteFlag',                 false                                          ...
 );
-[Trials,sessionListName,version,units,sampleRate,stcMode,states,overwriteFlag] =                 ...
+[Trials,sessionListName,tag,units,sampleRate,stcMode,states,feature_fcn,overwriteFlag] =         ...
     DefaultArgs(varargin,defargs,'--struct');
-
 %---------------------------------------------------------------------------------------------------
 
 
-if ~exist('sessionList','var'),  MjgER2016_load_data();  end
-if ~exist('overwrite',  'var'),  overwrite = false;      end
 
-%  Variables:
-%      Trials
-%      units
-%      cluSessionMap
-%      pitchReferenceTrial
-%      FigDir
-%      sessionListName
-%      sessionList
-%      states
-%      numStates
-%      interpParPfsp
-%      interpParDfs
-%
+% SET Meta Data ------------------------------------------------------------------------------------
+analysisHash = DataHash({sessionListName,tag,sampleRate,stcMode,states,func2str(feature_fcn)});
+metaFilePath = fullfile(MTA_PROJECT_PATH,'analysis',[mfilename '-meta-',analysisHash,'.mat']);
+dataFilePath = fullfile(MTA_PROJECT_PATH,'analysis',[mfilename '-data-',analysisHash,'.mat']);
+metaVars = {'sessionListName','tag','sampleRate','stcMode','states','feature_fcn','analysisHash'};
+dataVars = {'eigVecs','eigScrs','eigVars','eSpi','FSrBhvThp'};
+%---------------------------------------------------------------------------------------------------
 
-% SET analysis parameters
-version = '4';
-sampleRate = 250;   % Hz
-states = {'theta','rear','hloc','hpause','lloc','lpause','groom','sit'};%,'ripple'};
+MjgER2016_load_bhv_erpPCA_scores();
 
-
-dataFilePath = fullfile(MTA_PROJECT_PATH,'analysis',...
-                        ['req20181119-meta-',DataHash({sessionListName,version,sampleRate}),'.mat']);
-
-if ~exist(dataFilePath,'file')  ||  overwrite,
-
-    % LOAD
-    if ~exist('pfd','var'), 
-        [pfd,tags,eigVec,eigVar,eigScore,...
-         validDims,unitSubsets,unitIntersection,zrmMean,zrmStd] = ...
-            req20180123_ver5(Trials,[],'13');  
+if ~exist(dataFilePath,'file')  ||  overwriteFlag,
+    sessionList = get_session_list(sessionListName);
+    Trials = af(@(s) MTATrial.validate(s), sessionList);
+    units = cf(@(T)  select_placefields(T),  Trials); 
+    units = req20180123_remove_bad_units(units);
+    cluSessionMap = [];
+    for u = 1:numel(units),
+        cluSessionMap = cat(1,cluSessionMap,[u*ones([numel(units{u}),1]),units{u}(:)]);
     end
-
-% $$$ center = [0,0];
-% $$$ weightsFunction = @(x,center) 1./sqrt(sum(bsxfun(@minus,x,center).^2,2));
-% TEST weight function 
-% GET grid coordinates of all bins
-% $$$ gridBins = cell([1,2]);
-% $$$ binc = pfs.adata.bins([1,3]);
-% $$$ [gridBins{:}] = ndgrid(binc{:});
-% $$$ gridBins = reshape(cat(3,gridBins{:}),[],2);
-
+    
+    
+    % LOAD
+    [~,~,~,~,validDims,~,~] = req20180123_pfd_erpPCA([],[],'HBPITCHxBPITCH_v13',[],[],[],false);
 
     ucnt = 1;
 
+    nfac = 5;
+    
     eigVecs = [];
     eigScrs = [];
     eigVars = [];
     eSpi = [];
-% $$$ eigVals = [];    
-% $$$ eVar = [];
-% $$$ eScra = [];
-% $$$ eScrn = [];
-% $$$ cmins = [];
-% $$$ cvals = [];
-% $$$ smins = [];
-% $$$ svals = [];
-% $$$ iva = [];
-    for t = 1:23,
+    
+    for t = 1:numel(Trials),
         Trial = Trials{t}; 
         unitSubset = units{t};
-        pfs = MTAApfs(Trial,'tag',['hbpptbpFS1v',version]);
-% $$$     pfd = req20180123_ver5(Trial,[],'10');
-% $$$     [LR,FSr,VT,us,vDims] = req20180123_pfd_erpPCA(pfd,[],[],1,[],false);
-
-        %pft = pfs_2d_theta(Trial);
-% $$$     [hp,bp] = ndgrid(pfs.adata.bins{[1,3]});
-% $$$     hp = hp(:);
-% $$$     bp = bp(:);
-
-% $$$         SmoothingWeights = [0.005,0.005];
-% $$$         ndims = numel(SmoothingWeights);
-% $$$         msize = pfs.adata.binSizes([1,3])';
-% $$$         sind = cell(1,ndims);
-% $$$         bins = pfs.adata.bins([1,3,2]);
-% $$$         for i = 1:ndims,
-% $$$             sind{i} = linspace([repmat(diff(bins{i}([1,end]))./2,1,2).*[-1,1],msize(i)]);
-% $$$         end
-% $$$         [sind{:}] = ndgrid(sind{:});
-% $$$         sind = reshape(cat(ndims+1,sind{:}),[],ndims);
-% $$$         SmoothingWeightsMatrix = diag(SmoothingWeights);
-% $$$         Smoother = exp(-(multiprod(multiprod(sind',inv(SmoothingWeightsMatrix)',...
-% $$$                                              [1]  ,[1,2]),...
-% $$$                                    sind',1,1)./2))...
-% $$$             ./sqrt((2.*pi).^ndims.*prod(SmoothingWeights));
-% $$$         Smoother = reshape(Smoother,msize)./sum(Smoother);         
+        %pfs = MTAApfs(Trial,'tag',[']);
+        pfs = req20181106(Trial,sessionListName,tag,unitSubset);
         
         
         for u = unitSubset,
@@ -170,7 +120,7 @@ if ~exist(dataFilePath,'file')  ||  overwrite,
     end%for t
 
     cEVecs = reshape(eigVecs,size(eigVecs,1),size(eigVecs,2),[]);
-    cEVecs = cEVecs(:,:,validDims{1});
+    cEVecs = cEVecs(:,:,validDims);
     cEVecs(isnan(cEVecs(:))) = 0;
     
     FSrBhvThp = [];
@@ -178,10 +128,13 @@ if ~exist(dataFilePath,'file')  ||  overwrite,
         FSrBhvThp(:,:,v) = sq(cEVecs(:,v,:)) * FSCFr;
     end
 
-    save(dataFilePath,'-v7.3','eigVecs','eigScrs','eigVars','eSpi','FSrBhvThp');
+    save(dataFilePath,'-v7.3',dataVars{:});
+    save(metaFilePath,'-v7.3',metaVars{:});
 else
     load(dataFilePath);
 end
+
+metaData = load(metaFilePath);
 
 
 
