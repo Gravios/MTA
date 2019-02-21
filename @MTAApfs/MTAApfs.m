@@ -187,11 +187,11 @@ classdef MTAApfs < hgsetget %< MTAAnalysis
 % SET the epochs
                     if ischar(states),
                         Pfs.parameters.states = states;
-                        pfsState = Session.stc{states,xyz.sampleRate};
-                        pfsState.resample(xyz);
+                        pfsState = Session.stc{states};
+                        resample(pfsState,xyz);
                     elseif isa(states,'MTAData'),
                         pfsState = states.copy;
-                        pfsState.resample(xyz);
+                        resample(pfsState,xyz);
                         Pfs.parameters.states = pfsState.label;                       
                     end
                                         
@@ -232,10 +232,11 @@ classdef MTAApfs < hgsetget %< MTAAnalysis
 % RESET the epochs
                     if ischar(states),
                         Pfs.parameters.states = states;
-                        pfsState = Session.stc{states,xyz.sampleRate}.copy;
+                        pfsState = Session.stc{states}
+                        resample(pfsState,xyz);
                     elseif isa(states,'MTAData'),
                         pfsState = states.copy;
-                        pfsState.resample(xyz);
+                        resample(pfsState,xyz);
                         Pfs.parameters.states = pfsState.label;                       
                     end
 % ASSIGN computational boundaries

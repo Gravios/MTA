@@ -22,13 +22,20 @@ clear('pfd','tags','eigVec','eigVar','eigScore','validDims','zrmMean','zrmStd',.
       'rmapsShuffled','FSrM','FSrS','fsrsMean','fsrsStd','fsrsMean','fsrsStd');
 
 
+for trialIndex = 17:23;    
+Trial = Trials{trialIndex}; 
+unitSubset = units{trialIndex};
+[posEstCom,posEstMax,posEstSax,posteriorMax] = bhv_decode(Trial,250,unitSubset,'xyh',[],[],0.03,true);
+end
+
+
 trialIndex = 20;    
 Trial = Trials{trialIndex}; 
 unitSubset = units{trialIndex};
 
 sampleRate = 250;   % Hz
 spikeWindow = 0.025; % ms
-mode = 'xyhb'; % alt vals: 'xy'
+mode = 'xyhi'; % alt vals: 'xy'
 
 states = {'theta','rear','hloc','hpause','lloc','lpause','groom','sit','ripple'};
 
@@ -55,10 +62,8 @@ vxy.data = log10(vxy.data);
 
 % LOAD pitch and 
 fet = fet_HB_pitchB(Trial,sampleRate);
-fet = fet_HB_pitch(Trial);
-fet.map_to_reference_session(Trial,'Ed05-20140529.ont.all');
-tfet = fet.copy();
-fet.data = fet(:,3);
+tfet = copy(fet);
+fet.data = fet(:,1);
 ffet = filter(copy(fet),'ButFilter',3,1,'low');
 
 tvec = circshift(fxyz(:,'hcom',[1,2]),-round(sampleRate.*0.05))-fxyz(:,'hcom',[1,2]);
@@ -95,6 +100,7 @@ sum(ind)
 
 %derror = posEstMax;
 derror = posEstSax;
+%derror = posEstCom;
 figure()
 subplot(511);  plot(derror(ind,[1]));  %Lines([0;cumsum(diff([rper.data,1,2))],[],'k');
 hold('on');    plot(xyz(ind,'hcom',1),'k');
@@ -121,12 +127,13 @@ plot(ang(:,'head_back','head_front',1));
 plot(atan2(decError(:,2),decError(:,1)),'.r');
 plot(phz(:,1),'c')
 
+% Decompose decoding error by theta phase and state in egocentric frame of reference
 figure();
 ns = 6;
-%decError = [multiprod(posEstCom(:,[1,2])-sq(xyz(:,'hcom',[1,2])),hvec(:,:,:),2,[2,3]),fet(:,1)-posEstCom(:,3)];
-decError = [multiprod(posEstSax(:,[1,2])-sq(xyz(:,'hcom',[1,2])),hvec(:,:,:),2,[2,3]),fet(:,1)-posEstSax(:,3)];
+decError = [multiprod(posEstCom(:,[1,2])-sq(xyz(:,'hcom',[1,2])),hvec(:,:,:),2,[2,3]),fet(:,1)-posEstCom(:,3)];
+%decError = [multiprod(posEstSax(:,[1,2])-sq(xyz(:,'hcom',[1,2])),hvec(:,:,:),2,[2,3]),fet(:,1)-posEstSax(:,3)];
 for s = 1:ns; %states
-    cind = unitInclusion>=5 & posteriorMax>0.001;
+    cind = unitInclusion>=4 & posteriorMax>0.001;
     sind =      stcm(:,1)   ...
         &  any(stcm(:,s),2);
 
@@ -134,25 +141,33 @@ for s = 1:ns; %states
 
     % Forward decoding projection onto head
     subplot2(ns,3,s,1);
-    hist2([[phz(ind,1);phz(ind,1)+2*pi],[decError(ind,1);decError(ind,1)]],linspace(-pi,pi*3,50),linspace(-300,300,50));
+    out = hist2([[decError(ind,1);decError(ind,1)],[phz(ind,1);phz(ind,1)+2*pi]],...
+          linspace(-300,300,50),linspace(-pi,pi*3,50));
+    imagesc(linspace(-300,300,50),linspace(-pi,pi*3,50),bsxfun(@rdivide,out,max(out))');
+    axis('xy');
     title('forward projection')
-    ylim([-300,300]);
-    ylabel({states{s},'mm'});
-    xlabel('theta phase');
+    xlim([-300,300]);
+    xlabel({states{s},'mm'});
+    ylabel('theta phase');
     % Lateral decoding projection onto head
     subplot2(ns,3,s,2);
-    hist2([[phz(ind,1);phz(ind,1)+2*pi],[decError(ind,2);decError(ind,2)]],linspace(-pi,pi*3,50),linspace(-300,300,50));
+    out = hist2([[decError(ind,2);decError(ind,2)],[phz(ind,1);phz(ind,1)+2*pi]],...
+          linspace(-300,300,50),linspace(-pi,pi*3,50));
+    imagesc(linspace(-300,300,50),linspace(-pi,pi*3,50),bsxfun(@rdivide,out,max(out))');
+    axis('xy');    
     title('lateral projection')
-    ylabel('mm');
-    xlabel('theta phase');
+    xlabel('mm');
+    ylabel('theta phase');
 
     % Pitch decoding error
     subplot2(ns,3,s,3);
-    %ind = ind&circ_dist(circshift(ffet(:,1),-1),ffet(:,1))>0.0004;
-    hist2([[phz(ind,1);phz(ind,1)+2*pi],[decError(ind,3);decError(ind,3)]],linspace(-pi,pi*3,50),linspace(-pi/3,pi/3,75));
+    out = hist2([[decError(ind,3);decError(ind,3)],[phz(ind,1);phz(ind,1)+2*pi]],...
+          linspace(-pi/3,pi/3,75),linspace(-pi,pi*3,50));
+    imagesc(linspace(-pi/3,pi/3,75),linspace(-pi,pi*3,50),bsxfun(@rdivide,out,max(out))');
+    axis('xy');    
     title('head pitch projection');
-    ylabel('rad');
-    xlabel('theta phase');
+    xlabel('rad');
+    ylabel('theta phase');
 end
 
 

@@ -1032,3 +1032,16 @@
 
     
     
+
+
+*** req20190124
+    Tags: behavior field theta decomposition summary
+    Status: active
+    Type: Analysis
+    Author: Justin Graboski
+    Final_Forms: NA
+    Project: MjgER2016: theta modulation of bhv rate maps
+    Description: Compilation of placefield information and bhv theta decomposition stuff
+    Protocol:
+    Figures: /storage/gravio/figures/analysis/placefields_bhv
+    

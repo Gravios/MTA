@@ -40,7 +40,7 @@ clear('hcom');
 
 % Translational movements relative to body
 shft = 3;
-tmar = {'spine_lower','pelvis_root','head_back','head_front'};
+tmar = {'spine_lower','pelvis_root','hcom'};
 tvec = zeros([size(xyz,1),numel(tmar),2]);
 dzvec = zeros([size(xyz,1),numel(tmar),1]);
 for m = 1:numel(tmar),

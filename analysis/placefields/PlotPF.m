@@ -109,8 +109,8 @@ else
 end
 
 %OccThresh = 4*(mean(binDims)/200).^numel(binDims);
-gtind = soc > 2*(10/150).^numel(binDims);
-%gtind = soc > 2*(10/200).^numel(binDims);
+%gtind = soc > 2*(10/100).^numel(binDims);
+gtind = soc > 2*(10/200).^numel(binDims);
 
 
 %% Find the total occupancy and each pixels 

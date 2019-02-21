@@ -30,6 +30,8 @@
 %     FSCFr  - pseudo-inverse of LR
 %     rsMean   - rmaps shuffled mean
 %     rsStd    - rmaps shuffled std
+varNonEss = {'clu','tlu','rind','D','LR','FSCFr','rsMean','rsStd'};
+
 % 
 % 
 % AUXILLARAY vars
@@ -40,10 +42,9 @@
 %     FSrS     - std of 'shuffled' score
 %     fsrsMean - 
 %     fsrsStd
-%     fsrsMean - 
-%     fsrsStd
-%
-%
+varNonAux = {'pfdShuffled','rmapShuffledMean','rmapsShuffled','FSrM','FSrS','fsrsMean','fsrsStd'};
+
+
 % OUTPUT Vars
 %     rmaps    - matrix[D x S](numeric); rate maps corresponding to the valid eigenvector dims
 %     FSrC     - matrix[U x V](Numeric); fscores
@@ -152,8 +153,6 @@ else,
          'FSCFr',...
          'FSrM',...
          'FSrS',...
-         'fsrsMean',...
-         'fsrsStd',...
          'fsrsMean',...
          'fsrsStd',...
          'rmaps',...

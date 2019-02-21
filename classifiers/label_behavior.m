@@ -1,6 +1,10 @@
-function label_behavior(sessionList)
+function label_behavior(sessionList,varargin)
 %function label_behavior(sessionList)
 % sessionList: (string) list of sessions found in get_session_list.m
+
+defargs = struct('featureSet',      'fet_mis');
+[featureSet] = DefaultArgs(varargin,defargs,'--struct');
+
 
 % LABEL sessions with multi-session patternnet classifier 
 label_bhv_msnn('msnn',get_session_list(sessionList,[],[],struct('stcMode','default')));

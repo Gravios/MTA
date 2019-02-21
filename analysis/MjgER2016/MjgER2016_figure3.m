@@ -73,6 +73,7 @@ dfst = {'HPITCHxBPITCH'};%,'HPITCHxBSPEED','BPITCHxBSPEED','BPITCHxHSPEED','HPIT
 
 cond_round = @(rate) max([round(rate,0),round(rate,1)].*[rate>=10,rate<10]);
 
+nanColor = [0.15,0.15,0.15];
 
 pageWidth  = 21.;
 pageHeight = 29.7;
@@ -98,19 +99,15 @@ clf();
 
 
 cluMap = [20,119];
-
-
 yind = 1;
 xind = 1;
 
-% SET color scale max
+
 u = cluMap';
+% SET color scale max
 maxPfsRate = max(cell2mat(cf(@(p,u) maxRate(p,u,false,'prctile99',0.5),...
                              [pfs(1),dfs],repmat({u(2)},[1,1+numel(dfs)]))));
-
 sp = gobjects([1,0]);
-
-
 fax = axes('Position',[0,0,1,1],'Visible','off','Units','centimeters');
 xlim([0,hfig.Position(3)]);
 ylim([0,hfig.Position(4)]);
@@ -123,21 +120,21 @@ ylim([0,hfig.Position(4)]);
 % $$$ axis('tight');
 
 
-xind = 2;
+xind = 1;
 
 
 sp(end+1) = axes('Units','centimeters',...
                  'Position',[xpos(xind),ypos(yind),pwidth*1.25,pheight*1.25],...
                  'FontSize', 8);
 %                 'Position',[xpos(xind),ypos(yind),(pwidth+xpad)*2-xpad,(pheight+ypad)*2-ypad],...
-dfs{1}.plot(u(2),'mean',false,[0,maxPfsRate],false,0.5,false,[],@jet);
-text(-2,-0.45,num2str(cond_round(dfs{1}.maxRate(u(2),false,1))),'FontSize',8,'Color',[1,1,1]);
+dfs{1}.plot(u(2),'mean',false,[0,maxPfsRate],false,0.5,false,[],@jet,[],nanColor);
+text(-2,-0.45,num2str(cond_round(dfs{1}.maxRate(u(2),false,1))),'FontSize',10,'Color',[1,1,1]);
 xlabel({'HP (rad)'});
 ylabel({'BP (rad)'});
-xind = xind+3;
+xind = xind+2;
 xlim([-2,nonzeros(xlim.*[0,1])-0.2])
-sp(end).Color = [0,0,0];
-title('Bhv Rate Map');    
+sp(end).Color = nanColor;
+title({'Behavior','Rate Map'});    
 
 
 
@@ -146,11 +143,11 @@ sp(end+1) = axes('Units','centimeters',...
                  'Position',[xpos(xind),ypos(yind),pwidth*1.25,pheight*1.25],...
                  'FontSize', 8);
 %                 'Position',[xpos(xind),ypos(yind),(pwidth+xpad)*2-xpad,(pheight+ypad)*2-ypad],...
-plot(pfs{1},u(2),'mean',false,[0,maxPfsRate],true,0.5,false,interpPar,@jet);
+plot(pfs{1},u(2),'mean',false,[0,maxPfsRate],true,0.5,false,interpPar,@jet,[],nanColor);
 text(-490,-380,num2str(cond_round(maxPfsRate)),'FontSize',10,'Color',[1,1,1]);
 
 hold('on');
-rmap = plot(pfs{1},u(2),'mean',false,[0,maxPfsRate],true,0.5,false,interpPar,@jet);
+rmap = plot(pfs{1},u(2),'mean',false,[0,maxPfsRate],true,0.5,false,interpPar);
 [~,mxp] = pft.maxRate(u(2));
 binGrid = cell([1,2]);
 [binGrid{:}] = ndgrid(interpPar.bins{:});
@@ -167,45 +164,43 @@ contMaxPos = sq(binGrid(contMaxInd(1),contMaxInd(2),:));
 contMinPos = sq(binGrid(contMinInd(1),contMinInd(2),:));
 
 line(fax,...
-     [sp(end-1).Position(1)+pwidth.*1.5,sp(end).Position(1)+(contMaxInd(1)./numel(interpPar.bins{1})).*pwidth.*1.5],...
-     [sp(end-1).Position(2)+pheight.*1.5,sp(end).Position(2)+(contMaxInd(2)./numel(interpPar.bins{2})).*pheight.*1.5],...
+     [sp(end-1).Position(1)+pwidth.*1.25,sp(end).Position(1)+(contMaxInd(1)./numel(interpPar.bins{1})).*pwidth.*1.25],...
+     [sp(end-1).Position(2)+pheight.*1.25,sp(end).Position(2)+(contMaxInd(2)./numel(interpPar.bins{2})).*pheight.*1.25],...
      'Color','m','LineWidth',1);
 line(fax,...
-     [sp(end-1).Position(1)+pwidth.*1.5,sp(end).Position(1)+(contMinInd(1)./numel(interpPar.bins{1})).*pwidth.*1.5],...
-     [sp(end-1).Position(2),sp(end).Position(2)+(contMinInd(2)./numel(interpPar.bins{2})).*pheight.*1.5],...
+     [sp(end-1).Position(1)+pwidth.*1.25,sp(end).Position(1)+(contMinInd(1)./numel(interpPar.bins{1})).*pwidth.*1.25],...
+     [sp(end-1).Position(2),sp(end).Position(2)+(contMinInd(2)./numel(interpPar.bins{2})).*pheight.*1.25],...
      'Color','m','LineWidth',1);
 line(fax,...
-     [sp(end-1).Position(1),sp(end-1).Position(1)+pwidth.*1.5],...
+     [sp(end-1).Position(1),sp(end-1).Position(1)+pwidth.*1.25],...
      [sp(end-1).Position(2),sp(end-1).Position(2)],...
      'Color','m','LineWidth',1);      
 line(fax,...
-     [sp(end-1).Position(1),sp(end-1).Position(1)+pwidth.*1.5],...
-     [sp(end-1).Position(2)+pheight.*1.5,sp(end-1).Position(2)+pheight.*1.5],...
+     [sp(end-1).Position(1),sp(end-1).Position(1)+pwidth.*1.25],...
+     [sp(end-1).Position(2)+pheight.*1.25,sp(end-1).Position(2)+pheight.*1.25],...
      'Color','m','LineWidth',1);      
 line(fax,...
-     [sp(end-1).Position(1)+pwidth.*1.5,sp(end-1).Position(1)+pwidth.*1.5],...
-     [sp(end-1).Position(2),sp(end-1).Position(2)+pheight.*1.5],...
+     [sp(end-1).Position(1)+pwidth.*1.25,sp(end-1).Position(1)+pwidth.*1.25],...
+     [sp(end-1).Position(2),sp(end-1).Position(2)+pheight.*1.25],...
      'Color','m','LineWidth',1);      
 line(fax,...
      [sp(end-1).Position(1),sp(end-1).Position(1)],...
-     [sp(end-1).Position(2),sp(end-1).Position(2)+pheight.*1.5],...
+     [sp(end-1).Position(2),sp(end-1).Position(2)+pheight.*1.25],...
      'Color','m','LineWidth',1);      
 uistack(fax,'top');
 
-
-
-title('Spatial Rate Map');   
+title({'Spatial','Rate Map'});   
 chax = colorbar(sp(end));
 chax.LineWidth = 1;
 chax.Units = 'centimeters';
 colormap(sp(end),'jet');
 caxis([0,maxPfsRate]);
-chax.Position(1) = sp(end).Position(1)+pwidth*1.5+0.1;
+chax.Position(1) = sp(end).Position(1)+pwidth*1.25+0.1;
 
 sp(end).YTickLabel = {};
 sp(end).XTickLabel = {};
-line(fax,xpos(xind)+[0,pwidth*0.75],ypos(yind).*[1,1]-0.5,'Color','k','LineWidth',1);
-text(fax,xpos(xind),ypos(yind)-0.75,'50cm','FontSize',8,'Color',[0,0,0]);
+line(fax,xpos(xind)+[0,pwidth*1.25/2],ypos(yind).*[1,1]-0.125,'Color','k','LineWidth',2);
+text(fax,xpos(xind),ypos(yind)-0.35,'50cm','FontSize',8,'Color',[0,0,0]);
 
 xind = xind+3;
 
@@ -222,7 +217,7 @@ xind = xind+3;
 
 %% MjgER2016F3B - behavior and place field examples %%
 
-
+% $$$ % Multisession examples
 % $$$ % selected units session x unit id
 % $$$ clumap = [17,147;...
 % $$$            3,171;...
@@ -249,11 +244,12 @@ cluMap = [20,74;...
 
 
 
-labels = {'HPxBP','Theta','Rear','HLoc','LLoc','HPause','LPause'};
+labels = {'HPxBP','Theta','Rear','H Loc','L Loc','H Pause','L Pause'};
 
 % PLOT 
 %clf();    
 yind = 3;
+yinit = yind;
 for u = cluMap',
 
     xind = 1;
@@ -268,16 +264,6 @@ for u = cluMap',
     %dfsMaxRatesMean = cell2mat(cf(@(p,u) max(p.maxRate(u,false,'mean')),dfs,repmat({u(2)},[1,numel(dfs)])));
     dfsMaxRatesMean = mean(dfs{1}.maxRate(u,false,1));
 
-% ACCG 
-% $$$     sp(end+1) = axes('Units','centimeters',...
-% $$$                      'Position',[xpos(xind),ypos(yind),pwidth,pheight],...
-% $$$                      'FontSize', 8);
-% $$$     bar(tbins,accg(:,u(2)));
-% $$$     axis('tight');
-% $$$     sp(end).YTickLabel = {};
-% $$$     sp(end).XTickLabel = {};
-% $$$     if yind == 3, title(labels{xind});end
-% $$$     xind = xind+1;
     
 
 % DRZFIELDS 
@@ -286,14 +272,14 @@ for u = cluMap',
                          'Position',[xpos(xind),ypos(yind),pwidth,pheight],...
                          'FontSize', 8);
         
-        dfs{s}.plot(u(2),'mean',false,[0,maxPfsRate],false,0.5,false,[],@jet);
+        dfs{s}.plot(u(2),'mean',false,[0,maxPfsRate],false,0.5,false,[],@jet,[],nanColor);
         sp(end).YTickLabel = {};
         sp(end).XTickLabel = {};        
         text(-2,-0.475,num2str(cond_round(dfsMaxRatesMean(s))),'FontSize',8,'Color',[1,1,1]);
         xlim([-2,nonzeros(xlim.*[0,1])-0.2])
-        sp(end).Color = [0,0,0];
+        sp(end).Color = nanColor;
               
-        if yind == 3, title(labels{xind});end        
+        if yind == yinit, title(labels{xind});end        
         xind = xind+1;
     end
 
@@ -304,10 +290,10 @@ for u = cluMap',
                          'Position',[xpos(xind),ypos(yind),pwidth,pheight],...
                          'FontSize', 8);
 
-        plot(pfs{s},u(2),'mean',false,[0,maxPfsRate],true,0.5,false,interpPar,@jet);
+        plot(pfs{s},u(2),'mean',false,[0,maxPfsRate],true,0.5,false,interpPar,@jet,[],nanColor);
         sp(end).YTickLabel = {};
         sp(end).XTickLabel = {};
-        if yind == 3, title(labels{xind});end        
+        if yind == yinit, title(labels{xind});end        
         xind = xind+1;
         text(-495,-380,num2str(cond_round(pfsMaxRatesMean(s))),'FontSize',8,'Color',[1,1,1]);
     end
@@ -360,11 +346,11 @@ fpcMinMax = [min(cellfun(@min,fpc)),max(cellfun(@max,fpc))];
 yind = yind + 1;
 for i = 1:3,
     sp(end+1) = axes('Units','centimeters',...
-                     'Position',[xpos(i),ypos(yind)+0.5,pwidth,pheight],...
+                     'Position',[xpos(1),ypos(yind)+0.5,pwidth,pheight],...
                      'FontSize', 8);    
     
     imagescnan({bins{:},abs(reshape_eigen_vector(fpc{i},pfd(1,pfindex)))},...
-               fpcMinMax,'linear',false,[0,0,0],1,1);                % PRINT eigenvectors
+               fpcMinMax,'linear',false,nanColor,1,1);                % PRINT eigenvectors
     axis('xy');
     axis('tight');
     hold('on');    
@@ -373,13 +359,13 @@ for i = 1:3,
     end
     sp(end).YTickLabel = {};
     sp(end).XTickLabel = {};
-    sp(end).Color = [0,0,0];
-        
+    sp(end).Color = nanColor;
+    ylabel(['F',num2str(i)])
     xlim(pfd{1}.adata.bins{1}([1,end]));
     xlim([-2,nonzeros(xlim.*[0,1])-0.2])            
     ylim(pfd{1}.adata.bins{2}([1,end]));
 
-    %yind = yind + 2;
+    yind = yind + 1;
 end
 
 
@@ -388,7 +374,8 @@ af(@(ax) set(ax,'LineWidth',1), sp);
 
 %% MjgER2016F3D t-SNE mapping of fscores within HPxBP of first 3 eigenvectors
 % see: req20180319.m
-MjgER2016_load_bhv_erpPCA_scores();
+if ~exist('FSrC','var'),  MjgER2016_load_bhv_erpPCA_scores();  end
+
 % CREATED Vars
 % 
 % NON - ESSENTIAL 
@@ -441,10 +428,10 @@ si  = si(:,rind);
 % $$$ figure,plot(mapa(:,1),mapa(:,2),'.');
 
 
-yind = yind - 2;
-xind = 4;
+yind = yind - 1;
+xind = 2;
 sp(end+1) = axes('Units','centimeters',...
-                 'Position',[xpos(xind),ypos(yind),(pwidth+0.1)*6-0.1,(pheight+0.1)*6-0.1],...
+                 'Position',[xpos(xind)+0.5,ypos(yind)+0.5,(pwidth+0.1)*3-0.1,(pheight+0.1)*3-0.1],...
                  'FontSize', 8);    
 
 sigUnits = any(abs(fsrcz(:,1:3))>=1.96,2);
@@ -454,7 +441,9 @@ cc(~sigUnits,:) = repmat([0.75,0.75,0.75],[sum(~sigUnits),1]);
 
 
 % $$$ mapa = tsne([FSrC(:,1:3),si(unitSubsets{pfindex})'],[],2,4,225);
-mapa = tsne([fsrcz(:,1:3),si(unitSubsets{pfindex})'],[],2,4,25);
+if ~exist('mapa','var'),
+    mapa = tsne([fsrcz(:,1:3),si(unitSubsets{pfindex})'],[],2,4,25);
+end
 % $$$ figure,scatter(mapa(:,1),mapa(:,2),5,cc,'filled');
 
 
@@ -470,13 +459,15 @@ sp(end).YTickLabel = {};
 sp(end).XTickLabel = {};
 box('on');
 axis('tight')
+xlim(xlim.*1.05);
+ylim(ylim.*1.05);
 
 cluSessionSubset = cluSessionMap(unitSubsets{pfindex},:);
 for u = cluMap'
     uind = find(ismember(cluSessionSubset,u','rows'));
     sigUnits(uind);
 end
-
+set(gca(),'Color',nanColor)
     
 % $$$ sp(end+1)=subplot(359); hold('on');scatter(mapz(:,1)/10,mapz(:,2)/10,10,cc,'o','filled'); grid('on');
 % $$$ title('tsne on zscores')

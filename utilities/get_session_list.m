@@ -361,6 +361,54 @@ switch sessionList
     Sessions(end).trialName   = 'gnd';
     Sessions(end).includeSyncInd = [1:7];
     
+
+    
+  case 'Ed10'
+    tmy_nlx = my_nlx;
+    tmy_xyz = my_xyz;
+    
+    my_xyz = fullfile(tmy_xyz,'Ed10');
+    my_nlx = '/storage/eduardo/data/processed/nlx/Ed10';
+    
+    Sessions(1) = struct('sessionName',  'Ed10-20140813',   ...
+                         'mazeName',     'cof',             ...
+                         'trialName',    'all',             ...
+                         'xyz_host',      my_xyz,           ...
+                         'nlx_host',      my_nlx,           ...
+                         'xyzSampleRate', 119.881035,       ...
+                         'hostServer',   'lmu',             ...
+                         'dataServer',   'lmu',             ...
+                         'project',      'general',         ...
+                         'TTLValue',     '0x0002',          ...
+                         'includeSyncInd',[],               ...
+                         'offsets',       [0,0],            ...
+                         'xOffSet',       0,                ...
+                         'yOffSet',       0,                ...
+                         'stcMode',      'msnn_ppsvd_raux', ...
+                         'thetaRef',     [1:8:32],          ...
+                         'thetaRefGeneral',1                ...
+    );
+
+    Sessions(end+1) =    Sessions(end);    
+    Sessions(end).sessionName = 'Ed10-20140816';
+    Sessions(end).trialName   = 'all';
+    Sessions(end).includeSyncInd = [];
+    
+    Sessions(end+1) =    Sessions(end);
+    Sessions(end).sessionName = 'Ed10-20140817';
+    Sessions(end).trialName   = 'gnd';
+    Sessions(end).includeSyncInd = [1:7];
+    
+    Sessions(end+1) =    Sessions(end);
+    Sessions(end).sessionName = 'Ed10-20140819';
+    Sessions(end).trialName   = 'gnd';
+    Sessions(end).includeSyncInd = [1:4,6];
+    Sessions(end+1) =    Sessions(end);
+
+    Sessions(end+1) =    Sessions(end);    
+    Sessions(end).sessionName = 'Ed10-20140819';
+    Sessions(end).trialName   = 'fly';
+    Sessions(end).includeSyncInd = [5];
     
 
   case 'MjgER2016',
@@ -428,11 +476,13 @@ switch sessionList
     Sessions(end).mazeName    = 'cof';
     Sessions(end).xyz_host    =  my_xyz;
     Sessions(end).nlx_host    =  my_nlx;
+    Sessions(end).xyzSampleRate = 119.881035;    
     Sessions(end).TTLValue    = '0x0002';
     Sessions(end).includeSyncInd = [];    
     Sessions(end).thetaRef     = [8:8:32];
     Sessions(end).thetaRefGeneral = 8;    
 
+    % DID I MEAN TO cut out 0813???
     Sessions(end).sessionName = 'Ed10-20140816';
     Sessions(end).trialName   = 'all';
     Sessions(end).includeSyncInd = [];

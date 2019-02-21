@@ -19,22 +19,27 @@ ERR.msg  = ['SyncPeriods is empty, check recording sync channel: %s'];
 %recordingSyncPulseChannel
 Par = LoadPar(fullfile(Session.spath,[Session.name,'.xml']));
 
-mocapSyncPulse = LoadBinary(fullfile(Session.spath,[Session.name,'.lfp']),recSyncPulseChan,Par.nChannels,4)';
+
+[~,datFileName] = system(['readlink -f ',fullfile(Session.spath,[Session.name,'.dat'])]);
+datFileName = strip(datFileName,'both');
+mocapSyncPulse = LoadBinary(datFileName,recSyncPulseChan,Par.nChannels,4)';
 
 mocapSyncPeriods = ThreshCross(abs((mocapSyncPulse-mean(mocapSyncPulse))./max(mocapSyncPulse(:,1))),...
                           0.5,... threshold
                           0); %   Minumum Interval
-mocapSyncPeriods = reshape(round(mean(mocapSyncPeriods,2)),2,[])';
+%mocapSyncPeriods = reshape(round(mean(mocapSyncPeriods,2)),2,[])';
+
+camSyncPulse = LoadBinary(datFileName,camSyncPulseChan,Par.nChannels,4)';
+camSyncPeriods = ThreshCross(abs((camSyncPulse-mean(camSyncPulse))./max(camSyncPulse(:,1))),...
+                             0.5,... threshold
+                             0); %   Minumum Interval
 
 
-camSyncPulse = LoadBinary(fullfile(Session.spath,[Session.name,'.lfp']),...
-                          camSyncPulseChan,Par.nChannels,4)';
-camSyncInds = LocalMinima(-camSyncPulse,4,-1e4);
+mocapSampleRate = 1./(mean(nonzeros(discretize(diff(camSyncPeriods(:,1)),1:(Par.SampleRate/20))),'omitnan')./Par.SampleRate);
 
-
-
-mocapSampleRate = 1/(mean(diff( camSyncInds ))./Par.lfpSampleRate);
-
+% DIANOSTICS 
+%figure;hold('on');plot(camSyncPulse);plot(mocapSyncPulse,'r');
+%figure;hold('on');plot(mocapSyncPulse,'r');
 
 
 if exist('Par','var'),

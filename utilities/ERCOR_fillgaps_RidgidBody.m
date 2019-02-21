@@ -16,6 +16,7 @@ function xyz = ERCOR_fillgaps_RidgidBody(Session,varargin)
 %
 %    mode: string FLAGS - 'EMGM'   : gaussian mixture model
 %                         'MANUAL' : manual error annotation
+%                         'AUTO_THRESH' : automatic thresholding to create error periods
 %    
 %    method: string FLAGS - 'BEST_SWAP_PERMUTATION'    : find marker label permutation which fits rigidbody
 %                           'RIGIDBODY_RECONSTRUCTION' : reconstruct 'noisy' marker using other markers
