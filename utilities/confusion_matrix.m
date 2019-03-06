@@ -7,7 +7,6 @@ function [confmat,labels] =  confusion_matrix(stc1,stc2,varargin)
 % $$$     labels = {};
 % $$$ end
 
-
 %% Find common states
 s1ep = {};
 s2ep = {};

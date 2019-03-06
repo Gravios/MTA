@@ -1,7 +1,16 @@
 function ssp = fet_spline_spine(Trial,varargin)
-% function ss = fet_spline_spine(Trial)
-% An attempt to normalize marker positions along the spine
-% between subjects using a 
+% function ssp = fet_spline_spine(Trial,label,xyzMode,markers,overwrite)
+% create an spline interpolated data set for 100 points between tail and head
+%
+% DEFARGS 
+%
+%  label:    string,      '3dssh',
+%  xyzMode:  string,      'trb',                                               
+%  markers:  CellArray,   {{'spine_lower','pelvis_root','spine_middle','spine_upper','hcom'}},
+%  overwrite:Logical,     false                                                
+%
+
+
 % DEFARGS ------------------------------------------------------------------------------------------
 %Trial = MTASession.validate(Trial);
 Session = MTASession.validate([Trial.name,'.',Trial.maze.name,'.all']);

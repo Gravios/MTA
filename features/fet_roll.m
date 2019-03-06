@@ -3,7 +3,7 @@ function [rhm,fs,ts] = fet_roll(Trial,varargin)
 % [sampleRate,mode,windowSize] = DefaultArgs(varargin,{Trial.xyz.sampleRate,'spectral',1});
 % Need to update the spectral window size to adapt to the xyz.sampleRate
 
-[sampleRate,mode,d,windowSize,overwrite] = DefaultArgs(varargin,{Trial.xyz.sampleRate,'mta',0,1,false});
+[sampleRate,mode,d,windowSize,overwrite] = DefaultArgs(varargin,{[],'mta',0,1,false});
 
 fs = []; ts = [];
 
@@ -13,6 +13,11 @@ xyz = Trial.load('xyz');
 if xyz.sampleRate > 120, 
     xyz.resample(120); 
 end
+if ~isempty(sampleRate),
+    xyz.resample(sampleRate);
+end
+
+    
 
 xyz.filter('ButFilter',3,50,'low');
 

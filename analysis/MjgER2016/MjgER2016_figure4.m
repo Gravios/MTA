@@ -1,4 +1,4 @@
-% MjgER2016 Figure4
+sstates% MjgER2016 Figure4
 %
 % HP:= Head Pitch
 % BP:= Body Pitch
@@ -80,25 +80,15 @@ MjgER2016_load_bhv_erpPCA_scores();
 %     FSrC     - matrix[U x V](Numeric); fscores
 %     fsrcz    - matrix[U x V](Numeric); normalized fscores
 clear(varNonEss{:},varNonAux{:});
-
 sessionUnitCnt = cellfun(@numel,units);
 unitCnt = sum(sessionUnitCnt);
-
-statesLabels = {'theta','rear',{'H Loc'},{'H Pause'},{'L Loc'},{'L Pause'}};
-
+statesLabels = {'theta','rear','H Loc','H Pause','L Loc','L Pause'};
 uind = ismember(cluSessionMap,cluSessionMap(unitSubsets{1},:),'rows');
-
-
 sampleRate = 250;
 
-P  = {};   phzStats  = {};   Rmax  = {}; rho  = {};
-PP = {};   phzStatsP = {};   RmaxP = {}; rhoP = {};
-PN = {};   phzStatsN = {};   RmaxN = {}; rhoN = {};
 
-P_H  = {};   phzStats_H  = {};   Rmax_H  = {}; rho_H= {};
-PP_H = {};   phzStatsP_H = {};   RmaxP_H = {}; rhoP_H= {};
-PN_H = {};   phzStatsN_H = {};   RmaxN_H = {}; rhoN_H= {};
 
+% ACCUMULATE phase precession stats ----------------------------------------------------------------
 overwrite = false;
 numIter = 100;
 parmDRZall     = zeros([unitCnt,2,numIter+1,numStates]);
@@ -116,6 +106,7 @@ for t = 1:numel(Trials),
     unitSubset = units{t};
     fprintf('Processing Trial: %s\nComputational time: ',Trial.filebase)        
     
+% LOAD marker position from motion capture data
     xyz = preproc_xyz(Trial,'trb');
     xyz.resample(sampleRate);
     
@@ -131,17 +122,21 @@ for t = 1:numel(Trials),
     phz.data = mod(phz.data+pi,2*pi)-pi;
     lfp.resample(xyz);
 
+% LOAD theta state placefields
     pft = pfs_2d_theta(Trial);
+% COMPUTE placefield centered rate scaled distance metric with approach/depart signature
     hrz = compute_hrz(Trial,unitSubset,pft,'sampleRate',sampleRate);
     ddz = compute_ddz(Trial,unitSubset,pft,'sampleRate',sampleRate);
     drz = compute_drz(Trial,unitSubset,pft,'sampleRate',sampleRate);
 
+% COMPUTE head frame of reference vectors for all time points
     fxyz = filter(copy(xyz),'ButFilter',3,30,'low');
     hvec = fxyz(:,'head_front',[1,2])-fxyz(:,'head_back',[1,2]);
     hvec = sq(bsxfun(@rdivide,hvec,sqrt(sum(hvec.^2,3))));
     hvec = cat(3,hvec,sq(hvec)*[0,-1;1,0]);
     
 
+% NAN sample points where spikes occured lateral to the head
     pfhr = nan([size(xyz,1),numel(unitSubset),2]);
     for u = 1:numel(unitSubset),%&pft.data.spar>0.15&pft.data.spar<0.3),
         [mxr,mxp] = pft.maxRate(unitSubset(u));
@@ -149,8 +144,7 @@ for t = 1:numel(Trials),
         hrz(abs(pfhr(:,u,2))>100,u) = nan;
     end
     
-    
-
+% ISOLATE approaching and retreating trajectories
     drzp = drz;    drzp(drzp<0)=nan;
     ddzp = ddz;    ddzp(ddzp<0)=nan;    
     drzn = drz;    drzn(drzn>0)=nan;
@@ -160,12 +154,12 @@ for t = 1:numel(Trials),
     hrzn = hrz;    hrzn(hrzn>0)=nan;
     hdzn = ddz;    hdzn(hdzn>0)=nan;        
 
-    if t == 1,
-        ind = 1:sessionUnitCnt(1);
-    else,
-        ind = (sum(sessionUnitCnt(1:(t-1)))+1):sum(sessionUnitCnt(1:t));
+% LOCATE unit row in group stats matrix
+    if t == 1,  ind = 1:sessionUnitCnt(1);
+    else,       ind = (sum(sessionUnitCnt(1:(t-1)))+1):sum(sessionUnitCnt(1:t));
     end
 
+% COMPUTE phase precession stats for all states    
     for s = 1:numStates,
         spkpp = Trial.spk.copy();
         spkpp.create(Trial,xyz.sampleRate,states{s},unitSubset,'deburst');
@@ -188,24 +182,9 @@ for t = 1:numel(Trials),
 % $$$             MjgER2016_phasePrecession(Trial,hrzn,hdzn,phz,spkpp,unitSubset);
     end
         
-% $$$         % DRZ phase precession
-% $$$         [P{t,s},  phzStats{t,s},  Rmax{t,s},  rho{t,s}] = ...
-% $$$             MjgER2016_phasePrecession(Trial,drz,ddz,phz,spkpp,unitSubset);
-% $$$         [PP{t,s}, phzStatsP{t,s},RmaxP{t,s}, rhoP{t,s}] = ...
-% $$$             MjgER2016_phasePrecession(Trial,drzp,ddzp,phz,spkpp,unitSubset);
-% $$$         [PN{t,s}, phzStatsN{t,s},RmaxN{t,s}, rhoN{t,s}] = ...
-% $$$             MjgER2016_phasePrecession(Trial,drzn,ddzn,phz,spkpp,unitSubset);
-% $$$ 
-% $$$         % HRZ phase precession
-% $$$         [P_H{t,s},   phzStats_H{t,s}, Rmax_H{t,s}, rho_H{t,s}] = ...
-% $$$             MjgER2016_phasePrecession(Trial,hrz,ddz,phz,spkpp,unitSubset);
-% $$$         [PP_H{t,s}, phzStatsP_H{t,s},RmaxP_H{t,s}, rhoP_H{t,s}] = ...
-% $$$             MjgER2016_phasePrecession(Trial,hrzp,hdzp,phz,spkpp,unitSubset);
-% $$$         [PN_H{t,s}, phzStatsN_H{t,s},RmaxN_H{t,s}, rhoN_H{t,s}] = ...
-% $$$             MjgER2016_phasePrecession(Trial,hrzn,hdzn,phz,spkpp,unitSubset);
-% $$$     end
     
 end
+
 
 
 overwrite = false;
@@ -240,38 +219,18 @@ for t = 1:numel(Trials),
     end
 end
 
-% DRZ 
-% $$$ P = cf(@(p) permute(p,[1,3,2]), P);   P = cell2mat(P);
-% $$$ PP = cf(@(p) permute(p,[1,3,2]), PP); PP = cell2mat(PP);
-% $$$ PN = cf(@(p) permute(p,[1,3,2]), PN); PN = cell2mat(PN);
-% $$$ phzStats = cf(@(p) permute(p,[1,3,2]), phzStats);    phzStats = cell2mat(phzStats);
-% $$$ phzStatsP = cf(@(p) permute(p,[1,3,2]), phzStatsP);  phzStatsP = cell2mat(phzStatsP);
-% $$$ phzStatsN = cf(@(p) permute(p,[1,3,2]), phzStatsN);  phzStatsN = cell2mat(phzStatsN);
-% $$$ Rmax = cf(@(p) permute(p,[1,3,2]), Rmax);   Rmax = cell2mat(Rmax);
-% $$$ RmaxP = cf(@(p) permute(p,[1,3,2]), RmaxP); RmaxP = cell2mat(RmaxP);
-% $$$ RmaxN = cf(@(p) permute(p,[1,3,2]), RmaxN); RmaxN = cell2mat(RmaxN);
-% $$$ rho = cf(@(p) permute(p,[1,3,2]), rho);     rho = cell2mat(rho);
-% $$$ rhoP = cf(@(p) permute(p,[1,3,2]), rhoP);   rhoP = cell2mat(rhoP);
-% $$$ rhoN = cf(@(p) permute(p,[1,3,2]), rhoN);   rhoN = cell2mat(rhoN);
-% $$$ 
-% $$$ % HRZ 
-% $$$ P_H = cf(@(p) permute(p,[1,3,2]), P_H);   P_H = cell2mat(P_H);
-% $$$ PP_H = cf(@(p) permute(p,[1,3,2]), PP_H); PP_H = cell2mat(PP_H);
-% $$$ PN_H = cf(@(p) permute(p,[1,3,2]), PN_H); PN_H = cell2mat(PN_H);
-% $$$ phzStats_H = cf(@(p) permute(p,[1,3,2]), phzStats_H);   phzStats = cell2mat(phzStats_H);
-% $$$ phzStatsP_H = cf(@(p) permute(p,[1,3,2]), phzStatsP_H); phzStatsP = cell2mat(phzStatsP_H);
-% $$$ phzStatsN_H = cf(@(p) permute(p,[1,3,2]), phzStatsN_H); phzStatsN = cell2mat(phzStatsN_H);
-% $$$ Rmax_H = cf(@(p) permute(p,[1,3,2]), Rmax_H);   Rmax_H = cell2mat(Rmax_H);
-% $$$ RmaxP_H = cf(@(p) permute(p,[1,3,2]), RmaxP_H); RmaxP_H = cell2mat(RmaxP_H);
-% $$$ RmaxN_H = cf(@(p) permute(p,[1,3,2]), RmaxN_H); RmaxN_H = cell2mat(RmaxN_H);
-% $$$ rho_H = cf(@(p) permute(p,[1,3,2]), rho_H);     rho_H = cell2mat(rho_H);
-% $$$ rhoP_H = cf(@(p) permute(p,[1,3,2]), rhoP_H);   rhoP_H = cell2mat(rhoP_H);
-% $$$ rhoN_H = cf(@(p) permute(p,[1,3,2]), rhoN_H);   rhoN_H = cell2mat(rhoN_H);
-% $$$ 
-% exp(-s^2./2)
+
+% END ACCUMULATE phase precession stats ------------------------------------------------------------
 
 
-%figure,plot(parmHRZall(:,1,1,6),parmHRZall(:,2,1,6),'.');
+figure,plot(parmHRZall(:,1,1,3),parmHRZall(:,2,1,3),'.');
+figure,plot(parmHRZall(:,1,1,5),parmHRZall(:,2,1,5),'.');
+
+
+figure,hold('on');
+plot(parmHRZall(:,1,1,5),parmHRZall(:,2,1,5),'.');
+plot(parmHRZall(:,1,1,3),parmHRZall(:,2,1,3),'.r');
+
 
 
 figure,
@@ -289,15 +248,16 @@ title('E[Rho_{shf}] vs Rho')
 
 % LOAD EXAMPLE DATA --------------------------------------------------------------------------------
 
+pfds = req20180123_ver5(Trials,[],'13');
+
 exampleUnits = [74,83,79,59,103];
 
 t = 20;
 Trial = Trials{t};    
 unitSubset = units{t};
-
 pft = pfs_2d_theta(Trial);
 pfd = req20180123_ver5(Trial,[],'13');
-pfds = req20180123_ver5(Trials,[],'13');
+
 
 
 if ~exist('spkhrz','var')|isempty(spkhrz), req20180621(); end
@@ -319,7 +279,6 @@ cluSessionMapSubset_C = cluSessionMapSubset(~ismember(cluSessionMapSubset,...
 
 pfdMaps = cf(@(p,u) mean(p.data.rateMap(:,ismember(p.data.clu,u),:),3,'omitnan'), pfds(:,1),units');
 pfdMaps = cat(2,pfdMaps{:});
-
 
 indmatHighLow = zeros(pfds{1}.adata.binSizes');
 indmatHighLow(pfds{1}.adata.bins{1}<-0.25,pfds{1}.adata.bins{1}<0.5) = 1;
@@ -481,24 +440,23 @@ end%for u
 
 statesInds = [4,5,6,7,8];
 statesIndComp = {[5,6,7,8],7,8,5,6};
+
 statesUSubs  = {cluSessionMapSubset_R, ...
                 cluSessionMapSubset_H, ...
                 cluSessionMapSubset_H, ...
                 cluSessionMapSubset_L, ...
                 cluSessionMapSubset_L};
 
-genericScores = {rScore>-0.5  & RmaxN>0.25, ...
-                 hlScore<-0.1 & rScore<-0.2 & RmaxN>0.25, ...
-                 hlScore<-0.1 & rScore<-0.2 & RmaxN>0.25, ...
-                 hlScore>0.1  & rScore<-0.2 & RmaxN>0.25, ...
-                 hlScore>0.1  & rScore<-0.2 & RmaxN>0.25};
+% $$$ statesUSubs  = {cluSessionMap(rScore>-0.5  & RmaxN>0.25,:), ...
+% $$$                 cluSessionMap(hlScore<-0.1 & rScore<-0.2 & RmaxN>0.25,:), ...
+% $$$                 cluSessionMap(hlScore<-0.1 & rScore<-0.2 & RmaxN>0.25,:), ...
+% $$$                 cluSessionMap(hlScore>0.1  & rScore<-0.2 & RmaxN>0.25,:), ...
+% $$$                 cluSessionMap(hlScore>0.1  & rScore<-0.2 & RmaxN>0.25,:)};
 
-sesIds = [17:23];
 
-%sesIds = [8,9,10,11,12];
-
-% JPDF HRZ vs PHZ : all units
-sesIds = [8,9,10,11,12,17:23];
+% CA1 
+% JPDF HRZ vs PHZ : all units 
+sesIds = [3:5,8:12,17:23];
 tind = spkstc(:,1)==1 & ismember(spkmap(:,1),sesIds);
 % JPDF of plot VS spatial position for all units
 for s = 1:numel(statesInds);
@@ -509,8 +467,8 @@ for s = 1:numel(statesInds);
                      'FontSize', 8,...
                      'LineWidth',1);
 % INDEX data
-%    ind = tind & any(spkstc(:,statesInds(s)),2) & ismember(spkmap,statesUSubs{s},'rows');          
-    ind = tind & any(spkstc(:,statesInds(s)),2) & ismember(spkmap,cluSessionMap(genericScores{s},:),'rows');
+    ind = tind & any(spkstc(:,statesInds(s)),2) & ismember(spkmap,statesUSubs{s},'rows') & abs(spkego(:,2)<100);
+%    ind = tind & any(spkstc(:,statesInds(s)),2) & ismember(spkmap,cluSessionMap(genericScores{s},:),'rows');
 %    ind = tind & any(spkstc(:,statesInds(s)),2) & ismember(spkmap,cluSessionMap(RmaxN(:,s+1)>0.25,:),'rows');
 % PLOT jpdf of data
     hist2([repmat(spkhrz(ind),[2,1]),reshape(bsxfun(@plus,repmat(spkphz(ind),[1,2]),[0,2*pi]),[],1)],...
@@ -518,7 +476,8 @@ for s = 1:numel(statesInds);
           linspace(-pi,3*pi,21));
     sp(end).XTickLabels = {};
     sp(end).YTickLabels = {};
-    title(['N = ',num2str(numel(unique(spkmap(ind,:),'rows'))/2)]);
+    %title(['N = ',num2str(numel(unique(spkmap(ind,:),'rows'))/2)]);
+    title(statesLabels{s+1});    
     %caxis([0,150]);
     if s == 1, ylabel({'CA1'}); end    
     %if s == 1, ylabel({'Behavior','Specific Units'}); end
@@ -535,7 +494,8 @@ for s = 1:numel(statesInds);
 end
 
 
-
+% CA3 
+% JPDF HRZ vs PHZ : all units 
 sesIds = [1,2,6,7,13:16];
 tind = spkstc(:,1)==1 & ismember(spkmap(:,1),sesIds);
 % JPDF of plot VS spatial position for all units
@@ -547,8 +507,8 @@ for s = 1:numel(statesInds);
                      'FontSize', 8,...
                      'LineWidth',1);
 % INDEX data
-%    ind = tind & any(spkstc(:,statesInds(s)),2) & ismember(spkmap,statesUSubs{s},'rows');          
-    ind = tind & any(spkstc(:,statesInds(s)),2) & ismember(spkmap,cluSessionMap(genericScores{s},:),'rows');
+    ind = tind & any(spkstc(:,statesInds(s)),2) & ismember(spkmap,statesUSubs{s},'rows') & abs(spkego(:,2)<100);
+%    ind = tind & any(spkstc(:,statesInds(s)),2) & ismember(spkmap,cluSessionMap(genericScores{s},:),'rows');
 %    ind = tind & any(spkstc(:,statesInds(s)),2) & ismember(spkmap,cluSessionMap(RmaxN(:,s+1)>0.25,:),'rows');
 % PLOT jpdf of data
     hist2([repmat(spkhrz(ind),[2,1]),reshape(bsxfun(@plus,repmat(spkphz(ind),[1,2]),[0,2*pi]),[],1)],...
@@ -556,7 +516,8 @@ for s = 1:numel(statesInds);
           linspace(-pi,3*pi,21));
     sp(end).XTickLabels = {};
     sp(end).YTickLabels = {};
-    title(['N = ',num2str(numel(unique(spkmap(ind,:),'rows'))/2)]);
+    %title(['N = ',num2str(numel(unique(spkmap(ind,:),'rows'))/2)]);
+    %title(statesLabels{s});
     %caxis([0,150]);
     if s == 1, ylabel({'CA2&3'}); end
     if s == numel(statesInds),
@@ -572,158 +533,353 @@ for s = 1:numel(statesInds);
 end
 
 
-% PP slopes vs R
-uind = ismember(cluSessionMap,cluSessionMap(unitSubsets{1},:),'rows');
-for s = 1:numel(statesInds);
-    xind = 2+s;
+% PLOT phase precession group stats
+% 1. slopes of phase precession in units preferred behavior
+% 2. slopes of phase precession in units non-preferred behavior
+% COMPUTE vars for indexing
+
+% CA1
+ppZscores = sq(bsxfun(@minus,rhoHRZall(:,1,1,:),mean(rhoHRZall(:,1,2:end,:),3))./std(rhoHRZall(:,1,2:end,:),[],3));
+sesIds = [3:5,8:12,17:23];
+zthresh = -2;
+rthresh = 0.2;
+statesIndCompPhz = [2,5,6,3,4];
+% ACCUMULATE slope within units' preferred behavior
+prefBhvId = [];
+prefBhvSlopes = [];
+prefBhvPhases = [];
+nprefBhvId = [];
+nprefBhvSlopes = [];
+nprefBhvPhases = [];
+for s = 1:5;    
+    ind =   ismember(cluSessionMap,statesUSubs{s},'rows') ...
+          & ismember(cluSessionMap(:,1),sesIds)           ...
+          & rHRZall(:,1,1,[s+1])   > rthresh;
+    %          & ppZscores(:,[s+1]) < zthresh                  ...    
+    prefBhvId = cat(1,prefBhvId,s.*ones([sum(ind),1]));    
+    prefBhvSlopes = cat(1,prefBhvSlopes,parmHRZall(ind,1,1,s+1));        
+    prefBhvPhases = cat(1,prefBhvSlopes,parmHRZall(ind,2,1,s+1));
+    nprefBhvId = cat(1,nprefBhvId,(statesIndCompPhz(s)-1).*ones([sum(ind),1]));
+    nprefBhvSlopes = cat(1,nprefBhvSlopes,parmHRZall(ind,1,1,statesIndCompPhz(s)));
+    nprefBhvPhases = cat(1,nprefBhvSlopes,parmHRZall(ind,2,1,statesIndCompPhz(s)));    
+end            
 % CREATE subplot axes
-    sp(end+1) = axes('Units','centimeters',...
-                     'Position',[xpos(xind),ypos(yind+3)-pheight/2,pwidth,pheight],...
-                     'FontSize', 8,...
-                     'LineWidth',1);
-    plot(RmaxN_H(uind,s+1),PN_H(uind,s+1,1),'.')
-    %scatter(RmaxN_H(uind,s),PN_H(uind,s,1),4,bsxfun(@minus,FSrC(uind(unitSubsets{1}),[2,3,1]),[0,0.2,0.2]),'Filled');
-    xlim([0,1]);
-    ylim([-15,15]);
-    Lines([],0,'k');
-    if s==1, ylabel({'entering','field'}); end    
-end
-
-for s = 1:numel(statesInds);
-    xind = 2+s;
-% CREATE subplot axes
-    sp(end+1) = axes('Units','centimeters',...
-                     'Position',[xpos(xind),ypos(yind+4)-pheight/2,pwidth,pheight],...
-                     'FontSize', 8,...
-                     'LineWidth',1);
-    %scatter(RmaxP_H(uind,s),PP_H(uind,s,1),4,bsxfun(@minus,FSrC(uind(unitSubsets{1}),[2,3,1]),[0,0.2,0.2]),'Filled');    
-    plot(RmaxP_H(uind,s+1),PP_H(uind,s+1,1),'.')
-    xlim([0,1]);
-    ylim([-15,15]);
-    Lines([],0,'k');
-    if s==1, ylabel({'exiting','field'}); end
-end
+xind = 1;    
+yind = 6;
+sp(end+1) = axes('Units','centimeters',...
+                 'Position',[xpos(xind),ypos(yind)-pheight/2,pwidth*1.9,pheight],...
+                 'FontSize', 8,...
+                 'LineWidth',1);
+boxplot([prefBhvSlopes;nprefBhvSlopes],      ...
+        [prefBhvId*2-1;nprefBhvId*2],              ...
+        'plotstyle',    'traditional',       ...
+        'boxstyle',     'filled',            ...
+        'colors',       'rrbbccggmm',             ...
+        'symbol',       '.',                 ...
+        'datalim',      [-10,7.5],           ...
+        'labels',       {});
+grid('on');
 
 
+% CA3
+xind = 1;    
+yind = 7;
+sp(end+1) = axes('Units','centimeters',...
+                 'Position',[xpos(xind),ypos(yind)-pheight/2,pwidth*1.9,pheight],...
+                 'FontSize', 8,...
+                 'LineWidth',1);
+sesIds = [1,2,6,7,13:16];
+% ACCUMULATE slope within units' preferred behavior
+prefBhvId = [];
+prefBhvSlopes = [];
+prefBhvPhases = [];
+nprefBhvId = [];
+nprefBhvSlopes = [];
+nprefBhvPhases = [];
+for s = 1:5;    
+    ind =   ismember(cluSessionMap,statesUSubs{s},'rows') ...
+          & ismember(cluSessionMap(:,1),sesIds)           ...
+          & rHRZall(:,1,1,[s+1])   > rthresh;
+    %          & ppZscores(:,[s+1]) < zthresh                  ...    
+    prefBhvId = cat(1,prefBhvId,s.*ones([sum(ind),1]));    
+    prefBhvSlopes = cat(1,prefBhvSlopes,parmHRZall(ind,1,1,s+1));        
+    prefBhvPhases = cat(1,prefBhvSlopes,parmHRZall(ind,2,1,s+1));
+    nprefBhvId = cat(1,nprefBhvId,(statesIndCompPhz(s)-1).*ones([sum(ind),1]));
+    nprefBhvSlopes = cat(1,nprefBhvSlopes,parmHRZall(ind,1,1,statesIndCompPhz(s)));
+    nprefBhvPhases = cat(1,nprefBhvSlopes,parmHRZall(ind,2,1,statesIndCompPhz(s)));    
+end            
+boxplot([prefBhvSlopes;nprefBhvSlopes],      ...
+        [prefBhvId*2-1;nprefBhvId*2],        ...
+        'plotstyle',    'traditional',       ...
+        'boxstyle',     'filled',            ...
+        'colors',       'rrbbccggmm',        ...
+        'symbol',       '.',                 ...
+        'datalim',      [-10,7.5],           ...
+        'labelorientation','inline',       ...
+        'labels',       reshape([statesLabels(2:end);repmat({''},[1,numel(statesLabels)-1])],[],1)');        
+%        'labels',       reshape(repmat(statesLabels(2:end),[2,1]),[],1)');
+grid('on');
+sp(end).Position =[xpos(xind),ypos(yind)-pheight/2,pwidth*1.9,pheight];
+
+
+% END FIGURE 4 -------------------------------------------------------------------------------------
 
 
 
 
 
-sesIds = [8,9,10,11,12,17:23];
-tind = spkstc(:,1)==1 & ismember(spkmap(:,1),sesIds);
-hrzBins = linspace(-1,1,21);
-% SUBDIVIDED by behavioral selectivity
-for s = 1:numel(statesInds);
-    xind = 2+s;
-    sp(end+1) = axes('Units','centimeters',...
-                     'Position',[xpos(xind),ypos(yind+5)-pheight/2,pwidth,pheight],...
-                     'FontSize', 8,...
-                     'LineWidth',1);
-    ind = tind & any(spkstc(:,statesInds(s)),2) & ismember(spkmap,statesUSubs{s},'rows');          
+
+% SUPPLEMENTARY figures of figure 4
+% 4.1 examples of phase precession a comparison of DRZ vs HRZ
+%     4.1.1 [pfs,bfs,[drz for multiple behaviors],[hrz for multiple behaviors]]
+%     4.1.2 R value of HRZ circular-linear correlation vs R value of DRZ circular-linear correlation 
+%     4.1.2 Population of Units' Rho of HRZxTHP vs Rho of DRZxTHP
+%
+% DRZ: Trajectory directed rate zone (Huxter 2008)
+% HRZ: Head directed rate zone
+% THP: Theta phase
+%
+
+
+
+
+% SUP FIG 4.1 --------------------------------------------------------------------------------------
+
+
+
+
+s = 2;
+    ind =   ismember(cluSessionMap,statesUSubs{s},'rows') ...
+          & ismember(cluSessionMap(:,1),sesIds)           ...
+          & rHRZall(:,1,1,[s+1])   > rthresh;
+
+figure();
+plot(parmHRZall(ind,1,1,3),parmHRZall(ind,1,1,5),'.');
+daspect([1,1,1]);
+grid('on');
+hold('on');
+line([-20,20],[-20,20]);
+
+
+
+ppZscoresHRZ = sq(bsxfun(@minus,rhoHRZall(:,1,1,:),mean(rhoHRZall(:,1,2:end,:),3))./std(rhoHRZall(:,1,2:end,:),[],3));
+ppZscoresDRZ = sq(bsxfun(@minus,rhoDRZall(:,1,1,:),mean(rhoDRZall(:,1,2:end,:),3))./std(rhoDRZall(:,1,2:end,:),[],3));
+
+figure,
+zthresh = -2;
+sesIds = [3:5,8:12,17:23];
+%sesIds = [1,2,6,7,13:16];
+for s = 1:6
+    ind = ppZscoresDRZ(:,s) < zthresh & ppZscoresHRZ(:,s) < zthresh & ismember(cluSessionMap(:,1),sesIds);    
+    subplot(2,6,s);
     hold('on');
-% $$$     plot(linspace(hrzBins(1),hrzBins(end),numel(hrzBins)-1),...
-% $$$          accumarray(discretize(spkhrz(ind),hrzBins), spkphz(ind),[numel(hrzBins)-1,1],@circ_mean)','+');
-    errorbar(linspace(hrzBins(1),hrzBins(end),numel(hrzBins)-1)',...
-             accumarray(discretize(spkhrz(ind),hrzBins), spkphz(ind),[numel(hrzBins)-1,1],@circ_mean)',...
-             accumarray(discretize(spkhrz(ind),hrzBins), spkphz(ind),[numel(hrzBins)-1,1],@circ_var)'./2);    
-    sp(end).XTickLabels = {};
-    sp(end).YTickLabels = {};
-    title(['N = ',num2str(numel(unique(spkmap(ind,:),'rows'))/2)]);
-    Lines([],pi,'k');    
-end
+    scatter(rHRZall(ind,1,1,s),rDRZall(ind,1,1,s),15,parmHRZall(ind,1,1,s),'filled');
+    caxis([-5,5]);
+    line([0,1],[0,1]);
+    res = multiprod([rHRZall(ind,1,1,s),rDRZall(ind,1,1,s)],[cos(pi/4),-sin(pi/4);sin(pi/4),cos(pi/4)],[2],[1,2]);
+    resbins = 0.0:0.2:1;
+    resbinsInds = discretize(res(:,1),rbins);
+    resSTest = accumarray(resbinsInds(nniz(resbinsInds)),res(nniz(resbinsInds),2),[numel(resbins-1),1],@signtest,nan);
+    title({statesLabels{s},['Sign Test p=',num2str(signtest(res(:,2)))]});
+    ylabel('R_{DRZ}');
+    xlabel('R_{HRZ}');
+    xlim([0,0.5]);
+    ylim([0,0.5]);
+    colormap('jet');
 
-sesIds = [8,9,10,11,12,17:23];
-tind = spkstc(:,1)==1 & ismember(spkmap(:,1),sesIds);
-hrzBins = linspace(-1,1,21);
-% SUBDIVIDED by behavioral selectivity
-for s = 1:numel(statesInds);
-    xind = 2+s;
-    sp(end+1) = axes('Units','centimeters',...
-                     'Position',[xpos(xind),ypos(yind+5)-pheight/2,pwidth,pheight],...
-                     'FontSize', 8,...
-                     'LineWidth',1);
-    ind = tind & any(spkstc(:,statesInds(s)),2) & ismember(spkmap,statesUSubs{s},'rows');          
+    subplot(2,6,s+6);
     hold('on');
-% $$$     plot(linspace(hrzBins(1),hrzBins(end),numel(hrzBins)-1),...
-% $$$          accumarray(discretize(spkhrz(ind),hrzBins), spkphz(ind),[numel(hrzBins)-1,1],@circ_mean)','+');
-    errorbar(linspace(hrzBins(1),hrzBins(end),numel(hrzBins)-1)',...
-             accumarray(discretize(spkhrz(ind),hrzBins), spkphz(ind),[numel(hrzBins)-1,1],@circ_mean)',...
-             accumarray(discretize(spkhrz(ind),hrzBins), spkphz(ind),[numel(hrzBins)-1,1],@circ_var)'./2);    
-    sp(end).XTickLabels = {};
-    sp(end).YTickLabels = {};
-    title(['N = ',num2str(numel(unique(spkmap(ind,:),'rows'))/2)]);
-    Lines([],pi,'k');    
-end
-
-
-    
-    sp(end+1) = axes('Units','centimeters',...
-                     'Position',[xpos(xind),ypos(yind+2)-pheight/2,pwidth,pheight],...
-                     'FontSize', 8,...
-                     'LineWidth',1);
-    ind = tind & any(spkstc(:,statesIndComp{s}),2) & ismember(spkmap,statesUSubs{s},'rows');
-    hist2([repmat(spkhrz(ind),[2,1]),reshape(bsxfun(@plus,repmat(spkphz(ind),[1,2]),[0,2*pi]),[],1)],...
-          linspace(-1,1,21),...
-          linspace(-pi,3*pi,21));    
-    sp(end).XTickLabels = {};
-    sp(end).YTickLabels = {};
-    %caxis([0,150]); 
-    Lines([],pi,'k');    
-    if s == 1, ylabel({'Complementary','behavior'}); end    
-    if s == numel(statesInds),
-        sp(end).YAxisLocation = 'right';
-        sp(end).YTick = [0,pi,2*pi,3*pi];
-        sp(end).YTickLabels = [0,180,360,540];
-    else        
-        sp(end).XTickLabels = {};
-        sp(end).YTickLabels = {};
-    end
-    
-    
-    sp(end+1) = axes('Units','centimeters',...
-                     'Position',[xpos(xind),ypos(yind+4),pwidth,pheight],...
-                     'FontSize', 8,...
-                     'LineWidth',1);
-    ind = tind & any(spkstc(:,statesInds(s)),2) & ismember(spkmap,cluSessionMapSubset_N,'rows');
-    hist2([repmat(spkhrz(ind),[2,1]),reshape(bsxfun(@plus,repmat(spkphz(ind),[1,2]),[0,2*pi]),[],1)],...
-          linspace(-1,1,21),...
-          linspace(-pi,3*pi,21));    
-    if s == numel(statesInds),
-        sp(end).YAxisLocation = 'right';
-        sp(end).YTick = [0,pi,2*pi,3*pi];
-        sp(end).YTickLabels = [0,180,360,540];
-    else        
-        sp(end).XTickLabels = {};
-        sp(end).YTickLabels = {};
-    end
-    Lines([],pi,'k');
-    title(['N = ',num2str(numel(unique(spkmap(ind,:),'rows'))/2)]);    
-    if s == 1, ylabel({'Behavior','non-selective'}); end        
-    %caxis([0,150]);
+    plot(rhoHRZall(ind,1,1,s),rhoDRZall(ind,1,1,s),'.');
+    line([-1,1],[-1,1]);    
+    res = multiprod([rhoHRZall(ind,1,1,s),rhoDRZall(ind,1,1,s)],[cos(pi/4),-sin(pi/4);sin(pi/4),cos(pi/4)],[2],[1,2]);
+    resBins = -1:0.2:0;
+    resBinsInds = discretize(res(:,1),resBins);
+    resSTest = accumarray(resBinsInds(nniz(resBinsInds)),res(nniz(resBinsInds),2),[numel(resBins-1),1],@signtest,nan);
+    resMeans = multiprod([accumarray(resBinsInds(nniz(resBinsInds)),res(nniz(resBinsInds),1),[numel(resBins-1),1],@mean,nan),...
+                          accumarray(resBinsInds(nniz(resBinsInds)),res(nniz(resBinsInds),2),[numel(resBins-1),1],@mean,nan)],...
+                         [cos(-pi/4),-sin(-pi/4);sin(-pi/4),cos(-pi/4)],[2],[1,2]);
+    plot(resMeans(:,1),resMeans(:,2),'-+');
+    title({statesLabels{s},['Sign Test p=',num2str(signtest(res(:,2)))]});
+    ylabel('rho_{DRZ}');
+    xlabel('rho_{HRZ}');
+    xlim([-0.7,0]);
+    ylim([-0.7,0]);
 end
 
 
 
 
-% selective behaviors
+
+
+% TEST the significance between the r values  THPxDRZ vs THPxHRZ
+% xy THP x DRZ
+% xz THP x HRZ
+% yz HRZ x DRZ
+% $$$ diff <- xy-xz
+% $$$ determin = 1-xy*xy - xz*xz - yz*yz + 2*xy*xz*yz;
+% $$$ av=(xy+xz)/2
+% $$$ cube= (1-yz)*(1-yz)*(1-yz)
+% $$$ t2 = diff * sqrt((n-1)*(1+yz)/(((2*(n-1)/(n-3))*determin+av*av*cube)))
+% $$$ p <- pt(abs(t2),n-3,lower.tail=FALSE)    #changed to n-3 12/15/18
+% $$$ if(twotailed) p <- 2*p
+% $$$     value <- list(test="test of difference between two correlated  correlations",t=t2,p=p,Call=cl)
+
+
+
+% NON PREFERRED bhv
+% $$$ 
+% $$$ % PP slopes vs R
+% $$$ uind = ismember(cluSessionMap,cluSessionMap(unitSubsets{1},:),'rows');
+% $$$ for s = 1:numel(statesInds);
+% $$$     xind = 2+s;
+% $$$ % CREATE subplot axes
+% $$$     sp(end+1) = axes('Units','centimeters',...
+% $$$                      'Position',[xpos(xind),ypos(yind+3)-pheight/2,pwidth,pheight],...
+% $$$                      'FontSize', 8,...
+% $$$                      'LineWidth',1);
+% $$$     plot(RmaxN_H(uind,s+1),PN_H(uind,s+1,1),'.')
+% $$$     %scatter(RmaxN_H(uind,s),PN_H(uind,s,1),4,bsxfun(@minus,FSrC(uind(unitSubsets{1}),[2,3,1]),[0,0.2,0.2]),'Filled');
+% $$$     xlim([0,1]);
+% $$$     ylim([-15,15]);
+% $$$     Lines([],0,'k');
+% $$$     if s==1, ylabel({'entering','field'}); end    
+% $$$ end
+% $$$ 
+% $$$ for s = 1:numel(statesInds);
+% $$$     xind = 2+s;
+% $$$ % CREATE subplot axes
+% $$$     sp(end+1) = axes('Units','centimeters',...
+% $$$                      'Position',[xpos(xind),ypos(yind+4)-pheight/2,pwidth,pheight],...
+% $$$                      'FontSize', 8,...
+% $$$                      'LineWidth',1);
+% $$$     %scatter(RmaxP_H(uind,s),PP_H(uind,s,1),4,bsxfun(@minus,FSrC(uind(unitSubsets{1}),[2,3,1]),[0,0.2,0.2]),'Filled');    
+% $$$     plot(RmaxP_H(uind,s+1),PP_H(uind,s+1,1),'.')
+% $$$     xlim([0,1]);
+% $$$     ylim([-15,15]);
+% $$$     Lines([],0,'k');
+% $$$     if s==1, ylabel({'exiting','field'}); end
+% $$$ end
+
+
+
+% $$$ sesIds = [8,9,10,11,12,17:23];
+% $$$ tind = spkstc(:,1)==1 & ismember(spkmap(:,1),sesIds);
+% $$$ hrzBins = linspace(-1,1,21);
+% $$$ % SUBDIVIDED by behavioral selectivity
+% $$$ for s = 1:numel(statesInds);
+% $$$     xind = 2+s;
+% $$$     sp(end+1) = axes('Units','centimeters',...
+% $$$                      'Position',[xpos(xind),ypos(yind+5)-pheight/2,pwidth,pheight],...
+% $$$                      'FontSize', 8,...
+% $$$                      'LineWidth',1);
+% $$$     ind = tind & any(spkstc(:,statesInds(s)),2) & ismember(spkmap,statesUSubs{s},'rows');          
+% $$$     hold('on');
+% $$$ % $$$     plot(linspace(hrzBins(1),hrzBins(end),numel(hrzBins)-1),...
+% $$$ % $$$          accumarray(discretize(spkhrz(ind),hrzBins), spkphz(ind),[numel(hrzBins)-1,1],@circ_mean)','+');
+% $$$     errorbar(linspace(hrzBins(1),hrzBins(end),numel(hrzBins)-1)',...
+% $$$              accumarray(discretize(spkhrz(ind),hrzBins), spkphz(ind),[numel(hrzBins)-1,1],@circ_mean)',...
+% $$$              accumarray(discretize(spkhrz(ind),hrzBins), spkphz(ind),[numel(hrzBins)-1,1],@circ_var)'./2);    
+% $$$     sp(end).XTickLabels = {};
+% $$$     sp(end).YTickLabels = {};
+% $$$     title(['N = ',num2str(numel(unique(spkmap(ind,:),'rows'))/2)]);
+% $$$     Lines([],pi,'k');    
+% $$$ end
+% $$$ 
+% $$$ sesIds = [8,9,10,11,12,17:23];
+% $$$ tind = spkstc(:,1)==1 & ismember(spkmap(:,1),sesIds);
+% $$$ hrzBins = linspace(-1,1,21);
+% $$$ % SUBDIVIDED by behavioral selectivity
+% $$$ for s = 1:numel(statesInds);
+% $$$     xind = 2+s;
+% $$$     sp(end+1) = axes('Units','centimeters',...
+% $$$                      'Position',[xpos(xind),ypos(yind+5)-pheight/2,pwidth,pheight],...
+% $$$                      'FontSize', 8,...
+% $$$                      'LineWidth',1);
+% $$$     ind = tind & any(spkstc(:,statesInds(s)),2) & ismember(spkmap,statesUSubs{s},'rows');          
+% $$$     hold('on');
+% $$$ % $$$     plot(linspace(hrzBins(1),hrzBins(end),numel(hrzBins)-1),...
+% $$$ % $$$          accumarray(discretize(spkhrz(ind),hrzBins), spkphz(ind),[numel(hrzBins)-1,1],@circ_mean)','+');
+% $$$     errorbar(linspace(hrzBins(1),hrzBins(end),numel(hrzBins)-1)',...
+% $$$              accumarray(discretize(spkhrz(ind),hrzBins), spkphz(ind),[numel(hrzBins)-1,1],@circ_mean)',...
+% $$$              accumarray(discretize(spkhrz(ind),hrzBins), spkphz(ind),[numel(hrzBins)-1,1],@circ_var)'./2);    
+% $$$     sp(end).XTickLabels = {};
+% $$$     sp(end).YTickLabels = {};
+% $$$     title(['N = ',num2str(numel(unique(spkmap(ind,:),'rows'))/2)]);
+% $$$     Lines([],pi,'k');    
+% $$$ end
+
+
+
+
+
+    
+% $$$     sp(end+1) = axes('Units','centimeters',...
+% $$$                      'Position',[xpos(xind),ypos(yind+2)-pheight/2,pwidth,pheight],...
+% $$$                      'FontSize', 8,...
+% $$$                      'LineWidth',1);
+% $$$     ind = tind & any(spkstc(:,statesIndComp{s}),2) & ismember(spkmap,statesUSubs{s},'rows');
+% $$$     hist2([repmat(spkhrz(ind),[2,1]),reshape(bsxfun(@plus,repmat(spkphz(ind),[1,2]),[0,2*pi]),[],1)],...
+% $$$           linspace(-1,1,21),...
+% $$$           linspace(-pi,3*pi,21));    
+% $$$     sp(end).XTickLabels = {};
+% $$$     sp(end).YTickLabels = {};
+% $$$     %caxis([0,150]); 
+% $$$     Lines([],pi,'k');    
+% $$$     if s == 1, ylabel({'Complementary','behavior'}); end    
+% $$$     if s == numel(statesInds),
+% $$$         sp(end).YAxisLocation = 'right';
+% $$$         sp(end).YTick = [0,pi,2*pi,3*pi];
+% $$$         sp(end).YTickLabels = [0,180,360,540];
+% $$$     else        
+% $$$         sp(end).XTickLabels = {};
+% $$$         sp(end).YTickLabels = {};
+% $$$     end
+% $$$     
+% $$$     
+% $$$     sp(end+1) = axes('Units','centimeters',...
+% $$$                      'Position',[xpos(xind),ypos(yind+4),pwidth,pheight],...
+% $$$                      'FontSize', 8,...
+% $$$                      'LineWidth',1);
+% $$$     ind = tind & any(spkstc(:,statesInds(s)),2) & ismember(spkmap,cluSessionMapSubset_N,'rows');
+% $$$     hist2([repmat(spkhrz(ind),[2,1]),reshape(bsxfun(@plus,repmat(spkphz(ind),[1,2]),[0,2*pi]),[],1)],...
+% $$$           linspace(-1,1,21),...
+% $$$           linspace(-pi,3*pi,21));    
+% $$$     if s == numel(statesInds),
+% $$$         sp(end).YAxisLocation = 'right';
+% $$$         sp(end).YTick = [0,pi,2*pi,3*pi];
+% $$$         sp(end).YTickLabels = [0,180,360,540];
+% $$$     else        
+% $$$         sp(end).XTickLabels = {};
+% $$$         sp(end).YTickLabels = {};
+% $$$     end
+% $$$     Lines([],pi,'k');
+% $$$     title(['N = ',num2str(numel(unique(spkmap(ind,:),'rows'))/2)]);    
+% $$$     if s == 1, ylabel({'Behavior','non-selective'}); end        
+% $$$     %caxis([0,150]);
+% $$$ end
+
+
+
+
+% CA1 
+% JPDF HRZ vs PHZ : selective behaviors
 sesIds = [8,9,10,11,12,17:23];
 tind = spkstc(:,1)==1 & ismember(spkmap(:,1),sesIds);
 figure
 for s = 1:numel(statesInds);
+% PREFFERED state
     xind = 2+s;
     sp(end+1) = axes('Units','centimeters',...
                      'Position',[xpos(xind),ypos(yind+1)-pheight/2,pwidth,pheight],...
                      'FontSize', 8,...
                      'LineWidth',1);
-    ind = tind & any(spkstc(:,statesInds(s)),2) & ismember(spkmap,statesUSubs{s},'rows');          
+    ind = tind & any(spkstc(:,statesInds(s)),2) & ismember(spkmap,statesUSubs{s},'rows') & abs(spkego(:,2)<100);
     hist2([repmat(spkhrz(ind),[2,1]),reshape(bsxfun(@plus,repmat(spkphz(ind),[1,2]),[0,2*pi]),[],1)],...
           linspace(-1,1,21),...
           linspace(-pi,3*pi,21));
     sp(end).XTickLabels = {};
     sp(end).YTickLabels = {};
     title(['N = ',num2str(numel(unique(spkmap(ind,:),'rows'))/2)]);
-    %caxis([0,150]);
     if s == 1, ylabel({'Behavior','Specific Units'}); end
     if s == numel(statesInds),
         sp(end).YAxisLocation = 'right';
@@ -735,18 +891,18 @@ for s = 1:numel(statesInds);
         sp(end).YTickLabels = {};
     end    
     Lines([],pi,'k');    
-    
+
+% NONPREFFERED state    
     sp(end+1) = axes('Units','centimeters',...
                      'Position',[xpos(xind),ypos(yind+2)-pheight/2,pwidth,pheight],...
                      'FontSize', 8,...
                      'LineWidth',1);
-    ind = tind & any(spkstc(:,statesIndComp{s}),2) & ismember(spkmap,statesUSubs{s},'rows');
+    ind = tind & any(spkstc(:,statesIndComp{s}),2) & ismember(spkmap,statesUSubs{s},'rows') & abs(spkego(:,2)<100);
     hist2([repmat(spkhrz(ind),[2,1]),reshape(bsxfun(@plus,repmat(spkphz(ind),[1,2]),[0,2*pi]),[],1)],...
           linspace(-1,1,21),...
           linspace(-pi,3*pi,21));    
     sp(end).XTickLabels = {};
     sp(end).YTickLabels = {};
-    %caxis([0,150]); 
     Lines([],pi,'k');    
     if s == 1, ylabel({'Complementary','behavior'}); end    
     if s == numel(statesInds),
@@ -758,12 +914,12 @@ for s = 1:numel(statesInds);
         sp(end).YTickLabels = {};
     end
     
-    
+% THEREST state        
     sp(end+1) = axes('Units','centimeters',...
                      'Position',[xpos(xind),ypos(yind+4),pwidth,pheight],...
                      'FontSize', 8,...
                      'LineWidth',1);
-    ind = tind & any(spkstc(:,statesInds(s)),2) & ismember(spkmap,cluSessionMapSubset_N,'rows');
+    ind = tind & any(spkstc(:,statesInds(s)),2) & ismember(spkmap,cluSessionMapSubset_N,'rows') & abs(spkego(:,2)<100);
     hist2([repmat(spkhrz(ind),[2,1]),reshape(bsxfun(@plus,repmat(spkphz(ind),[1,2]),[0,2*pi]),[],1)],...
           linspace(-1,1,21),...
           linspace(-pi,3*pi,21));    
@@ -778,7 +934,6 @@ for s = 1:numel(statesInds);
     Lines([],pi,'k');
     title(['N = ',num2str(numel(unique(spkmap(ind,:),'rows'))/2)]);    
     if s == 1, ylabel({'Behavior','non-selective'}); end        
-    %caxis([0,150]);
 end
 
 
@@ -788,26 +943,132 @@ end
 
 
 
+statesUSubs  = {cluSessionMapSubset_R, ...
+                cluSessionMapSubset_H, ...
+                cluSessionMapSubset_H, ...
+                cluSessionMapSubset_L, ...
+                cluSessionMapSubset_L};
+
+statesUSubs  = {cluSessionMap(rScore>-0.5 ,:), ...
+                cluSessionMap(hlScore<-0.1 & rScore<-0.2,:), ...
+                cluSessionMap(hlScore<-0.1 & rScore<-0.2,:), ...
+                cluSessionMap(hlScore>0.1  & rScore<-0.2,:), ...
+                cluSessionMap(hlScore>0.1  & rScore<-0.2,:)};
+
+ppZscores = sq(bsxfun(@minus,rhoHRZall(:,1,1,:),mean(rhoHRZall(:,1,2:end,:),3))./std(rhoHRZall(:,1,2:end,:),[],3));
+sesIds = [8,9,10,11,12,17:23];
+zthresh = -2;
+rthresh = 0.2;
+statesIndCompPhz = [4,5,6,3,4];
+
+ppSlopeBins = linspace(-10,10,100);
 
 
-s = 2;
-P(ismember(spkmap,statesUSubs{s},'rows');
+
+s = 1;
+figure,
+subplot(131);plot(rHRZall(:,1,1,s),rhoHRZall(:,1,1,s),'.');
+subplot(132);plot(rHRZall(:,1,1,s),ppZscores(:,s),'.');
+subplot(133);scatter(rHRZall(:,1,1,s),parmHRZall(:,1,1,s),10,ppZscores(:,s),'Filled');
+caxis([-5,5])
+colormap(gca,'jet');
+
+figure();plot3(rHRZall(:,1,1,1),ppZscores(:,1),rhoHRZall(:,1,1,1),'.');
+
+% $$$ uind = ismember(cluSessionMap,cluSessionMap(unitSubsets{1},:),'rows') & ismember(cluSessionMap(:,1),[17:23]);
+figure,
+sp = gobjects([0,1]);
+sb = gobjects([0,1]);
+for s = 1:5;
+    sp(end+1) = subplot(5,5,s);
+    ind = ismember(cluSessionMap,statesUSubs{s},'rows') ...
+          & ismember(cluSessionMap(:,1),sesIds) ...
+          & (any(ppZscores(:,[s+1])<zthresh,2))...          
+          & any(rHRZall(:,1,1,[s+1])>rthresh,4);% ...          
+    %& (any(ppZscores(:,[s+1])<zthresh,2))...
+
+%          & (any(ppZscores(:,[s+1,statesIndCompPhz(s)])<zthresh,2));% ...    
+    %| any(rHRZall(:,1,1,[s+1,statesIndCompPhz(s)])<rthresh,4));
+    indR = ind & all(reshape(WithinRanges(parmHRZall(:,1,1,[s+1,statesIndCompPhz(s)]),[-10,10]),[],2),2);
+                                                                                                 %indR = ismember(cluSessionMap,statesUSubs{s},'rows') & any(abs(ppZscores(:,[s+1]))>zthresh,2) & any(sq(rHRZall(:,1,1,[s+1]))>0.2,2);
+% $$$     ind = ismember(cluSessionMap,statesUSubs{s},'rows') & any(abs(ppZscores(:,[3,5]))>2,2);%|sq(rHRZall(:,1,1,[3,5]))>0.2,2);
+% $$$     indR = ismember(cluSessionMap,statesUSubs{s},'rows') & any(abs(ppZscores(:,[3,5]))>2,2) & any(sq(rHRZall(:,1,1,[3,5]))>0.2,2);
+% PREFERRED bhv
+    plot(parmHRZall(ind,1,1,s+1),...
+         parmHRZall(ind,2,1,s+1)+double(parmHRZall(ind,2,1,s+1)<0).*2.*pi,'.');
+    title(statesLabels{s+1});
+% NON PREFERRED bhv
+    sp(end+1) = subplot(5,5,s+5);
+    plot(parmHRZall(ind,1,1,statesIndCompPhz(s)),...
+         parmHRZall(ind,2,1,statesIndCompPhz(s))+double(parmHRZall(ind,2,1,statesIndCompPhz(s))<0).*2.*pi,'.');    
+
+% MARGINAL pp slope
+    sb(end+1) = subplot(5,5,s+10); 
+    hold('on');
+    hax = bar(ppSlopeBins,histc(parmHRZall(ind,1,1,s+1),ppSlopeBins),'histc');
+    hax.FaceColor = 'b';
+    hax.EdgeColor = 'b';
+    hax.FaceAlpha = 0.4;
+    hax.EdgeAlpha = 0.4;
+    ylim([0,20]);
+    %Lines(mean(nonzeros(parmHRZall(ind,1,1,s+1).*double(WithinRanges(parmHRZall(ind,1,1,s+1),[-7.5,5]))),'omitnan'),[],'r');
+
+    hax = bar(ppSlopeBins,histc(parmHRZall(ind,1,1,statesIndCompPhz(s)),ppSlopeBins),'histc');
+    hax.FaceColor = 'r';
+    hax.EdgeColor = 'r';
+    hax.FaceAlpha = 0.4;
+    hax.EdgeAlpha = 0.4;
+    ylim([0,20]);
+    %Lines(mean(nonzeros(parmHRZall(ind,1,1,statesIndCompPhz(s)).*double(WithinRanges(parmHRZall(ind,1,1,statesIndCompPhz(s)),[-7.5,5]))),'omitnan'),[],'b');    
+
+
+% TRANSITION 
+    sp(end+1) = subplot(5,5,s+15);
+    hold('on');
+    plot([parmHRZall(indR,1,1,statesIndCompPhz(s)),parmHRZall(indR,1,1,s+1)]',...
+         [parmHRZall(indR,2,1,statesIndCompPhz(s))+double(parmHRZall(indR,2,1,statesIndCompPhz(s))<0).*2.*pi,...
+          parmHRZall(indR,2,1,s+1)+double(parmHRZall(indR,2,1,s+1)<0).*2.*pi]','b');    
+    plot(parmHRZall(ind,1,1,s+1),...
+         parmHRZall(ind,2,1,s+1)+double(parmHRZall(ind,2,1,s+1)<0).*2.*pi,'.r')
+% $$$     quiver(parmHRZall(ind,1,1,s+1),...
+% $$$            parmHRZall(ind,2,1,s+1),...
+% $$$            parmHRZall(ind,1,1,statesIndCompPhz(s))-parmHRZall(ind,1,1,s+1),...
+% $$$            parmHRZall(ind,2,1,statesIndCompPhz(s))-parmHRZall(ind,2,1,s+1),...
+% $$$            0);
+    subplot(5,5,s+20);    
+    plot([parmHRZall(indR,1,1,statesIndCompPhz(s))-parmHRZall(indR,1,1,s+1)],...
+         [parmHRZall(indR,2,1,statesIndCompPhz(s))+double(parmHRZall(indR,2,1,statesIndCompPhz(s))<0).*2.*pi]-...
+          [parmHRZall(indR,2,1,s+1)+double(parmHRZall(indR,2,1,s+1)<0).*2.*pi],'.b');
+    xlim([-10,10]);
+    ylim([-5,5]);
+
+end
+ForAllSubplots('grid(''on'');');
+af(@(s) ylim(s,[0,2*pi]), sp);
+af(@(s) set(s,'YTick',[0:pi/4:2*pi]),sp);
+af(@(s) set(s,'XTick',[-10:2.5:10]),[sp,sb]);
+af(@(s) xlim(s,[-7.5,5]), [sp,sb]);
+linkaxes(sp,'xy');
+
+
+figure,
+plot(parmHRZall(:,1,1,6),parmHRZall(:,2,1,3),'.');
 
 
 
-ind = spkstc(:,1)==1&spkstc(:,1)~=4&any(spkstc(:,[5,6,7,8]),2)...
-      &ismember(spkmap(:,1),17:23)& ...
-      ismember(spkmap,statesUSubs{s},'rows');
-
-%vbins = discretize(spkvxy(ind,3))
-phzBins = linspace(-pi,3*pi,41);
-phzBinInds = discretize(reshape(bsxfun(@plus,repmat(spkphz(ind),[1,2]),[0,2*pi]),[],1),phzBins);
-
-hrzBins = linspace(-1,1,21);
-hrzBinInds = discretize(repmat(spkhrz(ind),[2,1]),hrzBins);
 
 
-figure,imagesc(accumarray([hrzBinInds,phzBinInds],repmat(spkvxy(ind,3),[2,1]),[numel(hrzBins),numel(phzBins)],@mean)');
+
+
+% $$$ ind = spkstc(:,1)==1&spkstc(:,1)~=4&any(spkstc(:,[5,6,7,8]),2)...
+% $$$       &ismember(spkmap(:,1),17:23)& ...
+% $$$       ismember(spkmap,statesUSubs{s},'rows');
+% $$$ %vbins = discretize(spkvxy(ind,3))
+% $$$ phzBins = linspace(-pi,3*pi,41);
+% $$$ phzBinInds = discretize(reshape(bsxfun(@plus,repmat(spkphz(ind),[1,2]),[0,2*pi]),[],1),phzBins);
+% $$$ hrzBins = linspace(-1,1,21);
+% $$$ hrzBinInds = discretize(repmat(spkhrz(ind),[2,1]),hrzBins);
+% $$$ figure,imagesc(accumarray([hrzBinInds,phzBinInds],repmat(spkvxy(ind,3),[2,1]),[numel(hrzBins),numel(phzBins)],@mean)');
 
 
 

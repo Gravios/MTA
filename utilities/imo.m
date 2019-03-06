@@ -5,17 +5,17 @@ markerDiffMat = markerDiffMatrix(xyz);
 
 sessionLength = size(markerDiffMat,1);
 
-interMarkerOrientation = zeros(sessionLength,xyz.size(2),xyz.size(2),xyz.size(2),xyz.size(2),2);
-ccr = zeros(sessionLength,xyz.size(2),xyz.size(2),xyz.size(2),3);
+interMarkerOrientation = zeros(sessionLength,size(xyz,2),size(xyz,2),size(xyz,2),size(xyz,2),2);
+ccr = zeros(sessionLength,size(xyz,2),size(xyz,2),size(xyz,2),3);
 dang = zeros(sessionLength,3);
 cang = zeros(sessionLength,3,3);
 bs_ang = zeros(sessionLength,3);
 bs_projection = zeros(sessionLength,3);
 
 if sessionLength==1,
-    for i = 1:xyz.size(2),
-        for j = 1:xyz.size(2),
-            for k = 1:xyz.size(2),
+    for i = 1:size(xyz,2),
+        for j = 1:size(xyz,2),
+            for k = 1:size(xyz,2),
 
                 ccr(:,i,j,k,:) = cross(markerDiffMat(:,i,j,:),markerDiffMat(:,i,k,:),4);
                 ccr_mag = repmat(sum(ccr(:,i,j,k,:).^2,5).^0.5,1,3);
@@ -23,7 +23,7 @@ if sessionLength==1,
                                     sq(dot(markerDiffMat(:,i,j,:),...
                                            markerDiffMat(:,i,k,:),4)));
 
-                for l = 1:xyz.size(2),
+                for l = 1:size(xyz,2),
                     if length(unique([i,j,k,l]))==4,
 
                         dang(1,1) = dot(sq(ccr(:,i,j,k,:)),...
@@ -67,16 +67,16 @@ if sessionLength==1,
     end
 else
 
-    for i = 1:xyz.size(2),
-        for j = 1:xyz.size(2),
-            for k = 1:xyz.size(2),
+    for i = 1:size(xyz,2),
+        for j = 1:size(xyz,2),
+            for k = 1:size(xyz,2),
 
                 ccr(:,i,j,k,:) = cross(markerDiffMat(:,i,j,:),...
                                        markerDiffMat(:,i,k,:),...
                                        4);
                 ccr_mag = repmat(sum(ccr(:,i,j,k,:).^2,5).^0.5,1,3);
 
-                for l = 1:xyz.size(2),
+                for l = 1:size(xyz,2),
                     if length(unique([i,j,k,l]))==4,
 
                         dang(:,1) = dot(sq(ccr(:,i,j,k,:)),...

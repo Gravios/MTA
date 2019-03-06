@@ -232,7 +232,7 @@ classdef MTAApfs < hgsetget %< MTAAnalysis
 % RESET the epochs
                     if ischar(states),
                         Pfs.parameters.states = states;
-                        pfsState = Session.stc{states}
+                        pfsState = Session.stc{states};
                         resample(pfsState,xyz);
                     elseif isa(states,'MTAData'),
                         pfsState = states.copy;
@@ -413,7 +413,7 @@ classdef MTAApfs < hgsetget %< MTAAnalysis
                     else
                         sstpos = asstpos;
                         sstres = SelectPeriods(res,pfsState.data,'d',1,1);
-                     end
+                    end
                     nSpk = size(sstres,1);
                     sresind = repmat(sstres,1,numIter);
 

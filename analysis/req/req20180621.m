@@ -42,7 +42,7 @@ for tind = 1:numel(Trials)
     xyz.filter('ButFilter',3,30,'low');    
     xyz.resample(sampleRate);
     
-    vxy = xyz.vel(filter(copy(xyz),'ButFilter',3,30,'low'),{'spine_lower','nose','hcom'},[1,2]);
+    vxy = vel(filter(copy(xyz),'ButFilter',3,30,'low'),{'spine_lower','nose','hcom'},[1,2]);
 
     fet = fet_HB_pitchB(Trial,sampleRate);
 % $$$     fsvd = fet_svd(Trial);

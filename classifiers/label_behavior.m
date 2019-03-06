@@ -2,7 +2,7 @@ function label_behavior(sessionList,varargin)
 %function label_behavior(sessionList)
 % sessionList: (string) list of sessions found in get_session_list.m
 
-defargs = struct('featureSet',      'fet_mis');
+defargs = struct('featureSet','fet_mis');
 [featureSet] = DefaultArgs(varargin,defargs,'--struct');
 
 
