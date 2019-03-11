@@ -18,6 +18,7 @@ function [posEstCom,posEstMax,posEstSax,posteriorMax] = bhv_decode(Trial,varargi
 
 % DEFARGS ------------------------------------------------------------------------------------------
 defargs = struct('sampleRate',                    40,                                            ...
+                 'ufr',                           [],                                            ...
                  'units',                         [],                                            ...
                  'mode',                          'xy',                                          ...
                  'pfsArgs',                       '',                                            ...
@@ -25,7 +26,7 @@ defargs = struct('sampleRate',                    40,                           
                  'spikeWindow',                   0.02,                                          ...
                  'overwrite',                     false                                          ...
 );
-[sampleRate,units,mode,pfsArgs,interpParPfs,spikeWindow,overwrite] = DefaultArgs(varargin,defargs,'--struct');
+[sampleRate,ufr,units,mode,pfsArgs,interpParPfs,spikeWindow,overwrite] = DefaultArgs(varargin,defargs,'--struct');
 %---------------------------------------------------------------------------------------------------
 
 
@@ -235,7 +236,10 @@ if ~exist(fileName,'file') || overwrite,
 
 % LOAD xyz data
     xyz = filter(resample(load(Trial,'xyz'),sampleRate),'ButFilter',3,3);
-    ufr = load(Trial,'ufr',xyz,[],units,spikeWindow,true,'gauss');
+    if isempty(ufr),
+        ufr = load(Trial,'ufr',xyz,spk,units,spikeWindow,true,'gauss');
+    end
+    
     %fet = fet_HB_pitchB(Trial,sampleRate);
 
 % CREATE spatial mask

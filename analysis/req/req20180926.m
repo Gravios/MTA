@@ -98,7 +98,7 @@ if ~exist(dataFilePath,'file')||overwrite,
         tvec = sq(bsxfun(@rdivide,tvec,sqrt(sum(tvec.^2,3))));
         tvec = cat(3,tvec,sq(tvec)*[0,-1;1,0]);
 
-        tvecb = -circshift(fxyz(:,'hcom',[1,2]),50)-fxyz(:,'hcom',[1,2]);
+        tvecb = circshift(fxyz(:,'hcom',[1,2]),-10)-circshift(fxyz(:,'hcom',[1,2]),10);
         tvecb = sq(bsxfun(@rdivide,tvecb,sqrt(sum(tvecb.^2,3))));
         tvecb = cat(3,tvecb,sq(tvecb)*[0,-1;1,0]);
         
@@ -210,6 +210,7 @@ else,
     load(dataFilePath);
 end
 
+anghd = circ_dist(atan2(pfmr(:,1),pfmr(:,2)),atan2(pfhr(:,1),pfhr(:,2)));
 
 
 
@@ -293,7 +294,6 @@ ind = stca(:,1)==1                              ...
                      @sum);                                    % func
     mphz(mphz==0) = nan;                   
     imagescnan({binc,binc,mphz'}, [0,100],'linear',true,'colorMap',@jet);axis('xy');
-
 end
 
 
@@ -1137,36 +1137,58 @@ angInd = 4;
 angBinCnt = 0;
 angBins = [-2.99,-0.57,-0.14,0,0.14,0.57,2.99];
 
+
+
 subjectId = 'jg05';
 subjectInds = [17:23];
-angBins = [-2.99,-0.57,-0.14,0,0.14,0.57,2.99];
+% ANGVEL stuff
+%angBins = [-2.99,-0.57,-0.14,0,0.14,0.57,2.99];
+%angBins = [-2.5,-0.6,-0.3-0.15,-0.05,0,0.05,0.15,0.3,0.6,2.5];
+% $$$ angBins = [-2.5,-0.4,-0.2-0.1,-0.04,0,0.04,0.1,0.2,0.4,2.5];
 %angBins = [-2.99,-1.13,-0.74,-0.51,-0.34,-0.21,-0.11,-0.03,0,0.03,0.11,0.21,0.34,0.51,0.74,1.13,2.99];
-angBinCnt = 2;
-spcBinCnt = 20;
-phzBinCnt = 20;
-spdBinCnt = 12;
-angInd = 1;
+% $$$ angBinCnt = false;
+% $$$ angInd = 1;
+% ANGHT stuff
+mirrorBins = false;
+angBinCnt = false;
+%angBins = [-pi/sqrt(2),-pi/2,-pi/4,-pi/8,-pi/16,-pi/32,-pi/64,0,pi/64,pi/32,pi/16,pi/8,pi/4,pi/2,pi/sqrt(2)];
+%angBins = [-pi/2,-pi/4,-pi/8,-pi/16,-pi/32,-pi/64,0,pi/64,pi/32,pi/16,pi/8,pi/4,pi/2]+0.2;
+angBins = [-pi/2,-pi/4,-pi/8,-pi/16,-pi/32,0,pi/32,pi/16,pi/8,pi/4,pi/2];
+%angBins = [-pi/2,-pi/16,0,pi/16,pi/2];
+spcBinCnt = 30;
+phzBinCnt = 12;
 spdInd = 2;
-colorMode = 'speed';
-colorMap = @jet;
+spdBinCnt = false;
+spdBins = [1,1.9];
 speedTags = {'body speed','head speed'};
-%colorMode = 'angvel';
-%colorMap = @cool;
+
+% $$$ colorMode = 'speed';
+% $$$ colorMap = @jet;
+
+colorMode = 'angvel';
+colorMap = @cool;
 partitionTag = 'Partitioned by:';
+
 
 
 % $$$ stateInd = [4];
 stateInd = [5];
 stateInd = [3,4,5];
+stateInd = [6,8,9];
 
-thresholds.mazeCenterDist = 400;
+
+
+% THRESHOLD spikes
+thresholds.mazeCenterDist = 380;
 thresholds.mazeCenterAng = pi/2;
-plotFitFlag = false;
+plotFitFlag = true;
 
+
+% CREATE FIGURES
 hfigPop = figure();
 hfig = figure();
 hfig.Units = 'Centimeters';
-hfig.Position = [0,0,40,10];
+hfig.Position = [0,0,2*phzBinCnt,10];
 
 
 % SET bins edges of 2d space
@@ -1177,6 +1199,7 @@ gridBins = cell([1,2]);
 [gridBins{:}] = ndgrid(binc,binc);
 gridBins = reshape(cat(3,gridBins{:}),[],2);
 hind = discretize(pfhr,bins);
+
 
 % SET bins edges of theta phase
 phzBins = linspace(-pi,pi,phzBinCnt+1);
@@ -1189,37 +1212,54 @@ clf(hfigPop);
 
 
 % SELECT spikes
+
 cind =    mcda < thresholds.mazeCenterDist  ...
         | abs(mcaa) < thresholds.mazeCenterAng;
 sind = any(logical(stca(:,stateInd)),2) & logical(stca(:,1)); % select spikes, theta and bhv state union
 tind = ismember(sid(pfui),subjectInds);
 pind =  pfed(pfui)>20                            ... select units by Edist, unit qualitiy
       & pfsp(pfui)>0.05                          ... select units by sparsity, placefileds size
-      & pfsp(pfui)<0.4                           ... select units by sparsity, placefileds size
-      & pfmd(pfui)<390;                            % select units by spatial position 
-
+      & pfsp(pfui)<0.5                           ... select units by sparsity, placefileds size
+      & pfmd(pfui)<410;                            % select units by spatial position 
 
 ind =   cind & tind & sind & pind & nniz(phzv) & nniz(hind);
-        
+
+% $$$ figure,
+% $$$ subplot(131);
+% $$$ hist2([vxya(ind,2),circ_dist(atan2(pfmr(ind,1),pfmr(ind,2)),...
+% $$$                              atan2(pfhr(ind,1),pfhr(ind,2)))],linspace(0,2,100),linspace(-pi,pi,100));
+% $$$ subplot(132);
+% $$$ hist2([anga(ind,1),circ_dist(atan2(pfmr(ind,1),pfmr(ind,2)),...
+% $$$                              atan2(pfhr(ind,1),pfhr(ind,2)))],linspace(-1,1,100),linspace(-pi,pi,100));
+% $$$ subplot(133);
+% $$$ hist2([anga(ind,1),vxya(ind,2)],linspace(-1,1,100),linspace(0,2,100));
 
 % SET speed bins
 % DISCRETIZE speed
-spdBins = [prctile(vxya(ind&cind&vxya(:,spdInd)>-2&vxya(:,spdInd)<1.9,2),linspace(0,100,spdBinCnt+1))];
+if spdBinCnt,
+    spdBins = [prctile(vxya(ind&cind&vxya(:,1)>-2&vxya(:,spdInd)<1.9,spdInd),linspace(0,100,spdBinCnt+1))];
+end    
 spdBinc = (spdBins(1:end-1)+spdBins(2:end))./2;
+spdBinCnt = numel(spdBinc);
 vind = discretize(vxya(:,spdInd),spdBins); 
 if spdBinCnt>1,  partitionTag = [partitionTag,' ',speedTags{spdInd},';']; end
 
 % SET angular speed bins
 % DISCRETIZE Angular speed
-if angBinCnt,
+if mirrorBins && angBinCnt,
     angBins = reshape([prctile(anga(ind&anga(:,angInd)>-3&anga(:,angInd)<3,angInd),...
-                               linspace(0,100,angBinCnt))],[],2);
+                               linspace(0,100,angBinCnt+1))],[],2);
     angBins = mean([abs(angBins(1:end,1)),flipud(angBins(1:end,2))]');
     angBins = [-angBins,0,fliplr(angBins)];
+elseif angBinCnt,
+    angBins = [prctile(anghd(ind&cind,1),linspace(0,100,angBinCnt+1))];
 end
 angBinc = (angBins(1:end-1)+angBins(2:end))./2;
 angBinCnt = numel(angBinc);
-aind = discretize(anga(:,angInd),angBins); 
+% DISCRETIZE angular velocity
+% $$$ aind = discretize(anga(:,angInd),angBins); 
+% DISCRETIZE HRZxDRZ angle
+aind = discretize(anghd(:),angBins); 
 if angBinCnt>1,  partitionTag = [partitionTag,' head angvel;'];  end
 
 switch colorMode,
@@ -1297,9 +1337,9 @@ for s = 1:numel(spdBinc),
             if plotFitFlag            
                 fax = axes('Position',[0,0,1,1],'Visible','off','Units','centimeters');
                 xlim([0,1]);ylim([0,1]);
-                
-                %print(hfig,'-depsc2',fullfile(figPath,[figName,'.eps']));
-                %print(hfig,'-dpng',  fullfile(figPath,[figName,'.png']));
+% $$$                 
+% $$$                 print(hfig,'-depsc2',fullfile(figPath,[figName,'.eps']));
+% $$$                 print(hfig,'-dpng',  fullfile(figPath,[figName,'.png']));
             end
             clear('fax');
         else

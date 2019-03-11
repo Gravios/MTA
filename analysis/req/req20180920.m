@@ -1,3 +1,11 @@
+% req20180920
+%     Status: active
+%     Type: Analysis
+%     Author: Justin Graboski
+%     Final_Forms: NA
+%     Project: MjgER2016:interneurons
+%     Description: CCG between Interneurons as a function of space
+%     Protocol: 
 
 
 % InterNeuron ccg x head ang
