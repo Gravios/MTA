@@ -19,27 +19,32 @@ ERR.msg  = ['SyncPeriods is empty, check recording sync channel: %s'];
 %recordingSyncPulseChannel
 Par = LoadPar(fullfile(Session.spath,[Session.name,'.xml']));
 
-
-[~,datFileName] = system(['readlink -f ',fullfile(Session.spath,[Session.name,'.dat'])]);
-datFileName = strip(datFileName,'both');
-mocapSyncPulse = LoadBinary(datFileName,recSyncPulseChan,Par.nChannels,4)';
-
+%[~,datFileName] = system(['readlink -f ',fullfile(Session.spath,[Session.name,'.lfp'])]);
+%datFileName = strip(datFileName,'both');
+mocapSyncPulse = LoadBinary(fullfile(Session.spath,[Session.name,'.lfp']),recSyncPulseChan,Par.nChannels,4)';
 mocapSyncPeriods = ThreshCross(abs((mocapSyncPulse-mean(mocapSyncPulse))./max(mocapSyncPulse(:,1))),...
                           0.5,... threshold
                           0); %   Minumum Interval
-%mocapSyncPeriods = reshape(round(mean(mocapSyncPeriods,2)),2,[])';
-
-camSyncPulse = LoadBinary(datFileName,camSyncPulseChan,Par.nChannels,4)';
-camSyncPeriods = ThreshCross(abs((camSyncPulse-mean(camSyncPulse))./max(camSyncPulse(:,1))),...
-                             0.5,... threshold
-                             0); %   Minumum Interval
+mocapSyncPeriods = reshape(mocapSyncPeriods(:,1),2,[])';
 
 
-mocapSampleRate = 1./(mean(nonzeros(discretize(diff(camSyncPeriods(:,1)),1:(Par.SampleRate/20))),'omitnan')./Par.SampleRate);
+% $$$ [~,datFileName] = system(['readlink -f ',fullfile(Session.spath,[Session.name,'.dat'])]);
+% $$$ datFileName = strip(datFileName,'both');
+% $$$ camSyncPulse = LoadBinary(datFileName,camSyncPulseChan,Par.nChannels,4)';
+% $$$ camSyncPeriods = ThreshCross(abs((camSyncPulse-mean(camSyncPulse))./max(camSyncPulse(:,1))),...
+% $$$                              0.5,... threshold
+% $$$                              0); %   Minumum Interval
+% $$$ 
+% $$$ camSyncPeriods = ThreshCross(camSyncPulse,...
+% $$$                              1000,... threshold
+% $$$                              0); %   Minumum Interval
+% $$$ 
+% $$$ mocapSampleRate = 1./(mean(nonzeros(discretize(diff(camSyncPeriods(:,1)),1:(Par.SampleRate/40))),'omitnan')./Par.SampleRate);
 
 % DIANOSTICS 
 %figure;hold('on');plot(camSyncPulse);plot(mocapSyncPulse,'r');
 %figure;hold('on');plot(mocapSyncPulse,'r');
+% diff(mocapSyncPeriods,1,2)
 
 
 if exist('Par','var'),
@@ -70,14 +75,14 @@ end
 
 %% Organize the Sessions trials into a cell array
 %% Return the names of the markers
-if isempty(mocapSampleRate),
+% $$$ if isempty(mocapSampleRate),
     [xyzData, markers, mocapSampleRate] = concatViconFiles(Session);            
     if isempty(mocapSampleRate),
         error('MTA:utilities:syncViconNlx:emptySampleRate');
     end
-else
-    [xyzData, markers] = concatViconFiles(Session);            
-end
+% $$$ else
+% $$$     [xyzData, markers] = concatViconFiles(Session);            
+% $$$ end
 
 %% Load VSK if possible 
 vsk_path = fullfile(Session.spath, [Session.name '-' Session.maze.name '.vsk']);

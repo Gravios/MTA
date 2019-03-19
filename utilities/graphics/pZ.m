@@ -11,7 +11,7 @@ switch numel(varargin)
     key = 'r';
 end
 
-xyz = preproc_xyz(Trial);
+xyz = Trial.load('xyz');
 figure(hfig),hold on
-plot(xyz(:,'hcom',3));
+plot(xyz(:,'head_front',3));
 try,Lines(Trial.stc{key,xyz.sampleRate}(:),[],'r');end

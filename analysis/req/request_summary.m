@@ -745,7 +745,6 @@
 %  Bugs: NA
 
 
-
 ** 2018 02 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 
 % req20180206 ----------------------------------------------------
@@ -797,7 +796,6 @@
 
 
 
-
 ** 2018 03 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 
 % req20180301 ----------------------------------------------------
@@ -843,7 +841,6 @@
 %  Bugs: NA
 
 
-
 ** 2018 04 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 
 % req20180411 ----------------------------------------------------
@@ -882,7 +879,6 @@
 %               periods
 %  Bugs: NA
 
-
 ** 2018 05 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 
 % req20180509 ----------------------------------------------------
@@ -893,7 +889,6 @@
 %  Description: Compile: rate, size, position, and spatial information, 
 %               of each place field state
 %  Bugs: NA
-
 
 
 ** 2018 06 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
@@ -924,7 +919,6 @@
 %  Bugs: NA
 
 
-
 ** 2018 08 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 
 % req20180826 ----------------------------------------------------
@@ -939,16 +933,17 @@
 
 
 
-
 ** 2018 09 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 
-*** req20180900 ----------------------------------------------------
+*** req20180906
     Status: active
     Type: Analysis
     Author: Justin Graboski
     Final_Forms: NA
-    Description: 
-    Bugs: NA
+    Project: MjgER2016:placefields
+    Description: Compute placefields with data restricted to specific 
+                 theta phases.
+    Protocol: 
 *** req20180919
     Status: active
     Type: Analysis
@@ -960,7 +955,14 @@
     Protocol: 
         1. select only first one or two spikes of each theta cycle.
         2  compute placefields
-
+*** req20180920
+    Status: active
+    Type: Analysis
+    Author: Justin Graboski
+    Final_Forms: NA
+    Project: MjgER2016:interneurons
+    Description: CCG between Interneurons as a function of space
+    Protocol: 
 *** req20180921
     Tags: interneuron ratemaps
     Status: active
@@ -990,12 +992,11 @@
     Figures: 
         1.
 	  
-	*
-
 
 
 ** 2018 10 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 
+*** req
 
 ** 2018 11 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 
@@ -1003,7 +1004,7 @@
 
 *** req20181220
     Tags: trajectory count
-    Status: active
+    Status: retired
     Type: Analysis
     Author: Justin Graboski
     Final_Forms: NA
@@ -1012,8 +1013,7 @@
                  restricted behavioral space
     Protocol:
     Figures: none
-
-
+    
 
 * 2019
 ** 2019 01 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%

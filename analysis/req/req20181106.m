@@ -132,7 +132,7 @@ if ~exist(dataFilePath,'file') || overwriteFlag
 
 
     % COMPUTE theta resovled behavior fields
-    for t = 1:numel(SessionList),
+    for t = 1:numel(sessionList),
         Trial = Trials{t}; 
         unitSubset = units{t};        
         subjectId = regexp(Trial.name,'^(\w*)-','tokens');
@@ -177,6 +177,7 @@ if ~exist(dataFilePath,'file') || overwriteFlag
             pargs.xyzp = copy(fet);
             pargs.xyzp.data = [fet(:,1),phz(:,spk.map(spk.map(:,1)==unit,2)),fet(:,2)];
             pargs.units = unit;
+            pargs.tag   = tag;
             pargs.states = MTADepoch([],                                                   ...
                                      [],                                                   ...
                                      ThreshCross(aper & abs(drz(:,unit==unitSubset))<0.8   ...

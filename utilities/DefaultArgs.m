@@ -86,7 +86,7 @@ if numel(varargin)>0,
             
             if ischar(Args{index}) && isfield(DefArgs,Args{index}),
 % ASSIGN next postion in Args to varargout based on field tag in previous position in Args
-                outputIndex = ~cell2mat(cf(@isempty,regexp(Args{index},cf(@(x) ['^',x,'$'],defaultArgFields'))));
+                outputIndex = ~cell2mat(cellfun(@isempty,regexp(Args{index},cellfun(@(x) ['^',x,'$'],defaultArgFields','UniformOutput',false)),'UniformOutput',false));
                 varargout(outputIndex) = Args(index+1);
                 index = index+2;
                 nameValueMode = true;
@@ -105,7 +105,7 @@ if numel(varargin)>0,
 % OVERRIDE default args if AP is present and relevant to the function which called DefaultArgs
         if ~isempty(AP) && isfield(AP,dbss(2).name),
             for field  = fieldnames(AP.(dbss(2).name))',
-                outputIndex = ~cell2mat(cf(@isempty,regexp(field{1},cf(@(x) ['^',x,'$'],defaultArgFields'))));
+                outputIndex = ~cell2mat(cellfun(@isempty,regexp(field{1},cellfun(@(x) ['^',x,'$'],defaultArgFields','UniformOutput',false)),'UniformOutput',false));
                 varargout{outputIndex} = AP.(dbss(2).name).(field{1});
             end
         end
