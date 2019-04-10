@@ -59,6 +59,16 @@ tags={}; fetSets={}; fetInds={}; pfdParam={}; states={}; ranges={};
 %pfdParam = { boudaries   binDims   sweights };
 
 
+%1. HPITCHxBPITCH version 14 running
+% $$$ tags{end+1}        = ['HBPITCHxBPITCH'];
+% $$$ fetSets{end+1}     = 'fet_HB_pitchB';
+% $$$ fetInds{end+1}     = [1,2];
+% $$$ pfdParam{end+1}    = {[-2,0.8;-0.8,2],[0.2,0.2],[2,2]};
+% $$$ states{end+1}      = 'theta-groom-sit';
+% $$$ ranges{end+1}      = [0,300];
+
+
+
 %1. HPITCHxBPITCH version 13 running
 tags{end+1}        = ['HBPITCHxBPITCH'];
 fetSets{end+1}     = 'fet_HB_pitchB';

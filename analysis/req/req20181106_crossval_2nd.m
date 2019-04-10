@@ -1,4 +1,4 @@
-function [pfs,metaData] = req20181106(varargin)
+function [pfs,metaData] = req20181106_crossval_2nd(varargin)
 %
 %function load_behavior_fields_theta_resolved(varargin)
 % Input:
@@ -93,17 +93,17 @@ pargs = struct('units',              [],                                   ...
 
 defargs = struct('Trials',                        {{}},                                          ...
                  'sessionListName',               'MjgER2016',                                   ...
-                 'tag',                           'hbpptbpFS1v4',                                ...
+                 'tag',                           'hbpptbpFSCV2',                                ...
                  'units',                         [],                                            ...
                  'sampleRate',                    250,                                           ...
                  'stcMode',                       'msnn_ppsvd_raux',                             ...
                  'states',                        {{'theta','rear','hloc','hpause',              ...
                                                    'lloc','lpause','groom','sit'}},              ...
                  'feature_fcn',                   @fet_HB_pitchB,                                ...
-                 'overwrite',                 false,                                         ...
+                 'overwrite',                     false,                                         ...
                  'pargs',                         pargs                                          ...
 );
-[Trials,sessionListName,tag,units,sampleRate,stcMode,states,feature_fcn,overwrite,pargs] =   ...
+[Trials,sessionListName,tag,units,sampleRate,stcMode,states,feature_fcn,overwrite,pargs] =       ...
     DefaultArgs(varargin,defargs,'--struct');
 %---------------------------------------------------------------------------------------------------
 
@@ -118,7 +118,7 @@ metaVars = {'sessionListName','tag','sampleRate','stcMode','states','feature_fcn
 
 
 % ANALYSIS MAIN ------------------------------------------------------------------------------------
-if ~exist(dataFilePath,'file') || overwrite
+if ~exist(dataFilePath,'file') || overwrite,
 % LOAD Trial data
 % COLLATE unit info
     sessionList = get_session_list(sessionListName);
@@ -166,7 +166,11 @@ if ~exist(dataFilePath,'file') || overwrite
 % FET : Behavior space features
         fet = feval(feature_fcn,Trial,sampleRate,false,'trb');
 % APER : theta periods without sit or groom
-        aper = stcm(:,1)==1 & ~any(stcm(:,[7,8]),2);
+        for s = 2:6
+            stcm(find(stcm(:,s),round(sum(nniz(stcm(:,s)))/2),'first'),s) = 0;
+        end
+
+        aper = stcm(:,1)==1 & any(stcm(:,2:6),2);
 
 % PARGS : placefield computation arguments 
         
@@ -174,7 +178,7 @@ if ~exist(dataFilePath,'file') || overwrite
         pargs.spk = spk;
         
         pfs = MTAApfs(Trial,'tag',pargs.tag);
-        pfs.purge_savefile();        
+        pfs.purge_savefile();
         pfs = Trial;
         for unit = unitSubset,
             pargs.xyzp = copy(fet);
@@ -191,7 +195,7 @@ if ~exist(dataFilePath,'file') || overwrite
                                      pargs.xyzp.origin,'TimePeriods','sts',[],'tdrz','d');
             pfsArgs = struct2varargin(pargs);
             pfs = MTAApfs(pfs,pfsArgs{:});    
-            if unit == unitSubset(1),  pfs.save();  end
+            if unit==unitSubset(1),  pfs.save();  end
         end%for unit
         pfs.save();
         save(dataFilePath,metaVars{:});

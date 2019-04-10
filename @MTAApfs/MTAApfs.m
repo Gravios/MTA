@@ -165,10 +165,18 @@ classdef MTAApfs < hgsetget %< MTAAnalysis
                     Pfs.parameters.numIter    = numIter;
                     Pfs.parameters.bootstrap  = bootstrap;
                     Pfs.parameters.smoothingWeights = SmoothingWeights;
-
+                    Pfs.parameters.states     = '';
                     
                     Pfs.adata.trackingMarker  = trackingMarker;
-
+                    
+% OPTIMIZE later
+                    if ~isempty(tag) && exist(fpath(Pfs.update_filename(Session,tag)),'file') && ~overwrite
+                        load(Pfs.fpath);
+                        if all(ismember(units,Pfs.data.clu)),
+                            return;
+                        end
+                    end
+                    
 % SET the independent variabels
                     if isempty(xyzp),
                         try,
@@ -535,6 +543,17 @@ classdef MTAApfs < hgsetget %< MTAAnalysis
         end%function MTAApfs
 
 end%methods
+
+methods (Static)
+    function status = exist(Trial,varargin)
+        if isa(Trial,'MTASession'),
+            assert(numel(varargin)==1,'MTAApfs:exist:MissingPfsTag');
+            status = exist(fullfile(Trial.spath,[Trial.filebase,'.Pfs.' varargin{1} '.mat']),'file');
+        elseif isa(Trial,'MTAApfs'),
+            status = exist(fullfile(pfs.path,pfs.filename),'file');
+        end
+    end
+end % methods (Static)
 
 %methods
 %purge_tagged_savefile

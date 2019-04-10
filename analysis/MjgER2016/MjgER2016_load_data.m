@@ -5,7 +5,7 @@
 %      units
 %      cluSessionMap
 %      pitchReferenceTrial
-%      FigDir
+%      figBasePath
 %      sessionListName
 %      sessionList
 %      states
@@ -35,7 +35,7 @@ pitchReferenceTrial = 'Ed05-20140529.ont.all';
 reshape_eigen_vector = @(V,pfd) reshape(V(:,1),pfd{1}.adata.binSizes')';
  
 % 
-FigDir = create_directory('/storage/gravio/figures/analysis/parts/MjgER2016/');
+figBasePath = create_directory('/storage/gravio/figures/analysis/MjgER2016/');
 
 % SET states to plot
 states = {'theta-groom-sit','rear&theta','hloc&theta','hpause&theta','lloc&theta',...

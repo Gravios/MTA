@@ -6,6 +6,7 @@ classdef MTADufr < MTAData
 
     properties(Transient=true)
         data        % data
+        spikeWindow
     end
 
     methods

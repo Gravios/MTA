@@ -104,7 +104,7 @@ end
 % RESHAPE ratemap from 1D to ND
 ratemap = reshape(ratemap,Pfs.adata.binSizes');
 
-switch numel(Pfs.parameters.type)
+switch numel(Pfs.adata.binSizes)
   case 2
 
     if ~isempty(interpPar),

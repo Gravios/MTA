@@ -1,9 +1,9 @@
 function Data = create(Data,Session,varargin)
-%create(Data,Session,RefObj,spk,units,twin,overwrite)
+%create(Data,Session,RefObj,spk,units,spikeWindow,overwrite)
 %
 % Calculate the instantaneous firing rate of individual units
 %
-[RefObj,spk,units,twin,overwrite,mode] = DefaultArgs(varargin,{Session.lfp,[],[],0.05,false,'gauss'});
+[RefObj,spk,units,spikeWindow,overwrite,mode] = DefaultArgs(varargin,{Session.lfp,[],[],0.05,false,'gauss'});
 
 if isa(RefObj,'MTAApfs'),
     %nv units
@@ -46,19 +46,19 @@ else
     if isempty(units), units = 1:spk.map(end,1);end
     
     % create convolution window     
-    swin = round(twin*RefObj.sampleRate);    
+    swin = round(spikeWindow*RefObj.sampleRate);    
 
     %gwin = ones([swin,1]);
     switch mode
       case 'gauss'
         winLength = round(3*RefObj.sampleRate);
-        gwin = gausswin(winLength,winLength/(twin*RefObj.sampleRate));
+        gwin = gausswin(winLength,winLength/(spikeWindow*RefObj.sampleRate));
       case 'boxcar'
         gwin = ones([swin,1]);
         gwin = gwin./sum(gwin);
       case 'count'
         gwin = 1;
-        twin = 1;
+        spikeWindow = 1;
     end
 
     % accumulate and convolve activity of each unit
@@ -69,6 +69,7 @@ else
         Data.data(:,unit==units) = conv(accumarray(res,1,[dsize,1]),gwin,'same')+eps;
     end
 
+    Data.spikeWindow = spikeWindow;
     Data.data(~nniz(RefObj),:) = 0;
     Data.origin = RefObj.origin;
     Data.sync = RefObj.sync;

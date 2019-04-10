@@ -1,4 +1,4 @@
-function [pfs,metaData] = req20181106(varargin)
+function [pfs,metaData] = req20181106_crossVal(varargin)
 %
 %function load_behavior_fields_theta_resolved(varargin)
 % Input:
@@ -100,10 +100,10 @@ defargs = struct('Trials',                        {{}},                         
                  'states',                        {{'theta','rear','hloc','hpause',              ...
                                                    'lloc','lpause','groom','sit'}},              ...
                  'feature_fcn',                   @fet_HB_pitchB,                                ...
-                 'overwrite',                 false,                                         ...
+                 'overwriteFlag',                 false,                                         ...
                  'pargs',                         pargs                                          ...
 );
-[Trials,sessionListName,tag,units,sampleRate,stcMode,states,feature_fcn,overwrite,pargs] =   ...
+[Trials,sessionListName,tag,units,sampleRate,stcMode,states,feature_fcn,overwriteFlag,pargs] =   ...
     DefaultArgs(varargin,defargs,'--struct');
 %---------------------------------------------------------------------------------------------------
 
@@ -118,7 +118,7 @@ metaVars = {'sessionListName','tag','sampleRate','stcMode','states','feature_fcn
 
 
 % ANALYSIS MAIN ------------------------------------------------------------------------------------
-if ~exist(dataFilePath,'file') || overwrite
+if ~exist(dataFilePath,'file') || overwriteFlag
 % LOAD Trial data
 % COLLATE unit info
     sessionList = get_session_list(sessionListName);
@@ -174,7 +174,7 @@ if ~exist(dataFilePath,'file') || overwrite
         pargs.spk = spk;
         
         pfs = MTAApfs(Trial,'tag',pargs.tag);
-        pfs.purge_savefile();        
+        pfs.purge_savefile();
         pfs = Trial;
         for unit = unitSubset,
             pargs.xyzp = copy(fet);
@@ -191,7 +191,7 @@ if ~exist(dataFilePath,'file') || overwrite
                                      pargs.xyzp.origin,'TimePeriods','sts',[],'tdrz','d');
             pfsArgs = struct2varargin(pargs);
             pfs = MTAApfs(pfs,pfsArgs{:});    
-            if unit == unitSubset(1),  pfs.save();  end
+            if unit==unitSubset(1),  pfs.save();  end
         end%for unit
         pfs.save();
         save(dataFilePath,metaVars{:});
@@ -202,7 +202,7 @@ else
     else
         pfs = MTAApfs(Trials,units,'tag',tag);
     end
-end%if ~exist(dataFilePath,'file') || overwrite
+end%if ~exist(dataFilePath,'file') || overwriteFlag
 
 metaData = load(dataFilePath);
 

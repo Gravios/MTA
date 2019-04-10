@@ -453,7 +453,7 @@ switch sessionList
     Sessions(end).includeSyncInd = [1,3,4,6,7];
     Sessions(end).offsets        = [0,0];
     Sessions(end).thetaRef       = [8:8:64,77,77,77,77];
-    Sessions(end).thetaRefGeneral = 8;
+    Sessions(end).thetaRefGeneral = 1;
     
     Sessions(end+1) = Sessions(end);    
     Sessions(end).sessionName    = 'ER06-20130613';
@@ -508,16 +508,23 @@ switch sessionList
     Sessions(end).TTLValue      = '0x4000';
     Sessions(end).includeSyncInd = [];    
     Sessions(end).project       = 'general';
-    Sessions(end).thetaRefGeneral = 8;        
+    Sessions(end).thetaRefGeneral = 9;        
 
     Sessions(end+1) = Sessions(end);
     Sessions(end).sessionName = 'jg04-20120129';
+    Sessions(end).thetaRefGeneral = 9;        
+    
     Sessions(end+1) = Sessions(end);
     Sessions(end).sessionName = 'jg04-20120130';
+    Sessions(end).thetaRefGeneral = 3;          
+    
     Sessions(end+1) = Sessions(end);
     Sessions(end).sessionName = 'jg04-20120131';
+    Sessions(end).thetaRefGeneral = 1;
+    
     Sessions(end+1) = Sessions(end);
     Sessions(end).sessionName = 'jg04-20120201';
+    
     %Sessions(end+1) = Sessions(end);
     %Sessions(end).sessionName = 'jg04-20120203';
     
@@ -544,22 +551,22 @@ switch sessionList
     Sessions(end).TTLValue    = '0x0040';
     Sessions(end).includeSyncInd = [];
     Sessions(end).thetaRef     = [8:8:64,repmat(69,[1,5])];
-    Sessions(end).thetaRefGeneral = 69;        
+    Sessions(end).thetaRefGeneral = 65;        
     
     Sessions(end+1) =   Sessions(end);
     Sessions(end).sessionName  = 'jg05-20120310';
     Sessions(end).thetaRef     = [8:8:64,repmat(69,[1,4])];    
-    Sessions(end).thetaRefGeneral = 69;
+    Sessions(end).thetaRefGeneral = 65;
     Sessions(end).offsets      = [8,0];
     Sessions(end+1) =   Sessions(end);
     Sessions(end).sessionName  = 'jg05-20120311';  
     Sessions(end).thetaRef     = [8:8:32,37,43,49,57,repmat(68,[1,4])];
-    Sessions(end).thetaRefGeneral = 68;
+    Sessions(end).thetaRefGeneral = 65;
     Sessions(end).offsets      = [10,0];    
     Sessions(end+1) =   Sessions(end);
     Sessions(end).sessionName  = 'jg05-20120312';
     Sessions(end).thetaRef     = [8:8:40,46,53,61,repmat(69,[1,4])];
-    Sessions(end).thetaRefGeneral = 69;
+    Sessions(end).thetaRefGeneral = 67;
     Sessions(end).offsets      = [15,0];        
     Sessions(end+1) =   Sessions(end);
     Sessions(end).sessionName  = 'jg05-20120315';
@@ -569,11 +576,11 @@ switch sessionList
     Sessions(end+1) =   Sessions(end);
     Sessions(end).sessionName  = 'jg05-20120316';
     Sessions(end).thetaRef     = [8:8:64,repmat(69,[1,4])];        
-    Sessions(end).thetaRefGeneral = 69;
+    Sessions(end).thetaRefGeneral = 68;
     Sessions(end+1) =   Sessions(end);
     Sessions(end).sessionName  = 'jg05-20120317';
     Sessions(end).thetaRef     = [8:8:32,40,47,53,59,repmat(73,[1,4])];
-    Sessions(end).thetaRefGeneral = 73;    
+    Sessions(end).thetaRefGeneral = 69;    
     Sessions(end).offsets      = [12,0];
     
 

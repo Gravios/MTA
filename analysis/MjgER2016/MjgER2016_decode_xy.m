@@ -320,12 +320,12 @@ print(hfig,'-dpng',...
       ['/storage/share/Projects/BehaviorPlaceCode/decode/',...
       ['dc_decodedXthetaPhaseXstates_',Trial.filebase,'_Norm-',tagNormalization,'.png']]);
 
-% Section 3
-% START SECTION ------------------------------------------------------------------------------------
+
+% END S3 -------------------------------------------------------------------------------------------
 
 
 
-% START SECTION ------------------------------------------------------------------------------------
+% S4 -----------------------------------------------------------------------------------------------
 % Section 4: Theta phase as a function of decoded spatial representation projected onto 2d 
 %            orthonormal basis aligned to the head, partitioned by speed, and omitting rearing 
 %            periods.

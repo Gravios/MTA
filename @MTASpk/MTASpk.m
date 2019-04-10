@@ -2,6 +2,12 @@ classdef MTASpk < hgsetget
 % MTASpk(varargin)
 % Data structure to organize timing and features of neuron action potentials.
 %
+%   usage:
+%
+%      res = spk(c); returns spike times (res) where c is in spk.clu
+%      
+%      
+%
 %   Note: The properties (clu,res,fet,spk) should all have the same length
 %         along the first dimension.
 %   Note: MTASpk does not have a sync property. At the moment, anytime

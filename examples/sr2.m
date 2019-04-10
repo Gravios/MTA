@@ -55,6 +55,11 @@ for v = 1:size(vper,1),
     end
 end
 
+
+dist = [1:500]';
+zoneBoundaries = [300,200,100,50];
+zoneMat = bsxfun(@lt,dist,zoneBoundaries);
+zoneId =  sum(zoneMat,2);
     
 figure,plot(rhm.data);
 Trial = MTATrial.validate('Ed01-20140709.cof.all');

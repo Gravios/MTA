@@ -17,8 +17,14 @@ Par = LoadPar(fullfile(Session.spath, [Session.name '.xml']));
 if isempty(channels)
     channels = Par.(gselect{1})(gselect{2}).Channels(gselect{3});
 end
-Data.data = LoadBinary(Data.fpath,channels,...
-                       Par.nChannels,[],[],[],periods)';
+try,
+    Data.data = LoadBinary(Data.fpath,channels,...
+                           Par.nChannels,[],[],[],periods)';
+catch
+    Data.data = LoadBinary(Data.fpath,channels,...
+                           Par.nChannels,[],[],[],periods)';
+end
+
 Data.data(Data.data==0)=1;
 %Session.resync(Data);
 end
