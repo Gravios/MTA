@@ -1,0 +1,162 @@
+#! /bin/bash
+# ecube_rename_files 
+#
+# Rename files from ecube recording system to match the ndm file format for further processing
+#
+# RENAME files
+# headstage channel:  100_HS_CH99.continuous {0-} -> IF04-20181012a-01-ALL-ecube-100-CH-004.continuous 
+# analog-in channel:  103_PAI17.continuous   {0-19} -> IF04-20181012a-01-ALL-ecube-103-PAI-022.continuous
+#
+
+
+cwd=$(pwd)
+auxiliaryFiles=(messages.events settings.xml all_channels.events Continuous_Data.openephys)
+subjectDirectory=$cwd
+verbose="v"
+
+subsessionCodes=(a b c d e f g h i j k l m n o p q r s t u v w x y z)
+
+declare -a filenames
+
+while [[ $# > 0 ]]
+do
+    key="$1"
+    case $key in
+	-a|--auxiliary-filelist)
+	    auxiliaryFiles=$2
+	    shift
+	    ;;
+	-c|--subsession-codes)
+	    subsessionCodes=$2
+	    shift
+	    ;;
+	-d|--directory)
+	    subjectDirectory=$2
+	    shift
+	    ;;
+        -h|--help)     
+	    echo "ecube_rename_files [-a auxiliary_filelist] [-c subsessionCodes] [-d subjectDirectory] "
+	    echo "                   [-v verbose] [filenames]"
+	    exit 1
+            ;;
+	-v|--verbose)  
+	    verbose="v"
+            ;;
+	*)
+	    filenames[${#filenames[@]}]=$1	    
+            ;;
+    esac
+    shift 
+done
+
+# MOVE to subject Directory
+cd $subjectDirectory
+
+# GET subject name 
+subjectname=${PWD##*/}
+
+# GET recording directories within subject directory
+if (( ${#filenames[@]}==0 )); then
+    shopt -s nullglob
+    filenames=("20"*/)
+    shopt -u nullglob
+fi
+
+# TODO
+# if a subset of sessions are to be renamed find all other recording sessions from the same day
+#     and find the corresponding apha code 
+#if [[ ${#filenames[@]} -eq 0 ]]; then
+#fi
+
+# CHECK if recording sessions exist
+if (( ${#filenames[@]}==0 )); then
+    echo "`basename "$0"`:NoDirectoriesFound" >&2
+    exit 1
+fi
+
+
+# RENAME directories
+fileInd=0
+alphaInd=0
+currentFileBase=""
+for (( fileInd=0; fileInd<${#filenames[@]}; fileInd++ ))
+do
+    # MOVE to next directory
+    cd $subjectDirectory
+    # CHECK if current directory matches pattern
+    newDirName=$(printf '%s' ${filenames[$fileInd]} | sed -E '/^([0-9]{4})[-]([0-9]{2})[-]([0-9]{2})[_][0-9]{2}[-][0-9]{2}[-][0-9]{2}\/$/!{q100}; {s/^([0-9]{4})[-]([0-9]{2})[-]([0-9]{2})[_][0-9]{2}[-][0-9]{2}[-][0-9]{2}\/$/\1\2\3/}')
+    if [[ $? -eq 100 ]]; then
+	if [[ $verbose -eq "v" ]]; then
+	    echo "`basename "$0"`:SkipDirectory - ${filenames[$fileInd]}";
+	fi
+	continue
+    elif [[ $currentFileBase -ne $newDirName ]]; then
+	alphaInd=0
+	if [[ $verbose -eq "v" ]]; then
+	    echo "`basename "$0"`:UpdateFileBase - ${currentFileBase} -> ${newDirName}"
+	fi    
+    fi
+
+    # UPDATE currentFileBase to current directory
+    currentFileBase=$newDirName
+    
+    newDirName=$subjectname-$newDirName${subsessionCodes[$alphaInd]}
+
+    if [[ $verbose -eq "v" ]]; then    
+	echo "mv ${filenames[$fileInd]} $newDirName-ecube"
+    fi
+    mv --strip-trailing-slashes ${filenames[$fileInd]} $newDirName"-ecube"
+
+    cd $newDirName"-ecube"
+
+    # RENAME HEADSTAGE CHANNELS
+    # GET head stage channel file list
+    shopt -s nullglob
+    filenamesHS=("100_HS"*".continuous")
+    shopt -u nullglob    
+    rename -E 's/100_HS_CH(\d+)/sprintf "01-ALL-ecube-100-CH-%03d", $1/e' ${filenamesHS[@]}
+    # UPDATE head stage channel file list
+    shopt -s nullglob
+    filenamesHS=("01-ALL-ecube-100-CH-"*".continuous")
+    shopt -u nullglob
+    for file in "${filenamesHS[@]}"; do	 mv ./$file ./$newDirName"-"$file; done
+    
+
+    # RENAME ANALOG CHANNELS
+    # GET head stage channel file list    
+    shopt -s nullglob
+    filenamesPAI=("103_PAI"*".continuous")
+    shopt -u nullglob
+    if [[ ${#filenamesPAI[@]} -ne 0 ]]; then
+	rename -E 's/103_PAI(\d+)/sprintf "01-ALL-ecube-103-PAI-%03d", $1/e' ${filenamesPAI[@]}
+	shopt -s nullglob
+	filenamesPAI=("01-ALL-ecube-103-PAI-"*".continuous")
+	shopt -u nullglob
+	for file in "${filenamesPAI[@]}"; do mv ./$file ./$newDirName"-"$file; done
+    else
+	echo "`basename "$0"`:NoAnalogChannelsFound"
+    fi
+
+    
+    # RENAME irregular files
+    echo ${auxiliaryFiles[@]}
+    for file in "${auxiliaryFiles[@]}"; do
+	if [[ -L $file ]]; then
+            mv  ./$file  ./$newDirName"-01-ALL-ecube-"$file
+	else
+	    if [[ $verbose -eq "v" ]]; then    
+		echo "`basename "$0"`:AuxFileNotFound - ${file}"
+	    fi
+	fi
+    done
+
+    if [[ $verbose -eq "v" ]]; then    
+	echo "`basename "$0"`:FilesRenamed - ${newDirName}-ecube"
+    fi
+    
+    # ITERATE to next code
+    alphaInd=$((alphaInd+1))
+    
+done    
+
+

@@ -1,5 +1,5 @@
 function [fsrcz,FSrC,rmaps,FSCFr,FSrM,FSrS,fsrsMean,fsrsStd,rmapsShuffledMean,rmapsShuffled] = ...
-    compute_bhv_ratemaps_erpPCA_scores(Trials,units,bfrm,bfrmShuffled,eigVecs,validDims,unitSubset)
+    compute_bhv_ratemaps_erpPCA_scores(Trials,units,bfrm,bfrmShuffled,eigVecs,validDims,unitSubset,overwrite)
 %function [fsrcz,FSrC,rmaps,FSCFr,FSrM,FSrS,fsrsMean,fsrsStd,rmapsShuffledMean,rmapsShuffled] = ...
 %    compute_bhv_ratemaps_erpPCA_scores(Trials,Units,bfrm,bfrmShuffled,validDims,unitSubset)
 %
@@ -32,7 +32,7 @@ pfsTag = DataHash(cf(@(p,ps)  [p.filename,ps.filename],  bfrm,bfrmShuffled));
 filePath = fullfile(MTA_PROJECT_PATH,'analysis',[mfilename,'-',pfsTag,'.mat']);
 
 
-if exist(filePath,'file'),
+if exist(filePath,'file') && ~overwrite,
     load(filePath);
 else,
     pfindex = 1;

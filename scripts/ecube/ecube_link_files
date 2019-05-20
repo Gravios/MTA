@@ -1,0 +1,16 @@
+#! /bin/bash
+
+#cd MTA_UNITTEST_PATH
+
+if [[ ! -f ./source ]]; then
+    mkdir source
+fi
+echo "mv ./20* ./source"
+
+cd ./source
+for file in *; do
+    mkdir ../${file};
+    ln -s `pwd`/${file}/* ../${file}/
+done
+
+cd ..

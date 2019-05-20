@@ -1,0 +1,14 @@
+# ecube
+#
+# A set of scripts for preprocessing the files from the ecube recording system
+#
+# unit testing
+# case 1: in subject dir; single dir with format {YYYY-MM-DD_HH_MM_SS}
+#
+# case 2: in subject dir;
+#         two dirs with format {YYYY-MM-DD_HH_MM_SS}
+#
+# case 3: in subject dir;
+#         one dir with format {YYYY-MM-DD_HH_MM_SS};
+#         one dir with format {SUBID-YYYMMDDa-ecube};
+#

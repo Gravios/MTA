@@ -1,0 +1,5 @@
+
+cd /storage/gravio/data/raw/ecube_test/
+rm -rf ./IF13
+cp -R  ./IF13_bkp ./IF13
+cd IF13

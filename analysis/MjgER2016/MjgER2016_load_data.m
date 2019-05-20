@@ -8,6 +8,7 @@
 %      figBasePath
 %      sessionListName
 %      sessionList
+%      stcMode
 %      states
 %      numStates
 %      interpParPfsp
@@ -38,6 +39,7 @@ reshape_eigen_vector = @(V,pfd) reshape(V(:,1),pfd{1}.adata.binSizes')';
 figBasePath = create_directory('/storage/gravio/figures/analysis/MjgER2016/');
 
 % SET states to plot
+stcMode = 'msnn_ppsvd_raux';
 states = {'theta-groom-sit','rear&theta','hloc&theta','hpause&theta','lloc&theta',...
           'lpause&theta'};
 numStates = numel(states);

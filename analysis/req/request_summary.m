@@ -976,27 +976,19 @@
         2  compute ratemaps
 
 *** req20180926
-    Tags: egocentric PP
-    Status: active
-    Type: Analysis
-    Author: Justin Graboski
-    Final_Forms: NA
-    Project: MjgER2016:placefields
-    Description: Phase precession in an egocentric cooridinate system. During immobilitiy units
-                 still phase precess relative to the place field center. A velocity vector of
-                 the HCOM is too small which flips the standard drz's sign randomly 
-    Protocol: 
-        1. select interneurons
-        2  compute ratemaps
- 
-    Figures: 
-        1.
 	  
 
 
 ** 2018 10 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 
-*** req
+*** req20181010 - Theta phase restricted egocentric placefield ratemaps
+    Tags: phase egocentric ratemap
+    Status: active
+    Type: Analysis
+    Author: Justin Graboski
+    Project: MjgAS2020
+    Description: Egocentric ratemaps decomposed by theta phase
+    Figure: none
 
 ** 2018 11 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 
@@ -1045,3 +1037,23 @@
     Protocol:
     Figures: /storage/gravio/figures/analysis/placefields_bhv
     
+
+*** req20190125
+    Tags: theta phase rate map conditioned on space
+    Status: active
+    Type: Analysis
+    Author: Justin Graboski
+    Final_Forms: NA
+    Project: MjgER2016: behavior-theta-modulation 
+    Description: Compilation of theta phase rate maps given positon and state
+    Protocol:
+    Figures: 
+
+** 2019 02 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+
+
+** 2019 03 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+
+** 2019 04 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+
+

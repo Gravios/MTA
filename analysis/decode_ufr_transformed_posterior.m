@@ -1,4 +1,4 @@
-function [decEstCom,decEstMax,decEstSax,posteriorMax] = decode_ufr_transformed_posterior(Trial,varargin)
+function [decEstCom,decEstMax,decEstSax,posteriorMax,posteriorPatch] = decode_ufr_transformed_posterior(Trial,varargin)
 % function [decEstCom,decEstMax,decEstSax,decteriorMax] = decode_ufr_transformed_posterior(Trial,varargin)
 % 
 % 
@@ -40,7 +40,7 @@ if isempty(tag)
     tag = DataHash({Trial.filebase,pfs.filename,sampleRate,units,ufr.spikeWindow});
 end
 
-filepath = fullfile(Trial.spath,[Trial.filebase,'.',mfilename,'.',tag,'.mat']);
+filepath = fullfile(Trial.spath,[Trial.filebase,'.',mfilename(),'.',tag,'.mat']);
 
 if exist(filepath,'file') && ~overwrite,    
     load(filepath);
@@ -52,6 +52,14 @@ else
     ndims = numel(pfs.adata.bins);
     ufrLength = size(ufr,1);
     spikeWindow = ufr.spikeWindow;
+
+% NEW VARS NEEDED
+    xyz = {resample(preproc_xyz(Trial,'trb'),30)};
+    hvec = cf(@(x)    x(:,'head_front',[1,2])-x(:,'head_back',[1,2]),                    xyz          );
+    hvec = cf(@(h)    sq(bsxfun(@rdivide,h,sqrt(sum(h.^2,3)))),                          hvec         );
+    hvec = cf(@(h)    cat(3,h,sq(h)*[0,-1;1,0]),                                         hvec         );
+    hvec = hvec{1};
+    xyz = xyz{1};
 
 % SET interpolation parameters
 % $$$     pfsBins = cell([1,4]);
@@ -74,6 +82,7 @@ else
     end
     
     
+    
 % COMPUTE Posterior distribution base on ratemaps and unit firing rates
     ratemap(isnan(ratemap)) = 0;
     ratemap = ratemap+1e-3;    
@@ -82,6 +91,7 @@ else
     decEstMax = decEstCom;
     decEstSax = decEstCom;
     posteriorMax = nan([ufrLength,1]);
+
 
     numDimPos = numel(pfsBins);
 
@@ -92,6 +102,13 @@ else
     for d = 1:ndims,
         gbinm(:,d) = cat(2,binGrid{d}(logical(mask(:))));
     end
+
+    gbina = nan([size(ratemap,1),numel(pfsBins)]);
+    for d = 1:ndims,
+        gbina(:,d) = cat(2,binGrid{d}(:));
+    end
+    gbinPatch = gbina(sqrt(sum(gbina.^2,2))<300,:);
+    posteriorPatch = nan([ufrLength,size(gbinPatch,1)]);
     %clear('binGrid','mask');
 
     
@@ -116,7 +133,8 @@ else
 % COMPUTE posterior
         E = exp(-sum(ratemap,2)*ones([1,bufferSize])*spikeWindow+log(ratemap)*(ufr.data(ind,:)-eps)');
         E = bsxfun(@rdivide,E,sum(E));
-
+        
+        
 % LOCATE peak of posterior
         [apos,tbin] = max(E);
         mpos = gbinm(tbin,:);  
@@ -133,13 +151,49 @@ else
             weights = weights./sum(weights);
             tpos(tind,:) = sum(gbinm.*weights,'omitnan');
             cpos(tind,:) = sum(gbinm.*repmat(E(:,tind),[1,numDimPos]),'omitnan');            
+
+
+        end
+        
+        patchTF = bsxfun(@plus,...
+                         sq(multiprod(permute(gbinPatch,[4,2,1,3]),hvec(ind,:,:),2,[2,3])),...
+                         sq(xyz(ind,'hcom',[1,2])));
+        
+        pPatch = [];
+        for tind = 1:bufferSize        
+            Et = zeros([size(gbina,1),1]);
+            Et(logical(mask(:))) = E(:,tind);
+            
+            F = scatteredInterpolant(gbinm(:,1),...
+                                     gbinm(:,2),...
+                                     E(:,tind),...
+                                     'linear');
+            pPatch(tind,:) = F(sq(patchTF(tind,1,:)),...
+                               sq(patchTF(tind,2,:)));
         end
 
+% $$$ hpos =     xyz(:,{'head_back','head_front'},[1,2]);
+% $$$ hcom =     sq(xyz(:,{'hcom'},[1,2]));
+% $$$ figure, 
+% $$$ sp = gobjects([0,1]);
+% $$$ sp(end+1) = subplot(121);
+% $$$ sp(end+1) = subplot(122);
+% $$$ for tind = 1:bufferSize,
+% $$$     axes(sp(1));cla();hold('on');
+% $$$     scatter(gbinm(:,1),gbinm(:,2),100,E(:,tind),'filled');
+% $$$     circle(hcom(ind(tind),1),hcom(ind(tind),2),200,'r');
+% $$$     line(hpos(ind(tind),:,1),hpos(ind(tind),:,2));
+% $$$     axes(sp(2));cla();
+% $$$     scatter(gbinPatch(:,1),gbinPatch(:,2),100,pPatch(tind,:),'filled');
+% $$$     drawnow();
+% $$$ end
+        
 % ACCUMULATE position estimates                
         decEstCom(ind,:)      = cpos;
         decEstSax(ind,:)      = tpos;
         decEstMax(ind,:)      = mpos;
         posteriorMax(ind)     = apos;
+        posteriorPatch(ind,:) = pPatch;
 
         toc
     end% i
@@ -148,7 +202,8 @@ else
     % SAVE reconstruction statistics
     smoothingWeights = diag(smoothingWeights);    
     save(filepath,'decEstCom',   'decEstSax', 'decEstMax',...
-                  'posteriorMax','sampleRate','spikeWindow','smoothingWeights');
+                  'posteriorMax','sampleRate','spikeWindow','smoothingWeights',...
+                  'gbinPatch','posteriorPatch');
 end
 
 

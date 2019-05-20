@@ -42,7 +42,7 @@ defargs = struct('mode',                    'mtchglong',                        
 
 varargout = cell([1,nargout-1]);
 
-if sampleRate<fet.sampleRate&&~strcmp(fet.ext,'lfp'),
+if sampleRate<fet.sampleRate&&~strcmp(fet.ext,'lfp')&~strcmp(fet.ext,'dat'),
     fet.resample(sampleRate); 
 else
     sampleRate = fet.sampleRate;

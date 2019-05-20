@@ -35,9 +35,9 @@ defargs = struct('Trials',                        {{}},                         
                  'states',                        {{'theta','rear','hloc','hpause',              ...
                                                    'lloc','lpause','groom','sit'}},              ...
                  'feature_fcn',                   @fet_HB_pitchB,                                ...
-                 'overwriteFlag',                 false                                          ...
+                 'overwrite',                 false                                          ...
 );
-[Trials,sessionListName,tag,units,sampleRate,stcMode,states,feature_fcn,overwriteFlag] =         ...
+[Trials,sessionListName,tag,units,sampleRate,stcMode,states,feature_fcn,overwrite] =         ...
     DefaultArgs(varargin,defargs,'--struct');
 %---------------------------------------------------------------------------------------------------
 
@@ -53,7 +53,7 @@ dataVars = {'eigVecs','eigScrs','eigVars','eSpi','FSrBhvThp'};
 
 MjgER2016_load_bhv_erpPCA_scores();
 
-if ~exist(dataFilePath,'file')  ||  overwriteFlag,
+if ~exist(dataFilePath,'file')  ||  overwrite,
     sessionList = get_session_list(sessionListName);
     Trials = af(@(s) MTATrial.validate(s), sessionList);
     units = cf(@(T)  select_placefields(T),  Trials); 
@@ -65,11 +65,12 @@ if ~exist(dataFilePath,'file')  ||  overwriteFlag,
     
     
     % LOAD
-    [~,~,~,~,validDims,~,~] = req20180123_pfd_erpPCA([],[],'HBPITCHxBPITCH_v13',[],[],[],false);
+    bfrm = cf(@(t,u)  compute_bhv_ratemaps(t,u), Trials, units);
+    [~,~,~,~,validDims] = compute_bhv_ratemaps_erpPCA(bfrm);
 
     ucnt = 1;
 
-    nfac = 5;
+    nfac = 3;
     
     eigVecs = [];
     eigScrs = [];
@@ -81,10 +82,15 @@ if ~exist(dataFilePath,'file')  ||  overwriteFlag,
         unitSubset = units{t};
         %pfs = MTAApfs(Trial,'tag',[']);
         pfs = req20181106(Trial,sessionListName,tag,unitSubset);
+
+        mask = zeros(pfs.adata.binSizes([1,3])');
+        mask(validDims) = 1;
+        mask = repmat(permute(mask,[1,3,2]),[1,pfs.adata.binSizes(2),1]);
         
         
         for u = unitSubset,
             rmap = plot(pfs,u,1,'colorbar',[],false,0.5);
+            rmap(~mask) = nan;            
             if sum(rmap(:),'omitnan')~=0,
                 rmapNind = sq(sum(reshape(~isnan(rmap(:)),size(rmap)),2))>=pfs.adata.binSizes(2);
                 zmap = reshape(permute(rmap,[1,3,2]),[],pfs.adata.binSizes(2));
@@ -124,9 +130,9 @@ if ~exist(dataFilePath,'file')  ||  overwriteFlag,
     cEVecs(isnan(cEVecs(:))) = 0;
     
     FSrBhvThp = [];
-    for v = 1:size(cEVecs,2),
-        FSrBhvThp(:,:,v) = sq(cEVecs(:,v,:)) * FSCFr;
-    end
+% $$$     for v = 1:size(cEVecs,2),
+% $$$         FSrBhvThp(:,:,v) = sq(cEVecs(:,v,:)) * FSCFr;
+% $$$     end
 
     save(dataFilePath,'-v7.3',dataVars{:});
     save(metaFilePath,'-v7.3',metaVars{:});

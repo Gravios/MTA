@@ -67,7 +67,7 @@ else
 end
 
 
- % GENERATE gaussian smoothing kernel with std of # bins <- SmoothingWeight
+% GENERATE gaussian smoothing kernel with std of # bins <- SmoothingWeight
 sind = cell(1,ndims);
 for i = 1:ndims,
     sind{i} = linspace(-round(msize(i)/2),round(msize(i)/2),msize(i)+double(mod(msize(i),2)==0));
@@ -106,8 +106,11 @@ end
 %OccThresh = 4*(mean(binDims)/200).^numel(binDims);
 
 %gtind = SOcc > 2*(10/100).^numel(binDims)*numel(Bins{2});
-gtind = soc > 2*(1/15).^numel(binDims)*numel(Bins{2});
-
+%gtind = soc > (2*(10/150)*numel(Bins{2})).^numel(binDims)*numel(Bins{2});
+%gtind = soc > (2/15).^(numel(binDims)-1)*numel(Bins{2});
+%gtind = soc > 2*(1/15).^numel(binDims)*numel(Bins{2});
+gtind = soc > (2/15).^numel(binDims)/numel(Bins{2});
+%posSampleRate = 250
 
 
 %% Find the total occupancy and each pixels 

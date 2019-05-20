@@ -168,9 +168,28 @@ classdef MTAApfs < hgsetget %< MTAAnalysis
                     Pfs.parameters.states     = '';
                     
                     Pfs.adata.trackingMarker  = trackingMarker;
+                                        
+% SET the epochs
+                    if ischar(states),
+                        Pfs.parameters.states = states;
+                        pfsState = Session.stc{states};
+                    elseif isa(states,'MTAData'),
+                        pfsState = states.copy;
+                        Pfs.parameters.states = pfsState.label;                       
+                    end
+                                        
+% ASSIGN computational boundaries
+
+                    if isempty(boundaryLimits),
+                        boundaryLimits = Session.maze.boundaries(1:numel(type),:);
+                    end
+% COMPUTE bin count based on bin dimension and computational boundaries
+                    Pfs.adata.binSizes = round(abs(diff(boundaryLimits(1:numel(binDims),:),1,2))./binDims');
                     
+                    Pfs.update_filename(Session,tag);
+
 % OPTIMIZE later
-                    if ~isempty(tag) && exist(fpath(Pfs.update_filename(Session,tag)),'file') && ~overwrite
+                    if exist(fpath(Pfs),'file') && ~overwrite
                         load(Pfs.fpath);
                         if all(ismember(units,Pfs.data.clu)),
                             return;
@@ -191,28 +210,8 @@ classdef MTAApfs < hgsetget %< MTAAnalysis
                     else
                         xyz = xyzp;
                     end
-
-% SET the epochs
-                    if ischar(states),
-                        Pfs.parameters.states = states;
-                        pfsState = Session.stc{states};
-                        resample(pfsState,xyz);
-                    elseif isa(states,'MTAData'),
-                        pfsState = states.copy;
-                        resample(pfsState,xyz);
-                        Pfs.parameters.states = pfsState.label;                       
-                    end
-                                        
-% ASSIGN computational boundaries
-
-                    if isempty(boundaryLimits),
-                        boundaryLimits = Session.maze.boundaries(1:numel(type),:);
-                    end
-% COMPUTE bin count based on bin dimension and computational boundaries
-                    Pfs.adata.binSizes = round(abs(diff(boundaryLimits(1:numel(binDims),:),1,2))./binDims');
-                    
-                    Pfs.update_filename(Session,tag);
-
+% RESAMPLE state to new sampleRate
+                    resample(pfsState,xyz);                    
                     
                     
                 case 'MTAApfs'

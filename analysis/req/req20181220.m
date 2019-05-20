@@ -1,3 +1,6 @@
+%req20181220
+% Compute idependent trajectory count within all regions of the behavioral ratemaps
+
 global MTA_PROJECT_PATH;
 
 MjgER2016_load_data();
@@ -126,7 +129,7 @@ for unit = unitSubset,
                                    't');
     
     pitches = pargs.xyzp(pargs.states,:);
-    gridDist = sq(sqrt(sum((repmat(binGrid,[1,1,1,size(pitches,1)])...
+    gridDist = sq(sqrt(sum((rephbmat(binGrid,[1,1,1,size(pitches,1)])...
                             -repmat(permute(pitches,[3,4,2,1]),[size(binGrid,1),size(binGrid,2),1,1])).^2,3)));
 
     [gds,gridDistTinds] = sort(gridDist,3);

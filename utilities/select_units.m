@@ -1,6 +1,6 @@
 function units = select_units(varargin)
 % function units = select_units(varargin)
-% [sessionList,eDistThreshold,type,mode,nqFields] 
+% [sessionList,type,mode] 
 % {{{'jg05-20120309','cof','all'},{'jg05-20120310','cof','all'},{'jg05-20120317','cof','all'}},...
 % 15,'pyr','get',{'SpkWidthR','AmpSym'}});
 

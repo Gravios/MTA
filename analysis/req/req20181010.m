@@ -1,5 +1,11 @@
-
-% Theta phase restricted egocentric placefield ratemaps
+% req20181010 - Theta phase restricted egocentric placefield ratemaps
+%    Tags: phase egocentric ratemap
+%    Status: active
+%    Type: Analysis
+%    Author: Justin Graboski
+%    Project: MjgAS2020
+%    Description: Egocentric ratemaps decomposed by theta phase
+%    Figure: none
 
 
 MjgER2016_load_data();
@@ -90,7 +96,7 @@ for tind = 17:23; % jg05-20120312.cof.all
 end
 
 
-tind = 18;
+tind = 20;
 Trial = Trials{tind};
 unitSubset = units{tind};
 tprpf = {};

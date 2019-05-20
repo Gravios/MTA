@@ -13,5 +13,5 @@ end
 
 xyz = Trial.load('xyz');
 figure(hfig),hold on
-plot(xyz(:,'head_front',3));
+plot(xyz(:,'head_back',3));
 try,Lines(Trial.stc{key,xyz.sampleRate}(:),[],'r');end

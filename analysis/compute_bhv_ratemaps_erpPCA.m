@@ -54,13 +54,17 @@ if ~exist(filePath,'file') || overwrite,
     smnd  = sum(~isnan(rmaps),1);
     unitSubset = find(...                               % SELECT units with good sampling
                       range(1)<smnd&smnd<range(2)&...   %   SELECT unit subset by range of valid element count 
-                      max(rmaps)>2);                    %   SELECT unit subset by max rate
+                      max(rmaps)>4);                    %   SELECT unit subset by max rate
     zrmaps = rmaps(:,unitSubset);                       % SELECT a subset of rate maps by units
     zdims = size(zrmaps);                               % NOTE the dimensions of the original vector space
     zrmaps(isnan(zrmaps)) = 0;                          % SET all nan valued elements to zeros
-    validDims = sum(zrmaps==0,2)<zdims(2)/3;                % SELECT subspace {1/2 non-zero samples} 
+    validDims = sum(zrmaps==0,2)<zdims(2)/10;                % SELECT subspace {1/2 non-zero samples} 
     zrmaps = zrmaps(validDims,:);                           % REDUCE to selected subspace
                                                         % DECOMPOSE rate maps
+    %zrind = find(max(zrmaps)>2.5);
+    zrind = find(prctile(zrmaps,90)>2);
+    unitSubset = unitSubset(zrind);
+    zrmaps = zrmaps(:,zrind);
     
     %zrmaps = bsxfun(@rdivide,zrmaps,mean(prctile(zrmaps,90)));
     [~,LR,FSr,VT] = erpPCA(zrmaps',numComp);            % COMPUTE covariance-based PCA with Varimax rotation
@@ -85,21 +89,21 @@ end
 % $$$ end
 % $$$ subplot(1,numComp+1,numComp+1);
 % $$$ plot(VT(1:numComp,4),'*')
-
+% $$$ 
 % $$$ figure
 % $$$ for i = 1:numel(unitSubset),,
 % $$$     evmap = zeros(pfs{1}.adata.binSizes');
 % $$$     evmap(validDims) = zrmaps(:,i);
 % $$$ clf();
-% $$$     imagesc(pfs{1}.adata.bins{:},evmap');axis('xy')
-% $$$     title(num2str(clu(unitSubset(i),:)))
+% $$$     imagesc(pfs{1}.adata.bins{:},evmap');axis('xy')    
+% $$$     title(num2str([clu(unitSubset(i),:),max(evmap(:))]))
 % $$$     waitforbuttonpress();
 % $$$ end
+% $$$ 
 % $$$ figure,plot3(FSr(:,1),FSr(:,2),FSr(:,3),'.')
 % $$$ ind = FSr(:,1)<0;
 % $$$ figure,plot3(FSr(ind,2),FSr(ind,3),FSr(ind,4),'.')
-
-
+% $$$ 
 % $$$ figure
 % $$$ for i = 1:numel(unitSubset),
 % $$$     clf();
@@ -108,4 +112,4 @@ end
 % $$$     imagescnan({pfd{1}.adata.bins{:},evmap'},[],[],true);axis('xy')
 % $$$     waitforbuttonpress();
 % $$$ end
-% $$$ 
+
