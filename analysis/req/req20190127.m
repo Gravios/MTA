@@ -84,7 +84,7 @@ for t = 1:23
         for unit = unitSubset,
             [mxr,mxp] = pft.maxRate(unit);        
             pargs.xyzp = copy(xyz);
-            pargs.xyzp.data = [hrz(:,unit==unitSubset),phz(:,spk.map(spk.map(:,1)==unit,2))];
+            pargs.xyzp.data = [ddz(:,unit==unitSubset),phz(:,spk.map(spk.map(:,1)==unit,2))];
             pargs.units = unit;
             pargs.states = MTADepoch([],                                                   ...
                                      [],                                                   ...

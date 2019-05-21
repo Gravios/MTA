@@ -37,45 +37,21 @@ if exist(filePath,'file') && ~overwrite,
 else,
     pfindex = 1;
 
-    % [rmaps,clu] = concatenate_set_pfs(pfs,units);
+
     % GET bhv rate maps
-    rmaps = cf(@(p,u) mean(p.data.rateMap(:,ismember(p.data.clu,u),:),3,'omitnan'),  bfrm,units);
-    clu   = cf(@(p,u) p.data.clu(:,ismember(p.data.clu,u),:),                        bfrm,units);
-    tlu   = cf(@(i,u) repmat(i,size(u)), mat2cell(1:numel(units),1,ones([1,numel(units)])),units);
-    rmaps = cat(2, rmaps{:});
-    clu   = cat(2, clu{:});
-    tlu   = cat(2, tlu{:});
-    clu   = [tlu',clu'];
-    [clu,rind] = sortrows(clu);
-    clu   = clu(unitSubset,:);
-    rmaps = rmaps(:,rind);
-    rmaps = rmaps(validDims,unitSubset);
+    
+    [rmaps,clu]   = decapsulate_and_concatenate_mtaapfs(bfrm,units);    
+    clu           = clu(unitSubset,:);        
+    rmaps         = rmaps(validDims,unitSubset);
     rmaps(isnan(rmaps)) = 0;
-
-    rmapsShuffledMean = cf(@(p,u) mean(p.data.rateMap(:,ismember(p.data.clu,u),:),3,'omitnan'), bfrmShuffled,units);
-    clu =  cf(@(p,u) p.data.clu(:,ismember(p.data.clu,u),:), bfrmShuffled,units);    
-    tlu =  cf(@(i,u) repmat(i,size(u)), mat2cell(1:numel(units),1,ones([1,numel(units)])),units);
-    rmapsShuffledMean = cat(2, rmapsShuffledMean{:});   
-    clu = cat(2, clu{:});    
-    tlu = cat(2, tlu{:});    
-    clu = [tlu',clu'];
-    [~,rind] = sortrows(clu);
-    rmapsShuffledMean = rmapsShuffledMean(:,rind);
-    rmapsShuffledMean = rmapsShuffledMean(validDims,unitSubset);
-    rmapsShuffledMean(isnan(rmapsShuffledMean)) = 0;
-
-    rmapsShuffled = cf(@(p,u) p.data.rateMap(:,ismember(p.data.clu,u),:), bfrmShuffled,units);
-    clu =  cf(@(p,u) p.data.clu(:,ismember(p.data.clu,u),:), bfrmShuffled,units);    
-    tlu =  cf(@(i,u) repmat(i,size(u)), mat2cell(1:numel(units),1,ones([1,numel(units)])),units);
-    rmapsShuffled = cat(2, rmapsShuffled{:});   
-    clu = cat(2, clu{:});    
-    tlu = cat(2, tlu{:});    
-    clu = [tlu',clu'];
-    [~,rind] = sortrows(clu);
-    rmapsShuffled = rmapsShuffled(:,rind,:);
+    
+    rmapsShuffled = decapsulate_and_concatenate_mtaapfs(bfrmShuffled,units);
     rmapsShuffled = rmapsShuffled(validDims,unitSubset,:);
+    
+    rmapsShuffledMean = mean(rmapsShuffled,3,'omitnan');
+    
     rmapsShuffled(isnan(rmapsShuffled)) = 0;
-
+    
     D = cov(rmapsShuffledMean');
     LR = eigVecs;
 % COMPUTE rotated FS coefficients        

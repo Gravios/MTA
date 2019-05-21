@@ -26,6 +26,8 @@ switch dataType
     Data = cat(1,flipud(Data(end-order:end,:,:,:,:,:)),...
                       Data,...
                       flipud(Data(1:order,:,:,:,:,:)));
+  otherwise
+    error('MTA:utilities:@double:RectFilter:UnknownDataType');
 end
 
 dimensions = size(Data);
