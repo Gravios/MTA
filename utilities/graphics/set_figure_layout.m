@@ -1,7 +1,30 @@
 function [hfig,figOpts,fax] = set_figure_layout(varargin)
-% hfig,
-% format
-% layout
+%function [hfig,figOpts,fax] = set_figure_layout(varargin)
+% IN:
+%     hfig   - Handle: Main figure graphical handle
+%     format - String: page format option {'A4'}
+%     layout - String: page layout option {'portrait', 'landscape'}
+%     units  - String: figure's unit of measure {'normalized','centimeters','inches'...}
+%     subplotWidth  - Numeric: 
+%     subplotHeight - Numeric: 
+%     subplotPaddingHorizontal - Numeric: horizontal spacing of subplots within the same vertical oridnate
+%     subplotPaddingHorizontal - Numeric: horizontal spacing of subplots within the same vertical oridnate
+%
+% OUT:
+%     hfig - handle: Main figure graphical handle
+%
+%     figOpts - struct: Figure layout parameters 
+%        figOpts.page.units                
+%        figOpts.page.PaperPositionMode    
+%        figOpts.page.marginLeft           
+%        figOpts.page.marginTop            
+%        figOpts.subplot.width             
+%        figOpts.subplot.height            
+%        figOpts.subplot.horizontalPadding 
+%        figOpts.subplot.verticalPadding   
+%      
+%     fax - handle: Background axes handle
+
 
 % DEFARGS ------------------------------------------------------------------------------------------
 defargs = struct('hfig',                          [],                                            ...
@@ -10,11 +33,11 @@ defargs = struct('hfig',                          [],                           
                  'units',                         'centimeters',                                 ...
                  'subplotWidth',                  1.15,                                          ...
                  'subplotHeight',                 1.15,                                          ...
-                 'subplotHorizontalPadding',      0.0,                                           ...
+                 'subplotPaddingHorizontal',      0.0,                                           ...
                  'subplotVerticalPadding',        0.15                                           ...
 );
 [hfig,format,layout,units,subplotWidth,subplotHeight,                                            ...
- subplotHorizontalPadding,subplotVerticalPadding] = DefaultArgs(varargin,defargs,'--struct');
+ subplotPaddingHorizontal,subplotVerticalPadding] = DefaultArgs(varargin,defargs,'--struct');
 %---------------------------------------------------------------------------------------------------       
 
  
@@ -37,7 +60,7 @@ defargs = struct('hfig',                          [],                           
     figOpts.page.marginTop            = 2.54;
     figOpts.subplot.width             = subplotWidth;
     figOpts.subplot.height            = subplotHeight;
-    figOpts.subplot.horizontalPadding = subplotHorizontalPadding;
+    figOpts.subplot.horizontalPadding = subplotPaddingHorizontal;
     figOpts.subplot.verticalPadding   = subplotVerticalPadding;
 
     figOpts.page.xpos = figOpts.page.marginLeft                                                  ...

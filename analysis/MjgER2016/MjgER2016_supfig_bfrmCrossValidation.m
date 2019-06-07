@@ -1,4 +1,5 @@
 %MjgER2016_supfig_bfrmCrossValidation
+global MTA_PROJET_PATH
 
 MjgER2016_load_data();
 %  Variables:
@@ -125,10 +126,14 @@ for j = 1:size(brmCV1a,2),
                 & (pftCV1a(:,j)>0.25 | pftCV2a(:,k)>0.25)   ... 
                 & maskS;
         if ~isempty(nindS)&&sum(nindS)>=20,    
-            [rhoS(j,k),pvalB(j,k)] = corr(pftCV1a(nindS,j),pftCV2a(nindS,k));
+            [rhoS(j,k),pvalS(j,k)] = corr(pftCV1a(nindS,j),pftCV2a(nindS,k));
         end
     end
 end
+
+% save rhoS,rhoB
+
+% FIGURES ------------------------------------------------------------------------------------------
 
 % PLOT spatial vs behavioral correlation between fist and second half of session
 figure();

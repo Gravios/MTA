@@ -152,7 +152,7 @@ classdef MTAApfs < hgsetget %< MTAAnalysis
 % SET path
                     Pfs.path                  = Session.spath;
                     Pfs.tag                   = tag;
-% SET session                    
+% SET session
                     Pfs.session.sessionName   = Session.name;
                     Pfs.session.trialName     = Session.trialName;
                     Pfs.session.mazeName      = Session.maze.name;
@@ -168,7 +168,7 @@ classdef MTAApfs < hgsetget %< MTAAnalysis
                     Pfs.parameters.states     = '';
                     
                     Pfs.adata.trackingMarker  = trackingMarker;
-                                        
+                    
 % SET the epochs
                     if ischar(states),
                         Pfs.parameters.states = states;
@@ -177,9 +177,7 @@ classdef MTAApfs < hgsetget %< MTAAnalysis
                         pfsState = states.copy;
                         Pfs.parameters.states = pfsState.label;                       
                     end
-                                        
 % ASSIGN computational boundaries
-
                     if isempty(boundaryLimits),
                         boundaryLimits = Session.maze.boundaries(1:numel(type),:);
                     end
@@ -188,8 +186,8 @@ classdef MTAApfs < hgsetget %< MTAAnalysis
                     
                     Pfs.update_filename(Session,tag);
 
-% OPTIMIZE later
                     if exist(fpath(Pfs),'file') && ~overwrite
+% LOAD place fields 
                         load(Pfs.fpath);
                         if all(ismember(units,Pfs.data.clu)),
                             return;
@@ -219,7 +217,6 @@ classdef MTAApfs < hgsetget %< MTAAnalysis
                     Session = MTATrial(Obj.session.sessionName,...
                                        Obj.session.mazeName,...
                                        Obj.session.trialName);
-
                     
 % RESET the independent variabels
                     if xyzp.isempty,
@@ -258,7 +255,6 @@ classdef MTAApfs < hgsetget %< MTAAnalysis
                   
             end%switch Obj
                         
-
             numUnits = numel(units);
             selected_units = units;
             

@@ -5,7 +5,7 @@
 %  Description: parameter scripts for testing locate_rhm_ncp_coherence_point
 %  Bugs: NA
 
-FigPath = '/storage/gravio/figures/locate_max_rhmXncp_coherence';
+FigPath = '/storage/gravio/figures/analysis/locate_max_rhmXncp_coherence';
 create_directory(FigPath);
 
 sessionList = get_session_list('ncp');

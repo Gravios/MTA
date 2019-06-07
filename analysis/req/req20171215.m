@@ -41,17 +41,25 @@
 % $$$ figure();
 % $$$ plot(bsxfun(@rdivide,cat(2,e{:})',max(cat(2,e{:})')));
 
-Trial = MTATrial.validate('jg05-20120310.cof.all');
-Trial = MTATrial.validate('jg05-20120311.cof.all');
-Trial = MTATrial.validate('Ed10-20140817.cof.gnd');
+MjgER2016_load_data();
+
+Trial = Trials{20};
+unitSubset = units{20};
+
+% $$$ Trial = MTATrial.validate('jg05-20120310.cof.all');
+% $$$ Trial = MTATrial.validate('jg05-20120311.cof.all');
+% $$$ Trial = MTATrial.validate('jg05-20120312.cof.all');
+
+pftheta = pfs_2d_theta(Trial,unitSubset);
 
 state = 'pause&theta';
-
-units = select_placefields(Trial);
+overwrite = false;
+sampleRate = 16;
 
 % Now generate a head local gradient of spatial information around the head
 
 xyz = Trial.load('xyz','trb');
+resample(xyz,sampleRate);
 rb = Trial.xyz.model.rb({'head_back','head_left','head_front','head_right'});
 hcom = xyz.com(rb);
 xyz.addMarker('hcom', [0.5,1,0.5],{{'head_back','head_front',[0,0,1]}},hcom);
@@ -75,7 +83,6 @@ nm = nx.*20+hcom;
 xyz.addMarker('hbx',  [0.5,1,0.5],[],nm);
 nhm = {'hcom'};%,'hbx','hrx','htx'};
 
-
 i = [-100:10:100];
 j = [-100:10:100];
 k = [-50:10:50];
@@ -83,35 +90,58 @@ k = [-50:10:50];
 txyz = xyz(:,nhm,:);
 ind = nniz(txyz);
 
+spk = Trial.load('spk',sampleRate,'theta-groom-sit',unitSubset,'deburst');
 
-pargs = get_default_args('MjgER2016','MTAApfs','struct');
-pargs.units = units;
-pargs.states = 'theta-groom-sit';
-pargs.numIter = 1;
-pargs.overwrite = true;
-pargs.halfsample = false;
 pft = cell([numel(i),numel(j),numel(k)]);
+parp = parpool(11);
 for x = 1:numel(i),
     for y = 1:numel(j),
-        for z = 1:numel(k)
+        parfor z = 1:numel(k)
             sxyz = bsxfun(@plus,nx*i(x)+ny*j(y)+nz*k(z),txyz);
-            pargs.tag = ['ms-x',num2str(i(x)),'y',num2str(j(y)),'z',num2str(k(z))];
+            pargs = get_default_args('MjgER2016','MTAApfs','struct');
+            pargs.units = unitSubset;
+            pargs.states = 'theta-groom-sit';
+            pargs.numIter = 1;
+            pargs.SmoothingWeights = [1.5 1.5];
+            pargs.overwrite = overwrite;
+            pargs.halfsample = false;
+            pargs.spk = spk;
+            pargs.tag = ['msn-x',num2str(i(x)),'y',num2str(j(y)),'z',num2str(k(z))];
             pargs.xyzp = MTADfet.encapsulate(Trial,sxyz(:,1,[1,2]),xyz.sampleRate,'','','');
-            pfsArgs = struct2varargin(pargs);                    
-            pft{x,y,z} = MTAApfs(Trial,pfsArgs{:});
+            pfsArgs = struct2varargin(pargs);
+            pft(x,y,z) = {MTAApfs(Trial,pfsArgs{:})};
+            disp(num2str([x,y,z]));
         end
     end
 end
 
-mrates = cf(@(p,u)  p.maxRate(u),  pft,repmat({units},size(pft)));
+mrates = cf(@(p)  p.maxRate(unitSubset),  pft);
+% GET behavioral information scores
+
+bsi = cf(@(p) p.data.si(:,ismember(p.data.clu,unitSubset),:), pft);
+bsit = permute(reshape(cell2mat(bsi),[size(bsi,1),numel(bsi{1}),size(bsi,2),size(bsi,3)]),[1,3,4,2]);
+figure();
+for u = 1:size(bsit,4),
+    for s = 1:size(bsit,3),
+    subplot(2,6,s);    
+        imagesc(i,j,bsit(:,:,s,u)');
+        axis('xy');
+        title(num2str(unitSubset(u)));
+    end
+    cbx = colorbar();
+    cbx.Position = cbx.Position+[0.05,0,0,0];
+    subplot(2,6,12);
+    plot(pftheta,unitSubset(u),'mean','text',[],true);
+    waitforbuttonpress();
+end
+
+    
+
 pareas = cf(@(p,m)  permute(sum(bsxfun(@gt,p.data.rateMap,m'./2)),[1,3,4,2]),  pft,  mrates);
 p = cell2mat(pareas);
 
 r = cf(@(m) permute(m,[2,3,4,1]),  mrates);
 r = cell2mat(r);
-
-
-
 
 
 i = [-100:10:100];
@@ -282,8 +312,10 @@ print(gcf,'-dpng',  fullfile(FigDir,[FigName,'.png']));
 
 
 % 2d placefield optimizaiton search
+spk = Trial.load('spk',sampleRate,'theta-groom-sit',unitSubset,'deburst');
 
 xyz = Trial.load('xyz','trb');
+xyz.resample(sampleRate);
 rb = Trial.xyz.model.rb({'head_back','head_left','head_front','head_right'});
 hcom = xyz.com(rb);
 xyz.addMarker('hcom', [0.5,1,0.5],{{'head_back','head_front',[0,0,1]}},hcom);
@@ -316,16 +348,17 @@ j = [-100:5:100];
 txyz = xyz(:,nhm,:);
 
 pargs = get_default_args('MjgER2016','MTAApfs','struct');
-pargs.units = units;
-pargs.states = state;
+pargs.units = unitSubset;
+pargs.states = 'theta-groom-sit';
 pargs.numIter = 1;
 pargs.overwrite = true;
 pargs.halfsample = false;
+pargs.spk = spk;
 pfd = cell([numel(i),numel(j)]);
 for x = 1:numel(i),
     for y = 1:numel(j),
             sxyz = bsxfun(@plus,nx*i(x)+ny*j(y)+nz*0,txyz);
-            pargs.tag = ['ms-x',num2str(i(x)),'y',num2str(j(y))];
+            pargs.tag = ['ms2d-x',num2str(i(x)),'y',num2str(j(y))];
             pargs.xyzp = MTADfet.encapsulate(Trial,sxyz(:,1,[1,2]),xyz.sampleRate,'','','');
             pfsArgs = struct2varargin(pargs);
             pfd{x,y} = MTAApfs(Trial,pfsArgs{:});

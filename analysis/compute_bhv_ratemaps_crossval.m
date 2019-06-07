@@ -86,15 +86,15 @@ switch tag
   case 'cv2'
     FFLAG = 'first';
 end
-for s = 2:6
-    stcm(find(stcm(:,s),round(sum(nniz(stcm(:,s)))/2),FFLAG),s) = 0;
-end
-aper = stcm(:,1)==1 & any(stcm(:,2:6),2);
+
+
 
 % ASSIGN name and units to MTAApfs computational arguments
 pfsArgs.tag   = pfsTag;
 pfsArgs.units = units;
 pfsArgs.spk   = spk;
+
+
 
 % MAYBE overwrite all values
 pfsArgs.overwrite = overwrite;        
@@ -102,6 +102,19 @@ pfsArgs.overwrite = overwrite;
 u = 1;        
 % RESTRICT periods by drz and ddz
 pfsArgs.units  = units(u);
+
+stcmSubset = stcm;
+if ~isempty(spk.per),
+    sper = spk.per.copy();
+    sper.data = sper.data(spk.perInd(units(u),:));
+    cast(sper,'TimeSeries',xyz);
+    stcmSubset(~sper.data) = 0;
+end
+for s = 2:6
+    stcmSubset(find(stcmSubset(:,s),round(sum(nniz(stcmSubset(:,s)))/2),FFLAG),s) = 0;
+end
+aper = stcmSubset(:,1)==1 & any(stcmSubset(:,2:6),2);
+
 pfsArgs.states = MTADepoch([],                                           ...
                            [],                                           ...
                            ThreshCross(aper & abs(drz(:,u))<threshRate   ...

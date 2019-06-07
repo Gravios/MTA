@@ -75,6 +75,11 @@ brmShuff   = cf(@(t,u)   compute_bhv_ratemaps_shuffled(t,u),             Trials,
 % $$$     axis('xy');
 % $$$ end
 
+
+    
+
+
+
 stateLabels = {'theta','rear','high','low'}
 stateColors = 'brgk';
 
@@ -82,15 +87,17 @@ pftTPZ = cf(@(s) cf(@(T,u) MTAApfs(T,u,'tag',['tp-',s]), Trials, units), stateLa
 
 phzOrder = [9:16,1:8];
 figure();
-t = 20
+t = 21
 rmb = pftTPZ{1}{1}.adata.bins{1}(phzOrder)+2*pi*double(pftTPZ{1}{1}.adata.bins{1}(phzOrder)<0);
 for u = units{t};
 hold('on');    
 for s = 1:4,
     %plot(pftTPZ{s}{t}.adata.bins{:},plot(pftTPZ{s}{t},u),stateColors(s),'LineWidth',1);
     %plot(pftTPZ{s}{t}.adata.bins{:},plot(pftTPZ{s}{t},u,'mean_circ_smooth'),stateColors(s),'LineWidth',1);
-    rmp = plot(pftTPZ{s}{t},u,'all_circ_smooth');
+    rmp = plot(pftTPZ{s}{t},u,'mean_circ_smooth');
+    %rmp = plot(pftTPZ{s}{t},u,'mean');    
     plot(rmb,rmp(phzOrder,:),stateColors(s),'LineWidth',1);    
+    
 end
 xlim([0,2*pi])
 title(num2str(u));
@@ -99,11 +106,35 @@ clf();
 end
 
 
+pftTPZshuff = cf(@(s) cf(@(T,u) MTAApfs(T,u,'tag',['tp-shuff-',s]), Trials, units), stateLabels);
+phzOrder = [9:16,1:8];
+figure();
+t = 21
+rmb = pftTPZshuff{1}{1}.adata.bins{1}(phzOrder)+2*pi*double(pftTPZshuff{1}{1}.adata.bins{1}(phzOrder)<0);
+for u = units{t};
+hold('on');    
+for s = 1:4,
+    %plot(pftTPZ{s}{t}.adata.bins{:},plot(pftTPZ{s}{t},u),stateColors(s),'LineWidth',1);
+    %plot(pftTPZ{s}{t}.adata.bins{:},plot(pftTPZ{s}{t},u,'mean_circ_smooth'),stateColors(s),'LineWidth',1);
+    rmp = plot(pftTPZshuff{s}{t},u,'mean_circ_smooth');
+    %rmp = plot(pftTPZ{s}{t},u,'mean');    
+    plot(rmb,rmp(phzOrder,:),stateColors(s),'LineWidth',1);    
+    
+end
+xlim([0,2*pi])
+title(num2str(u));
+waitforbuttonpress();
+clf();
+end
+ 
+
+
+
 % $$$ % HRZ vs PHZ - egocentric rate zones versus theta phaze given behavioral state and placefield proximity
 % $$$ % req20190126();
 % $$$ pftHZTP = cf(@(s) cf(@(T,u) MTAApfs(T,u,'tag',['hztp-',s]), Trials, units), stateLabels);
 % $$$ figure,
-% $$$ t = 20;
+% $$$ t = 19;
 % $$$ sp = tight_subplot(2,4,0,0.05);
 % $$$ sp = reshape(sp,4,2)';
 % $$$ for u = units{t},
@@ -120,9 +151,98 @@ end
 % $$$     waitforbuttonpress();
 % $$$ end
 
+% $$$ % ddr vs PHZ - egocentric rate zones versus theta phaze given behavioral state and placefield proximity
+% $$$ % req20190127();
+% $$$ pftHZTP = cf(@(s) cf(@(T,u) MTAApfs(T,u,'tag',['ddtp-',s]), Trials, units), stateLabels);
+% $$$ figure,
+% $$$ t = 20;
+% $$$ sp = tight_subplot(2,4,0,0.05);
+% $$$ sp = reshape(sp,4,2)';
+% $$$ for u = units{t},
+% $$$     mrate = prctile(nonzeros(plot(pftHZTP{s}{t},u,1,'text',[],false)),99).*1.5;
+% $$$     for s = 1:4,
+% $$$         try,
+% $$$         axes(sp(1,s));
+% $$$         plot(pftHZTP{s}{t},u,1,'text',[0,mrate],false);
+% $$$         title([num2str(u) '-' stateLabels{s} '-' num2str(mrate)]);
+% $$$         axes(sp(2,s));
+% $$$         plot(pftHZTP{s}{t},u,1,'text',[0,mrate],false);
+% $$$         end
+% $$$     end
+% $$$     waitforbuttonpress();
+% $$$ end
+
+
+sesIds = [3:5,8:12,17:23];
+sesIds = [8:12,17:23];
+sesInds = ismember(cluSessionMap(:,1),sesIds);
+uind = diag(rhoB)>0.5&diag(rhoS)>0.5;
+
+cluSessionMapSubset = cluSessionMap(unitSubset,:);
+cluSessionMapRestricted = cluSessionMapSubset(uind&sesInds(unitSubset),:);
+
+pftTPZap = pftTPZa(:,uind&sesInds(unitSubset),2:4);
+npftTPZa = reshape(pftTPZap,16,[]);
+%npftTPZa = reshape(permute(pftTPZap,[2,1,3]),[],16.*3);
+npftTPZa(~nniz(npftTPZa(:))) = 0;
+nind = sum(npftTPZa==0)==16;
+% $$$ nind = sum(npftTPZa==0,2)==16*3;
+%npftTPZa(nind,:) =[];
+npftTPZa(:,nind) =[];
+
+[LU,LR,FSr,VT] = erpPCA(npftTPZa',3);
+fscr = zeros([numel(nind),3]);
+fscr(~nind,:) = FSr;
+fscr = reshape(fscr,[],3,3);
+
+
+figure,plot(LR)
+figure,plot(VT(1:10,4),'-+');
+
+[W,H,D] = nnmf(npftTPZa,3);
+Ha = zeros([numel(nind),3]);
+Ha(~nind,:) = H';
+Ha = reshape(Ha,[],3,3);
+
+figure();plot(W)
+
+
+
+figure,
+for u = 1:size(cluSessionMapRestricted,1),
+subplot(321);
+plot(pftTPZ{1}{1}.adata.bins{1},LR);
+title('erpPCA');
+subplot(323);
+imagesc(sq(fscr(u,:,:)));
+title(num2str(cluSessionMapRestricted(u,:)));
+colorbar();
+subplot(322);
+plot(pftTPZ{1}{1}.adata.bins{1},W);
+title('nnmf');
+subplot(324);
+imagesc(sq(Ha(u,:,:)));
+title(num2str(cluSessionMapRestricted(u,:)));
+colorbar();
+subplot(3,2,[5,6]);
+plot(pftTPZ{1}{1}.adata.bins{1},sq(pftTPZap(:,u,:)));
+legend({'rear','high','low'});
+waitforbuttonpress();
+clf();
+end
+
+
+
+figure,
+plot(fscr(:,2,1),fscr(:,3,3),'.');
+grid('on');
+line([-3,3],[-3,3]);
+
+
+
 
 % REDUCE placefield objects to 3D tensor
-pftTPZa = cf(@(pfs) cf(@(p,u) mean(p.data.rateMap(:,ismember(p.data.clu,u),:),3,'omitnan'),  pfs,units), pftTPZ);
+pftTPZa = cf(@(pfs) cf(@(p,u) mean(RectFilter(p.data.rateMap(:,ismember(p.data.clu,u),:),3,1,'circular'),3,'omitnan'),  pfs,units), pftTPZ);
 clu     = cf(@(pfs) cf(@(p,u) p.data.clu(:,ismember(p.data.clu,u),:),                        pfs,units), pftTPZ);
 tlu     = cf(@(i,u) repmat(i,size(u)), mat2cell(1:numel(units),1,ones([1,numel(units)])),units);
 pftTPZa = cf(@(pfs) cat(2,pfs{:}), pftTPZa);
@@ -138,19 +258,64 @@ pftTPZa = pftTPZa(:,rind,:);
 pftTPZa = pftTPZa(:,unitSubset,:);
 pftTPZa(isnan(pftTPZa)) = 0;
 
+
 % COMPUTE mean theta phase for each state
 meanStateThetaPhase = pftTPZa;
 pftTPZcpx = sq(sum(reshape(bsxfun(@times,                                                     ...
                                reshape(pftTPZa,size(pftTPZa,1),[]),                        ...
-                               exp(-i.*pftTPZ{1}{1}.adata.bins{1}(phzOrder))),             ...
+                               exp(-i.*pftTPZ{1}{1}.adata.bins{1})),             ...
                         [size(pftTPZa,1),size(pftTPZa,2),size(pftTPZa,3)]),1)              ...
             ./sum(pftTPZa,1));
 
+uind = diag(rhoB)>0.5&diag(rhoS)>0.5;
 figure,
-for s = 1:4,
-    subplot(1,4,s);
-    rose(angle(pftTPZcpx(abs(pftTPZcpx(:,s))>0.1,s)),16);
-    title(stateLabels{s});
+tang = angle(pftTPZcpx(:,1));
+for s = 2:4,
+    for j = 2:4,    
+        if s~=j,
+            subplot2(4,4,s,j);            
+            hold('on');
+            %rose(angle(pftTPZcpx(abs(pftTPZcpx(:,s))>0.1,s)),16);
+            %histcirc(angle(pftTPZcpx(abs(pftTPZcpx(:,s))>0.1,s)),16,pi/2)        
+            cpx = [pftTPZcpx(:,s),pftTPZcpx(:,j)];
+            aind = all(abs(cpx)>0.1,2);
+            dmax = [max(pftTPZa(:,:,s))',max(pftTPZa(:,:,j))'];
+            
+            ind = all(dmax>2,2);
+            aind = aind&ind&uind&sesInds(unitSubset);
+
+% $$$             scatter(circ_dist(tang(aind),angle(cpx(aind,1))),...
+% $$$                     circ_dist(tang(aind),angle(cpx(aind,2))),20,diff(dmax(aind,:),1,2),'filled')
+            
+            
+            scatter(angle(cpx(aind,1)),angle(cpx(aind,2)),20,-diff(dmax(aind,:),1,2),'filled')
+            scatter(angle(cpx(aind,1))+2*pi,angle(cpx(aind,2))+2*pi,20,-diff(dmax(aind,:),1,2),'filled')
+            scatter(angle(cpx(aind,1))+2*pi,angle(cpx(aind,2)),20,-diff(dmax(aind,:),1,2),'filled')
+            scatter(angle(cpx(aind,1)),angle(cpx(aind,2))+2*pi,20,-diff(dmax(aind,:),1,2),'filled')            
+            
+% $$$             scatter(circ_dist(angle(cpx(aind,1)),angle(cpx(aind,2))),angle(cpx(aind,1)),20,diff(dmax(aind,:),1,2),'filled')
+% $$$             scatter(circ_dist(angle(cpx(aind,1)),angle(cpx(aind,2))),angle(cpx(aind,1))+2*pi,20,diff(dmax(aind,:),1,2),'filled')
+
+% $$$             scatter(diff(dmax(aind,:),1,2),angle(cpx(aind,1)),20,circ_dist(angle(cpx(aind,1)),angle(cpx(aind,2))),'filled')
+% $$$             scatter(diff(dmax(aind,:),1,2),angle(cpx(aind,1))+2*pi,20,circ_dist(angle(cpx(aind,1)),angle(cpx(aind,2))),'filled')
+            Lines([],pi,'k');
+            Lines(pi,[],'k');
+% $$$             Lines([],0,'k');
+% $$$             Lines(0,[],'k');
+            colormap('jet');            
+            caxis([-10,10]);
+            %colormap('hsv');            
+% $$$             xlim([-pi,pi]);
+% $$$             ylim([-pi,pi]);
+            %caxis([-pi,pi]);
+            ylim([0,2*pi]);
+            xlim([0,2*pi]);
+            line([0,2*pi],[0,2*pi]);
+
+            title([stateLabels{s} ' ' stateLabels{j}]);
+
+        end
+    end
 end
 
 
@@ -268,9 +433,54 @@ cluExamples = [22, 13;...
 % $$$                        79,80, ... % nonselective transitions
 % $$$                       35,139,104,103];    % selective stationary
 
-cluExampleSet  = [18, 21; ...
+cluExampleSet  = [18, 24; ... all walk high low phase shift
+                  18, 25; ... all walk high low phase dropout
+                  18, 33; ... low walk
+                  18, 42; ... all to low walk
+                  18, 49; ... mid walk
+                  18, 60; ... all sorts of crazy but only in walk 
+                  ...
+                  20, 34; ... rear 
+                  20, 35; ... 
+                  20, 63; ...
+                  20, 79; ...                  
+                  20, 80; ... % nonselective transitions
+                  20, 83; ...                  
+                  20,103; ...
+                  20,104; ...              
+                  20,110; ...                  
+                  20,111; ...                  
+                  20,119; ... % rearing transitions
+                  20,139; ...
+                  ...                  
+                  21,  6; ... low walk dominant
+                  21, 22; ... all to high walk
+                  21, 32; ... mid walk
+                  21, 37; ... low walk
+                  ...
+                  22,  6; ... rear
+                  22, 11; ... rear
+                  22, 13; ... walk slight spatial shift between high and low
+                  22, 18; ... low walk
+                  22, 22; ... low walk                  
+                  22, 61; ... high walk
+                  ...
+                  23, 18; ... high walk                  
+                  23, 35; ... double placefield high and low walk
+                  23, 36; ... high walk                  
+                  23, 40; ... walk high and low phase shift
+                  23, 63; ... high walk
+                  23, 70; ... all walk                                    
+                  23, 71; ... low walk                  
+                  23, 69];
+
+
+
+
+
+cluExampleSet  = [18, 24; ...
                   18, 25; ...
-                  19, 67; ...                  
+                  19, 67; ...
                   19, 141; ...                            
                   20, 80; ...
                   20, 83; ...
@@ -1048,3 +1258,215 @@ end
 % $$$ af(@(s) xlim(s,[-0.2,1]),sp);
 % $$$ af(@(s) ylim(s,[-0.2,1]),sp);
 % $$$ af(@(s) grid(s,'on'),sp);
+
+
+
+
+% req20190527();
+
+pftHZTPD = cf(@(s) cf(@(T,u) MTAApfs(T,u,'tag',['ddtp-','s',num2str(sigma),'-',s]), Trials, units), stateLabels);
+pftTPZDa = cf(@(pfs) ...
+              cf(@(p,u) ...
+                 p.data.rateMap(:,ismember(p.data.clu,u),:),  ...
+                 pfs,units), ...
+              pftHZTPD);
+% $$$ pftTPZDa = cf(@(pfs) ...
+% $$$               cf(@(p,u) ...
+% $$$                  mean(reshape(permute(RectFilter(reshape(permute(p.data.rateMap(:,ismember(p.data.clu,u),:),[1,4,2,3]),[p.adata.binSizes',numel(u),p.parameters.numIter]),3,1,'circular'),[2,1,3,4]),size(p.data.rateMap,1),numel(u),p.parameters.numIter),3,'omitnan'),  ...
+% $$$                  pfs,units), ...
+% $$$               pftHZTPD);
+
+clu     = cf(@(pfs) cf(@(p,u) p.data.clu(:,ismember(p.data.clu,u),:),                        pfs,units), pftHZTPD);
+tlu     = cf(@(i,u) repmat(i,size(u)), mat2cell(1:numel(units),1,ones([1,numel(units)])),units);
+pftTPZDa = cf(@(pfs) cat(2,pfs{:}), pftTPZDa);
+clu     = cf(@(c)   cat(2,c{:}),clu);
+assert(all(cell2mat(cf(@(c) all(c), cf(@(c,o) c==o, clu,circshift(clu,1,2))))),'Clus do not match');
+pftTPZDa = cat(4,pftTPZDa{:});
+clu = clu{1};
+tlu=cat(2,tlu{:});
+clu=[tlu',clu'];
+[clu,rind] = sortrows(clu);
+clu     = clu(unitSubset,:);
+pftTPZDa = pftTPZDa(:,rind,:,:);
+pftTPZDa = pftTPZDa(:,unitSubset,:,:);
+pftTPZDa = reshape(permute(pftTPZDa,[1,5,2,3,4]),[pftHZTPD{1}{1}.adata.binSizes',numel(unitSubset),pftHZTPD{1}{1}.parameters.numIter,numel(stateLabels)]);
+
+% For each unit, for each state, for each phase, find the maximum rate and position along the gdz
+[grate,gpos] = max(permute(RectFilter(sq(mean(permute(pftTPZDa(:,:,uind&sesInds(unitSubset),:,:),[2,1,3,4,5]),4,'omitnan')),3,1,'circular'),[2,1,3,4,5]));
+grate = sq(grate(:,:,:,2:4));
+gpos = sq(gpos);
+[prate,pphz] = max(grate);
+
+
+npftTPZa = reshape(grate,16,[]);
+npftTPZa(~nniz(npftTPZa(:))) = 0;
+nind = sum(npftTPZa==0)==16;
+npftTPZa(:,nind) =[];
+
+[LU,LR,FSr,VT] = erpPCA(npftTPZa',3);
+fscr = zeros([numel(nind),3]);
+fscr(~nind,:) = FSr;
+fscr = reshape(fscr,[],3,3);
+
+figure,plot(LR(phzOrder,:))
+figure,plot(VT(1:10,4),'-+');
+
+
+[W,H,D] = nnmf(npftTPZa,3);
+fscr = zeros([numel(nind),3]);
+fscr(~nind,:) = H';
+fscr = reshape(fscr,[],3,3);
+
+figure,plot(W(phzOrder,:))
+
+
+msr = sq(max(sq(grate(phzOrder,:,:))));
+[msr,msi] = sort(msr,2,'descend');
+dsr = sq(mean(sq(grate(phzOrder,:,:))));
+[dsr,dsi] = sort(dsr,2,'descend');
+
+
+
+
+
+
+% REVIEW examples 
+figure(293023);
+for u = 1:144;
+clf();
+% F scores
+subplot(411);
+imagesc(sq(fscr(u,:,:)));
+% phase rates
+subplot(412);
+plot(sq(grate(phzOrder,u,1:4)));
+legend(stateLabels(1:4));
+% Eigenvectors
+subplot(413);
+plot(LR(phzOrder,:));
+% Delta F scores (dominate - subordinate)
+subplot(414);
+%sq(sum(fscr(u,:,:).*double(fscr(u,:,:)>0),3),'k-+')
+plot(bsxfun(@minus,sq(fscr(u,dsi(u),:)),sq(fscr(u,~ismember([1:3],dsi(u)),:))'));
+% GET index of domiate state
+waitforbuttonpress();
+end
+
+
+% DOMINATE state 
+stateLabelSubset = stateLabels(2:4);
+figure,
+for s = 1:3,
+ind = dsi==s;
+dfscr = bsxfun(@minus,fscr(ind,~ismember(1:size(fscr,2),s),:),fscr(ind,s,:));
+dgrate = bsxfun(@minus,grate(:,ind,[false,~ismember(2:4,s+1),false,false,false,false]),grate(:,ind,s+1));
+rdsr = dsr(ind,s)./mean(dsr(ind,~ismember(1:size(fscr,2),s)),2);
+subplot(3,2,2*s-1);
+hold('on');
+grid('on');
+%plot3(dfscr(:,1,1),dfscr(:,1,2),dfscr(:,1,3),'.');
+plot(sq(dfscr(:,1,:))');
+%plot(sq(dgrate(phzOrder,:,1)));
+%plot(mean(sq(dgrate(phzOrder,:,1)),2),'k--','LineWidth',3);
+title(stateLabelSubset(~ismember(1:size(fscr,2),s)))
+subplot(3,2,2*s);
+hold('on');
+grid('on');
+%plot3(dfscr(:,2,1),dfscr(:,2,2),dfscr(:,2,3),'.');
+plot(sq(dfscr(:,2,:))');
+%plot(sq(dgrate(phzOrder,:,2)));
+%plot(mean(sq(dgrate(phzOrder,:,2)),2),'k--','LineWidth',3);
+end
+
+
+% DOMINATE state rate difference
+stateLabelSubset = stateLabels(2:4);
+figure,
+for s = 1:3,
+ind = dsi==s;
+%dfscr = bsxfun(@minus,fscr(ind,~ismember(1:size(fscr,2),s),:),fscr(ind,s,:));
+dgrate = bsxfun(@minus,grate(:,ind,[false,~ismember(2:4,s+1),false,false,false,false]),grate(:,ind,s+1));
+
+subplot(3,2,2*s-1);
+hold('on');
+grid('on');
+%plot3(dfscr(:,1,1),dfscr(:,1,2),dfscr(:,1,3),'.');
+%plot(sq(dfscr(:,1,:))');
+plot(sq(dgrate(phzOrder,:,1)));
+plot(mean(sq(dgrate(phzOrder,:,1)),2),'k--','LineWidth',3);
+title(stateLabelSubset(~ismember(1:size(fscr,2),s)))
+
+subplot(3,2,2*s);
+hold('on');
+grid('on');
+%plot3(dfscr(:,2,1),dfscr(:,2,2),dfscr(:,2,3),'.');
+%plot(sq(dfscr(:,2,:))');
+plot(sq(dgrate(phzOrder,:,2)));
+plot(mean(sq(dgrate(phzOrder,:,2)),2),'k--','LineWidth',3);
+end
+
+
+% Compare erpPCA fscores for all cells within dominate state
+stateLabelSubset = stateLabels(2:4);
+figure,
+for s = 1:3,
+ind = dsi==s;
+dfscr = bsxfun(@minus,fscr(ind,~ismember(1:size(fscr,2),s),:),fscr(ind,s,:));
+subplot(3,3,3*s-2);
+plot3(msr(ind,3),msr(ind,2),msr(ind,1),'.');
+xlim([0,50]);ylim([0,50]);zlim([0,50]);daspect([1,1,1])
+subplot(3,3,3*s-1);
+hold('on');
+grid('on');
+plot3(dfscr(:,1,1),dfscr(:,1,2),dfscr(:,1,3),'.');
+title(stateLabelSubset(~ismember(1:size(fscr,2),s)))
+subplot(3,3,3*s);
+hold('on');
+grid('on');
+plot3(dfscr(:,2,1),dfscr(:,2,2),dfscr(:,2,3),'.');
+end
+ForAllSubplots('ylim([-0.2,0.2]);xlim([-0.2,0.2])')
+%
+
+% CONSOLIDATE the fscore differences 
+%  color by dominate state
+%  order fscore differences by mean rate
+% 
+figure();
+stsColor = 'rgb';
+sp = gobjects([0,1]);
+sp(end+1) = subplot(121);
+sp(end+1) = subplot(122);
+af(@(h) hold(h,'on'), sp);
+for s = 1:3
+    ind = dsi(:,1)==s;
+    dfscr = bsxfun(@minus,fscr(ind,~ismember(1:size(fscr,2),s),:),fscr(ind,s,:));
+    dispOpts = {'.',...
+                'MarkerFaceColor',stsColor(s),...
+                'MarkerEdgeColor',stsColor(s),...
+                'MarkerSize',10};
+    for j = 1:size(dfscr,1),
+        if dsi(j,2)>dsi(j,3)
+            %if dsr(j,2)>4,
+                axes(sp(1));
+                plot(dfscr(j,2,1),dfscr(j,2,2),dispOpts{:});
+                %end
+                %if dsr(j,3)>4,
+                axes(sp(2));
+                plot(dfscr(j,1,1),dfscr(j,1,2),dispOpts{:});
+                %end
+        else
+            %if dsr(j,2)>4,
+                axes(sp(1));
+                plot(dfscr(j,1,1),dfscr(j,1,2),dispOpts{:});
+                %end
+                %if dsr(j,3)>4,
+                axes(sp(2));
+                plot(dfscr(j,2,1),dfscr(j,2,2),dispOpts{:});
+                %end
+        end
+    end
+end
+ForAllSubplots('ylim([-0.2,0.1]);xlim([-0.2,0.1])')
+
+

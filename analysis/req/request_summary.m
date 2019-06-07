@@ -1044,7 +1044,7 @@
     Type: Analysis
     Author: Justin Graboski
     Final_Forms: NA
-    Project: MjgER2016: behavior-theta-modulation 
+    Project: MjgER2016: BhvPlaceCode
     Description: Compilation of theta phase rate maps given positon and state
     Protocol:
     Figures: 
@@ -1055,5 +1055,34 @@
 ** 2019 03 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 
 ** 2019 04 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+   
+** 2019 05 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 
+*** req20190527
+    Tags: distance place field transform
+    Status: active
+    Type: analysis
+    Author: Justin Graboski
+    Final_Forms: NA
+    Project: MjgER2016: BhvPlaceCode
+    Description: gaussian distance transform to compute linearized 2d trajectories rate maps
+    Protocol: 1. transform distance to max normalized gaussian map
+    Figures:
+
+*** req20190530 
+    Tags: forbidden analysis
+
+
+** 2019 05 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+
+*** req20190603
+    Tags: trajectory count 
+    Status: retired
+    Type: utility
+    Author: Justin Graboski
+    Final_Forms: compute_unit_uniqueTrajectoryCount.m
+    Project: MjgER2016: BhvPlaceCode
+    Description: compute the number of independent trajectories near a place field
+                 center, the number of independent trajectories with at least one spike,
+                 and the first and last spike time within this reagion.
 
