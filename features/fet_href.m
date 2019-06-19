@@ -12,7 +12,7 @@ function [fet,featureTitles,featureDesc,Nmean,Nstd] = fet_href(Trial,varargin)
 % DEFARGS ------------------------------------------------------------------------------------------
 defargs = struct('newSampleRate', Trial.xyz.sampleRate,                 ...
                  'normalize'    , false,                    ...
-                 'procOpts'     , {'SPLINE_SPINE_HEAD_EQD'});
+                 'procOpts'     , {{}});
 
 [newSampleRate,normalize,procOpts] = DefaultArgs(varargin,defargs,'--struct');
 %--------------------------------------------------------------------------------------------------

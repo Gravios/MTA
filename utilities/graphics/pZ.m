@@ -1,17 +1,6 @@
 function pZ(Trial,varargin)
-
-switch numel(varargin)
-  case 2
-    hfig = varargin{1};
-    key = varargin{2};
-  case 1
-    hfig = varargin{1};
-  otherwise         
-    hfig = gcf;
-    key = 'r';
-end
-
+[hfig,key,marker] = DefaultArgs(varargin,struct('hfig',gcf(),'key','r','marker','head_back'),'--struct');
 xyz = Trial.load('xyz');
 figure(hfig),hold on
-plot(xyz(:,'head_back',3));
+plot(xyz(:,marker,3));
 try,Lines(Trial.stc{key,xyz.sampleRate}(:),[],'r');end

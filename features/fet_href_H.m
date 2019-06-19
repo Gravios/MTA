@@ -45,6 +45,7 @@ ny = bsxfun(@rdivide,ny,sqrt(sum((ny).^2,3)));
 nx = cross(ny,nz);
 nx = bsxfun(@rdivide,nx,sqrt(sum((nx).^2,3)));
 
+
 if theta ~= 0,
     evec = cat(2,nx,ny,nz);
     j =1:3;

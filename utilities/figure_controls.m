@@ -5,20 +5,20 @@ function index = figure_controls(hfig,index,varargin)
 [indmap,autoIncr,figname,flags] = DefaultArgs(varargin,{[],false,[],''});
 
 
-if autoIncr,
-    whatkey = 'n';
+if autoIncr,                              % ITERATE automatically over indmap
+    currentChar = 'n';
     if ~isempty(indmap),
         if index==indmap(end),index=-1;
             return;
         end
     end
-else
-    B = waitforbuttonpress;
-    whatkey = get(hfig,'CurrentCharacter');
+else                                      % ITERATE manually over indmap
+    B = waitforbuttonpress();
+    currentChar = hfig.CurrentCharacter;  % GET the last key pressed
     if ~B,return,end
 end
 
-switch double(whatkey)
+switch double(currentChar)                % DO some action
   case double('i')
     ii = index;
     index = input('Enter index #: ');
@@ -29,35 +29,34 @@ switch double(whatkey)
         end
     end
 
-
-  case double('n')
-    if ~isempty(indmap)
+  case double('n')                        % GET next index
+    if ~isempty(indmap)                   % GET next index within indmap
         ii = find(indmap==index);
-        if (ii+1)>numel(indmap),
+        if (ii+1)>numel(indmap),          % RETURN to begining of indmap            
             index=indmap(1);
-        else
+        else                              % GET next index
             index = indmap(ii+1);
         end
-    else
+    else                                  % GET next index        
         index = index+1;
     end
     
-  case double('p')
-    if ~isempty(indmap)
+  case double('p')                        % GET previous index    
+    if ~isempty(indmap)                   % GET previous index within indmap        
         ii = find(indmap==index);
-        if (ii-1)<1,
+        if (ii-1)<1,                      % MOVE to the end of indmap
             index=indmap(end);
-        else
+        else                              % GET previous index                
              index = indmap(ii-1);
         end
-    else
+    else                                  % GET previous index            
         index=index-1;
     end
     
-  case double('s')
+  case double('s')                        % PRINT figure
     saveas(hfig,figname,'png');
     
-  case double('q')
+  case double('q')                        % QUIT figure    
     index = -1;
 end
 

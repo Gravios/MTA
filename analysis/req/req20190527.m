@@ -130,25 +130,25 @@ for t = 1:23
 end% for t
 % $$$ delete(parp);
 
-figure,
-sp = tight_subplot(2,1,0,0.1);
-for u = units{t},
-axes(sp(1));plot(pfs,u,'mean','text',[],false);
-axes(sp(2));plot(pfs,u,'mean','text',[],false);
-title(num2str(u));
-waitforbuttonpress();
-end
-
-
-pftHZTPD    = cf(@(s) ...
-                 cf(@(T,u) MTAApfs(T,u,'tag',['ddtp-','s',num2str(sigma),'-',s]), Trials(20), units(20)),...
-                 stateLabels);
-
-t = 1
+% $$$ figure,
+% $$$ sp = tight_subplot(2,1,0,0.1);
+% $$$ for u = units{t},
+% $$$ axes(sp(1));plot(pfs,u,'mean','text',[],false);
+% $$$ axes(sp(2));plot(pfs,u,'mean','text',[],false);
+% $$$ title(num2str(u));
+% $$$ waitforbuttonpress();
+% $$$ end
+% $$$ 
+% $$$ 
+% $$$ pftHZTPD    = cf(@(s) ...
+% $$$                  cf(@(T,u) MTAApfs(T,u,'tag',['ddtp-','s',num2str(sigma),'-',s]), Trials, units),...
+% $$$                  stateLabels);
+% $$$ 
+t = 5;
 figure,
 sp = tight_subplot(2,8,0,0.1);
 sp = reshape(reshape(sp',8,2)',2,8);
-for u = units{20},
+for u = units{t},
     for s = 1:8,
         axes(sp(s*2-1));plot(pftHZTPD{s}{t},u,'mean','text',[],false);
         axes(sp(s*2));plot(pftHZTPD{s}{t},u,'mean','text',[],false);

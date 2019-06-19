@@ -116,6 +116,9 @@ unitInclusionTPD = cell([1,numel(tInds)]);
 
 
 for t = tInds;
+    Trial = Trials{t};
+    unitSubset = units{t};
+    
     xyz = preproc_xyz(Trial,'trb');
     xyz.resample(sampleRate);
     spk  = create(copy(Trial.spk),Trial,xyz.sampleRate,'',unitSubset,'deburst');
@@ -131,15 +134,18 @@ for t = tInds;
 end
 
 
-% $$$ figure,
-% $$$ ind = posteriorMax>0.01;
-% $$$ subplot(4,1,1);plot([xyz(ind,5,1),sq(decEstSax(ind,1))]);    
-% $$$ subplot(4,1,2);plot([xyz(ind,5,2),sq(decEstSax(ind,2))]);        
-% $$$ subplot(4,1,3);plot([fet(ind,1),  sq(decEstSax(ind,3))]);
-% $$$ subplot(4,1,4);plot([fet(ind,2),  sq(decEstSax(ind,4))]);
-% $$$ linkaxes(findobj(gcf(),'Type','Axes'),'x');
-% $$$ 
-% $$$ 
+fet = fet_HB_pitchB(Trial,sampleRate);
+
+
+figure,
+ind = posteriorMax{t==tInds}>0.01&unitInclusion{t==tInds}>4;
+subplot(4,1,1);plot([xyz(ind,5,1),sq(decEstCom{t==tInds}(ind,1))]);    
+subplot(4,1,2);plot([xyz(ind,5,2),sq(decEstCom{t==tInds}(ind,2))]);    
+subplot(4,1,3);plot([fet(ind,1),  sq(decEstCom{t==tInds}(ind,3))]);
+subplot(4,1,4);plot([fet(ind,2),  sq(decEstCom{t==tInds}(ind,4))]);
+linkaxes(findobj(gcf(),'Type','Axes'),'x');
+
+
 % $$$ decError = zeros([size(xyz,1),size(decEstSax,2)]);
 % $$$ decError(:,[1,2]) = [multiprod(decEstSax(:,[1,2])-sq(xyz(:,'hcom',[1,2])),hvec(:,:,:),2,[2,3])];
 % $$$ decError(:,[3,4],:) = [fet(:,1)-decEstSaxTPD(:,3),fet(:,2)-decEstSax(:,4)];

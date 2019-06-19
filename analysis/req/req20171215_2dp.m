@@ -24,33 +24,34 @@ xyz.resample(sampleRate);
 rb = Trial.xyz.model.rb({'head_back','head_left','head_front','head_right'});
 hcom = xyz.com(rb);
 xyz.addMarker('hcom', [0.5,1,0.5],{{'head_back','head_front',[0,0,1]}},hcom);
-hcom(:,:,3) = 0;
-xyz.data(:,:,3) = 0;
+hcom = hcom(:,:,1:2);
+xyz.data= xyz.data(:,:,[1,2]);
 
-% GENERATE orthogonal basis, origin: head's center of mass
-nz = -cross(xyz(:,'head_back',:)-hcom,xyz(:,'head_left',:)-hcom);
-nz = bsxfun(@rdivide,nz,sqrt(sum((nz).^2,3))); 
-nm = nz.*20+hcom;
-xyz.addMarker('htx',  [0.5,1,0.5],[],nm);
-
-% GENERATE orthogonal basis, origin: head's center of mass
-ny = cross(xyz(:,'htx',:)-hcom,xyz(:,'head_back',:)-hcom);
-ny = bsxfun(@rdivide,ny,sqrt(sum((ny).^2,3)));
-nm = ny.*20+hcom;
-xyz.addMarker('hrx',  [0.5,1,0.5],[],nm);
-
-% GENERATE orthogonal basis, origin: head's center of mass
-nx = cross(xyz(:,'hrx',:)-hcom,xyz(:,'htx',:)-hcom);
-nx = bsxfun(@rdivide,nx,sqrt(sum((nx).^2,3)));
-nm = nx.*20+hcom;
-xyz.addMarker('hbx',  [0.5,1,0.5],[],nm);
-nhm = {'hcom'};%,'hbx','hrx','htx'};
+nx = xyz(:,'head_front',:)-hcom;
+nx = bsxfun(@rdivide,nx,sqrt(sum((nx).^2,3))); 
+ny = nx(:,1,[2,1]);
 
 
-i = [-100:5:100];
-j = [-100:5:100];
+i = [-300:10:300];
+j = [-200:10:200];
 
-txyz = xyz(:,nhm,:);
+
+
+% DIAGNOSTIC plot
+% $$$ figure();
+% $$$ tind = 2110;
+% $$$ hold('on');
+% $$$ scatter(xyz(tind,{'hcom','head_front','head_right'},1),...
+% $$$          xyz(tind,{'hcom','head_front','head_right'},2),...
+% $$$         30,[0,0,1;0,1,0;1,0,0],'filled');
+% $$$ markerColor = jet(numel(i));
+% $$$ for x = 1:numel(i)
+% $$$     nxy = sq([nx(tind,1,:)*i(x)+ny(tind,1,:)*j(25)+hcom(tind,1,:)]);
+% $$$     scatter(nxy(1),nxy(2),10,markerColor(x,:),'filled');
+% $$$ end
+
+
+
 % LFP - Local Field Potential
 Trial.lfp.filename = [Trial.name,'.lfp'];
 try,   lfp = load(Trial,'lfp',sessionList(t).thetaRefGeneral);
@@ -66,31 +67,34 @@ phz.data = mod(phz.data+pi,2*pi)-pi;
 lfp.resample(xyz);    
 
 
-parp = parpool(8);
 pfd = cell([numel(i),numel(j)]);
+
 for x = 1:numel(i),
-    parfor y = 1:numel(j),
+    for y = 1:numel(j),
         disp(num2str([x,y]));
-        sxyz = bsxfun(@plus,nx*i(x)+ny*j(y)+nz*0,txyz);
+        sxyz = bsxfun(@plus,nx*i(x)+ny*j(y),hcom);
         pargs = get_default_args('MjgER2016','MTAApfs','struct');
         pargs.units = unitSubset;
-        pargs.states = 'theta-groom-sit';
+        pargs.states = 'theta-groom-sit-rear';
         pargs.binDims = [40,pi/4,40];
         pargs.SmoothingWeights = [1.5,0.8,1.5];
         pargs.boundaryLimits =  [-500,500;-pi,pi;-500,500];        
         pargs.numIter = 1;
-        pargs.overwrite = true;
+        pargs.overwrite = false;
         pargs.halfsample = false;
         pargs.spk = spk;
+        pargs.autoSaveFlag = true;
         pargs.tag = ['ms2dp-x',num2str(i(x)),'y',num2str(j(y))];            
         pargs.xyzp = MTADfet.encapsulate(Trial,[sxyz(:,1,1),phz.data,sxyz(:,1,2)],sampleRate,'','','');
         pargs.compute_pfs = @PlotPFCirc;
         pfsArgs = struct2varargin(pargs);
-        pfd(x,y) = {MTAApfs(Trial,pfsArgs{:})};
+        pfd{x,y} = MTAApfs(Trial,pfsArgs{:});
     end
 end
 
 
+
+pff = MTAApfs(Trial,unitSubset,'tag',['ms2dp-x',num2str(i(x)),'y',num2str(j(y))])
 
 bsi = cf(@(p) p.data.si(:,ismember(p.data.clu,unitSubset),:), pfd);
 bsit = permute(reshape(cell2mat(bsi),[size(bsi,1),numel(bsi{1}),size(bsi,2),size(bsi,3)]),[1,3,2]);
@@ -116,14 +120,47 @@ for u = 1:size(bsit,3),
     title(num2str(unitSubset(u)));
     cbx = colorbar();
     cbx.Position = cbx.Position+[0.05,0,0,0];
-    
     waitforbuttonpress();
 end
+
+phzOrder = fliplr([5:8,1:4]);
+
+pbins = pfd{1}.adata.bins{2}+double(pfd{1}.adata.bins{2}<0).*2.*pi;
+pbins = pbins(phzOrder);
+xbins = i([1:16]*4-3);
+
+figure(1);clf();
+sp = tight_subplot(8,16,0,0.01);
+sp = reshape(sp,16,8)';
+for u = 1:size(bsit,3)
+    figure(1);
+    for b = 1:16,
+        rmap = plot(pfd{b*4-3,21},unitSubset(u),[],'text',[],false);
+        rmaps = reshape(permute(rmap,[1,3,2]),[],size(rmap,2));
+        bsii(b,:) = sum(bsxfun(@rdivide,rmaps,mean(rmaps,'omitnan'))...
+                               .*log2(bsxfun(@rdivide,rmaps,mean(rmaps,'omitnan'))),'omitnan')./size(rmaps,1);
+        for p = 1:8,
+            axes(sp(p,b));
+            imagesc(sq(rmap(:,phzOrder(p),:))');
+            caxis([0,prctile(rmap(:),99.9)]);
+            axis('xy');
+            colormap('jet');
+            set(gca,'XTicklabel',{});
+            set(gca,'YTicklabel',{});
+        end
+    end
+    figure(2);
+    imagesc(xbins,pbins,bsii(:,phzOrder)');
+    axis('xy');
+    waitforbuttonpress();
+end
+
 
 
 mratesd = cf(@(p,u)  p.maxRate(u),  pfd,repmat({units},size(pfd)));
 pareasd = cf(@(p,m)  permute(sum(bsxfun(@gt,p.data.rateMap,m'./2)),[1,3,2]),  pfd,  mratesd);
 pd = cell2mat(pareasd);
+
 
 rd = cf(@(m) permute(m,[2,3,1]),  mratesd);
 rd = cell2mat(rd);

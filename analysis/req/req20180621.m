@@ -17,11 +17,12 @@ MjgER2016_load_data();
 statesSpk = {'theta','loc','pause','rear','hloc','hpause','lloc','lpause','groom','sit'};
 distThresh = 250;
 sampleRate = 250;
-
+sigma = 150;
 
 spkmap = [];
 spkdrz = [];
 spkhrz = [];
+spkghz = [];
 spkpch = [];
 spkego = [];
 
@@ -65,8 +66,10 @@ for tind = 1:numel(Trials)
     spk = Trial.load('spk',xyz.sampleRate,'gper',unitSubset,'deburst');
     pft = pfs_2d_theta(Trial,unitSubset);
     hrz = compute_hrz(Trial,unitSubset,pft,'sampleRate',sampleRate);
+    ghz = compute_ghz(Trial,unitSubset,pft,'sampleRate',sampleRate,'sigma',150);    
     ddz = compute_ddz(Trial,unitSubset,pft,'sampleRate',sampleRate);
     drz = compute_drz(Trial,unitSubset,pft,'sampleRate',sampleRate);
+    Trial.lfp.filename = [Trial.name,'.lfp'];
     try,  lfp = Trial.load('lfp',sessionList(tind).thetaRef);
     catch,lfp = Trial.load('lfp',sessionList(tind).thetaRef);
     end    
@@ -126,6 +129,7 @@ for tind = 1:numel(Trials)
 % $$$         spkavl = cat(1,spkavl,avl(res,:));        
         spkdrz = cat(1,spkdrz,drz(res,unit));
         spkhrz = cat(1,spkhrz,hrz(res,unit));        
+        spkghz = cat(1,spkhrz,ghz(res,unit));                
         spkphz = cat(1,spkphz,phz(res,spk.map(unitSubset(unit)==spk.map(:,1),2)));        
         for state = 1:numel(statesSpk),
             for s = 1:2,

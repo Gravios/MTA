@@ -399,7 +399,7 @@ if getappdata(handles.DMapp,'load_sessions'),
 
     % Select Valid Sessions
     files = dir(Session.path.data);
-    re = '^[a-zA-Z]{1,2}[0-9]{2,4}[-][0-9]{8,8}$';% regular expression to match Session naming convention
+    re = '^[a-zA-Z]{1,2}[0-9]{2,4}[-][0-9]{8,8}[a-zA-Z]*$';% regular expression to match Session naming convention
     sessionList = {files(~cellfun(@isempty,regexp({files.name},re))).name};
     
     
@@ -445,7 +445,7 @@ if getappdata(handles.DMapp,'load_sessions'),
     
     
    % Organize lists by subject
-    re = '[0-9]{2,2}[-][0-9]{8,8}$';% regular expression
+    re = '[0-9]{2,2}[-][0-9]{8,8}[a-zA-Z]*$';% regular expression
     dateList = {};
     mazeList = {};
     trialList = {};

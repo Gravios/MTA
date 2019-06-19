@@ -48,8 +48,11 @@ function xyz = ERCOR_fillgaps_RidgidBody(Session,varargin)
 %     S1 : SELECT representative periods
 %     S2 : VALIDATE rigidBodyMarkers input type and count
 %     S3 : SELECT error periods
-
-
+%
+% TODO: 
+%
+%     1. return periods where rigid body errors had no optimal solution
+%     
 
 % DEFARGS ------------------------------------------------------------------------------------------
 defArgs = struct('mode',      'MANUAL',                                                            ...

@@ -113,6 +113,8 @@ if numel(Pfs.adata.binSizes) > 1,
     switch numel(Pfs.adata.binSizes)
       case 2
 
+        
+
         if ~isempty(interpPar),
             % INTERPOLATE ratemap 
             interpGrids= cell([1,numel(interpPar.bins)]);
@@ -126,6 +128,12 @@ if numel(Pfs.adata.binSizes) > 1,
             ratemap        = interp2(Pfs.adata.bins{:},ratemap',interpGrids{:},interpPar.methodRateMap);
             interpdNanMask = interp2(Pfs.adata.bins{:},nanMask',interpGrids{:},interpPar.methodNanMap);
 
+            if numel(mazeMask)>1;
+                mazeMask = double(interp2(Pfs.adata.bins{:},...
+                                          double(mazeMask)',...
+                                          interpGrids{:},...
+                                          interpPar.methodRateMap)>0.5);
+            end
             % SMOOTH edges with interpolated nan mask
             ratemap(interpdNanMask>interpPar.nanMaskThreshold) = nan;
             % CORRECT for cubic undershoot 
@@ -138,8 +146,6 @@ if numel(Pfs.adata.binSizes) > 1,
             binSizes = Pfs.adata.binSizes;
         end
         
-
-
         if mazeMaskFlag,
             % RESTRICT ratemap area to within the maze radius
             if mazeMask==1,
@@ -153,6 +159,7 @@ if numel(Pfs.adata.binSizes) > 1,
                 mazeMask(mazeMask==0)=nan;
             end
         end
+
         ratemap = ratemap.*mazeMask;
         
         

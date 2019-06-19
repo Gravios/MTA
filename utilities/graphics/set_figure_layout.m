@@ -1,5 +1,5 @@
-function [hfig,figOpts,fax] = set_figure_layout(varargin)
-%function [hfig,figOpts,fax] = set_figure_layout(varargin)
+function [hfig,figOpts,fax, sax] = set_figure_layout(varargin)
+%function [hfig,figOpts,fax, sax] = set_figure_layout(varargin)
 % IN:
 %     hfig   - Handle: Main figure graphical handle
 %     format - String: page format option {'A4'}
@@ -24,6 +24,8 @@ function [hfig,figOpts,fax] = set_figure_layout(varargin)
 %        figOpts.subplot.verticalPadding   
 %      
 %     fax - handle: Background axes handle
+%
+%     sax - handle: empty subplot axes handle
 
 
 % DEFARGS ------------------------------------------------------------------------------------------
@@ -91,5 +93,8 @@ hfig.PaperPositionMode = figOpts.page.PaperPositionMode;
 fax = axes('Position',[0,0,1,1],'Visible','off','Units','centimeters');
 xlim([0,hfig.Position(3)]);
 ylim([0,hfig.Position(4)]);
- 
+
+% SETUP subplot axes
+sax = gobjects([1,0]); 
+
 % END MAIN -----------------------------------------------------------------------------------------

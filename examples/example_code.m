@@ -120,26 +120,14 @@ figure,hist(ang(Trial.stc{'r'},5,7,2),100)
 
 
 %% Loading LFP
-% for Ed10 this is how to load the raw lfp of the nasal cavity pressure
-lfp_ncp = Trial.lfp.copy;
-lfp_ncp.load(Trial,65);
-
-% for Ed10 this is how to load the raw lfp of the olfactory bulb
-lfp_olf = Trial.lfp.copy;
-lfp_olf.load(Trial,33:64);
-
-% for Ed10 this is how to load the raw lfp of the hippocampus
-lfp_olf = Trial.lfp.copy;
-lfp_olf.load(Trial,1:32);
-
 
 % for jg05 how to load the raw lfp of the hippocampus H64BUZ
-lfp_olf = Trial.lfp.copy;
-lfp_olf.load(Trial,1:64);
+lfp = Trial.load('lfp',1:64);
 
 % for jg05 how to load the raw lfp of the hippocampus H32LIN
-lfp_olf = Trial.lfp.copy;
-lfp_olf.load(Trial,65:96);
+lfp = Trial.load('lfp' ,65:96);
+
+
 
 
 

@@ -37,20 +37,20 @@ if exist(filePath,'file') && ~overwrite,
 else,
     pfindex = 1;
 
-
     % GET bhv rate maps
     
     [rmaps,clu]   = decapsulate_and_concatenate_mtaapfs(bfrm,units);    
+    rmaps         = mean(rmaps,3,'omitnan');
     clu           = clu(unitSubset,:);        
     rmaps         = rmaps(validDims,unitSubset);
     rmaps(isnan(rmaps)) = 0;
     
     rmapsShuffled = decapsulate_and_concatenate_mtaapfs(bfrmShuffled,units);
     rmapsShuffled = rmapsShuffled(validDims,unitSubset,:);
-    
+
+    rmapsShuffled(~nniz(rmapsShuffled(:))) = 0;    
     rmapsShuffledMean = mean(rmapsShuffled,3,'omitnan');
-    
-    rmapsShuffled(isnan(rmapsShuffled)) = 0;
+
     
     D = cov(rmapsShuffledMean');
     LR = eigVecs;

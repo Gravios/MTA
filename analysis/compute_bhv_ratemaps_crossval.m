@@ -106,8 +106,9 @@ pfsArgs.units  = units(u);
 stcmSubset = stcm;
 if ~isempty(spk.per),
     sper = spk.per.copy();
-    sper.data = sper.data(spk.perInd(units(u),:));
-    cast(sper,'TimeSeries',xyz);
+    sper.data = sper.data(spk.perInd(units(u),:),:);
+    cast(sper,'TimeSeries',xyz,'absolute');
+    resample(sper,xyz);
     stcmSubset(~sper.data) = 0;
 end
 for s = 2:6
