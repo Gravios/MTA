@@ -32,20 +32,58 @@ pftTPZDa = reshape(permute(pftTPZDa,[1,5,2,3,4]),[pftHZTPD{1}{1}.adata.binSizes'
 
 % For each unit, for each state, for each phase, find the maximum rate and position along the gdz
 
+% GET BS mean maxPhzRate
+[maxPhzRate,mprPos] = max(permute(sq(mean(RectFilter(permute(pftTPZDa,[2,1,3,4,5]),3,1,'circular'),4,'omitnan')),[2,1,3,4,5]));
 
-pind =  all(sq(sum(any(isnan(pftTPZDa(10:30,:,:,1,2:4)),2)))<5,2);
+% GET BS std maxPhzRate
+[maxPhzRateStd]   = permute(sq(std(RectFilter(permute(pftTPZDa,[2,1,3,4,5]), ...
+                                 3,1,'circular'),[],4,'omitnan')),[2,1,3,4,5]);
+mprSize = size(maxPhzRateStd);
+maxPhzRateStd = reshape(maxPhzRateStd,mprSize(1),[]);
+mprPos = reshape(mprPos,[],1);
+maxPhzRateStda = [];
+for s = 1:size(maxPhzRateStd,2),
+    maxPhzRateStda(s) = maxPhzRateStd(gpi(s),s);
+end
+maxPhzRateStd = maxPhzRateStda;
+maxPhzRateStd = reshape(sq(maxPhzRateStd),gsaSize(2:end));
+maxPhzRateStd = sq(maxPhzRateStd(:,:,2:4));
 
-grateUnits = pind&sesInds(unitSubset);
-[grate,gpos] = max(permute(sq(mean(RectFilter(permute(pftTPZDa(:,:,grateUnits,:,:),[2,1,3,4,5]),3,1,'circular'),4,'omitnan')),[2,1,3,4,5]));
+[maxPhzRateBS,mprPosBS] = max(permute(sq(RectFilter(permute(pftTPZDa,[2,1,3,4,5]),3,1,'circular')),[2,1,3,4,5]));
+mprPosBS = sq(mprPosBS(1,:,:,:,2:4));
+mprPosBS = permute(mprPosBS,[1,2,4,3]);
+maxPhzRateBS = sq(maxPhzRateBS(1,:,:,:,2:4));
+maxPhzRateBS = permute(maxPhzRateBS,[1,2,4,3]);
 
-% $$$ [grate,gpos] = max(permute(sq(mean(permute(pftTPZDa(:,:,pind&sesInds(unitSubset),:,:),[2,1,3,4,5]),4,'omitnan')),[2,1,3,4,5]));
+mprPosBSMean = mean(pftHZTPD{1}{1}.adata.bins{1}(mprPosBS),ndims(mprPosBS),'omitnan');
+mprPosBSStd = std(mprPosBS,[],ndims(mprPosBS),'omitnan');
 
-grate = sq(grate(:,:,:,2:4));
-gpos = sq(gpos);
-[prate,pphz] = max(grate);
-clusub = clu(sesInds(unitSubset),:);
 
-npftTPZa = reshape(grate,16,[]);
+% $$$ figure,plot(mprPosBSMean(:,314,3),pftHZTPD{1}{1}.adata.bins{2})
+% $$$ figure,hold('on')
+% $$$ u = 309;
+% $$$ for s=1:3;
+% $$$ plot(sq(maxPhzRateBS(phzOrder,u,s,:)),sclr(s))
+% $$$ plot(mean(maxPhzRateBS(phzOrder,u,s),4,'omitnan'),'c','LineWidth',2)
+% $$$ plot(maxPhzRate(phzOrder,u,s),'k','LineWidth',2)
+% $$$ plot(maxPhzRate(phzOrder,u,s)+maxPhzRateStd(phzOrder,u,s),'m','LineWidth',2)
+% $$$ plot(maxPhzRate(phzOrder,u,s)-maxPhzRateStd(phzOrder,u,s),'m','LineWidth',2)
+% $$$ end
+
+% SQUEEZE matrix 
+% FILTER States
+% GET max rate for each behavior
+maxPhzRate = sq(maxPhzRate(:,:,:,2:4));
+mprPos = sq(mprPos);
+mprPos = mprPos(:,:,2:4);
+mprPos = pftHZTPD{1}{1}.adata.bins{1}(mprPos);
+[prate,pphz] = max(maxPhzRate);
+
+% SELECT unit subset for phase preference decomposition
+validPosOcc =  all(sq(sum(any(isnan(pftTPZDa(10:30,:,:,1,2:4)),2)))<5,2);
+mprDecompUnits = validPosOcc & sesInds(unitSubset);
+
+npftTPZa = reshape(maxPhzRate(:,mprDecompUnits,:),16,[]);
 npftTPZa(~nniz(npftTPZa(:))) = 0;
 nind = sum(npftTPZa==0)==16;
 npftTPZa(:,nind) =[];
@@ -56,9 +94,9 @@ fscrCPPD = zeros([numel(nind),3]);
 fscrCPPD(~nind,:) = H';
 fscrCPPD = reshape(fscrCPPD,[],3,3);
 
-msr = sq(max(sq(grate(phzOrder,:,:))));
+msr = sq(max(sq(maxPhzRate(phzOrder,:,:))));
 [msr,msi] = sort(msr,2,'descend');
-dsr = sq(mean(sq(grate(phzOrder,:,:))));
+dsr = sq(mean(sq(maxPhzRate(phzOrder,:,:))));
 [dsr,dsi] = sort(dsr,2,'descend');
 
 nTPZmean = mean(npftTPZa,2);
@@ -72,9 +110,18 @@ rk = size(FSCFrPhz,2);%rank(D,1e-4);       % why not on D? would save on corrcoe
 FSCFrPhz = FSCFrPhz .* repmat(sqrt(diag(DPhz)),1,rk); % compute rotated factor scores from the normalized raw
 FSrCPhz = multiprod(pftTPZDs,FSCFrPhz,[2],[1,2]);
 
+fscrCPPD = reshape(fscrCPPD,[],3,3);
 
-[grate,gpos] = max(permute(sq(mean(RectFilter(permute(pftTPZDa,[2,1,3,4,5]),3,1,'circular'),4,'omitnan')),[2,1,3,4,5]));
-grate = sq(grate(:,:,:,2:4));
+
+% PROJECT rateCPPD (maxPhzRate) onto nnmf vectors 
+fscrCPPDAll = permute(multiprod(maxPhzRate,FSCFrPhz,[1],[1,2]),[2,3,1])./10000;
+
+figure,plot(fscrCPPD(:,1,1),fscrCPPDAll(mprDecompUnits,1,1)/10000,'.');
+line([0,0.2],[0,0.2])
+
+
+
+
 
 sclr = 'rgb';
 figure(1)
@@ -102,7 +149,7 @@ while u~=-1,
             end
 
         axes(sp(s+9));        
-            plot(grate(:,u,s),sclr(s));
+            plot(maxPhzRate(:,u,s),sclr(s));
     end
     mscr = max(nonzeros(FSrC(:,:,u,:,:)));
     af(@(x) ylim(x,[0,mscr]),sp(s+4:s+6));
@@ -168,3 +215,63 @@ for s = 1:3,
             plot(comCPPD(:,:,s)-comCPPD(:,:,j))
     end
 end
+
+
+
+
+
+% COMPUTE complex value vector of maxPhzRate
+mprCpx = bsxfun(@times,                                                     ...
+                maxPhzRate,                                                 ...
+                exp(i.*(pftHZTPD{1}{1}.adata.bins{2}+double(pftHZTPD{1}{1}.adata.bins{2}<0).*2*pi)));
+%exp(-i.*pftHZTPD{1}{1}.adata.bins{2}));
+mprMeanPhz = sq(sum(mprCpx)./sum(maxPhzRate,1,'omitnan'));
+
+
+msr = sq(max(sq(maxPhzRate)));
+[msr,msi] = sort(msr,2,'descend');
+dsr = sq(mean(sq(maxPhzRate)));
+[dsr,dsi] = sort(dsr,2,'descend');
+csr = sq(abs(sum(mprCpx)));
+[csr,csi] = sort(csr,2,'descend');
+
+ssi = dsi;
+
+
+validPosOccRlx =  all(sq(sum(any(isnan(pftTPZDa(10:30,:,:,1,3:4)),2)))<5,2);
+validPosOccRr =  all(sq(sum(any(isnan(pftTPZDa(10:30,:,:,1,2)),2)))<5,2);
+
+% CORRECT bhv pref oder where rear cannot be compared 
+tssi = ssi(validPosOccRlx & ~validPosOccRr,[1,2]);
+tssi(tssi(:,1)==1&tssi(:,2)==3,1) = 2;
+tssi(tssi(:,1)==1&tssi(:,2)==2,1) = 3;
+tssi(tssi(:,2)==1&tssi(:,1)==3,2) = 2;
+tssi(tssi(:,2)==1&tssi(:,1)==2,2) = 3;
+ssi(validPosOccRlx & ~validPosOccRr,[1,2]) = tssi;
+ssi(validPosOccRlx & ~validPosOccRr,3) = 1;
+
+stsColor = 'rgb';
+mprMeanPhzAng = angle(mprMeanPhz);
+mprMeanPhzRln = abs(mprMeanPhz);
+mprMeanRate = sq(mean(maxPhzRate,'omitnan'));
+mprMaxRate = sq(max(maxPhzRate,[],'omitnan'));
+
+mprMeanPhzAngSrt = nan(size(mprMeanRate));
+mprMeanPhzRlnSrt = nan(size(mprMeanRate));
+mprMeanRateSrt   = nan(size(mprMeanRate));
+mprMaxRateSrt    = nan(size(mprMeanRate));
+mprPosSrt        = nan(size(mprPos));
+for j = 1:size(mprMeanRate,1);
+    for s = 1:3,
+        mprMeanPhzAngSrt(j,s) = mprMeanPhzAng(j,ssi(j,s));
+        mprMeanPhzRlnSrt(j,s) = mprMeanPhzRln(j,ssi(j,s));        
+        mprMeanRateSrt  (j,s) = mprMeanRate  (j,ssi(j,s));
+        mprMaxRateSrt   (j,s) = mprMaxRate   (j,ssi(j,s));    
+        mprPosSrt     (:,j,s) = mprPos     (:,j,ssi(j,s));
+    end
+end
+
+
+mprMeanPhzAngSrtShift = mprMeanPhzAngSrt(:,1) + double(mprMeanPhzAngSrt(:,1)<0).*2.*pi;
+
+

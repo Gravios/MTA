@@ -29,15 +29,22 @@ cam(4).fov = 51;
 cam(5).name = 'Prime 13';
 cam(5).hpx=1280;
 cam(5).vpx=1024;
-cam(5).msize= 5;
+cam(5).msize= 8;
 cam(5).fov = 56;
 
+
+%% vcam
+cam(5).name = 'vcam';
+cam(6).hpx = 640;
+cam(6).vpx = 480;
+cam(6).msize = 8; %mm
+cam(6).fov = 41;
 
 
 %for i=1:numel(c)
 %end
 
-i = 5;
+i = 6;
 
 cam(i).fov = deg2rad(cam(i).fov);
 r = [.4:.01:4]';

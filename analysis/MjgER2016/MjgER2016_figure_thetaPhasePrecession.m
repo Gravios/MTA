@@ -44,9 +44,13 @@ phzOrder = [9:16,1:8];
 sesIds = [8:12,17:23];
 sesInds = ismember(cluSessionMap(:,1),sesIds);
 
+statesPfss = {'loc&theta','lloc&theta','hloc&theta','rear&theta',         ...
+              'pause&theta','lpause&theta','hpause&theta'};
+statesPfssInd = [4,3,2];
 
 % DEF place field rate maps
 pfts        = cf(@(t,u)  pfs_2d_theta(t,u),                                       Trials, units);
+pfss        = cf(@(t,u)  pfs_2d_states(t,u),                                      Trials, units);
 % DEF behavior field rate maps
 pfbs        = cf(@(t,u)  compute_bhv_ratemaps(t,u),                               Trials, units);
 pfbsShuff   = cf(@(t,u)  compute_bhv_ratemaps_shuffled(t,u),                      Trials, units);
@@ -79,10 +83,10 @@ end
 
 %[cluSessionMap(cluSessionMap(:,1)==19,2),diff(sq(tper(cluSessionMap(:,1)==19,1,:)),1,2)./60]
 
-
-
-
-
+dbins = pftHZTPD{1}{1}.adata.bins{1};
+pbins = circ_rad2ang([pftHZTPD{1}{1}.adata.bins{2};pftHZTPD{1}{1}.adata.bins{2}+2*pi]);
+sclr = 'rgb';
+sclrm = eye(3);
 
 
 
@@ -211,7 +215,7 @@ cond_round = @(rate) max([round(rate,0),round(rate,1)].*[rate>=10,rate<10]);
 nanColor = [0.15,0.15,0.15];
 
 
-
+%STARTFIG
 
 % SET figure opts
 [hfig,fig,fax,sax] = set_figure_layout(figure(666001),'A4','portrait',[],2,2);
@@ -529,8 +533,8 @@ statesIndsGPE = [2,3,4];
 expUnitsGPE = {[20],[21];...
                [21],[14];...               
                [21],[22];...
-               [22],[58];...               
-               [18],[49]};
+               [22],[58];...
+               [20],[103]};
 yind = 5;                
 for tind = 1:size(expUnitsGPE,1)
     t = expUnitsGPE{tind,1}(1);
@@ -543,29 +547,53 @@ for tind = 1:size(expUnitsGPE,1)
                           'Position',[fig.page.xpos(xind),                                   ...
                                       fig.page.ypos(yind)-fig.subplot.height/2,              ...
                                       fig.subplot.width,                                     ...
-                                      fig.subplot.height/2],                                 ...
+                                      fig.subplot.height],                                   ...
                           'FontSize', 8,                                                     ...
                           'LineWidth',1);
-        plot(pfts{t},unit,'mean',false,[],true,0.5,false,interpParPfs,@jet,[],nanColor);
-        text(-480,-380,num2str(cond_round(pfts{t}.maxRate(unit,true,'interpPar',interpParPfs))),...
+        hold(sax(end),'on');
+        plot(pfts{t},u,'mean',false,[],true,0.5,false,interpParPfs,@bone,[],nanColor);
+        text(-480,-380,num2str(cond_round(pfts{t}.maxRate(u,true,'interpPar',interpParPfs))),...
              'FontSize',10,'Color',[1,1,1]);
         sax(end).XTickLabels = {};
         sax(end).YTickLabels = {};
+        % plot state placefield centers 
+        pfssCntrMrate = zeros([numel(statesPfssInd),1]);
+        pfssCntrPos = zeros([numel(statesPfssInd),2]);
+        for s = 1:numel(statesPfssInd),
+            [pfssCntrMrate(s),pfssCntrPos(s,:)] = maxRate(pfss{t}{statesPfssInd(s)},...
+                                                          u,true,'interpPar',interpParPfs);
+            if s~=1 & any(ismember(round(pfssCntrPos(1:s-1,:)),round(pfssCntrPos(s,:)),'rows')),
+                shift = 10;
+            else
+                shift = 0;
+            end
+            shift
+            
+            if pfssCntrMrate(s)>2,
+                hax = scatter(pfssCntrPos(s,1)+shift,pfssCntrPos(s,2),15,sclr(s),'filled');
+            end
+            
+        end
+
+                [pfssCntrMrate,pfssCntrPos]
+        axis(sax(end),'tight');
         axes(fax);
         rectangle('Position',sax(end).Position,'LineWidth',1);
+
+        
         
 % PLOT behavior field
         xind = 2;
         sax(end+1) = axes('Units','centimeters',                                ...
                           'Position',[fig.page.xpos(xind),                      ...
-                                      fig.page.ypos(yind),                      ...
+                                      fig.page.ypos(yind)-fig.subplot.height/2, ...
                                       fig.subplot.width,                        ...
                                       fig.subplot.height],                      ...
                           'FontSize', 8,                                        ...
                           'LineWidth',1);
-        plot(pfbs{t},unit,'mean',[],[],false,0.5,false,...
-             interpParDfs,@jet,reshape(validDims,pfbs{t}.adata.binSizes'),nanColor);    
-        text(-1.7,-0.45,num2str(cond_round(pfbs{t}.maxRate(unit,false,'mask',validDims))),...
+        plot(pfbs{t},u,'mean',[],[],false,0.5,false,...
+             interpParDfs,@bone,reshape(validDims,pfbs{t}.adata.binSizes'),nanColor);    
+        text(-1.7,-0.45,num2str(cond_round(pfbs{t}.maxRate(u,false,'mask',validDims))),...
              'FontSize',10,'Color',[1,1,1]);
         %text(-1.7,-0.45,num2str(cond_round(maxPfsRate)),'FontSize',10,'Color',[1,1,1]);
         sax(end).XTickLabels = {};
@@ -576,7 +604,8 @@ for tind = 1:size(expUnitsGPE,1)
         rectangle('Position',sax(end).Position,'LineWidth',1);
         
         
-        for s = 1:numel(statesIndsGPE);
+        mrateHZTPD = max(cell2mat(cf(@(p) p{t}.maxRate(u,false), pftHZTPD(statesIndsGPE(:)))));
+        for s = 1:numel(statesIndsGPE),
 % SET horizontal offset    
             xind = 2+s;    
 % CREATE subplot axes
@@ -587,7 +616,11 @@ for tind = 1:size(expUnitsGPE,1)
                                           fig.subplot.height/2],                                 ...
                               'FontSize', 8,                                                     ...
                               'LineWidth',1);
-            plot(pftHZTPD{statesIndsGPE(s)}{t},u,'mean',[],[],false);
+            
+            
+            plot(pftHZTPD{statesIndsGPE(s)}{t},u,'mean','',[0,mrateHZTPD],false,[],[],[],@bone,[],nanColor);
+            text(-.9,-1.8,num2str(cond_round(mrateHZTPD)),...
+                 'FontSize',10,'Color',[1,1,1]);
             
             sax(end+1) = axes('Units','centimeters',                                             ...
                               'Position',[fig.page.xpos(xind),                                   ...
@@ -596,26 +629,82 @@ for tind = 1:size(expUnitsGPE,1)
                                           fig.subplot.height/2],                                 ...
                               'FontSize', 8,                                                     ...
                               'LineWidth',1);
-            plot(pftHZTPD{statesIndsGPE(s)}{t},u,'mean','text',[],false);
+            plot(pftHZTPD{statesIndsGPE(s)}{t},u,'mean','',[0,mrateHZTPD],false,[],[],[],@bone,[],nanColor);
 
+            
             if s == numel(statesIndsGPE),
                 sax(end).YAxisLocation = 'right';
                 sax(end).YTick = [0,pi,2*pi,3*pi];
                 sax(end).YTickLabels = [0,180,360,540];
-                sax(end).XTickLabels = {};        
+                sax(end).XTickLabels = {};   
             else        
                 sax(end).XTickLabels = {};
                 sax(end).YTickLabels = {};
             end    
-            Lines([],pi,'k');    
+            sax(end).Color = 'none';
+            
+        for s = 1:numel(statesIndsGPE),
+            boundedline(repmat(grate(:,ismember(cluSessionMapSubset,[t,u],'rows'),s),[2,1])',...
+                        pbins',...
+                        repmat(grateStd(:,ismember(cluSessionMapSubset,[t,u],'rows'),s),[2,1])',...
+                        ['-',sclr(s)],...
+                        'transparency',0.5,...
+                        'orientation','horiz');
+            boundedline(repmat(grate(:,ismember(cluSessionMapSubset,[t,u],'rows'),s),[2,1])',...
+                        dbins',...
+                        repmat(mprPosStd(:,ismember(cluSessionMapSubset,[t,u],'rows'),s),[2,1])'.*1.96./10,...
+                        ['-',sclr(s)],...
+                        'transparency',1,...
+                        'orientation','horiz');
+        end
+            
+
+            axes(fax);
+            rectangle('Position',[sax(end-1).Position.*[1,1,1,2]],'LineWidth',1);
+            
         end%for s
+        
+        
+        sax(end+1) = axes('Units','centimeters',                                             ...
+                          'Position',[fig.page.xpos(xind+1),                                 ...
+                                      fig.page.ypos(yind)-fig.subplot.height/2,              ...
+                                      fig.subplot.width,                                     ...
+                                      fig.subplot.height],                                   ...
+                          'FontSize', 8,                                                     ...
+                          'LineWidth',1);
+        hold('on');
+        for s = 1:numel(statesIndsGPE),
+            boundedline(repmat(grate(:,ismember(cluSessionMapSubset,[t,u],'rows'),s),[2,1])',...
+                        pbins',...
+                        repmat(grateStd(:,ismember(cluSessionMapSubset,[t,u],'rows'),s),[2,1])',...
+                        ['-',sclr(s)],...
+                        'transparency',0.5,...
+                        'orientation','horiz');
+            boundedline(repmat(grate(:,ismember(cluSessionMapSubset,[t,u],'rows'),s),[2,1])',...
+                        pbins',...
+                        repmat(grateStd(:,ismember(cluSessionMapSubset,[t,u],'rows'),s),[2,1])'.*1.96./10,...
+                        ['-',sclr(s)],...
+                        'transparency',1,...
+                        'orientation','horiz');
+            
+        end
+        sax(end).YAxisLocation = 'right';
+        sax(end).XTickLabels = {};
+        sax(end).YTick = [0,180,360,540];
+        sax(end).YTickLabels = [0,180,360,540];
+        
+        ylim(pbins([1,end]));
+        %xlim([0,max(xlim)]);
+        %xlim([0,mrateHZTPD+8]);
+        xlim([0,35]);
+        
     end%for uid
 end%for tind
-
+ 
 
 % PLOT phase eigenvectors 
-xind = 6;    
-yind = 7;
+xind = 7;
+yind = 6;
 sax(end+1) = axes('Units','centimeters',                                             ...
                   'Position',[fig.page.xpos(xind)+fig.subplot.width/2,               ...
                               fig.page.ypos(yind)-fig.subplot.height/2,              ...
@@ -624,12 +713,14 @@ sax(end+1) = axes('Units','centimeters',                                        
                   'FontSize', 8,                                                     ...
                   'LineWidth',1);
 hold('on');
-
 for s = 1:3,
-    plot(repmat(W(:,s),2,1),...
-         circ_rad2ang([pftHZTPD{1}{1}.adata.bins{2};pftHZTPD{1}{1}.adata.bins{2}+2*pi]));
+    plot(repmat(W(:,s),2,1),pbins,'LineWidth',2);
 end
 ylim([-180,540]);
+sax(end).YAxisLocation = 'right';
+sax(end).XTickLabels = {};
+sax(end).YTick = [0,180,360,540];
+sax(end).YTickLabels = [0,180,360,540];
 
 
 % PLOT fscr diff of Dominate vs subdominate state
@@ -637,27 +728,29 @@ yind = 8;
 sax(end+1) = axes('Units','centimeters',                                             ...
                   'Position',[fig.page.xpos(xind)+fig.subplot.width/2,               ...
                               fig.page.ypos(yind)-fig.subplot.height/2,              ...
-                              fig.subplot.width,                                     ...
-                              fig.subplot.height],                                   ...
+                              fig.subplot.width*2,                                   ...
+                              fig.subplot.height*2],                                 ...
                   'FontSize', 8,                                                     ...
                   'LineWidth',1);
 hold('on');
 
-yind = 9;
+yind = 10;
 sax(end+1) = axes('Units','centimeters',                                             ...
                   'Position',[fig.page.xpos(xind)+fig.subplot.width/2,               ...
                               fig.page.ypos(yind)-fig.subplot.height/2,              ...
-                              fig.subplot.width,                                     ...
-                              fig.subplot.height],                                   ...
+                              fig.subplot.width*2,                                   ...
+                              fig.subplot.height*2],                                 ...
                   'FontSize', 8,                                                     ...
                   'LineWidth',1);
 hold('on');
 
 
-
+% PLOT the differences between phase features of dominate ves subdominate 
+validPosOccRlx =  all(sq(sum(any(isnan(pftTPZDa(10:30,:,:,1,3:4)),2)))<5,2);
+validPosOccRr =  all(sq(sum(any(isnan(pftTPZDa(10:30,:,:,1,2)),2)))<5,2);
 stsColor = 'rgb';
 for s = 1:3
-    ind = dsi(:,1)==s;
+    ind = dsi(:,1)==s & validPosOccRlx;
     dfscr = bsxfun(@minus,fscrCPPD(ind,~ismember(1:size(fscrCPPD,2),s),:),fscrCPPD(ind,s,:));
     dispOpts = {'.',...
                 'MarkerFaceColor',stsColor(s),...
@@ -683,22 +776,32 @@ for s = 1:3
 end
 grid(sax(end),'on');
 grid(sax(end-1),'on');
-ylim(sax(end),[-0.18,0.1]);
-xlim(sax(end),[-0.16,0.1]);
-ylim(sax(end-1),[-0.18,0.1]);
-xlim(sax(end-1),[-0.16,0.1]);
+ylim(sax(end),[-0.1,0.053]);
+xlim(sax(end),[-0.12,0.025]);
+ylim(sax(end-1),[-0.1,0.053]);
+xlim(sax(end-1),[-0.12,0.025]);
+sax(end-1).XTickLabels = {};
+sax(end-1).YTickLabels = {};
+sax(end).XTickLabels = {};
+sax(end).YTickLabels = {};
 
 
-sp = tight_subplot(2,8,0,0.1);
-sp = reshape(reshape(sp',8,2)',2,8);
-for u = units{t},
-    for s = 1:8,
-        axes(sp(s*2-1));plot(pftHZTPD{s}{t},u,'mean','text',[],false);
-        axes(sp(s*2));plot(pftHZTPD{s}{t},u,'mean','text',[],false);
-        title(num2str(u));
-    end
-    waitforbuttonpress();
-end
+%ENDFIG
+
+
+
+
+
+% $$$ sp = tight_subplot(2,8,0,0.1);
+% $$$ sp = reshape(reshape(sp',8,2)',2,8);
+% $$$ for u = units{t},
+% $$$     for s = 1:8,
+% $$$         axes(sp(s*2-1));plot(pftHZTPD{s}{t},u,'mean','text',[],false);
+% $$$         axes(sp(s*2));plot(pftHZTPD{s}{t},u,'mean','text',[],false);
+% $$$         title(num2str(u));
+% $$$     end
+% $$$     waitforbuttonpress();
+% $$$ end
 
 
 

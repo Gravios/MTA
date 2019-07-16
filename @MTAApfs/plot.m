@@ -128,7 +128,7 @@ if numel(Pfs.adata.binSizes) > 1,
             ratemap        = interp2(Pfs.adata.bins{:},ratemap',interpGrids{:},interpPar.methodRateMap);
             interpdNanMask = interp2(Pfs.adata.bins{:},nanMask',interpGrids{:},interpPar.methodNanMap);
 
-            if numel(mazeMask)>1;
+            if numel(mazeMask)>1,
                 mazeMask = double(interp2(Pfs.adata.bins{:},...
                                           double(mazeMask)',...
                                           interpGrids{:},...
@@ -148,7 +148,7 @@ if numel(Pfs.adata.binSizes) > 1,
         
         if mazeMaskFlag,
             % RESTRICT ratemap area to within the maze radius
-            if mazeMask==1,
+            if numel(mazeMask)==1,
                 width = binSizes(1);
                 height =binSizes(2);
                 radius = round(binSizes(1)/2)-find(bins{1}<-450,1,'last');
@@ -156,9 +156,9 @@ if numel(Pfs.adata.binSizes) > 1,
                 centerH = height/2;
                 [W,H] = meshgrid(1:width,1:height);           
                 mazeMask = double(sqrt((W-centerW-.5).^2 + (H-centerH-.5).^2) < radius);
-                mazeMask(mazeMask==0)=nan;
             end
         end
+        mazeMask(mazeMask==0)=nan;
 
         ratemap = ratemap.*mazeMask;
         

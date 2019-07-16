@@ -6,7 +6,7 @@ dirArray = dir(fullfile(Session.spath, Session.maze.name));
 trialArray = {};
 trialPartSize = {};
 lastTrial = 0;
-expr = 'trial..._';
+expr = 'trial...';
 for i = 1:length(dirArray);
     validTrial = regexpi(dirArray(i).name,expr);
     if validTrial,

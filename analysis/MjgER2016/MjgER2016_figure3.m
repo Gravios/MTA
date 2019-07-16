@@ -29,20 +29,31 @@ MjgER2016_load_data();
 %  MjgER2016_load_data:
 %
 %  Variables:
-%      Trials
-%      units
-%      cluSessionMap
-%      pitchReferenceTrial
-%      FigDir
-%      sessionListName
-%      sessionList
-%      states
-%      numStates
-%      interpParPfsp
-%      interpParDfs
-%
+%      Trials      units      cluSessionMap      pitchReferenceTrial      FigDir
+%      sessionListName        sessionList        states                   numStates      
+%      interpParPfsp          interpParDfs
+%      
 %  Functions:
 %      reshape_eigen_vector
+
+MjgER2016_figure3_args();
+% MjgER2016_figure3_args:
+%
+% Default arument overrides:
+%     fet_HB_pitchB
+%     compute_bhv_ratemaps
+%     compute_bhv_ratemaps_shuffled
+%     compute_bhv_ratemap_erpPCA
+
+bfrmNormal     = cf(@(t,u)   compute_bhv_ratemaps(t,u),                    Trials, units);
+
+
+% compute_bhv_ratemap_erpPCA
+[eigVecs, eigScrs, eigVars, unitSubset, validDims, zrmMean, zrmStd] = ...
+                 cf(@(t,u)   compute_bhv_ratemaps_erpPCA(t,u),             Trials, units);
+
+
+
 
 
 Trial = Trials{20};
@@ -143,33 +154,33 @@ sp(end+1) = axes('Units','centimeters',...
                  'Position',[xpos(xind),ypos(yind),pwidth*1.25,pheight*1.25],...
                  'FontSize', 8);
 %                 'Position',[xpos(xind),ypos(yind),(pwidth+xpad)*2-xpad,(pheight+ypad)*2-ypad],...
-plot(pfs{1},u(2),'mean',false,[0,maxPfsRate],true,0.5,false,interpPar,@jet,[],nanColor);
+plot(pfs{1},u(2),'mean',false,[0,maxPfsRate],true,0.5,false,interpParPfs,@jet,[],nanColor);
 text(-490,-380,num2str(cond_round(maxPfsRate)),'FontSize',10,'Color',[1,1,1]);
 
 hold('on');
-rmap = plot(pfs{1},u(2),'mean',false,[0,maxPfsRate],true,0.5,false,interpPar);
+rmap = plot(pfs{1},u(2),'mean',false,[0,maxPfsRate],true,0.5,false,interpParPfs);
 [~,mxp] = pft.maxRate(u(2));
 binGrid = cell([1,2]);
-[binGrid{:}] = ndgrid(interpPar.bins{:});
+[binGrid{:}] = ndgrid(interpParPfs.bins{:});
 binGrid = cat(3,binGrid{:});
-binDist = sqrt(sum((binGrid-repmat(permute(mxp,[1,3,2]),[cellfun(@numel,interpPar.bins),1])).^2,3));
+binDist = sqrt(sum((binGrid-repmat(permute(mxp,[1,3,2]),[cellfun(@numel,interpParPfs.bins),1])).^2,3));
 [cont,conHax] = contour(binGrid(:,:,1),binGrid(:,:,2),(rmap./max(rmap(:)))>0.2&binDist<250,[0.5,0.5],'m','LineWidth',1);
 [contYMax,contYMaxInd] = max(reshape(binGrid(:,:,2).*double((rmap./max(rmap(:)))>0.2&binDist<250),[],1));
 [contYMin,contYMinInd] = min(reshape(binGrid(:,:,2).*double((rmap./max(rmap(:)))>0.2&binDist<250),[],1));
 contMaxInd = zeros([1,2]);
-[contMaxInd(1),contMaxInd(2)] = ind2sub(cellfun(@numel,interpPar.bins),contYMaxInd);
+[contMaxInd(1),contMaxInd(2)] = ind2sub(cellfun(@numel,interpParPfs.bins),contYMaxInd);
 contMinInd = zeros([1,2]);
-[contMinInd(1),contMinInd(2)] = ind2sub(cellfun(@numel,interpPar.bins),contYMinInd);
+[contMinInd(1),contMinInd(2)] = ind2sub(cellfun(@numel,interpParPfs.bins),contYMinInd);
 contMaxPos = sq(binGrid(contMaxInd(1),contMaxInd(2),:));
 contMinPos = sq(binGrid(contMinInd(1),contMinInd(2),:));
 
 line(fax,...
-     [sp(end-1).Position(1)+pwidth.*1.25,sp(end).Position(1)+(contMaxInd(1)./numel(interpPar.bins{1})).*pwidth.*1.25],...
-     [sp(end-1).Position(2)+pheight.*1.25,sp(end).Position(2)+(contMaxInd(2)./numel(interpPar.bins{2})).*pheight.*1.25],...
+     [sp(end-1).Position(1)+pwidth.*1.25,sp(end).Position(1)+(contMaxInd(1)./numel(interpParPfs.bins{1})).*pwidth.*1.25],...
+     [sp(end-1).Position(2)+pheight.*1.25,sp(end).Position(2)+(contMaxInd(2)./numel(interpParPfs.bins{2})).*pheight.*1.25],...
      'Color','m','LineWidth',1);
 line(fax,...
-     [sp(end-1).Position(1)+pwidth.*1.25,sp(end).Position(1)+(contMinInd(1)./numel(interpPar.bins{1})).*pwidth.*1.25],...
-     [sp(end-1).Position(2),sp(end).Position(2)+(contMinInd(2)./numel(interpPar.bins{2})).*pheight.*1.25],...
+     [sp(end-1).Position(1)+pwidth.*1.25,sp(end).Position(1)+(contMinInd(1)./numel(interpParPfs.bins{1})).*pwidth.*1.25],...
+     [sp(end-1).Position(2),sp(end).Position(2)+(contMinInd(2)./numel(interpParPfs.bins{2})).*pheight.*1.25],...
      'Color','m','LineWidth',1);
 line(fax,...
      [sp(end-1).Position(1),sp(end-1).Position(1)+pwidth.*1.25],...
@@ -290,7 +301,7 @@ for u = cluMap',
                          'Position',[xpos(xind),ypos(yind),pwidth,pheight],...
                          'FontSize', 8);
 
-        plot(pfs{s},u(2),'mean',false,[0,maxPfsRate],true,0.5,false,interpPar,@jet,[],nanColor);
+        plot(pfs{s},u(2),'mean',false,[0,maxPfsRate],true,0.5,false,interpParPfs,@jet,[],nanColor);
         sp(end).YTickLabel = {};
         sp(end).XTickLabel = {};
         if yind == yinit, title(labels{xind});end        
