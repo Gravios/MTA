@@ -41,8 +41,14 @@ unitCnt = sum(sessionUnitCnt);
 phzOrder = [9:16,1:8];
 %CA1 units
 %sesIds = [3:5,8:12,17:23];
+%CA3 units
+%sesIds = [1:2,6:7,13:16];
 sesIds = [8:12,17:23];
 sesInds = ismember(cluSessionMap(:,1),sesIds);
+
+sesIds = [8:12,17:23];
+sesInds = ismember(cluSessionMap(:,1),sesIds);
+
 
 statesPfss = {'loc&theta','lloc&theta','hloc&theta','rear&theta',         ...
               'pause&theta','lpause&theta','hpause&theta'};
@@ -87,6 +93,7 @@ dbins = pftHZTPD{1}{1}.adata.bins{1};
 pbins = circ_rad2ang([pftHZTPD{1}{1}.adata.bins{2};pftHZTPD{1}{1}.adata.bins{2}+2*pi]);
 sclr = 'rgb';
 sclrm = eye(3);
+colorMap = @cool;
 
 
 
@@ -148,7 +155,7 @@ exampleUnits = [20,74;...
                 20,59;...
                 20,103];
 
-expUnitsPP = {[20],[79,103]};
+expUnitsPP = {[20],[79,25]};
 
 if ~exist('spkhrz','var')|isempty(spkhrz), req20180621(); end
 
@@ -210,15 +217,15 @@ pfdMaps = cat(2,pfdMaps{:});
 % $$$ rScore = (mean(pfdMaps(indmatHighLow(:)==3,:),'omitnan')-mean(mean(pfdMaps(ismember(indmatHighLow(:),[1,2]),:),'omitnan')))'./ ...
 % $$$          (mean(pfdMaps(indmatHighLow(:)==3,:),'omitnan')+mean(mean(pfdMaps(ismember(indmatHighLow(:),[1,2]),:),'omitnan')))';
 
-% FIGURE START -------------------------------------------------------------------------------------
+%% FIGURE START ------------------------------------------------------------------------------------
+%% STARTFIG ----------------------------------------------------------------------------------------
 cond_round = @(rate) max([round(rate,0),round(rate,1)].*[rate>=10,rate<10]);
 nanColor = [0.15,0.15,0.15];
 
 
-%STARTFIG
 
 % SET figure opts
-[hfig,fig,fax,sax] = set_figure_layout(figure(666001),'A4','portrait',[],2,2);
+[hfig,fig,fax,sax] = set_figure_layout(figure(666001),'A4','portrait',[],1.5,1.5);
 
 % PLOT rate maps and phase precession examples
 for tind = 1:size(expUnitsPP,1),
@@ -235,7 +242,7 @@ for uind = 1:numel(expUnitsPP{tind,2}),
                                  fig.page.ypos(yind),fig.subplot.width,fig.subplot.height],...
                      'FontSize', 8,...
                      'LineWidth',1);
-    plot(pfts{t},unit,'mean',false,[],true,0.5,false,interpParPfs,@jet,[],nanColor);
+    plot(pfts{t},unit,'mean',false,[],true,0.5,false,interpParPfs,colorMap,[],nanColor);
     text(-480,-380,num2str(cond_round(pfts{t}.maxRate(unit,true,'interpPar',interpParPfs))),'FontSize',10,'Color',[1,1,1]);
     sax(end).XTickLabels = {};
     sax(end).YTickLabels = {};
@@ -253,7 +260,7 @@ for uind = 1:numel(expUnitsPP{tind,2}),
                      'LineWidth',1);
     %plot(pfbs{t},unit,'mean',false,[],false,0.5,false,interpParDfs,@jet,reshape(validDims,pfbs{t}.adata.binSizes'),nanColor);
     plot(pfbs{t},unit,'mean',[],[],false,0.5,false,...
-         interpParDfs,@jet,reshape(validDims,pfbs{t}.adata.binSizes'),nanColor);    
+         interpParDfs,colorMap,reshape(validDims,pfbs{t}.adata.binSizes'),nanColor);    
     text(-1.7,-0.45,num2str(cond_round(pfbs{t}.maxRate(unit,false,'mask',validDims))),'FontSize',10,'Color',[1,1,1]);
     %text(-1.7,-0.45,num2str(cond_round(maxPfsRate)),'FontSize',10,'Color',[1,1,1]);
     sax(end).XTickLabels = {};
@@ -473,7 +480,7 @@ boxplot([prefBhvSlopes;nprefBhvSlopes],      ...
         [prefBhvId*2-1;nprefBhvId*2],              ...
         'plotstyle',    'traditional',       ...
         'boxstyle',     'filled',            ...
-        'colors',       'rrbbccggmm',             ...
+        'colors',       'rrggmmbbcc',             ...
         'symbol',       '.',                 ...
         'datalim',      [-10,7.5],           ...
         'labels',       {});
@@ -516,7 +523,7 @@ boxplot([prefBhvSlopes;nprefBhvSlopes],      ...
         [prefBhvId*2-1;nprefBhvId*2],              ...
         'plotstyle',    'traditional',       ...
         'boxstyle',     'filled',            ...
-        'colors',       'rrbbccggmm',             ...
+        'colors',       'rrggmmbbcc',             ...
         'symbol',       '.',                 ...
         'datalim',      [-10,7.5],           ...
         'labelorientation','inline',       ...
@@ -532,15 +539,30 @@ sax(end).Position =[fig.page.xpos(xind),fig.page.ypos(yind)-fig.subplot.height/2
 statesIndsGPE = [2,3,4];
 expUnitsGPE = {[20],[21];...
                [21],[14];...               
+               [ 3],[158];
                [21],[22];...
                [22],[58];...
                [20],[103]};
+
+markers = '^vposhp';
+tppUnits = {[5], [4];  ...  REAR , high @ peak    
+            [5], [31]; ...  HIGH , low  @ peak 
+            [22],[61]; ...  HIGH , low  @ peak 
+            [18],[18]; ...  LOW  , high @ peak
+            [20],[139];...  LOW  , high @ trough
+            [20],[103];...  LOW
+            [19],[15]; ...  HIGH
+           };
+
 yind = 5;                
-for tind = 1:size(expUnitsGPE,1)
-    t = expUnitsGPE{tind,1}(1);
-    for uid = 1:numel(expUnitsGPE{tind,2});
+ucnt = 1 
+for tind = 1:size(tppUnits,1)
+    t = tppUnits{tind,1}(1);
+    for uid = 1:numel(tppUnits{tind,2});
         yind = yind+1;                
-        u = expUnitsGPE{tind,2}(uid);
+        u = tppUnits{tind,2}(uid);
+        uind =  ismember(cluSessionMapSubset,[t,u],'rows');
+
 % PLOT place field        
         xind = 1;
         sax(end+1) = axes('Units','centimeters',                                             ...
@@ -551,7 +573,7 @@ for tind = 1:size(expUnitsGPE,1)
                           'FontSize', 8,                                                     ...
                           'LineWidth',1);
         hold(sax(end),'on');
-        plot(pfts{t},u,'mean',false,[],true,0.5,false,interpParPfs,@bone,[],nanColor);
+        plot(pfts{t},u,'mean',false,[],true,0.5,false,interpParPfs,colorMap,[],nanColor);
         text(-480,-380,num2str(cond_round(pfts{t}.maxRate(u,true,'interpPar',interpParPfs))),...
              'FontSize',10,'Color',[1,1,1]);
         sax(end).XTickLabels = {};
@@ -567,15 +589,13 @@ for tind = 1:size(expUnitsGPE,1)
             else
                 shift = 0;
             end
-            shift
             
             if pfssCntrMrate(s)>2,
-                hax = scatter(pfssCntrPos(s,1)+shift,pfssCntrPos(s,2),15,sclr(s),'filled');
+                hax = scatter(pfssCntrPos(s,1)+shift,pfssCntrPos(s,2),15,sclr(s));
             end
             
         end
 
-                [pfssCntrMrate,pfssCntrPos]
         axis(sax(end),'tight');
         axes(fax);
         rectangle('Position',sax(end).Position,'LineWidth',1);
@@ -592,7 +612,7 @@ for tind = 1:size(expUnitsGPE,1)
                           'FontSize', 8,                                        ...
                           'LineWidth',1);
         plot(pfbs{t},u,'mean',[],[],false,0.5,false,...
-             interpParDfs,@bone,reshape(validDims,pfbs{t}.adata.binSizes'),nanColor);    
+             interpParDfs,@cool,reshape(validDims,pfbs{t}.adata.binSizes'),nanColor);    
         text(-1.7,-0.45,num2str(cond_round(pfbs{t}.maxRate(u,false,'mask',validDims))),...
              'FontSize',10,'Color',[1,1,1]);
         %text(-1.7,-0.45,num2str(cond_round(maxPfsRate)),'FontSize',10,'Color',[1,1,1]);
@@ -617,10 +637,34 @@ for tind = 1:size(expUnitsGPE,1)
                               'FontSize', 8,                                                     ...
                               'LineWidth',1);
             
-            
-            plot(pftHZTPD{statesIndsGPE(s)}{t},u,'mean','',[0,mrateHZTPD],false,[],[],[],@bone,[],nanColor);
+            hold('on');                            
+            plot(pftHZTPD{statesIndsGPE(s)}{t},u,'mean','',[0,mrateHZTPD],false,[],[],[],colorMap,[],nanColor);
             text(-.9,-1.8,num2str(cond_round(mrateHZTPD)),...
                  'FontSize',10,'Color',[1,1,1]);
+            if mean(maxPhzRate(:,uind,s)) > 4,
+                plot(mprPos(:,uind,s)',            ... x = drz 
+                     pftHZTPD{1}{1}.adata.bins{2}',... y = phase
+                     ['-k'],                       ... LineColor
+                     'LineWidth',1);                 % LineWidth
+                plot(meanDTPos(:,uind,1,s)',         ... x = drz
+                     pftHZTPD{1}{1}.adata.bins{2}',... y = phase
+                     ['-w'],                       ... LineColor
+                     'LineWidth',1);                 % LineWidth
+                               
+                ylim([-pi,pi]);
+            end
+
+% $$$             [hl,hp] = boundedline(mprPos(:,uind,s)',...
+% $$$                         pftHZTPD{1}{1}.adata.bins{2}',...
+% $$$                         0,...
+% $$$                         ...% mprPosBSStd(:,ismember(cluSessionMapSubset,[t,u],'rows'),s)'.*1.96./10,...
+% $$$                         ['-',sclr(s)],...
+% $$$                         'alpha',...                        
+% $$$                         'transparency',0.3,...
+% $$$                         'orientation','horiz');
+% $$$             hl.LineWidth = 1;
+% $$$             hp.EdgeColor = 'none';
+            Lines(0,[],'w');
             
             sax(end+1) = axes('Units','centimeters',                                             ...
                               'Position',[fig.page.xpos(xind),                                   ...
@@ -629,8 +673,31 @@ for tind = 1:size(expUnitsGPE,1)
                                           fig.subplot.height/2],                                 ...
                               'FontSize', 8,                                                     ...
                               'LineWidth',1);
-            plot(pftHZTPD{statesIndsGPE(s)}{t},u,'mean','',[0,mrateHZTPD],false,[],[],[],@bone,[],nanColor);
-
+            hold('on');
+            plot(pftHZTPD{statesIndsGPE(s)}{t},u,'mean','',[0,mrateHZTPD],false,[],[],[],colorMap,[],nanColor);
+            if mean(maxPhzRate(:,uind,s)) > 4,
+                plot(mprPos(:,uind,s)',            ... x = drz
+                     pftHZTPD{1}{1}.adata.bins{2}',... y = phase
+                     ['-k'],                       ... LineColor
+                     'LineWidth',1);                 % LineWidth
+                plot(meanDTPos(:,uind,1,s)',       ... x = drz
+                     pftHZTPD{1}{1}.adata.bins{2}',... y = phase
+                     ['-w'],                       ... LineColor
+                     'LineWidth',1);                 % LineWidth
+                ylim([-pi,pi]);                               
+            end
+            
+% $$$             [hl,hp] = boundedline(mprPos(:,uind,s)',...
+% $$$                         pftHZTPD{1}{1}.adata.bins{2}',...
+% $$$                         0,...
+% $$$                         ... %mprPosBSStd(:,uind,s)'.*1.96./10,...
+% $$$                         ['-',sclr(s)],...
+% $$$                         'alpha',...
+% $$$                         'transparency',0.3,...
+% $$$                         'orientation','horiz');
+% $$$             hl.LineWidth = 1;            
+% $$$             hp.EdgeColor = 'none';
+            Lines(0,[],'w',1);            
             
             if s == numel(statesIndsGPE),
                 sax(end).YAxisLocation = 'right';
@@ -642,21 +709,8 @@ for tind = 1:size(expUnitsGPE,1)
                 sax(end).YTickLabels = {};
             end    
             sax(end).Color = 'none';
-            
-        for s = 1:numel(statesIndsGPE),
-            boundedline(repmat(grate(:,ismember(cluSessionMapSubset,[t,u],'rows'),s),[2,1])',...
-                        pbins',...
-                        repmat(grateStd(:,ismember(cluSessionMapSubset,[t,u],'rows'),s),[2,1])',...
-                        ['-',sclr(s)],...
-                        'transparency',0.5,...
-                        'orientation','horiz');
-            boundedline(repmat(grate(:,ismember(cluSessionMapSubset,[t,u],'rows'),s),[2,1])',...
-                        dbins',...
-                        repmat(mprPosStd(:,ismember(cluSessionMapSubset,[t,u],'rows'),s),[2,1])'.*1.96./10,...
-                        ['-',sclr(s)],...
-                        'transparency',1,...
-                        'orientation','horiz');
-        end
+            sax(end-1).Color = 'none';            
+
             
 
             axes(fax);
@@ -674,20 +728,25 @@ for tind = 1:size(expUnitsGPE,1)
                           'LineWidth',1);
         hold('on');
         for s = 1:numel(statesIndsGPE),
-            boundedline(repmat(grate(:,ismember(cluSessionMapSubset,[t,u],'rows'),s),[2,1])',...
+            [hl,hp] = boundedline(repmat(maxPhzRate(:,uind,s),[2,1])',...
                         pbins',...
-                        repmat(grateStd(:,ismember(cluSessionMapSubset,[t,u],'rows'),s),[2,1])',...
+                        repmat(phzRateStd(:,uind,s),[2,1])',...
                         ['-',sclr(s)],...
-                        'transparency',0.5,...
+                        'alpha',...
+                        'transparency',0.3,...
                         'orientation','horiz');
-            boundedline(repmat(grate(:,ismember(cluSessionMapSubset,[t,u],'rows'),s),[2,1])',...
+            hl.LineWidth = 1;
+            hp.EdgeColor = 'none';
+            [hl,hp] = boundedline(repmat(phzRateMean(:,uind,s),[2,1])',...
                         pbins',...
-                        repmat(grateStd(:,ismember(cluSessionMapSubset,[t,u],'rows'),s),[2,1])'.*1.96./10,...
+                        repmat(phzRateStd(:,uind,s),[2,1])'.*1.96./10,...
                         ['-',sclr(s)],...
                         'transparency',1,...
                         'orientation','horiz');
-            
+            hl.LineWidth = 1;
+            hp.EdgeColor = 'none';
         end
+        plot(30,360,markers(ucnt),'MarkerFaceColor','m','MarkerEdgeColor','m','MarkerSize',10);
         sax(end).YAxisLocation = 'right';
         sax(end).XTickLabels = {};
         sax(end).YTick = [0,180,360,540];
@@ -696,8 +755,9 @@ for tind = 1:size(expUnitsGPE,1)
         ylim(pbins([1,end]));
         %xlim([0,max(xlim)]);
         %xlim([0,mrateHZTPD+8]);
-        xlim([0,35]);
+        xlim([0,25]);
         
+        ucnt = 1 + ucnt;
     end%for uid
 end%for tind
  
@@ -722,6 +782,125 @@ sax(end).XTickLabels = {};
 sax(end).YTick = [0,180,360,540];
 sax(end).YTickLabels = [0,180,360,540];
 
+
+yind = 8;
+sax(end+1) = axes('Units','centimeters',                                             ...
+                  'Position',[fig.page.xpos(xind)+fig.subplot.width/2,               ...
+                              fig.page.ypos(yind)-fig.subplot.height/2,              ...
+                              fig.subplot.width*2,                                   ...
+                              fig.subplot.height*2],                                 ...
+                  'FontSize', 8,                                                     ...
+                  'LineWidth',1);
+hold('on');
+
+
+
+
+
+% PLOT rate diff vs phase diff
+figure,hold('on');
+ucnt = 1;
+% EXAMPLES 
+for tind = 1:size(tppUnits,1)
+    t = tppUnits{tind,1}(1);
+    dispOpts = {['-',markers(ucnt)],                              ...
+                'MarkerFaceColor','m',                            ...
+                'MarkerEdgeColor','m',                            ...
+                'MarkerSize',10};
+    for uid = 1:numel(tppUnits{tind,2});
+        u = tppUnits{tind,2}(uid);
+        ind = ismember(cluSessionMapSubset,[t,u],'rows');% example unit index        
+        plot(prmRateSrt(ind,1)'-prmRateSrt(ind,2)',       ...
+             -circ_dist(prmPhzAngSrt(ind,1)',                     ...
+                        prmPhzAngSrt(ind,2)'),                    ...
+         dispOpts{:});
+    end
+    ucnt = ucnt+1;
+end
+% POPULATION 
+smarkers = '^sv';
+for s = 1:3
+    ind = dsi(:,1)==s & validPosOccRlx & sesInds(unitSubset) & prmMaxRateSrt(:,2) > 4;
+    scatter(prmRateSrt(ind,1)'-prmRateSrt(ind,2)',            ...
+            -circ_dist(prmPhzAngSrt(ind,1)',                          ...
+                       prmPhzAngSrt(ind,2)'),                         ...
+            15,prmPhzAngSrtShift(ind),smarkers(s),'filled');
+end    
+Lines([],0,'k');
+Lines(0,[],'k');    
+colormap(hsv(3));
+caxis([0,2*pi]);
+xlim([0,15]);
+Lines(4.5,[],'k');
+% MEAN phz diff
+rbins = linspace(0,15,8);
+rdfBinInd = discretize(prmRateSrt(:,1)-prmRateSrt(:,2),rbins);
+nind = nniz(rdfBinInd) & phzBinInd==2 & validPosOccRlx & sesInds(unitSubset) & prmMaxRateSrt(:,2) > 4;
+out = accumarray(rdfBinInd(nind),                     ... Subs
+                 circ_dist(prmPhzAngSrt(nind,1),  ... Vals
+                           prmPhzAngSrt(nind,2)), ...
+                 [numel(rbins)-1,1],                  ... Size
+                 @median);%                               Fun
+plot(diff(rbins)./2+rbins(1:end-1),out,'-+');
+
+figure();
+for s = 1:3;
+    subplot(1,3,s);
+    hold('on');
+    for j = nonzeros(double(s~=[1:3]).*[1:3])',
+        ind =  dsi(:,1)==s & dsi(:,2)==j & validPosOccRlx & sesInds(unitSubset) & prmMaxRateSrt(:,2) > 4 & validUnits;
+        plot(prmPhzAngSrt(ind,1)+double(prmPhzAngSrt(ind,1)<0).*2*pi,...
+                prmPhzAngSrt(ind,2)+double(prmPhzAngSrt(ind,2)<0).*2.*pi,smarkers(j));
+    end
+    line([0,2*pi],[0,2*pi])
+end
+
+
+
+
+phzBinInd = discretize(prmPhzAngSrtShift,linspace(0,2*pi,4));
+rdfBinInd = discretize(prmRateSrt(:,1)-prmRateSrt(:,2),[0,4.5,30]);
+ssc = 'mc';
+phzBinsR = linspace(-pi,pi,13);
+figure();hold('on');
+for r = 1:2,
+    ind = phzBinInd==2 & rdfBinInd==r & validPosOccRlx & sesInds(unitSubset) & prmMaxRateSrt(:,2) > 4;
+    hax = bar(phzBinsR,                                                       ...
+              histc(circ_dist(prmPhzAngSrt(ind,1)',                       ...
+                              prmPhzAngSrt(ind,2)'),phzBinsR),            ...
+              'histc');
+    hax.FaceColor = ssc(r);
+    hax.EdgeColor = ssc(r);
+    hax.FaceAlpha = 0.4;
+    hax.EdgeAlpha = 0;
+    Lines(mean(circ_dist(prmPhzAngSrt(ind,1)',prmPhzAngSrt(ind,2)')),[],ssc(r));
+end    
+
+figure();
+s = 3;
+phzBinsR = linspace(-pi,pi,17);
+ind = dsi(:,1)==s &phzBinInd==2 & validPosOccRlx & sesInds(unitSubset) & prmMaxRateSrt(:,2) > 4;
+hist(circ_dist(prmPhzAngSrt(ind,1)',prmPhzAngSrt(ind,2)'),phzBinsR);
+
+figure();
+phzBinsR = linspace(-pi,pi,17);
+ind = validPosOccRlx & sesInds(unitSubset) & prmMaxRateSrt(:,2) > 4;
+hist(circ_dist(prmPhzAngSrt(ind,1)',prmPhzAngSrt(ind,2)'),phzBinsR);
+
+
+sesIds = [3:5,8:12,17:23];
+sesInds = ismember(cluSessionMap(:,1),sesIds);
+
+figure,hist(prmPhzRlnSrt(ind,1),0:0.01:0.5)
+
+
+
+% ENDFIG
+
+
+
+
+%% NNMF analysis figures ---------------------------------------------------------------------------
 
 % PLOT fscr diff of Dominate vs subdominate state
 yind = 8;
@@ -750,8 +929,8 @@ validPosOccRlx =  all(sq(sum(any(isnan(pftTPZDa(10:30,:,:,1,3:4)),2)))<5,2);
 validPosOccRr =  all(sq(sum(any(isnan(pftTPZDa(10:30,:,:,1,2)),2)))<5,2);
 stsColor = 'rgb';
 for s = 1:3
-    ind = dsi(:,1)==s & validPosOccRlx;
-    dfscr = bsxfun(@minus,fscrCPPD(ind,~ismember(1:size(fscrCPPD,2),s),:),fscrCPPD(ind,s,:));
+    ind = dsi(:,1)==s & validPosOccRlx & sesInds(unitSubset);
+    dfscr = bsxfun(@minus,fscrCPPDAll(ind,~ismember(1:size(fscrCPPDAll,2),s),:),fscrCPPDAll(ind,s,:));
     dispOpts = {'.',...
                 'MarkerFaceColor',stsColor(s),...
                 'MarkerEdgeColor',stsColor(s),...
@@ -774,19 +953,77 @@ for s = 1:3
         end
     end
 end
+axes(sax(end));            
+Lines([],0,'k','-',1);
+Lines(0,[],'k','-',1);
+axes(sax(end-1));            
+Lines([],0,'k','-',1);
+Lines(0,[],'k','-',1);
+            
 grid(sax(end),'on');
 grid(sax(end-1),'on');
-ylim(sax(end),[-0.1,0.053]);
-xlim(sax(end),[-0.12,0.025]);
-ylim(sax(end-1),[-0.1,0.053]);
-xlim(sax(end-1),[-0.12,0.025]);
+ylim(sax(end),[-0.09,0.045]);
+xlim(sax(end),[-0.12,0.045]);
+ylim(sax(end-1),[-0.09,0.045]);
+xlim(sax(end-1),[-0.12,0.045]);
 sax(end-1).XTickLabels = {};
 sax(end-1).YTickLabels = {};
 sax(end).XTickLabels = {};
 sax(end).YTickLabels = {};
 
+tppUnits = {[20],[21];...
+               [21],[14];...               
+               [21],[22];...
+               [22],[58];...
+               [20],[103]};
 
-%ENDFIG
+%cla(sax(end))
+%cla(sax(end-1))
+ucnt = 1 
+for tind = 1:size(tppUnits,1)
+    t = tppUnits{tind,1}(1);
+    dispOpts = {['-',markers(ucnt)],...
+                'MarkerFaceColor','m',...
+                'MarkerEdgeColor','m',...
+                'MarkerSize',5};
+    
+    for uid = 1:numel(tppUnits{tind,2});
+        u = tppUnits{tind,2}(uid);
+        ind = ismember(cluSessionMapSubset,[t,u],'rows');% example unit index
+        dfscr = bsxfun(@minus,...
+                       fscrCPPDAll(ind,~ismember(1:size(fscrCPPDAll,2),dsi(ind,1)),:),...
+                       fscrCPPDAll(ind,dsi(ind,1),:));
+        if dsi(ind,2)>dsi(ind,3)
+            axes(sax(end-1));
+            plot(dfscr(1,:,1),dfscr(1,:,2),dispOpts{:});
+            %plot(dfscr(1,2,1),dfscr(1,2,2),dispOpts{:});
+            %plot(dfscr(1,1,1),dfscr(1,1,2),dispOpts{:});
+            axes(sax(end));                
+            plot(dfscr(1,:,1),dfscr(1,:,3),dispOpts{:});
+            %plot(dfscr(1,2,1),dfscr(1,2,3),dispOpts{:});
+            %plot(dfscr(1,1,1),dfscr(1,1,3),dispOpts{:});
+        else
+            axes(sax(end-1));            
+            plot(dfscr(1,:,1),dfscr(1,:,2),dispOpts{:});
+            %plot(dfscr(1,1,1),dfscr(1,1,2),dispOpts{:});
+            %plot(dfscr(1,2,1),dfscr(1,2,2),dispOpts{:});
+            axes(sax(end));            
+            plot(dfscr(1,:,1),dfscr(1,:,3),dispOpts{:});
+            %plot(dfscr(1,1,1),dfscr(1,1,3),dispOpts{:});
+            %plot(dfscr(1,2,1),dfscr(1,2,3),dispOpts{:});
+        end
+        ucnt = 1 + ucnt;
+    end        
+end
+
+        
+
+
+
+
+
+%cla(sax(end))
+%cla(sax(end-1))
 
 
 

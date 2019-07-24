@@ -10,7 +10,6 @@ parmHRZall     = zeros([unitCnt,2,numIter+1,numStates]);
 phzStatsHRZall = zeros([unitCnt,2,numIter+1,numStates]);
 rHRZall        = zeros([unitCnt,1,numIter+1,numStates]);
 rhoHRZall      = zeros([unitCnt,1,numIter+1,numStates]);
-sigma = 150;
 
 for t = 1:numel(Trials),
 

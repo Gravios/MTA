@@ -21,6 +21,9 @@ elseif all(~cellfun(@isempty,regexpi(dataLoggers,{'blackrock','vicon'})))
     
 elseif all(~cellfun(@isempty,regexpi(dataLoggers,{'openephys','vicon'})))
     Session = sync_openephys_vicon(Session,TTLValue,xyzSampleRate);
+
+elseif all(~cellfun(@isempty,regexpi(dataLoggers,{'oephys','vicon'})))
+    Session = sync_openephys_vicon(Session,TTLValue,xyzSampleRate);
     
 elseif all(~cellfun(@isempty,regexpi(dataLoggers,{'vicon'})))
     Session = loadVicon(Session,xyzSampleRate);
