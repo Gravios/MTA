@@ -2,9 +2,10 @@
 
 % GHZ VS PHZ ratemap examples ----------------------------------------------------------------------
 
-statesIndsGPE = [2,3,4];
+
 
 % REAR 
+titles = {'rear'};
 expUnitsGPE = { [3], [62,130];... 62hbadedge
                 [4], [100];... 100hbadedge
                 [5], [55];...

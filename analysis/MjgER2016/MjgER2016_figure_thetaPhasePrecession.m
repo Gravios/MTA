@@ -31,28 +31,27 @@ global MTA_PROJECT_PATH
 MjgER2016_load_data();
 MjgER2016_general_args('section 1');
 
+%%%<<< SET args
 overwrite = false;
 stateLabels = {'theta','rear','high','low','hloc','hpause','lloc','lpause'};
 statesLabels = {'theta','rear','H Loc','H Pause','L Loc','L Pause'};
 sampleRate = 250;
-sigma = 100;
+sigma = 150;
 sessionUnitCnt = cellfun(@numel,units);
 unitCnt = sum(sessionUnitCnt);
 phzOrder = [9:16,1:8];
 %CA1 units
-%sesIds = [3:5,8:12,17:23];
+sesIds = [3:5,8:12,17:23];
 %CA3 units
 %sesIds = [1:2,6:7,13:16];
-sesIds = [8:12,17:23];
 sesInds = ismember(cluSessionMap(:,1),sesIds);
-
-sesIds = [8:12,17:23];
-sesInds = ismember(cluSessionMap(:,1),sesIds);
-
-
 statesPfss = {'loc&theta','lloc&theta','hloc&theta','rear&theta',         ...
               'pause&theta','lpause&theta','hpause&theta'};
 statesPfssInd = [4,3,2];
+stsColor = 'rgb';
+%%%>>>
+
+%%%<<< LOAD data
 
 % DEF place field rate maps
 pfts        = cf(@(t,u)  pfs_2d_theta(t,u),                                       Trials, units);
@@ -66,16 +65,17 @@ pftHZTPD    = cf(@(s) ...
                  stateLabels);
 % LOAD bhv ratemap erpPCA
 [eigVecs,eigScrs,eigVars,unitSubset,validDims] = compute_bhv_ratemaps_erpPCA(pfbs,units,'overwrite',overwrite);
+cluSessionMapSubset = cluSessionMap(unitSubset,:);
 % LOAD bhv ratemap erpPCA Scores
 [fsrcz,FSrC,rmaps,FSCFr,FSrM,FSrS,fsrsMean,fsrsStd] = ...
     compute_bhv_ratemaps_erpPCA_scores(Trials,units,pfbs,pfbsShuff,eigVecs,validDims,unitSubset,overwrite);
+
 
 % GENERAL variables
 phaseBinCenters = pftHZTPD{1}{1}.adata.bins{1}(phzOrder)+2*pi ...
                   .*double(pftHZTPD{1}{1}.adata.bins{1}(phzOrder)<0);
 
 uind = ismember(cluSessionMap,cluSessionMap(unitSubset,:),'rows');
-
 
 trjCntFilePath = fullfile(MTA_PROJECT_PATH,'analysis',...
                           ['unit_uniqueTrajectoryCount-',DataHash({cf(@(t)t.filebase,Trials),units}),'.mat'])
@@ -88,46 +88,21 @@ else
 end
 
 %[cluSessionMap(cluSessionMap(:,1)==19,2),diff(sq(tper(cluSessionMap(:,1)==19,1,:)),1,2)./60]
-
 dbins = pftHZTPD{1}{1}.adata.bins{1};
 pbins = circ_rad2ang([pftHZTPD{1}{1}.adata.bins{2};pftHZTPD{1}{1}.adata.bins{2}+2*pi]);
 sclr = 'rgb';
 sclrm = eye(3);
 colorMap = @cool;
-
-
+%%%>>>
 
 %req20181220
 
-% DIAGNOSTIC figures 
-% $$$ numComp = 3;
-% $$$ fpc  = cell([1,numComp]);
-% $$$ for i = 1:numComp,
-% $$$     fpc{i} = nan(size(validDims{1}));
-% $$$     fpc{i}(validDims{1}) = eigVecs{1}(:,i);
-% $$$ end
-
-% $$$ fpcMinMax = [min(cellfun(@min,fpc)),max(cellfun(@max,fpc))];
-% $$$ figure();
-% $$$ yind = yind + 1;
-% $$$ for i = 1:3,
-% $$$     subplot(1,3,i)    
-% $$$     imagescnan({pfd{1}.adata.bins{:},abs(reshape_eigen_vector(fpc{i},pfd(1,1)))},...
-% $$$                fpcMinMax,'linear',false,nanColor,1,1);                % PRINT eigenvectors
-% $$$     axis('xy');
-% $$$     axis('tight');
-% $$$     ylabel(['F',num2str(i)])
-% $$$     xlim(pfd{1}.adata.bins{1}([1,end]));
-% $$$     xlim([-2,nonzeros(xlim.*[0,1])-0.2])            
-% $$$     ylim(pfd{1}.adata.bins{2}([1,end]));
-% $$$ end
-
 % LOAD phase precession statistics
 MjgER2016_figure_thetaPhasePrecession_stats();
-MjgER2016_figure_thetaPhasePrecession_correctedPhasePreferenceDecomposition();
+MjgER2016_figure_thetaPhasePrecession_drzCorrectedPhasePreference();
+MjgER2016_figure_thetaPhasePrecession_correctedPhasePreferenceDecomposition_statePermutations();
 
-
-% DIAGNOSTIC figures
+%%%<<< DIAGNOSTIC figures
 figure,plot(parmHRZall(:,1,1,3),parmHRZall(:,2,1,3),'.');
 figure,plot(parmHRZall(:,1,1,5),parmHRZall(:,2,1,5),'.');
 figure,
@@ -144,7 +119,7 @@ figure,
     title('Zscore vs Rho')
     subplot(224),plot(mean(rhoHRZall(:,1,2:end,3),3),rhoHRZall(:,1,1,3),'.')
     title('E[Rho_{shf}] vs Rho')
-
+%%%>>>
 
 
 % LOAD EXAMPLE DATA --------------------------------------------------------------------------------
@@ -166,7 +141,6 @@ spkppr(isnan(spkppr)) = 0;
 
 csthresh = 2.1;
 csoffset = 1;
-cluSessionMapSubset = cluSessionMap(unitSubset,:);
 cluSessionMapSubset_L = cluSessionMapSubset(  fsrcz(:,1)>csthresh                                ...
                                             & fsrcz(:,2)<(csthresh-csoffset)                     ...
                                             & fsrcz(:,3)<(csthresh-csoffset),:);
@@ -227,100 +201,104 @@ nanColor = [0.15,0.15,0.15];
 % SET figure opts
 [hfig,fig,fax,sax] = set_figure_layout(figure(666001),'A4','portrait',[],1.5,1.5);
 
-% PLOT rate maps and phase precession examples
+
+
+
+%%%<<< PLOT rate maps and phase precession examples
 for tind = 1:size(expUnitsPP,1),
     t = expUnitsPP{tind,1}(1);
-for uind = 1:numel(expUnitsPP{tind,2}),
-    unit = expUnitsPP{tind,2}(uind);
-    maxPfsRate = max(cell2mat(cf(@(p,u) maxRate(p,u,false,'prctile99',0.5),...
-                             [pfts(t),pfbs(t)],repmat({unit},[1,1+numel(pfbs{t})]))));
-% PLOT theta example    
-    yind = uind;
-    xind = 1;    
-    sax(end+1) = axes('Units','centimeters',...
-                     'Position',[fig.page.xpos(xind),...
-                                 fig.page.ypos(yind),fig.subplot.width,fig.subplot.height],...
-                     'FontSize', 8,...
-                     'LineWidth',1);
-    plot(pfts{t},unit,'mean',false,[],true,0.5,false,interpParPfs,colorMap,[],nanColor);
-    text(-480,-380,num2str(cond_round(pfts{t}.maxRate(unit,true,'interpPar',interpParPfs))),'FontSize',10,'Color',[1,1,1]);
-    sax(end).XTickLabels = {};
-    sax(end).YTickLabels = {};
-    axes(fax);
-    rectangle('Position',sax(end).Position,'LineWidth',1);
-
-% PLOT Behavior field restricted to theta placefield center
-    xind = 2;
-    sax(end+1) = axes('Units','centimeters',                               ...
-                     'Position',[fig.page.xpos(xind),                      ...
-                                 fig.page.ypos(yind),                      ...
-                                 fig.subplot.width,                        ...
-                                 fig.subplot.height],                      ...
-                     'FontSize', 8,                                        ...
-                     'LineWidth',1);
-    %plot(pfbs{t},unit,'mean',false,[],false,0.5,false,interpParDfs,@jet,reshape(validDims,pfbs{t}.adata.binSizes'),nanColor);
-    plot(pfbs{t},unit,'mean',[],[],false,0.5,false,...
-         interpParDfs,colorMap,reshape(validDims,pfbs{t}.adata.binSizes'),nanColor);    
-    text(-1.7,-0.45,num2str(cond_round(pfbs{t}.maxRate(unit,false,'mask',validDims))),'FontSize',10,'Color',[1,1,1]);
-    %text(-1.7,-0.45,num2str(cond_round(maxPfsRate)),'FontSize',10,'Color',[1,1,1]);
-    sax(end).XTickLabels = {};
-    sax(end).YTickLabels = {};
-    xlim([-1.8,0.5]);
-    ylim([-0.75,1.8]);
-    axes(fax);
-    rectangle('Position',sax(end).Position,'LineWidth',1);
-    
-% PLOT phase precession for each state
-    for s = 1:numel(states)-1
-        xind = 2+s;
+    for uind = 1:numel(expUnitsPP{tind,2}),
+        unit = expUnitsPP{tind,2}(uind);
+        maxPfsRate = max(cell2mat(cf(@(p,u) maxRate(p,u,false,'prctile99',0.5),...
+                                     [pfts(t),pfbs(t)],repmat({unit},[1,1+numel(pfbs{t})]))));
+        %%%<<< PLOT theta example    
+        yind = uind;
+        xind = 1;    
         sax(end+1) = axes('Units','centimeters',...
-                         'Position',[fig.page.xpos(xind),...
-                                     fig.page.ypos(yind),...
-                                     fig.subplot.width,...
-                                     fig.subplot.height],...
-                         'FontSize', 8,...
-                         'LineWidth',1);
-        
-        uind =  ismember(spkmap,[t,unit],'rows') ...
-                & logical(spkstc(:,1)) ...
-                & logical(spkstc(:,statesInds(s))) ...
-                & abs(spkego(:,2))<100;
-        
-        hold('on');
-        plot([spkhrz(uind);spkhrz(uind)],...
-             [circ_rad2ang(spkphz(uind));circ_rad2ang(spkphz(uind))+360],...
-             '.','MarkerSize',5);
-        xlim([-1,1]);
-        ylim([-180,540]);
-        
-        if u == 1
-            title(statesLabels{s+1});
-        end
-
-        if s ~= numel(states)-1,
-            sax(end).XTickLabels = {};
-            sax(end).YTickLabels = {};
-        else,
-            sax(end).YAxisLocation = 'right';
-            sax(end).YTick = [0,180,360,540];
-        end
-        
-        uExInd = ismember(cluSessionMap,[t,unit],'rows');
-        
-        plot([-1,1],circ_rad2ang(parmHRZall(uExInd,1,1,s+1)*[-1,1]+parmHRZall(uExInd,2,1,s+1)),'-r','LineWidth',1)
-        plot([-1,1],circ_rad2ang(parmHRZall(uExInd,1,1,s+1)*[-1,1]+parmHRZall(uExInd,2,1,s+1))+360,'-r','LineWidth',1)
-
+                          'Position',[fig.page.xpos(xind),...
+                            fig.page.ypos(yind),fig.subplot.width,fig.subplot.height],...
+                          'FontSize', 8,...
+                          'LineWidth',1);
+        plot(pfts{t},unit,'mean',false,[],true,0.5,false,interpParPfs,colorMap,[],nanColor);
+        text(-480,-380,num2str(cond_round(pfts{t}.maxRate(unit,true,'interpPar',interpParPfs))),'FontSize',10,'Color',[1,1,1]);
+        sax(end).XTickLabels = {};
+        sax(end).YTickLabels = {};
         axes(fax);
         rectangle('Position',sax(end).Position,'LineWidth',1);
+        %%%>>>
+
+        %%%<<< PLOT Behavior field restricted to theta placefield center
+        xind = 2;
+        sax(end+1) = axes('Units','centimeters',                               ...
+                          'Position',[fig.page.xpos(xind),                      ...
+                            fig.page.ypos(yind),                      ...
+                            fig.subplot.width,                        ...
+                            fig.subplot.height],                      ...
+                          'FontSize', 8,                                        ...
+                          'LineWidth',1);
+        %plot(pfbs{t},unit,'mean',false,[],false,0.5,false,interpParDfs,@jet,reshape(validDims,pfbs{t}.adata.binSizes'),nanColor);
+        plot(pfbs{t},unit,'mean',[],[],false,0.5,false,...
+             interpParDfs,colorMap,reshape(validDims,pfbs{t}.adata.binSizes'),nanColor);    
+        text(-1.7,-0.45,num2str(cond_round(pfbs{t}.maxRate(unit,false,'mask',validDims))),'FontSize',10,'Color',[1,1,1]);
+        %text(-1.7,-0.45,num2str(cond_round(maxPfsRate)),'FontSize',10,'Color',[1,1,1]);
+        sax(end).XTickLabels = {};
+        sax(end).YTickLabels = {};
+        xlim([-1.8,0.5]);
+        ylim([-0.75,1.8]);
+        axes(fax);
+        rectangle('Position',sax(end).Position,'LineWidth',1);
+        %%%>>>
         
-    end        
-end%for u
+        %%%<<< PLOT phase precession for each state
+        for s = 1:numel(states)-1
+            xind = 2+s;
+            sax(end+1) = axes('Units','centimeters',...
+                              'Position',[fig.page.xpos(xind),...
+                                fig.page.ypos(yind),...
+                                fig.subplot.width,...
+                                fig.subplot.height],...
+                              'FontSize', 8,...
+                              'LineWidth',1);
+            
+            uind =  ismember(spkmap,[t,unit],'rows') ...
+                    & logical(spkstc(:,1)) ...
+                    & logical(spkstc(:,statesInds(s))) ...
+                    & abs(spkego(:,2))<100;
+            
+            hold('on');
+            plot([spkhrz(uind);spkhrz(uind)],...
+                 [circ_rad2ang(spkphz(uind));circ_rad2ang(spkphz(uind))+360],...
+                 '.','MarkerSize',5);
+            xlim([-1,1]);
+            ylim([-180,540]);
+            
+            if u == 1
+                title(statesLabels{s+1});
+            end
+
+            if s ~= numel(states)-1,
+                sax(end).XTickLabels = {};
+                sax(end).YTickLabels = {};
+            else,
+                sax(end).YAxisLocation = 'right';
+                sax(end).YTick = [0,180,360,540];
+            end
+            
+            uExInd = ismember(cluSessionMap,[t,unit],'rows');
+            
+            plot([-1,1],circ_rad2ang(parmHRZall(uExInd,1,1,s+1)*[-1,1]+parmHRZall(uExInd,2,1,s+1)),'-r','LineWidth',1)
+            plot([-1,1],circ_rad2ang(parmHRZall(uExInd,1,1,s+1)*[-1,1]+parmHRZall(uExInd,2,1,s+1))+360,'-r','LineWidth',1)
+
+            axes(fax);
+            rectangle('Position',sax(end).Position,'LineWidth',1);
+        end
+        %%%>>>
+    end%for u
 end%for t
 % END plot phase precession examples ---------------------------------------------------------------
+%%%>>>
 
-
-
-
+%%%<<< JPDF HRZ vs PHZ : all spikes
 % CA1 ----------------------------------------------------------------------------------------------
 % JPDF HRZ vs PHZ : all spikes
 tind = spkstc(:,1)==1 & ismember(spkmap(:,1),sesIds);
@@ -329,7 +307,10 @@ for s = 1:numel(statesInds);
     xind = 2+s;
 % CREATE subplot axes
     sax(end+1) = axes('Units','centimeters',...
-                     'Position',[fig.page.xpos(xind),fig.page.ypos(yind+1)-fig.subplot.height/2,fig.subplot.width,fig.subplot.height],...
+                     'Position',[fig.page.xpos(xind),...
+                                 fig.page.ypos(yind+1)-fig.subplot.height/2,...
+                                 fig.subplot.width,...
+                                 fig.subplot.height],...
                      'FontSize', 8,...
                      'LineWidth',1);
 % INDEX data
@@ -355,13 +336,10 @@ for s = 1:numel(statesInds);
     end    
     Lines([],pi,'k');    
 end
+%%%>>>
 
-
-
-
+%%%<<< JPDF HRZ vs PHZ : Behaviorally non selective neurons
 % CA1 ----------------------------------------------------------------------------------------------
-% JPDF HRZ vs PHZ : Behaviorally non selective neurons
-
 % RESTRICT anaysis to Sessions with CA1 units and theta activity
 tind = spkstc(:,1)==1 & ismember(spkmap(:,1),sesIds);
 % JPDF of plot VS spatial position for all units
@@ -394,11 +372,9 @@ for s = 1:numel(statesInds);
     end    
     Lines([],pi,'k');    
 end
+%%%>>>
 
-
-
-
-% REMOVED : too few samples for phase precession analysis in CA2/3
+%%%<<< REMOVED : too few samples for phase precession analysis in CA2/3
 % $$$ % CA3 
 % $$$ % JPDF HRZ vs PHZ : all units 
 % $$$ sesIds = [1,2,6,7,13:16];
@@ -436,13 +412,15 @@ end
 % $$$     end    
 % $$$     Lines([],pi,'k');    
 % $$$ end
+%%%>>>
 
-
+%%%<<< PLOT phase precession group stats
 % PLOT phase precession group stats ----------------------------------------------------------------
 % 1. slopes of phase precession in units preferred behavior
 % 2. slopes of phase precession in units non-preferred behavior
 % COMPUTE vars for indexing
 
+%%%<<< CA1 Behaviorally selective population phase precession statistics
 % CA1
 %ppZscores = sq(bsxfun(@minus,...
 %                      rhoHRZall(:,1,1,:),...
@@ -473,7 +451,10 @@ end
 xind = 1;    
 yind = 3;
 sax(end+1) = axes('Units','centimeters',...
-                 'Position',[fig.page.xpos(xind),fig.page.ypos(yind)-fig.subplot.height/2,fig.subplot.width*1.9,fig.subplot.height],...
+                 'Position',[fig.page.xpos(xind),...
+                             fig.page.ypos(yind)-fig.subplot.height/2,...
+                             fig.subplot.width*1.9,...
+                             fig.subplot.height],...
                  'FontSize', 8,...
                  'LineWidth',1);
 boxplot([prefBhvSlopes;nprefBhvSlopes],      ...
@@ -485,9 +466,9 @@ boxplot([prefBhvSlopes;nprefBhvSlopes],      ...
         'datalim',      [-10,7.5],           ...
         'labels',       {});
 grid('on');
+%%%>>>
 
-
-% CA1 Non selective population phase precession statistics -----------------------------------------
+%%%<<< CA1 Non selective population phase precession statistics
 %ppZscores = sq(bsxfun(@minus,rhoHRZall(:,1,1,:),mean(rhoHRZall(:,1,2:end,:),3))./std(rhoHRZall(:,1,2:end,:),[],3));
 rthresh = 0.2;
 statesIndCompPhz = [2,5,6,3,4];
@@ -530,11 +511,10 @@ boxplot([prefBhvSlopes;nprefBhvSlopes],      ...
         'labels',       reshape([statesLabels(2:end);repmat({''},[1,numel(statesLabels)-1])],[],1)');        
 grid('on');
 sax(end).Position =[fig.page.xpos(xind),fig.page.ypos(yind)-fig.subplot.height/2,fig.subplot.width*1.9,fig.subplot.height];
-% END CA1 Non selective population phase precession statistics -------------------------------------
+%%%>>>
+%%%>>>
 
-
-
-% GHZ VS PHZ ratemap examples ----------------------------------------------------------------------
+%%%<<< GHZ VS PHZ ratemap examples 
 
 statesIndsGPE = [2,3,4];
 expUnitsGPE = {[20],[21];...
@@ -546,10 +526,10 @@ expUnitsGPE = {[20],[21];...
 
 markers = '^vposhp';
 tppUnits = {[5], [4];  ...  REAR , high @ peak    
-            [5], [31]; ...  HIGH , low  @ peak 
+            [21],[22]; ...  HIGH , low  @ peak 
             [22],[61]; ...  HIGH , low  @ peak 
             [18],[18]; ...  LOW  , high @ peak
-            [20],[139];...  LOW  , high @ trough
+            [22],[58]; ...  LOW  , high @ trough
             [20],[103];...  LOW
             [19],[15]; ...  HIGH
            };
@@ -563,7 +543,7 @@ for tind = 1:size(tppUnits,1)
         u = tppUnits{tind,2}(uid);
         uind =  ismember(cluSessionMapSubset,[t,u],'rows');
 
-% PLOT place field        
+        %%%<<< PLOT place field
         xind = 1;
         sax(end+1) = axes('Units','centimeters',                                             ...
                           'Position',[fig.page.xpos(xind),                                   ...
@@ -599,10 +579,9 @@ for tind = 1:size(tppUnits,1)
         axis(sax(end),'tight');
         axes(fax);
         rectangle('Position',sax(end).Position,'LineWidth',1);
+        %%%>>>
 
-        
-        
-% PLOT behavior field
+        %%%<<< PLOT behavior field
         xind = 2;
         sax(end+1) = axes('Units','centimeters',                                ...
                           'Position',[fig.page.xpos(xind),                      ...
@@ -622,8 +601,9 @@ for tind = 1:size(tppUnits,1)
         ylim([-0.75,1.8]);
         axes(fax);
         rectangle('Position',sax(end).Position,'LineWidth',1);
+        %%%>>>
         
-        
+        %%%<<< PLOT drzphz field
         mrateHZTPD = max(cell2mat(cf(@(p) p{t}.maxRate(u,false), pftHZTPD(statesIndsGPE(:)))));
         for s = 1:numel(statesIndsGPE),
 % SET horizontal offset    
@@ -717,8 +697,9 @@ for tind = 1:size(tppUnits,1)
             rectangle('Position',[sax(end-1).Position.*[1,1,1,2]],'LineWidth',1);
             
         end%for s
+        %%%>>>
         
-        
+        %%%<<< PLOT drz corrected theta phase preference
         sax(end+1) = axes('Units','centimeters',                                             ...
                           'Position',[fig.page.xpos(xind+1),                                 ...
                                       fig.page.ypos(yind)-fig.subplot.height/2,              ...
@@ -756,13 +737,14 @@ for tind = 1:size(tppUnits,1)
         %xlim([0,max(xlim)]);
         %xlim([0,mrateHZTPD+8]);
         xlim([0,25]);
+        %%%>>>
         
         ucnt = 1 + ucnt;
     end%for uid
 end%for tind
- 
+%%%>>>
 
-% PLOT phase eigenvectors 
+%%%<<< PLOT phase eigenvectors 
 xind = 7;
 yind = 6;
 sax(end+1) = axes('Units','centimeters',                                             ...
@@ -792,12 +774,9 @@ sax(end+1) = axes('Units','centimeters',                                        
                   'FontSize', 8,                                                     ...
                   'LineWidth',1);
 hold('on');
+%%%>>>
 
-
-
-
-
-% PLOT rate diff vs phase diff
+%%%<<< PLOT rate diff vs phase diff
 figure,hold('on');
 ucnt = 1;
 % EXAMPLES 
@@ -842,6 +821,8 @@ out = accumarray(rdfBinInd(nind),                     ... Subs
                  [numel(rbins)-1,1],                  ... Size
                  @median);%                               Fun
 plot(diff(rbins)./2+rbins(1:end-1),out,'-+');
+%%%>>>
+
 
 figure();
 for s = 1:3;
@@ -927,7 +908,7 @@ hold('on');
 % PLOT the differences between phase features of dominate ves subdominate 
 validPosOccRlx =  all(sq(sum(any(isnan(pftTPZDa(10:30,:,:,1,3:4)),2)))<5,2);
 validPosOccRr =  all(sq(sum(any(isnan(pftTPZDa(10:30,:,:,1,2)),2)))<5,2);
-stsColor = 'rgb';
+
 for s = 1:3
     ind = dsi(:,1)==s & validPosOccRlx & sesInds(unitSubset);
     dfscr = bsxfun(@minus,fscrCPPDAll(ind,~ismember(1:size(fscrCPPDAll,2),s),:),fscrCPPDAll(ind,s,:));
@@ -1821,3 +1802,29 @@ for u = 1:size(cluSessionMapRestricted,1),
     waitforbuttonpress();
     cla(sp);
 end
+
+
+%%%<<< DIAGNOSTIC figures 
+numComp = 3;
+fpc  = cell([1,numComp]);
+for i = 1:numComp,
+    fpc{i} = nan(size(validDims{1}));
+    fpc{i}(validDims{1}) = eigVecs{1}(:,i);
+end
+
+fpcMinMax = [min(cellfun(@min,fpc)),max(cellfun(@max,fpc))];
+figure();
+yind = yind + 1;
+for i = 1:3,
+    subplot(1,3,i)    
+    imagescnan({pfd{1}.adata.bins{:},abs(reshape_eigen_vector(fpc{i},pfd(1,1)))},...
+               fpcMinMax,'linear',false,nanColor,1,1);                % PRINT eigenvectors
+    axis('xy');
+    axis('tight');
+    ylabel(['F',num2str(i)])
+    xlim(pfd{1}.adata.bins{1}([1,end]));
+    xlim([-2,nonzeros(xlim.*[0,1])-0.2])            
+    ylim(pfd{1}.adata.bins{2}([1,end]));
+end
+
+%%%>>>

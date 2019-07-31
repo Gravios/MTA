@@ -1,6 +1,5 @@
 function MTAstartup(varargin)
 %function MTAstartup(varargin)
-%[projectName,hostServer,dataServer,addBasicPaths] = DefaultArgs(varargin,{'general','cin','bach',true});
 %
 % variables:
 %   
@@ -14,11 +13,14 @@ function MTAstartup(varargin)
 %                    are important to the functionality of MTA,
 %                    please ensure they point to the correct locations.
 %                    (These paths can be found at the end of the script)
+%
+%   configure: logical, update mazes, models, ect...
+%
 
 clearvars('-except','varargin','MTA_CURRENT_PROJECT','MTA_PROJECT_PATH')
 
 % DEFARGS ------------------------------------------------------------------------------------------
-defargs = struct('projectName',                      '',                                         ...
+defargs = struct('projectName',                      'general',                                  ...
                  'hostServer',                       'lmu',                                      ...
                  'dataServer',                       'lmu',                                      ...
                  'addBasicPaths',                    true,                                       ...
@@ -41,7 +43,6 @@ else
 end
 
 
-
 switch hostServer % The severer where matlab is running. 
                    % Note: the addpath statement must point to 
                    % the "local" version of MTA.
@@ -58,42 +59,6 @@ switch hostServer % The severer where matlab is running.
         if configure, MTAConfiguration(projPath,'absolute',projectName,hostServer,dataServer); end;
         MTA_PROJECT_PATH = projPath;
     end
-  
-  case 'cin'
-    addpath('/gpfs01/sirota/homes/share/matlab/MTA/');
-
-    switch dataServer % Where the data is located
-      case 'cin'
-        if configure, MTAConfiguration('/gpfs01/sirota/home/gravio/data','absolute'); end;
-      case 'bach'
-        %MTAConfiguration('/gpfs01/sirota/bach/data/gravio','absolute');
-        if configure, MTAConfiguration('/gpfs01/sirota/data/bachdata/data/gravio','absolute'); end;
-    end
-
-  case 'bach'
-    addpath('/data/homes/share/matlab/MTA/');
-
-    switch dataServer % Where the data is located
-      case 'cin'
-        if configure, MTAConfiguration('/mnt/gpfs/home/gravio/data','absolute'); end;
-      case 'bach'
-        if configure, MTAConfiguration('/gpfs01/sirota/data/bachdata/data/gravio','absolute'); end;
-        %MTAConfiguration('/data/homes/gravio/data','absolute');
-    end
-
-  case 'mypc'
-
-    switch dataServer % Where the data is located
-      case 'mypc'
-        MTAConfiguration('C:\Users\yomama\data','absolute');        
-      case 'myhd'
-        MTAConfiguration('F:\data','absolute');        
-      case 'mysd'
-        MTAConfiguration('E:\data','absolute');      
-      case 'mycy'
-        MTAConfiguration('C:\cygwin64\home\yomama\data','absolute');
-    end
-    return
 
 end
 
@@ -106,7 +71,7 @@ if addBasicPaths
     else
         userpath = getenv('HOME');
     end
-    %dirs = regexp(genpath(parentdir),['[^;]*'],'match');
+
     switch dataServer
       case 'lmu'
         addpath(genpath('/storage/share/matlab/Third-Party_Toolboxes/HMM/hmmbox/'));

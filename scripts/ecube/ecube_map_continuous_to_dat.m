@@ -1,4 +1,4 @@
-function map_oephys_to_dat(filebase, xml, varargin)
+function ecube_map_continuous_to_dat(filebase, xml, varargin)
 % function map_oephys_to_dat(Session, xml, acqSystem, chanmap, processorList, subSessionList)
 %
 % CONVERTS .continuous files with wideband signal recorded 
@@ -275,7 +275,7 @@ for s=1:nSubSes
         continue
     end
         
-    map_oephys_to_dat_subses_block(selectedFiles(:,s), filebase, dat, acqSystem, chanInfo, MAX_DATFILE_SIZE);
+    ecube_map_continuous_to_dat_subses_block(selectedFiles(:,s), filebase, dat, acqSystem, chanInfo, MAX_DATFILE_SIZE);
     
     %move the .dat and .dat.sts files to the dedicated directory
     if exist(dat, 'file')

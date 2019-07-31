@@ -1,0 +1,54 @@
+#! /bin/bash
+# setup the MTA environment for a new user
+#
+# 
+#
+# MTA assumes a specifec file structure for both data and code
+#
+# matlab code - expected location: /storage/code/matlab
+# data        - expected location: /storage/$USER/data
+
+USER=''
+STORAGE=''
+MTA=''
+MATLAB_STARTUP=''
+
+while getopts u:s:m:p: option ;
+do
+    case "${option}" 
+    in
+    u) USER=${OPTARG};;
+    s) STORAGE=${OPTARG};;
+    a) MTA=${OPTARG};;
+    m) MATLAB=${OPTARG};;
+    esac
+done
+
+
+if [ -z "$USER" ]; then
+    USER=`whoami`
+fi
+
+if [ -z "$STORAGE" ]; then
+    if [ -d /storage/$USER ]; then   
+        STORAGE="storage"
+    elif [ -d /storage2/$USER ]; then
+        STORAGE="storage2"
+    fi
+fi
+   
+echo /$STORAGE/$USER
+
+if [ -z "$MATLAB" ]; then
+    MATLAB="/$STORAGE/$USER/code/matlab/"
+fi
+
+# COPY MTAstartup to user's matlab directory
+cp "$MTA/config/MTAstartup.m" "$MATLAB/MTAstartup.m"
+
+# APPEND MTAstartup to the end of user's matlab startup file
+
+echo "addpath(genpath('/storage/share/matlab/labbox'));"       >> "$MATLAB/startup.m"
+echo "rmpath( genpath('/storage/share/matlab/labbox/.git'));"  >> "$MATLAB/startup.m"
+echo "MTAstartup();"                                           >> "$MATLAB/startup.m"
+

@@ -33,19 +33,8 @@ Setup
        Note: MTAstartup must be run each time you which to access data located in a different
                 location. 
 
-5. Add the following lines to your startup.m file in the specified order.
 
-       Note: The order is important. Some functions within MTA must override their counterpart
-                 in the labbox.
+5. Try it out: See MTA/analysis/example_code.m to get started.
 
-       %% Labbox
-       addpath(genpath('/gpfs01/sirota/homes/share/matlab/labbox'));
-       rmpath(genpath('/gpfs01/sirota/homes/share/matlab/labbox/.git'));
-
-       %% MTA
-       MTAstartup.m;
-
-6. Try it out: See MTA/analysis/example_code.m to get started.
-
-7. Complain to me if there are any bugs, but only if it has 7 or 11 legs, if it has 6 use your entomology 
+6. Complain to me if there are any bugs, but only if it has 7 or 11 legs, if it has 6 use your entomology 
     skills to identify it.

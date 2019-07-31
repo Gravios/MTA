@@ -1,4 +1,4 @@
-% MjgER2016_figure5
+ g% MjgER2016_figure5
 % Behavior Theta Decomposition
 
 % DECOMPOSITION of behavior space across theta phases
@@ -77,16 +77,17 @@ brmShuff   = cf(@(t,u)   compute_bhv_ratemaps_shuffled(t,u),             Trials,
 
 
     
-
+% ANALYSIS theta phase rate maps -------------------------------------------------------------------
 
 
 stateLabels = {'theta','rear','high','low'}
 stateColors = 'brgk';
 
+% DEF theta phase rate maps for each state
 pftTPZ = cf(@(s) cf(@(T,u) MTAApfs(T,u,'tag',['tp-',s]), Trials, units), stateLabels);
 
-phzOrder = [9:16,1:8];
 figure();
+phzOrder = [9:16,1:8];
 t = 21
 rmb = pftTPZ{1}{1}.adata.bins{1}(phzOrder)+2*pi*double(pftTPZ{1}{1}.adata.bins{1}(phzOrder)<0);
 for u = units{t};
@@ -106,9 +107,11 @@ clf();
 end
 
 
+% DEF shuffled theta phase rate maps for each state
 pftTPZshuff = cf(@(s) cf(@(T,u) MTAApfs(T,u,'tag',['tp-shuff-',s]), Trials, units), stateLabels);
-phzOrder = [9:16,1:8];
+
 figure();
+phzOrder = [9:16,1:8];
 t = 21
 rmb = pftTPZshuff{1}{1}.adata.bins{1}(phzOrder)+2*pi*double(pftTPZshuff{1}{1}.adata.bins{1}(phzOrder)<0);
 for u = units{t};
@@ -127,6 +130,7 @@ waitforbuttonpress();
 clf();
 end
  
+%---------------------------------------------------------------------------------------------------
 
 
 
@@ -173,10 +177,12 @@ end
 % $$$ end
 
 
+
+
 sesIds = [3:5,8:12,17:23];
 sesIds = [8:12,17:23];
 sesInds = ismember(cluSessionMap(:,1),sesIds);
-uind = diag(rhoB)>0.5&diag(rhoS)>0.5;
+uind = diag(rhoB)>0.5&diag(rhoS)>0.5; % SOURCE req20190
 
 cluSessionMapSubset = cluSessionMap(unitSubset,:);
 cluSessionMapRestricted = cluSessionMapSubset(uind&sesInds(unitSubset),:);
@@ -1263,7 +1269,7 @@ end
 
 
 % req20190527();
-
+sigma = 150;
 pftHZTPD = cf(@(s) cf(@(T,u) MTAApfs(T,u,'tag',['ddtp-','s',num2str(sigma),'-',s]), Trials, units), stateLabels);
 pftTPZDa = cf(@(pfs) ...
               cf(@(p,u) ...
@@ -1275,6 +1281,13 @@ pftTPZDa = cf(@(pfs) ...
 % $$$                  mean(reshape(permute(RectFilter(reshape(permute(p.data.rateMap(:,ismember(p.data.clu,u),:),[1,4,2,3]),[p.adata.binSizes',numel(u),p.parameters.numIter]),3,1,'circular'),[2,1,3,4]),size(p.data.rateMap,1),numel(u),p.parameters.numIter),3,'omitnan'),  ...
 % $$$                  pfs,units), ...
 % $$$               pftHZTPD);
+
+
+u =3;figure;plot(sq(max(reshape(pftTPZDa{3}{20}(:,u,:),[40,16,101]))),'c');hold on, ...
+   plot(sq(max(reshape(pftTPZDa{4}{20}(:,u,:),[40,16,101]))),'b');
+
+u =3;figure;plot(mean(RectFilter(sq(max(reshape(pftTPZDa{3}{20}(:,u,:),[40,16,101]))),3,1,'circular'),2),'c');
+hold('on'); plot(mean(RectFilter(sq(max(reshape(pftTPZDa{4}{20}(:,u,:),[40,16,101]))),3,1,'circular'),2),'b');
 
 clu     = cf(@(pfs) cf(@(p,u) p.data.clu(:,ismember(p.data.clu,u),:),                        pfs,units), pftHZTPD);
 tlu     = cf(@(i,u) repmat(i,size(u)), mat2cell(1:numel(units),1,ones([1,numel(units)])),units);
@@ -1290,12 +1303,16 @@ clu     = clu(unitSubset,:);
 pftTPZDa = pftTPZDa(:,rind,:,:);
 pftTPZDa = pftTPZDa(:,unitSubset,:,:);
 pftTPZDa = reshape(permute(pftTPZDa,[1,5,2,3,4]),[pftHZTPD{1}{1}.adata.binSizes',numel(unitSubset),pftHZTPD{1}{1}.parameters.numIter,numel(stateLabels)]);
+%pftTPZDa = reshape(permute(pftTPZDa,[1,5,2,3,4]),[pftHZTPD{1}{1}.adata.binSizes',numel(unitSubset),1,numel(stateLabels)]);
 
 % For each unit, for each state, for each phase, find the maximum rate and position along the gdz
-[grate,gpos] = max(permute(RectFilter(sq(mean(permute(pftTPZDa(:,:,uind&sesInds(unitSubset),:,:),[2,1,3,4,5]),4,'omitnan')),3,1,'circular'),[2,1,3,4,5]));
+
+[grate,gpos] = max(permute(sq(mean(RectFilter(permute(pftTPZDa(:,:,sesInds(unitSubset),:,:),[2,1,3,4,5]),3,1,'circular'),4,'omitnan')),[2,1,3,4,5]));
+% $$$ [grate,gpos] = max(permute(sq(mean(permute(pftTPZDa(:,:,sesInds(unitSubset),:,:),[2,1,3,4,5]),4,'omitnan')),[2,1,3,4,5]));
 grate = sq(grate(:,:,:,2:4));
 gpos = sq(gpos);
 [prate,pphz] = max(grate);
+clusub = clu(sesInds(unitSubset),:);
 
 
 npftTPZa = reshape(grate,16,[]);
@@ -1303,13 +1320,12 @@ npftTPZa(~nniz(npftTPZa(:))) = 0;
 nind = sum(npftTPZa==0)==16;
 npftTPZa(:,nind) =[];
 
-[LU,LR,FSr,VT] = erpPCA(npftTPZa',3);
-fscr = zeros([numel(nind),3]);
-fscr(~nind,:) = FSr;
-fscr = reshape(fscr,[],3,3);
-
-figure,plot(LR(phzOrder,:))
-figure,plot(VT(1:10,4),'-+');
+% $$$ [LU,LR,FSr,VT] = erpPCA(npftTPZa',3);
+% $$$ fscr = zeros([numel(nind),3]);
+% $$$ fscr(~nind,:) = FSr;
+% $$$ fscr = reshape(fscr,[],3,3);
+% $$$ figure,plot(LR(phzOrder,:))
+% $$$ figure,plot(VT(1:10,4),'-+');
 
 
 [W,H,D] = nnmf(npftTPZa,3);
@@ -1339,15 +1355,15 @@ subplot(411);
 imagesc(sq(fscr(u,:,:)));
 % phase rates
 subplot(412);
-plot(sq(grate(phzOrder,u,1:4)));
-legend(stateLabels(1:4));
+plot(sq(grate(phzOrder,u,1:3)));
+legend(stateLabels(2:4));
 % Eigenvectors
 subplot(413);
-plot(LR(phzOrder,:));
+plot(W(phzOrder,:));
 % Delta F scores (dominate - subordinate)
 subplot(414);
 %sq(sum(fscr(u,:,:).*double(fscr(u,:,:)>0),3),'k-+')
-plot(bsxfun(@minus,sq(fscr(u,dsi(u),:)),sq(fscr(u,~ismember([1:3],dsi(u)),:))'));
+%plot(bsxfun(@minus,sq(fscr(u,dsi(u),:)),sq(fscr(u,~ismember([1:3],dsi(u)),:))'));
 % GET index of domiate state
 waitforbuttonpress();
 end
@@ -1446,25 +1462,45 @@ for s = 1:3
                 'MarkerEdgeColor',stsColor(s),...
                 'MarkerSize',10};
     for j = 1:size(dfscr,1),
+% $$$         if dsi(j,2)>dsi(j,3)
+% $$$             %if dsr(j,2)>4,
+% $$$                 axes(sp(1));
+% $$$                 plot(dfscr(j,2,1),dfscr(j,2,2),dispOpts{:});
+% $$$                 %end
+% $$$                 %if dsr(j,3)>4,
+% $$$                 %axes(sp(2));
+% $$$                 plot(dfscr(j,1,1),dfscr(j,1,2),dispOpts{:});
+% $$$                 %end
+% $$$         else
+% $$$             %if dsr(j,2)>4,
+% $$$                 axes(sp(1));
+% $$$                 plot(dfscr(j,1,1),dfscr(j,1,2),dispOpts{:});
+% $$$                 %end
+% $$$                 %if dsr(j,3)>4,
+% $$$                 %axes(sp(2));
+% $$$                 plot(dfscr(j,2,1),dfscr(j,2,2),dispOpts{:});
+% $$$                 %end
+% $$$         end
         if dsi(j,2)>dsi(j,3)
             %if dsr(j,2)>4,
                 axes(sp(1));
-                plot(dfscr(j,2,1),dfscr(j,2,2),dispOpts{:});
+                plot3(dfscr(j,2,1),dfscr(j,2,2),dfscr(j,2,3),dispOpts{:});
                 %end
                 %if dsr(j,3)>4,
-                axes(sp(2));
-                plot(dfscr(j,1,1),dfscr(j,1,2),dispOpts{:});
+                %axes(sp(2));
+                plot3(dfscr(j,1,1),dfscr(j,1,2),dfscr(j,1,3),dispOpts{:});
                 %end
         else
             %if dsr(j,2)>4,
                 axes(sp(1));
-                plot(dfscr(j,1,1),dfscr(j,1,2),dispOpts{:});
+                plot3(dfscr(j,1,1),dfscr(j,1,2),dfscr(j,1,3),dispOpts{:});
                 %end
                 %if dsr(j,3)>4,
-                axes(sp(2));
-                plot(dfscr(j,2,1),dfscr(j,2,2),dispOpts{:});
+                %axes(sp(2));
+                plot3(dfscr(j,2,1),dfscr(j,2,2),dfscr(j,2,3),dispOpts{:});
                 %end
         end
+        
     end
 end
 ForAllSubplots('ylim([-0.2,0.1]);xlim([-0.2,0.1])')

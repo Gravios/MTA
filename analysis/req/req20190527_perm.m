@@ -78,7 +78,7 @@ for t = 1:23
     end
     
     
-    numIter = 200;
+    numIter = 100;
     for s = 1:numel(stl)    
         for k = 1:numel(stl)    
             if s==k, 

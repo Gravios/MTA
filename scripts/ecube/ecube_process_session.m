@@ -1,4 +1,4 @@
-function process_raw_ecube(filebase, xml, varargin)
+function ecube_process_session(filebase, xml, varargin)
 % function  process_raw_ecube(filebase, xml, <channelMap>, <processorList>)
 %
 % <UserNAME>    : regexp : [a-z][A-Z]+
@@ -206,7 +206,7 @@ prcSpikeFlag = isfield(par, 'SpkGrps') &&  ~isempty(par.SpkGrps(1).Channels);
 % CONVERT open ecube .continous files to a .dat 
 dat = fullfile(filebase,[filebase,'.dat']);
 if ~exist(dat,'file') || overwrite,
-    map_oephys_to_dat(filebase, xml, acqSystem, chanmap, processorList, subSessionList);
+    ecube_map_continuous_to_dat(filebase, xml, acqSystem, chanmap, processorList, subSessionList);
 else
     fprintf('File %s found. Function oephys2dat was SKIPPED.\n', dat)
 end

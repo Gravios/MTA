@@ -1,19 +1,5 @@
 %% How to MTA your Data
 %
-%% Setup        
-%
-% copy the following file 
-%     /gpfs01/sirota/homes/share/matlab/MTA/config/MTAstartup.m
-% 
-%     MTAConfiguration('/gpfs01/sirota/bach/data/gravio','absolute');
-%     MTAConfiguration('path_where_you_want_do_your_analysis','absolute'); 
-% 
-% copy the following lines to your matlab startup.m 
-%     %% Labbox
-%     addpath(genpath('/gpfs01/sirota/homes/share/matlab/labbox'));
-%     rmpath(genpath('/gpfs01/sirota/homes/share/matlab/labbox/.git'));
-%     MTAstartup
-%
 
 %% Hello Session 
 % bellow is the setup info needed for playing with a few sessions
