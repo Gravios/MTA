@@ -2,6 +2,7 @@ classdef MTADlfp < MTAData
 %MTADlfp(path,filename,data,sampleRate,syncPeriods,syncOrigin,type,ext)
 %
 %  MTADlfp is a subclass of MTAData. 
+%  MTADlfp Objects contain the local field potential (LFP) data
 %
 %  Current Data Type: TimeSeries
 %
@@ -12,15 +13,27 @@ classdef MTADlfp < MTAData
 %    second dimension:   channel, ':', numeric array of indicies
 %                                 representing the loaded channels                              
 %
-%    Indexing Example:
-%       All time for 2 channels
-%       chan1and2 = lfp(:,[1,2]);
+%    
 %
-%       Selected periods for the 3rd channel
-%       chan3per = lfp([1,300;400,1000],3);
+%    Examples:
+%      Load data:
+%        load(lfp,Trial,
+%
+%      Index channels:
+%
+%        % All time for 2 channels
+%        chan1and2 = lfp(:,[1,2]);
+%
+%        % Selected periods for the 3rd channel
+%        chan3per = lfp([1,300;400,1000],3);
+%      
 %
 %
-%  See also MTAData
+%
+%  See also MTAData 
+%
+%  
+    
     properties 
         model = [];
     end

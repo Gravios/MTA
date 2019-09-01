@@ -224,13 +224,12 @@ for t = tInds;
 end
 
 
+%[yind, yOffSet, xind, xOffSet] = deal(0, 0, 0, 0);
 
 
 
-[hfig,figOpts,xpos,ypos,fax] = set_figure_layout(figure(666005),'A4','portrait');
 
-
-
+% COMPILE egocentric variables 
 fet  = cf(@(t)    fet_HB_pitchB(t,sampleRateTPD),                                    Trials(tInds));
 hvec = cf(@(x)    x(:,'head_front',[1,2])-x(:,'head_back',[1,2]),                    xyz          );
 hvec = cf(@(h)    sq(bsxfun(@rdivide,h,sqrt(sum(h.^2,3)))),                          hvec         );
@@ -240,6 +239,10 @@ tvec = cf(@(h)    sq(bsxfun(@rdivide,h,sqrt(sum(h.^2,3)))),                     
 tvec = cf(@(h)    cat(3,h,sq(h)*[0,-1;1,0]),                                         tvec         );
 stc  = cf(@(t)    t.load('stc','msnn_ppsvd_raux'),                                   Trials(tInds));
 stcm = cf(@(s,x)  stc2mat(s,x,states),                                               stc,   xyz   );
+
+
+[hfig,figOpts,xpos,ypos,fax] = set_figure_layout(figure(666006),'A4','portrait');
+
 
 
 % COMPUTE error
