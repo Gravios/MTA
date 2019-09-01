@@ -254,20 +254,41 @@ dErr = cf(@(e,x,h,f)  cat(2,...
                                            [1,2,4,3]),...
                                    h(:,:,:),2,[2,3])),...
                           [bsxfun(@minus,f(:,1),e(:,3,:)),bsxfun(@minus,f(:,2),e(:,4,:))]), ...
-          dErr(9),xyz(9),hvec(9),fet(9));
+          dErr,xyz,hvec,fet);
 
-ind  = cf(@(p,u,s) all(p>0.00005,2) & sum(double(u>=1),2)>4 & s(:,1)==1 & any(logical(s(:,stid)),2),...
-          posteriorMaxTPD(9),unitInclusionTPD(9),stcm(9));
+ind  = cf(@(p,u,s) all(p>0.0005,2) & sum(double(u>=1),2)>6 & s(:,1)==1 & any(logical(s(:,stid)),2),...
+          posteriorMaxTPD,unitInclusionTPD,stcm);
 
-figure,plot(sq(dErr{1}(ind{1},1,:)))
-
-out = [];
-for j = 1:8;
-    out = cat(2,out,histc(sq(dErr{1}(ind{1},1,j)),linspace(-500,500,100)));
+dcTDPfrontal = cell([1,10]);
+dcTDPlateral = cell([1,10]);
+for tn = 1:10,
+    for j = 1:8;
+        dcTDPfrontal{tn} = cat(2,dcTDPfrontal{tn},histc(sq(dErr{tn}(ind{tn},1,j)),linspace(-500,500,100)));
+        dcTDPlateral{tn} = cat(2,dcTDPlateral{tn},histc(sq(dErr{tn}(ind{tn},2,j)),linspace(-500,500,100)));        
+    end
 end
+
 figure,
-imagesc(linspace(-500,500,250),1:8,repmat(out,1,2)')
+for tn = 1:10,
+    subplot2(2,10,1,tn);
+    imagesc(linspace(-500,500,250),1:8,repmat(dcTDPfrontal{tn},1,2)')
+    axis('xy');
+    xlim([-300,300]);    
+    subplot2(2,10,2,tn);
+    imagesc(linspace(-500,500,250),1:8,repmat(dcTDPlateral{tn},1,2)')
+    axis('xy');
+    xlim([-300,300]);
+end
+
+figure,
+subplot(121);
+imagesc(linspace(-500,500,250),1:8,repmat(sum(cat(3,dcTDPfrontal{:}),3),1,2)')
 axis('xy');
+xlim([-300,300]);
+subplot(122);
+imagesc(linspace(-500,500,250),1:8,repmat(sum(cat(3,dcTDPlateral{:}),3),1,2)')
+axis('xy');
+xlim([-300,300]);
 
 
 out = [];
