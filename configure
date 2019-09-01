@@ -1,12 +1,15 @@
 #! /bin/bash
 # setup the MTA environment for a new user
 #
-# 
 #
 # MTA assumes a specifec file structure for both data and code
 #
 # matlab code - expected location: /storage/code/matlab
 # data        - expected location: /storage/$USER/data
+#
+# example
+#     configure -u gravio -s storage2 -m /storage/gravio/code/matlab
+# 
 
 USER=''
 STORAGE=''
@@ -27,6 +30,10 @@ done
 
 if [ -z "$USER" ]; then
     USER=`whoami`
+fi
+
+if [ -z "$MTA" ]; then
+    MTA="/storage/share/matlab/MTA"
 fi
 
 if [ -z "$STORAGE" ]; then
@@ -52,3 +59,8 @@ echo "addpath(genpath('/storage/share/matlab/labbox'));"       >> "$MATLAB/start
 echo "rmpath( genpath('/storage/share/matlab/labbox/.git'));"  >> "$MATLAB/startup.m"
 echo "MTAstartup();"                                           >> "$MATLAB/startup.m"
 
+echo 'export MTA="/storage/share/matlab/MTA/"'                 >> "~/.bashrc"
+echo 'export MTA_ROOT_PATH="/storage/gravio/data/"'            >> "~/.bashrc"
+echo 'export MTA_PROJECT_PATH="/storage/gravio/data/project"'  >> "~/.bashrc"
+
+source '~/.bashrc'

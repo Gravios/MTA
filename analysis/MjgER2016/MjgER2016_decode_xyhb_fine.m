@@ -6,6 +6,7 @@
 %
 
 
+global MTA_PROJECT_PATH
 
 MjgER2016_load_data();
 
@@ -29,13 +30,28 @@ unitSubset = units{trialIndex};
 end
 
 
+
+
+sampleRate = 30;   % Hz [C:250]
+spikeWindow = 0.3; % ms [C:0.03]
+mode = 'xyh'; % alt vals: 'xy'
+mode = 'xyb'; % alt vals: 'xy'
+
+for trialIndex = 17:23;    
+Trial = Trials{trialIndex}; 
+unitSubset = units{trialIndex};
+[posEstCom,posEstMax,posEstSax,posteriorMax] = ...
+    bhv_decode(Trial,sampleRate,unitSubset,mode,[],[],spikeWindow,true);
+end
+
+
 trialIndex = 20;    
 Trial = Trials{trialIndex}; 
 unitSubset = units{trialIndex};
 
-sampleRate = 250;   % Hz
-spikeWindow = 0.025; % ms
-mode = 'xyhi'; % alt vals: 'xy'
+sampleRate = 30;   % Hz
+spikeWindow = 0.3; % ms
+mode = 'xyh'; % alt vals: 'xy'
 
 states = {'theta','rear','hloc','hpause','lloc','lpause','groom','sit','ripple'};
 
@@ -43,11 +59,13 @@ states = {'theta','rear','hloc','hpause','lloc','lpause','groom','sit','ripple'}
 % LOAD subject position object
 stc = Trial.load('stc','msnn_ppsvd_raux');
 xyz = resample(preproc_xyz(Trial,'trb'),sampleRate);
-fxyz = filter(copy(xyz),'ButFilter',3,20,'low');
+fxyz = filter(copy(xyz),'ButFilter',3,10,'low');
 
 % LOAD lfp
 % COMPUTE theta LFP phase
-lfp = load(Trial,'lfp',72);
+try,  lfp = load(Trial,'lfp',72);
+catch, lfp = load(Trial,'lfp',72);
+end
 %lfp = load(Trial,'lfp',84);
 phz = lfp.phase([6,12]);
 phz.data = unwrap(phz.data);
@@ -83,17 +101,15 @@ stcm = stc2mat(stc,xyz,states);
 ufr = load(Trial,'ufr',xyz,[],unitSubset,spikeWindow,true,'gauss');    
 unitInclusion = sum(ufr.data>0.2,2);
 
-[posEstCom,posEstMax,posteriorMax] = bhv_decode(Trial,sampleRate,unitSubset,mode,[],[],spikeWindow,true);
+[posEstCom,posEstMax,posEstSax,posteriorMax] = ...
+    bhv_decode(Trial,sampleRate,unitSubset,mode,[],[],spikeWindow,false);
+% $$$ [posEstCom,posEstMax,posEstSax,posteriorMax] = bhv_decode(Trial,250,unitSubset,'xyh',[],[],0.025,false);
+% $$$ [posEstCom,posEstMax,posEstSax,posteriorMax] = bhv_decode(Trial,250,unitSubset,'xyhi',[],[],0.025,false);
+% $$$ [posEstCom,posEstMax,posEstSax,posteriorMax] = bhv_decode(Trial,250,unitSubset,'xyb',[],[],0.025,false);
+% $$$ [posEstCom,posEstMax,posEstSax,posteriorMax] = bhv_decode(Trial,250,unitSubset,'xyz',[],[],0.025,false);
 
-[posEstCom,posEstMax,posEstSax,posteriorMax] = bhv_decode(Trial,250,unitSubset,'xyh',[],[],0.025,false);
-[posEstCom,posEstMax,posEstSax,posteriorMax] = bhv_decode(Trial,250,unitSubset,'xyhi',[],[],0.025,false);
-[posEstCom,posEstMax,posEstSax,posteriorMax] = bhv_decode(Trial,250,unitSubset,'xyb',[],[],0.025,false);
-[posEstCom,posEstMax,posEstSax,posteriorMax] = bhv_decode(Trial,250,unitSubset,'xyz',[],[],0.025,false);
-
-
-[posEstCom,posEstMax,posEstSax,posteriorMax] = bhv_decode(Trial,250,unitSubset,'xyhi',[],[],0.125,false);
-
-ind = unitInclusion>=4 & any(stcm==1,2) & posteriorMax>0.001;
+ind = unitInclusion>=4 & any(stcm==1,2) & posteriorMax>0.01;
+ind = unitInclusion>=5 & any(stcm==1,2) & ~any(stcm==2,2) & posteriorMax>0.005;
 sum(ind)
 
 %ind = ':';
@@ -119,6 +135,8 @@ clear('derror');
 %% some plots of stuff
 ind = ':';
 decError = [multiprod(posEstSax(ind,[1,2])-sq(xyz(ind,'hcom',[1,2])),hvec(ind,:,:),2,[2,3]),fet(ind,1)-posEstSax(ind,3)];
+decError = [multiprod(posEstSax(ind,[1,2])-sq(xyz(ind,'hcom',[1,2])),hvec(ind,:,:),2,[2,3]),fet(ind,1)-posEstCom(ind,3)];
+decError = [multiprod(posEstSax(ind,[1,2])-sq(xyz(ind,'hcom',[1,2])),hvec(ind,:,:),2,[2,3]),fet(ind,1)-posEstMax(ind,3)];
 decError(~(unitInclusion>=2 & any(stcm==1,2) & posteriorMax>0.0005)) = nan;
 
 figure,
@@ -130,8 +148,9 @@ plot(phz(:,1),'c')
 % Decompose decoding error by theta phase and state in egocentric frame of reference
 figure();
 ns = 6;
-decError = [multiprod(posEstCom(:,[1,2])-sq(xyz(:,'hcom',[1,2])),hvec(:,:,:),2,[2,3]),fet(:,1)-posEstCom(:,3)];
+%decError = [multiprod(posEstCom(:,[1,2])-sq(xyz(:,'hcom',[1,2])),hvec(:,:,:),2,[2,3]),fet(:,1)-posEstCom(:,3)];
 %decError = [multiprod(posEstSax(:,[1,2])-sq(xyz(:,'hcom',[1,2])),hvec(:,:,:),2,[2,3]),fet(:,1)-posEstSax(:,3)];
+decError = [multiprod(posEstMax(:,[1,2])-sq(xyz(:,'hcom',[1,2])),hvec(:,:,:),2,[2,3]),fet(:,1)-posEstMax(:,3)];
 for s = 1:ns; %states
     cind = unitInclusion>=4 & posteriorMax>0.001;
     sind =      stcm(:,1)   ...
@@ -169,7 +188,7 @@ for s = 1:ns; %states
     xlabel('rad');
     ylabel('theta phase');
 end
-
+ForAllSubplots('Lines(0,[],''k'')');
 
 figure
 %decError = [multiprod(posEstCom(:,[1,2])-sq(xyz(:,'hcom',[1,2])),hvec(:,:,:),2,[2,3]),fet(:,1)-posEstCom(:,3)];
@@ -1606,10 +1625,10 @@ end
 
 % bhv_decode testing figures
 
-figure,
-plot((1:size(fet,1))./fet.sampleRate,fet(:,3));
-hold('on');
-ind = posteriorMax>0.001;
-pt = (1:size(posEstSax,1));
-plot(pt(ind)./sampleRate,posEstSax(ind,3),'.');
+% $$$ figure,
+% $$$ plot((1:size(fet,1))./fet.sampleRate,fet(:,3));
+% $$$ hold('on');
+% $$$ ind = posteriorMax>0.01;
+% $$$ pt = (1:size(posEstSax,1));
+% $$$ plot(pt(ind)./sampleRate,posEstSax(ind,3),'.');
 

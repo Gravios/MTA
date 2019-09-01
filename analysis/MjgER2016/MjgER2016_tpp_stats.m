@@ -1,6 +1,6 @@
 
 % ACCUMULATE phase precession stats ----------------------------------------------------------------
-overwrite = false;
+overwrite = true;
 numIter = 100;
 parmDRZall     = zeros([unitCnt,2,numIter+1,numStates]);
 phzStatsDRZall = zeros([unitCnt,2,numIter+1,numStates]);
@@ -12,11 +12,34 @@ rHRZall        = zeros([unitCnt,1,numIter+1,numStates]);
 rhoHRZall      = zeros([unitCnt,1,numIter+1,numStates]);
 
 for t = 1:numel(Trials),
+    
+% LOAD phase precession states
+    if ~overwrite ...
+       & all(cellfun(@(sts) exist(fullfile(Trials{t}.spath,                               ...
+                                           [Trials{t}.filebase,                           ...
+                                               '-phasePrecession-',                       ...
+                                               'GHZall-',sts,'-',num2str(numIter),        ...
+                                               '.mat']),                                  ...
+                                  'file'),                                                ...
+                          states)),
+        for s = 1:numStates,
+                [parmHRZall(ind,:,:,s), phzStatsHRZall(ind,:,:,s),              ...
+                 rHRZall(ind,:,:,s), rhoHRZall(ind,:,:,s)] =                    ...
+                    MjgER2016_phasePrecession(                                  ...
+                        Trials{t},                                              ...
+                        'tag',['GHZall-',states{s},'-',num2str(numIter)]);
+        end
+        continue
+    end
 
+
+    
+% COMUTE phase precession states    
     Trial = Trials{t};    
-    unitSubsetTempTemp = units{t};
-    fprintf('Processing Trial: %s\nComputational time: ',Trial.filebase)        
-   
+    unitSubsetTemp = units{t};
+    fprintf('Processing Trial: %s\n',Trial.filebase)
+
+
 
 % LOAD marker position from motion capture data
     xyz = preproc_xyz(Trial,'trb');
@@ -26,8 +49,8 @@ for t = 1:numel(Trials),
 % RESAMPLE lfp to xyz sample rate
 % COMPUTE lfp phase in theta band (6-12 Hz)
     Trial.lfp.filename = [Trial.name,'.lfp'];
-    try, lfp = Trial.load('lfp',sessionList(t).thetaRef);
-    catch, lfp = Trial.load('lfp',sessionList(t).thetaRef);
+    try, lfp = Trial.load('lfp',sessionList(t).thetaRefGeneral);
+    catch, lfp = Trial.load('lfp',sessionList(t).thetaRefGeneral);
     end
     phz = lfp.phase([5,13]);    
     phz.data = unwrap(phz.data);
@@ -83,7 +106,8 @@ for t = 1:numel(Trials),
 % $$$         [parmDRZall(ind,:,:,s), phzStatsDRZall(ind,:,:,s), rDRZall(ind,:,:,s), rhoDRZall(ind,:,:,s)] = ...
 % $$$             MjgER2016_phasePrecession(Trial,drz,ddz,phz,spkpp,unitSubsetTemp,[],[],numIter,...
 % $$$                                       ['DRZ-',states{s},'-',num2str(numIter)],overwrite);
-        [parmHRZall(ind,:,:,s), phzStatsHRZall(ind,:,:,s), rHRZall(ind,:,:,s), rhoHRZall(ind,:,:,s)] = ...
+        [parmHRZall(ind,:,:,s), phzStatsHRZall(ind,:,:,s), ...
+         rHRZall(ind,:,:,s), rhoHRZall(ind,:,:,s)] = ...
             MjgER2016_phasePrecession(Trial,ghz,ddz,phz,spkpp,unitSubsetTemp,[],[],numIter,...
                                       ['GHZall-',states{s},'-',num2str(numIter)],overwrite);
 % $$$         

@@ -129,7 +129,7 @@ for tind = 1:numel(Trials)
 % $$$         spkavl = cat(1,spkavl,avl(res,:));        
         spkdrz = cat(1,spkdrz,drz(res,unit));
         spkhrz = cat(1,spkhrz,hrz(res,unit));        
-        spkghz = cat(1,spkhrz,ghz(res,unit));                
+        spkghz = cat(1,spkghz,ghz(res,unit));                
         spkphz = cat(1,spkphz,phz(res,spk.map(unitSubset(unit)==spk.map(:,1),2)));        
         for state = 1:numel(statesSpk),
             for s = 1:2,

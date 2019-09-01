@@ -1,6 +1,6 @@
 % MjgER2016_figure6
 %
-% DECODING 
+% DECODING position and behavior based on spatio-behavioral ratemaps
 % 
 % 
 % 
@@ -30,7 +30,6 @@ interpParPfs = struct('bins',{{linspace(-500,500,50),...
 %      Generate the behavior rate maps which are computed from the data within the placefield during
 %  theta periods
 %
-%
 %  Joint physical-behavioral rate maps
 %
 %      Generate the spatial-behavioral rate maps which are computed from the data within the 
@@ -42,40 +41,36 @@ interpParPfs = struct('bins',{{linspace(-500,500,50),...
 MjgER2016_figure6_args('section 1');
 
 % DEF selection of trials by index
-tInds = [1:23];
+tInds = [3:5,17:23];
 
 % DEF behavior field rate map
 bfrm        = cf(@(t,u)   compute_bhv_ratemaps(t,u),                    Trials(tInds), units(tInds));
-bfrmShuff   = cf(@(t,u)   compute_bhv_ratemaps_shuffled(t,u),           Trials(tInds), units(tInds));
+%bfrmShuff   = cf(@(t,u)   compute_bhv_ratemaps_shuffled(t,u),           Trials(tInds), units(tInds));
 
 % COMPUTE bhv ratemap erpPCA
 [eigVecs, eigScrs, eigVars, unitSubsets, validDims, zrmMean, zrmStd] = ...
     compute_bhv_ratemaps_erpPCA(bfrm, units(tInds));
 
 % COMPUTE bhv ratemap erpPCA scores
-[fsrcz,FSrC,rmaps,FSCFr,FSrM,FSrS,fsrsMean,fsrsStd,rmapsShuffledMean,rmapsShuffled] = ...
-    compute_bhv_ratemaps_erpPCA_scores(Trials(tInds),units(tInds),bfrm,bfrmShuff,eigVecs,validDims,unitSubsets);
-
-% COMPUTE bhv ratemap nnmf
-% $$$ [wVecs,hScores,dScale] = compute_bhv_ratemaps_nnmf(bfrm(tInds),units(tInds));
+% $$$ [fsrcz,FSrC,rmaps,FSCFr,FSrM,FSrS,fsrsMean,fsrsStd,rmapsShuffledMean,rmapsShuffled] = ...
+% $$$     compute_bhv_ratemaps_erpPCA_scores(Trials(tInds),units(tInds),bfrm,bfrmShuff,eigVecs,validDims,unitSubsets);
 
 % GENERATE bhv ratemap mask
 maskbhv = false(bfrm{1}.adata.binSizes');
 maskbhv(validDims) = true;
 
 % GENERATE xyhb placefields
-tInds = 17:23;
-pfsXYHB   = cf(@(t,u)   compute_xyhb_ratemaps(t,u),                    Trials(tInds), units(tInds));
-
+pfsXYHB  = cf(@(t,u)  compute_xyhb_ratemaps(t,u),  Trials(tInds), units(tInds));
 % GENERATE xy ratemap mask
 maskcirc = create_tensor_mask(pfsXYHB{1}.adata.bins(1:2));
 
 % COMPLETE mask
-mask = repmat(maskcirc,[1,1,size(maskbhv)]).*repmat(permute(maskbhv,[3,4,1,2]),[size(maskcirc),1,1]);
+% $$$ mask = repmat(maskcirc,[1,1,size(maskbhv)]).*repmat(permute(maskbhv,[3,4,1,2]),[size(maskcirc),1,1]);
 %save(fullfile(MTA_PROJECT_PATH,'analysis','pfsXYHB_mask.mat'),'mask','-v7.3');
 load(fullfile(MTA_PROJECT_PATH,'analysis','pfsXYHB_mask.mat'));
 
 
+%%%<<< DIAGNOSTIC FIGURE
 % $$$ rmp = plot(pfsXYHB{1},61,1,[],[],false);
 % $$$ % CHECK mask is correct
 % $$$ nx = pfsXYHB{1}.adata.binSizes(1);
@@ -91,7 +86,7 @@ load(fullfile(MTA_PROJECT_PATH,'analysis','pfsXYHB_mask.mat'));
 % $$$         axis('xy')
 % $$$     end
 % $$$ end
-
+%%%>>>
 
 
 
@@ -134,16 +129,46 @@ for t = tInds;
 end
 
 
+t = 20;
+Trial = Trials{t};
+unitSubset = units{t};
+xyz = resample(Trial.load('xyz','trb'),30);
 fet = fet_HB_pitchB(Trial,sampleRate);
+ts = [1:size(xyz,1)]./sampleRate;
+stcm = stc2mat(Trial.load('stc'),xyz,states);
 
 
 figure,
-ind = posteriorMax{t==tInds}>0.01&unitInclusion{t==tInds}>4;
-subplot(4,1,1);plot([xyz(ind,5,1),sq(decEstCom{t==tInds}(ind,1))]);    
-subplot(4,1,2);plot([xyz(ind,5,2),sq(decEstCom{t==tInds}(ind,2))]);    
-subplot(4,1,3);plot([fet(ind,1),  sq(decEstCom{t==tInds}(ind,3))]);
-subplot(4,1,4);plot([fet(ind,2),  sq(decEstCom{t==tInds}(ind,4))]);
+ind =    posteriorMax{t==tInds} > 0.001 ...
+      & unitInclusion{t==tInds} > 3     ...
+      & stcm(:,1)==1;
+nanmask = ones([size(xyz,1),1]);
+nanmask(~ind)=nan;
+% X vs X_est
+subplot(4,1,1);
+    hold('on');
+    plot(ts,xyz(:,5,1),'-k','LineWidth',1);
+    plot(ts,sq(decEstCom{t==tInds}(:,1)).*nanmask,'-r','LineWidth',1);
+% X vs X_est
+subplot(4,1,2);
+    hold('on');
+    plot(ts,xyz(:,5,2),'-k','LineWidth',1);
+    plot(ts,decEstCom{t==tInds}(:,2).*nanmask,'-r','LineWidth',1);
+subplot(4,1,3);
+    hold('on');
+    plot(ts,fet(:,1),'-k','LineWidth',1);
+    plot(ts,decEstCom{t==tInds}(:,3).*nanmask,'-r','LineWidth',1);
+    ylim([-1.5,0.5]);    
+subplot(4,1,4);
+    hold('on');
+    plot(ts, fet(:,2),'-k','LineWidth',1);
+    plot(ts, decEstCom{t==tInds}(:,4).*nanmask,'-r','LineWidth',1);
+    ylim([-0.5,1.5]);
 linkaxes(findobj(gcf(),'Type','Axes'),'x');
+
+xlim([290,345]);
+xlim([530,600]);
+xlim([1000,1045]);
 
 
 % $$$ decError = zeros([size(xyz,1),size(decEstSax,2)]);
@@ -159,23 +184,20 @@ linkaxes(findobj(gcf(),'Type','Axes'),'x');
 % $$$ hist2(decError(ind,[3,4]),linspace(-1.5,1.5,50),linspace(-1.5,1.5,50));
 % $$$ 
 
-
-% $$$ decEstComTPD = cell([1,7]);
-% $$$ decEstMaxTPD = cell([1,7]);
-% $$$ decEstSaxTPD = cell([1,7]);
-% $$$ posteriorMaxTPD = cell([1,7]);
-
-tInds = [17:23];
+sampleRateTPD = 250;
 decEstComTPD     = cell([1,numel(tInds)]);
 decEstMaxTPD     = cell([1,numel(tInds)]);
 decEstSaxTPD     = cell([1,numel(tInds)]);
 posteriorMaxTPD  = cell([1,numel(tInds)]);
 unitInclusionTPD = cell([1,numel(tInds)]);
-pfsXYHB   = cf(@(t,u)   compute_xyhb_ratemaps(t,u),                    Trials(tInds), units(tInds));
-xyz       = cf(@(t)     resample(preproc_xyz(t,'trb'),sampleRate),      Trials(tInds)             );
+xyz       = cf(@(t)     resample(preproc_xyz(t,'trb'),sampleRateTPD),      Trials(tInds));
 
-phzBins = -pi:pi/3:pi;
+
+
+phzBins = -pi:pi/4:pi;
+
 for t = tInds;
+    Trials{t}.lfp.filename = [Trials{t}.name,'.lfp'];    
     tn = find(t==tInds);
     try,   lfp = load(Trials{t},'lfp',sessionList(t).thetaRefGeneral);
     catch, lfp = load(Trials{t},'lfp',sessionList(t).thetaRefGeneral);
@@ -188,23 +210,28 @@ for t = tInds;
     for p = 1:numel(phzBins)-1
         spkt = copy(spk);
         spkt.clu = spkt.clu(phzBinInds(spkt.res)==p);
-        spkt.res = round(spkt.res(phzBinInds(spkt.res)==p)./lfp.sampleRate.*sampleRate);    
-        spkt.sampleRate = sampleRate;
+        spkt.res = round(spkt.res(phzBinInds(spkt.res)==p)./lfp.sampleRate.*sampleRateTPD);    
+        spkt.sampleRate = sampleRateTPD;
         ufr = Trials{t}.load('ufr',xyz{tn},spkt,units{t},spikeWindow,true,'gauss');
         ufr.data =  ufr.data.*6;
         unitInclusionTPD{tn}(:,p) = sum(ufr.data>0.2,2);
-        tag = ['xyhb_thpD',num2str(p),'o',num2str(numel(phzBins)-1)];
-        [decEstComTPD{tn}(:,:,p),decEstMaxTPD{tn}(:,:,p),decEstSaxTPD{tn}(:,:,p),posteriorMaxTPD{tn}(:,p)] = ...
-            decode_ufr(Trials{t},units{t},sampleRate,ufr,pfsXYHB{tn},[],mask,smoothingWeights,'tag',tag,'overwrite',true);
+        tag = ['xyhb_thpD',num2str(sampleRateTPD),'_',num2str(p),'o',num2str(numel(phzBins)-1)];
+        [decEstComTPD{tn}(:,:,p),decEstMaxTPD{tn}(:,:,p),...
+         decEstSaxTPD{tn}(:,:,p),posteriorMaxTPD{tn}(:,p)] = ...
+            decode_ufr(Trials{t},units{t},sampleRateTPD,ufr,pfsXYHB{tn},...
+                       [],mask,smoothingWeights,'tag',tag,'overwrite',false);
     end
 end
+
+
+
 
 
 [hfig,figOpts,xpos,ypos,fax] = set_figure_layout(figure(666005),'A4','portrait');
 
 
 
-fet  = cf(@(t)    fet_HB_pitchB(t,sampleRate),                                       Trials(tInds));
+fet  = cf(@(t)    fet_HB_pitchB(t,sampleRateTPD),                                    Trials(tInds));
 hvec = cf(@(x)    x(:,'head_front',[1,2])-x(:,'head_back',[1,2]),                    xyz          );
 hvec = cf(@(h)    sq(bsxfun(@rdivide,h,sqrt(sum(h.^2,3)))),                          hvec         );
 hvec = cf(@(h)    cat(3,h,sq(h)*[0,-1;1,0]),                                         hvec         );
@@ -227,15 +254,38 @@ dErr = cf(@(e,x,h,f)  cat(2,...
                                            [1,2,4,3]),...
                                    h(:,:,:),2,[2,3])),...
                           [bsxfun(@minus,f(:,1),e(:,3,:)),bsxfun(@minus,f(:,2),e(:,4,:))]), ...
-          dErr,xyz,hvec,fet);
+          dErr(9),xyz(9),hvec(9),fet(9));
+
+ind  = cf(@(p,u,s) all(p>0.00005,2) & sum(double(u>=1),2)>4 & s(:,1)==1 & any(logical(s(:,stid)),2),...
+          posteriorMaxTPD(9),unitInclusionTPD(9),stcm(9));
+
+figure,plot(sq(dErr{1}(ind{1},1,:)))
+
+out = [];
+for j = 1:8;
+    out = cat(2,out,histc(sq(dErr{1}(ind{1},1,j)),linspace(-500,500,100)));
+end
+figure,
+imagesc(linspace(-500,500,250),1:8,repmat(out,1,2)')
+axis('xy');
 
 
+out = [];
+for j = 1:8;
+    out = cat(2,out,histc(sq(dErr{1}(ind{1},3,j)),linspace(-2,2,100)));
+end
+figure,
+imagesc(linspace(-2,2,100),1:8,out')
+axis('xy');
+    
+stid = [3,5];
+stid = [4,6];
 stid = [3,4,5,6];
 stid = [2];
 stid = [3];
 stid = [5];
 
-ind  = cf(@(p,u,s) all(p>0.00005,2) & all(u>=3,2) & s(:,1)==1 & any(logical(s(:,stid)),2),...
+ind  = cf(@(p,u,s) all(p>0.00005,2) & all(u>=2,2) & s(:,1)==1 & any(logical(s(:,stid)),2),...
           posteriorMaxTPD,unitInclusionTPD,stcm);
 
 
@@ -288,7 +338,7 @@ linkaxes(findobj(gcf(),'Type','Axes'),'x');
 
 
 
-tind = 19;
+tind = 20;
 Trial = Trials{tind};
 unitSubset = units{tind};
 xyz = preproc_xyz(Trial,'trb');

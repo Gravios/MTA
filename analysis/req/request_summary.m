@@ -921,15 +921,14 @@
 
 ** 2018 08 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 
-% req20180826 ----------------------------------------------------
-%  Status: active
-%  Type: Analysis
-%  Author: Justin Graboski
-%  Final_Forms: NA
-%  Description: within state PP as function of 
-%               {drz, body pitch, head pitch}
-%
-%  Bugs: NA
+*** req20180826 ----------------------------------------------------
+    Status: active
+    Type: Analysis
+    Author: Justin Graboski
+    Final_Forms: NA
+    Description: within state PP as function of 
+                 {drz, body pitch, head pitch}
+    Bugs: NA
 
 
 
@@ -1085,4 +1084,18 @@
     Description: compute the number of independent trajectories near a place field
                  center, the number of independent trajectories with at least one spike,
                  and the first and last spike time within this reagion.
+
+
+** 2019 05 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+
+*** req20190829
+    Tags: synchronization spectrometer ach
+    Status: retired
+    Type: utility
+    Author: Justin Graboski
+    Final_Forms: 
+    Project: 
+    Description: working on -
+                 synchronization of video to openephys signal
+                 synchronizaiton of ACh signal, processed from spectrometer data
 

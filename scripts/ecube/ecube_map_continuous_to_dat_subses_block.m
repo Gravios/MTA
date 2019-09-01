@@ -1,6 +1,5 @@
-function ecube_map_continuous_to_dat_subses_block(subSesFileNames, filebase, dat, acqSystem, varargin)
-% function map_oephys_to_dat_subses_block(subSesFileNames, filebase, dat, acqSystem, ...
-%                                         channelMap, datFileSizeLimit)
+function ecube_map_continuous_to_dat_subses_block( filebase, subSesFileNames, dat, chanInfo, varargin)
+% function map_oephys_to_dat_subses_block(subSesFileNames, filebase, dat, acqSystem, chanInfo, datFileSizeLimit)
 % oephys2dat_subses_blocks is a modification of oephys2dat_subses.m, which
 % converts .continuous files from "subSesFileNames" with wideband signal
 % recorded with an open ephys acquisition system to .dat data format, but
@@ -45,13 +44,12 @@ function ecube_map_continuous_to_dat_subses_block(subSesFileNames, filebase, dat
 
 
 % DEFARGS ------------------------------------------------------------------------------------------
-[ chanInfo, datFileSizeLimit] = DefaultArgs(varargin,{ [], 40 });
+[ acqSystem, datFileSizeLimit ] = DefaultArgs(varargin,{ 'ecube', 40 });
 source = [filebase,'-',acqSystem];
 nFiles = length(subSesFileNames);
 %---------------------------------------------------------------------------------------------------
 
 % CHECK that all the files exist and that file names and internal header info match
-selectedChannels = false([nFiles,1]);
 for k=1:nFiles    
     if ~exist(subSesFileNames{k}, 'file')
         error(sprintf('map_oephys_to_dat_subses_block: File %s not found', subSesFileNames{k}))
@@ -80,314 +78,159 @@ for k=1:length(subSesFileNames);
     fclose(fid);
 end
 
-% DIAGNOSTIC figure
-% $$$ figure;plot(fileSizeBytes)
-% $$$ xlabel('files')
-% $$$ ylabel('File Size bytes')
-% $$$ title([cdir ' - FileSize_bytes for each file - '])
-
-%% set up loading parameters
-
 % SET structure of a block of .continuous data
 blockBytes =  [8 2 2 2048 10]; 
 
 % COMPUTE size of a data block (bytes)
-blockSizeBytes =  sum(blockBytes);
-blockSizeSamples = 1024;
+blockSamples = 1024;
 % SET Pre-defined size of a .continuous file header (bytes)
 NUM_HEADER_BYTES = 1024;
 
 % COMPUTE the total number of blocks in the file
-nBlocks = floor((fileSizeBytes - NUM_HEADER_BYTES)/blockSizeBytes);
+nBlocks = (fileSizeBytes - NUM_HEADER_BYTES)/sum(blockBytes);
+assert(all(floor(nBlocks)==nBlocks),[mfilename,':IncompleteBlock'])
 
 % SET LENGTH of a data chunk (in blocks) that can be loaded simulateously across channels
-chunkBlock = 2500;
-chunkSamples = chunkBlock*blockSizeSamples;
+chunkBlock = 512;
+chunkSamples = chunkBlock*blockSamples;
 
-%alternative function structure:
-% a) find out full session duration: get first and last absolute timepoints present in data across all files
-% b) make matrix of zeros spaninng first and last absolute timepoint across all channels
-% c) go through this matrix in chunks and fill all recorded data into its respective time slot
-
-%%
-%Compute number of full chunks in the file
+% COMPUTE number of full chunks in the file
 nChunks = ceil(max(nBlocks/chunkBlock));
-
-%establish file_end_t for all files ???? not used ????
+firstTimeStamp = nan([size(subSesFileNames)]);
+finalTimeStamp = nan([size(subSesFileNames)]);
 for k=1:nFiles
-    nLastBlockEach(k)=((fileSizeBytes(k)-NUM_HEADER_BYTES)/blockSizeBytes);
-    assert(floor(nLastBlockEach(k))==nLastBlockEach(k),...
-           'map_oephys_to_dat_subses_block:FilesizeNotBlocksizeMultiple');
-
-    [~, t, ~] = load_open_ephys_data_blocks(subSesFileNames{k}, 'unscaledInt16', [nLastBlockEach(k)-1 nLastBlockEach(k)]);
+    [~, t, ~] = load_open_ephys_data_blocks(subSesFileNames{k}, ...
+                                            'unscaledInt16', ...
+                                            [1,2]);
+    firstTimeStamp(k)=min(t);
+    [~, t, ~] = load_open_ephys_data_blocks(subSesFileNames{k}, ...
+                                            'unscaledInt16', ...
+                                            [nBlocks(k)-1 nBlocks(k)]);
     finalTimeStamp(k)=max(t);
 end
+clear('t');
 
+startTimeStamp = min(firstTimeStamp);
 
 %%%>>>
 
 
 %%%<<< Load from all channels and save to a .dat file
+% Does not handle gaps in the data
 
 % LOAD / CHECK / CORRECT / SAVE all chunks
 
-%set startblock
+% SET startblock
 blockRange = repmat([1   chunkBlock],nFiles,1)';    
+if blockRange(2,1) > min(nBlocks),  blockRange(2,:) = min(nBlocks);  end
+remnantData       = repmat({int16([])},[1,nFiles]);
+remnantTimeStamps = repmat({[]},[1,nFiles]);
+finished=false;
+n=0;    
+finalDat = [];
 
-if blockRange(2,1) > min(nLastBlockEach)
-    blockRange(2,:) = min(nLastBlockEach);
-end    
-
-finished=0;
-n=0;
-    
-while finished~=1;
-    
+while ~finished;
     n=n+1;
+    
+    if any(blockRange(2,:)>nBlocks),
+        blockRange(2,blockRange(2,:)>nBlocks) = nBlocks;
+    end
+    
+% STOP when all data blocks from all files have been read      
+    if any(blockRange(2,:)==nBlocks), finished = true; end
     
 % LOADING section: exactly as in oephys2dat_subses.m, but for a chunk
     %Initialize the variable for accumulating the data
     %Note: a cell array is used here to be able to run parfor and to accomodate cases when channels have different length
-    raw   = cell(1,nFiles);
-    raw_t = cell(1,nFiles); 
+    rawData   = cell([1,nFiles]);
+    rawTimeStamps = cell([1,nFiles]); 
     
-    if n~=1;
-        blockRange= [nextchunk_startblock; nextchunk_endblock];
-    end
-    
-% LOAD chunk data
-    clear('LoadedFile')
     for k=1:nFiles
-        % LOAD chunk
-        [data, t] = load_open_ephys_data_blocks(subSesFileNames{k}, 'unscaledInt16',blockRange(:,k));
-        % STORE data and timestamps
+% LOAD chunk
+        [rawData{k}, rawTimeStamps{k}] = ...
+            load_open_ephys_data_blocks(subSesFileNames{k},'unscaledInt16',blockRange(:,k));
+% STORE data and timestamps
         if diff(blockRange(:,k))<=1;
-            data=0;
+            rawData{k}=0;
             t=0;
         end
-        raw{k} = data; % unscaled int16
-        raw_t{k} = t;  % samples
-        
-        LoadedFile{k} = subSesFileNames{k};
-        
     end%for k
-    clear('data','t');
+    assert(all(cellfun(@(x) all(diff(x)==1), rawTimeStamps)),[mfilename,':TimeStampGap']);
 
-       
+    rawData       = cf(@(x,y) cat(1,x,y), remnantData,rawData);
+    rawTimeStamps = cf(@(x,y) cat(1,x,y), remnantTimeStamps,rawTimeStamps);    
+
     
-    %% ----------------------------- Fill data into the right timeslots ----------------------------------%
+% FILL data into the right timeslots
+
+    if n==1,
+        fid = fopen(dat,'a');        
+        timeStampShift = startTimeStamp;
+    else
+        timeStampShift = chunkLastTimeStamp+1;
+    end
+
+    chunkStartTimeStamp  = min(cellfun(@(x) x(1), rawTimeStamps));
+    chunkLastTimeStamp  = min(cellfun(@(x) x(end), rawTimeStamps));
+    chunkRange = chunkLastTimeStamp-chunkStartTimeStamp+1;
     
-    fprintf('Checking data on consistency and mapping ...')    
+    assert( timeStampShift == chunkStartTimeStamp ,[mfilename,':GapBetweenBlocks']);
     
-    %Check whether a timestamp vector on any channel has gaps (time increment is more than one sample)
-    %If it does..
-    % ...fill gaps in timestamps with timestamps and corresponding data with zeros
-    % Here i assume that these gaps are due to restarts of recording (continued acquisition)
-    % and not due to lost not-saved data.
-    % well cause might not matter for dealing with it here...
-            
-    %Flag showing whether gap correction on the time vector has been done
-    %IfGapCorrected = 0;
-    
-     if n==1;
-    %   find smallest chunk_end_t
-        %Extract the very first and last timestamps across all the channels
-        firstTimestamps = cellfun(@(x) x(1), raw_t);
-        firstTimestamps = firstTimestamps(firstTimestamps~=0);
+% initiate new raw vector        
+    processedData = repmat({zeros(1,chunkRange)},[nFiles,1]); 
+    for k=1:nFiles
+        shiftedTimeStamps{k} = rawTimeStamps{k}-timeStampShift+1;
+        remnantTimeInds{k}   = shiftedTimeStamps{k} >  chunkRange;
+        remnantTimeStamps{k} = rawTimeStamps{k}(remnantTimeInds{k});
+        shiftedTimeStamps{k} = shiftedTimeStamps{k}(shiftedTimeStamps{k} <= chunkRange);
+    end
         
-        lastTimestamps  = cellfun(@(x) x(end), raw_t);
-        lastTimestamps = lastTimestamps(lastTimestamps~=0);
-    
-        %find first start-timestamps and first end-timestamps across files
-        smallest_last_t = min(lastTimestamps);
-        smallest_first_t = min(firstTimestamps);
-        %define new t for chunk between smallest_first_t and smallest_last_t
-        raw_t_new=smallest_first_t:smallest_last_t;
-        nextchunk_start_t=smallest_last_t+1;
-     else
-         raw_t_new=nextchunk_start_t : nextchunk_start_t + chunkSamples;
-         nextchunk_start_t = raw_t_new(end) + 1;
-     end  
-    % across channels: n==1 keep all data falling between smallest_first_t and smallest_last_t
-    %                  n>1  keep all data falling within largest 
-    % empty data points filled with zeros
     for k=1:nFiles
-        [is_in_newt,idx_in_newt] = ismember(raw_t{k},raw_t_new); %get indices of raw_t values falling within new chunk  %SLOW
-        if raw_t{k}==0;
-            is_in_newt=zeros(1,length(raw_t_new));
-        end
-        raw_new{k}=zeros(1,length(raw_t_new)); %initiate new raw vector
-        idx_in_newt=idx_in_newt(idx_in_newt~=0); %remove zeros to get usable index
-        if ~isempty(idx_in_newt)
-            raw_new{k}(idx_in_newt)=raw{k}(is_in_newt); %assign data to new chunk %SLOW
-        end
-        raw_new{k}=int16(raw_new{k})';
-        raw_new_idc{k}=[1:length(raw_new{k})];
-        raw_empty{k}=~ismember(raw_new_idc{k},idx_in_newt);%keep idc of not recorded samples (remaining zeros) across files %% that should be done simpler
-        if max(is_in_newt)==0
-            lastblock(k)=0;
-        else
-            lastblock(k)=floor(max(find(is_in_newt))/1024); %get idx of last fully used block per file
+        processedData{k}(shiftedTimeStamps{k}) = rawData{k}(shiftedTimeStamps{k});
+    end
+    
+    for k=1:nFiles
+        if ~isempty(remnantTimeStamps{k}),
+            remnantData{k} = rawData{k}(remnantTimeInds{k});
         end
     end
-         
     
-    %translate nextchunk values into Blockranges
-    lastblo=lastblock+blockRange(1,:);
-    nextchunk_startblock=lastblo+1; 
-    nextchunk_endblock=nextchunk_startblock+chunkBlock;
-        
-    %compare nextchunk_endblock to each files nLastBlockEach, prevent
-    %loading attempts beyond end-of-files
-    for k=1:nFiles
-        if nextchunk_startblock(k)>=nLastBlockEach(k);
-           nextchunk_startblock(k)=nLastBlockEach(k)-1; 
-        end
-        if nextchunk_endblock(k)>=nLastBlockEach(k);
-           nextchunk_endblock(k)=nLastBlockEach(k);
-        end
-    end
-  
+    assert(any(chunkLastTimeStamp+1 == min(cellfun(@(x) x(1), ...
+               remnantTimeStamps(~cellfun(@isempty,remnantTimeStamps))))),...
+           [mfilename,':GapBetweenBlocks']);
 
-
-    
-    %% ----------------------------- Re-order the data ----------------------------------%    
-    %Re-order the loaded channels in asceding order within each channel type
-% $$$     indCH = find(strcmp(Header_chanType,'CH'));
-% $$$     [~,ind] = sort(Header_Chan(indCH));
-% $$$     indCH = indCH(ind);
-% $$$     if strcmp(acqSystem, 'oephys')
-% $$$         indAUX = find(strcmp(Header_chanType,'AUX'));
-% $$$         [~,ind] = sort(Header_Chan(indAUX));
-% $$$         indAUX = indAUX(ind);
-% $$$         indADC = find(strcmp(Header_chanType,'ADC'));
-% $$$         [~,ind] = sort(Header_Chan(indADC));
-% $$$         indADC = indADC(ind);
-% $$$         indALL = cat(2,indCH,indAUX,indADC);
-% $$$     elseif strcmp(acqSystem, 'ecube')
-% $$$         indPAI = find(strcmp(Header_chanType,'PAI'));
-% $$$         [~,ind] = sort(Header_Chan(indPAI));
-% $$$         indPAI = indPAI(ind);
-% $$$         indPDI = find(strcmp(Header_chanType,'PDI'));
-% $$$         [~,ind] = sort(Header_Chan(indPDI));
-% $$$         indPDI = indPDI(ind);
-% $$$         indALL = cat(2,indCH,indPAI,indPDI);
-% $$$     end %if strcmp(acqSystem, 'oephys')
-% $$$     
-% $$$     raw_new = raw_new(indALL);
-% $$$     LoadedFile = LoadedFile(indALL)';
-% $$$     %sort also the original vectors to be used for mapping below
-% $$$     Header_chanType = Header_chanType(indALL);
-% $$$     Header_Chan     = Header_Chan(indALL);
-% $$$     clear ind indCH indAUX indADC indPAI indPDI indALL
-          
-    
-    
-    %Check that channelMap has only unique indices  %% reintroduce later!
-% %     if length(unique(channelMap))~=length(channelMap)
-% %         msgbox('channelMap contains repeating channel indices!')
-% %     end
-    
-    %NEW----------------------------------------
-    %Re-order channels based on the mapping map if provided
-% $$$     if ~isempty(channelMap)
-% $$$                
-% $$$         if length(raw_new) == length(channelMap)
-% $$$            
-% $$$             %NEW: remap using actual channel indices from the file headers (equal to those from file names)
-% $$$             indCH = find(strcmp(Header_chanType,'CH'));
-% $$$             %[~, indCH_remapped] = ismember(channelMap, Header_Chan(indCH));
-% $$$             [~, indCH_remapped] = ismember(channelMap, (Header_Chan(indCH)+1));  %cx GS
-% $$$             
-% $$$             indMap = indCH_remapped;
-% $$$             
-% $$$             if any(indMap==0)
-% $$$                 error('channelMap contains indices of CH channels which are not present in the data!')
-% $$$             end
-% $$$             
-% $$$         elseif length(raw_new) > length(channelMap)
-% $$$             %if data have more channels (AUX or ADC) than in the mapping, just put them in the natural order at the end
-% $$$             %NOTE: it is assumed that CH channels go always first.
-% $$$             
-% $$$             %NEW: remap using actual channel indices from the file headers (equal to those from file names)
-% $$$             indCH = find(strcmp(Header_chanType,'CH'));
-% $$$             [~, indCH_remapped] = ismember(channelMap, (Header_Chan(indCH)+1));  %cx GS
-% $$$             
-% $$$             if strcmp(acqSystem, 'oephys')
-% $$$                 indAUX = find(strcmp(Header_chanType,'AUX'));
-% $$$                 indADC = find(strcmp(Header_chanType,'ADC'));
-% $$$                 indMap = cat(1,indCH_remapped(:), indAUX(:), indADC(:));
-% $$$                 
-% $$$             elseif strcmp(acqSystem, 'ecube')
-% $$$                 indPAI = find(strcmp(Header_chanType,'PAI'));
-% $$$                 indPDI = find(strcmp(Header_chanType,'PDI'));
-% $$$                 indMap = cat(1,indCH_remapped(:), indPAI(:), indPDI(:));
-% $$$                 
-% $$$             end %if strcmp(acqSystem, 'oephys')
-% $$$             
-% $$$             if any(indMap==0)
-% $$$                 error('channelMap contains indices of CH channels which are not present in the data!')
-% $$$             end
-% $$$             
-% $$$         end
-% $$$         raw_new = raw_new(indMap);
-% $$$         LoadedFile = LoadedFile(indMap);
-% $$$         clear ind indCH indCH_remapped indAUX indADC indPAI indPDI indMap
-% $$$         
-% $$$     end %if ~isempty(channelMap)
-          
-    % CONVERT data: bits to mkV
-    %NOTE: precision is kept as int16 even after conversion because we save to .dat file as int16 anyway
-    %NOTE: AUX/ADC channels have different bitVolts values, which is not taken into account here.
-    for k=1:nFiles
-        raw_new{k} = raw_new{k} .* header(k).bitVolts;
-    end
-    
-    fprintf('DONE\n')
-    
-    
-    % SAVE / APPEND data (mkV) to .dat file
+% SAVE / APPEND data (mkV) to .dat file
     fprintf('Saving data chunk-%d of %d (1024-samples, %d channels) to %s ... ', ...
             n, nChunks, nFiles, dat);
-    if n==1
-        fid_out = fopen(dat,'w');
-    else
-        fid_out = fopen(dat,'a');
-    end    
-    fwrite(fid_out, cell2mat(raw_new)','int16');
-    fclose(fid_out);
-    fprintf('DONE\n') 
-    
-    clear('raw', 'raw_t', 'raw_new', 'raw_t_new', 't', 'LoadedFile', 'gaps', ...
-          'Header_chanType', 'Header_Chan', 'blockRange')
-    %------------------------ END of Loading section ----------------------------------------------------% 
-    
-    %stop when all data blocks from all files have been read    
-    if sum(nextchunk_endblock==nLastBlockEach)==length(nLastBlockEach); 
+    fwrite(fid, cell2mat(processedData),'int16');
+    fprintf('DONE\n')
+    clear('rawData', 'rawTimeStamps', 'processedData', 'processedTimeStamps');
 
-        finished=finished+0.5; %initiate one last round if all files are due to get their last blocks loaded
-    end
     
-end %loop across chunks
+% END of Loading section ----------------------------------------------------%
 
+% $$$    finalDat = cat(1,finalDat,cell2mat(processedData)');
+   blockRange = blockRange + chunkBlock;      
+   
+end% loop across chunks
 
+fclose(fid);
 
 %%%>>>
 
-%% ---------------- Create an info file: [nChan sampleRate nSamples StartTime EndTime] -----------------%
-%NOTE: if the data contained time gaps, a new time vector without gaps is created and 
-%StartTime/ EndTime are taken from this new time vector. 
-[~, t] = load_open_ephys_data_blocks(subSesFileNames{1}, 'unscaledInt16', [1 2]);
-OverallStartTimestamp = t(1);
+% CREATE an info file: [nChan sampleRate nSamples StartTime EndTime]
+
+%% NOTE : if the data contained time gaps, a new time vector without gaps is created and 
+%% StartTime/ EndTime are taken from this new time vector. 
 dat_info = [dat '.info'];
-fprintf('Saving [nChan  sampleRate_Hz  nSamples  StartTime  EndTime  IfGapCorrected] into a file %s ...', dat_info)
+fprintf('Saving [nChan sampleRate nSamples startTime endTime] into a file %s ...', dat_info)
 info = [ numel(header),                       ... nChan
          header(1).sampleRate,                ... sampleRate
          nBlocks*1024,                        ... nSamples
-         OverallStartTimestamp,               ... start time
-         OverallStartTimestamp+nBlocks*1024-1 ... end time
+         min(firstTimeStamp),                 ... start time
+         min(firstTimeStamp)+nBlocks*1024-1   ... end time    
        ]; 
-dlmwrite(dat_info, info, 'delimiter','\t','precision','%.0f');
+dlmwrite(dat_info, info, 'delimiter','\n','precision','%.0f');
 fprintf('DONE\n')
 
 
@@ -402,3 +245,8 @@ return
 
 
 
+% DIAGNOSTIC figures
+% $$$ figure;plot(fileSizeBytes)
+% $$$ xlabel('files')
+% $$$ ylabel('File Size bytes')
+% $$$ title([cdir ' - FileSize_bytes for each file - '])

@@ -1,6 +1,6 @@
 function Data = load(Data,varargin)
 % Data = load(Data,varargin)
-% Loads data from disk into MTAData object
+% Loads data from mat file into MTAData object
 % 
 % varargin: 
 %    Session 

@@ -35,8 +35,8 @@ do
 	    shift
 	    ;;
         -h|--help)     
-	    echo "ecube_rename_files [-a auxiliary_filelist] [-c subsessionCodes] [-d subjectDirectory] "
-	    echo "                   [-v verbose] [filenames]"
+	    echo "ecube_rename_files [-a auxiliary_filelist] [-c subsessionCodes]  "
+	    echo "                   [-d subjectDirectory] [-v verbose] [filenames]"
 	    exit 1
             ;;
 	-v|--verbose)  

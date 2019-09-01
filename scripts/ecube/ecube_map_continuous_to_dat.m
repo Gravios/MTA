@@ -1,5 +1,5 @@
 function ecube_map_continuous_to_dat(filebase, xml, varargin)
-% function map_oephys_to_dat(Session, xml, acqSystem, chanmap, processorList, subSessionList)
+% function map_oephys_to_dat(Session, xml, acqSystem, channelMap, processorList, subSessionList)
 %
 % CONVERTS .continuous files with wideband signal recorded 
 %     by an open ephys acquisition acqSystem to .dat data format.
@@ -54,12 +54,9 @@ function ecube_map_continuous_to_dat(filebase, xml, varargin)
 
 % DEFARGS ------------------------------------------------------------------------------------------
 
-if nargin<1
-    error(['USAGE:  oephys2dat(Session, xml, acqSystem, chanmap, processorList, subSessionList)'])
-end
+assert(nargin>2,'USAGE:  oephys2dat(Session, xml, channelMap, subSessionList, acqSystem)')
 
-[acqSystem, chanmap,  processorList, subSessionList] = ...
-    DefaultArgs(varargin,{ 'oephys', [], [], [] });
+[ channelMap, subSessionList, acqSystem ] = DefaultArgs(varargin,{  [], [], 'ecube' });
 %---------------------------------------------------------------------------------------------------
 
 
@@ -105,15 +102,14 @@ fprintf(['%s \n'], datestr(clock) );
 
 %%%<<< LOAD channel mapping from the ASCII file    
 
-if exist(chanmap, 'file'),
-    fprintf('Loading channel mapping from %s ->', chanmap);
-    fid = fopen(chanmap);
-    channelMap = textscan(fid,'%s');
-    channelMap = channelMap{1};
-    fclose(fid);
-    %channelMap = reshape(dlmread(channelMap),[],1);
+if exist(channelMap, 'file'),
+    fprintf('Loading channel mapping from %s ->', channelMap);
+    fid = fopen(channelMap);
+    chanmap = textscan(fid,'%s');
+    fclose(fid);    
+    chanmap = chanmap{1};
     fprintf(' DONE\n');
-    if isempty(channelMap),
+    if isempty(chanmap),
         fprintf('Channel Map vector is empty -> MAPPING all channels in original order..\n')    
     end
 else
@@ -127,7 +123,7 @@ else
 %               isSource="0" isSink="0" NodeId="101">
 %        <EDITOR isCollapsed="0" displayName="Channel Map" Type="ChannelMappingEditor">
     fprintf('Channel Map file is absent -> MAPPING all channels in original order. \n')
-    channelMap = [];
+    chanmap = [];
 end
 
 %%%>>>
@@ -144,7 +140,7 @@ clear('dirList');
 %%%<<< PARSE file names to extract information about the files
 
 selectedChannels = false(size(filenames));
-channelMapInd = [];
+chanmapInd = [];
 clear('chanInfo');
 for k=1:length(filenames)
     cit= regexp(filenames{k},['(?<subjectName>[a-zA-Z]{1,4}\d+)-',...
@@ -159,8 +155,8 @@ for k=1:length(filenames)
     
     cit.chanName = [cit.processorId,'-',cit.chanType,'-',cit.chanId];
     
-    if ~isempty(channelMap)
-        cmi = find(~cellfun(@isempty,regexp(cit.chanName,channelMap,'once')));     
+    if ~isempty(chanmap)
+        cmi = find(~cellfun(@isempty,regexp(cit.chanName,cf(@(c) ['^',c,'$'],chanmap),'match')));
     else
         cmi = k;
     end
@@ -170,15 +166,15 @@ for k=1:length(filenames)
     end
     
     chanInfo(cmi) = cit;
-    channelMapInd(end+1) = cmi;        
+    chanmapInd(end+1) = cmi;        
     selectedChannels(k) = true;
     
 end
 % $$$ clear('out','out2','k');
 clear('cit','k');
 
-assert(numel(unique(channelMapInd))==numel(channelMap),...
-       'map_oephys_to_dat:channelMap:DuplicateChannel');
+assert(numel(unique(chanmapInd))==numel(chanmap),...
+       'map_oephys_to_dat:chanmap:DuplicateChannel');
 
 
 subSesIdList = unique({chanInfo.subSesId});
@@ -186,10 +182,10 @@ nSubSes = length(subSesIdList);
 subSesNameList = unique({chanInfo.subSesName});
 chanTypeList = unique({chanInfo.chanType});
 
-selectedFiles = reshape(filenames(selectedChannels),numel(channelMap),nSubSes);
+selectedFiles = reshape(filenames(selectedChannels),numel(chanmap),nSubSes);
 for s = 1:nSubSes,
-% REORDER files in accordance to channelMap
-    selectedFiles(channelMapInd,s) = selectedFiles(:,s);
+% REORDER files in accordance to chanmap
+    selectedFiles(chanmapInd,s) = selectedFiles(:,s);
 end
 
 %%%>>>
@@ -218,7 +214,7 @@ subSesSizeGbAll = sum(subSesSizeGb);
 % CHECK whether any of the subsession exceeds the maximum size
 if any(subSesSizeGb > MAX_DATFILE_SIZE)  || subSesSizeGbAll > MAX_DATFILE_SIZE  
     for s=1:nSubSes
-        fprintf('%s: %1.1f Gb \n', subSesDescriptionList{s}, subSesSizeGb(s));
+        fprintf('%s: %1.1f Gb \n', subSesNameList{s}, subSesSizeGb(s));
     end
     fprintf('COMPUTING future .dat file size ... %1.1f Gb \n', subSesSizeGbAll);
 end
@@ -244,7 +240,7 @@ for s=1:nSubSes
     if nSubSes==1,
         dat = sprintf(['%s.dat'], filebase);
     else
-        dat = sprintf(['%s-%02.0f-%s.dat'], filebase, subSesIdList(s), subSesDescriptionList{s});
+        dat = sprintf(['%s-%02.0f-%s.dat'], filebase, subSesIdList(s), subSesNameList{s});
     end
     
 % MAINTAIN list of individual .dat files for future merging
@@ -275,7 +271,7 @@ for s=1:nSubSes
         continue
     end
         
-    ecube_map_continuous_to_dat_subses_block(selectedFiles(:,s), filebase, dat, acqSystem, chanInfo, MAX_DATFILE_SIZE);
+    ecube_map_continuous_to_dat_subses_block( filebase, selectedFiles(:,s), dat, chanInfo, acqSystem, MAX_DATFILE_SIZE);
     
     %move the .dat and .dat.sts files to the dedicated directory
     if exist(dat, 'file')

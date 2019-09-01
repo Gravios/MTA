@@ -1,4 +1,4 @@
-function [decEstCom,decEstMax,decEstSax,posteriorMax] = decode_ufr(Trial,varargin)
+function [decEstCom,decEstMax,decEstSax,posteriorMax] = decode_ufr_bayesian(Trial,varargin)
 % function [decEstCom,decEstMax,decEstSax,decteriorMax] = decode_ufr(Trial,varargin)
 % 
 % 
@@ -37,7 +37,7 @@ defargs = struct('units',                         [],                           
 
 
 if isempty(tag)
-    tag = DataHash({Trial.filebase,pfs.filename,sampleRate,units,ufr,spikeWindow});
+    tag = DataHash({Trial.filebase,pfs.filename,sampleRate,units,ufr.spikeWindow});
 end
 
 filepath = fullfile(Trial.spath,[Trial.filebase,'.',mfilename,'.',tag,'.mat']);

@@ -1,5 +1,6 @@
 function ecube_process_session(filebase, xml, varargin)
-% function  process_raw_ecube(filebase, xml, <channelMap>, <processorList>)
+% function ecube_process_session(filebase, xml, channelMap, acqSystem, processorList)
+%
 %
 % <UserNAME>    : regexp : [a-z][A-Z]+
 % <UserID>      : regexp : [a-z][A-Z]{1,4}
@@ -141,11 +142,9 @@ function ecube_process_session(filebase, xml, varargin)
 
 % DEFARGS ------------------------------------------------------------------------------------------
 
-if nargin<1
-    error(['USAGE:  ProcessEcube(Session, xml, <channelMap>, <processorList>)'])
-end
+assert(nargin>2,'USAGE:  ProcessEcube(Session, xml, <channelMap>, <processorList>)');
 
-[acqSystem, channelMap, processorList, overwrite] = DefaultArgs(varargin,{ 'ecube', [], [], false });
+[ channelMap, subSessionList, acqSystem ] = DefaultArgs(varargin,{ [], [], 'ecube'});
 
 %---------------------------------------------------------------------------------------------------
 
@@ -156,17 +155,16 @@ addpath('/storage/gerrit/code/matlab/Wraps/Convert/Ecube/')
 
 % $$$ filebase      = 'IF13-20190409c';
 % $$$ xml           = 'IF13.xml';
-% $$$ chanmap    = 'IF13.chanmap';
+% $$$ channelMap    = 'IF13.chanmap';
 % $$$ processorList = [100,103]; 
 % $$$ acqSystem     = 'ecube';
 % $$$ mfilename     = 'process_raw_ecube';
-
-filebase      = 'IF13-20190409b';
-xml           = 'IF13.xml';
-chanmap       = 'IF13.chanmap';
-processorList = [100,103]; 
-acqSystem     = 'ecube';
-mfilename     = 'process_raw_ecube';
+% $$$ filebase      = 'IF13-20190409b';
+% $$$ xml           = 'IF13.xml';
+% $$$ channelMap       = 'IF13.chanmap';
+% $$$ processorList = [100,103]; 
+% $$$ acqSystem     = 'ecube';
+% $$$ mfilename     = 'ecube_process_session';
 
 %%%>>>
 
@@ -186,7 +184,10 @@ if ~exist([xml],'file'),    error('Parameter file %s not found!', xml);         
 
 % LOAD processing parameters from a xml file
 par = LoadXml([xml]);
-subSessionList = par.SubsessionDescription;
+if isempty(subSessionList),
+    subSessionList = par.SubsessionDescription;
+end
+
 
 %NOTE: spike processing will be modified to switch to Kilosort
 %Process spikes only if spike groups are defined in the xml file
@@ -206,7 +207,7 @@ prcSpikeFlag = isfield(par, 'SpkGrps') &&  ~isempty(par.SpkGrps(1).Channels);
 % CONVERT open ecube .continous files to a .dat 
 dat = fullfile(filebase,[filebase,'.dat']);
 if ~exist(dat,'file') || overwrite,
-    ecube_map_continuous_to_dat(filebase, xml, acqSystem, chanmap, processorList, subSessionList);
+    ecube_map_continuous_to_dat(filebase, xml, channelMap, subSessionList, acqSystem );
 else
     fprintf('File %s found. Function oephys2dat was SKIPPED.\n', dat)
 end
@@ -217,8 +218,8 @@ copyfile(xml, fullfile(filebase,[filebase,'.xml']), 'f');
   
 % COPY channel map template to raw and processed directories
 if ~isempty(channelMap)
-    copyfile(chanmap, fullfile(filebase, [filebase, '.chanmap']), 'f');
-    copyfile(chanmap, fullfile(source,   [filebase, '.chanmap']), 'f');    
+    copyfile(channelMap, fullfile(filebase, [filebase, '.chanmap']), 'f');
+    copyfile(channelMap, fullfile(source,   [filebase, '.chanmap']), 'f');    
 end
 
 %%%>>>
@@ -228,10 +229,12 @@ end
 %%%<<<  MOVE processed files to final 'processed' folder
 % CLEAN up files
 %CleanProcessedSession(filebase)    
+cd('..');
 cwd = pwd();
-finalDirPath = fullfile('..','..','..','processed','ephys',subject,filebase);
+finalDirPath = fullfile('..','..','..','processed','ephys',subject)
+create_directory(finalDirPath);
 system(['mv ',filebase,' ',finalDirPath]);
-cd(fullfile(finalDirPath))
+cd(fullfile(finalDirPath,filebase))
 
 %%%>>>
 

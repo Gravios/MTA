@@ -296,6 +296,7 @@ nxyz.save;
 
 
 if display,
+    create_directory(fullfile(Session.spath,'figures'));
     scatter3(mpoint(:,1),mpoint(:,2),mpoint(:,3),200,'filled');
     saveas(hfig,fullfile(Session.spath,'figures',[mfilename,'_diagnostic.fig']),'fig');
 end

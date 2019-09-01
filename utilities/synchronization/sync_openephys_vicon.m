@@ -25,9 +25,12 @@ if exist('Par','var'),
     lfp = LoadBinary(fullfile(Session.spath, [Session.name '.lfp']),recSyncPulseChan,Par.nChannels,4)';
 % ASSIGN synchronization periods in sesconds as continuous time
     recordSync = [0,numel(lfp)./Par.lfpSampleRate];
-    mocapSyncPeriods = ThreshCross(abs((lfp-mean(lfp))./max(lfp(:,1))),...
-                          0.5,... threshold
-                          0); %   Minumum Interval
+% $$$     mocapSyncPeriods = ThreshCross(abs((lfp-mean(lfp))./max(lfp(:,1))),...
+% $$$                           0.5,... threshold
+% $$$                           0); %   Minumum Interval
+    mocapSyncPeriods = ThreshCross(abs(clip(lfp-mean(lfp(1:100)),0,inf)./max(lfp(:))/1.1),...
+                                   0.5,... threshold
+                                   0); %   Minumum Interval
     
     lfpSyncPeriods = MTADepoch([],[],recordSync+[1/Par.lfpSampleRate,1/Par.lfpSampleRate],1,recordSync,0);
     clear('lfp');

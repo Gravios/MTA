@@ -30,7 +30,7 @@ xyz = preproc_xyz(Trial,'trb');
 vxy = vel(filter(xyz.copy(),'ButFilter',3,2.5,'low'),{'spine_lower','hcom'},[1,2]);
 stc = Trial.stc.copy();
 
-pft = pfs_2d_theta(Trial,1:111,false,true,struct('numIter',1,'halfsample','false'));
+% $$$ pft = pfs_2d_theta(Trial,1:111,false,true,struct('numIter',1,'halfsample','false'));
 
 % $$$ figure,
 % $$$ for u = 1:111,
@@ -46,6 +46,58 @@ non = Trial.load('spk',Trial.lfp.sampleRate,'',unitsNon);
 
 Trial.lfp.filename = [Trial.name,'.lfp'];
 lfp = Trial.load('lfp',[66,69,75,82,85]);
+lfp = Trial.load('lfp',[66:85]);
+
+freqEdges = linspace(30,120,11);
+lfpbp = lfp.copy();
+lfpbp.data = [];
+for f = 1:numel(freqEdges)-1,
+    tlfp = lfp.copy();
+    tlfp.filter('ButFilter',3,freqEdges([f,f+1]),'bandpass');
+    lfpbp.data = cat(3,lfpbp.data,tlfp.data);
+end
+
+phzbp = lfp.copy();
+phzbp.data = [];
+for f = 1:numel(freqEdges)-1,
+    tphz = lfp.copy();
+    tphz = tphz.phase(freqEdges([f,f+1]));
+    phzbp.data = cat(3,phzbp.data,tphz.data);
+end
+
+phz = lfp.phase([6,12]);
+phzBins = linspace(-pi,pi,9);
+
+
+
+
+statesPer = {'hloc&theta','lloc&theta'};
+figure();
+for u = units{18};
+    clf();
+for s = 1:2,
+    locPer = [stc{statesPer{s},lfp.sampleRate}];
+    res = pyr(u);
+    res = res(WithinRanges(res,locPer.data));
+    for p = 1:numel(phzBins)-1
+        subplot2(2,numel(phzBins)-1,s,p);
+% $$$         out = zeros([5,numel(freqEdges)-1]);
+% $$$         ind = res(phzBins(p)<phz(res,2)&phz(res,2)<phzBins(p+1));
+% $$$         for d = 1:size(phzbp,2),
+% $$$             for f = 1:numel(freqEdges)-1
+% $$$                 out(d,f) = PPC(phzbp(ind,d,f));
+% $$$             end
+% $$$         end
+        slfp = Shilbert(lfpbp(res(phzBins(p)<phz(res,1)&phz(res,1)<phzBins(p+1)),:,:));
+        %imagesc(freqEdges(1:end-1)+diff(freqEdges(1:2))/2,1:5,abs(sq(sum(slfp)./mean(abs(slfp)))))
+        imagesc(freqEdges(1:end-1)+diff(freqEdges(1:2))/2,1:5,abs(sq(sum(slfp)./mean(abs(slfp)))))
+        %imagesc(freqEdges(1:end-1)+diff(freqEdges(1:2))/2,1:size(phzbp,2),out)
+        title(num2str(u))
+    end
+end
+waitforbuttonpress();
+end
+
 
 ufrInt = Trial.load('ufr',[],[],unitsInt,0.5);
 ufrPyr = Trial.load('ufr',xyz,[],unitsPyr,0.75);
@@ -72,6 +124,50 @@ ufrNon = Trial.load('ufr',xyz,[],unitsNon,0.75);
 % END LOAD DATA ------------------------------------------------------------------------------------
 
 
+specArgshr = struct('nFFT',2^7,...
+                  'Fs',  lfp.sampleRate,...
+                  'WinLength',2^6,...
+                  'nOverlap',2^6*0.875,...
+                  'NW',3,...
+                  'Detrend',[],...
+                  'nTapers',[],...
+                  'FreqRange',[40,150]);
+[hys,hfs,hts] = fet_spec(Trial,lfp,'mtcsdglong',[],[],specArgshr);
+cmapLimsGamma = [2.4,3.8;...
+                 2.4,3.8;...
+                 2.8,4.4;...
+                 2.8,4.4;...
+                 2.8,4.4];
+
+figure,
+sp = tight_subplot(9,1,0,0.05);
+for s = 1:5
+    axes(sp(s));
+    imagesc(hts,hfs,log10(hys.data(:,:,s))');
+    colormap('jet');
+    caxis(cmapLimsGamma(s,:));
+    axis('xy')
+end
+axes(sp(6));
+imagesc(lts,lfs,log10(lys.data(:,:,4))');
+colormap('jet');
+caxis(cmapLimsTheta(4,:));
+axis('xy')
+axes(sp(7));
+    haxSTS = plotSTC(Trial.stc,1,[],...
+                     fliplr({'rear','hloc','hpause','lloc','lpause','groom','sit'}),...
+                     fliplr('rbcgkmy'));
+    xlim(indLFP([1,end])./lfp.sampleRate)
+    haxSTS.YTickLabel = fliplr({'rear','hloc','hpause','lloc','lpause','groom','sit'});
+    xlabel('Time (s)');
+axes(sp(8));
+    v = vxy.data;
+    plot([1:size(vxy,1)]./xyz.sampleRate,v)
+    ylim([0,50])
+
+axes(sp(9));
+    plot([1:size(lfp,1)]./lfp.sampleRate,lfp(:,[2,4]))
+linkaxes(get(gcf,'Children'),'x');
 
 
 specArgsGamma = struct('nFFT',2^8,...

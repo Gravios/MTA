@@ -14,7 +14,7 @@ function pfs = pfs_2d_theta(Trial,varargin)
 %    overwrite:  logical, flag 1: recompute place fields
 %                              0: load place fields from file
 %
-%    numIter:    numeric, Number of subsampled iterations (NOTE: 1st sample is full)
+%    pfsArgsOverride: struct, list of vars and arguments to be overridden when computing placefield
 %
 
 
