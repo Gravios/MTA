@@ -102,8 +102,8 @@ for i = 1:size(Trial.spk.map,1),
     %waitforbuttonpress
     %pause(1)
 
-    saveas(figH,fullfile(Trial.path.data,'figures',[Trial.filebase,'-unit_rhm_spkcohere'],[Trial.filebase,'-unit_rhm_spkcohere-',num2str(i),'.png']));
-    %reportfig(fullfile(Trial.path.data,'figures'),figH, ...
+    saveas(figH,fullfile(Trial.path.project,'figures',[Trial.filebase,'-unit_rhm_spkcohere'],[Trial.filebase,'-unit_rhm_spkcohere-',num2str(i),'.png']));
+    %reportfig(fullfile(Trial.path.project,'figures'),figH, ...
     %[Trial.filebase '-unit_rhm_spkcohere'],[],[Trial.filebase ' unit:' num2str(i)],300)
 end
 

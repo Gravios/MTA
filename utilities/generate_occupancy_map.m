@@ -108,7 +108,7 @@ if display
     set(hfig,'position',get(hfig,'position').*[1,1,0,0]+[0,0,x*330,y*300])
     
     if report
-        reportfig(fullfile(Trial.path.data,'figures'),hfig,['xyocc'],false,Trial.filebase,100);
+        reportfig(fullfile(Trial.path.project,'figures'),hfig,['xyocc'],false,Trial.filebase,100);
     end
 
 end

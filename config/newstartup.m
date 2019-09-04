@@ -38,7 +38,7 @@ else
         
       case 'bw_cluster'
         %path.home = userdir;
-        %path.data = fullfile(userdir,'data');
+        .path.project = fullfile(userdir,'data');
         %path.cin_cluster_data = fullfile('/mnt/gpfs',username,'data');
 
     end

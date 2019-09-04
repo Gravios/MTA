@@ -37,16 +37,18 @@ defargs = struct('units',                         [],                           
 
 
 if isempty(tag)
-    tag = DataHash({Trial.filebase,pfs.filename,sampleRate,units,ufr,spikeWindow});
+% GENERATE unique hash for save file
+    tag = DataHash({Trial.filebase,pfs.filename,sampleRate,units,spikeWindow});
 end
 
+% GENERATE path for save file 
 filepath = fullfile(Trial.spath,[Trial.filebase,'.',mfilename,'.',tag,'.mat']);
 
 if exist(filepath,'file') && ~overwrite,    
     load(filepath);
 else
-% SET helper vars
 
+% SET parameters
     smoothingWeights = diag(smoothingWeights);
     pfsBins = pfs.adata.bins;
     ndims = numel(pfs.adata.bins);

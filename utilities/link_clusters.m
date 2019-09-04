@@ -13,8 +13,8 @@
 function link_clusters(FileBase1, FileBase2)
 
 Session = MTASession([]);
-filebase1 = fullfile(Session.path.data,FileBase1,FileBase1);
-filebase2 = fullfile(Session.path.data,FileBase2,FileBase2);
+filebase1 = fullfile(Session.path.project,FileBase1,FileBase1);
+filebase2 = fullfile(Session.path.project,FileBase2,FileBase2);
 
 Par1 = LoadPar([filebase1 '.xml']);
 Par2 = LoadPar([filebase2 '.xml']);

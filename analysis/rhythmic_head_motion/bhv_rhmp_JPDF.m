@@ -98,6 +98,6 @@ ylabel('count');
 end
 
 suptitle([Trial.filebase ' : ' Trial.stc{s}.label]);
-reportfig(fullfile(Trial.path.data,'figures'),figH, ...
+reportfig(fullfile(Trial.path.project,'figures'),figH, ...
           ['RHM_' strjoin(mode,'_') '_JPDF' ],[],[Trial.filebase ' :' Trial.stc{s}.label],200,true);
 

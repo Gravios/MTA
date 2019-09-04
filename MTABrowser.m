@@ -398,13 +398,13 @@ if getappdata(handles.DMapp,'load_sessions'),
 
 
     % Select Valid Sessions
-    files = dir(Session.path.data);
+    files = dir(Session.path.project);
     re = '^[a-zA-Z]{1,2}[0-9]{2,4}[-][0-9]{8,8}[a-zA-Z]*$';% regular expression to match Session naming convention
     sessionList = {files(~cellfun(@isempty,regexp({files.name},re))).name};
     
     
     % Recursive maze and trial search
-    files = cellfun(@dir,cellfun(@fullfile,repmat({Session.path.data},1,length(sessionList)), sessionList,'UniformOutput',false),'UniformOutput',false);
+    files = cellfun(@dir,cellfun(@fullfile,repmat({Session.path.project},1,length(sessionList)), sessionList,'UniformOutput',false),'UniformOutput',false);
     mazelist = cell(1,length(files));
     triallist = cell(1,length(files));
     for i = 1:length(files),

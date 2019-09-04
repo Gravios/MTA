@@ -37,7 +37,7 @@ for rli = 1:numel(rlist),
 
         SesList = SessionList(slist{sli});
         mapped = '-map2ref';
-        ds = load(fullfile(MTASession().path.data,'analysis',[slist{sli},'-',model,mapped,'.mat']));
+        ds = load(fullfile(MTASession().path.project,'analysis',[slist{sli},'-',model,mapped,'.mat']));
 
         %% Pre-process features
         for s = 1:numel(SesList);
@@ -431,7 +431,7 @@ p                        [StcCor.states{StcCor.gsi(states{msts})}.data;pind([1,e
 
         mapped = '-map2ref';
 
-        save(fullfile(MTASession().path.data,'analysis',[slist{sli},'-',model,'_PP',mapped,'.mat']),...
+        save(fullfile(MTASession().path.project,'analysis',[slist{sli},'-',model,'_PP',mapped,'.mat']),...
              '-v7.3','slist','rlist','nNeurons','nIter','sampleRate','model','fetSet','rndMethod',...
              'states','stc','d_state','p_state','ls');
 
@@ -474,7 +474,7 @@ for sli = 1:numel(slist)
                  '_NN_' num2str(nNeurons) ...
                  '_NI_' num2str(nIter) ...         
                  '_NN_multiPN_RAND_' rndMethod];
-        load(fullfile(MTASession().path.data,'analysis',[slist{sli},'-',model,'_PP',mapped,'.mat']));
+        load(fullfile(MTASession().path.project,'analysis',[slist{sli},'-',model,'_PP',mapped,'.mat']));
 
 
 
@@ -564,7 +564,7 @@ for sli = 1:numel(slist),
                  '_NI_' num2str(nIter) ...         
                  '_NN_multiPN_RAND_' rndMethod];
 
-        ds = load(fullfile(MTASession().path.data,'analysis',[slist{sli},'-',model,'_PP',mapped,'.mat']));
+        ds = load(fullfile(MTASession().path.project,'analysis',[slist{sli},'-',model,'_PP',mapped,'.mat']));
 
         scat = scatter(k*ones([numel(ds.ls),1]),cell2mat(cellfun(@subsref,ds.ls, ...
                              repmat({substruct('.',prop)},[1,numel(ds.ls)]),'uniformoutput',false))'.*100,10);

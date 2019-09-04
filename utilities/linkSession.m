@@ -10,14 +10,14 @@ function linkSession(sessionName,xyzPath,nlxPath)
 % MOD removed f flag from ln command
 
 Session = MTASession([]);
-datDir = fullfile(Session.path.data,sessionName);
+datDir = fullfile(Session.path.project,sessionName);
 try,mkdir(datDir);end
 
 if ~isempty(xyzPath),
 % GET directory list along xyzPath
     xyzMazeDirs = dir(fullfile(xyzPath,sessionName));xyzMazeDirs(1:2)=[];
-    if ~strcmp(xyzPath,fullfile(Session.path.data,'xyz')),        
-        xyzDir = fullfile(Session.path.data,'xyz',sessionName);
+    if ~strcmp(xyzPath,fullfile(Session.path.project,'xyz')),        
+        xyzDir = fullfile(Session.path.project,'xyz',sessionName);
         create_directory(xyzDir);
 % REMOVE old links
         system(['find ',xyzDir,' -type l -delete']);        
@@ -36,8 +36,8 @@ end
 % Link Nlx data to nlx folder
 if exist('nlxPath','var')
     if ~isempty(nlxPath),
-        if ~strcmp(nlxPath,fullfile(Session.path.data,'nlx')),
-            nlxDir = fullfile(Session.path.data,'nlx',sessionName);
+        if ~strcmp(nlxPath,fullfile(Session.path.project,'nlx')),
+            nlxDir = fullfile(Session.path.project,'nlx',sessionName);
             create_directory(nlxDir);
             system(['find ',nlxDir,' -type l -delete']);
             if numel(dir(fullfile(nlxPath,sessionName)))>2,

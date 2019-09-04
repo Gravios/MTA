@@ -53,7 +53,7 @@ for rli = 1:numel(rlist),
 
         SesList = SessionList(slist{sli});
         mapped = '-map2ref';
-        ds = load(fullfile(MTASession().path.data,'analysis',[slist{sli},'-',model,mapped,'.mat']));
+        ds = load(fullfile(MTASession().path.project,'analysis',[slist{sli},'-',model,mapped,'.mat']));
 
         %% Pre-process features
         for s = 1:numel(SesList);
@@ -324,7 +324,7 @@ for rli = 1:numel(rlist),
 
         mapped = '-map2ref';
 
-        save(fullfile(MTASession().path.data,'analysis',...
+        save(fullfile(MTASession().path.project,'analysis',...
                       [slist{sli},'-',model,tag_postprocessing,mapped,'.mat']),...
              '-v7.3','slist','rlist','nNeurons','nIter','sampleRate','model',...
              'fetSet','rndMethod','states','stc','ls');
@@ -425,7 +425,7 @@ StcCor.states{StcCor.gsi(key)}.data(logicFun(pd,pthresh),:) = [];
 % $$$                  '_NN_' num2str(nNeurons) ...
 % $$$                  '_NI_' num2str(nIter) ...         
 % $$$                  '_NN_multiPN_RAND_' rndMethod];
-% $$$         load(fullfile(MTASession().path.data,'analysis',[slist{sli},'-',model,'_PP',mapped,'.mat']));
+% $$$         load(fullfile(MTASession().path.project,'analysis',[slist{sli},'-',model,'_PP',mapped,'.mat']));
 % $$$ 
 % $$$ 
 % $$$ 
@@ -518,7 +518,7 @@ StcCor.states{StcCor.gsi(key)}.data(logicFun(pd,pthresh),:) = [];
 % $$$                  '_NI_' num2str(nIter) ...         
 % $$$                  '_NN_multiPN_RAND_' rndMethod];
 % $$$ 
-% $$$         ds = load(fullfile(MTASession().path.data,'analysis', ...
+% $$$         ds = load(fullfile(MTASession().path.project,'analysis', ...
 % $$$                            [slist{sli},'-',model,'_PP',mapped,'.mat']));
 % $$$         for s = 1:numel(ds.stc),
 % $$$             ds.stc{s}.save(1);
@@ -563,7 +563,7 @@ StcCor.states{StcCor.gsi(key)}.data(logicFun(pd,pthresh),:) = [];
 % $$$                  '_NN_' num2str(nNeurons) ...
 % $$$                  '_NI_' num2str(nIter) ...         
 % $$$                  '_NN_multiPN_RAND_' rndMethod];
-% $$$         load(fullfile(MTASession().path.data,'analysis',[slist{sli},'-',model,'_PP',mapped,'.mat']));
+% $$$         load(fullfile(MTASession().path.project,'analysis',[slist{sli},'-',model,'_PP',mapped,'.mat']));
 % $$$     
 % $$$         for sti = 1:numel(stc),
 % $$$             for s = 1:6

@@ -143,7 +143,7 @@ classdef MTASession < hgsetget
             else
             % CREATE new session object
                 Session.name = name;
-                Session.spath = fullfile(Session.path.data,Session.name);
+                Session.spath = fullfile(Session.path.project,Session.name);
                 Session.trialName = 'all';
                 Session.maze = MTAMaze(mazeName);
                 Session.filebase = [Session.name '.' Session.maze.name '.' Session.trialName];

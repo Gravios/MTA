@@ -88,10 +88,10 @@ if train
     [tstc,~,tfet] = resample_whole_state_bootstrap_noisy_trim(stc,fet,states);
     tstc.states{end}.data = [1,tfet.size(1)];    
     [stateOrd,fetInds,miAstates] = select_features_hmi(Trial,tstc,tfet,states,false);
-    save(fullfile(Trial.path.data,'analysis','req20160310_1_preproc_ALT20160613.mat'),...
+    save(fullfile(Trial.path.project,'analysis','req20160310_1_preproc_ALT20160613.mat'),...
          'stateOrd','fetInds','miAstates');
 else
-    load(fullfile(Trial.path.data,'analysis','req20160310_1_preproc_ALT20160613.mat'));
+    load(fullfile(Trial.path.project,'analysis','req20160310_1_preproc_ALT20160613.mat'));
 end
 
 save(fullfile(Trial.spath,'req20160310_1_preproc-tfet_ALT20160613.mat'),...

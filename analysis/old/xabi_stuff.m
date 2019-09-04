@@ -2,7 +2,7 @@
 
 
 Trial = MTATrial('Ed10-20140815');
-ds = load(fullfile(Trial.path.data,'Ed10-20140815.Breath_classification.lfp.66.mat'));
+ds = load(fullfile(Trial.path.project,'Ed10-20140815.Breath_classification.lfp.66.mat'));
 ds.insp_periods = ds.insp_periods - round(Trial.sync.data(1)*Trial.lfp.sampleRate);
 
 % drop periods before vicon

@@ -29,7 +29,7 @@ end
 
 
 % MAIN ---------------------------------------------------------------------------------------------
-filename = fullfile(MTASession([]).path.data,'analysis',[mfilename,'-',tag,'.mat']);
+filename = fullfile(MTASession([]).path.project,'analysis',[mfilename,'-',tag,'.mat']);
 
 
 if ~exist(filename,'file') || overwrite,

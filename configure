@@ -7,6 +7,12 @@
 # matlab code - expected location: /storage/code/matlab
 # data        - expected location: /storage/$USER/data
 #
+# USER is your user name
+#
+# STORAGE is the location of your user DATA folder
+#         e.g. /storage
+#         NOT  /home
+#
 # example
 #     configure -u gravio -s storage2 -m /storage/gravio/code/matlab
 # 
@@ -14,7 +20,8 @@
 USER=''
 STORAGE=''
 MTA=''
-MATLAB_STARTUP=''
+MATLAB=''
+SHARE=''
 
 while getopts u:s:m:p: option ;
 do
@@ -24,6 +31,7 @@ do
     s) STORAGE=${OPTARG};;
     a) MTA=${OPTARG};;
     m) MATLAB=${OPTARG};;
+    r) SHARE=${OPTARG};;    
     esac
 done
 
@@ -33,7 +41,17 @@ if [ -z "$USER" ]; then
 fi
 
 if [ -z "$MTA" ]; then
-    MTA="/storage/share/matlab/MTA"
+    #SOURCE="${BASH_SOURCE[0]}"
+    #while [ -h "$SOURCE" ]; do
+    #    # resolve $SOURCE until the file is no longer a symlink
+    #    DIR="$( cd -P "$( dirname "$SOURCE" )" >/dev/null 2>&1 && pwd )"
+    #    SOURCE="$(readlink "$SOURCE")"
+    #    # if $SOURCE was a relative symlink, we need to resolve it relative to the
+    #    # path where the symlink file was located
+    #    [[ $SOURCE != /* ]] && SOURCE="$DIR/$SOURCE" 
+    #done
+    #MTA="$( cd -P "$( dirname "$SOURCE" )" >/dev/null 2>&1 && pwd )"
+    MTA="$( cd "$( dirname "${BASH_SOURCE[0]}" )" >/dev/null 2>&1 && pwd )"
 fi
 
 if [ -z "$STORAGE" ]; then
@@ -48,6 +66,18 @@ echo /$STORAGE/$USER
 
 if [ -z "$MATLAB" ]; then
     MATLAB="/$STORAGE/$USER/code/matlab/"
+    if [ ! -d "/$STORAGE/$USER/code" ]; then
+	mkdir "/$STORAGE/$USER/code"
+    fi
+    
+    if [ ! -d "/$STORAGE/$USER/code/matlab" ]; then
+	mkdir "/$STORAGE/$USER/code/matlab"
+    fi
+    
+fi
+
+if [ -z "$SHARE" ]; then
+    SHARE="/storage/share/matlab"
 fi
 
 # COPY MTAstartup to user's matlab directory
@@ -55,12 +85,20 @@ cp "$MTA/config/MTAstartup.m" "$MATLAB/MTAstartup.m"
 
 # APPEND MTAstartup to the end of user's matlab startup file
 
-echo "addpath(genpath('/storage/share/matlab/labbox'));"       >> "$MATLAB/startup.m"
-echo "rmpath( genpath('/storage/share/matlab/labbox/.git'));"  >> "$MATLAB/startup.m"
-echo "MTAstartup();"                                           >> "$MATLAB/startup.m"
+# ASSUMING the matlab startup is located in the $MATLAB directory
+# ADD commands to startup.m to create paths to labbox
+# RUN commands to startup.m to run MTAstartup.m
+echo "addpath(genpath('$SHARE/labbox'));"       >> "/home/$USER/startup.m"
+echo "rmpath( genpath('$SHARE/labbox/.git'));"  >> "/home/$USER/startup.m"
+echo "global MTA_PATH;"                         >> "/home/$USER/startup.m"
+echo "MTA_PATH = getenv('MTA_PATH');"           >> "/home/$USER/startup.m"
 
-echo 'export MTA="/storage/share/matlab/MTA/"'                 >> "~/.bashrc"
-echo 'export MTA_ROOT_PATH="/storage/gravio/data/"'            >> "~/.bashrc"
-echo 'export MTA_PROJECT_PATH="/storage/gravio/data/project"'  >> "~/.bashrc"
+echo "addpath('$MTA/utilities');"               >> "/home/$USER/startup.m"
+echo "MTAstartup();"                            >> "/home/$USER/startup.m"
+
+# ADD environmental variables to aid MTAstartup and MTAconfiguration
+echo 'export MTA=$MTA'                                         >> "~/.bashrc"
+echo 'export MTA_DATA_PATH="/$STORAGE/$USER/data/"'            >> "~/.bashrc"
+echo 'export MTA_PROJECT_PATH="/$STORAGE/$USER/data/project"'  >> "~/.bashrc"
 
 source '~/.bashrc'

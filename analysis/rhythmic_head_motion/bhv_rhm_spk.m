@@ -175,7 +175,7 @@ while i~=-1,
     end
     i = figure_controls(hFig,i,units,autoIncr);
     pause(.1)
-    reportfig(fullfile(Trial.path.data,'figures'),hFig, ...
+    reportfig(fullfile(Trial.path.project,'figures'),hFig, ...
           ['BHV_SPK_ang_vel_xy'],[],[Trial.filebase ' :unit:' num2str(i)],200,true);
 
 end

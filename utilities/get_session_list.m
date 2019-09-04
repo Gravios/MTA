@@ -459,9 +459,9 @@ switch sessionList
                          'thetaRefGeneral',232              ...
     );
     
-% $$$     Sessions(end+1) = Sessions(end);
-% $$$     Sessions(end).sessionName = 'IF14-20190712b';
-% $$$     Sessions(end).mazeName    = 'rov';
+    Sessions(end+1) = Sessions(end);
+    Sessions(end).sessionName = 'IF14-20190712b';
+    Sessions(end).mazeName    = 'cof';
     
   case 'MjgER2016',
     tmy_nlx = my_nlx;

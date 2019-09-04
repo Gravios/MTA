@@ -20,7 +20,7 @@ function MTAstartup(varargin)
 clearvars('-except','varargin','MTA_CURRENT_PROJECT','MTA_PROJECT_PATH')
 
 % DEFARGS ------------------------------------------------------------------------------------------
-defargs = struct('projectName',                      'general',                                  ...
+defargs = struct('projectName',                      '',                                         ...
                  'hostServer',                       'lmu',                                      ...
                  'dataServer',                       'lmu',                                      ...
                  'addBasicPaths',                    true,                                       ...
@@ -30,10 +30,14 @@ defargs = struct('projectName',                      'general',                 
     DefaultArgs(varargin,defargs,'--struct');
 %---------------------------------------------------------------------------------------------------
 
-
-global MTA_CURRENT_PROJECT;
+global MTA_PATH;
+global MTA_DATA_PATH;
 global MTA_PROJECT_PATH;
+global MTA_CURRENT_PROJECT;
 
+MTA_PATH            = getenv('MTA_PATH');
+MTA_DATA_PATH       = getenv('MTA_DATA_PATH');
+MTA_PROJECT_PATH    = getenv('MTA_PROJECT_PATH');
 
 if ~isempty(projectName),
     MTA_CURRENT_PROJECT = projectName;
@@ -48,24 +52,30 @@ switch hostServer % The severer where matlab is running.
                    % the "local" version of MTA.
   
   case 'lmu'
-    addpath('/storage/share/matlab/MTA/');
+% ADD MTA to matlab paths
+    addpath(MTA_PATH);
 
     switch dataServer % Where the data is located
       case 'lmu'
-        projPath = fullfile('/storage/gravio/data/project/',projectName);
-        if ~exist(projPath),
-            mkdir(projPath);
+% SET project path        
+        projectPath = fullfile(MTA_PROJECT_PATH,projectName);        
+        if ~exist(projectPath),
+            create_directory(projectPath);
         end
-        if configure, MTAConfiguration(projPath,'absolute',projectName,hostServer,dataServer); end;
-        MTA_PROJECT_PATH = projPath;
+        if configure, 
+% CONFIGURE project directories
+            MTAConfiguration(projectPath,'absolute',projectName,hostServer,dataServer); 
+        end
+% SET the project path to global var        
+        MTA_PROJECT_PATH = projectPath;
     end
 
 end
 
+
 % most likely will need corrections when you set
 % up MTA for the first time
 if addBasicPaths 
-                   
     if ispc,
         userpath = getenv('HOMEPATH');
     else

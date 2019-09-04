@@ -62,6 +62,28 @@ tpp.ceMat = reshape(permute(tpp.ceMat,[1,5,2,3,4]),...
 % $$$                                 3,1,'circular'),...
 % $$$                      [2,1,3,4,5]);
 
+for u = 1:size(tpp.ceMat,3),
+    for n = 1:size(tpp.ceMat,4),
+        for s = 1:size(tpp.ceMat,5),
+            for p = 1:size(tpp.ceMat,2),
+                nind = [];
+                gind = [];
+                nind = find(isnan(tpp.ceMat(:,p,u,n,s)));
+                gind = nind( nind<30 & nind>10 );
+                if numel(gind)>4, continue; end
+                bind = ~ismember(tpp.drzBins,tpp.drzBins(nind));
+                if ~isempty(gind)
+                    tpp.ceMat(gind,p,u,n,s) = interp1(tpp.drzBins(bind),          ...
+                                                      tpp.ceMat(bind,p,u,n,s),    ...
+                                                      tpp.drzBins(gind));
+                end
+            end
+        end
+    end
+end
+
+
+
 [tpp.phzRateMax,tpp.phzRateMaxPosInd] = ...
     max(sq(mean(tpp.ceMat,4,'omitnan')));
 tpp.phzRateMax = sq(tpp.phzRateMax);
@@ -162,10 +184,10 @@ validUnits(dind) = false;
 
 % CORRECT bhv pref oder where rear cannot be compared 
 tssi = ssi(validPosOccRlx & ~validPosOccRr,[1,2]);
-tssi(tssi(:,1)==1&tssi(:,2)==3,1) = 2;
-tssi(tssi(:,1)==1&tssi(:,2)==2,1) = 3;
-tssi(tssi(:,2)==1&tssi(:,1)==3,2) = 2;
-tssi(tssi(:,2)==1&tssi(:,1)==2,2) = 3;
+tssi(tssi(:,1)==1&tssi(:,2)==3,1:2) = [3,2];
+tssi(tssi(:,1)==1&tssi(:,2)==2,1:2) = [2,3];
+tssi(tssi(:,2)==1&tssi(:,1)==3,1:2) = [3,2];
+tssi(tssi(:,2)==1&tssi(:,1)==2,1:2) = [2,3];
 ssi(validPosOccRlx & ~validPosOccRr,[1,2]) = tssi;
 ssi(validPosOccRlx & ~validPosOccRr,3) = 1;
 
@@ -275,23 +297,23 @@ end
 % $$$ end
 % $$$ 
 % $$$ 
-% $$$             
-% $$$             
-% $$$ figure();
-% $$$ for s = 1:3;
-% $$$     subplot(1,3,s);
-% $$$     hold('on');
-% $$$     for j = nonzeros(double(s~=[1:3]).*[1:3])',
-% $$$         ind =  ssi(:,1)==s & ssi(:,2)==j        ...
-% $$$                & validPosOccRlx                 ...
-% $$$                & sesInds(unitSubset)            ...
-% $$$                & prmMaxRateSrt(:,2) > 4         ...
-% $$$                & validUnits;
-% $$$         plot(prmPhzAngSrt(ind,1)+double(prmPhzAngSrt(ind,1)<0).*2.*pi,...
-% $$$              prmPhzAngSrt(ind,2)+double(prmPhzAngSrt(ind,2)<0).*2.*pi,smarkers(j));
-% $$$     end
-% $$$     line([0,2*pi],[0,2*pi])
-% $$$ end
+
+            
+figure();
+for s = 1:3;
+    subplot(1,3,s);
+    hold('on');
+    for j = nonzeros(double(s~=[1:3]).*[1:3])',
+        ind =  ssi(:,1)==s & ssi(:,2)==j        ...
+               & validPosOccRlx                 ...
+               & sesInds(unitSubset)            ...
+               & validUnits;
+        plot(tpp.prmPhzAngSrtShift(ind,1),...
+             tpp.prmPhzAngSrtShift(ind,2),'.');
+    end
+    line([0,2*pi],[0,2*pi])
+end
+
 % $$$ 
 % $$$ sesIds = [3:5,8:12,17:23];
 % $$$ %sesIds = [8:12,17:23];

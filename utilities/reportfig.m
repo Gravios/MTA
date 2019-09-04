@@ -98,7 +98,7 @@ end
 
 
 if isa(Trial,'MTASession'),
-    TrialFigPath= fullfile(Trial.path.data,'figures',FigDir);
+    TrialFigPath= fullfile(Trial.path.project,'figures',FigDir);
     WebDir = fullfile(Trial.path.web);
 elseif ischar(Trial),
     TrialFigPath = fullfile(Trial,FigDir);    

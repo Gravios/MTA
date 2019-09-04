@@ -165,7 +165,7 @@ mfilename = 'req20151203';
 RefTrial = MTATrial('jg05-20120317');
 if mapToRefTrial, mapping =    ['-map2_' RefTrial.filebase];else mapping    = '';end
 if normalize,     normStatus = '-norm';                     else normStatus = '';end
-fileLoc = fullfile(Trial.path.data,'analysis',...
+fileLoc = fullfile(Trial.path.project,'analysis',...
                    ['req20151203-hand_labeled-fet_tsne_rev15',mapping,normStatus,'.mat']);
 ds = load(fileLoc);
 

@@ -9,14 +9,14 @@ function link_session_to_project(sessionName,xyzPath,nlxPath)
 % UPDATE requires link shell extension
 
 Session = MTASession([]);
-datDir = fullfile(Session.path.data,sessionName);
+datDir = fullfile(Session.path.project,sessionName);
 try,mkdir(datDir);end
 
 if ~isempty(xyzPath),
     % get list of directories along the path xyzPath
     xyz_maze_dirs = dir(fullfile(xyzPath,sessionName));xyz_maze_dirs(1:2)=[];
-    if ~strcmp(xyzPath,fullfile(Session.path.data,'xyz')),
-        xyzDir = fullfile(Session.path.data,'xyz',sessionName);
+    if ~strcmp(xyzPath,fullfile(Session.path.project,'xyz')),
+        xyzDir = fullfile(Session.path.project,'xyz',sessionName);
         create_directory(xyzDir);
         for maze = 1:numel(xyz_maze_dirs),
             create_directory(fullfile(xyzDir,xyz_maze_dirs(maze).name));
@@ -32,8 +32,8 @@ end
 % Link Nlx data to nlx folder
 if exist('nlxPath','var')
     if ~isempty(nlxPath),
-        if ~strcmp(nlxPath,fullfile(Session.path.data,'nlx')),
-            nlxDir = fullfile(Session.path.data,'nlx',sessionName);
+        if ~strcmp(nlxPath,fullfile(Session.path.project,'nlx')),
+            nlxDir = fullfile(Session.path.project,'nlx',sessionName);
             create_directory(nlxDir);
             system(['find ',nlxDir,' -type l -delete']);
             if numel(dir(fullfile(nlxPath,sessionName)))>2,

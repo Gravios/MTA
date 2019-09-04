@@ -8,14 +8,14 @@ function select_features_via_mutual_information(Trial)
 Trial = 'jg05-20120317.cof.all';
 Trial = 'Ed03-20140624.cof.all';
 Trial = MTATrial.validate(Trial);
-%cd(Trial.path.data);
+%cd(Trial.path.project);
 local = true;
 overwrite = true;
 sampleRate = 12;
 states = {'walk','rear','turn','pause','groom','sit'};
 
 % PREPROCCESS (1) features and save to relevant files for subsequent analysis
-file_preproc = fullfile(Trial.path.data,'analysis','req20160310_1_preproc.mat');
+file_preproc = fullfile(Trial.path.project,'analysis','req20160310_1_preproc.mat');
 if ~exist(file_preproc,'file')||overwrite
     if ~local,
         jid = popen(['MatSubmitLRZ --config lrzc_hugemem.conf'...

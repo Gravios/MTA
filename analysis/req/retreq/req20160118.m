@@ -63,7 +63,7 @@ for sli = 1:numel(slist),
             mapped = '';
         end
         
-        save(fullfile(MTASession().path.data,'analysis',[slist{sli},'-',model,mapped,'.mat']),...
+        save(fullfile(MTASession().path.project,'analysis',[slist{sli},'-',model,mapped,'.mat']),...
              '-v7.3','slist','model','fetSet','states','stc','d_state','ls');
 
     end
@@ -76,7 +76,7 @@ fetSet  = 'fet_tsne_rev11';
 SesList = get_session_list(slist{sli});
 SesList = {SesList(:).sessionName};
 model = ['MTAC_BATCH-' fetSet '_SR_12_REF_' refTrial{rti} '.cof.all_NN_100_NN_multiPN_RAND_WSB'];
-load(fullfile(MTASession().path.data,'analysis',[slist{sli},'-',model,'.mat']));
+load(fullfile(MTASession().path.project,'analysis',[slist{sli},'-',model,'.mat']));
 
 prop = 'accuracy';
 figure,plot(cell2mat(cellfun(@subsref,ls, ...
@@ -139,7 +139,7 @@ for sli = 1:numel(slist),
     for rti = 1:numel(refTrial),    
         prop = 'accuracy';
         model = ['MTAC_BATCH-' fetSet '_SR_12_REF_' refTrial{rti} '.cof.all_NN_100_NN_multiPN_RAND_WSB'];
-        ds = load(fullfile(MTASession().path.data,'analysis',[slist{sli},'-',model,'.mat']));
+        ds = load(fullfile(MTASession().path.project,'analysis',[slist{sli},'-',model,'.mat']));
         scat = scatter(k*ones([numel(ds.ls),1]),cell2mat(cellfun(@subsref,ds.ls, ...
                              repmat({substruct('.',prop)},[1,numel(ds.ls)]),'uniformoutput',false))'.*100,10);
 

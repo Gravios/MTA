@@ -36,7 +36,7 @@ end
 if map2reference, mapping =    ['-map2_' RefTrial.filebase];else mapping    = '';end
 if normalize,     normStatus = '-norm';                     else normStatus = '';end
 
-fileLoc = fullfile(MTASession([]).path.data,'analysis',...
+fileLoc = fullfile(MTASession([]).path.project,'analysis',...
                    [mfilename,'-',sessionSet,'-',featureSet,mapping,normStatus,'.mat']);
 
 if ~exist(fileLoc,'file'),

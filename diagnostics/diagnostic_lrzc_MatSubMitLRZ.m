@@ -3,7 +3,7 @@ function diagnostic_lrzc_MatSubMitLRZ(Trial)
 %testing matlab function submission to the lrz clusters
 
 Trial = MTATrial.validate(Trial);
-cd(Trial.path.data);
+cd(Trial.path.project);
 
 
 %1. 

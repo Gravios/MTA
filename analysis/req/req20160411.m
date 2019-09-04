@@ -91,7 +91,7 @@ parameters.refTrial = 'jg05-20120317.cof.all';
 tag = DataHash(parameters);
 
 % SET file name
-fileLoc = fullfile(MTASession([]).path.data,'analysis',[mfilename,'-',tag,iteration,'.mat']);
+fileLoc = fullfile(MTASession([]).path.project,'analysis',[mfilename,'-',tag,iteration,'.mat']);
 
 % POPULATE variable from parameter struct
 [featureSet,featureSubsetInds,initial_dims,perplexity,newSampleRate,states,...

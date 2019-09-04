@@ -81,7 +81,7 @@ for rti = 1:numel(rlist),
 
 
         end
-        save(fullfile(MTASession().path.data,'analysis',[slist{sli},'-',model,'.mat']),...
+        save(fullfile(MTASession().path.project,'analysis',[slist{sli},'-',model,'.mat']),...
              '-v7.3','slist','rlist','nNeurons','sampleRate','model','fetSet',...
              'states','Stc','d_state','ls');
     
@@ -104,7 +104,7 @@ model = ['MTAC_'  featureSet ...
          '_STC_'  rlist(rti).stcMode ...
          '_NN_'   num2str(nNeurons) ];
 
-load(fullfile(MTASession().path.data,'analysis',[slist{sli},'-',model,'.mat']))
+load(fullfile(MTASession().path.project,'analysis',[slist{sli},'-',model,'.mat']))
 
 
 %figure

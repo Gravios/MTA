@@ -45,7 +45,7 @@ while numel(gStates) > 2
             xlabel('Difference of Mutual Information (bits)');
         end
 
-        reportfig(fullfile(Trial.path.data,'figures'),... 
+        reportfig(fullfile(Trial.path.project,'figures'),... 
                   hfig,...          Figure Handle 
                   strjoin({Trial.filebase,fet.label,stc.mode,gStates{:}},'-'),... FileName
                   mfilename,...     Subdirectory 

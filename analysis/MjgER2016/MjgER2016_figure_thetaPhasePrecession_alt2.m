@@ -828,18 +828,21 @@ end%for tind
 %%%<<< PLOT prefered phase of dominate vs subdominate states
 % ADJUST subplot coordinates        
 
-[yind, yOffSet, xind, xOffSet] = deal(yind, yOffSet-1.2, 1, 0);
+[yind, yOffSet, xind, xOffSet] = deal(11, -1.2, -1, 0);
 %[yind, yOffSet, xind, xOffSet] = deal(yind-4, -1.4, 1, 0);
-%for g = 1:8, delete(sax(end));sax(end) = [];end
+%for g = 1:16, delete(sax(end));sax(end) = [];end
+%delete(rec);
+rec =[];
 for s = 1:3;
+    %%%<<< TPP dom vs sub
 % ADJUST subplot coordinates        
-    [yind, yOffSet, xind, xOffSet] = deal(yind+1, yOffSet, 1, 0);
+    [yind, yOffSet, xind, xOffSet] = deal(11, -1, xind+2, 0);
 % CREATE subplot axes
     sax(end+1) = axes('Units','centimeters',                                    ...
                       'Position',[fig.page.xpos(xind)+xOffSet,                  ...
                                   fig.page.ypos(yind)+yOffSet,                  ...
-                                  fig.subplot.width,                            ...
-                                  fig.subplot.height],                          ...
+                                  fig.subplot.width*1.5,                        ...
+                                  fig.subplot.height*1.5],                      ...
                       'FontSize', 8,                                            ...
                       'LineWidth',1);
     hold('on');
@@ -849,7 +852,7 @@ for s = 1:3;
                & sesInds(unitSubset)            ...
                & validUnits;
         plot(tpp.prmPhzAngSrtShift(ind,1),...
-             tpp.prmPhzAngSrtShift(ind,2),['.',sclr(j)],'MarkerSize',6);
+             tpp.prmPhzAngSrtShift(ind,2),['o',sclr(j)],'MarkerSize',3);
     end
     line([0,2*pi],[0,2*pi])
     xlim([0,2*pi]);
@@ -861,98 +864,292 @@ for s = 1:3;
          'FontSize', 10, 'VerticalAlignment',  'middle');    
     % add bounding box
     axes(fax);
-    rectangle('Position',sax(end).Position,'LineWidth',1);
+    rec(end+1) = rectangle('Position',sax(end).Position,'LineWidth',1);
+    %%%>>> TPP dom vs sub    
+    
+    
+    
+    %%%<<< z-scores
+% ADJUST subplot coordinates                               
+    [yind, yOffSet, xind, xOffSet] = deal(14, -0, xind, xOffSet);
+% CREATE subplot axes     
+    sax(end+1) = axes('Units','centimeters',                                ... units
+    'Position',[fig.page.xpos(xind)+xOffSet,              ... xpos
+                fig.page.ypos(yind)+yOffSet+fig.subplot.height/1.5-0.2,              ... ypos
+                fig.subplot.width*1.5,                    ... width
+                fig.subplot.height/1.5],                  ... height
+    'FontSize', 8,                                        ... font size
+    'LineWidth',1);                                         % line width
+    hold('on');
+    
+    otherStates = nonzeros([1:3].*double([1:3] ~= s))';
+    zscrs = {};
+    sind = {};
+    for o = fliplr(otherStates),
+% SELECT relevant units
+        stind = find(  validPosOccRlx             ...
+                     & sesInds(unitSubset)        ...
+                     & tpp.prmMaxRateSrt(:,2) > 4 ...
+                     & validUnits                 ...
+                     & ssi(:,1)==s & ssi(:,2)==o )';
+% GET z-scores
+        % statePairIndex (spi)
+        spi =   find(ismember(perm.statePairs(:,1),perm.states(s))...
+                       & ismember(perm.statePairs(:,2),perm.states(o)));
+% SORT z-scores by mean phase
+        [~,sind{end+1}] = sortrows([angle(perm.zScrShfCpxMean(stind,1,spi)),...
+                             abs(perm.zScrShfCpxMean(stind,1,spi))],[1,2]);
+        zscrs{end+1} = tpp.zscore(phzOrder,stind,1,spi);
+        
+        
+        % histogram of mean phase
+        % other sub-dominant state
+        zang = angle(perm.zScrShfCpxMean(stind,1,spi))        
+% $$$         histogram(zang+double(zang<0).*2*pi,  ...
+% $$$                   linspace(0,2*pi,13),                      ...
+% $$$                   'FaceColor',sclr(o),                      ...
+% $$$                   'FaceAlpha',0.4)
+        [out,eds] = histcounts(zang+double(zang<0).*2*pi,  ...
+                               linspace(0,2*pi,13),                      ...
+                               'Normalization','probability');
+        out = mean([circshift(out,1);out;circshift(out,-1)]);
+        plot(sum([eds(1:end-1);eds(2:end)])/2,            ...
+             out,            ...
+            'Color',sclr(o),...
+            'LineWidth',1);
+        
+    end
+    sax(end).YTick = [];
+    sax(end).XTick = [];    
+    xlim([0,2*pi]);            
+    ylim([0,0.25])    
+    
+        
+% ADJUST subplot coordinates                               
+    [yind, yOffSet, xind, xOffSet] = deal(13, 0, xind, xOffSet);
+% ALIGN vertically subplot to the top of previous column        
+% CREATE subplot axes 
+    usc = cell2mat(cf(@(z) size(z,2), zscrs));
+    height = (fig.subplot.height*1.5*usc(1)./sum(usc))-0.1;
+    
+    sax(end+1) = axes('Units','centimeters',                                ... units
+                      'Position',[fig.page.xpos(xind)+xOffSet,              ... xpos
+                                  fig.page.ypos(yind)+yOffSet,              ... ypos
+                                  fig.subplot.width*1.5,                    ... width
+                                  height],                                  ... height
+                      'FontSize', 8,                                        ... font size
+                      'LineWidth',1);                                         % line width
+    hold('on');
+    imagesc(RectFilter(zscrs{1}(:,sind{1}),3,1,'circular')');
+    %axis('xy');
+    caxis([-5.2, 5.2]);
+    colormap(sax(end), 'jet');
+    axis    (sax(end), 'tight');
+    sax(end).XTick = [];
+    sax(end).YTick = [];        
+    ylabel(sax(end),                                        ... axis_handle
+           perm.states{otherStates(2)},                     ... label_text
+           'Units','Centimeters',                           ... unit
+           'VerticalAlignment','middle',                    ... V align 
+           'HorizontalAlignment','center',                  ... H align
+           'Position',[-0.2,sax(end).Position(4)./2]);        % position
+           
+
+
+    % other sub-dominant state
+    sax(end+1) = axes('Units','centimeters',                                ... units
+                      'Position',[fig.page.xpos(xind)+xOffSet,              ... xpos
+                                  fig.page.ypos(yind)+yOffSet+height+0.2,   ... ypos
+                                  fig.subplot.width*1.5,                    ... width
+                                  (fig.subplot.height*1.5*usc(2)./sum(usc))-0.1],... height
+                      'FontSize', 8,                                        ... font size
+                      'LineWidth',1);                                         % line width
+    hold('on');
+    imagesc(RectFilter(zscrs{2}(:,sind{2}),3,1,'circular')');
+    %axis('xy');
+    caxis([-5.2, 5.2]);
+    colormap(sax(end), 'jet');
+    axis    (sax(end), 'tight');
+    sax(end).XTick = [];
+    sax(end).YTick = [];        
+    ylabel(sax(end),                                        ... axis_handle
+           perm.states{otherStates(1)},                                  ... label_text
+           'Units','Centimeters',                           ... unit
+           'VerticalAlignment','middle',                    ... V align 
+           'HorizontalAlignment','center',                  ... H align
+           'Position',[-0.2,sax(end).Position(4)./2]);        % position
+
 
 % ADJUST subplot coordinates        
-    [yind, yOffSet, xind, xOffSet] = deal(yind, yOffSet, xind+1, 0);
-    
+    [yind, yOffSet, xind, xOffSet] = deal(14, -0.8, xind, 0);
 % CREATE subplot axes
     sax(end+1) = axes('Units','centimeters',                        ...
                       'Position',[fig.page.xpos(xind)+xOffSet,      ...
-                                  fig.page.ypos(yind)+yOffSet,      ...
-                                  fig.subplot.width/3,              ...
-                                  fig.subplot.height],              ...
+                                  fig.page.ypos(yind)+yOffSet+fig.subplot.height/1.5,      ...
+                                  fig.subplot.width*1.5,            ...
+                                  fig.subplot.height/3],            ...
                       'FontSize', 8,                                ...
                       'LineWidth',1);
     hold(sax(end),'on');
 % ADD phase "bar"
-    plot(-cos(circ_ang2rad(0:360)),0:360,'-k','LineWidth',2);
-    sax(end).YAxisLocation = 'right';
+    plot(0:360,cos(circ_ang2rad(0:360)),'-k','LineWidth',2);
     sax(end).Visible = 'off';                                    
     sax(end).YTick = [];
     sax(end).YTickLabels = [];
     sax(end).XTick = [];
-    ylim([0,360]);
-    xlim([-1.5,1.5]);
-    
-    if s == 1,
-        axes(fax);
-        text(sum(sax(end).Position([1,3]))           ... x pos 
-               +fig.subplot.verticalPadding,         ...
-             sum(sax(end).Position([2,4]).*[1,0.5]), ... y pos
-             'Pref Phase','FontSize',8,'Color','k','VerticalAlignment','middle',...
-             'HorizontalAlignment','center','Rotation',90);
-    end
-    if s == 3,
-% ADJUST subplot coordinates                
-        [yind, yOffSet, xind, xOffSet] = deal(yind+1, yOffSet+fig.subplot.height/2, 1, 0);        
-% CREATE subplot axes
-        sax(end+1) = axes('Units','centimeters',                                    ...
-                          'Position',[fig.page.xpos(xind)+xOffSet,                  ...
-                                      fig.page.ypos(yind)+yOffSet,                  ...
-                                      fig.subplot.width,                            ...
-                                      fig.subplot.height/2],                        ...
-                          'FontSize', 8,                                            ...
-                          'LineWidth',1);
-        hold('on');
-        for j = 1:3
-            ind =  ssi(:,1)==j                                  ...
-                   & validPosOccRlx                             ...
-                   & sesInds(unitSubset)                        ...
-                   & validUnits;
-            histogram(tpp.prmPhzAngSrtShift(ind,1),             ...
-                      linspace(0,2*pi,17),                      ...
-                      'FaceColor',sclr(j),                      ...
-                      'FaceAlpha',0.4)
-        end
-        xlim([0,2*pi]);
-        sax(end).YTick = [];
-        sax(end).XTick = [];
-        
-
-        
-% ADJUST subplot coordinates        
-        [yind, yOffSet, xind, xOffSet] = deal(yind, yOffSet-0.5, 1, 0);
-% CREATE subplot axes
-        sax(end+1) = axes('Units','centimeters',                        ...
-                          'Position',[fig.page.xpos(xind)+xOffSet,      ...
-                                      fig.page.ypos(yind)+yOffSet,      ...
-                                      fig.subplot.width,                ...
-                                      fig.subplot.height/3],            ...
-                          'FontSize', 8,                                ...
-                          'LineWidth',1);
-        hold(sax(end),'on');
-% ADD phase "bar"
-        plot(0:360,cos(circ_ang2rad(0:360)),'-k','LineWidth',2);
-        sax(end).Visible = 'off';                                    
-        sax(end).YTick = [];
-        sax(end).YTickLabels = [];
-        sax(end).XTick = [];
-        xlim([0,360]);
-        ylim([-1.5,1.5]);
-
+    xlim([0,360]);
+    ylim([-1.5,1.5]);
+     if s==1
         text(360,-0.25, '360', 'HorizontalAlignment','center',     ...
              'FontSize', 8, 'VerticalAlignment',  'middle');
         text(180, 0.25, '180', 'HorizontalAlignment','center',     ...
              'FontSize', 8, 'VerticalAlignment',  'middle');                    
         text(0,  -0.25, '0', 'HorizontalAlignment','center',     ...
              'FontSize', 8, 'VerticalAlignment',  'middle');                    
+    end
+           
+    %%%>>> z-scores
+end
+
+
+% ADJUST subplot coordinates                
+%for g = 1, delete(sax(end));sax(end) = [];end
+[yind, yOffSet, xind, xOffSet] = deal(11, -1, 7, 0);
+% CREATE subplot axes
+sax(end+1) = axes('Units','centimeters',                                    ...
+                  'Position',[fig.page.xpos(xind)+xOffSet,                  ...
+                              fig.page.ypos(yind)+yOffSet,                  ...
+                              fig.subplot.width*1.5,                        ...
+                              fig.subplot.height*1.5],                      ...
+                  'FontSize', 8,                                            ...
+                  'LineWidth',1);
+hold('on');
+for j = fliplr(1:3)
+    ind =  ssi(:,1)==j                                  ...
+           & validPosOccRlx                             ...
+           & sesInds(unitSubset)                        ...
+           & validUnits;
+    %histogram
+% $$$     histogram(tpp.prmPhzAngSrtShift(ind,1),             ...
+% $$$               linspace(0,2*pi,13),                      ...
+% $$$               'FaceColor',sclr(j),                      ...
+% $$$               'FaceAlpha',0.4,...
+% $$$               'Normalization','probability');
+    %stairs
+% $$$     [out,eds] = histcounts(tpp.prmPhzAngSrtShift(ind,1),...
+% $$$                       linspace(0,2*pi,13));
+% $$$     stairs(sum([eds(1:end-1);eds(2:end)])/2,            ...
+% $$$            RectFilter(out,3,1,'circular'),            ...
+% $$$            'Color',sclr(j),...
+% $$$            'LineWidth',1);
+    %plot
+    [out,eds] = histcounts(tpp.prmPhzAngSrtShift(ind,1),...
+                      linspace(0,2*pi,13),'Normalization','probability');
+    out = mean([circshift(out,1);out;circshift(out,-1)]);
+    plot(sum([eds(1:end-1);eds(2:end)])/2,            ...
+         out,            ...
+        'Color',sclr(j),...
+        'LineWidth',1);
+end
+xlim([0,2*pi]);
+sax(end).YTick = [];
+sax(end).XTick = [];
+        
+
+
+
+
+
+% ADJUST subplot coordinates        
+% $$$     [yind, yOffSet, xind, xOffSet] = deal(yind, yOffSet, xind+1, 0);
+% $$$     
+% $$$ % CREATE subplot axes
+% $$$     sax(end+1) = axes('Units','centimeters',                        ...
+% $$$                       'Position',[fig.page.xpos(xind)+xOffSet,      ...
+% $$$                                   fig.page.ypos(yind)+yOffSet,      ...
+% $$$                                   fig.subplot.width/3,              ...
+% $$$                                   fig.subplot.height],              ...
+% $$$                       'FontSize', 8,                                ...
+% $$$                       'LineWidth',1);
+% $$$     hold(sax(end),'on');
+% $$$ % ADD phase "bar"
+% $$$     plot(-cos(circ_ang2rad(0:360)),0:360,'-k','LineWidth',2);
+% $$$     sax(end).YAxisLocation = 'right';
+% $$$     sax(end).Visible = 'off';                                    
+% $$$     sax(end).YTick = [];
+% $$$     sax(end).YTickLabels = [];
+% $$$     sax(end).XTick = [];
+% $$$     ylim([0,360]);
+% $$$     xlim([-1.5,1.5]);
+% $$$     
+% $$$     if s == 1,
 % $$$         axes(fax);
-% $$$         text(sum(sax(end).Position([1,3]))+0.2,sum(sax(end).Position([2,4]).*[1,0.5]),...
+% $$$         text(sum(sax(end).Position([1,3]))           ... x pos 
+% $$$                +fig.subplot.verticalPadding,         ...
+% $$$              sum(sax(end).Position([2,4]).*[1,0.5]), ... y pos
 % $$$              'Pref Phase','FontSize',8,'Color','k','VerticalAlignment','middle',...
 % $$$              'HorizontalAlignment','center','Rotation',90);
-
-    end
+% $$$     end
+% $$$     if s == 3,
+% $$$ % ADJUST subplot coordinates                
+% $$$         [yind, yOffSet, xind, xOffSet] = deal(yind+1, yOffSet+fig.subplot.height/2, 1, 0);
+% $$$ % CREATE subplot axes
+% $$$         sax(end+1) = axes('Units','centimeters',                                    ...
+% $$$                           'Position',[fig.page.xpos(xind)+xOffSet,                  ...
+% $$$                                       fig.page.ypos(yind)+yOffSet,                  ...
+% $$$                                       fig.subplot.width,                            ...
+% $$$                                       fig.subplot.height/2],                        ...
+% $$$                           'FontSize', 8,                                            ...
+% $$$                           'LineWidth',1);
+% $$$         hold('on');
+% $$$         for j = 1:3
+% $$$             ind =  ssi(:,1)==j                                  ...
+% $$$                    & validPosOccRlx                             ...
+% $$$                    & sesInds(unitSubset)                        ...
+% $$$                    & validUnits;
+% $$$             histogram(tpp.prmPhzAngSrtShift(ind,1),             ...
+% $$$                       linspace(0,2*pi,17),                      ...
+% $$$                       'FaceColor',sclr(j),                      ...
+% $$$                       'FaceAlpha',0.4)
+% $$$         end
+% $$$         xlim([0,2*pi]);
+% $$$         sax(end).YTick = [];
+% $$$         sax(end).XTick = [];
+% $$$         
+% $$$ 
+% $$$         
+% $$$ % ADJUST subplot coordinates        
+% $$$         [yind, yOffSet, xind, xOffSet] = deal(yind, yOffSet-0.5, 1, 0);
+% $$$ % CREATE subplot axes
+% $$$         sax(end+1) = axes('Units','centimeters',                        ...
+% $$$                           'Position',[fig.page.xpos(xind)+xOffSet,      ...
+% $$$                                       fig.page.ypos(yind)+yOffSet,      ...
+% $$$                                       fig.subplot.width,                ...
+% $$$                                       fig.subplot.height/3],            ...
+% $$$                           'FontSize', 8,                                ...
+% $$$                           'LineWidth',1);
+% $$$         hold(sax(end),'on');
+% $$$ % ADD phase "bar"
+% $$$         plot(0:360,cos(circ_ang2rad(0:360)),'-k','LineWidth',2);
+% $$$         sax(end).Visible = 'off';                                    
+% $$$         sax(end).YTick = [];
+% $$$         sax(end).YTickLabels = [];
+% $$$         sax(end).XTick = [];
+% $$$         xlim([0,360]);
+% $$$         ylim([-1.5,1.5]);
+% $$$ 
+% $$$         text(360,-0.25, '360', 'HorizontalAlignment','center',     ...
+% $$$              'FontSize', 8, 'VerticalAlignment',  'middle');
+% $$$         text(180, 0.25, '180', 'HorizontalAlignment','center',     ...
+% $$$              'FontSize', 8, 'VerticalAlignment',  'middle');                    
+% $$$         text(0,  -0.25, '0', 'HorizontalAlignment','center',     ...
+% $$$              'FontSize', 8, 'VerticalAlignment',  'middle');                    
+% $$$ % $$$         axes(fax);
+% $$$ % $$$         text(sum(sax(end).Position([1,3]))+0.2,sum(sax(end).Position([2,4]).*[1,0.5]),...
+% $$$ % $$$              'Pref Phase','FontSize',8,'Color','k','VerticalAlignment','middle',...
+% $$$ % $$$              'HorizontalAlignment','center','Rotation',90);
+% $$$ 
+% $$$     end
     
 end
 %%%>>>

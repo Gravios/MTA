@@ -53,7 +53,7 @@ for rli = 1:numel(rlist),
 
         SesList = SessionList(slist{sli});
         mapped = '-map2ref';
-        ds = load(fullfile(MTASession().path.data,'analysis',[slist{sli},'-',model,mapped,'.mat']));
+        ds = load(fullfile(MTASession().path.project,'analysis',[slist{sli},'-',model,mapped,'.mat']));
 
         %% Pre-process features
         for s = 1:numel(SesList);
@@ -342,7 +342,7 @@ for rli = 1:numel(rlist),
 
         mapped = '-map2ref';
 
-        save(fullfile(MTASession().path.data,'analysis',...
+        save(fullfile(MTASession().path.project,'analysis',...
                       [slist{sli},'-',model,tag_postprocessing,mapped,'.mat']),...
              '-v7.3','slist','rlist','nNeurons','nIter','sampleRate','model',...
              'fetSet','rndMethod','states','stc','ls');

@@ -25,7 +25,7 @@ end
 
 
 save(fullfile(Trial.spath,['req20160310_5_genfigs.mat']),'bFetInds','-v7.3');
-save(fullfile(Trial.path.data,'analysis',['req20160310_5_genfigs-',Trial.filebase,'.mat']),'bFetInds','-v7.3');
+save(fullfile(Trial.path.project,'analysis',['req20160310_5_genfigs-',Trial.filebase,'.mat']),'bFetInds','-v7.3');
 
 % $$$ 
 % $$$ oind = [repmat([1:59],1,2)',zeros([118,1])];
@@ -98,7 +98,7 @@ save(fullfile(Trial.path.data,'analysis',['req20160310_5_genfigs-',Trial.filebas
 % $$$ saveas(hfig,fullfile('/storage/gravio/manuscripts/man2015-jgEd-MoCap/Figures/Figure_3/',...
 % $$$                 ['MIDIFF-' strjoin(tstates,'-') '.eps']),'epsc')
 
-% $$$         reportfig(fullfile(Trial.path.data,'figures'),... 
+% $$$         reportfig(fullfile(Trial.path.project,'figures'),... 
 % $$$                   hfig,...          Figure Handle 
 % $$$                   strjoin({Trial.filebase,fet.label,stc.mode,tstates{:}},'-'),... FileName
 % $$$                   'req20160310',...     Subdirectory 

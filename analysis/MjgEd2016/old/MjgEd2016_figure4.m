@@ -12,8 +12,8 @@
 
 MTAstartup('man_jgEd_2015');
 Trial = MTATrial('jg05-20120317');
-figPath = fullfile(Trial.path.data,'figures');
-anlPath = fullfile(Trial.path.data,'analysis');
+figPath = fullfile(Trial.path.project,'figures');
+anlPath = fullfile(Trial.path.project,'analysis');
 figPath = '/storage/gravio/manuscripts/man2015-jgEd-MoCap/Figures/Figure_2';
 
 xyz = Trial.load('xyz');

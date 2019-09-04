@@ -16,7 +16,7 @@ function [xyz,ss] = preproc_xyz(Trial,varargin)
 % 
 
 
-[procOpts,overwrite] = DefaultArgs(varargin,{{},false},true);
+[procOpts,sampleRate,overwrite] = DefaultArgs(varargin,{{},[],false},true);
 Trial = MTATrial.validate(Trial);
 
 % DELBLOCK if version>=3,
@@ -341,7 +341,12 @@ xyz.addMarker('nose',...     Name
                {'head_front','hcom',[0,0,255]},...
                {'head_right','hcom',[0,0,255]}},... 
               xyz(:,'hcom',:)+nx*-40);
-              
-              
-              
+                                         
 xyz.data(isnan(xyz.data)) = eps;
+
+if ~isempty(sampleRate),
+    xyz.resample(sampleRate);
+    if nargout>1
+        ss.resample(sampleRate);
+    end
+end
