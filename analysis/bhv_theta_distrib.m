@@ -102,7 +102,7 @@ suptitle([Trial.filebase ' : ' Trial.stc{s}.label])
 
 set(figH,'pos',[14,325,1581,420]);
 
-reportfig(fullfile(Trial.path.data,'figures'),figH, ...
+reportfig(fullfile(Trial.path.project,'figures'),figH, ...
           'RHM_psd_distrib',[],[Trial.filebase ' :' Trial.stc{s}.label],200)
 
 
@@ -177,7 +177,7 @@ ylabel('Log10 Head Height (mm)');
 suptitle([Trial.filebase ' : ' sind.label])
 set(figH,'pos',[14,325,1581,420]);
 
-reportfig(fullfile(Trial.path.data,'figures'),figH, ...
+reportfig(fullfile(Trial.path.project,'figures'),figH, ...
           'meanRHM_on_jpdf_bv_zh',[],[Trial.filebase ' :' Trial.stc{s}.label],200)
 
 % $$$ %figure,

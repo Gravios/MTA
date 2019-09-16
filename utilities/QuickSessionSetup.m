@@ -57,14 +57,18 @@ for sessionArgs = sessionList
 
 %   LINK data to project folder
     if all(isfield(sessionArgs,{'xyz_host','nlx_host'}))&&~ispc
-        linkSession(sessionArgs.sessionName,...
+        link_session(sessionArgs.sessionName,...
                     sessionArgs.xyz_host,...
                     sessionArgs.nlx_host);
         dataLoggers = {'nlx','vicon'};
     elseif isfield(sessionArgs,'xyz_host')&&~ispc
-        linkSession(sessionArgs.sessionName,...
+        link_session(sessionArgs.sessionName,...
                     sessionArgs.xyz_host);
         dataLoggers = {'vicon'};
+    else % use paths
+        link_session_Dpath(sessionArgs.sessionName,)
+        link_session(sessionArgs.sessionName, sessionArgs.paths{:});
+        dataLoggers = sessionArgs.dataLoggers;
     end
 
         

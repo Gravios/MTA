@@ -10,11 +10,13 @@ function [fet,featureTitles,featureDesc,Nmean,Nstd] = fet_href_H(Trial,varargin)
 % DEFARGS ------------------------------------------------------------------------------------------
 defargs = struct('newSampleRate'  , Trial.xyz.sampleRate,                                        ...
                  'normalize'      , false,                                                       ...
-                 'procOpts'       , {''},                                                        ...
-                 'rotationAxisInd', 2,                                                           ...
-                 'theta'          , 0                                                            ...
+                 'procOpts'       , {{''}},                                                      ...
+                 'rotationAxisInd', 2 ,                                                          ...
+                 'theta'          , 0 ,                                                          ...
+                 'markers'        , {{'head_back','head_left','head_front','head_right'}}        ...
 );
-[newSampleRate,normalize,procOpts,rotationAxisInd,theta] = DefaultArgs(varargin,defargs,'--struct');
+[newSampleRate,normalize,procOpts,rotationAxisInd,theta,markers] =                               ...
+    DefaultArgs(varargin,defargs,'--struct');
 %--------------------------------------------------------------------------------------------------
 
 % MAIN ---------------------------------------------------------------------------------------------
@@ -26,15 +28,16 @@ fet = MTADfet(Trial.spath,...
               Trial.xyz.sampleRate,...
               Trial.sync.copy,...
               Trial.sync.data(1),...
-              [],'TimeSeries',[],'head referenced position and motion','fet_href_H','h');                  
+              [],'TimeSeries',[],'head referenced position and motion','fet_href_H','h');
 
 
 % PREPROC xyz
 % FILTER xyz
 xyz = preproc_xyz(Trial,procOpts);
 xyz.data(~nniz(xyz),:,:) = 0;
-xyz.filter('RectFilter',3,4);
-rb = xyz.model.rb({'head_back','head_left','head_front','head_right'});
+%xyz.filter('RectFilter',11,3);
+%xyz.filter('ButFilter',3,2.5,'low');
+rb = xyz.model.rb(markers);
 hcom = xyz.com(rb);
 
 % GENERATE orthogonal basis, origin: head's center of mass
@@ -75,7 +78,7 @@ end
 
 
 % COMPUTE hcom projection onto head reference
-uvec = circshift(hcom,-3)-circshift(hcom,3);
+uvec = circshift(hcom,-10)-circshift(hcom,10);
 fet.data(:,1) = dot(uvec,nx,3);
 fet.data(:,2) = dot(uvec,ny,3);
 fet.data(:,3) = dot(uvec,nz,3);

@@ -10,7 +10,7 @@ end
 
 % Load VSK to get marker names,colors and connections for creating the
 % model
-vsk_path = fullfile(Session.spath, Session.maze.name, [Session.name '-' Session.maze.name '.vsk']);
+vsk_path = fullfile(Session.spath,  [Session.name '-' Session.maze.name '.vsk']);
 if exist(vsk_path,'file'),
     Session.model = MTAModel(vsk_path,'-vsk');
 else

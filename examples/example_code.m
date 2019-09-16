@@ -66,14 +66,8 @@ end
 %% Loading stuff
 
 % This loads a trial
-%Trial = MTATrial('Ed10-20140817','all'    ,'cof');
+%Trial = MTATrial.validate('jg05-20120312.cof.all');
 Trial = MTATrial (SessionName,    TrialName,MazeName);
-
-
-% This performs a deep copy of an object
-xyz = Trial.xyz.copy;
-% This loads data into the object from file
-xyz.load(Trial);
 
 
 % Does the same thing as above in a single line.
@@ -84,18 +78,11 @@ xyz = Trial.load('xyz');
 %xyz.filter(ones([1,7])./7);
 xyz.filter('ButFilter',3,50,'low'); %see help gtwin for gaussian kernals
 
-% Load xyz without an existing Trial object... still makes a
-% temporary one though so it's not super useful but it can do it
-xyz = MTATrial('jg05-20120309').load('xyz').filter('ButFilter',3,50,'low');
-
-
-
 % this is crapy though since the angles are not easily smoothed in
 % the time domain, so we can create a new set based on a smoothed xyz
 xyz = Trial.load('xyz');
 xyz.filter('ButFilter',3,50,'low'); 
 ang = create(MTADang,Trial,xyz);
-
 
 % Marker segment angles are relative to the room coordinate system.
 % The following code plots the distribution of head pitch during rearing
@@ -113,7 +100,19 @@ lfp = Trial.load('lfp',1:64);
 % for jg05 how to load the raw lfp of the hippocampus H32LIN
 lfp = Trial.load('lfp' ,65:96);
 
+lfp = Trial.load('lfp' ,70);
 
+lfp.resample(xyz);
+
+hang = create(MTADang,Trial,xyz);
+
+
+pos = sq(bsxfun(@minus,sq(xyz(:,'head_back',[1:2])),[-100,10]));
+ang = cell([1,2]);
+[ang{:}] = cart2pol(pos(:,1),pos(:,2));
+ang = cat(2,ang{:});
+
+figure,plot(circ_dist(hang(:,'head_back','head_front',1),ang(:,1)),ang(:,2),'.')
 
 
 

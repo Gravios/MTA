@@ -39,6 +39,7 @@ else
     periods = round((Session.sync(1)+periods)*Data.sampleRate);
 end
 
+periods(periods==0) = 1;
 
 try,
     Data.data = LoadBinary(Data.fpath,channels,par.nChannels,[],[],[],periods)';

@@ -54,7 +54,7 @@ ForAllSubplots(['caxis([0,' num2str(median(caxmax)) '])']);
 
 imtype = 'png';
 
-imgfilebase = fullfile(Trial.path.data,'figures',mfilename);
+imgfilebase = fullfile(Trial.path.project,'figures',mfilename);
 if ~exist(imgfilebase,'dir'), mkdir(imgfilebase),end
 
 %keyboard
@@ -81,19 +81,19 @@ set(hfig,'Units','inches')
 set(hfig,'paperposition',get(hfig,'position').*[0,0,1,1]/2)
 
 
-saveas(hfig,fullfile(Trial.path.data,'figures',mfilename,...
+saveas(hfig,fullfile(Trial.path.project,'figures',mfilename,...
                      [Trial.filebase '.' mfilename '.' Trial.stc.mode '.' tag '.' imtype]),imtype);
 
 imtype = 'eps';
-saveas(hfig,fullfile(Trial.path.data,'figures',mfilename,...
+saveas(hfig,fullfile(Trial.path.project,'figures',mfilename,...
                      [Trial.filebase '.' mfilename '.' Trial.stc.mode '.' tag '.' imtype]),'epsc2');
 
 
-% $$$ savefig(fullfile(Trial.path.data,'figures',mfilename,...
+% $$$ savefig(fullfile(Trial.path.project,'figures',mfilename,...
 % $$$                  [Trial.filebase '.' mfilename '.' tag '.' imtype]),...
 % $$$         hfig,imtype);
 
 
-%reportfig(fullfile(Trial.path.data,'figures'),figh,'jpdf_ang_height',[],Trial.filebase,100)
+%reportfig(fullfile(Trial.path.project,'figures'),figh,'jpdf_ang_height',[],Trial.filebase,100)
 
 

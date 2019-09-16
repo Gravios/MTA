@@ -314,6 +314,7 @@ if sum(~cellfun(@isempty,...
         xyz.com(xyz.model.rb({'spine_lower','pelvis_root','spine_middle','spine_upper','head_back','head_front'})));
 end
 
+try
 % ADD marker: head Center of Mass
 xyz.addMarker('hcom',...     Name
               [.7,0,.7],...  Color
@@ -322,7 +323,15 @@ xyz.addMarker('hcom',...     Name
                {'head_front','hcom',[0,0,255]},...
                {'head_right','hcom',[0,0,255]}},... 
               xyz.com(xyz.model.rb({'head_back','head_left','head_front','head_right'})));
-
+catch
+% ADD marker: head Center of Mass
+xyz.addMarker('hcom',...     Name
+              [.7,0,.7],...  Color
+              {{'head_back', 'hcom',[0,0,255]},... Sticks to visually connect
+               {'head_left', 'hcom',[0,0,255]},... new marker to skeleton
+               {'head_right','hcom',[0,0,255]}},... 
+              xyz.com(xyz.model.rb({'head_back','head_left','head_right'})));
+end
 
               
 

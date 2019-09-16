@@ -16,9 +16,11 @@ function transform_rigidBody(Session,varargin);
 defargs = struct('display',               false,                                                 ...
                  'overwrite',             false,                                                 ...
                  'scoreFunction',         struct('fun',@mad,'args',{{1}}),                       ...
-                 'periods',               []                                                     ...
+                 'periods',               [],                                                    ...
+                 'rigidBodyMarkers',      {{'head_back','head_left','head_front','head_right'}}  ...
 );
-[display,overwrite,scoreFunction,periods] = DefaultArgs(varargin,defargs,'--struct');
+[display, overwrite, scoreFunction, periods, rigidBodyMarkers] =                                 ...
+    DefaultArgs( varargin, defargs, '--struct');
 %---------------------------------------------------------------------------------------------------
 
 
@@ -29,6 +31,7 @@ if ischar(Session),
 % LOAD session
     Session = MTASession.validate(Session);
 else
+% !!! CHANGE THIS STUPID BEHAVIOR
 % CONVERT trial to session
     trialPeriodsByDefault = false;
     if isempty(periods), 
@@ -48,10 +51,10 @@ if display,hfig = figure();end
 % LOAD xyz
 % ADD lowpass filtered marker of the head's center of mass
 xyz = Session.load('xyz');
-rb = Session.xyz.model.rb({'head_back','head_left','head_front','head_right'});
+rb = Session.xyz.model.rb(rigidBodyMarkers);
 hcom = xyz.com(rb);
 xyz.addMarker('fhcom',[0.5,1,0.5],[],ButFilter(hcom,3,[2]./(Session.xyz.sampleRate/2),'low'));
-xyz.addMarker('hcom', [0.5,1,0.5],{{'head_back','head_front',[0,0,1]}},hcom);
+xyz.addMarker('hcom', [0.5,1,0.5],{{'head_back','hcom',[0,0,1]}},hcom);
 
 
 
@@ -85,16 +88,18 @@ if display,
     clf();
     ind = xyz.get_pose_index();
     subplot2(7,7,[1:4],[1:3]);daspect([1,1,1]);hold('on');
+    try    
     m = 'head_front';
     hold on,plot3(xyz(ind,m,1),xyz(ind,m,2),xyz(ind,m,3),'.b')
     hold on,scatter3(xyz(ind,m,1),xyz(ind,m,2),xyz(ind,m,3),150,'b')
+    end
     m = 'head_back';    
-    hold on,plot3(xyz(ind,5,1),xyz(ind,5,2),xyz(ind,5,3),'.','Color',[0.5,0,0.5])
-    hold on,scatter3(xyz(ind,5,1),xyz(ind,5,2),xyz(ind,5,3),150,[0.5,0,0.5])
+    hold on,plot3(xyz(ind,m,1),xyz(ind,m,2),xyz(ind,m,3),'.','Color',[0.5,0,0.5])
+    hold on,scatter3(xyz(ind,m,1),xyz(ind,m,2),xyz(ind,m,3),150,[0.5,0,0.5])
     m = 'head_left';    
-    hold on,plot3(xyz(ind,6,1),xyz(ind,6,2),xyz(ind,6,3),'.g')
+    hold on,plot3(xyz(ind,m,1),xyz(ind,m,2),xyz(ind,m,3),'.g')
     m = 'head_right';        
-    hold on,plot3(xyz(ind,8,1),xyz(ind,8,2),xyz(ind,8,3),'.r')
+    hold on,plot3(xyz(ind,m,1),xyz(ind,m,2),xyz(ind,m,3),'.r')
     
     hold on,plot3(xyz(ind,'hbx',1),xyz(ind,'hbx',2),xyz(ind,'hbx',3),'^m')
     hold on,scatter3(xyz(ind,'hbx',1),xyz(ind,'hbx',2),xyz(ind,'hbx',3),150,'m')
@@ -116,9 +121,9 @@ if ~exist(FileName_coarse,'file') || overwrite,
     k = [-100:10:100];
 
 % COMPUTE head speed
-    vxy = xyz.vel('head_front',[1,2]);
+    vxy = xyz.vel('hcom',[1,2]);
 % RESTRICT computations to periods where head speed is greater than 2cm/2        
-    ind = vxy.data>2;
+    ind = vxy.data > 2  &  vxy.data < 100;;
     
     if ~isempty(periods)
 % RESTRICT computations to specified data subset
@@ -142,7 +147,8 @@ if ~exist(FileName_coarse,'file') || overwrite,
 
     vxyz = zeros([7,numel(i),numel(j),numel(k)]);
     txyz = xyz(:,nhm,:);
-    ind = ind&nniz(txyz);
+    ind = ind  &  nniz(txyz);                                   % REMOVE indices with zeros
+    ind = ind  &  randn([size(ind)]) > 0.5;                     % SUBSAMPLE 
     txyz = txyz(ind,:,:);
     tnx = nx(ind,:,:);
     tny = ny(ind,:,:);   
@@ -183,6 +189,7 @@ for m = 1:7,
 end
 
 if display,
+    figure
     for m = 1:7,
         subplot2(7,7,5,m);
         imagesc(i,j,log10(sq(vxyz(m,:,:,mind(m,3))))');
@@ -271,20 +278,23 @@ mpoint = nanmean(nanmean(cat(3,reshape(scp,[],3),reshape(tcq,[],3)),3));
 nxyz = Session.load('xyz');
 nxyz.addMarker('head_neck',...
                [1,0,1],...
-               {{'head_back','head_front',[1,0,1]}},...
+               {{'head_back','hcom',[1,0,1]}},...
                bsxfun(@plus,nx*mpoint(2)+ny*mpoint(1)+nz*mpoint(3),xyz(:,'hcom',:))...
 );
 
 
 % REPLACE data of each head marker with shifted position around neck
-nxyz.data(:,nxyz.model.gmi('head_back'),:) =  ...
-    bsxfun(@plus,nx*mpoint(2)+ny*mpoint(1)+nz*mpoint(3),xyz(:,'head_back',:));
-nxyz.data(:,nxyz.model.gmi('head_left'),:) =  ...
-    bsxfun(@plus,nx*mpoint(2)+ny*mpoint(1)+nz*mpoint(3),xyz(:,'head_left',:));
-nxyz.data(:,nxyz.model.gmi('head_front'),:) =  ...
-    bsxfun(@plus,nx*mpoint(2)+ny*mpoint(1)+nz*mpoint(3),xyz(:,'head_front',:));
-nxyz.data(:,nxyz.model.gmi('head_right'),:) =  ...
-    bsxfun(@plus,nx*mpoint(2)+ny*mpoint(1)+nz*mpoint(3),xyz(:,'head_right',:));
+for marker = rigidBodyMarkers,
+    marker = marker{1};
+    nxyz.data(:,nxyz.model.gmi(marker),:) =  ...
+        bsxfun(@plus,nx*mpoint(2)+ny*mpoint(1)+nz*mpoint(3),xyz(:,marker,:));
+end
+% $$$ nxyz.data(:,nxyz.model.gmi('head_left'),:) =  ...
+% $$$     bsxfun(@plus,nx*mpoint(2)+ny*mpoint(1)+nz*mpoint(3),xyz(:,'head_left',:));
+% $$$ nxyz.data(:,nxyz.model.gmi('head_front'),:) =  ...
+% $$$     bsxfun(@plus,nx*mpoint(2)+ny*mpoint(1)+nz*mpoint(3),xyz(:,'head_front',:));
+% $$$ nxyz.data(:,nxyz.model.gmi('head_right'),:) =  ...
+% $$$     bsxfun(@plus,nx*mpoint(2)+ny*mpoint(1)+nz*mpoint(3),xyz(:,'head_right',:));
 
 % UPDATE MTADxyz object metadata
 % SAVE new MTADxyz object

@@ -22,6 +22,8 @@ classdef MTADfbr < MTAData
 %
 %  See also MTAData
     properties 
+        integrationTime = [];
+        
         model = [];
     end
     properties(Transient=true)

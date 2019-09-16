@@ -66,7 +66,7 @@ version = '13';
 
 
 
-filename = fullfile(MTASession([]).path.data,'analysis',['MjgER2016_erpPCA_scores_v' version '.mat']);
+filename = fullfile(MTASession([]).path.project,'analysis',['MjgER2016_erpPCA_scores_v' version '.mat']);
 
 if exist(filename,'file'),
     load(filename);

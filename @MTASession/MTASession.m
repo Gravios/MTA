@@ -97,7 +97,7 @@ classdef MTASession < hgsetget
         nq = {};
 
         %fbr - MTADfbr: (Time,ClusterId) fiber photometery with lfpSampleRate
-        fbr 
+        fbr = MTADfbr([]);
 
     end
     

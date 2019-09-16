@@ -109,7 +109,7 @@ ylabel('RHM frequency (Hz)');
 end
 
 suptitle([Trial.filebase ' : ' Trial.stc{s}.label]);
-reportfig(fullfile(Trial.path.data,'figures'),figH, ...
+reportfig(fullfile(Trial.path.project,'figures'),figH, ...
           ['RHM_psd_distrib_' strjoin(mode)],[],[Trial.filebase ' :' Trial.stc{s}.label],200,true);
 
 
@@ -232,7 +232,7 @@ reportfig(fullfile(Trial.path.data,'figures'),figH, ...
 % $$$ suptitle([Trial.filebase ' : ' Trial.stc{s}.label])
 % $$$ set(figH,'pos',[14,325,1581,420]);
 % $$$ 
-% $$$ reportfig(fullfile(Trial.path.data,'figures'),figH, ...
+% $$$ reportfig(fullfile(Trial.path.project,'figures'),figH, ...
 % $$$           'meanRHM_on_jpdf_bv_zh',[],[Trial.filebase ' :' Trial.stc{s}.label],200)
 
 % $$$ %figure,

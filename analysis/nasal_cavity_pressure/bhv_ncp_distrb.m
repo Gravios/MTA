@@ -253,7 +253,7 @@ reportfig(Trial,figH,['NCP_psd_distrib_' strjoin(mode,'_')],[],[Trial.filebase '
 % $$$ suptitle([Trial.filebase ' : ' Trial.stc{s}.label])
 % $$$ set(figH,'pos',[14,325,1581,420]);
 % $$$ 
-% $$$ reportfig(fullfile(Trial.path.data,'figures'),figH, ...
+% $$$ reportfig(fullfile(Trial.path.project,'figures'),figH, ...
 % $$$           'meanNCP_on_jpdf_bv_zh',[],[Trial.filebase ' :' Trial.stc{s}.label],200)
 
 % $$$ %figure,
