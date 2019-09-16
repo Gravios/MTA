@@ -1,0 +1,19 @@
+#! /bin/bash
+# mta_link_data
+# helper script to link data recursively with relative symbolic links
+#
+
+session=$1
+path=$2
+field=$3
+file=$4
+
+
+depth=`echo $file | grep -o / | wc -l`
+
+prefix='';
+for var_name in $(seq 1 $depth ); do
+    prefix=$prefix'../'
+done
+
+ln -s $prefix$field/$session/${file:2} $path/${file:2}
