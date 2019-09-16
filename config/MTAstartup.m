@@ -35,9 +35,9 @@ global MTA_DATA_PATH;
 global MTA_PROJECT_PATH;
 global MTA_CURRENT_PROJECT;
 
-MTA_PATH            = getenv('MTA_PATH');
-MTA_DATA_PATH       = getenv('MTA_DATA_PATH');
-MTA_PROJECT_PATH    = getenv('MTA_PROJECT_PATH');
+MTA_PATH         = getenv('MTA_PATH');
+MTA_DATA_PATH    = getenv('MTA_DATA_PATH');
+MTA_PROJECT_PATH = getenv('MTA_PROJECT_PATH');
 
 if ~isempty(projectName),
     MTA_CURRENT_PROJECT = projectName;
@@ -47,34 +47,33 @@ else
 end
 
 
-switch hostServer % The severer where matlab is running. 
-                   % Note: the addpath statement must point to 
-                   % the "local" version of MTA.
+if ~isempty(MTA_CURRENT_PROJECT),
+    MTA_CURRENT_PROJECT = 'general';
+end
+
+
+switch hostServer, 
+    % The severer where matlab is running. 
+    % Note: the addpath statement must point to the "local" version of MTA.
   
   case 'lmu'
-% ADD MTA to matlab paths
-    addpath(MTA_PATH);
+%   ADD MTA to matlab paths
+    addpath( MTA_PATH );
 
     switch dataServer % Where the data is located
       case 'lmu'
-% SET project path        
-        projectPath = fullfile(MTA_PROJECT_PATH,projectName);        
-        if ~exist(projectPath),
-            create_directory(projectPath);
+% SET global project path variable
+        MTA_PROJECT_PATH = fullfile( MTA_PROJECT_PATH, MTA_CURRENT_PROJECT);        
+        create_directory( MTA_PROJECT_PATH );
+        if configure,% project directories
+            MTAConfiguration( MTA_PROJECT_PATH, 'absolute', MTA_CURRENT_PROJECT, hostServer, dataServer); 
         end
-        if configure, 
-% CONFIGURE project directories
-            MTAConfiguration(projectPath,'absolute',projectName,hostServer,dataServer); 
-        end
-% SET the project path to global var        
-        MTA_PROJECT_PATH = projectPath;
+
     end
 
 end
 
 
-% most likely will need corrections when you set
-% up MTA for the first time
 if addBasicPaths 
     if ispc,
         userpath = getenv('HOMEPATH');
@@ -89,7 +88,6 @@ if addBasicPaths
         addpath(genpath('/storage/share/matlab/MTA/'));
         rmpath(genpath('/storage/share/matlab/MTA/.git'));
         rmpath(genpath('/storage/share/matlab/MTA/config'));
-        cd('/storage/share/matlab/MTA/');
         addpath('home/antsiro/matlab/General','-END');
         addpath('home/antsiro/matlab/draft','-END');
       

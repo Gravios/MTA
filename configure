@@ -7,6 +7,13 @@
 # matlab code - expected location: /storage/code/matlab
 # data        - expected location: /storage/$USER/data
 #
+# -s : matlab startup path
+# -u : username
+# -d : data storage root (path)
+# -m : 
+MATLAB_SHARE_PATH=''
+MATLAB_STARTUP_PATH=''
+
 # USER is your user name
 #
 # STORAGE is the location of your user DATA folder
@@ -17,30 +24,47 @@
 #     configure -u gravio -s storage2 -m /storage/gravio/code/matlab
 # 
 
-USER=''
+USERNAME=''
 STORAGE=''
-MTA=''
-MATLAB=''
-SHARE=''
+MATLAB_SHARE_PATH=''
+MATLAB_STARTUP_PATH=''
+MTA_PATH=''
 
-while getopts u:s:m:p: option ;
+while getopts u:d:s:r:m: option ;
 do
     case "${option}" 
     in
-    u) USER=${OPTARG};;
-    s) STORAGE=${OPTARG};;
-    a) MTA=${OPTARG};;
-    m) MATLAB=${OPTARG};;
-    r) SHARE=${OPTARG};;    
+    u) USERNAME=${OPTARG};;
+    d) STORAGE=${OPTARG};;
+    s) MATLAB_STARTUP_PATH=${OPTARG};;    
+    r) MATLAB_SHARE_PATH=${OPTARG};;
+    m) MTA_PATH=${OPTARG};;
     esac
 done
 
 
-if [ -z "$USER" ]; then
-    USER=`whoami`
+# DEFINE username
+if [ -z "$USERNAME" ]; then
+    USERNAME=`whoami`
 fi
 
-if [ -z "$MTA" ]; then
+# DEFINE storage name
+if [ -z "$STORAGE" ]; then
+    if [ -d /storage/$USERNAME ]; then   
+        STORAGE="storage"
+    elif [ -d /storage2/$USERNAME ]; then
+        STORAGE="storage2"
+    fi
+fi
+   
+
+# DEFINE matlab share path
+if [ -z "$MATLAB_SHARE_PATH" ]; then
+    MATLAB_SHARE_PATH="/storage/share/matlab"
+fi
+
+# DEFINE mta path
+if [ -z "$MTA_PATH" ]; then
     #SOURCE="${BASH_SOURCE[0]}"
     #while [ -h "$SOURCE" ]; do
     #    # resolve $SOURCE until the file is no longer a symlink
@@ -51,54 +75,32 @@ if [ -z "$MTA" ]; then
     #    [[ $SOURCE != /* ]] && SOURCE="$DIR/$SOURCE" 
     #done
     #MTA="$( cd -P "$( dirname "$SOURCE" )" >/dev/null 2>&1 && pwd )"
-    MTA="$( cd "$( dirname "${BASH_SOURCE[0]}" )" >/dev/null 2>&1 && pwd )"
+    #MTA="$( cd "$( dirname "${BASH_SOURCE[0]}" )" >/dev/null 2>&1 && pwd )"
+    MTA_PATH="$MATLAB_SHARE_PATH/MTA"
 fi
 
-if [ -z "$STORAGE" ]; then
-    if [ -d /storage/$USER ]; then   
-        STORAGE="storage"
-    elif [ -d /storage2/$USER ]; then
-        STORAGE="storage2"
-    fi
-fi
-   
-echo /$STORAGE/$USER
 
-if [ -z "$MATLAB" ]; then
-    MATLAB="/$STORAGE/$USER/code/matlab/"
-    if [ ! -d "/$STORAGE/$USER/code" ]; then
-	mkdir "/$STORAGE/$USER/code"
-    fi
-    
-    if [ ! -d "/$STORAGE/$USER/code/matlab" ]; then
-	mkdir "/$STORAGE/$USER/code/matlab"
-    fi
-    
-fi
-
-if [ -z "$SHARE" ]; then
-    SHARE="/storage/share/matlab"
-fi
 
 # COPY MTAstartup to user's matlab directory
-cp "$MTA/config/MTAstartup.m" "$MATLAB/MTAstartup.m"
+cp "$MTA_PATH/config/MTAstartup.m" "$MATLAB_STARTUP_PATH/MTAstartup.m"
+
+
 
 # APPEND MTAstartup to the end of user's matlab startup file
-
-# ASSUMING the matlab startup is located in the $MATLAB directory
 # ADD commands to startup.m to create paths to labbox
 # RUN commands to startup.m to run MTAstartup.m
-echo "addpath(genpath('$SHARE/labbox'));"       >> "/home/$USER/startup.m"
-echo "rmpath( genpath('$SHARE/labbox/.git'));"  >> "/home/$USER/startup.m"
-echo "global MTA_PATH;"                         >> "/home/$USER/startup.m"
-echo "MTA_PATH = getenv('MTA_PATH');"           >> "/home/$USER/startup.m"
+echo "addpath(genpath('$MATLAB_SHARE_PATH/labbox'));"       >> "$MATLAB_STARTUP_PATH/startup.m"
+echo "rmpath( genpath('$MATLAB_SHARE_PATH/labbox/.git'));"  >> "$MATLAB_STARTUP_PATH/startup.m"
+echo "global MTA_PATH;"                                     >> "$MATLAB_STARTUP_PATH/startup.m"
+echo "MTA_PATH = getenv('MTA_PATH');"                       >> "$MATLAB_STARTUP_PATH/startup.m"
+echo "addpath('$MTA_PATH/utilities');"                      >> "$MATLAB_STARTUP_PATH/startup.m"
+echo "MTAstartup();"                                        >> "$MATLAB_STARTUP_PATH/startup.m"
 
-echo "addpath('$MTA/utilities');"               >> "/home/$USER/startup.m"
-echo "MTAstartup();"                            >> "/home/$USER/startup.m"
+
 
 # ADD environmental variables to aid MTAstartup and MTAconfiguration
-echo 'export MTA=$MTA'                                         >> "~/.bashrc"
-echo 'export MTA_DATA_PATH="/$STORAGE/$USER/data/"'            >> "~/.bashrc"
-echo 'export MTA_PROJECT_PATH="/$STORAGE/$USER/data/project"'  >> "~/.bashrc"
+echo "export MTA_PATH=$MTA_PATH"                                      >> "$HOME/.bashrc"
+echo "export MTA_DATA_PATH=/$STORAGE/$USERNAME/data/"            >> "$HOME/.bashrc"
+echo "export MTA_PROJECT_PATH=/$STORAGE/$USERNAME/data/project"  >> "$HOME/.bashrc"
 
-source '~/.bashrc'
+source "$HOME/.bashrc"
