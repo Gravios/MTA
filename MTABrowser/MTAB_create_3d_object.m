@@ -5,7 +5,7 @@ function obj = MTAB_create_3d_object(Data,parent,handles,idx,cmc)
                            'line_style', '-');
     
     marker_options = struct('style','o',...
-                            'size', 6 ,...
+                            'size', 10 ,...
                             'erase', 'normal'); %{none|xor|background}
     
 
@@ -78,9 +78,9 @@ function obj = MTAB_create_3d_object(Data,parent,handles,idx,cmc)
                                  [obj.xyzpos(idx,l,2),obj.xyzpos(idx,l,2)],...
                                  [obj.xyzpos(idx,l,3),obj.xyzpos(idx,l,3)]);
         obj.markers{l}.Marker           = marker_options.style;
-        obj.markers{l}.MarkerEdgeColor  = Data.model.Markers{l}.color./255;
+        obj.markers{l}.MarkerEdgeColor  = Data.model.Markers{l}.color;
         obj.markers{l}.MarkerSize       = marker_options.size;
-        obj.markers{l}.MarkerFaceColor  = Data.model.Markers{l}.color./255;
+        obj.markers{l}.MarkerFaceColor  = Data.model.Markers{l}.color;
         obj.markers{l}.Visible          = 'on';
         guidata(obj.markers{l},handles);
     end
