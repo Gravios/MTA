@@ -309,7 +309,7 @@ dc4.hpEInd = cf(@(e)  discretize(e, hpeBin),  dc4.error.hp);
 dc4.bpEInd = cf(@(e)  discretize(e, bpeBin),  dc4.error.bp);
 dc4.hbEInd = cf(@(e)  discretize(e, hbeBin),  dc4.error.hb);
 
-ind = cf(@(ei1,ei2,hpi,bpi,hbi,u,s)                              ...
+jind = cf(@(ei1,ei2,hpi,bpi,hbi,u,s)                              ...
          s(:,1)==1 & any(s(:,3:6),2)                           ...
            & nniz(ei1) & nniz(ei2)                             ...
            & nniz(hpi) & nniz(bpi)                             ...
@@ -324,7 +324,7 @@ JPDF_d2xyErr_Uinc =                                             ...
                   1,                                            ...
                   [numel(xyeBin)-1,numel(uincBin)-1],           ...
                   @sum,nan),                                        ...
-       dc2.xyEInd, uincInd, ind);
+       dc2.xyEInd, uincInd, jind);
 
 JPDF_d4xyErr_Uinc =                                             ...
     cf(@(x,u,i)                                                 ...
@@ -332,7 +332,8 @@ JPDF_d4xyErr_Uinc =                                             ...
                   1,                                            ...
                   [numel(xyeBin)-1,numel(uincBin)-1],           ...
                   @sum,nan),                                        ...
-       dc4.xyEInd, uincInd, ind);
+       dc4.xyEInd, uincInd, jind);
+
 
 
 JPDF_d4hpErr_Uinc =                                             ...
@@ -341,7 +342,7 @@ JPDF_d4hpErr_Uinc =                                             ...
                1,                                               ...
                [numel(hpeBin)-1,numel(uincBin)-1],              ...
                @sum,nan),                                           ...
-       dc4.bpEInd, uincInd, ind);
+       dc4.bpEInd, uincInd, jind);
 
 
 JPDF_d4bpErr_Uinc =                                             ...
@@ -350,7 +351,7 @@ JPDF_d4bpErr_Uinc =                                             ...
                1,                                               ...
                [numel(bpeBin)-1,numel(uincBin)-1],              ...
                @sum,nan),...
-       dc4.hpEInd, uincInd, ind);
+       dc4.hpEInd, uincInd, jind);
 
 JPDF_d4hbErr_Uinc =                                             ...
     cf(@(hb,u,i)                                                ...
@@ -358,7 +359,7 @@ JPDF_d4hbErr_Uinc =                                             ...
                1,                                               ...
                [numel(hbeBin)-1,numel(uincBin)-1],              ...
                @sum,nan),...
-       dc4.hbEInd, uincInd, ind);
+       dc4.hbEInd, uincInd, jind);
 
 % $$$ CONEXP_d4hbErr_Uinc_post =                                      ...
 % $$$     cf(@(hb,u,i)                                                ...
@@ -367,6 +368,28 @@ JPDF_d4hbErr_Uinc =                                             ...
 % $$$                [numel(bpeBin)-1,numel(uincBin)-1],              ...
 % $$$                @sum,nan),...
 % $$$        dc4.hbEInd, uincInd, nind,ind);
+
+
+
+JPDF_d4xyErr_d4hbErr =                                          ...
+    cf(@(x,h,i)                                                 ...
+       accumarray([x(i),h(i)],                                  ...
+                  1,                                            ...
+                  [numel(xyeBin)-1,numel(hbeBin)-1],           ...
+                  @sum,nan),                                    ...
+       dc4.xyEInd, dc4.hbEInd, jind);
+
+y = 1;
+
+JPDF_d4xyErr_d4hbErr_gfltr = imgaussfilt(sum(cat(3, JPDF_d4xyErr_d4hbErr{:}),3,'omitnan'),2);
+JPDF_d4xyErr_d4hbErr_gfltr = JPDF_d4xyErr_d4hbErr_gfltr./sum(nonzeros())
+figure();
+    colormap('jet');
+    imagesc(xyeBinCenters./10,                              ...
+            hbeBinCenters,                                 ...
+            );
+        axis('xy');
+
 
 
 
@@ -629,7 +652,7 @@ perrorBinCenters = mean(GetSegs(perrorBinEdges,1:numel(perrorBinEdges)-1,2));
 
 for sts = 1:numel(stid),
     indTDP{sts}  = cf(@(p,u,s)                                           ...
-                      all(p>0.0005,2)                                    ...
+                      all(p>0.0007,2)                                    ...
                       & sum(double(u>=3),2)>6                            ...
                       & s(:,1)==1                                        ...
                       & any(logical(s(:,stid(sts))),2)                   ...
@@ -657,6 +680,110 @@ for sts = 1:numel(stid),
     end
 end
 %%%>>>
+
+dErrlon = cf(@(e) reshape( sq(e(:,1,:))', [], 1), dErr);
+dErrlat = cf(@(e) reshape( sq(e(:,2,:))', [], 1), dErr);
+dErrhp  = cf(@(e) reshape( sq(e(:,3,:))', [], 1), dErr);
+dErrbp  = cf(@(e) reshape( sq(e(:,4,:))', [], 1), dErr);
+dstcm   = cf(@(s) reshape( permute( repmat( s, [1,1,8]),[2,3,1]),  8,[])', stcm);
+dphz    = cf(@(e) reshape( repmat( phzBinCenters',[size(e,1),1])', [], 1), dErr);
+duinc   = cf(@(u) reshape( u', [], 1), unitInclusionTPD);
+dpost   = cf(@(p) reshape( p', [], 1), posteriorMaxTPD);
+duincI  = cf(@(u) reshape( repmat( sum(double(u>=3),2)>6,[1,8])',[],1), unitInclusionTPD);
+dpostI  = cf(@(p) reshape( repmat( all(p>0.00075,2),[1,8])',[],1), posteriorMaxTPD);
+
+dtind  = cf(@(p,t)  repmat(t.*ones([size(p,1),1]),[8,1]), posteriorMaxTPD,num2cell(tind));
+
+dErrlon = cat( 1, dErrlon{:} );
+dErrlat = cat( 1, dErrlat{:} );
+dErrhp  = cat( 1, dErrhp{:} );
+dErrbp  = cat( 1, dErrbp{:} );
+dstcm   = cat( 1, dstcm{:}  );
+dphz    = cat( 1, dphz{:}   );
+duinc   = cat( 1, duinc{:}  );
+dpost   = cat( 1, dpost{:}  );
+duincI  = cat( 1, duincI{:} );
+dpostI  = cat( 1, dpostI{:} );
+dtind   = cat( 1, dtind{:}  );
+
+
+% permutation test of the mutual information of the joint distribution between longitudinal error 
+% and theta phase. 
+
+sum(logical(dstcm(:,1)) & ~any(logical(dstcm(:,[7,8])),2))
+
+
+
+Ixy  = zeros([100,6,6]);
+Ixyr = zeros([100,6,6]);
+for i = 1:100,
+    for sts = 1:6,
+        ind =   logical(dstcm(:,1))                             ...
+                & logical(dstcm(:,sts))                         ...
+                & ~any(logical(dstcm(:,[7,8])),2)               ...
+                & dpostI                                        ...
+                & duincI;        
+        ind(ind) = randn([sum(ind),1]) > 1;        
+        si = sum(ind);
+        for sto = 1:6,    
+            tic
+            indo =   logical(dstcm(:,1))                        ...
+                     & logical(dstcm(:,sto))                    ...
+                     & ~any(logical(dstcm(:,[7,8])),2)          ...
+                     & dpostI                                   ...
+                     & duincI;        
+            indo(indo) = randn([sum(indo),1]) > 1;
+            so = sum(indo);
+
+            indb = find(ind | indo);
+            indb = randsample(indb,sum([si,so].*double([sts>sto,sts<=sto])));
+            
+            px  = histcounts(dErrlon(indb),                     ...
+                             errorBinEdges,                     ...
+                             'Normalization','probability');
+            py  = histcounts(dphz(indb),                        ...
+                             phzBins,                           ...
+                             'Normalization','probability');
+            pxy = histcounts2(dErrlon(indb),                    ...
+                              dphz(indb),                       ...
+                              errorBinEdges,                    ...
+                              phzBins,                          ...
+                              'Normalization','probability');
+            Ixy(i,sts) = sum(nonzeros(pxy.*log(pxy./bsxfun(@times,px',py))),'omitnan');
+            
+            rndPhz = dphz(indb)+randn([numel(indb),1])*2;
+            rndPhz( rndPhz < -pi ) = rndPhz( rndPhz < -pi ) + 2.*pi;
+            rndPhz( rndPhz >  pi ) = rndPhz( rndPhz >  pi ) - 2.*pi;
+            py  = histcounts(rndPhz,                            ...
+                             phzBins,                           ...
+                             'Normalization','probability');
+            pxy = histcounts2(dErrlon(indb),                    ...
+                              rndPhz,                           ...
+                              errorBinEdges,                    ...
+                              phzBins,                          ...
+                              'Normalization','probability');
+            Ixyr(i,sts,sto) = sum(nonzeros(pxy.*log(pxy./bsxfun(@times,px',py))),'omitnan');
+            toc
+        end
+    end
+end
+
+
+figure,hold('on');
+histogram(log10(Ixyr(:,1)),linspace(-4,-1,100))
+hist(log10(Ixy(:,1)),linspace(-4,-1,100))
+
+
+
+% $$$ indTDP{sts}  = cf(@(p,u,s)                                           ...
+% $$$                   all(p>0.0005,2)                                    ...
+% $$$                   & sum(double(u>=3),2)>6                            ...
+% $$$                   & s(:,1)==1                                        ...
+% $$$                   & any(logical(s(:,stid(sts))),2)                   ...
+% $$$                   & ~any(logical(s(:,[7,8])),2),                     ...
+% $$$                   posteriorMaxTPD,unitInclusionTPD,stcm);
+
+
 
 
 
@@ -730,7 +857,7 @@ sax(end+1) = axes('Units','centimeters',                                ...
                   'LineWidth',1);
 hold(sax(end),'on');
 imagesc(pfsXYHB{1}.adata.bins{1:2},~maskcirc');
-colormap(sax(end),'gray')
+vcolormap(sax(end),'gray')
 caxis(sax(end),[-2,1])
 
 circle(0,0,480,'-k');
@@ -883,15 +1010,28 @@ ylim([-0.5,1.6]);
 %%%>>>
 
 
+%%%<<< PLOT spatial vs behaivoral error
+
+
+
+
+%%%>>>
+
+
+
+
+%%%<<< PLOT BLOCK : theta phase * decoding error
+xs = 5;
+%%%>>>
+
 %%%<<< PLOT longitudinal error for TDP decoding
 % SET constants
 xcoords =linspace(-500,500,250);
 ycoords = circ_rad2ang([phzBinCenters;phzBinCenters+2*pi]);
-% ADJUST subplot coordinates
-xOffSet = -0.2;
 for sts = 1:numel(stid),
 % ADJUST subplot coordinates    
-    [yind, yOffSet, xind, xOffSet] = deal(5, -0.8, sts, xOffSet+0.2);
+    [yind, yOffSet, xind, xOffSet] = deal(4+sts, -0.8, xs, 0);
+
 % CREATE subplot axes
     sax(end+1) = axes('Units','centimeters',                                ...
                       'Position',[fig.page.xpos(xind)+xOffSet,              ...
@@ -929,45 +1069,22 @@ for sts = 1:numel(stid),
     %plot(repmat(dcTpdMax(sts,:),[1,2])', ycoords,'k','LineWidth',2);
     %plot(repmat(dcTpdWmn(1,:),[1,2])', ycoords,'k','LineWidth',2);    
     %plot(repmat(dcTpdWmn(sts,:),[1,2])', ycoords,'m','LineWidth',2);
-    title(states{sts});
+
     colormap(sax(end),'jet');    
-    
+    ylabel(sax(end),states{sts});
     if sts == 1,
-        ylabel(sax(end),{'RCP Error'});
+        title(sax(end),{'RCP Error'});
     end
-    
 end
-% ADJUST subplot coordinates        
-[yind, yOffSet, xind, xOffSet] = deal(5, -0.8, sts+1, xOffSet);
-% CREATE subplot axes
-sax(end+1) = axes('Units','centimeters',                        ...
-                  'Position',[fig.page.xpos(xind)+xOffSet,      ...
-                              fig.page.ypos(yind)+yOffSet,      ...
-                              fig.subplot.width/1.5,              ...
-                              fig.subplot.height],              ...
-                  'FontSize', 8,                                ...
-                  'LineWidth',1);
-hold(sax(end),'on');
-% ADD phase "bar"
-plot(-cos(circ_ang2rad(-60:420)),-60:420,'-k','LineWidth',2);
 
-sax(end).YAxisLocation = 'right';
-sax(end).Visible = 'off';                                    
-sax(end).YTick = [];
-sax(end).YTickLabels = [];
-sax(end).XTick = [];
-ylim([-60,420]);
-xlim([-1.5,1.5]);
-
-
-text( 0.25, 360, '360', 'HorizontalAlignment','center',     ...
-         'FontSize', 8, 'VerticalAlignment',  'middle');
-text(-0.25, 180, '180', 'HorizontalAlignment','center',     ...
-         'FontSize', 8, 'VerticalAlignment',  'middle');                    
-text( 0.25,   0,   '0', 'HorizontalAlignment','center',     ...
-         'FontSize', 8, 'VerticalAlignment',  'middle');                    
-
-
+% PLOT sptial scale bar 
+axes(fax);
+line([sax(end).Position(1)+sax(end).Position(3)./4,sax(end).Position(1)+sax(end).Position(3).*3./4],...
+     [1,1].*(sax(end).Position([2])-0.2), 'Color', 'k', 'LineWidth', 1);
+text(sax(end).Position(1)+sax(end).Position(3)/2,               ...
+     sax(end).Position([2])-0.4,                                ...
+     '20 cm',                                                   ...
+     'HorizontalAlignment','center');
 
 
 %%%>>>
@@ -980,7 +1097,7 @@ ycoords = circ_rad2ang([phzBinCenters;phzBinCenters+2*pi]);
 xOffSet = -0.2;
 for sts = 1:numel(stid),
 % ADJUST subplot coordinates    
-    [yind, yOffSet, xind, xOffSet] = deal(6, -0.8, sts, xOffSet+0.2);
+    [yind, yOffSet, xind, xOffSet] = deal(4+sts, -0.8, xs+1, 0.2);
 % CREATE subplot axes
     sax(end+1) = axes('Units','centimeters',                                ...
                       'Position',[fig.page.xpos(xind)+xOffSet,              ...
@@ -1022,32 +1139,22 @@ for sts = 1:numel(stid),
     colormap(sax(end),'jet');    
     if sts == 1,
         %ylabel(sax(end),{'Head','Pitch'});
-        ylabel(sax(end),{'HP Error'});        
+        title(sax(end),{'HP Error'});        
     end
     
 end
-% ADJUST subplot coordinates        
-[yind, yOffSet, xind, xOffSet] = deal(6, -0.8, sts+1, xOffSet);
-% CREATE subplot axes
-sax(end+1) = axes('Units','centimeters',                        ...
-                  'Position',[fig.page.xpos(xind)+xOffSet,      ...
-                              fig.page.ypos(yind)+yOffSet,      ...
-                              fig.subplot.width/3,              ...
-                              fig.subplot.height],              ...
-                  'FontSize', 8,                                ...
-                  'LineWidth',1);
-hold(sax(end),'on');
-% ADD phase "bar"
-plot(-cos(circ_ang2rad(-60:420)),-60:420,'-k','LineWidth',2);
 
-sax(end).YAxisLocation = 'right';
-sax(end).Visible = 'off';                                    
-sax(end).YTick = [];
-sax(end).YTickLabels = [];
-sax(end).XTick = [];
-ylim([-60,420]);
-xlim([-1.25,1.25]);
-
+% PLOT scale bar 
+axes(fax);
+line([sax(end).Position(1)+sax(end).Position(3).*1.5./5,        ...
+      sax(end).Position(1)+sax(end).Position(3).*3.5./5],       ...
+      [1,1].*(sax(end).Position([2])-0.2),                      ...
+      'Color', 'k',                                             ...
+      'LineWidth', 1);
+text(sax(end).Position(1)+sax(end).Position(3)/2,               ...
+     sax(end).Position([2])-0.5,                                ...
+     '1 rad',                                                   ...
+     'HorizontalAlignment','center');
 
 
 %%%>>>
@@ -1059,11 +1166,9 @@ xlim([-1.25,1.25]);
 
 xcoords =linspace([pbound,50]);
 ycoords = circ_rad2ang([phzBinCenters;phzBinCenters+2*pi]);
-% ADJUST subplot coordinates
-xOffSet = -0.2;
 for sts = 1:numel(stid),
 % ADJUST subplot coordinates    
-    [yind, yOffSet, xind, xOffSet] = deal(7, -0.8, sts, xOffSet+0.2);
+    [yind, yOffSet, xind, xOffSet] = deal(4+sts, -0.8, xs+2, 0.4);
 % CREATE subplot axes
     sax(end+1) = axes('Units','centimeters',                                ...
                       'Position',[fig.page.xpos(xind)+xOffSet,              ...
@@ -1103,37 +1208,81 @@ for sts = 1:numel(stid),
     %plot(repmat(dcTpdWmn(sts,:),[1,2])', ycoords,'m','LineWidth',2);
     %title(states{sts});
     colormap(sax(end),'jet');    
+    
     if sts == 1,
         %ylabel(sax(end),{'Body','Pitch'});
-        ylabel(sax(end),{'BP Error'});        
-    end
-end
-
+        title(sax(end),{'BP Error'});        
 % ADJUST subplot coordinates        
-[yind, yOffSet, xind, xOffSet] = deal(7, -0.8, sts+1, xOffSet);
+        [yind, yOffSet, xind, xOffSet] = deal(4+sts, -0.8, xs+3, 0.4);
 % CREATE subplot axes
-sax(end+1) = axes('Units','centimeters',                        ...
-                  'Position',[fig.page.xpos(xind)+xOffSet,      ...
-                              fig.page.ypos(yind)+yOffSet,      ...
-                              fig.subplot.width/3,              ...
-                              fig.subplot.height],              ...
-                  'FontSize', 8,                                ...
-                  'LineWidth',1);
-hold(sax(end),'on');
+        sax(end+1) = axes('Units','centimeters',                        ...
+                          'Position',[fig.page.xpos(xind)+xOffSet,      ...
+                            fig.page.ypos(yind)+yOffSet,      ...
+                            fig.subplot.width/1.5,              ...
+                            fig.subplot.height],              ...
+                          'FontSize', 8,                                ...
+                          'LineWidth',1);
+        hold(sax(end),'on');
 % ADD phase "bar"
-plot(-cos(circ_ang2rad(-60:420)),-60:420,'-k','LineWidth',2);
+        plot(-cos(circ_ang2rad(-60:420)),-60:420,'-k','LineWidth',2);
 
-sax(end).YAxisLocation = 'right';
-sax(end).Visible = 'off';                                    
-sax(end).YTick = [];
-sax(end).YTickLabels = [];
-sax(end).XTick = [];
-ylim([-60,420]);
-xlim(pbound);
+        sax(end).YAxisLocation = 'right';
+        sax(end).Visible = 'off';                                    
+        sax(end).YTick = [];
+        sax(end).YTickLabels = [];
+        sax(end).XTick = [];
+        ylim([-60,420]);
+        xlim([-1.5,1.5]);
+
+
+        text( 0.25, 360, '360', 'HorizontalAlignment','center',     ...
+              'FontSize', 8, 'VerticalAlignment',  'middle');
+        text(-0.25, 180, '180', 'HorizontalAlignment','center',     ...
+             'FontSize', 8, 'VerticalAlignment',  'middle');                    
+        text( 0.25,   0,   '0', 'HorizontalAlignment','center',     ...
+              'FontSize', 8, 'VerticalAlignment',  'middle');                    
+    else
+% ADJUST subplot coordinates        
+        [yind, yOffSet, xind, xOffSet] = deal(4+sts, -0.8, xs+3, 0.4);
+% CREATE subplot axes
+        sax(end+1) = axes('Units','centimeters',                        ...
+                          'Position',[fig.page.xpos(xind)+xOffSet,      ...
+                            fig.page.ypos(yind)+yOffSet,      ...
+                            fig.subplot.width/3,              ...
+                            fig.subplot.height],              ...
+                          'FontSize', 8,                                ...
+                          'LineWidth',1);
+        hold(sax(end),'on');
+% ADD phase "bar"
+        plot(-cos(circ_ang2rad(-60:420)),-60:420,'-k','LineWidth',2);
+
+        sax(end).YAxisLocation = 'right';
+        sax(end).Visible = 'off';                                    
+        sax(end).YTick = [];
+        sax(end).YTickLabels = [];
+        sax(end).XTick = [];
+        ylim([-60,420]);
+        xlim(pbound);
+    end
+    
+end
+% PLOT scale bar 
+axes(fax);
+line([sax(end-1).Position(1)+sax(end-1).Position(3).*1.5./5,        ...
+      sax(end-1).Position(1)+sax(end-1).Position(3).*3.5./5],       ...
+      [1,1].*(sax(end).Position(2)-0.2),                      ...
+      'Color', 'k',                                             ...
+      'LineWidth', 1);
+text(sax(end-1).Position(1)+sax(end-1).Position(3)/2,               ...
+     sax(end-1).Position(2)-0.5,                                ...
+     '1 rad',                                                   ...
+     'HorizontalAlignment','center');
+
+
 
 %%%>>>
 
-
+% STOPFIG ------------------------------------------------------------------------------------------
 
 
 %%%<<< PLOT lateral error as function of theta phase
@@ -1190,7 +1339,7 @@ end
 
 
 
-% STOPFIG ------------------------------------------------------------------------------------------
+
     
 
 ind  = cf(@(p,u,s) all(p>0.00005,2) & all(u>=2,2) & s(:,1)==1 & any(logical(s(:,stid)),2),...

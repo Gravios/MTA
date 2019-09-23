@@ -162,12 +162,22 @@ xyz.resample(ACh);
 vxy = xyz.vel(1,[1,2]);
 rhm = fet_rhm(s);
 
-for f = list_files(s.name,'fbr')
-    fbr = load(fullfile(s.spath(),f{1}));
-    fbr.integrationTime = fbr.intergrationTime;
-    fbr = rmfield(fbr,'intergrationTime');
-    system(['rm ' fullfile(s.spath(),f{1})]);    
-    save(fullfile(s.spath(),f{1}),'-struct','fbr');
+
+
+% UPDATE fbr struct
+sessionList = get_session_list('your_session_list_name');
+Sessions = af(@(s) MTASession.validate(s), sessionList);
+path = 'your/path/to/processed/fbr/files';
+for si = 1:numel(Sessions),
+    Session = Sessions{si};
+    s = MTASession([]);
+    for f = list_files(Session.name,'fbr')
+        fbr = load(fullfile(path,f{1}));
+        fbr.integrationTime = fbr.intergrationTime;
+        fbr = rmfield(fbr,'intergrationTime');
+        system(['rm ' fullfile(path,f{1})]);    
+        save(fullfile(path,f{1}),'-struct','fbr');
+    end
 end
 
 

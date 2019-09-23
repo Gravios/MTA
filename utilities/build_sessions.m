@@ -36,7 +36,14 @@ Config = load('MTAConf.mat');
 % MAIN ---------------------------------------------------------------------------------------------
 
 % RETRIVE session list
-sessionList = get_session_list(sessionListName);
+if ischar(sessionListName);
+    sessionList = get_session_list(sessionListName);
+elseif isstruct(sessionListName);
+    sessionList = sessionListName;
+else
+    error('MTA:utilities:build_sessions:BadSessionListName');
+end
+
 
 % FOREACH Session in Sessions
 %     CREATE new session if ses file is absent or overwrite is flagged

@@ -23,28 +23,27 @@ Par = LoadPar(fullfile(Session.spath, [Session.name '.xml']));
 if exist('Par','var'),
 % LOAD single channel of lfp to check the number of samples
     lfp = LoadBinary(fullfile(Session.spath, [Session.name '.lfp']),recSyncPulseChan,Par.nChannels,4)';
-% ASSIGN synchronization periods in sesconds as continuous time
+    % ASSIGN synchronization periods in sesconds as continuous time 
     recordSync = [0,numel(lfp)./Par.lfpSampleRate];
-% $$$     mocapSyncPeriods = ThreshCross(abs((lfp-mean(lfp))./max(lfp(:,1))),...
-% $$$                           0.5,... threshold
-% $$$                           0); %   Minumum Interval
     mocapSyncPeriods = ThreshCross(abs(clip(lfp-mean(lfp(1:100)),0,inf)./max(lfp(:))/1.1),...
                                    0.5,... threshold
                                    0); %   Minumum Interval
-    
+                                   
     lfpSyncPeriods = MTADepoch([],[],recordSync+[1/Par.lfpSampleRate,1/Par.lfpSampleRate],1,recordSync,0);
     clear('lfp');
     Session.lfp = MTADlfp(Session.spath,[Session.name '.lfp'],[],Par.lfpSampleRate,lfpSyncPeriods,0);    
     Session.lfp.filename = [Session.name '.lfp'];
     Session.sampleRate = Par.SampleRate;
+else 
+    error('MTA:utilities:synchronization:sync_openephys_vicon:ParXMLNotFound');
 end
 
 if ~exist(Session.spath,'dir')
-    if ~exist(Session.spath,'dir') && ...
-        exist(fullfile(Session.path.project,'nlx',Session.name),'dir') && ...
-        exist(fullfile(Session.path.project,'xyz',Session.name),'dir')
-        mkdir(Session.spath);
-        
+    if ~exist(Session.spath,'dir') ...
+         && (exist(fullfile(Session.path.project,'nlx',Session.name),'dir') || ...
+             exist(fullfile(Session.path.project,'ephys',Session.name),'dir')) ...
+         && exist(fullfile(Session.path.project,'xyz',Session.name),'dir')
+        create_directory(Session.spath);
     else
         e.message    = ['Session: ' Session.name ', cannot be found or does not exist. ' ...
                        'Check paths or see the README for the correct directory structure for the MTA toolbox.'];

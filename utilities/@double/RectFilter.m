@@ -38,7 +38,7 @@ for n = 1:numApplications,
 
     %hold('on');plot(-3:19,sq(Data(:,20,101,1,1)))
 
-    Data = circshift(sq(mean(GetSegs(Data,1:size(Data,1),order,nan),1,'omitnan')),-order);
+    Data = circshift(sq(mean(GetSegs(Data,1:size(Data,1),order,nan),1,'omitnan')),-floor(order/2)-1);
     Data = Data(1:dimensions(1),:,:);
                     
 
