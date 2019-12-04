@@ -158,6 +158,9 @@ if numel(Pfs.adata.binSizes) > 1,
                 mazeMask = double(sqrt((W-centerW-.5).^2 + (H-centerH-.5).^2) < radius);
             end
         end
+        if islogical(mazeMask),
+            mazeMask = double(mazeMask);
+        end
         mazeMask(mazeMask==0)=nan;
 
         ratemap = ratemap.*mazeMask;

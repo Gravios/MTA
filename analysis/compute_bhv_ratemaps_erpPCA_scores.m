@@ -1,8 +1,18 @@
 function [fsrcz,FSrC,rmaps,FSCFr,FSrM,FSrS,fsrsMean,fsrsStd,rmapsShuffledMean,rmapsShuffled] = ...
-    compute_bhv_ratemaps_erpPCA_scores(Trials,units,bfrm,bfrmShuffled,eigVecs,validDims,unitSubset,overwrite)
+    compute_bhv_ratemaps_erpPCA_scores(varargin)
 %function [fsrcz,FSrC,rmaps,FSCFr,FSrM,FSrS,fsrsMean,fsrsStd,rmapsShuffledMean,rmapsShuffled] = ...
 %    compute_bhv_ratemaps_erpPCA_scores(Trials,Units,bfrm,bfrmShuffled,validDims,unitSubset)
-%
+% 
+% INPUTS:
+%    Trials,
+%    units,
+%    bfrm,
+%    bfrmShuffled,
+%    eigVecs,
+%    validDims,
+%    unitSubset,
+%    overwrite,
+%    tag
 %
 % drzrbhv field: directional rate zone restriced behavioral tuning curves
 % DIMENSIONS 
@@ -22,21 +32,34 @@ function [fsrcz,FSrC,rmaps,FSCFr,FSrM,FSrS,fsrsMean,fsrsStd,rmapsShuffledMean,rm
 global MTA_PROJECT_PATH
 
 
-% TAGS ---------------------------------------------------------------------------------------------
-pfsTag = DataHash(cf(@(p,ps)  [p.filename,ps.filename],  bfrm,bfrmShuffled));
+% DEFARGS ------------------------------------------------------------------------------------------
+defargs = struct('Trials',                        [],                                            ...
+                 'units',                         [],                                            ...
+                 'bfrm',                          [],                                            ...
+                 'bfrmShuffled',                  [],                                            ...
+                 'eigVecs',                       [],                                            ...
+                 'validDims',                     [],                                            ...
+                 'unitSubset',                    [],                                            ...
+                 'overwrite',                     false,                                         ...
+                 'tag',                           []                                             ...
+);
+[Trials, units, bfrm, bfrmShuffled, eigVecs, validDims, unitSubset, overwrite, tag] =            ...
+    DefaultArgs(varargin,defargs,'--struct');
 %---------------------------------------------------------------------------------------------------
+
 
 
 % MAIN ---------------------------------------------------------------------------------------------
 
-filePath = fullfile(MTA_PROJECT_PATH,'analysis',[mfilename,'-',pfsTag,'.mat']);
+if isempty(tag)
+    tag = DataHash(cf(@(p,ps)  [p.filename,ps.filename],  bfrm,bfrmShuffled));
+end
 
+filePath = fullfile(MTA_PROJECT_PATH,'analysis',[mfilename,'-',tag,'.mat']);
 
 if exist(filePath,'file') && ~overwrite,
     load(filePath);
 else,
-    pfindex = 1;
-
     % GET bhv rate maps
     
     [rmaps,clu]   = decapsulate_and_concatenate_mtaapfs(bfrm,units);    

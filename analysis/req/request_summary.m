@@ -1020,11 +1020,7 @@
     Protocol: 1. load theta resolved bhv fields for list of time shifts
               2. Compute behavioral information 
     Figures: none
-
     
-    
-
-
 *** req20190124
     Tags: behavior field theta decomposition summary
     Status: active
@@ -1035,7 +1031,6 @@
     Description: Compilation of placefield information and bhv theta decomposition stuff
     Protocol:
     Figures: /storage/gravio/figures/analysis/placefields_bhv
-    
 
 *** req20190125
     Tags: theta phase rate map conditioned on space
@@ -1048,12 +1043,71 @@
     Protocol:
     Figures: 
 
+
+
+*** req20190126
+    Tags: theta phase rate map conditioned on space
+    Status: active
+    Type: Analysis
+    Author: Justin Graboski
+    Final_Forms: NA
+    Project: MjgER2016: behavior-theta-modulation 
+    Description: Compilation of theta phase rate maps given positon and state
+    Protocol:
+    Figures: 
+
+
+*** req20190130
+    Tags: theta phase rate map conditioned on hrz
+    Status: active
+    Type: Analysis
+    Author: Justin Graboski
+    Final_Forms: NA
+    Project: MjgER2016: BhvPlaceCode
+    Description: Compilation of theta phase rate maps given positon and state
+    Protocol:
+    Figures: 
+
+
 ** 2019 02 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+*** req20190226
+    Tags: drz place field head angular velocity
+    Status: active
+    Type: Analysis
+    Author: Justin Graboski
+    Final_Forms: NA
+    Project: MjgER2016: BhvPlaceCode
+    Description: Computation of unit ratemap between drz and head angular velocity
+    Protocol:
+    Figures: 
 
 
 ** 2019 03 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+*** req20190308
+    Tags: decoding egocentric
+    Status: active
+    Type: analysis
+    Author: Justin Graboski
+    Final_Forms: NA
+    Project: MjgER2016: 
+    Description: decoding forward versus lateral relative to head position
+    Protocol:
+    Figures: 
+
 
 ** 2019 04 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+*** req20190409 
+    Tags: Diary 20190409
+    Status: active
+    Type: Diary
+    Author: Justin Graboski
+    Final_Forms: NA
+    Project: MjgER2016: theta modulation of bhv rate maps
+    Description: 
+    Protocol:
+    Figures: /storage/gravio/figures/analysis/
+
+
    
 ** 2019 05 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 
@@ -1072,7 +1126,7 @@
     Tags: forbidden analysis
 
 
-** 2019 05 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+** 2019 06 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 
 *** req20190603
     Tags: trajectory count 
@@ -1085,8 +1139,26 @@
                  center, the number of independent trajectories with at least one spike,
                  and the first and last spike time within this reagion.
 
+*** req20190612
+    Tags: spk clustering klustakwik
+    Status: retired
+    Type: utility
+    Author: Justin Graboski
+    Final_Forms: 
+    Project: 
+    Description: reclustering after the removal of ripples
 
-** 2019 05 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+*** req20190615
+    Tags: IF04 data processing
+    Status: active
+    Type: analysis
+    Author: Justin Graboski
+    Final_Forms: NA
+    Project: NA
+    Description: generate behvaioral states from only head movements for gerrit
+                 
+
+** 2019 08 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 
 *** req20190829
     Tags: synchronization spectrometer ach
@@ -1099,3 +1171,16 @@
                  synchronization of video to openephys signal
                  synchronizaiton of ACh signal, processed from spectrometer data
 
+
+** 2019 10 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+
+*** req20191001
+    Tags: Organization Decode Behavior position Bhv xyz
+    Status: active
+    Type: org
+    Author: Justin Graboski
+    Final_Forms: 
+    Project: MjgER2016
+    Description: 
+
+                 

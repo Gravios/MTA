@@ -1,4 +1,4 @@
-sstates% MjgER2016 Figure4
+% MjgER2016 Figure4
 %
 % HP:= Head Pitch
 % BP:= Body Pitch

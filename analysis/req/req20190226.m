@@ -1,3 +1,15 @@
+% *** req20190226
+%     Tags: drz place field head angular velocity
+%     Status: active
+%     Type: Analysis
+%     Author: Justin Graboski
+%     Final_Forms: NA
+%     Project: MjgER2016: BhvPlaceCode
+%     Description: Computation of unit ratemap between drz and head angular velocity
+%     Protocol:
+%     Figures: 
+
+
 
 
 MjgER2016_load_data();

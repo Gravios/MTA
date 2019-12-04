@@ -47,6 +47,7 @@ MjgER2016_load_data();
 % SET analysis args
 MjgER2016_figure5_args('section 1');
 
+overwrite = false;
 
 % DEF place field rate maps
 [pfts]          = cf(@(t,u) pfs_2d_theta(t,u), Trials,units);
@@ -513,7 +514,7 @@ cluExampleSet = [20, 34; ...
 
 
 
-nx = pfs.adata.binSizes(2)/2+4;
+nx = pfss{1}.adata.binSizes(2)/2+4;
 %ny = numel(unitsExampleSubset);
 ny = size(cluExampleSet,1);
 

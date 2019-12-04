@@ -83,7 +83,7 @@ assert(nargin>2,'USAGE:  oephys2dat(Session, xml, channelMap, subSessionList, ac
 MAX_DATFILE_SIZE = 15;
 source = [filebase,'-',acqSystem];
 % ASSERT xml file existance
-assert(exist(xml,'file')==2,sprintf('Parameter file %s not found', xml))
+assert(exist(xml,'file')==2,sprintf('Parameter file %s not found', xml));
 
 
 fprintf(['%s:  %s (converting and merging .continous --> .dat) \n'], filebase, mfilename );
@@ -106,14 +106,17 @@ if exist(channelMap, 'file'),
     fprintf('Loading channel mapping from %s ->', channelMap);
     fid = fopen(channelMap);
     chanmap = textscan(fid,'%s');
-    fclose(fid);    
+    fclose(fid);
     chanmap = chanmap{1};
     fprintf(' DONE\n');
     if isempty(chanmap),
         fprintf('Channel Map vector is empty -> MAPPING all channels in original order..\n')    
     end
 else
-% Could also parse the channel order from the settis.xml 
+    fprintf('Channel Map file is absent -> MAPPING all channels in original order. \n')
+    chanmap = [];
+
+% Could also parse the channel order from the settings.xml 
 % settings.signalchain.processor: 100 channels
 %                                 101 channel map
 %                                 102 lfp viewer
@@ -122,20 +125,19 @@ else
 %               pluginType="1" pluginIndex="3" libraryName="Channel Mapper" libraryVersion="1"
 %               isSource="0" isSink="0" NodeId="101">
 %        <EDITOR isCollapsed="0" displayName="Channel Map" Type="ChannelMappingEditor">
-    fprintf('Channel Map file is absent -> MAPPING all channels in original order. \n')
-    chanmap = [];
 end
 
 %%%>>>
 
-%%%<<< CREATE a list of all .continious files
 
+
+%%%<<< CREATE a list of all .continious files
 dirList = dir(fullfile(source,[filebase,'*.continuous']));
 filenames = {dirList.name}';
-assert(~isempty(filenames),'map_oephys_to_dat:EphysFilesNotFound');
+assert(~isempty(filenames),'ecube_map_continuous_to_dat:EphysFilesNotFound');
 clear('dirList');
-
 %%%>>>
+
 
 %%%<<< PARSE file names to extract information about the files
 

@@ -12,7 +12,7 @@ function ecube_process_session(filebase, xml, varargin)
 %
 % PREPARE data for processing:
 %    
-%    PLACE Place all subsessions in subject directory in /storage/<User>/data/raw/ecube/<AnimalID>/.
+%    PLACE Place all subsessions in /storage/<User>/data/raw/ecube/<AnimalID>/.
 %    CREATE an ASCII *.note file with experiment's metadata. %            
 %    PLACE *.note in processing directory. 
 %    RENAME *.note template copy as AnimalID-YYYYMMDD.note 
@@ -25,7 +25,7 @@ function ecube_process_session(filebase, xml, varargin)
 %                         for subsessions of an experiment (e.g. sleep,maze,sleep or ca1, ca3).
 %
 %        Acquisition System:
-%            Number of channels: total number of channels recorded, including AUX and ADC channels.
+%            Number of channels: total number of channels, including AUX and ADC channels.
 %            Sampling rate: sampling rate of the acquisition system (default = 30000).
 %            Initial offset: 0
 %            Amplification: 1 (for standard intant headstages without on-board amplification).
@@ -42,11 +42,12 @@ function ecube_process_session(filebase, xml, varargin)
 %
 %        Anatomical Groups:
 %            Groups: sets of channel indicies grouped by electrode/probe site configuration.
-%                    Do not forget to put all accelerometer (AUX) channels into a separate anatomical group.
+%                    Do not forget to put all accelerometer (AUX) channels into a separate 
+%                    anatomical group.
 %
 %        Spike Groups:
-%            Groups": groups of open ephys channel indicies grouped in accordance with appearance of
-%                     spikes from the same neurons. 
+%            Groups": groups of open ephys channel indicies grouped in accordance with 
+%                     appearance of spikes from the same neurons. 
 %                     It will not be needed for KiloSort. 
 %                     BUT NEEDED FOR OTHER ANALYSIS
 % 
@@ -63,7 +64,7 @@ function ecube_process_session(filebase, xml, varargin)
 %           running on local PCs. In this case run MATLAB on the lab server.
 %
 %
-% process_raw_ecube is a function which preprocess a session recorded with an open ephys aqcuisition system:
+% function ecube_process_session  preprocess a session recorded with an open ephys aqcuisition system:
 %     LINK raw data to processing directory:  (bash)       {ecube_link_files}
 %     RENAME raw data to ndm_naming schema:   (bash)       {ecube_rename_files}
 %     CONVERT .continous files to .dat file:  (matlab)     {oephys2dat.m}
@@ -78,11 +79,13 @@ function ecube_process_session(filebase, xml, varargin)
 % Dependencies :
 %    NDM toolbox (L. Hazan, M. Zugaro, http://neurosuite.sourceforge.net).
 %
-%    NOTE: This function can deal with the case when .continuous files from some of the channels are not present. 
+%    NOTE: This function can deal with the case when .continuous files from some of the 
+%          channels are not present. 
 %      e.g. when one records with a 32-channels headstage and then delete some channel files.
 %      {oephys2dat.m} detects all present .continuous files
 %      {oephys2dat.m} groups them by their type (CH, AUX, ADC) 
-%      {oephys2dat.m} sorts the channels within each group in ascending order using their channel indices.
+%      {oephys2dat.m} sorts the channels within each group in ascending order using their 
+%                     channel indices.
 % 
 % AFTER process_raw_ecube:
 %    CHECK filebase.dat and filebase.lfp files in Neuroscope:
@@ -144,7 +147,8 @@ function ecube_process_session(filebase, xml, varargin)
 
 assert(nargin>2,'USAGE:  ProcessEcube(Session, xml, <channelMap>, <processorList>)');
 
-[ channelMap, subSessionList, acqSystem ] = DefaultArgs(varargin,{ [], [], 'ecube'});
+[ channelMap, subSessionList, acqSystem, prcSpikeFlag] = ...
+    DefaultArgs(varargin,{ [], [], 'ecube', false});
 
 %---------------------------------------------------------------------------------------------------
 
@@ -179,21 +183,16 @@ fileOutLog = sprintf('%s.%s.log', source, mfilename);
 if exist([source '/' fileOutLog],'file'),    delete([source '/' fileOutLog]);    end
 if exist(source,'dir'),                       diary([source '/' fileOutLog]);    
 else                        error(sprintf('Directory %s not found!',source));    end
-% CHECK that the xml file is present
-if ~exist([xml],'file'),    error('Parameter file %s not found!', xml);          end
 
-% LOAD processing parameters from a xml file
-par = LoadXml([xml]);
+% LOAD processing parameters from ndm xml file
+if ~exist([xml],'file'),    
+    error('Parameter file %s not found!', xml);          
+else
+    par = LoadXml([xml]);
+end
 if isempty(subSessionList),
     subSessionList = par.SubsessionDescription;
 end
-
-
-%NOTE: spike processing will be modified to switch to Kilosort
-%Process spikes only if spike groups are defined in the xml file
-
-prcSpikeFlag = isfield(par, 'SpkGrps') &&  ~isempty(par.SpkGrps(1).Channels);
-
 
 % RENAME data files to conform to the ndm_naming scheme
 % MOVE data files from subsession directories to the same session directory
@@ -201,6 +200,8 @@ prcSpikeFlag = isfield(par, 'SpkGrps') &&  ~isempty(par.SpkGrps(1).Channels);
 %! ecube_rename_files
 
 %%%>>>
+
+
 
 %%%<<< Processing using MATLAB
 
@@ -239,7 +240,9 @@ cd(fullfile(finalDirPath,filebase))
 %%%>>>
 
 
+
 %%%<<< Processing using NDM scripts
+
 % CREATE a LFP file by downsampling the .dat file
 lfp = fullfile(filebase,[filebase,'.lfp']);
 if ~exist(lfp,'file')
@@ -247,6 +250,10 @@ if ~exist(lfp,'file')
 else
     fprintf('File %s found. Function ndm_lfp was SKIPPED.\n', lfp)
 end
+
+%NOTE: spike processing will be modified to switch to Kilosort
+%      Process spikes only if spike groups are defined in the xml file
+% prcSpikeFlag = isfield(par, 'SpkGrps') &&  ~isempty(par.SpkGrps(1).Channels);
 
 % PROCESS spikes only if necessary (NOT TESTED YET)
 if prcSpikeFlag==1
@@ -267,11 +274,12 @@ if prcSpikeFlag==1
 end %if prcSpikeFlag==1
 
 cd(cwd); 
-
 %%%>>>
 
-diary off
+
+
 % MOVE ProcessOephys log file to the directory with converted files
+diary off
 if exist(fullfile(source,fileOutLog), 'file')
     movefile(fullfile(source,fileOutLog), fullfile(finalDirPath,fileOutLog));
 end

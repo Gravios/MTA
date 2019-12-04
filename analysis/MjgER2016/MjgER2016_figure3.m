@@ -6,14 +6,11 @@
 %
 % Subplots:
 %    A. BHV pfd example, large for clear axes 
-%        1. auto correlogram of unit
-%        2. PFD behavioral space HPxBP
-%        3. PFD behavioral space BSxHS
-%        4. PFS theta
+%        1. PFD behavioral space HPxBP
+%        2. PFS theta
 %    B. Place field examples
 %        1. auto correlogram of unit
 %        2. PFD behavioral space HPxBP
-%        3. PFD behavioral space BSxHS
 %        4. PFS theta
 %        5. PFS rear & theta
 %        6. PFS hloc & theta
@@ -45,22 +42,35 @@ MjgER2016_figure3_args();
 %     compute_bhv_ratemaps_shuffled
 %     compute_bhv_ratemap_erpPCA
 
-bfrmNormal     = cf(@(t,u)   compute_bhv_ratemaps(t,u),                    Trials, units);
+% EXAMPLE Trial : jg05-20120312
+tind = 20;
+Trial = Trials{tind};
+stc = Trials{tind}.stc.copy();
 
 
-% compute_bhv_ratemap_erpPCA
+% LOAD place restricted behavior fields
+bfs   = cf(@(t,u)   compute_bhv_ratemaps(t,u),  Trials, units);
+bfsEx = bfs{tind};
+bfsTag = {'HPITCHxBPITCH'};
+
+
+% COMPUTE bfs erpPCA
 [eigVecs, eigScrs, eigVars, unitSubset, validDims, zrmMean, zrmStd] = ...
-                 cf(@(t,u)   compute_bhv_ratemaps_erpPCA(t,u),             Trials, units);
+                    compute_bhv_ratemaps_erpPCA(bfs, units);
+numComp = size(eigVecs,2);
+fpc  = cell([1,numComp]);
+for i = 1:numComp,
+    fpc{i} = nan(size(validDims));
+    fpc{i}(validDims) = eigVecs(:,i);
+end
+fpcLims = [min(cellfun(@min,fpc)),max(cellfun(@max,fpc))];
 
 
-
-
-
-Trial = Trials{20};
-stc = Trials{20}.stc.copy();
-% LOAD place fields
+% LOAD theta place fields
 pft = pfs_2d_theta(Trial);
 pft.parameters.states = 'theta-groom-sit';
+
+% LOAD behavior place field
 pfs = cat(2,{pft},pfs_2d_states(Trial));
 % SORT place field states to match states
 pfStates = cf(@(s) ['^',s,'$'],cf(@(p) p.parameters.states,pfs));
@@ -73,25 +83,67 @@ for s = 1:numStates,
 end
 pfs = pfs(psi);
 
-% LOAD DRZ fields
-dfs = req20180123_ver5(Trial);
-dfst = {'HPITCHxBPITCH'};%,'HPITCHxBSPEED','BPITCHxBSPEED','BPITCHxHSPEED','HPITCHxRHM'};
 
-[ddz] = compute_ddz(Trial,units{20},pft);
+
+
+
+bins = ;
+% LOAD Behavioral state contours
+[stateContourMaps,stateContourHandles] =                           ...
+    bhv_contours(sessionListName,                                  ... sessionListName
+                 'fet_HB_pitchB',                                  ... featureSet
+                 [1,2],                                            ... featureInd
+                 {linspace(-2,2,50),linspace(-2,2,50)},            ... featureBin
+                 'Ed05-20140529.ont.all',                          ... referenceTrial
+                 {'lloc+lpause&theta','hloc+hpause&theta',         ... states
+                   'rear&theta'},                                  ...
+                 'wcr',                                            ... stateColors
+                 '0c641aa30eb6c126a115c42cdfc3fada'                ... tag
+);
+
+
+
+
+
+[fsrcz,FSrC,rmaps,FSCFr,FSrM,FSrS,fsrsMean,fsrsStd,rmapsShuffledMean,rmapsShuffled] = ...
+    compute_bhv_ratemaps_erpPCA_scores('tag','68536b9a930748fd25a91dfc8ca84d39');
+
+
+% GET auxiliary features
+clu =  cf(@(p,u) p.data.clu(:,ismember(p.data.clu,u),:), bfs,units);    
+si  =  cf(@(p,u) p.data.si(:,ismember(p.data.clu,u),:),  bfs,units);
+tlu =  cf(@(i,u) repmat(i,size(u)), mat2cell(1:numel(units),1,ones([1,numel(units)])),units);
+si  = cat(2, si{:});   
+clu = cat(2, clu{:});    
+tlu = cat(2, tlu{:});    
+clu = [tlu',clu'];
+
+
+[~,rind] = sortrows(clu);
+si  = si(:,rind);
+
+sigUnits = any(abs(fsrcz(:,1:3))>=1.96,2);
+
+cc = eigScrs(:,[2,1,3])+0.75;
+cc(~sigUnits,:) = repmat([0.75,0.75,0.75],[sum(~sigUnits),1]);
+
+
+if ~exist('mapa','var'),
+mapa = tsne([FSrC(:,1:3),(si(unitSubset)'-mean(si(unitSubset))')./std(si(unitSubset))'],[],2,3,40);    
+% $$$     mapa = tsne([fsrcz(:,1:3),(si(unitSubset)'-mean(si(unitSubset))')./std(si(unitSubset))'],[],2,4,80);
+% $$$     mapa = tsne([fsrcz(:,1:3),si(unitSubset)'],[],2,3,50);
+end
+
 
 % LOAD accgs
 [accg,tbins] = autoccg(Trial);
-
 cond_round = @(rate) max([round(rate,0),round(rate,1)].*[rate>=10,rate<10]);
-
 nanColor = [0.15,0.15,0.15];
 
 pageWidth  = 21.;
 pageHeight = 29.7;
-
 pwidth = 1.25;
 pheight = 1.25;
-
 xpad = 0.1;
 ypad = 0.1;
 
@@ -99,25 +151,27 @@ xpos = 3.5:(pwidth+xpad):pageWidth;
 ypos = fliplr(0.5:(pheight+xpad):pageHeight-3.7);
 
 % SET figure opts
-hfig = figure(666001);
+hfig = figure(666003);
+clf();
+% $$$ [hfig, figOpts, fax, sax] = set_figure_layout(hfig,'A4','portrait','centimeters',...
+
 hfig.Units = 'centimeters';
 hfig.Position = [1, 1, pageWidth,pageHeight];
 hfig.PaperPositionMode = 'auto';
 
-clf();
+
 
 %% MjgER2016F3A - behavior and place field examples %%
-
-
 cluMap = [20,119];
 yind = 1;
 xind = 1;
 
 
+
 u = cluMap';
 % SET color scale max
 maxPfsRate = max(cell2mat(cf(@(p,u) maxRate(p,u,false,'prctile99',0.5),...
-                             [pfs(1),dfs],repmat({u(2)},[1,1+numel(dfs)]))));
+                             {pfs{1},bfsEx},repmat({u(2)},[1,2]))));
 sp = gobjects([1,0]);
 fax = axes('Position',[0,0,1,1],'Visible','off','Units','centimeters');
 xlim([0,hfig.Position(3)]);
@@ -138,8 +192,8 @@ sp(end+1) = axes('Units','centimeters',...
                  'Position',[xpos(xind),ypos(yind),pwidth*1.25,pheight*1.25],...
                  'FontSize', 8);
 %                 'Position',[xpos(xind),ypos(yind),(pwidth+xpad)*2-xpad,(pheight+ypad)*2-ypad],...
-dfs{1}.plot(u(2),'mean',false,[0,maxPfsRate],false,0.5,false,[],@jet,[],nanColor);
-text(-2,-0.45,num2str(cond_round(dfs{1}.maxRate(u(2),false,1))),'FontSize',10,'Color',[1,1,1]);
+bfs{tind}.plot(u(2),'mean',false,[0,maxPfsRate],false,0.5,false,[],@jet,[],nanColor);
+text(-2,-0.45,num2str(cond_round(bfs{tind}.maxRate(u(2),false,1))),'FontSize',10,'Color',[1,1,1]);
 xlabel({'HP (rad)'});
 ylabel({'BP (rad)'});
 xind = xind+2;
@@ -215,13 +269,6 @@ text(fax,xpos(xind),ypos(yind)-0.35,'50cm','FontSize',8,'Color',[0,0,0]);
 
 xind = xind+3;
 
-% $$$ sp(end+1) = axes('Units','centimeters',...
-% $$$                  'Position',[xpos(xind),ypos(yind),(pwidth+xpad)*2-xpad,(pheight+ypad)*2-ypad],...
-% $$$                  'FontSize', 8);
-% $$$ dfs{2}.plot(u(2),'mean',false,[0,maxPfsRate],false,0.5,false,[],@jet);
-% $$$ text(-1.95,-1.65,num2str(cond_round(dfsMaxRatesMean(2))),'FontSize',12,'Color',[1,1,1]);
-% $$$ ylabel({'Body Speed','(log10(cm/s))'});
-
 
 
 
@@ -250,7 +297,7 @@ cluMap = [20,74;...
           20,109;...
           20,59];
 
-% {accg,DFS{HP,BP},DFS{HP,BS},theta,rear,hloc,lloc,hpause,lpause}
+% {accg,BFS{HP,BP},BFS{HP,BS},theta,rear,hloc,lloc,hpause,lpause}
 
 
 
@@ -265,34 +312,33 @@ for u = cluMap',
 
     xind = 1;
 
-    sp = gobjects([1,0]);
-    
 % SET color scale max
-    maxPfsRate = max(cell2mat(cf(@(p,u) maxRate(p,u,false,'prctile99',0.5),...
-                                 [pfs,dfs],repmat({u(2)},[1,numel(pfs)+numel(dfs)]))));
+    maxPfsRate = max(cell2mat(cf(@(p,u) ...
+                                 maxRate(p,u,false,'prctile99',0.5),...
+                                 [pfs,{bfsEx}],repmat({u(2)},[1,numel(pfs)+1]))));
 
-    pfsMaxRatesMean = cell2mat(cf(@(p,u) max(p.maxRate(u,true,'mean')),pfs,repmat({u(2)},[1,numel(pfs)])));
-    %dfsMaxRatesMean = cell2mat(cf(@(p,u) max(p.maxRate(u,false,'mean')),dfs,repmat({u(2)},[1,numel(dfs)])));
-    dfsMaxRatesMean = mean(dfs{1}.maxRate(u,false,1));
+    pfsMaxRatesMean = cell2mat(cf(@(p,u) ...
+                                  max(p.maxRate(u,true,'mean')),...
+                                  pfs,repmat({u(2)},[1,numel(pfs)])));
+    %bfsMaxRatesMean = cell2mat(cf(@(p,u) max(p.maxRate(u,false,'mean')),bfs,repmat({u(2)},[1,numel(bfs)])));
+    bfsMaxRatesMean = mean(bfsEx.maxRate(u,false,1));
 
     
 
 % DRZFIELDS 
-    for s = 1:numel(dfs),
-        sp(end+1) = axes('Units','centimeters',...
-                         'Position',[xpos(xind),ypos(yind),pwidth,pheight],...
-                         'FontSize', 8);
-        
-        dfs{s}.plot(u(2),'mean',false,[0,maxPfsRate],false,0.5,false,[],@jet,[],nanColor);
-        sp(end).YTickLabel = {};
-        sp(end).XTickLabel = {};        
-        text(-2,-0.475,num2str(cond_round(dfsMaxRatesMean(s))),'FontSize',8,'Color',[1,1,1]);
-        xlim([-2,nonzeros(xlim.*[0,1])-0.2])
-        sp(end).Color = nanColor;
-              
-        if yind == yinit, title(labels{xind});end        
-        xind = xind+1;
-    end
+    sp(end+1) = axes('Units','centimeters',...
+                     'Position',[xpos(xind),ypos(yind),pwidth,pheight],...
+                     'FontSize', 8);
+
+    bfsEx.plot(u(2),'mean',false,[0,maxPfsRate],false,0.5,false,[],@jet,[],nanColor);
+    sp(end).YTickLabel = {};
+    sp(end).XTickLabel = {};        
+    text(-2,-0.475,num2str(cond_round(bfsMaxRatesMean)),'FontSize',8,'Color',[1,1,1]);
+    xlim([-2,nonzeros(xlim.*[0,1])-0.2])
+    sp(end).Color = nanColor;
+
+    if yind == yinit, title(labels{xind});end        
+    xind = xind+1;
 
     
     for s = 1:numStates,
@@ -319,49 +365,15 @@ end
 % see: req20180123_vis_HBPITCHxBPITCH_erpPCA.m
 
 
-
-if ~exist('pfd','var'),
-    [pfd,tags,eigVec,eigVar,eigScore,validDims,unitSubsets,unitIntersection,zrmMean,zrmStd] = req20180123_ver5(Trials);
-end
-
-numComp = size(eigVec{1},2);
-pfindex = 1;
-
-
-bins = dfs{1}.adata.bins;
-
-% LOAD Behavioral state contours
-[stateContourMaps,stateContourHandles] =                           ...
-    bhv_contours(sessionListName,                                  ... sessionListName
-                 'fet_HB_pitchB',                                  ... featureSet
-                 [1,2],                                            ... featureInd
-                 {linspace(-2,2,50),linspace(-2,2,50)},            ... featureBin
-                 'Ed05-20140529.ont.all',                          ... referenceTrial
-                 {'lloc+lpause&theta','hloc+hpause&theta',         ... states
-                   'rear&theta'},                                  ...
-                 'wcr'                                             ... stateColors
-);
-
-
-
-
-fpc  = cell([1,numComp]);
-for i = 1:numComp,
-    fpc{i} = nan(size(validDims{pfindex}));
-    fpc{i}(validDims{pfindex}) = eigVec{pfindex}(:,i);
-end
-
-fpcMinMax = [min(cellfun(@min,fpc)),max(cellfun(@max,fpc))];
-
 % PLOT 
-yind = yind + 1;
+yind = 15
 for i = 1:3,
     sp(end+1) = axes('Units','centimeters',...
                      'Position',[xpos(1),ypos(yind)+0.5,pwidth,pheight],...
                      'FontSize', 8);    
     
-    imagescnan({bins{:},abs(reshape_eigen_vector(fpc{i},pfd(1,pfindex)))},...
-               fpcMinMax,'linear',false,nanColor,1,1);                % PRINT eigenvectors
+    imagescnan({bfsEx.adata.bins{:},abs(reshape_eigen_vector(fpc{i},bfsEx))},...
+               fpcLims,'linear',false,nanColor,1,1);                % PRINT eigenvectors
     axis('xy');
     axis('tight');
     hold('on');    
@@ -372,9 +384,9 @@ for i = 1:3,
     sp(end).XTickLabel = {};
     sp(end).Color = nanColor;
     ylabel(['F',num2str(i)])
-    xlim(pfd{1}.adata.bins{1}([1,end]));
+    xlim(bfsEx.adata.bins{1}([1,end]));
     xlim([-2,nonzeros(xlim.*[0,1])-0.2])            
-    ylim(pfd{1}.adata.bins{2}([1,end]));
+    ylim(bfsEx.adata.bins{2}([1,end]));
 
     yind = yind + 1;
 end
@@ -385,7 +397,6 @@ af(@(ax) set(ax,'LineWidth',1), sp);
 
 %% MjgER2016F3D t-SNE mapping of fscores within HPxBP of first 3 eigenvectors
 % see: req20180319.m
-if ~exist('FSrC','var'),  MjgER2016_load_bhv_erpPCA_scores();  end
 
 % CREATED Vars
 % 
@@ -420,21 +431,7 @@ if ~exist('FSrC','var'),  MjgER2016_load_bhv_erpPCA_scores();  end
 
 
 
-% GET auxiliary features
-clu =  cf(@(p,u) p.data.clu(:,ismember(p.data.clu,u),:), pfd(:,pfindex),units');    
-si  =  cf(@(p,u) p.data.si(:,ismember(p.data.clu,u),:),  pfd(:,pfindex),units');
-tlu =  cf(@(i,u) repmat(i,size(u)), mat2cell(1:numel(units),1,ones([1,numel(units)])),units);
-si  = cat(2, si{:});   
-clu = cat(2, clu{:});    
-tlu = cat(2, tlu{:});    
-clu = [tlu',clu'];
-
-
-[~,rind] = sortrows(clu);
-si  = si(:,rind);
-
-
-% $$$ dsm = pdist([FSrC(:,1:3),si(unitSubsets{pfindex})']);
+% $$$ dsm = pdist([FSrC(:,1:3),si(unitSubset)']);
 % $$$ mapa = mdscale(dsm,2);
 % $$$ figure,plot(mapa(:,1),mapa(:,2),'.');
 
@@ -445,22 +442,13 @@ sp(end+1) = axes('Units','centimeters',...
                  'Position',[xpos(xind)+0.5,ypos(yind)+0.5,(pwidth+0.1)*3-0.1,(pheight+0.1)*3-0.1],...
                  'FontSize', 8);    
 
-sigUnits = any(abs(fsrcz(:,1:3))>=1.96,2);
-
-cc = eigScore{pfindex}(:,[2,1,3])+0.75;
-cc(~sigUnits,:) = repmat([0.75,0.75,0.75],[sum(~sigUnits),1]);
-
-
-% $$$ mapa = tsne([FSrC(:,1:3),si(unitSubsets{pfindex})'],[],2,4,225);
-if ~exist('mapa','var'),
-    mapa = tsne([fsrcz(:,1:3),si(unitSubsets{pfindex})'],[],2,4,25);
-end
 % $$$ figure,scatter(mapa(:,1),mapa(:,2),5,cc,'filled');
-
 
 % $$$ ss = ones([size(cc,1),1])*10;
 % $$$ ss(all(abs(fsrcz(:,1:3))>1.96,2)) = 20;
 % $$$ ss(all(abs(fsrcz(:,1:3))<1.96,2)) = 5;
+%mapa = tsne([FSrC(:,1:3),(si(unitSubset)'-mean(si(unitSubset))')./std(si(unitSubset))'],[],2,3,40);
+%figure();
 
 cla();
 mi = [2,1];
@@ -473,7 +461,7 @@ axis('tight')
 xlim(xlim.*1.05);
 ylim(ylim.*1.05);
 
-cluSessionSubset = cluSessionMap(unitSubsets{pfindex},:);
+cluSessionSubset = cluSessionMap(unitSubset,:);
 for u = cluMap'
     uind = find(ismember(cluSessionSubset,u','rows'));
     sigUnits(uind);
@@ -488,22 +476,26 @@ set(gca(),'Color',nanColor)
 %figure,scatter(mapz(:,1),mapz(:,2),10,cc,'filled');
 
 
-yind = yind + 6;
-xind = 4;
+yind = yind-1;
+xind = 6;
 sp(end+1) = axes('Units','centimeters',...
-                 'Position',[xpos(xind),ypos(yind),(pwidth+0.1)*6-0.1,(pheight+0.1)*4-0.1],...
+                 'Position',[xpos(xind),ypos(yind),(pwidth+0.1)*3-0.1,(pheight+0.1)*2-0.1],...
                  'FontSize', 8);    
 
 hold('on');
-for i = 1:3,
+for i = [2,1,3],
     [F,X] = ecdf(fsrcz(:,i));
     cdfplot(X);
 end
-legend({'rear','low prone','high prone'},'Location','southeast');
+lax = legend({'rear','low prone','high prone'},'Location','southeastoutside');
+lax.Units = 'centimeters';
+lax.Position(1) = 0.1;
+drawnow();
+lax.Position(1) = sum(sp(end).Position([1,3]));
 Lines(-1.96,[],'k');
 Lines(1.96,[],'k');
 
 Lines(-3.1,[],'k');
 Lines(3.1,[],'k');
-
+xlim([-20,20])
 

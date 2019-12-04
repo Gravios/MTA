@@ -1,4 +1,12 @@
 % req20190612
+%    Tags: spk clustering klustakwik
+%    Status: retired
+%    Type: utility
+%    Author: Justin Graboski
+%    Final_Forms: 
+%    Project: 
+%    Description: reclustering after the removal of ripples
+
 
 % 1. Backup files - { *.res.?, *.fet.?, *.clu.?, *.spk.? };
 % 2. load spikes  - timestamp, clusterId, waveform

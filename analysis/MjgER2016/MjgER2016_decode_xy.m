@@ -1546,6 +1546,8 @@ end
 
 
 
+figure,imagesc(log10(sq(ys(:,21,:)))');
+
 ufrIntObj = ufrInt.copy();
 ufrIntObj.data = mean(ufrInt(:,[5,6,10]),2);
 uiphz = ufrIntObj.phase([5,12]);
@@ -1804,7 +1806,7 @@ seq.obsPathAngPPC = nan([size(seq.periods,1),1]);
 seq.decPathAngPPC = nan([size(seq.periods,1),1]);
 
 
-< 
+ 
 dvxy = vxy.data;
 dxyz = xyz(:,'nose',[1,2]);
 depos = permute(epos,[1,3,2]);

@@ -594,7 +594,8 @@ switch sessionList
                          'yOffSet',       0,                ...
                          'stcMode',      'msnn_ppsvd_raux', ...
                          'thetaRef',     [8:8:64],          ...
-                         'thetaRefGeneral',8                ...
+                         'thetaRefGeneral',8,               ...
+                         'rippleDetectionChannels', [17:24] ...
     );
 
     Sessions(end+1) = Sessions(end);
@@ -614,6 +615,7 @@ switch sessionList
     Sessions(end).offsets        = [0,0];
     Sessions(end).thetaRef       = [8:8:64,77,77,77,77];
     Sessions(end).thetaRefGeneral = 1;
+    Sessions(end).rippleDetectionChannels = [9:16];
     
     Sessions(end+1) = Sessions(end);    
     Sessions(end).sessionName    = 'ER06-20130613';
@@ -712,36 +714,47 @@ switch sessionList
     Sessions(end).includeSyncInd = [];
     Sessions(end).thetaRef     = [8:8:64,repmat(69,[1,5])];
     Sessions(end).thetaRefGeneral = 65;        
+    Sessions(end).rippleDetectionChannels = [57:64];    
     
     Sessions(end+1) =   Sessions(end);
     Sessions(end).sessionName  = 'jg05-20120310';
     Sessions(end).thetaRef     = [8:8:64,repmat(69,[1,4])];    
     Sessions(end).thetaRefGeneral = 65;
     Sessions(end).offsets      = [8,0];
+    
     Sessions(end+1) =   Sessions(end);
     Sessions(end).sessionName  = 'jg05-20120311';  
     Sessions(end).thetaRef     = [8:8:32,37,43,49,57,repmat(68,[1,4])];
+    Sessions(end).rippleDetectionChannels = [33:40];        
     Sessions(end).thetaRefGeneral = 65;
     Sessions(end).offsets      = [10,0];    
+
     Sessions(end+1) =   Sessions(end);
     Sessions(end).sessionName  = 'jg05-20120312';
     Sessions(end).thetaRef     = [8:8:40,46,53,61,repmat(69,[1,4])];
     Sessions(end).thetaRefGeneral = 67;
     Sessions(end).offsets      = [15,0];        
+    Sessions(end).rippleDetectionChannels = [57:64];        
+
     Sessions(end+1) =   Sessions(end);
     Sessions(end).sessionName  = 'jg05-20120315';
-    Sessions(end).thetaRef     = [8:8:64,repmat(69,[1,4])];    
+    Sessions(end).thetaRef     = [8:8:64,repmat(69,[1,4])];        
     Sessions(end).thetaRefGeneral = 69;
     Sessions(end).offsets      = [10,-10];            
+    Sessions(end).rippleDetectionChannels = [49:56];
+    
     Sessions(end+1) =   Sessions(end);
     Sessions(end).sessionName  = 'jg05-20120316';
     Sessions(end).thetaRef     = [8:8:64,repmat(69,[1,4])];        
     Sessions(end).thetaRefGeneral = 68;
+    Sessions(end).rippleDetectionChannels = [49:56];
+
     Sessions(end+1) =   Sessions(end);
     Sessions(end).sessionName  = 'jg05-20120317';
     Sessions(end).thetaRef     = [8:8:32,40,47,53,59,repmat(73,[1,4])];
     Sessions(end).thetaRefGeneral = 69;    
     Sessions(end).offsets      = [12,0];
+    Sessions(end).rippleDetectionChannels = [49:56];
     
 
   case 'BHV_S4H5',

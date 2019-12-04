@@ -55,7 +55,7 @@ for k=1:nFiles
         error(sprintf('map_oephys_to_dat_subses_block: File %s not found', subSesFileNames{k}))
     end
     
-    header(k) = load_open_ephys_header(subSesFileNames{k});    
+    header(k) = ecube_load_header(subSesFileNames{k});    
     %Deal with a files from eCube with additional suffixes "HS_" in file name, get rid of it first
     header(k).channel = strrep(header(k).channel,'HS_','');
 
@@ -64,7 +64,7 @@ for k=1:nFiles
 % LATER REMOVE
 
     assert(strcmp(header(k).channel,[chanInfo(k).chanType,chanInfo(k).chanId]),...
-           'map_oephys_to_dat_subses_block:HeaderChannelIdMismatch');
+           'ecube_map_continuous_to_dat_subses_block:HeaderChannelIdMismatch');
 end%for k
 
 
@@ -99,11 +99,11 @@ nChunks = ceil(max(nBlocks/chunkBlock));
 firstTimeStamp = nan([size(subSesFileNames)]);
 finalTimeStamp = nan([size(subSesFileNames)]);
 for k=1:nFiles
-    [~, t, ~] = load_open_ephys_data_blocks(subSesFileNames{k}, ...
+    [~, t, ~] = ecube_load_continuous_data_blocks(subSesFileNames{k}, ...
                                             'unscaledInt16', ...
                                             [1,2]);
     firstTimeStamp(k)=min(t);
-    [~, t, ~] = load_open_ephys_data_blocks(subSesFileNames{k}, ...
+    [~, t, ~] = ecube_load_continuous_data_blocks(subSesFileNames{k}, ...
                                             'unscaledInt16', ...
                                             [nBlocks(k)-1 nBlocks(k)]);
     finalTimeStamp(k)=max(t);
@@ -148,7 +148,7 @@ while ~finished;
     for k=1:nFiles
 % LOAD chunk
         [rawData{k}, rawTimeStamps{k}] = ...
-            load_open_ephys_data_blocks(subSesFileNames{k},'unscaledInt16',blockRange(:,k));
+            ecube_load_continuous_data_blocks(subSesFileNames{k},'unscaledInt16',blockRange(:,k));
 % STORE data and timestamps
         if diff(blockRange(:,k))<=1;
             rawData{k}=0;
@@ -176,7 +176,7 @@ while ~finished;
     
     assert( timeStampShift == chunkStartTimeStamp ,[mfilename,':GapBetweenBlocks']);
     
-% initiate new raw vector        
+% INITIATE new raw vector        
     processedData = repmat({zeros(1,chunkRange)},[nFiles,1]); 
     for k=1:nFiles
         shiftedTimeStamps{k} = rawTimeStamps{k}-timeStampShift+1;

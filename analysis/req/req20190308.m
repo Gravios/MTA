@@ -1,3 +1,15 @@
+% req20190308
+%    Tags: decoding egocentric
+%    Status: active
+%    Type: analysis
+%    Author: Justin Graboski
+%    Final_Forms: NA
+%    Project: MjgER2016: 
+%    Description: decoding forward versus lateral relative to head position
+%    Protocol:
+%    Figures: 
+
+
 
 
 
@@ -29,6 +41,8 @@ sids = 17:23;
     cf(@(t,u)  bhv_decode(t,sampleRate,[],u,'xyh',[],[],spikeWindow,false), Trials(sids),units(sids));
 [posEstComXYB,posEstMaxXYB,posEstSaxXYB,posteriorMaxXYB] = ...
     cf(@(t,u)  bhv_decode(t,sampleRate,[],u,'xyb',[],[],spikeWindow,false), Trials(sids),units(sids));
+[posEstComXYB,posEstMaxXYB,posEstSaxXYB,posteriorMaxXYB] = ...
+    cf(@(t,u)  bhv_decode(t,sampleRate,[],u,'xyhb',[],[],spikeWindow,false), Trials(sids),units(sids));
 
 pMax = posteriorMaxXYH;
 stc  = cf(@(t)    t.load('stc','msnn_ppsvd_raux'),               Trials(sids)   );
@@ -152,12 +166,12 @@ sp(end+1) = subplot(4,1,1);
 hold('on');
 plot(xyz{s}(ind{s},'hcom',1));
 plot(posEstSaxXYH{s}(ind{s},1),'r');
-plot(posEstSaxXYB{s}(ind{s},1),'m');
+plot(posEstMaxXYB{s}(ind{s},1),'m');
 sp(end+1) = subplot(4,1,2);
 hold('on');
 plot(xyz{s}(ind{s},'hcom',2));
 plot(posEstSaxXYH{s}(ind{s},2),'r');
-plot(posEstSaxXYB{s}(ind{s},2),'m');
+plot(posEstMaxXYB{s}(ind{s},2),'m');
 sp(end+1) = subplot(4,1,3);
 hold('on');
 plot(fet{s}(ind{s},1));
@@ -166,5 +180,29 @@ sp(end+1) = subplot(4,1,4);
 hold('on');
 plot(fet{s}(ind{s},2));
 plot(posEstSaxXYB{s}(ind{s},3),'m');
+linkaxes(sp,'x');
+
+
+figure();
+s = 4;
+sp = gobjects([0,1]);
+sp(end+1) = subplot(4,1,1);
+hold('on');
+plot(xyz{s}(ind{s},'hcom',1));
+plot(posEstMaxXYH{s}(ind{s},1),'r');
+plot(posEstMaxXYB{s}(ind{s},1),'m');
+sp(end+1) = subplot(4,1,2);
+hold('on');
+plot(xyz{s}(ind{s},'hcom',2));
+plot(posEstMaxXYH{s}(ind{s},2),'r');
+plot(posEstMaxXYB{s}(ind{s},2),'m');
+sp(end+1) = subplot(4,1,3);
+hold('on');
+plot(fet{s}(ind{s},1));
+plot(posEstMaxXYH{s}(ind{s},3),'r');
+sp(end+1) = subplot(4,1,4);
+hold('on');
+plot(fet{s}(ind{s},2));
+plot(posEstMaxXYB{s}(ind{s},3),'m');
 linkaxes(sp,'x');
 

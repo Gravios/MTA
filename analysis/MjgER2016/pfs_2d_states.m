@@ -16,11 +16,10 @@ function pfs = pfs_2d_states(Trial,varargin)
 %           
 %    reportFig:  logical,   flag 1: save figures as pngs of each place field in a predefined location
 %                                0: return placefield object without creating figures
+%    tag:        string,    identifier tag
 %
 %    overwrite:  logical,   flag 1: recompute place fields
 %                                0: load place fields from file
-%
-%    numIter:    numeric, Number of subsampled iterations (NOTE: 1st sample is full)
 %
 %    pfsArgsOverride: struct, (see MTAApfs input arguments)
 %

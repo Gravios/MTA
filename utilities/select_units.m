@@ -1,8 +1,11 @@
 function units = select_units(varargin)
 % function units = select_units(varargin)
-% [sessionList,type,mode] 
-% {{{'jg05-20120309','cof','all'},{'jg05-20120310','cof','all'},{'jg05-20120317','cof','all'}},...
-% 15,'pyr','get',{'SpkWidthR','AmpSym'}});
+%
+% VARARGIN :
+%    sessionList  -  String: {'MjgER2016'}, name use in get_session_list to call list of sessions
+%    type         -  String: {'pyr','int'}, unit class selection tag
+%    mode         -  String: {'get','set'}, retreive units or set model
+%
 
 % DEFARGS ----------------------------------------------------------------------
 defargs = struct('sessionList',        'MjgER2016',                          ...
