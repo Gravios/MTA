@@ -11,6 +11,9 @@ if     all(~cellfun(@isempty,regexpi(dataLoggers,{'nlx','vicon'})))
     
 elseif     all(~cellfun(@isempty,regexpi(dataLoggers,{'openephys','optitrack'})))
     Session = sync_openephys_optitrack(Session,TTLValue,xyzSampleRate);
+
+elseif     all(~cellfun(@isempty,regexpi(dataLoggers,{'openephys','sobolev'})))
+    Session = sync_openephys_sobolev(Session,TTLValue,xyzSampleRate);
     
 elseif     all(~cellfun(@isempty,regexpi(dataLoggers,{'openephys_fiber','optitrack'})))
     Session = sync_openephys_optitrack_fiber(Session,TTLValue,xyzSampleRate);

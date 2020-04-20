@@ -111,6 +111,8 @@ classdef MTAModel
                 load('MTAMarkerConnections.mat');
 
                 switch Model.N
+                  case 1
+                    Model.name = 'HCOM';
                   case 3
                     Model.name = 'H3';
                   case 4

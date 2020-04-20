@@ -15,6 +15,8 @@ classdef MTAMaze
 
         %boundaries - numericArray<-double: xyz limits for calculations
         boundaries
+        
+        xyz
     end
     
     methods

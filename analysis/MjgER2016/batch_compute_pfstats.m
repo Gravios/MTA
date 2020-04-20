@@ -7,14 +7,15 @@ defargs = struct('sessionList',         'MjgER2016_bhv',                        
                  'states',              {{'loc','lloc','hloc','rear','pause','lpause','hpause'}},...
                  'tag',                 '',                                                      ...
                  'overwrite',           false,                                                   ...
-                 'verbose',             false                                                    ...
+                 'verbose',             false,                                                   ...
+                 'pfsArgs',             []                                                       ...
 );%-------------------------------------------------------------------------------------------------
 
-[sessionList,stcMode,states,tag,overwrite,verbose] = DefaultArgs(varargin,defargs,'--struct');
+[sessionList,stcMode,states,tag,overwrite,verbose,pfsArgs] = DefaultArgs(varargin,defargs,'--struct');
 
 % modify states
-states = cellfun(@strcat,states,repmat({'&theta'},size(states)),'UniformOutput',false);
-states{end+1} = 'theta';
+% $$$ states = cellfun(@strcat,states,repmat({'&theta'},size(states)),'UniformOutput',false);
+% $$$ states{end+1} = 'theta';
 
 
 
@@ -50,20 +51,24 @@ for s = 1:numel(slist)
             Trial.load('stc',[Trial.name,'.',Trial.maze.name,'.all','.stc.',stcMode,'.mat']);            
         end
 
-        pft = pfs_2d_theta(Trial,[],[],overwrite);
-        mrt = pft.maxRate;
-
-        % Reduce clu list based on theta pfs max rate
-        units = select_units(Trial,18);
-        units = units(mrt(pft.data.clu(units))>1);
+        units = Trial.spk.map(:,1);
+% $$$         pft = pfs_2d_theta(Trial,[],[],overwrite);
+% $$$         mrt = pft.maxRate;
+% $$$ 
+% $$$         % Reduce clu list based on theta pfs max rate
+% $$$         units = select_units(Trial,18);
+% $$$         units = units(mrt(pft.data.clu(units))>1);
 
         % Compute place fields and subsampled estimate
         for sts = 1:numel(states),
-            defargs = get_default_args_MjgEdER2016('MTAApfs','struct');
-            defargs.units = units;
-            defargs.states = states{sts};
-            defargs = struct2varargin(defargs);        
-            pfkbs{sts} = MTAApfs(Trial,defargs{:});      
+            pargs = pfsArgs;
+            if isempty(pfsArgs),
+                pargs = get_default_args_MjgEdER2016('MTAApfs','struct');
+            end
+            pargs.units = units;
+            pargs.states = states{sts};
+            pargs = struct2varargin(pargs);        
+            pfkbs{sts} = MTAApfs(Trial,pargs{:});      
         end
 
         % Parse place field features
@@ -72,9 +77,9 @@ for s = 1:numel(slist)
         pfkstats = {};
 
         tic
-        for t = 1:numel(states),
+        for sts = 1:numel(states),
             for u = 1:numel(units),
-                [pfkstats{t}{u},pfkboots{t}{u},pfmstats{t}{u}] = PlaceFieldStats(Trial,pfkbs{t},units(u),false);
+                [pfkstats{sts}{u},pfkboots{sts}{u},pfmstats{sts}{u}] = PlaceFieldStats(Trial,pfkbs{sts},units(u),4,false,false);
             end
         end
         toc
@@ -84,7 +89,7 @@ for s = 1:numel(slist)
         pfkstats = [pfkstats{:}];
         pfkstats = [pfkstats{:}];
 
-        pfkstats = reshape(pfkstats,numel(units),numel(states))';
+        pfkstats = reshape(pfkstats,[numel(units),numel(states)])';
         
         
         % Select the biggest baddest place field patch for all units

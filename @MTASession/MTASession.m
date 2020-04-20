@@ -98,6 +98,8 @@ classdef MTASession < hgsetget
 
         %fbr - MTADfbr: (Time,ClusterId) fiber photometery with lfpSampleRate
         fbr = MTADfbr([]);
+        
+        arena
 
     end
     
@@ -176,7 +178,7 @@ classdef MTASession < hgsetget
             elseif isa(Session,'MTASession'),
                 return;
             elseif ischar(Session),
-                pat =['(?<sessionName>[a-z_A-Z]+\d{2,4}[-]\d{8,8}[a-z_A-Z]{0,1})\.'...
+                pat =['(?<sessionName>[a-z_A-Z]+\d{2,8}[-]\d{8,8}[a-z_A-Z]{0,1})\.'...
                       '(?<mazeName>\w+)\.'...
                       '(?<trialName>\w+)'];
                 tok = regexp(Session,pat,'names');

@@ -205,8 +205,13 @@ classdef MTAApfs < hgsetget %< MTAAnalysis
                             xyz = preproc_xyz(Session,'trb');
                         catch err,
                             disp(err)
-                            xyz = preproc_xyz(Session);
-                            trackingMarker = 'hcom';
+                            try,
+                                xyz = preproc_xyz(Session);
+                                trackingMarker = 'hcom';
+                            catch
+                                xyz = Session.load('xyz');
+                                trackingMarker = 'hcom';
+                            end
                         end
                         xyz.resample(16);
                         xyz.data = sq(xyz(:,trackingMarker,1:numel(binDims)));

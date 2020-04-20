@@ -1005,7 +1005,7 @@
     Protocol:
     Figures: none
     
-
+    
 * 2019
 ** 2019 01 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 
@@ -1184,3 +1184,21 @@
     Description: 
 
                  
+* 2020
+
+** 2020 01 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+
+** 2020 01 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+
+*** req20200217
+    Tags: place field head-body distance
+    Status: retired
+    Type: Analysis
+    Author: Justin Graboski
+    Final_Forms: NA
+    Project: MjgER2016: bhvfields
+    Description: place field rate dependence of head-body distance
+    Suplementary_Files: req20200217_args.m
+
+
+

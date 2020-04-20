@@ -1,4 +1,4 @@
-function rho = spatialCoherence(Pfs,units)
+function rho = spatialCoherence(Pfs,units,maskFlag)
 % rho = spatialCoherence(Pfs,units);
 % The correlation between a list of firing rates in each
 % pixel and a corresponding list of firing rates averaged
@@ -9,7 +9,7 @@ if isempty(units),
 end
 rho = nan(numel(units),1);
 for u = units(:)',
-    rm = Pfs.plot(u);
+    rm = Pfs.plot(u,'mazeMaskFlag',maskFlag);
     cmat = [1,1,1;1,0,1;1,1,1];
     c = conv2(rm,cmat,'valid')./8;
     rmss = rm(2:end-1,2:end-1);

@@ -137,6 +137,7 @@ set(gca, 'ydir', 'reverse')
 
 handleImage    = gca;
 
+handleColorbar = gobjects([1,1]);
 if colorbarIsRequired,
     handleColorbar = SideBar;
     image(0,linspace([colorLimits,1000]), permute(cm, [1,3,2]));

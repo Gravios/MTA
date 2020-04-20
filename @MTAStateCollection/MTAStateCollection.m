@@ -228,19 +228,19 @@ classdef MTAStateCollection < hgsetget
                         for s = 1:numel(queries),
                             if ischar(queries{1}),
                                 
-                                % Parse indexing query for operators and store their order
+                                % PARSE indexing query for operators and store their order
                                 stsFuncs = regexp(queries{s},'\&*\^*\|*\+*\-*','match');
                                 
-                                % Parse indexing query for states
+                                % PARSE indexing query for states
                                 stsNames = regexp(queries{s},'\&*\^*\|*\+*\-*','split');
                                 
-                                % indexing query should not start or end with an operator 
+                                % NOTE indexing query should not start or end with an operator 
                                 assert(numel(stsFuncs)+1==numel(stsNames),...
                                     'MTAStateCollection:subsref:UnequalStatesAndFunctionCount',...
                                     ['Each state name must be separated by a \n' ...
                                     'join(''^'',''&'') or intersect(''|'',''+'') operator']);
                                 
-                                % initallize cell array to accumulate the queried states
+                                % INITALLIZE cell array to accumulate the queried states
                                 sts = cell([1,numel(stsNames)]);
                                 for i = 1:numel(stsNames),
                                     stci = Stc.gsi(stsNames{i});

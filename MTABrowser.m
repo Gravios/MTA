@@ -30,7 +30,7 @@ function varargout = MTABrowser(varargin)
 
 % Edit the above text to modify the response to help MTABrowser
 
-% Last Modified by GUIDE v2.5 26-Feb-2016 16:06:48
+% Last Modified by GUIDE v2.5 27-Jan-2020 09:48:30
 
 % Begin initialization code - DO NOT EDIT
 gui_Singleton = 1;
@@ -650,6 +650,7 @@ if hObject ~= getappdata(handles.MTABrowserStates,'previousBState'),
     
     % DEFAULT args for the viewer
     MLData = getappdata(handles.MTABrowser,'MLData');
+    MLData.avp = [];
     MLData.record = {};
     MLData.recording=0;
     MLData.MLRotaKeyPressFcn = [];
@@ -2222,14 +2223,17 @@ if ~getappdata(handles.MLapp,'paused'),
     
     selected_states = find(MLData.selected_states);
     % Label state
-    if MLData.flag_tag&&MLData.current_label,
+    if MLData.flag_tag && MLData.current_label,
         MLData.States{selected_states(MLData.current_label)}.data(idx) = MLData.current_label/2;
     end
     % Erase state
-    if MLData.erase_tag&&MLData.current_label,
+    if MLData.erase_tag && MLData.current_label,
         MLData.States{selected_states(MLData.current_label)}.data(idx) = 0;
     end
 
+    if ~isempty(MLData.avp) && round(MLData.idx./200.*40+MLData.avp.offset)>=1
+        MLData.avp.toolsPanel.Children(5).Callback{1}([],[],'frameNumber',round(MLData.idx./200.*40+MLData.avp.offset))
+    end
     
 
     if ( MLData.idx < 1 ), 
@@ -2538,3 +2542,28 @@ cellfun(@set,...
         repmat({propertyName},1,numel(objectArray)),...
         repmat({propertyValue},1,numel(objectArray))...
 );
+
+
+% --- Executes on button press in MLviewVideo.
+function MLviewVideo_Callback(hObject, eventdata, handles)
+% hObject    handle to MLviewVideo (see GCBO)
+% eventdata  reserved - to be defined in a future version of MATLAB
+% handles    structure with handles and user data (see GUIDATA)
+Session = getappdata(handles.MTABrowser,'Session');
+MLData = getappdata(handles.MTABrowser,'MLData');
+[filename,filepath] = uigetfile(['*.' Session.name '.mp4'],'Open Feature Collection:',...
+                     fullfile(Session.spath, [Session.name '.mp4']),...
+                     'MultiSelect','off');
+
+MLData.avp = AVPlay(fullfile(filepath,filename));
+
+% COMPUTE video time offset
+Par = LoadPar(fullfile(Session.spath, [Session.name '.xml']));            
+lfp = LoadBinary(fullfile(Session.spath, [Session.name '.lfp']),36,Par.nChannels,4)';
+
+MLData.avp.offset = (Session.sync.data(1)-find(lfp>2500,1,'first')./1250).*40;
+clear('lfp');
+clear('Par');
+
+setappdata(handles.MTABrowser,'MLData',MLData);
+guidata(hObject,handles);

@@ -1,4 +1,4 @@
-function units = select_units(varargin)
+function [units,nq] = select_units(varargin)
 % function units = select_units(varargin)
 %
 % VARARGIN :

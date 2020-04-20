@@ -6,115 +6,261 @@
 
 MjgER2016_load_data();
 
-if ~exist('pfd','var'), [pfd,tags,eigVec,eigVar,eigScore,validDims,unitSubsets,unitIntersection,zrmMean,zrmStd] = req20180123_ver5(Trials);  end
-numComp = size(eigVec{1},2);
-pfindex = 1;
-MjgER2016_load_bhv_erpPCA_scores();
-% output:
-%    fsrcz
-%    FSrC
-%    rmaps
-clear('pfd','tags','eigVec','eigVar','eigScore','validDims','zrmMean','zrmStd',...
-      'clu','tlu','rind','D','LR','FSCFr','rsMean','rsStd','pfdShuffled','rmapsShuffledMean',...
-      'rmapsShuffled','FSrM','FSrS','fsrsMean','fsrsStd','fsrsMean','fsrsStd');
+% $$$ if ~exist('pfd','var'), [pfd,tags,eigVec,eigVar,eigScore,validDims,unitSubsets,unitIntersection,zrmMean,zrmStd] = req20180123_ver5(Trials);  end
+% $$$ numComp = size(eigVec{1},2);
+% $$$ pfindex = 1;
+% $$$ MjgER2016_load_bhv_erpPCA_scores();
+% $$$ % output:
+% $$$ %    fsrcz
+% $$$ %    FSrC
+% $$$ %    rmaps
+% $$$ clear('pfd','tags','eigVec','eigVar','eigScore','validDims','zrmMean','zrmStd',...
+% $$$       'clu','tlu','rind','D','LR','FSCFr','rsMean','rsStd','pfdShuffled','rmapsShuffledMean',...
+% $$$       'rmapsShuffled','FSrM','FSrS','fsrsMean','fsrsStd','fsrsMean','fsrsStd');
  
 
 % SET analysis parameters
 sampleRate = 250;   % Hz
-spikeWindow = 0.02; % ms [0.75,0.05,0.025,0.02,0.015]
+spikeWindow = 0.03; % ms [0.75,0.05,0.025,0.02,0.015]
 mode = 'xy'; % alt vals: 'xy'
 posteriorMaxThreshold = 0.001;
 
+% $$$ 
+% $$$ statesPfs = {'theta-groom-sit','rear&theta','hloc&theta','hpause&theta','lloc&theta',...
+% $$$           'lpause&theta'};
+% $$$ 
+% $$$ states = {'theta','rear','hloc','hpause','lloc','lpause','groom','sit','turn','walk'};%,'ripple'};
+% $$$ 
+% $$$ 
+% $$$ thetaPerPeak = resample(cast([Trial.stc{'theta-groom-sit'}],'TimeSeries'),xyz);
+% $$$ thetaPerTrgh = copy(thetaPerPeak);
+% $$$ 
+% $$$ thetaPerPeak.label = 'thetaPeak';
+% $$$ thetaPerPeak.data(phz.data<0) = 0;
+% $$$ thetaPerPeak = cast(thetaPerPeak,'TimePeriods');
+% $$$ 
+% $$$ thetaPerTrgh.label = 'thetaTrgh';
+% $$$ thetaPerTrgh.data(phz.data>0) = 0;
+% $$$ thetaPerTrgh = cast(thetaPerTrgh,'TimePeriods');
 
-statesPfs = {'theta-groom-sit','rear&theta','hloc&theta','hpause&theta','lloc&theta',...
-          'lpause&theta'};
-
-states = {'theta','rear','hloc','hpause','lloc','lpause','groom','sit'};%,'ripple'};
-
-
-thetaPerPeak = resample(cast([Trial.stc{'theta-groom-sit'}],'TimeSeries'),xyz);
-thetaPerTrgh = copy(thetaPerPeak);
-
-thetaPerPeak.label = 'thetaPeak';
-thetaPerPeak.data(phz.data<0) = 0;
-thetaPerPeak = cast(thetaPerPeak,'TimePeriods');
-
-thetaPerTrgh.label = 'thetaTrgh';
-thetaPerTrgh.data(phz.data>0) = 0;
-thetaPerTrgh = cast(thetaPerTrgh,'TimePeriods');
 
 
 %-LOAD-DATA------------------------------------------------------------------------------%
 
-% DECODE position from placefields and unit firing rate for all sessions
-cf(@(t,u)  bhv_decode(t,sampleRate,u,mode,[],[],spikeWindow,true),  Trials, units);
 
-% LOAD Trial
-trialIndex = 18;
-Trial = Trials{trialIndex}; 
-% SELECT units
-unitSubset = units{trialIndex};
-% LOAD state collection
-stc = Trial.load('stc','msnn_ppsvd_raux');
+% DECODE position from placefields and unit firing rate for all sessions
+tind = [3:5,17:23];
+
+Trials = Trials(tind);
+units = units(tind);
+
+%cf(@(t,u)  bhv_decode(t,sampleRate,[],u,mode,[],[],spikeWindow,true),  Trials(tind), units(tind));
+
+
 % LOAD subject position object
-xyz = resample(preproc_xyz(Trial,'trb'),sampleRate);
-fxyz = filter(copy(xyz),'ButFilter',3,20,'low');
+xyz = cf(@(t)  resample(preproc_xyz(t,'trb'),sampleRate), Trials);
+
+% TRIAL inds
+dtind   = cf(@(x,t)  t.*ones([size(x,1),1]), xyz,num2cell(tind));    
+dtind   = cat( 1, dtind{:}  );
+
 % COMPUTE polar coordinates of horizontal position
-mazeCenterDist = sqrt(sum(xyz(:,'hcom',[1,2]).^2,3));
-mazeCenterAng = circ_dist(atan2(xyz(:,'hcom',2),xyz(:,'hcom',1)),...
-                atan2(diff(xyz(:,{'hcom','nose'},2),1,2),diff(xyz(:,{'hcom','nose'},1),1,2)));
+dmcd = cf(@(x) sqrt(sum(x(:,'hcom',[1,2]).^2,3)),xyz);
+dmcd = cat(1, dmcd{:});
+dmca = cf(@(x) circ_dist(atan2(x(:,'hcom',2),x(:,'hcom',1)),...
+                 atan2(diff(x(:,{'hcom','nose'},2),1,2),diff(x(:,{'hcom','nose'},1),1,2))),...
+          xyz);
+dmca = cat(1, dmca{:});
+
 % LOAD lfp
-lfp = load(Trial,'lfp',sessionList(trialIndex).thetaRefGeneral);
+cf(@(t) set(t.lfp,'filename',[t.name,'.lfp']), Trials);
+
+lfp = cf(@(t,c) load(t,'lfp',c), Trials, num2cell([sessionList(tind).thetaRefGeneral]));
 % COMPUTE theta LFP phase
-phz = lfp.phase([6,12]);
-phz.data = unwrap(phz.data);
-phz.resample(xyz);    
-phz.data = mod(phz.data+pi,2*pi)-pi;
-lfp.resample(xyz);    
+dphz = cf(@(l) l.phase([6,12]), lfp);
+cf(@(p) set(p,'data',unwrap(p.data)), dphz);
+cf(@(p,x) p.resample(x), dphz,xyz);    
+dphz = cf(@(p) mod(p.data+pi,2*pi)-pi, dphz);;
+%clear('lfp');
+dphz = cat(1,dphz{:});
+dphz(ismember(dtind,[3,4,5])) = dphz(ismember(dtind,[3,4,5]))+2*0.78;
+dphz(~ismember(dtind,[3,4,5])) = dphz(~ismember(dtind,[3,4,5]))+0.78;
+dphz(dphz<0) = dphz(dphz<0)+2*pi;
+
+
+
 % COMPUTE speed
-vxy = vel(filter(copy(xyz),'ButFilter',3,2.5,'low'),{'spine_lower','hcom'},[1,2]);
-vxy.data(vxy.data<1e-3) = 1e-3;
-vxy.data = log10(vxy.data);
+% $$$ vxy = vel(filter(copy(xyz),'ButFilter',3,2.5,'low'),{'spine_lower','hcom'},[1,2]);
+% $$$ vxy.data(vxy.data<1e-3) = 1e-3;
+% $$$ vxy.data = log10(vxy.data);
 %fvxy = vel(filter(copy(xyz),'ButFilter',3,1.5,'low'),{'spine_lower','hcom'},[1,2]);
 
 
-% LOAD pitch and 
-fet = fet_HB_pitchB(Trial,sampleRate);
-% COMPUTE head motion basis
-tvec = circshift(fxyz(:,'hcom',[1,2]),-round(sampleRate.*0.05))-fxyz(:,'hcom',[1,2]);
-tvec = sq(bsxfun(@rdivide,tvec,sqrt(sum(tvec.^2,3))));
-tvec = cat(3,tvec,sq(tvec)*[0,-1;1,0]);
-hvec = fxyz(:,'head_front',[1,2])-fxyz(:,'head_back',[1,2]);
-hvec = sq(bsxfun(@rdivide,hvec,sqrt(sum(hvec.^2,3))));
-hvec = cat(3,hvec,sq(hvec)*[0,-1;1,0]);
-bvec = fxyz(:,'spine_lower',[1,2])-fxyz(:,'spine_upper',[1,2]);
-bvec = sq(bsxfun(@rdivide,bvec,sqrt(sum(bvec.^2,3))));
-bvec = cat(3,bvec,sq(bvec)*[0,-1;1,0]);
-% LOAD THETA place fields
-pft = pfs_2d_theta(Trial,unitSubset);
-% COMPUTE DRZ
-[hrz,~,hrang] = compute_hrz(Trial,unitSubset,pft,'sampleRate',sampleRate);
-[drz,~,drang] = compute_drz(Trial,unitSubset,pft,'sampleRate',sampleRate);
-[ddz,~] = compute_ddz(Trial,unitSubset,pft,'sampleRate',sampleRate);
+
+
+tRot = {0,0,0,0.17,0.17,0.17,0.17,0.17,0.17,0.17};
+%pch  = cf(@(t)    fet_HB_pitchB(t,sampleRate),                                   Trials   );
+hvec = cf(@(x)    x(:,'head_front',[1,2])-x(:,'head_back',[1,2]),                xyz      );
+hvec = cf(@(h)    sq(bsxfun(@rdivide,h,sqrt(sum(h.^2,3)))),                      hvec     );
+hvec = cf(@(h)    cat(3,h,sq(h)*[0,-1;1,0]),                                     hvec     );
+hvec = cf(@(h,r)  multiprod(h,[cos(r),-sin(r);sin(r),cos(r)],[2,3],[1,2]),       hvec, tRot);
+tvec = cf(@(x)    circshift(x(:,'hcom',[1,2]),-1)-circshift(x(:,'hcom',[1,2]),1),xyz      );
+tvec = cf(@(h)    sq(bsxfun(@rdivide,h,sqrt(sum(h.^2,3)))),                      tvec     );
+tvec = cf(@(h)    cat(3,h,sq(h)*[0,-1;1,0]),                                     tvec     );
+stc  = cf(@(t)    t.load('stc','msnn_ppsvd_raux'),                               Trials       );
+
+dstcm = cf(@(s,x)  stc2mat(s,x,states),                                           stc,xyz);
+dstcm = cat(1, dstcm{:});
+
+% HBP 
+hbp = cf(@(p) p(:,1), pch);
+hbp = cat(1,hbp{:});
 
 
 % CONVERT MTAStateCollection into a state matrix 
 stcm = stc2mat(stc,xyz,states);
 % COMPUTE unit firing rate
-ufr = load(Trial,'ufr',xyz,[],unitSubset,spikeWindow,true,'gauss');    
-unitInclusion = sum(ufr.data>0.2,2);
-% LOAD spikes
-spk = Trial.load('spk',sampleRate,'',unitSubset,'deburst');
 
-
-unitCountLeft = hrang<0&unitInclusion;
-unitCountRight = hrang>=0&unitInclusion;
+% UNIT inclusion
+duinc = cf(@(t,u,x) load(t,'ufr',x,[],u,spikeWindow,true,'gauss'), Trials,units,xyz);    
+duinc = cf(@(u) sum(u.data>0.2,2), duinc);
+duinc = cat(1,duinc{:});
 
 % DECODE position from placefields and unit firing rate
 overwrite = false;
-[posEstCom,posEstMax,posEstSax,posteriorMax] = bhv_decode(Trial,sampleRate,unitSubset,mode,[],[],spikeWindow,overwrite);
+[posEstCom,posEstMax,posEstSax,posteriorMax] = ...
+    cf(@(t,u) bhv_decode(t,sampleRate,[],u,mode,[],[],spikeWindow,overwrite), Trials,units);
 
 %-END-LOAD-DATA------------------------------------------------------------------------------%
+
+% DIAGNOSTICS of req20191104
+
+
+% HBA 
+dhba = [];
+for t = 1:numel(Trials),
+    txyz = filter(copy(xyz{t}),'ButFilter',3,30,'low');    
+    xycoor = cat(2,...
+                 txyz(:,'hcom',[1,2])-txyz(:,'bcom',[1,2]),...
+                 txyz(:,'nose',[1,2])-txyz(:,'hcom',[1,2]));
+    tht = cart2pol(xycoor(:,:,1),xycoor(:,:,2));
+    dhba = cat(1,dhba,circ_dist(tht(:,2),tht(:,1)));
+end
+
+
+% HRL 
+dhrl = cf(@(t,x) transform_origin(t,filter(copy(x),'ButFilter',4,20),'hcom','nose',{'hcom','head_right'}), ...
+          Trials, xyz);
+dhrl = cf(@(h) real(h.roll), dhrl);
+dhrl  = cat( 1, dhrl{:} );
+
+% HVL 
+% HVF 
+hrv = cf(@(t) fet_href_HXY(t,sampleRate,false,'trb',[],4,0), Trials);
+dhvf = cf(@(h) h(:,1), hrv);
+dhvf = cat(1,dhvf{:});
+dhvl = cf(@(h) h(:,2), hrv);
+dhvl = cat(1,dhvl{:});
+
+% DERROR 
+dError = cf(@(e,x,h,t) ...
+            [multiprod(e(:,[1,2])-sq(x(:,'hcom',[1,2])),h,2,[2,3]), ...
+             multiprod(e(:,[1,2])-sq(x(:,'hcom',[1,2])),t,2,[2,3])], ...
+            posEstSax, xyz, hvec, tvec);
+dError = cat(1,dError{:});
+dError(:,2) = dError(:,2)+16;
+
+posteriorMax = cat(1,posteriorMax{:});
+
+chrl = (dhrl-0.26*double(~ismember(dtind,[3,4,5])));
+chba = -(dhba+0.2-0.4*double(~ismember(dtind,[3,4,5])));
+
+%chvang = dhvang;
+chvl = dhvl;
+cError = dError;
+a = chba;
+chba  (a<0) = -chba    (a<0);
+cError(a<0,2) = -cError(a<0,2);
+cError(a<0,4) = -cError(a<0,4);
+chvl  (a<0) = -chvl    (a<0);
+chrl  (a<0) = -chrl    (a<0);
+%chvang  ( a<0 ) = -chvang   ( a<0 );
+
+
+hbaBinEdges = linspace(0,1.2,8);;
+hbaBinCenters = (hbaBinEdges(2:end)+hbaBinEdges(1:end-1))./2;
+hbaBinInd = discretize(chba,hbaBinEdges);
+
+hvlBinEdges = [-60,-10,-2,2,10,60];
+hvlBinCenters = (hvlBinEdges(2:end)+hvlBinEdges(1:end-1))./2;
+hvlBinInd = discretize(chvl,hvlBinEdges);
+
+hvfBinEdges = [-20,-10,-2,2,10,20,40,80];
+hvfBinCenters = (hvfBinEdges(2:end)+hvfBinEdges(1:end-1))./2;
+hvfBinInd = discretize(dhvf,hvfBinEdges);
+
+hrlBinEdges = [-0.6,-0.3,-0.1,0.1,0.3,0.6];
+hrlBinCenters = (hrlBinEdges(2:end)+hrlBinEdges(1:end-1))./2;
+hrlBinInd = discretize(chrl,hrlBinEdges);
+
+
+phzBinEdges = linspace(0,2*pi,26);
+phzBinCenters = (phzBinEdges(2:end)+phzBinEdges(1:end-1))./2;
+phzBinInd = discretize(dphz,phzBinEdges);
+
+decBinEdges = linspace(-500,500,100);
+
+ind = duinc>=1&duinc<=6 ...
+      & posteriorMax>0.002 ...
+      & dstcm(:,1)         ...   
+      & any(dstcm(:,[9]),2) ...
+      & dmcd < thresholds.mazeCenterDist;
+%      & (dmcd < thresholds.mazeCenterDist  |  abs(dmca) < thresholds.mazeCenterAng);
+
+txhv = hbaBinInd(ind);
+tyhv = hvlBinInd(ind);
+%tyhv = hrlBinInd(ind);
+tphz = dphz(ind);
+tpbi = phzBinInd(ind);
+tdec = cError(ind,:);
+
+figure();
+for x = 1:numel(hbaBinCenters),
+    for y = 1:numel(hvlBinCenters),
+        dind = txhv==x & tyhv==y;    
+        subplot2(numel(hvlBinCenters),numel(hbaBinCenters),y,x);
+        hist2([tdec(dind,2),tphz(dind)],decBinEdges,phzBinEdges);
+        for p = 1:numel(phzBinCenters),
+            mj(p,x,y) = median(tdec(dind&tpbi==p,2),'omitnan');
+        end
+        
+    end
+end
+ForAllSubplots('xlim([-300,300]);');
+ForAllSubplots('Lines(0,[],''k'');');
+
+figure,
+for p = 1:25,
+    subplot(1,25,p);
+    imagesc(sq(mj(p,:,:))')
+    axis('xy');
+    caxis([-100,100]);
+end
+
+
+txhv = hbaBinInd(ind);
+tyhv = hvfBinInd(ind);
+tphz = dphz(ind);
+tdec = cError(ind,:);
+figure();
+for x = 1:numel(hbaBinCenters),
+    for y = 1:numel(hvfBinCenters),
+        dind = txhv==x&tyhv==y;    
+        subplot2(numel(hvfBinCenters),numel(hbaBinCenters),y,x);
+        hist2([tdec(dind,1),tphz(dind)], decBinEdges,phzBinEdges);
+    end
+end
+ForAllSubplots('xlim([-300,300]);');
 
 
 % START SECTION ------------------------------------------------------------------------------------
@@ -603,7 +749,7 @@ sind =     stcm(:,1)   ...
          & ~stcm(:,7);            
 sum(cind&sind)
 ind = cind&sind&phz.data>-pi&phz.data<0;
-ind(ind) = 
+
 
 %decError = multiprod(posEstCom(ind,[1,2])-sq(xyz(ind,'hcom',[1,2])),tvec(ind,:,:),2,[2,3]);
 decError = multiprod(posEstCom(ind,[1,2])-sq(xyz(ind,'hcom',[1,2])),hvec(ind,:,:),2,[2,3]);    

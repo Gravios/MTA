@@ -99,7 +99,7 @@ if Spk.sampleRate~=1
     Res = ceil(Res);
 end
 
-[Res, ind] = SelectPeriods(Res,ceil(Session.sync([1,end])*Spk.sampleRate+1),'d',1,1);
+[Res, ind] = SelectPeriods(Res,ceil(Session.sync([1,end])*Spk.sampleRate+1*double(Spk.sampleRate~=1)),'d',1,1);
 Clu = Clu(ind);
 
 % SELECT specific states

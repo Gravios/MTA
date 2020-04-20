@@ -7,13 +7,13 @@
 # matlab code - expected location: /storage/code/matlab
 # data        - expected location: /storage/$USER/data
 #
-# -s : matlab startup path
+# -s : matlab startup path, location of script: startup.m
+# -r : matlab share path, location of the MTA toobox, where labbox and other dependencies reside
+#         /storage/share/matlab/
 # -u : username
 # -d : data storage root (path)
-# -m : 
-MATLAB_SHARE_PATH=''
-MATLAB_STARTUP_PATH=''
-
+# -m : MTA code path (by default assumes the matlab share path)
+#
 # USER is your user name
 #
 # STORAGE is the location of your user DATA folder
@@ -21,7 +21,8 @@ MATLAB_STARTUP_PATH=''
 #         NOT  /home
 #
 # example
-#     configure -u gravio -s storage2 -m /storage/gravio/code/matlab
+#     configure -u gravio -d storage2 -m /storage/gravio/code/matlab
+#     configure -u 
 # 
 
 USERNAME=''

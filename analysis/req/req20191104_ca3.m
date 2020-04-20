@@ -500,7 +500,7 @@ var = 'hrvf';
 hrvfBinEdges = [-30,-10,-4,-1,1,4,7,10,15,22,30,45,80];
 hrvfBinCenters = mean([hrvfBinEdges(2:end); hrvfBinEdges(1:end-1)]);
 edx = numel(hrvfBinCenters);
-edy = numel(hrvfBinCenters);
+%edy = numel(hrvfBinCenters);
 hrvfBinInd = discretize(circshift(-dfhrvf,0),hrvfBinEdges);
 varBC = hrvfBinCenters;
 thrvfBinInd = hrvfBinInd(ind);
@@ -792,10 +792,10 @@ ind =   logical(dstcm(:,1))                             ...
         & dhdist<320; % ...
 
 var = 'hbang';
-hbangBinEdges = linspace(-1.2,1.2,8);
+hbangBinEdges = linspace(-1.2,1.2,10);
 hbangBinCenters = mean([hbangBinEdges(2:end); hbangBinEdges(1:end-1)]);
 edx = numel(hbangBinCenters);
-hbangBinInd = discretize(-(dhbang+0.2-0.4*double(~ismember(dtind,[3,4,5]))),hbangBinEdges);
+hbangBinInd = discretize(-(dhbang+0.2-0.45*double(~ismember(dtind,[3,4,5]))),hbangBinEdges);
 thbangBinInd = hbangBinInd(ind);
 
 var = 'hrvl';
@@ -807,21 +807,12 @@ hrvlBinInd = discretize(circshift(dfhrvl,0),hrvlBinEdges);
 varBC = hrvlBinCenters;
 thrvlBinInd = hrvlBinInd(ind);
 
-var = 'hrvf';
-hrvlBinEdges = [-5,5,10,15,20,30,45,60,80];
-hrvlBinCenters = mean([hrvlBinEdges(2:end); hrvlBinEdges(1:end-1)]);
-edy = numel(hrvlBinCenters);
-hrvlBinInd = discretize(circshift(dfhrvf,0),hrvlBinEdges);
-varBC = hrvlBinCenters;
-thrvlBinInd = hrvlBinInd(ind);
-
-
 
 tdphz = dphz(ind);
 
 
 out =  zeros([numel(ferrorBinCenters{e}),numel(phzBinCenters),edx, edy, 2]);
-for e = 1:4;
+for e = 1:2;
     tferr = ferr{e}(ind);
     figure();
     sax = reshape(tight_subplot(edy,edx,0.001,0,0),[edx,edy])';
@@ -2131,7 +2122,6 @@ ind =   logical(dstcm(:,1))                             ...
 figure()
 hist(dhz(ind&~ismember(dtind,[3,4,5])),100);
 
-chzdza = -circ_dist(dhzdza,pi/2);
 
 cblen = dblen+20*double(ismember(dtind,[3,4,5]));
 chroll = (dhroll-0.26*double(~ismember(dtind,[3,4,5])));
@@ -2139,7 +2129,6 @@ chbang = -(dhbang+0.2-0.4*double(~ismember(dtind,[3,4,5])));
 chvang = dhvang;
 cfhrvl = dfhrvl;
 lfErr = ferr([1:2]);
-lfErr = {derrlns,derrlts};
 v = cfhrvl;
 a = chbang;
 chbang  ( a<0 ) = -chbang   ( a<0 );
@@ -2147,7 +2136,6 @@ lfErr{2}( a<0 ) = -lfErr{2} ( a<0 );
 cfhrvl  ( a<0 ) = -cfhrvl   ( a<0 );
 chroll ( a<0 ) = -chroll  ( a<0 );
 chvang  ( a<0 ) = -chvang   ( a<0 );
-chzdza  ( a<0 ) = -chzdza   ( a<0 );
 % $$$ cfhrvl( a<0 & v>0) = -cfhrvl( a<0 & v>0);
 % $$$ cfhrvl( a<0 & v<0) = -cfhrvl( a<0 & v<0);
 clear('a');
@@ -2272,22 +2260,6 @@ vbc{end+1} = mean([vbe{end}(2:end); vbe{end}(1:end-1)]);
 vun{end+1} = 'cm/s';
 
 
-vlb{9} = 'hda';
-vdc{9} = 'hrz-drz angle';
-vnm{9} = 'chzdza';
-switch nbins
-  case 3,  vbe{9} = [-pi,-pi/3,pi/3,pi];
-  case 5,  vbe{9} = linspace(-pi,pi,6);
-  case 7,  vbe{9} = linspace(-pi,pi,8);
-end
-vbc{9} = mean([vbe{end}(2:end); vbe{end}(1:end-1)]);
-vun{9} = 'rad';
-
-
-
-
-
-
 stgrps = {[9:11],4,6,3,5,9,10,11};
 stlbls = {'all','HP','LP','HW','LW','T','W','P'};
 nvars = numel(vlb);
@@ -2321,7 +2293,7 @@ else
                     % compute JPDF(FERROR, PHZ | HBA, HRVL)
                     for x = 1:xc,
                         for y = 1:yc,
-+                            disp(['s: ',num2str(s),'   g: ',num2str(g),'   h: ',num2str(h),'   x: ',num2str(x),'  y: ',num2str(y),'  e: ',num2str(e)]);
+                            disp(['s: ',num2str(s),'   g: ',num2str(g),'   h: ',num2str(h),'   x: ',num2str(x),'  y: ',num2str(y),'  e: ',num2str(e)]);
                             indb = xi==x & yi==y;
                             sCnt(x,y,e,g,h,s) = sum(indb);
                             sJpdf(:,:,x,y,e,g,h,s) = hist2([tferr(indb),tdphz(indb)],...
@@ -2374,7 +2346,7 @@ else
          );
 end
 
-%%%>>>
+
 
 pbc = phzBinCenters+2*pi*double(phzBinCenters<0);
 
@@ -2390,17 +2362,16 @@ pbc = phzBinCenters+2*pi*double(phzBinCenters<0);
 
 
 
-s = 6;
+s = 1;
 e = 2;
-g =4;
-h = 5;
+g = 1;
+h = 4;
 figure();
 sax = reshape(tight_subplot(5,5,[0.01,0.01],0.1,0.1)',[5,5]);
 for x = 1:size(sJpdf,3);
     for y = 1:size(sJpdf,4);
         axes(sax(x,6-y));
         imagesc(ferrorBinCenters{1},pbc(phzOrder),imgaussfilt(sq(sJpdf(:,phzOrder,x,y,e,g,h,s))',[0.1,3]));
-        %imagesc(ferrorBinCenters{1},pbc(phzOrder),sq(sJpdf(:,phzOrder,x,y,e,g,h,s))');        
         axis('xy');
         if e==1,
             xlim([-200,300]);
@@ -2409,18 +2380,11 @@ for x = 1:size(sJpdf,3);
         end
         Lines(0,[],'k');
         Lines(100,[],'k');
-        Lines(-100,[],'k');
         sax(x,6-y).XTick = [];
-        sax(x,6-y).YTick = [];      
-        if x ==1 && y == 3,
-            ylabel(vlb{h});
-        end
-        if x == 3 && y == 1,
-            xlabel(vlb{g});
-        end
+        sax(x,6-y).YTick = [];        
     end
 end
-colormap('jet');
+
 
 
 
@@ -2443,8 +2407,8 @@ for g = 1:nvars,
 end
 
 %%%<<< DISPLAY the jdpf of space and median EPP F and L
-g = 1;
-h = 4;
+g = 5;
+h = 6;
 figure();
 k = 0;
 for s = [1:8];
@@ -2464,10 +2428,8 @@ for s = [1:8];
     title(stlbls{s});
 end
 
-
-
 k = 0;
-for s = [7];
+for s = [1:8];
     %for s = [1,6,7,8];
     k = k+1;
 hfig = figure();
@@ -2497,11 +2459,9 @@ for p = 1:8,
     end
 end
 end
-
 %%%>>>
 
-
-p = 2;
+p =2;
 figure,imagesc(sqrt(sum(sq(diff(smJpdf(2,phzOrder([2,6]),:,:,:,g,h,s,:),1,2)).^2,3))'.*nmask');
 axis('xy');
 colormap('jet');
@@ -2512,7 +2472,7 @@ caxis([0,100])
 ind = logical(dstcm(:,1))                             ...
       & duincI                                        ...
       & dpostI                                        ...        
-      & dhdist<320;% & chbang <0.25;
+      & dhdist<380;% & chbang <0.25;
 
 
 tp = ThreshCross(circshift(dstcm(:,11),64)&dstcm(:,9),0.5,32);
@@ -2539,9 +2499,9 @@ tt = 4000;
 %tt = 4480;
 %tt = 3760;
 aind = {};
-aind{1} = asegs(tt,:) > 0.0 & asegs(tt,:) < 0.4;% & pbt & mean(abs(vsegs(tt-100:tt+100,:)))>10;
-aind{2} = asegs(tf,:) > 0.4 & asegs(tf,:) < 0.8;% & pbt & mean(abs(vsegs(tt-100:tt+100,:)))>10;
-aind{3} = asegs(tt,:) > 0.8 & asegs(tt,:) < 1.4;% & pbt & vsegs(tf,:)<0;
+aind{1} = asegs(tt,:) > 0.0 & asegs(tt,:) < 0.4 & pbt & mean(abs(vsegs(tt-100:tt+100,:)))>10;
+aind{2} = asegs(tf,:) > 0.4 & asegs(tf,:) < 0.8 & pbt & mean(abs(vsegs(tt-100:tt+100,:)))>10;
+aind{3} = asegs(tt,:) > 0.8 & asegs(tt,:) < 1.4 & pbt & vsegs(tf,:)<0;
 cmap = cool(6);
 figure();
 for a = 1:3,
@@ -2757,56 +2717,22 @@ vbc = {};
 vun = {};
 %vbi: see below
 
-
-%%%<<< HBA x HVF
-% 1
-vlb{end+1} = 'hba';
-vdc{end+1} = 'head-body angle';
-vnm{end+1} = 'chbang';
-vbe{end+1} = [0,0.4,0.8,1.2];
-vbc{end+1} = mean([vbe{end}(2:end); vbe{end}(1:end-1)]);
-vun{end+1} = 'rad';
-%2
+% $$$ % 1
+% $$$ vlb{end+1} = 'hba';
+% $$$ vdc{end+1} = 'head-body angle';
+% $$$ vnm{end+1} = 'chbang';
+% $$$ vbe{end+1} = [0,0.4,0.8,1.2];
+% $$$ vbc{end+1} = mean([vbe{end}(2:end); vbe{end}(1:end-1)]);
+% $$$ vun{end+1} = 'rad';
+%3
 vlb{end+1} = 'hvf';
 vdc{end+1} = 'forward head speed';
 vnm{end+1} = 'dfhrvf';
-%vbe{end+1} = [-10,10,30,50,80];
-%vbe{end+1} = [-4,4,12,18,24,30,36,42,48,54,60,66,72,78];
-%vbe{end+1} = [-4,4,10,20,30,40,50,60,70,80];
-vbe{end+1} = [-4,4,10,25,40,55,70,85];
+vbe{end+1} = [-10,10,30,50,80];
 vbc{end+1} = mean([vbe{end}(2:end); vbe{end}(1:end-1)]);
 vun{end+1} = 'cm/s';
-%%%>>>
-
-%%%<<< HBA x HVF
-% 1
-vlb{end+1} = 'hba';
-vdc{end+1} = 'head-body angle';
-vnm{end+1} = 'chbang';
-vbe{end+1} = [0,0.4,0.8,1.2];
-vbc{end+1} = mean([vbe{end}(2:end); vbe{end}(1:end-1)]);
-vun{end+1} = 'rad';
-%2
-vlb{end+1} = 'hvl';
-vdc{end+1} = 'lateral head speed';
-vnm{end+1} = 'dfhrvl';
-%vbe{end+1} = [-10,10,30,50,80];
-%vbe{end+1} = [-4,4,12,18,24,30,36,42,48,54,60,66,72,78];
-%vbe{end+1} = [-4,4,10,20,30,40,50,60,70,80];
-vbe{end+1} = [-60,-40,-25,-10,-4,4,10,25,40,60];
-vbc{end+1} = mean([vbe{end}(2:end); vbe{end}(1:end-1)]);
-vun{end+1} = 'cm/s';
-%%%>>>
 
 
-%%%<<< HBA x HBD
-% 1
-vlb{end+1} = 'hba';
-vdc{end+1} = 'head-body angle';
-vnm{end+1} = 'chbang';
-vbe{end+1} = [0,0.4,0.8,1.2];
-vbc{end+1} = mean([vbe{end}(2:end); vbe{end}(1:end-1)]);
-vun{end+1} = 'rad';
 % 2
 vlb{end+1} = 'hbd';
 vdc{end+1} = 'head-body distance';
@@ -2814,16 +2740,15 @@ vnm{end+1} = 'cblen';
 vbe{end+1} = linspace(110,160,9);
 vbc{end+1} = mean([vbe{end}(2:end); vbe{end}(1:end-1)]);
 vun{end+1} = 'mm';
-%%%>>>
 
 
 
-stgrps = {9:11,2,9,10,11};
-stlbls = {'ALL','Rear','Turn','Walk','Pause'};
+
+stgrps = {9:11,9,10,11};
+stlbls = {'ALL','Turn','Walk','Pause'};
 nIter = 100;
-shifts = 0:8:2^8;
-tag = DataHash({vlb,stgrps,nbins,nvars,stlbls});
-filepath = fullfile(MTA_PROJECT_PATH,'analysis',['MjgER2016_req20191104_jpdf_hbaCorrected_2d_ID_',tag,'.mat']);
+% $$$ tag = DataHash({vlb,stgrps,nbins,nvars,stlbls});
+% $$$ filepath = fullfile(MTA_PROJECT_PATH,'analysis',['MjgER2016_req20191104_jpdf_hbaCorrected_2d_ID_',tag,'.mat']);
 
 if exist(filepath,'file'),
     load(filepath);
@@ -2833,12 +2758,12 @@ else
     sJpdf =  zeros([numel(ferrorBinCenters{1}),numel(phzBinCenters),numel(vbc{1}),numel(vbc{2}), 2, numel(stgrps),nIter]);
     smJpdf = zeros([3,numel(phzBinCenters),numel(vbc{1}),numel(vbc{2}), 2,numel(stgrps),nIter]);
     sCnt =  zeros([numel(vbc{1}),numel(vbc{2}), 2,numel(stgrps),nIter]);
-    for s = 4%:numel(stgrps),
+    for s = 1:numel(stgrps),
         ind = logical(dstcm(:,1))                             ...
               & any(logical(dstcm(:,stgrps{s})),2)            ...
               & duincI                                        ...
               & dpostI                                        ...        
-              & dhdist<320;% & chbang<0.4;
+              & dhdist<380 & chbang<0.4;
         for v = 1:numel(vbe),
             vbi{v} = discretize(eval([vnm{v},'(ind)']),vbe{v});
         end
@@ -2872,7 +2797,7 @@ else
         end
     end
 
-    for s = 4%:numel(stgrps)
+    for s = 1:numel(stgrps)
         for x = 1:xc,
             tic
             for y = 1:yc
@@ -2893,7 +2818,7 @@ else
         end
     end
 
-    save(filepath,...
+    save(fullfile(MTA_PROJECT_PATH,'analysis',['MjgER2016_req20191104_jpdf_hbaCorrected_2d_ID_',tag,'.mat']),...
          'smJpdf',                                                                           ...
          'sJpdf',                                                                            ...
          'sCnt',                                                                             ...
@@ -2910,11 +2835,8 @@ else
 end
 
 
-
-
 k = 0;
-%for s = [1:5];
-for s = [4];
+for s = [1:4];
     %for s = [1,6,7,8];
     k = k+1;
 hfig = figure();
@@ -2927,12 +2849,12 @@ for p = 1:8,
         nmask(~nmask) = nan;
         %nmask = 1;
         if e==1,
-            ca = [-120,200];
+            ca = [-60,120];
         else
             ca = [-60, 60];
         end
 % $$$         imagescnan({vbc{grps{g}(1)},vbc{grps{g}(2)},sq(smJpdf(2,phzOrder(p),:,:,e,g,s,:))'.*nmask'},...
-% $$$                    ca,'linear',false,'colorMap',@jet);**
+% $$$                    ca,'linear',false,'colorMap',@jet);
 % $$$         axis('xy');
         imagesc(vbc{1},vbc{2},sq(median(smJpdf(2,phzOrder(p),:,:,e,s,:),ndims(smJpdf)))'.*nmask');
         colormap('jet');
@@ -2946,11 +2868,11 @@ for p = 1:8,
 end
 end
 
-s = 4;
-x = 1;
+s =3;
+x = 2;
 figure();
 for y = 1:numel(vbc{2});
-    subplot2(numel(vbc{2}),2,y,1);
+    subplot(numel(vbc{2}),1,y);
     imagesc(ferrorBinCenters{1},...
             phzBinCenters(phzOrder)+2*pi*double(phzBinCenters(phzOrder)<0), ...
             imgaussfilt(sq(mean(sJpdf(:,phzOrder,x,y,1,s,:),ndims(sJpdf))),[2,0.1])');
@@ -2958,16 +2880,7 @@ for y = 1:numel(vbc{2});
     Lines(0,[],'k');
     Lines([],pi,'k');
     xlim([-250,350]);
-    subplot2(numel(vbc{2}),2,y,2);
-    imagesc(ferrorBinCenters{1},...
-            phzBinCenters(phzOrder)+2*pi*double(phzBinCenters(phzOrder)<0), ...
-            imgaussfilt(sq(mean(sJpdf(:,phzOrder,x,y,2,s,:),ndims(sJpdf))),[2,0.1])');
-    axis('xy');
-    Lines(0,[],'k');
-    Lines([],pi,'k');
-    xlim([-250,250]);
 end
-colormap('jet');
 
 e = 1;
 x = 2;
@@ -3007,7 +2920,7 @@ g = 1;
 h = 2;
 figure();
 k = 0;
-for s = [1:5]
+for s = [1:4]
     %for s = [1,6,7,8];
     k = k +1;
     subplot(1,4,k);
