@@ -17,12 +17,15 @@ vun = {};
 %vbi: see below
 
 
-%%%<<< HBA x HVF
+%%%<<< Variable Setup
 % 1
 vlb{end+1} = 'hba';
 vdc{end+1} = 'head-body angle';
 vnm{end+1} = 'chbang';
-vbe{end+1} = [-1.2,-0.8,-0.4,0.4,0.8,1.2];
+%vbe{end+1} = [-1.2,-0.8,-0.4,0.4,0.8,1.2];
+%vbe{end+1} = [-1.2,-0.8,-0.4,0.4,0.8,1.2];
+vbe{end+1} = [-1.2,-0.3,0.3,1.2];
+%vbe{end+1} = [-1.2,-0.6,-0.2,0.2,0.6,1.2];
 vbc{end+1} = mean([vbe{end}(2:end); vbe{end}(1:end-1)]);
 vun{end+1} = 'rad';
 %2
@@ -33,16 +36,17 @@ vnm{end+1} = 'dfhrvl';
 %vbe{end+1} = [-4,4,12,18,24,30,36,42,48,54,60,66,72,78];
 %vbe{end+1} = [-4,4,10,20,30,40,50,60,70,80];
 %vbe{end+1} = [-4,4,10,25,40,55,70,85];
-vbe{end+1} = [-60,-4,4,60];
+vbe{end+1} = [-80,-5,5,80];
 vbc{end+1} = mean([vbe{end}(2:end); vbe{end}(1:end-1)]);
 vun{end+1} = 'cm/s';
 %%%>>>
 
-stgrps = {9:11}
+%%%<<< computations
+stgrps = {9:11};
 stlbls = {'ALL'};
-nIter = 20;
+nIter = 100;
 shifts = 0:8:2^8;
-tag = DataHash({vlb,stgrps,nbins,nvars,stlbls});
+tag = DataHash({vlb,vbe,stgrps,stlbls});
 filepath = fullfile(MTA_PROJECT_PATH,'analysis',['MjgER2016_req20191104_jpdf_2d_PS_',tag,'.mat']);
 
 if exist(filepath,'file'),
@@ -129,18 +133,19 @@ else
          '-v7.3'                                                                             ...
          );
 end
+%%%>>>
 
 
 
 
-
-
+%%%<<< Summary Figures
 xc = numel(vbc{1});
 yc = numel(vbc{2});
+el = 'FL';
+elbl = {'Forward','Lateral'};
 hfig = figure();
 for s = 1:10;
     for e = 1:2;
-        el = 'FL';
 
         clf(hfig)
         hfig.Units = 'Centimeters';
@@ -160,7 +165,7 @@ for s = 1:10;
                     xlabel(vlb{1});
                 end        
                 if round(xc/2)==x & y==1;
-                    title({Trials{s}.filebase,[vdc{1},' vs ',vdc{2}],'Lateral Egocentric Phase Preccession'});
+                    title({Trials{s}.filebase,[vdc{1},' vs ',vdc{2}],[elbl{e} ' Egocentric Phase Preccession']});
                 end        
                 if x==1 & round(yc/2)==y;
                     ylabel(vlb{2});
@@ -220,6 +225,87 @@ for s = 1:10;
 end
 
 %print(hfig,'-depsc',[filePath,'.eps']);
+%%%>>>
+
+figure();
+x = 3;y = 2;
+plot(sq(mean(smJpdf(2,phzOrder(2),x,y,1,:,:),ndims(smJpdf))),...
+     sq(mean(smJpdf(2,phzOrder(2),x,y,2,:,:),ndims(smJpdf))),...
+     '.');
+xlim([-200,200])
+ylim([-200,200])
+
+figure();
+hold('on');
+x = 1;y = 2;
+plot(sq(mean(smJpdf(2,phzOrder(5),x,y,1,:,:),ndims(smJpdf))),...
+     sq(mean(smJpdf(2,phzOrder(5),x,y,2,:,:),ndims(smJpdf))),...
+     '.k','MarkerSize',20);
+plot(sq(mean(smJpdf(2,phzOrder(2),x,y,1,:,:),ndims(smJpdf))),...
+     sq(mean(smJpdf(2,phzOrder(2),x,y,2,:,:),ndims(smJpdf))),...
+     '.r','MarkerSize',20);
+
+xlim([-50,200])
+ylim([-100,100])
+
+
+
+figure();
+cmap = jet(size(smJpdf,3));
+cmap = ['bgr']';
+for y = 1:size(smJpdf,4),
+    subplot(1,3,y);
+    hold('on');
+    for x = 1:size(smJpdf,3),
+        for s = 1:7,
+            %if mean(sCnt(x,y,e,s,:),ndims(sCnt))<250,
+            %    continue;
+            %end
+            
+            plot(sq(mean(smJpdf(2,phzOrder([2,6]),x,y,2,s,:),ndims(smJpdf))),...
+                 sq(mean(smJpdf(2,phzOrder([2,6]),x,y,1,s,:),ndims(smJpdf)))+8,...
+                 'Color',cmap(x,:),'LineWidth',2);
+            plot(sq(mean(smJpdf(2,phzOrder([6]),x,y,2,s,:),ndims(smJpdf))),...
+                 sq(mean(smJpdf(2,phzOrder([6]),x,y,1,s,:),ndims(smJpdf)))+8,...
+                 '.','Color','k','MarkerSize',10);
+            
+        end
+    end
+    ylim([-100,150]);
+    xlim([-100,100]);
+    daspect([1,1,1]);
+    grid('on');
+end
+
+
+
+
+
+figure();
+cmap = cool(10);
+%cmap = ['rbg']';
+for y = 1:3,
+    subplot(3,1,y);
+    hold('on');
+    for x = 1:5;    
+        for s = 1:10; 
+            plot(sq(mean(smJpdf(2,phzOrder([2]),:,y,1,s,:),ndims(smJpdf))),...
+                 sq(mean(smJpdf(2,phzOrder([2]),:,y,2,s,:),ndims(smJpdf)))+8,...
+                 'Color',cmap(s,:),'LineWidth',2);
+        end
+    end
+    xlim([-100,200])
+ylim([-150,150])
+
+end
+
+plot(sq(mean(smJpdf(2,phzOrder(2),x,y,1,s,:),ndims(smJpdf))),...
+     sq(mean(smJpdf(2,phzOrder(2),x,y,2,s,:),ndims(smJpdf))),...
+     '.r','MarkerSize',20);
+
+xlim([-50,200])
+ylim([-100,100])
+
 
 
 % DEMONSTRATED the EPP dependence upon HBA and HVL

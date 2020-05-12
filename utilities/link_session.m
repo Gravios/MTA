@@ -1,5 +1,5 @@
 function link_session(sessionName,Dpaths)
-%function linkSession(sessionName,xyzPath,nlxPath)
+%function linkSession(sessionName,Dpaths)
 %
 %  Creates Session folder in the current MTA project
 %  and creates symlinks pointed to folders containing

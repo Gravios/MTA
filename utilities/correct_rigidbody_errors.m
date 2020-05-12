@@ -221,7 +221,7 @@ hold('on');
 c = jet(numel(errorIds));
 emptyErrIds = [];
 for u = errorIds'
-    if ~isempty(efet(eid==u,1)),
+    if sum(efet(eid==u,1))>1,
         scatter(efet(eid==u,1),efet(eid==u,5),4,c(u,:));
         eidCount(u) = sum(eid==u);
     else
