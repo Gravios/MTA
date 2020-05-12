@@ -17,7 +17,9 @@ function [xyz,ss] = preproc_xyz(Trial,varargin)
 
 
 [procOpts,sampleRate,overwrite] = DefaultArgs(varargin,{{},[],false},true);
-Trial = MTATrial.validate(Trial);
+if ischar(Trial);
+    Trial = MTATrial.validate(Trial);
+end
 
 % DELBLOCK if version>=3,
 if isempty(Trial.fet),
@@ -123,7 +125,9 @@ while ~isempty(procOpts)
             xyz.name = 'spline_spine_head_eqi_smooth';
             xyz.updateFilename(Trial);      
             xyz.save;
-            Trial = MTATrial.validate(Trial.filebase);
+            if isa(Trial,'MTATrial'),
+                Trial = MTATrial.validate(Trial.filebase);
+            end
             xyz = Trial.load('xyz','sehs');
         end
         
@@ -226,8 +230,7 @@ while ~isempty(procOpts)
             xyz.key  = 'h';
             xyz.name = 'spline_spine_head_eqd';
             xyz.updateFilename(Trial);      
-            xyz.save 
-            Trial = MTATrial.validate(Trial.filebase);
+            xyz.save; 
             xyz = Trial.load('xyz','seh');
         end
         
