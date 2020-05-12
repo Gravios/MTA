@@ -55,6 +55,8 @@ function xyz = ERCOR_fillgaps_RidgidBody(Session,varargin)
 %     
 
 % DEFARGS ------------------------------------------------------------------------------------------
+MIN_GRP_SZ = 10;
+STATUS_TAG = '[STATUS] MTA:utilities:ERCOR_fillgaps_RidgidBody:  ';
 defArgs = struct('mode',      'MANUAL',                                                            ...
                  'method',    'BEST_SWAP_PERMUTATION',                                           ...
                  'goodIndicies', [],                                                             ...
@@ -81,7 +83,7 @@ lastPiece = (numChunks*bufferSize+1):xyz.size(1);
 if isempty(goodIndicies),
 % SELECT periods without errors if no good index is specified
     pfig = PlotSessionErrors(Session);
-    disp(['Please select a point on the x-axis with the data cursor ' ...
+    disp(['[INFO] Please select a point on the x-axis with the data cursor ' ...
           'and then press enter']);
     ylm = ylim;
     bflag = false;
@@ -104,7 +106,7 @@ if isempty(goodIndicies),
     end
     goodIndicies = unique(goodIndicies);
     
-    disp(['Number of indicies selected: = ' num2str(numel(goodIndicies))])
+    disp([STATUS_TAG, 'Number of indicies selected: ' num2str(numel(goodIndicies))]);
     delete(pfig);
 end
 % END S1 -------------------------------------------------------------------------------------------
@@ -191,10 +193,10 @@ switch mode
     clf(hfig)
     plot(dtgmori)
     disp('******************************');
-    disp('* Select each error group:   *')
-    disp('*   add point:   left click  *')
-    disp('*   close group: right click *')
-    disp('*   quit:        escape key  *')
+    disp('* Select each error group:   *');
+    disp('*   add point:   left click  *');
+    disp('*   close group: right click *');
+    disp('*   quit:        escape key  *');
     disp('******************************'); 
     
     eid = ClusterPP(hfig);
@@ -227,9 +229,9 @@ end
 errorIds(ismember(errorIds,emptyErrIds)) = [];
 
 
-disp('')
-disp(['Number of error groups: ' num2str(numel(errorIds))]);
-disp('')
+disp('');
+disp([STATUS_TAG, 'Error group Count: ', num2str(numel(errorIds))]);
+disp('');
 
 for i = errorIds',
     switch method
@@ -239,6 +241,10 @@ for i = errorIds',
         tectry = zeros([eidCount(i),nperm]);
         bids = eid==i;    
         % Compute residual for each marker swap permutation
+        if sum(bids) < MIN_GRP_SZ,
+            continue
+        end
+        
         k = 1;
         for c = bperm',
             trxyz.data = rxyz(bids,c,:);
@@ -260,8 +266,8 @@ for i = errorIds',
         %%check this bpVal since it changes with each model.
 
         if bpVal < MarkerSwapErrorThreshold,
-            disp('')
-            disp(['Error Group: ' num2str(i) ' , bpVal = ' num2str(bpVal)])
+            disp('');
+            disp([STATUS_TAG,'Error Group Id: ', num2str(i), ' , MarkerSwapError: ' num2str(bpVal)]);
             smar = subsref(rigidBody.ml,substruct('()',{bperm(bpInd,:)}));
             [~,rind] = sort(xyz.model.gmi(rigidBody.ml));
             marInd = xyz.model.gmi(smar(rind));
@@ -269,10 +275,10 @@ for i = errorIds',
             xyz.data(eid==i,corInd,:) = xyz(eid==i,marInd,:);
             xyz.save;
         else
-            disp('')
-            disp(['Error Group: ' num2str(i) ' , bpVal = ' num2str(bpVal)])
-            %disp('No options, ignoring error')
-            disp(['Ridgid body intermarker distance optimization'])
+            disp('');
+            disp([STATUS_TAG, 'Error Group Id: ' num2str(i) ' , bpVal = ' num2str(bpVal)]);
+            %disp('No options, ignoring error');
+            disp([STATUS_TAG,'Ridgid body intermarker distance optimization']);
         end
         
       case 'RIGIDBODY_RECONSTRUCTION'
