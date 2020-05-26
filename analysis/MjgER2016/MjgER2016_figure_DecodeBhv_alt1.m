@@ -1,3 +1,5 @@
+%%%<<<<Replaced missing fold top mark>
+
 % MjgER2016_figure6
 %
 % DECODING position and behavior based on spatio-behavioral ratemaps
@@ -3051,4 +3053,4 @@ text(sax(end-1).Position(1)+sax(end-1).Position(3)/2,               ...
 
 %%%>>>
 
-%%%>>>
+%%%>>>%%%>>>

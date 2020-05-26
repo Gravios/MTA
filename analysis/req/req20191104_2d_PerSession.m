@@ -2,9 +2,17 @@
 MTA_PROJECT_REPORT_PATH = '/storage/share/Projects/BehaviorPlaceCode/';
 figurePath = fullfile(MTA_PROJECT_REPORT_PATH,'egocentricPP','bySession');
 create_directory(figurePath);
+phzOrder = [5:8,1:4];
 
+figure();
+    subplot(121);hist(dhbang((logical(dstcm(:,5))|logical(dstcm(:,3)))&ismember(dtind,[1,2])),100)
+    subplot(122);hist(dhbang((logical(dstcm(:,5))|logical(dstcm(:,3)))&~ismember(dtind,[1,2])),100)
 
-chbang = -(dhbang+0.2-0.4*double(~ismember(dtind,[3,4,5])));
+figure()
+    subplot(121);hist(dblen((logical(dstcm(:,5))|logical(dstcm(:,3)))&ismember(dtind,[1,2])),100)
+    subplot(122);hist(dblen((logical(dstcm(:,5))|logical(dstcm(:,3)))&~ismember(dtind,[1,2])),100)
+
+chbang = -dhbang;
 cblen = dblen+20*double(ismember(dtind,[3,4,5]));
 
 
@@ -29,14 +37,25 @@ vbe{end+1} = [-1.2,-0.3,0.3,1.2];
 vbc{end+1} = mean([vbe{end}(2:end); vbe{end}(1:end-1)]);
 vun{end+1} = 'rad';
 %2
-vlb{end+1} = 'hvl';
-vdc{end+1} = 'lateral head speed';
-vnm{end+1} = 'dfhrvl';
+% $$$ vlb{end+1} = 'hvl';
+% $$$ vdc{end+1} = 'lateral head speed';
+% $$$ vnm{end+1} = 'dfhrvl';
+% $$$ %vbe{end+1} = [-10,10,30,50,80];
+% $$$ %vbe{end+1} = [-4,4,12,18,24,30,36,42,48,54,60,66,72,78];
+% $$$ %vbe{end+1} = [-4,4,10,20,30,40,50,60,70,80];
+% $$$ %vbe{end+1} = [-4,4,10,25,40,55,70,85];
+% $$$ vbe{end+1} = [-80,-5,5,80];
+% $$$ vbc{end+1} = mean([vbe{end}(2:end); vbe{end}(1:end-1)]);
+% $$$ vun{end+1} = 'cm/s';
+
+vlb{end+1} = 'hvf';
+vdc{end+1} = 'forward head speed';
+vnm{end+1} = 'dfhrvf';
 %vbe{end+1} = [-10,10,30,50,80];
 %vbe{end+1} = [-4,4,12,18,24,30,36,42,48,54,60,66,72,78];
 %vbe{end+1} = [-4,4,10,20,30,40,50,60,70,80];
 %vbe{end+1} = [-4,4,10,25,40,55,70,85];
-vbe{end+1} = [-80,-5,5,80];
+vbe{end+1} = [-4,4,20,80];
 vbc{end+1} = mean([vbe{end}(2:end); vbe{end}(1:end-1)]);
 vun{end+1} = 'cm/s';
 %%%>>>
@@ -47,7 +66,9 @@ stlbls = {'ALL'};
 nIter = 100;
 shifts = 0:8:2^8;
 tag = DataHash({vlb,vbe,stgrps,stlbls});
-filepath = fullfile(MTA_PROJECT_PATH,'analysis',['MjgER2016_req20191104_jpdf_2d_PS_',tag,'.mat']);
+filepath = fullfile(MTA_PROJECT_PATH,'analysis',['MjgER2016_req20191104_jpdf_2d_PS_ca3_',tag,'.mat']);
+
+lfErr = ferr([1:2]);
 
 if exist(filepath,'file'),
     load(filepath);
@@ -144,7 +165,7 @@ yc = numel(vbc{2});
 el = 'FL';
 elbl = {'Forward','Lateral'};
 hfig = figure();
-for s = 1:10;
+for s = 1:4;
     for e = 1:2;
 
         clf(hfig)
@@ -250,7 +271,8 @@ ylim([-100,100])
 
 
 
-figure();
+hfig = figure();
+hfig.PaperOrientation = 'landscape';
 cmap = jet(size(smJpdf,3));
 cmap = ['bgr']';
 for y = 1:size(smJpdf,4),

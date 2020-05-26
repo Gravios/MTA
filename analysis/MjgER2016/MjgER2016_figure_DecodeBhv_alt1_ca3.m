@@ -49,7 +49,7 @@ global MTA_PROJECT_PATH
 %%%<<< LOAD data and SET analysis parameters
 
 MjgER2016_load_data();
-states = {'theta','rear','hloc','hpause','lloc','lpause','groom','sit'};
+states = {'theta','rear','hloc','hpause','lloc','lpause','groom','sit','turn','walk','pause'};
 spikeWindow = 0.3;
 sampleRate = 30;
 sampleRateTPD = 250;
@@ -120,7 +120,8 @@ load(fullfile(MTA_PROJECT_PATH,'analysis','pfsXYHB_mask.mat'));
 
 
 % SELECT trial subset
-tind = [3:5,17:23];
+tind = [1:2,6,7];
+%tind = [3:5,17:23];
 Trials = Trials(tind);
 units  = units(tind);
 numTrials = numel(Trials);
@@ -304,6 +305,7 @@ d2ufz = circ_mean(circshift(GetSegs(d2phz,1:size(d2phz,1),11,nan),-6,2),...
 
 
 d2ufzInd = discretize(d2ufz,dc2.phzBinCenters);
+
 %%%>>>
 
 
@@ -873,6 +875,9 @@ end
 
 %%%>>>
 
+
+
+
 %%%<<< DCT DECODE xyhb|[phz] 300ms window : 
 
 % decoded position based on high sampleRate and binned by theta phase
@@ -914,48 +919,48 @@ end
 
 %%%>>>
 
+
+
+
+
 %%%<<< COMPUTE DCT PROJECTION : projection of decoded position onto egocentric coordinates
-dct.tRot = {0,0,0,0.17,0.17,0.17,0.17,0.17,0.17,0.17};
-dct.fet  = cf(@(t)    fet_HB_pitchB(t,dct.sampleRate),                               Trials       );
-dct.hvec = cf(@(x)    x(:,'head_front',[1,2])-x(:,'head_back',[1,2]),                dct.xyz      );
+%dct.tRot = {0,0,0,0.17,0.17,0.17,0.17,0.17,0.17,0.17};
+%dct.hRot = {0,0,0,0.17,0.17,0.17,0.17,0.17,0.17,0.17};
+dct.hRot = {0,0,0,0}
+%dct.hRot = {0.2,0.2,0.2,-0.25,-0.25,-0.25,-0.25,-0.25,-0.25,-0.25};
+% $$$ dct.pch  = cf(@(t)    fet_HB_pitch(t,dct.sampleRate),                                Trials       );
+% $$$ dct.fet  = cf(@(t)    fet_HB_pitchB(t,dct.sampleRate),                               Trials       );
+dct.hvec = cf(@(x)    x(:,'nose',[1,2])-x(:,'hcom',[1,2]),                           dct.xyz      );
 dct.hvec = cf(@(h)    sq(bsxfun(@rdivide,h,sqrt(sum(h.^2,3)))),                      dct.hvec     );
 dct.hvec = cf(@(h)    cat(3,h,sq(h)*[0,-1;1,0]),                                     dct.hvec     );
-dct.hvec = cf(@(h,r)  multiprod(h,[cos(r),-sin(r);sin(r),cos(r)],[2,3],[1,2]),       dct.hvec, dct.tRot);
-dct.tvec = cf(@(x)    circshift(x(:,'hcom',[1,2]),-1)-circshift(x(:,'hcom',[1,2]),1),dct.xyz      );
+dct.hvec = cf(@(h,r)  multiprod(h,[cos(r),-sin(r);sin(r),cos(r)],[2,3],[1,2]),       dct.hvec, dct.hRot);
+% $$$ dct.tvec = cf(@(x)    circshift(x(:,'hcom',[1,2]),-20)-circshift(x(:,'hcom',[1,2]),20), ...
+% $$$               cf(@(x) filter(copy(x),'ButFilter',4,2,'low'), dct.xyz)      );
+dct.tvec = cf(@(x)    circshift(x(:,'hcom',[1,2]),-round(250*0.1))-circshift(x(:,'hcom',[1,2]),round(250*0.1)), dct.xyz   );
 dct.tvec = cf(@(h)    sq(bsxfun(@rdivide,h,sqrt(sum(h.^2,3)))),                      dct.tvec     );
 dct.tvec = cf(@(h)    cat(3,h,sq(h)*[0,-1;1,0]),                                     dct.tvec     );
 dct.stc  = cf(@(t)    t.load('stc','msnn_ppsvd_raux'),                               Trials       );
 dct.stcm = cf(@(s,x)  stc2mat(s,x,states),                                           dct.stc,dct.xyz);
 dct.ts   = cf(@(x)    [1:size(x,1)]./x.sampleRate,                                   dct.xyz      );
 
-for t = 1:numel(dct.xyz),
-    dct.hvang{t} = filter(copy(dct.xyz{t}),'ButFilter',3,1.5,'low');
-% $$$     xycoor = cat(2,...
-% $$$                  dct.hvang{t}(:,'hcom',[1,2])-dct.hvang{t}(:,'bcom',[1,2]),...
-% $$$                  dct.hvang{t}(:,'nose',[1,2])-dct.hvang{t}(:,'hcom',[1,2]));
-% $$$     xycoor = cat(2,...
-% $$$                  dct.hbang{t}(:,'spine_upper',[1,2])-dct.hbang{t}(:,'pelvis_root',[1,2]),...
-% $$$                  dct.hbang{t}(:,'head_front',[1,2])-dct.hbang{t}(:,'head_back',[1,2]));
-    xycoor = cat(2,...
-                 dct.hvang{t}(:,'spine_upper',[1,2])-dct.hvang{t}(:,'spine_lower',[1,2]),...
-                 dct.hvang{t}(:,'head_front',[1,2])-dct.hvang{t}(:,'head_back',[1,2]));
-    dct.hvang{t}.data = cart2pol(xycoor(:,:,1),xycoor(:,:,2));
-% $$$     dct.hvang{t}.data = circ_dist(circshift(dct.hvang{t}.data(:,2),-5),...
-% $$$                                   circshift(dct.hvang{t}.data(:,2),+5));
-    dct.hvang{t}.data = circ_dist(circshift(circ_dist(dct.hvang{t}.data(:,2),dct.hvang{t}.data(:,1)),-5),...
-                                  circshift(circ_dist(dct.hvang{t}.data(:,2),dct.hvang{t}.data(:,1)),+5));
 
-    
-    dct.hbang{t} = filter(copy(dct.xyz{t}),'ButFilter',3,15,'low');    
-% $$$     xycoor = cat(2,...
-% $$$                  dct.hbang{t}(:,'hcom',[1,2])-dct.hbang{t}(:,'bcom',[1,2]),...
-% $$$                  dct.hbang{t}(:,'nose',[1,2])-dct.hbang{t}(:,'hcom',[1,2]));
-% $$$     xycoor = cat(2,...
-% $$$                  dct.hbang{t}(:,'spine_upper',[1,2])-dct.hbang{t}(:,'pelvis_root',[1,2]),...
-% $$$                  dct.hbang{t}(:,'head_front',[1,2])-dct.hbang{t}(:,'head_back',[1,2]));
+for t = 1:numel(dct.xyz),
+    dct.hvang{t} = filter(copy(dct.xyz{t}),'ButFilter',4,2,'low');
     xycoor = cat(2,...
-                 dct.hbang{t}(:,'spine_upper',[1,2])-dct.hbang{t}(:,'spine_lower',[1,2]),...
-                 dct.hbang{t}(:,'head_front',[1,2])-dct.hbang{t}(:,'head_back',[1,2]));
+                 dct.hvang{t}(:,'spine_upper',[1,2])-dct.hvang{t}(:,'bcom',[1,2]),...
+                 dct.hvang{t}(:,'nose',[1,2])-dct.hvang{t}(:,'hcom',[1,2]));
+    dct.hvang{t}.data = cart2pol(xycoor(:,:,1),xycoor(:,:,2));
+    % Positive: CCW (Left)     Negative: CW (Right)
+    dct.hvang{t}.data = circ_dist(circshift(dct.hvang{t}.data(:,2),-10),...
+                                  circshift(dct.hvang{t}.data(:,2),+10));
+    
+% $$$     dct.hvang{t}.data = circ_dist(circshift(circ_dist(dct.hvang{t}.data(:,2),dct.hvang{t}.data(:,1)),-10),...
+% $$$                                   circshift(circ_dist(dct.hvang{t}.data(:,2),dct.hvang{t}.data(:,1)),+10));
+
+    dct.hbang{t} = filter(copy(dct.xyz{t}),'ButFilter',3,30,'low');    
+    xycoor = cat(2,...
+                 dct.hbang{t}(:,'spine_upper',[1,2])-dct.hbang{t}(:,'bcom',[1,2]),...
+                 dct.hbang{t}(:,'nose',[1,2])-dct.hbang{t}(:,'hcom',[1,2]));
     dct.hbang{t}.data = cart2pol(xycoor(:,:,1),xycoor(:,:,2));
     dct.hbang{t}.data = circ_dist(dct.hbang{t}.data(:,2),dct.hbang{t}.data(:,1));
 end
@@ -966,44 +971,126 @@ for t = 1:numel(dct.xyz),
     [~,dct.hdist{t}.data] = cart2pol(xycoor(:,:,1),xycoor(:,:,2));
 end
 
+% $$$ dct.bref = cf(@(t) fet_bref(t,dct.sampleRate), Trials);
+% $$$ for t = 1:numel(dct.bref),
+% $$$     dct.brefd{t} = filter(copy(dct.bref{t}),'ButFilter',4,[1.5,6],'bandpass');
+% $$$ end
+% $$$ for t = 1:numel(dct.xyz),
+% $$$     dct.xyvel{t} = vel(filter(copy(dct.xyz{t}),'ButFilter',3,3),'hcom',[1,2]);
+% $$$ end
+% $$$ for t = 1:numel(dct.xyz),
+% $$$     dct.rberrs{t} = vel(filter(copy(dct.xyz{t}),'ButFilter',4,60,'low'),...
+% $$$                         {'head_back','head_left','head_front','head_right'},[1,2,3]);
+% $$$     dct.rberrsf{t} = vel(filter(copy(dct.xyz{t}),'ButFilter',4,1.5,'low'),...
+% $$$                          {'head_back','head_left','head_front','head_right'},[1,2,3]);    
+% $$$     dct.rberrs{t}.data = mean((dct.rberrs{t}.data-dct.rberrsf{t}.data).^2,2);
+% $$$     dct.rberrs{t} = mean(dct.rberrs{t}.segs(1:size(dct.rberrs{t},1),round(sampleRate/4),0))';
+% $$$ end
 
 for t = 1:numTrials
-    hang = transform_origin(Trials{t},dct.xyz{t});
+    dct.blen{t} = filter(copy(dct.xyz{t}),'ButFilter',4,20,'low');
+    dct.blen{t}.data = sqrt(sum(diff(dct.blen{t}(:,{'hcom','bcom'},[1,2]),1,2).^2,3));
+    %dct.blen{t}.data = sqrt(sum(diff(dct.blen{t}(:,{'spine_lower','spine_upper'},[1,2]),1,2).^2,3));
+end
+dblen = cf(@(e) reshape( repmat( e(:,1),[1,8])', [], 1), dct.blen);                dblen = cat( 1, dblen{:} );
+dhvd  = cf(@(e) reshape( repmat( [0;diff(e(:,1))],[1,8])', [], 1).*dct.sampleRate, dct.blen);      dhvd  = cat( 1, dhvd{:}  );
+
+for t = 1:numTrials
+    hang = transform_origin(Trials{t},filter(copy(dct.xyz{t}),'ButFilter',4,20),'hcom','nose',{'hcom','head_right'});
     dct.roll{t} = real(hang.roll);
 end
 
-dct.bref = cf(@(t) fet_bref(t,dct.sampleRate), Trials);
-for t = 1:numel(dct.bref),
-    dct.brefd{t} = filter(copy(dct.bref{t}),'ButFilter',4,[1.5,6],'bandpass');
-end
+
+%dct.hrvfl = cf(@(t,r) filter(fet_href_H(t,dct.sampleRate,'trb',[],[],r),'ButFilter',3,25,'low'), Trials,dct.tRot);
+dct.fhrvfl = cf(@(t) fet_href_HXY(t,dct.sampleRate,false,'trb',[],4,0), Trials);
+dfhrvf   = cf(@(e) reshape( repmat( e(:,1),[1,8])', [], 1), dct.fhrvfl);                dfhrvf   = cat( 1, dfhrvf{:}  );
+dfhrvl   = cf(@(e) reshape( repmat( e(:,2),[1,8])', [], 1), dct.fhrvfl);                dfhrvl   = cat( 1, dfhrvl{:}  );
+
+dhzdza   = cf(@(e) reshape( repmat( atan2(e(:,1),e(:,2)),[1,8])', [], 1), dct.fhrvfl);  dhzdza   = cat( 1, dhzdza{:}  );
+
+%dct.hRot = {0.2,0.2,0.2,-0.25,-0.25,-0.25,-0.25,-0.25,-0.25,-0.25};
+%dct.hRot = {0.2,0.2,0.2,-0.25,-0.25,-0.25,-0.25,-0.25,-0.25,-0.25};
+
+dct.fbrvfl = cf(@(t)   fet_bref_BXY(t,dct.sampleRate,false,'trb',4),      Trials);
+dfbrvf   = cf(@(e) reshape( repmat( e(:,1),[1,8])', [], 1), dct.fbrvfl);                dfhrvf   = cat( 1, dfbrvf{:}  );
+dfbrvl   = cf(@(e) reshape( repmat( e(:,2),[1,8])', [], 1), dct.fbrvfl);                dfhrvl   = cat( 1, dfbrvl{:}  );
+
+dct.fhrvfl = cf(@(t) fet_href_HXY(t,dct.sampleRate,false,'trb',4),      Trials);
+dfhrvf   = cf(@(e) reshape( repmat( e(:,1),[1,8])', [], 1), dct.fhrvfl);                dfhrvf   = cat( 1, dfhrvf{:}  );
+dfhrvl   = cf(@(e) reshape( repmat( e(:,2),[1,8])', [], 1), dct.fhrvfl);                dfhrvl   = cat( 1, dfhrvl{:}  );
+
+%figure,hist2([dfhrvf(ind),dfhrvl(ind)],linspace(-20,120,100),linspace(-120,120,100));caxis([0,2000])
 
 
-for t = 1:numel(dct.xyz),
-    dct.xyvel{t} = vel(filter(copy(dct.xyz{t}),'ButFilter',3,3),'hcom',[1,2]);
-end
-
-dct.hrvfl = cf(@(t) filter(fet_href_H(t,dct.sampleRate),'ButFilter',3,25,'low'), Trials);
-
-
+% $$$ dct.rhm = cf(@(t) fet_rhm(t,dct.sampleRate), Trials);
+% $$$ cf(@(r,x) r.resample(x),                     dct.rhm,dct.xyz);
+% $$$ dct.rhm = cf(@(r) r.phase([6,12]),             dct.rhm);
+% $$$ drhm   = cf(@(e) reshape( repmat( e(:,1),[1,8])', [], 1), dct.rhm);                drhm   = cat( 1, drhm{:}  );
+%dct.hrvfl = cf(@(h,r) multiprod(h.data(:,[1,2]),[cos(-r),-sin(-r);sin(-r),cos(-r)],[2],[1,2]),dct.hrvfl, dct.tRot);
+% $$$ 
+% $$$ 
+% $$$ figure,hist2([dhrvl(ind),-dhrvf(ind)],linspace(-100,100,100),linspace(-50,100,100))
+% $$$ 
+% $$$ figure,
+% $$$ subplot(211);
+% $$$ r = -dct.tRot{8};
+% $$$ h = multiprod(dct.hrvfl{8}(:,[1,2]),[cos(r),-sin(r);sin(r),cos(r)],[2],[1,2]);
+% $$$ hist2(h(nniz(h),[2,1]),linspace(-100,100,100),linspace(-100,100,100));
+% $$$ caxis([0,1000]);
+% $$$ 
+% $$$ subplot(212);
+% $$$ h = dct.hrvfl{8};
+% $$$ hist2(h(nniz(h),[2,1]),linspace(-100,100,100),linspace(-100,100,100));
+% $$$ caxis([0,1000]);
+ 
 % COMPUTE error
 dct.error = dct.com;
-%dErr = dct.sax;
+%dct.error = dct.sax;
 %dErr = dct.max;
-dct.error = cf(@(e,x,h,f)  cat(2,                                                                ...
+% $$$ dct.error = cf(@(e,x,h,f)  cat(2,                                                                ...
+% $$$                            sq(multiprod(permute(bsxfun(@minus,                                   ...
+% $$$                                                        e(:,[1,2],:),                             ...
+% $$$                                                        sq(x(:,'hcom',[1,2]))),                   ...
+% $$$                                                 [1,2,4,3]),...
+% $$$                                         h(:,:,:),2,[2,3])),...
+% $$$                            [bsxfun(@minus,f(:,1),e(:,3,:)),...
+% $$$                             bsxfun(@minus,f(:,2),e(:,4,:))]), ...
+% $$$                dct.error,dct.xyz,dct.hvec,dct.fet);
+dct.error = cf(@(e,x,h,t)  cat(2,                                                                ...
                            sq(multiprod(permute(bsxfun(@minus,                                   ...
                                                        e(:,[1,2],:),                             ...
                                                        sq(x(:,'hcom',[1,2]))),                   ...
                                                 [1,2,4,3]),...
                                         h(:,:,:),2,[2,3])),...
-                           [bsxfun(@minus,f(:,1),e(:,3,:)),...
-                            bsxfun(@minus,f(:,2),e(:,4,:))]), ...
-               dct.error,dct.xyz,dct.hvec,dct.fet);
+                           sq(multiprod(permute(bsxfun(@minus,                                   ...
+                                                       e(:,[1,2],:),                             ...
+                                                       sq(x(:,'hcom',[1,2]))),                   ...
+                                                [1,2,4,3]),...
+                                        t(:,:,:),2,[2,3]))),...                               
+               dct.error,dct.xyz,dct.hvec,dct.tvec);
+
+dct.error = dct.com;
+dct.errorShift = cf(@(e,x,h,t)  cat(2,                                                                ...
+                           sq(multiprod(permute(bsxfun(@minus,                                   ...
+                                                       e(:,[1,2],:),                             ...
+                                                       sq(circshift(x(:,'hcom',[1,2]),25))),                   ...
+                                                [1,2,4,3]),...
+                                        circshift(h(:,:,:),25),2,[2,3])),...
+                           sq(multiprod(permute(bsxfun(@minus,                                   ...
+                                                       e(:,[1,2],:),                             ...
+                                                       sq(x(:,'hcom',[1,2]))),                   ...
+                                                [1,2,4,3]),...
+                                        t(:,:,:),2,[2,3]))),...                               
+               dct.error,dct.xyz,dct.hvec,dct.tvec);
+derrlns = cf(@(e) reshape( sq(e(:,1,:))', [], 1), dct.errorShift);                      derrlns = cat( 1, derrlns{:} );
+derrlts = cf(@(e) reshape( sq(e(:,2,:))', [], 1), dct.errorShift);                      derrlts = cat( 1, derrlts{:} );
+
 %%%>>>
 
 %%%<<< COMPUTE error for TDP decoding per state
 
 stid = [1,2,3,4,5,6];
-dct.lon = repmat({cell([1,numTrials])},[1,numel(stid)]);
+g2dct.lon = repmat({cell([1,numTrials])},[1,numel(stid)]);
 dct.lat = repmat({cell([1,numTrials])},[1,numel(stid)]);
 dct.hp = repmat({cell([1,numTrials])},[1,numel(stid)]);
 dct.bp = repmat({cell([1,numTrials])},[1,numel(stid)]);
@@ -1066,6 +1153,11 @@ for sts = 1:numel(stid),
             
     end
 end
+
+save('/storage/gravio/data/project/general/analysis/MjgER2016_decodeBhv.mat',...
+     'dct','-v7.3');
+     
+load('/storage/gravio/data/project/general/analysis/MjgER2016_decodeBhv.mat');
 
 %%%>>>
 
@@ -1212,95 +1304,504 @@ for sts = 1:numel(stid),
     colormap(sphr(sts,t+1),'jet');
 end
 
-
-
 %%%>>>
 
 %%%<<< VECTORIZE dct data
 
-dErrlon = cf(@(e) reshape( sq(e(:,1,:))', [], 1), dct.error);
-dErrlat = cf(@(e) reshape( sq(e(:,2,:))', [], 1), dct.error);
-dErrhp  = cf(@(e) reshape( sq(e(:,3,:))', [], 1), dct.error);
-dErrbp  = cf(@(e) reshape( sq(e(:,4,:))', [], 1), dct.error);
+dErrlon = cf(@(e) reshape( sq(e(:,1,:))', [], 1), dct.error);                           dErrlon = cat( 1, dErrlon{:} );
+dErrlat = cf(@(e) reshape( sq(e(:,2,:))', [], 1), dct.error);                           dErrlat = cat( 1, dErrlat{:} );
+dErrTlon = cf(@(e) reshape( sq(e(:,3,:))', [], 1), dct.error);                          dErrTlon = cat( 1, dErrTlon{:} );
+dErrTlat = cf(@(e) reshape( sq(e(:,4,:))', [], 1), dct.error);                          dErrTlat = cat( 1, dErrTlat{:} );
 
-dbref   = cf(@(e) reshape( repmat( e.data(:,17),[1,8])', [], 1), dct.bref);
-dbreff   = cf(@(e) reshape( repmat( e.data(:,17),[1,8])', [], 1), dct.brefd);
-dbrefd  = cf(@(e) reshape( repmat( [0;diff(e.data(:,17))],[1,8])', [], 1), dct.brefd);
+dErrhp  = cf(@(e) reshape( sq(e(:,3,:))', [], 1), dct.error);                           dErrhp  = cat( 1, dErrhp{:} ); 
+dErrbp  = cf(@(e) reshape( sq(e(:,4,:))', [], 1), dct.error);                           dErrbp  = cat( 1, dErrbp{:} ); 
 
-dhroll  = cf(@(e) reshape( repmat( e     ,[1,8])', [], 1), dct.roll);
-dhbang  = cf(@(e) reshape( repmat( e.data,[1,8])', [], 1), dct.hbang);
-dhvang  = cf(@(e) reshape( repmat( e.data,[1,8])', [], 1), dct.hvang);
-dxyvel  = cf(@(e) reshape( repmat( e.data,[1,8])', [], 1), dct.xyvel);
-dhrvf  = cf(@(e) reshape( repmat( e(:,1),[1,8])', [], 1), dct.hrvfl);
-dhrvl  = cf(@(e) reshape( repmat( e(:,2),[1,8])', [], 1), dct.hrvfl);
-dhdist  = cf(@(e) reshape( repmat( e(:,1),[1,8])', [], 1), dct.hdist);
 
-dstcm   = cf(@(s) reshape( permute( repmat( s, [1,1,8]),[2,3,1]),  8,[])', dct.stcm);
-dphz    = cf(@(e) reshape( repmat( phzBinCenters',[size(e,1),1])', [], 1), dct.error);
-duinc   = cf(@(u) reshape( u', [], 1), dct.uinc);
-dpufr   = cf(@(u) reshape( u', [], 1), dct.pufr);
-dpost   = cf(@(p) reshape( p', [], 1), dct.post);
-duincI  = cf(@(u) reshape( repmat( sum(double(u>=2&u<=10),2)>6,[1,8])',[],1), dct.uinc);
-dpostI  = cf(@(p) reshape( repmat( all(p>0.00025,2),[1,8])',[],1), dct.post);
 
-dtind  = cf(@(p,t)  repmat(t.*ones([size(p,1),1]),[8,1]), dct.post,num2cell(tind));
+%dErrlat = dErrlat-16; % correction due to bias in transform_rigidbody.
 
-dErrlon = cat( 1, dErrlon{:} );
-dErrlat = cat( 1, dErrlat{:} );
-dErrhp  = cat( 1, dErrhp{:} );
-dErrbp  = cat( 1, dErrbp{:} );
 
-dbref   = cat( 1, dbref{:}  );
-dbreff  = cat( 1, dbreff{:} );
-dbrefd  = cat( 1, dbrefd{:} );
+dfet    = cf(@(e) reshape( repmat( e.data(:,1),[1,8])', [], 1), dct.fet);               dfet  = cat( 1, dfet{:} );
+dpch    = cf(@(e) reshape( repmat( e(:,3),[1,8])', [], 1), dct.pch);                    dpch  = cat( 1, dpch{:} );
+dbch    = cf(@(e) reshape( repmat( e(:,1),[1,8])', [], 1), dct.pch);                    dbch  = cat( 1, dbch{:} );
+%dbref   = cf(@(e) reshape( repmat( e.data(:,17),[1,8])', [], 1), dct.bref);             dbref   = cat( 1, dbref{:}  );
+%dbreff  = cf(@(e) reshape( repmat( e.data(:,17),[1,8])', [], 1), dct.brefd);            dbreff  = cat( 1, dbreff{:} );
+%dbrefd  = cf(@(e) reshape( repmat( [0;diff(e.data(:,17))],[1,8])', [], 1), dct.brefd);  dbrefd  = cat( 1, dbrefd{:} );
 
-dhroll  = cat( 1, dhroll{:} );
-dhbang  = cat( 1, dhbang{:} );
-dhvang  = cat( 1, dhvang{:} );
-dxyvel  = cat( 1, dxyvel{:} );
-dhrvf   = cat( 1, dhrvf{:} );
-dhrvl   = cat( 1, dhrvl{:} );
-dhdist   = cat( 1, dhdist{:} );
-
+dhz     = cf(@(e) reshape( repmat( e(:,'hcom',3),[1,8])', [], 1), dct.xyz);             dhz   = cat( 1, dhz{:} );
+dhbang  = cf(@(e) reshape( repmat( e.data,[1,8])', [], 1), dct.hbang);                  dhbang  = cat( 1, dhbang{:} );
+dhvang  = cf(@(e) reshape( repmat( e.data,[1,8])', [], 1), dct.hvang);                  dhvang  = cat( 1, dhvang{:} );
+dhroll  = cf(@(e) reshape( repmat( e     ,[1,8])', [], 1), dct.roll);                   dhroll  = cat( 1, dhroll{:} );
+dstcm   = cf(@(s) reshape( permute( repmat( s, [1,1,8]),[2,3,1]),  numel(states),[])', dct.stcm);   
 dstcm   = cat( 1, dstcm{:}  );
-dphz    = cat( 1, dphz{:}   );
-duinc   = cat( 1, duinc{:}  );
-dpufr   = cat( 1, dpufr{:}  );
-dpost   = cat( 1, dpost{:}  );
-duincI  = cat( 1, duincI{:} );
-dpostI  = cat( 1, dpostI{:} );
-dtind   = cat( 1, dtind{:}  );
+
+% $$$ dxyvel  = cf(@(e) reshape( repmat( e.data,[1,8])', [], 1), dct.xyvel);                  dxyvel  = cat( 1, dxyvel{:} );
+% $$$ drberrs = cf(@(e) reshape( repmat( e     ,[1,8])', [], 1), dct.rberrs);                 drberrs  = cat( 1, drberrs{:} );
+
+dhdist  = cf(@(e) reshape( repmat( e(:,1),[1,8])', [], 1), dct.hdist);                  dhdist  = cat( 1, dhdist{:} );
+
+
+dphz    = cf(@(e) reshape( repmat( phzBinCenters',[size(e,1),1])', [], 1), dct.error);  dphz    = cat( 1, dphz{:}   );
+
+duinc   = cf(@(u) reshape( u', [], 1), dct.uinc);                                       duinc   = cat( 1, duinc{:}  );
+dpufr   = cf(@(u) reshape( u', [], 1), dct.pufr);                                       dpufr   = cat( 1, dpufr{:}  );
+dpost   = cf(@(p) reshape( p', [], 1), dct.post);                                       dpost   = cat( 1, dpost{:}  );
+
+duincI  = cf(@(u) reshape( repmat( sum(double(u>=2&u<=8),2)>4,[1,8])',[],1), dct.uinc); duincI  = cat( 1, duincI{:} );
+dpostI  = cf(@(p) reshape( repmat( all(p>0.001,2),[1,8])',[],1), dct.post);            dpostI  = cat( 1, dpostI{:} );
+
+% $$$ duincI  = cf(@(u) reshape( [u>=2&u<=8]',[],1), dct.uinc); duincI  = cat( 1, duincI{:} );
+% $$$ dpostI  = cf(@(p) reshape( [p>0.01]',[],1), dct.post);            dpostI  = cat( 1, dpostI{:} );
+
+
+dtind   = cf(@(p,t)  repmat(t.*ones([size(p,1),1]),[8,1]), dct.post,num2cell(tind));    dtind   = cat( 1, dtind{:}  );
 
 
 
 
 
-tdphz = dphz;
 
-
+tmpdphz = dphz;
 for p = 1:8,
-    tdphz(ismember(dtind,[3,4,5])&phzBinCenters(p)==dphz) = ...
-        phzBinCenters((p+2).*double(p<=6)+mod(p+2,8).*double(p>6));
+    tmpdphz(ismember(dtind,[1,2])&phzBinCenters(p)==dphz) = ...
+    phzBinCenters((p+2).*double(p<=6)+mod(p+2,8).*double(p>6));
 end
-
-for p = 1:8,
-    tdphz(~ismember(dtind,[3,4,5])&phzBinCenters(p)==dphz) = ...
-        phzBinCenters((p+1).*double(p<=7)+mod(p+1,8).*double(p>7));
-end
-dphz = tdphz;
+dphz = tmpdphz;
+% $$$ 
 
 
-dphz(~ismember(dtind,[3,4,5])) = dphz(~ismember(dtind,[3,4,5]))+diff(phzBinCenters(1:2));
-dphz(dphz>pi) = dphz(dphz>pi)-2.*pi;
+smMask = false([size(dphz,1)./numel(phzBinCenters),1]);
+smMask(1:32:end) = true;
+smMask = reshape(repmat(smMask,[1,numel(phzBinCenters)])',[],1);
+
+ferr    = {dErrlon,dErrlat,dErrhp,dErrbp};
+ferrorBinEdges = {errorBinEdges,errorBinEdges,perrorBinEdges,perrorBinEdges};
+ferrorBinCenters = {errorBinCenters,errorBinCenters,perrorBinCenters,perrorBinCenters};
+
+ttid    = 1:7;
+ttid    = 1:4;
+
+ferr    = {dErrlon,dErrlat,dErrTlon,dErrTlat};
+ferrorBinEdges = {errorBinEdges,errorBinEdges,errorBinEdges,errorBinEdges};
+ferrorBinCenters = {errorBinCenters,errorBinCenters,errorBinCenters,errorBinCenters};
 
 
-save('/storage/gravio/data/project/general/analysis/MjgER2016_decodeBhv.mat',...
-     'dErrlon', 'dErrlat', 'dErrhp', 'dErrbp', 'dstcm', 'dphz', 'duinc', 'dpost',...
-     'duincI', 'dpostI', 'dtind','-v7.3');
-     
-load('/storage/gravio/data/project/general/analysis/MjgER2016_decodeBhv.mat');
+
+% by session stats
+
+% $$$ dphz(~ismember(dtind,[3,4,5])) = dphz(~ismember(dtind,[3,4,5]))+diff(phzBinCenters(1:2));
+% $$$ dphz(dphz>pi) = dphz(dphz>pi)-2.*pi;
+
 
 %%%>>>
+% $$$ 
+% $$$ 
+% $$$ 
+% $$$ %%%<<< COMPUTE DCT PROJECTION : projection of decoded position onto egocentric coordinates
+% $$$ 
+% $$$ dct.tRot = {0,0,0,0.17,0.17,0.17,0.17,0.17,0.17,0.17};
+% $$$ dct.tRot = num2cell(zeros([1,4]));
+% $$$ dct.pch  = cf(@(t)    fet_HB_pitch(t,dct.sampleRate),                               Trials       );
+% $$$ dct.fet  = cf(@(t)    fet_HB_pitchB(t,dct.sampleRate),                               Trials       );
+% $$$ dct.hvec = cf(@(x)    x(:,'head_front',[1,2])-x(:,'head_back',[1,2]),                dct.xyz      );
+% $$$ dct.hvec = cf(@(h)    sq(bsxfun(@rdivide,h,sqrt(sum(h.^2,3)))),                      dct.hvec     );
+% $$$ dct.hvec = cf(@(h)    cat(3,h,sq(h)*[0,-1;1,0]),                                     dct.hvec     );
+% $$$ dct.hvec = cf(@(h,r)  multiprod(h,[cos(r),-sin(r);sin(r),cos(r)],[2,3],[1,2]),       dct.hvec, dct.tRot);
+% $$$ dct.tvec = cf(@(x)    circshift(x(:,'hcom',[1,2]),-20)-circshift(x(:,'hcom',[1,2]),20), dct.xyz   );
+% $$$ dct.tvec = cf(@(x)    circshift(x(:,'hcom',[1,2]),-20)-circshift(x(:,'hcom',[1,2]),20), ...
+% $$$               cf(@(x) filter(copy(x),'ButFilter',4,2,'low'), dct.xyz)      );
+% $$$ dct.tvec = cf(@(h)    sq(bsxfun(@rdivide,h,sqrt(sum(h.^2,3)))),                      dct.tvec     );
+% $$$ dct.tvec = cf(@(h)    cat(3,h,sq(h)*[0,-1;1,0]),                                     dct.tvec     );
+% $$$ dct.stc  = cf(@(t)    t.load('stc','msnn_ppsvd_raux'),                               Trials       );
+% $$$ dct.stcm = cf(@(s,x)  stc2mat(s,x,states),                                           dct.stc,dct.xyz);
+% $$$ dct.ts   = cf(@(x)    [1:size(x,1)]./x.sampleRate,                                   dct.xyz      );
+% $$$ 
+% $$$ 
+% $$$ 
+% $$$ for t = 1:numel(dct.xyz),
+% $$$     dct.hvang{t} = filter(copy(dct.xyz{t}),'ButFilter',4,2,'low');
+% $$$     xycoor = cat(2,...
+% $$$                  dct.hvang{t}(:,'spine_upper',[1,2])-dct.hvang{t}(:,'bcom',[1,2]),...
+% $$$                  dct.hvang{t}(:,'nose',[1,2])-dct.hvang{t}(:,'hcom',[1,2]));
+% $$$     dct.hvang{t}.data = cart2pol(xycoor(:,:,1),xycoor(:,:,2));
+% $$$     % Positive: CCW (Left)     Negative: CW (Right)
+% $$$     dct.hvang{t}.data = circ_dist(circshift(dct.hvang{t}.data(:,2),-10),...
+% $$$                                   circshift(dct.hvang{t}.data(:,2),+10));
+% $$$     
+% $$$ % $$$     dct.hvang{t}.data = circ_dist(circshift(circ_dist(dct.hvang{t}.data(:,2),dct.hvang{t}.data(:,1)),-10),...
+% $$$ % $$$                                   circshift(circ_dist(dct.hvang{t}.data(:,2),dct.hvang{t}.data(:,1)),+10));
+% $$$ 
+% $$$     dct.hbang{t} = filter(copy(dct.xyz{t}),'ButFilter',3,30,'low');    
+% $$$     xycoor = cat(2,...
+% $$$                  dct.hbang{t}(:,'spine_upper',[1,2])-dct.hbang{t}(:,'bcom',[1,2]),...
+% $$$                  dct.hbang{t}(:,'nose',[1,2])-dct.hbang{t}(:,'hcom',[1,2]));
+% $$$     dct.hbang{t}.data = cart2pol(xycoor(:,:,1),xycoor(:,:,2));
+% $$$     dct.hbang{t}.data = circ_dist(dct.hbang{t}.data(:,2),dct.hbang{t}.data(:,1));
+% $$$ end
+% $$$ 
+% $$$ for t = 1:numel(dct.xyz),
+% $$$     dct.hdist{t} = filter(copy(dct.xyz{t}),'ButFilter',3,5,'low');
+% $$$     xycoor =    dct.xyz{t}(:,'hcom',[1,2]);
+% $$$     [~,dct.hdist{t}.data] = cart2pol(xycoor(:,:,1),xycoor(:,:,2));
+% $$$ end
+% $$$ 
+% $$$ 
+% $$$ for t = 1:numTrials
+% $$$     dct.blen{t} = filter(copy(dct.xyz{t}),'ButFilter',4,20,'low');
+% $$$     dct.blen{t}.data = sqrt(sum(diff(dct.blen{t}(:,{'hcom','bcom'},[1,2]),1,2).^2,3));
+% $$$     %dct.blen{t}.data = sqrt(sum(diff(dct.blen{t}(:,{'spine_lower','spine_upper'},[1,2]),1,2).^2,3));
+% $$$ end
+% $$$ dblen = cf(@(e) reshape( repmat( e(:,1),[1,8])', [], 1), dct.blen);                dblen = cat( 1, dblen{:} );
+% $$$ dhvd  = cf(@(e) reshape( repmat( [0;diff(e(:,1))],[1,8])', [], 1).*dct.sampleRate, dct.blen);      dhvd  = cat( 1, dhvd{:}  );
+% $$$ 
+% $$$ for t = 1:numTrials
+% $$$     hang = transform_origin(Trials{t},filter(copy(dct.xyz{t}),'ButFilter',4,20),'hcom','nose',{'hcom','head_right'});
+% $$$     dct.roll{t} = real(hang.roll);
+% $$$ end
+% $$$ 
+% $$$ 
+% $$$ 
+% $$$ 
+% $$$ dct.fbrvfl = cf(@(t)   fet_bref_BXY(t,dct.sampleRate,false,'trb',4),      Trials);
+% $$$ dfbrvf   = cf(@(e) reshape( repmat( e(:,1),[1,8])', [], 1), dct.fbrvfl);                dfhrvf   = cat( 1, dfbrvf{:}  );
+% $$$ dfbrvl   = cf(@(e) reshape( repmat( e(:,2),[1,8])', [], 1), dct.fbrvfl);                dfhrvl   = cat( 1, dfbrvl{:}  );
+% $$$ 
+% $$$ dct.fhrvfl = cf(@(t) fet_href_HXY(t,dct.sampleRate,false,'trb',4),      Trials);
+% $$$ dfhrvf   = cf(@(e) reshape( repmat( e(:,1),[1,8])', [], 1), dct.fhrvfl);                dfhrvf   = cat( 1, dfhrvf{:}  );
+% $$$ dfhrvl   = cf(@(e) reshape( repmat( e(:,2),[1,8])', [], 1), dct.fhrvfl);                dfhrvl   = cat( 1, dfhrvl{:}  );
+% $$$ 
+% $$$ 
+% $$$ for t = 1:numel(dct.xyz),
+% $$$     dct.xyvel{t} = vel(filter(copy(dct.xyz{t}),'ButFilter',3,3),'hcom',[1,2]);
+% $$$ end
+% $$$ 
+% $$$ 
+% $$$ % COMPUTE error
+% $$$ dct.error = dct.com;
+% $$$ %dErr = dct.sax;
+% $$$ %dErr = dct.max;
+% $$$ % $$$ dct.error = cf(@(e,x,h,f)  cat(2,                                                                ...
+% $$$ % $$$                            sq(multiprod(permute(bsxfun(@minus,                                   ...
+% $$$ % $$$                                                        e(:,[1,2],:),                             ...
+% $$$ % $$$                                                        sq(x(:,'hcom',[1,2]))),                   ...
+% $$$ % $$$                                                 [1,2,4,3]),...
+% $$$ % $$$                                         h(:,:,:),2,[2,3])),...
+% $$$ % $$$                            [bsxfun(@minus,f(:,1),e(:,3,:)),...
+% $$$ % $$$                             bsxfun(@minus,f(:,2),e(:,4,:))]), ...
+% $$$ % $$$                dct.error,dct.xyz,dct.hvec,dct.fet);
+% $$$ 
+% $$$ dct.error = cf(@(e,x,h,t)  cat(2,                                                                ...
+% $$$                            sq(multiprod(permute(bsxfun(@minus,                                   ...
+% $$$                                                        e(:,[1,2],:),                             ...
+% $$$                                                        sq(x(:,'hcom',[1,2]))),                   ...
+% $$$                                                 [1,2,4,3]),...
+% $$$                                         h(:,:,:),2,[2,3])),...
+% $$$                                sq(multiprod(permute(bsxfun(@minus,                                   ...
+% $$$                                                        e(:,[1,2],:),                             ...
+% $$$                                                        sq(x(:,'hcom',[1,2]))),                   ...
+% $$$                                                 [1,2,4,3]),...
+% $$$                                         t(:,:,:),2,[2,3]))),...
+% $$$                dct.error,dct.xyz,dct.hvec,dct.tvec);
+% $$$ 
+% $$$ %%%>>>
+% $$$ 
+% $$$ %%%<<< COMPUTE error for TDP decoding per state
+% $$$ 
+% $$$ stid = [1,2,3,4,5,6];
+% $$$ dct.lon = repmat({cell([1,numTrials])},[1,numel(stid)]);
+% $$$ dct.lat = repmat({cell([1,numTrials])},[1,numel(stid)]);
+% $$$ dct.hp = repmat({cell([1,numTrials])},[1,numel(stid)]);
+% $$$ dct.bp = repmat({cell([1,numTrials])},[1,numel(stid)]);
+% $$$ dct.hpRnd = repmat({cell([1,numTrials])},[1,numel(stid)]);
+% $$$ dct.bpRnd = repmat({cell([1,numTrials])},[1,numel(stid)]);
+% $$$ dct.ind = cell([1,numel(stid)]);
+% $$$ %norm = 'probability';
+% $$$ norm = 'count';
+% $$$ for sts = 1:numel(stid),
+% $$$     dct.ind{sts}  = cf(@(p,u,s)                                 ...
+% $$$                       all(p>0.001,2)                           ...
+% $$$                       & sum(double(u>=3),2)>6                   ...
+% $$$                       & s(:,1)==1                               ...
+% $$$                       & any(logical(s(:,stid(sts))),2)          ...
+% $$$                       & ~any(logical(s(:,[7,8])),2),            ...
+% $$$                         dct.post,dct.uinc,dct.stcm);
+% $$$     for t = 1:numel(Trials),
+% $$$         for j = 1:numel(phzBins)-1;
+% $$$             dct.lon{sts}{t} =                                   ...
+% $$$                 cat(2,                                          ...
+% $$$                     dct.lon{sts}{t},                            ...
+% $$$                     histcounts(sq(dct.error{t}(dct.ind{sts}{t},1,j)), ...
+% $$$                                errorBinEdges,...
+% $$$                                'Normalization',norm)');
+% $$$             dct.lat{sts}{t} =                                   ...
+% $$$                 cat(2,                                          ...
+% $$$                     dct.lat{sts}{t},                            ...
+% $$$                     histcounts(sq(dct.error{t}(dct.ind{sts}{t},2,j)),      ...
+% $$$                                errorBinEdges,...
+% $$$                                'Normalization',norm)');                    
+% $$$             dct.hp{sts}{t} =                                               ...
+% $$$                 cat(2,                                                     ...
+% $$$                     dct.hp{sts}{t},                                        ...
+% $$$                     histcounts(sq(dct.error{t}(dct.ind{sts}{t},3,j)),      ...
+% $$$                                perrorBinEdges,...
+% $$$                                'Normalization',norm)');                               
+% $$$             dct.bp{sts}{t} =                                               ...
+% $$$                 cat(2,                                                     ...
+% $$$                     dct.bp{sts}{t},                                        ...
+% $$$                     histcounts(sq(dct.error{t}(dct.ind{sts}{t},4,j)),      ...
+% $$$                                perrorBinEdges,...
+% $$$                                'Normalization',norm)');
+% $$$ 
+% $$$             dct.hpRnd{sts}{t} =                                            ...
+% $$$                 cat(2,                                                     ...
+% $$$                     dct.hpRnd{sts}{t},                                     ...
+% $$$                     histcounts(sq(dct.fet{t}(dct.ind{sts}{t},1)) - ...
+% $$$                                circshift(sq(dct.fet{t}(dct.ind{sts}{t},1)),5000*j),      ...
+% $$$                                perrorBinEdges,...
+% $$$                                'Normalization',norm)');
+% $$$             dct.bpRnd{sts}{t} =                                            ...
+% $$$                 cat(2,                                                     ...
+% $$$                     dct.bpRnd{sts}{t},                                     ...
+% $$$                     histcounts(sq(dct.fet{t}(dct.ind{sts}{t},2)) - ...
+% $$$                                circshift(sq(dct.fet{t}(dct.ind{sts}{t},2)),5000*j),      ...
+% $$$                                perrorBinEdges,...
+% $$$                                'Normalization',norm)');
+% $$$             
+% $$$         end
+% $$$             
+% $$$     end
+% $$$ end
+% $$$ 
+% $$$ %%%>>>
+% $$$ 
+% $$$ %%%<<< SUPFIG States x Trials
+% $$$ 
+% $$$ figure();
+% $$$ if exist('sp','var'),delete(sp);end;
+% $$$ sp = gobjects([numel(stid),numTrials]);
+% $$$ for sts = 1:numel(stid),
+% $$$     for t = 1:numTrials,
+% $$$         sp(sts,t) = subplot2(numel(stid),numTrials+1,sts,t);
+% $$$         imagesc(errorBinCenters,...
+% $$$                 [phzBinCenters;phzBinCenters+2*pi],...
+% $$$                 repmat(dct.lon{sts}{t},[1,2])');
+% $$$         axis    (sp(sts,t),'xy');
+% $$$         colormap(sp(sts,t),'jet');
+% $$$         xlim    (sp(sts,t),[-200,200]);        
+% $$$     end
+% $$$ end
+% $$$ for sts = 1:numel(stid),
+% $$$     sp(sts,t+1) = subplot2(numel(stid),numTrials+1,sts,numTrials+1);
+% $$$     imagesc(errorBinCenters,...
+% $$$             [phzBinCenters;phzBinCenters+2*pi],...
+% $$$             repmat(sum(cat(3,dct.lon{sts}{:}),3),[1,2])');
+% $$$     axis    (sp(sts,t+1),'xy');
+% $$$     colormap(sp(sts,t+1),'jet');
+% $$$     xlim    (sp(sts,t+1),[-200,200]);        
+% $$$ end
+% $$$ 
+% $$$ figure();
+% $$$ if exist('spt','var'),delete(spt);end;
+% $$$ spt = gobjects([numel(stid),numTrials]);
+% $$$ for sts = 1:numel(stid),
+% $$$     for t = 1:numTrials,
+% $$$         spt(sts,t) = subplot2(numel(stid),numTrials,sts,t);
+% $$$         imagesc(errorBinCenters,...
+% $$$                 [phzBinCenters;phzBinCenters+2*pi],...
+% $$$                 repmat(dct.lat{sts}{t},[1,2])');
+% $$$         axis    (spt(sts,t),'xy');
+% $$$         colormap(spt(sts,t),'jet');
+% $$$         xlim    (spt(sts,t),[-200,200]);
+% $$$     end
+% $$$ end
+% $$$ for sts = 1:numel(stid),
+% $$$     spt(sts,t+1) = subplot2(numel(stid),numTrials+1,sts,numTrials+1);
+% $$$     imagesc(errorBinCenters,...
+% $$$             [phzBinCenters;phzBinCenters+2*pi],...
+% $$$             repmat(sum(cat(3,dct.lat{sts}{:}),3),[1,2])');
+% $$$     axis    (spt(sts,t+1),'xy');
+% $$$     colormap(spt(sts,t+1),'jet');
+% $$$     xlim    (spt(sts,t+1),[-200,200]);        
+% $$$ end
+% $$$ 
+% $$$ 
+% $$$ 
+% $$$ figure();
+% $$$ if exist('sph','var'),delete(sph);end;
+% $$$ sph = gobjects([numel(stid),numTrials]);
+% $$$ for sts = 1:numel(stid),
+% $$$     for t = 1:numTrials,
+% $$$         sph(sts,t) = subplot2(numel(stid),numTrials+1,sts,t);
+% $$$         imagesc(perrorBinCenters,...
+% $$$                 [phzBinCenters;phzBinCenters+2.*pi],...
+% $$$                 repmat(dct.hp{sts}{t},[1,2])');
+% $$$         axis    (sph(sts,t),'xy');
+% $$$         colormap(sph(sts,t),'jet');
+% $$$     end
+% $$$ end
+% $$$ for sts = 1:numel(stid),
+% $$$     sph(sts,t+1) = subplot2(numel(stid),numTrials+1,sts,numTrials+1);
+% $$$     imagesc(perrorBinCenters,...
+% $$$             [phzBinCenters;phzBinCenters+2*pi],...
+% $$$             repmat(sum(cat(3,dct.hp{sts}{:}),3),[1,2])');
+% $$$     axis    (sph(sts,t+1),'xy');
+% $$$     colormap(sph(sts,t+1),'jet');
+% $$$ end
+% $$$ 
+% $$$ figure();
+% $$$ if exist('spb','var'),delete(spb);end;
+% $$$ spb = gobjects([numel(stid),numTrials]);
+% $$$ for sts = 1:numel(stid),
+% $$$     for t = 1:numTrials,
+% $$$         spb(sts,t) = subplot2(numel(stid),numTrials+1,sts,t);
+% $$$         imagesc(perrorBinCenters,...
+% $$$                 [phzBinCenters;phzBinCenters+2.*pi],...
+% $$$                 repmat(dct.bp{sts}{t},[1,2])');
+% $$$         axis    (spb(sts,t),'xy');
+% $$$         colormap(spb(sts,t),'jet');
+% $$$     end
+% $$$ end
+% $$$ for sts = 1:numel(stid),
+% $$$     spb(sts,t+1) = subplot2(numel(stid),numTrials+1,sts,numTrials+1);
+% $$$     imagesc(perrorBinCenters,...
+% $$$             [phzBinCenters;phzBinCenters+2*pi],...
+% $$$             repmat(sum(cat(3,dct.bp{sts}{:}),3),[1,2])');
+% $$$     axis    (spb(sts,t+1),'xy');
+% $$$     colormap(spb(sts,t+1),'jet');
+% $$$ end
+% $$$ 
+% $$$ 
+% $$$ 
+% $$$ figure();
+% $$$ if exist('spbr','var'),delete(spbr);end;
+% $$$ spbr = gobjects([numel(stid),numTrials]);
+% $$$ for sts = 1:numel(stid),
+% $$$     for t = 1:numTrials,
+% $$$         spbr(sts,t) = subplot2(numel(stid),numTrials+1,sts,t);
+% $$$         imagesc(perrorBinCenters,...
+% $$$                 [phzBinCenters;phzBinCenters+2.*pi],...
+% $$$                 repmat(dct.bpRnd{sts}{t},[1,2])');
+% $$$         axis    (spbr(sts,t),'xy');
+% $$$         colormap(spbr(sts,t),'jet');
+% $$$     end
+% $$$ end
+% $$$ for sts = 1:numel(stid),
+% $$$     spbr(sts,t+1) = subplot2(numel(stid),numTrials+1,sts,numTrials+1);
+% $$$     imagesc(perrorBinCenters,...
+% $$$             [phzBinCenters;phzBinCenters+2*pi],...
+% $$$             repmat(sum(cat(3,dct.bpRnd{sts}{:}),3),[1,2])');
+% $$$     axis    (spbr(sts,t+1),'xy');
+% $$$     colormap(spbr(sts,t+1),'jet');
+% $$$ end
+% $$$ 
+% $$$ 
+% $$$ figure();
+% $$$ if exist('sphr','var'),delete(sphr);end;
+% $$$ sphr = gobjects([numel(stid),numTrials]);
+% $$$ for sts = 1:numel(stid),
+% $$$     for t = 1:numTrials,
+% $$$         sphr(sts,t) = subplot2(numel(stid),numTrials+1,sts,t);
+% $$$         imagesc(perrorBinCenters,...
+% $$$                 [phzBinCenters;phzBinCenters+2.*pi],...
+% $$$                 repmat(dct.hpRnd{sts}{t},[1,2])');
+% $$$         axis    (sphr(sts,t),'xy');
+% $$$         colormap(sphr(sts,t),'jet');
+% $$$     end
+% $$$ end
+% $$$ for sts = 1:numel(stid),
+% $$$     sphr(sts,t+1) = subplot2(numel(stid),numTrials+1,sts,numTrials+1);
+% $$$     imagesc(perrorBinCenters,...
+% $$$             [phzBinCenters;phzBinCenters+2*pi],...
+% $$$             repmat(sum(cat(3,dct.hpRnd{sts}{:}),3),[1,2])');
+% $$$     axis    (sphr(sts,t+1),'xy');
+% $$$     colormap(sphr(sts,t+1),'jet');
+% $$$ end
+% $$$ 
+% $$$ %%%>>>
+% $$$ 
+% $$$ %%%<<< VECTORIZE dct data
+% $$$ 
+% $$$ dErrlon = cf(@(e) reshape( sq(e(:,1,:))', [], 1), dct.error);                           dErrlon = cat( 1, dErrlon{:} );
+% $$$ dErrlat = cf(@(e) reshape( sq(e(:,2,:))', [], 1), dct.error);                           dErrlat = cat( 1, dErrlat{:} );
+% $$$ dErrTlon = cf(@(e) reshape( sq(e(:,3,:))', [], 1), dct.error);                           dErrTlon = cat( 1, dErrTlon{:} );
+% $$$ dErrTlat = cf(@(e) reshape( sq(e(:,4,:))', [], 1), dct.error);                           dErrTlat = cat( 1, dErrTlat{:} );
+% $$$ 
+% $$$ dErrhp  = cf(@(e) reshape( sq(e(:,3,:))', [], 1), dct.error);                           dErrhp  = cat( 1, dErrhp{:} ); 
+% $$$ dErrbp  = cf(@(e) reshape( sq(e(:,4,:))', [], 1), dct.error);                           dErrbp  = cat( 1, dErrbp{:} ); 
+% $$$ 
+% $$$ %dErrlat = dErrlat-16; % correction due to bias in transform_rigidbody.
+% $$$ 
+% $$$ 
+% $$$ dfet    = cf(@(e) reshape( repmat( e.data(:,1),[1,8])', [], 1), dct.fet);               dfet  = cat( 1, dfet{:} );
+% $$$ dpch    = cf(@(e) reshape( repmat( e(:,3),[1,8])', [], 1), dct.pch);                    dpch  = cat( 1, dpch{:} );
+% $$$ dbch    = cf(@(e) reshape( repmat( e(:,1),[1,8])', [], 1), dct.pch);                    dbch  = cat( 1, dbch{:} );
+% $$$ %dbref   = cf(@(e) reshape( repmat( e.data(:,17),[1,8])', [], 1), dct.bref);             dbref   = cat( 1, dbref{:}  );
+% $$$ %dbreff  = cf(@(e) reshape( repmat( e.data(:,17),[1,8])', [], 1), dct.brefd);            dbreff  = cat( 1, dbreff{:} );
+% $$$ %dbrefd  = cf(@(e) reshape( repmat( [0;diff(e.data(:,17))],[1,8])', [], 1), dct.brefd);  dbrefd  = cat( 1, dbrefd{:} );
+% $$$ 
+% $$$ dhz     = cf(@(e) reshape( repmat( e(:,'hcom',3),[1,8])', [], 1), dct.xyz);             dhz   = cat( 1, dhz{:} );
+% $$$ dhbang  = cf(@(e) reshape( repmat( e.data,[1,8])', [], 1), dct.hbang);                  dhbang  = cat( 1, dhbang{:} );
+% $$$ dhvang  = cf(@(e) reshape( repmat( e.data,[1,8])', [], 1), dct.hvang);                  dhvang  = cat( 1, dhvang{:} );
+% $$$ dhroll  = cf(@(e) reshape( repmat( e     ,[1,8])', [], 1), dct.roll);                   dhroll  = cat( 1, dhroll{:} );
+% $$$ dstcm   = cf(@(s) reshape( permute( repmat( s, [1,1,8]),[2,3,1]),  numel(states),[])', dct.stcm);   
+% $$$ dstcm   = cat( 1, dstcm{:}  );
+% $$$ 
+% $$$ % $$$ dxyvel  = cf(@(e) reshape( repmat( e.data,[1,8])', [], 1), dct.xyvel);                  dxyvel  = cat( 1, dxyvel{:} );
+% $$$ % $$$ drberrs = cf(@(e) reshape( repmat( e     ,[1,8])', [], 1), dct.rberrs);                 drberrs  = cat( 1, drberrs{:} );
+% $$$ 
+% $$$ dhdist  = cf(@(e) reshape( repmat( e(:,1),[1,8])', [], 1), dct.hdist);                  dhdist  = cat( 1, dhdist{:} );
+% $$$ 
+% $$$ 
+% $$$ dphz    = cf(@(e) reshape( repmat( phzBinCenters',[size(e,1),1])', [], 1), dct.error);  dphz    = cat( 1, dphz{:}   );
+% $$$ 
+% $$$ duinc   = cf(@(u) reshape( u', [], 1), dct.uinc);                                       duinc   = cat( 1, duinc{:}  );
+% $$$ dpufr   = cf(@(u) reshape( u', [], 1), dct.pufr);                                       dpufr   = cat( 1, dpufr{:}  );
+% $$$ dpost   = cf(@(p) reshape( p', [], 1), dct.post);                                       dpost   = cat( 1, dpost{:}  );
+% $$$ 
+% $$$ duincI  = cf(@(u) reshape( repmat( sum(double(u>=2&u<=8),2)>4,[1,8])',[],1), dct.uinc); duincI  = cat( 1, duincI{:} );
+% $$$ dpostI  = cf(@(p) reshape( repmat( all(p>0.001,2),[1,8])',[],1), dct.post);            dpostI  = cat( 1, dpostI{:} );
+% $$$ 
+% $$$ % $$$ duincI  = cf(@(u) reshape( [u>=2&u<=8]',[],1), dct.uinc); duincI  = cat( 1, duincI{:} );
+% $$$ % $$$ dpostI  = cf(@(p) reshape( [p>0.01]',[],1), dct.post);            dpostI  = cat( 1, dpostI{:} );
+% $$$ 
+% $$$ 
+% $$$ dtind   = cf(@(p,t)  repmat(t.*ones([size(p,1),1]),[8,1]), dct.post,num2cell(tind));    dtind   = cat( 1, dtind{:}  );
+% $$$ 
+% $$$ 
+% $$$ ttdphz = dphz;
+% $$$ tmpdphz = dphz;
+% $$$ for p = 1:8,
+% $$$     tmpdphz(ismember(dtind,[1,2])&phzBinCenters(p)==dphz) = ...
+% $$$     phzBinCenters((p+2).*double(p<=6)+mod(p+2,8).*double(p>6));
+% $$$ end
+% $$$ % $$$ for p = 1:8,
+% $$$ % $$$     tmpdphz(~ismember(dtind,[3,4,5])&phzBinCenters(p)==dphz) = ...
+% $$$ % $$$         phzBinCenters((p+1).*double(p<=7)+mod(p+1,8).*double(p>7));
+% $$$ % $$$ end
+% $$$ dphz = tmpdphz;
+% $$$ 
+% $$$ 
+% $$$ 
+% $$$ % $$$ save('/storage/gravio/data/project/general/analysis/MjgER2016_decodeBhv_dvars.mat',...
+% $$$ % $$$      'dErrlon','dErrlat','dErrhp','dErrbp','dfet','dbref','dbreff','dbrefd','dhbang','dhvang',...
+% $$$ % $$$      'dhroll','dxyvel','drberrs','dhrvf','dhrvl','dhdist','dstcm','dphz','duinc','dpufr','dpost',...
+% $$$ % $$$      'duincI','dpostI','dtind','-v7.3');
+% $$$ load('/storage/gravio/data/project/general/analysis/MjgER2016_decodeBhv_dvars_ca3.mat');
+% $$$ 
+% $$$ 
+% $$$ smMask = false([size(dphz,1)./numel(phzBinCenters),1]);
+% $$$ smMask(1:32:end) = true;
+% $$$ smMask = reshape(repmat(smMask,[1,numel(phzBinCenters)])',[],1);
+% $$$ 
+% $$$ ferr    = {dErrlon,dErrlat,dErrhp,dErrbp};
+% $$$ 
+% $$$ ferr = {dErrlon,dErrlat,dErrTlon,dErrTlat};
+% $$$ ferrorBinEdges = {errorBinEdges,errorBinEdges,errorBinEdges,errorBinEdges};
+% $$$ ferrorBinCenters = {errorBinCenters,errorBinCenters,errorBinCenters,errorBinCenters};
+% $$$ 
+% $$$ ttid    = 1:7;
+% $$$ 
+% $$$ %%%>>>
 
 %%%<<< COLLECT : ripple associated stats
 

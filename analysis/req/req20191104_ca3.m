@@ -16,6 +16,8 @@ create_directory(fullfile(MTA_PROJECT_REPORT_PATH,'egocentricPP'));
 phzOrder = [4,3,2,1,8,7,6,5];
 
 
+figure,hist(dhbang(logical(dstcm(:,5))&logical(dstcm(:,3))&ismember(dtind,[1,2])),100)
+figure,hist(dhbang(logical(dstcm(:,5))&logical(dstcm(:,3))&ismember(dtind,[1,2])),100)
 
 %%%<<< testing effect of various behavioral variables on lateral phase precession
 

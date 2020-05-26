@@ -1190,7 +1190,7 @@ end
 %%%>>>
 
 
-%%%<<< 
+%%%<<< something which needs a name later
 
 ind =   logical(dstcm(:,1))                             ...
         & any(logical(dstcm(:,[3,4,5,6])),2)              ...
@@ -2748,7 +2748,6 @@ print(hfig,'-dpng', [filePath,'.png']);
 
 %%%<<< Indepth 2d 
 
-
 vlb = {};
 vdc = {};
 vnm = {};
@@ -3023,9 +3022,6 @@ for s = [1:5]
     Lines([],vbe{h},'k');
     title(stlbls{s});
 end
-
-
-
 
 %%%>>>
 
@@ -4119,6 +4115,7 @@ qntlavShuff = mean(qntlavShuff,8);
 
 
 %%%<<< DATA CHECK POINT : qntlav
+
 save(fullfile(MTA_PROJECT_PATH,'analysis','MjgER2016_req20191104_qntlav.mat'),...
      'qntlav',                  ...
      'qntlavShuff',             ...
@@ -4129,10 +4126,12 @@ save(fullfile(MTA_PROJECT_PATH,'analysis','MjgER2016_req20191104_qntlav.mat'),..
      'stsLbls'                  ...
 );
 load(fullfile(MTA_PROJECT_PATH,'analysis','MjgER2016_req20191104_qntlav.mat'));
+
 %%%>>>
 
 
 %%%<<< Plot median decoded position (egocentric) bootstraps for thetaPhase([90,270])
+
 ledLoc = {'southwest','northeast'}; 
 hba = 1:edx
 sts = 1
@@ -4147,9 +4146,11 @@ for p = [3];    for hva = 1:edy;
     xlim([-120,120]);
     ylim([-120,120]);
 end;end;
+
 %%%>>>
 
 %%%<<< Plot bootstrapped median of the median decoded (egocentric) position over thetaPhase([80,130,180,230,270])
+
 cmap = jet(12);
 ledLoc = {'southwest','northeast'}; 
 hba = 1:edx;
@@ -4163,6 +4164,7 @@ for p = [2:7];    for hva = 1:edy;
     xlim([-20,120]);
     ylim([-80,80]);
 end;end;
+
 %%%>>>
 
 
@@ -4552,6 +4554,7 @@ plot( sq(mean(qntlav( 2, p, hba,hva,1,1,:),7,'omitnan')),sq(mean(qntlav(2,p,hba,
 
 
 %%%<<< Compute z-score 
+
 % does the sign of the hba matter?
 % bootstrapped median decoded lateral displacement relative to the head
 %    compare the sign of the head-body angle for each group of displacements
@@ -4569,11 +4572,11 @@ randsample(qntlav(:,p,hba,hav,sts,fet,itr),50;
 
 
 ind =   logical(dstcm(:,1))                             ...
-        & any(logical(dstcm(:,[3,4,5,6])),2)            ...
+        & any(logical(dstcm(:,[9:11])),2)            ...
         & ~any(logical(dstcm(:,[7,8])),2)               ...
         & dpostI                                        ...
         & duincI ...
-        & dhdist<380;
+        & dhdist<320;
 
 
 vLbl = {};
@@ -4584,17 +4587,18 @@ vBinLbl = {};
 varBinCnt = 3;
 
 vLbl{end+1} = 'hba';
-vEds{end+1} = [-1.2,-0.2,0.2,1.2];  % length: varBinCnt
+vEds{end+1} = [-1.2,-0.3,0.3,1.2];  % length: varBinCnt
 %vEds{end+1} = linspace(0,1.2,6);
 vCtr{end+1} = mean([vEds{end}(2:end); vEds{end}(1:end-1)]);
 vInd{end+1} = discretize(-(dhbang+0.2-0.4*double(~ismember(dtind,[3,4,5]))),vEds{end});
-vBinLbl{end+1} = {'L','CL','C','CR','R'};
+%vBinLbl{end+1} = {'L','CL','C','CR','R'};
+vBinLbl{end+1} = {'Left','Center','Right'};
 
 vLbl{end+1} = 'hvl';
 vEds{end+1} = [-80,-5,5,80]; % length: varBinCnt
 vCtr{end+1} = mean([vEds{end}(2:end); vEds{end}(1:end-1)]);
 vInd{end+1} = discretize(dfhrvl,vEds{end});
-vBinLbl{end+1} = {'leftward','0','rightward'};
+vBinLbl{end+1} = {'CCW','0','CW'};
 
 vLbl{end+1} = 'hvf';
 vEds{end+1} = [-10,10,25,80]; % length: varBinCnt
@@ -4625,6 +4629,7 @@ for v = 1;%:numel(vLbl),
         for e = 1:2;
 % GET dependent var { ego-centric phase precession: forward, lateral }
             tferr = ferr{e}(ind);
+            if e==2, tferr = tferr+8; end
 % COMPUTE conditional means
             for x = 1:edx
                 for y = 1:edy,            
@@ -4661,12 +4666,13 @@ end
 % out[ prj, phz, x, y, epp, var1, var2 ]
 
 
-[hfig,fig,fax,sax] = set_figure_layout(figure(666010),'A4','portrait',[],1,1,0.1,0.1);
+[hfig,fig,fax,sax] = set_figure_layout(figure(666010),'A4','portrait',[],1.25,1.25,0.1,0.1);
 
 %       hba,hvl  hvl,hvf  hvf,hbp  hba,hvf
 vGrp = { [1,2],   [3,2],   [3,1]};
 vGrp = { [1,2],   [1,3]};
-    cmap = 'gcb';
+cmap = 'bcr';
+cmap = 'bgr';    
 for g = 1:numel(vGrp);
     v = vGrp{g}(1); 
     b = vGrp{g}(2); 
@@ -4755,7 +4761,7 @@ end
 
 
 
-
+axes(sax(end));
 yOffSet = -0.5;
 xOffSet = fig.subplot.width/2;
 for s = 1:numel(stsLbls),

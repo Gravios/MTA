@@ -311,9 +311,14 @@ end
 % SAVE state collection
 cf(@(s) s.save(true),    Stc);
 % UPDATE state collection mode with model name
+cf(@(s,m) s.updateMode(m),Stc,repmat('msnn',[1,numTrials]));
+% SAVE state collection
+cf(@(s) s.save(true),    Stc);
+% UPDATE state collection mode with model name
 cf(@(s,m) s.updateMode(m),Stc,repmat({model},[1,numTrials]));
 % SAVE state collection
 cf(@(s) s.save(true),    Stc);
+
 
 
 % if MTA_VERBOSITY > 1, 

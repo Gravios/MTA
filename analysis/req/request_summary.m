@@ -1200,5 +1200,17 @@
     Description: place field rate dependence of head-body distance
     Suplementary_Files: req20200217_args.m
 
+** 2020 05 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+*** req20200525
+    Tags: cluster managment, curating
+    Status: retired
+    Type: Analysis
+    Author: Justin Graboski
+    Final_Forms: NA
+    Project: MjgER2016: bhvfields
+    Description: update req20180123_remove_bad_units
+    New_methods: assign_bad_units.m, remove_bad_units.m
+
+
 
 

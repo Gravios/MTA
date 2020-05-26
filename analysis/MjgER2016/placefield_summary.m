@@ -21,9 +21,10 @@ end
         
 % LOAD Trials
 % COMPUTE placefield statistics
-Trials  = af(@(t)  MTATrial.validate(t),   sessionList);
-units = cf(@(T)  select_placefields(T),  Trials); 
-units = req20180123_remove_bad_units(units);
+Trials  = af(@(t)    MTATrial.validate(t),   sessionList);
+units   = cf(@(t)    select_placefields(t),  Trials); 
+units   = cf(@(t,u)  remove_bad_units(t,u),  Trials,units);
+%units = req20180123_remove_bad_units(units);
 
 %unitsInt = cf(@(T)  select_units(T,'int'),  Trials); 
 
