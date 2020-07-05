@@ -190,11 +190,11 @@ psa = load_normalization_parameters_mapminmax(features{1}.label,...
                                               'hand_labeled');
 % LOAD hand labeled state matrix
 shl = {};
-if ~any(cell2mat(cf(@(s) strcmp(s.mode,'default'),StcHL))),
-    shl = cf(@(s,x,sts) MTADxyz('data',double(0<stc2mat(s,x,sts)),...
-                                'sampleRate',x.sampleRate),...
-             StcHL, xyz, states);
-end
+% $$$ if ~any(cell2mat(cf(@(s) strcmp(s.mode,'default'),StcHL))),
+% $$$     shl = cf(@(s,x,sts) MTADxyz('data',double(0<stc2mat(s,x,sts)),...
+% $$$                                 'sampleRate',x.sampleRate),...
+% $$$              StcHL, xyz, states);
+% $$$ end
 
 
 
@@ -311,7 +311,7 @@ end
 % SAVE state collection
 cf(@(s) s.save(true),    Stc);
 % UPDATE state collection mode with model name
-cf(@(s,m) s.updateMode(m),Stc,repmat('msnn',[1,numTrials]));
+cf(@(s,m) s.updateMode(m),Stc,repmat({'msnn'},[1,numTrials]));
 % SAVE state collection
 cf(@(s) s.save(true),    Stc);
 % UPDATE state collection mode with model name

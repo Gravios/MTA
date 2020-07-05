@@ -1,5 +1,3 @@
-%%%<<<<Replaced missing fold top mark>
-
 % MjgER2016_figure6
 %
 % DECODING position and behavior based on spatio-behavioral ratemaps
@@ -249,6 +247,7 @@ dc4.fet = cf(@(t)  fet_HB_pitchB(t,dc4.sampleRate),  Trials);
 %%%>>>
 
 %%%<<< COMPUTE decoding stats
+
 dc2.error.xy   = cf(@(c,x)                                                      ...
                      sqrt( sum(( c(:,[1,2])-sq( x(:,'nose',[1,2]))).^2,2)),     ...
                      dc2.com, dc2.xyz);
@@ -275,6 +274,7 @@ dc4.error.bp = cf(@(c,f)                                                        
 dc4.error.hb = cf(@(c,f)                                                        ...
                   sqrt( sum((c(:,[3,4])-f(:,[1,2])).^2,2)),                     ...
                   dc4.com,dc4.fet);
+
 %%%>>>
 
 %%%<<< COMPUTE ERROR: DC4
@@ -951,8 +951,10 @@ end
 %%%>>>
 
 %%%<<< COMPUTE DCT PROJECTION : projection of decoded position onto egocentric coordinates
+
 %dct.tRot = {0,0,0,0.17,0.17,0.17,0.17,0.17,0.17,0.17};
 dct.hRot = {0,0,0,0.17,0.17,0.17,0.17,0.17,0.17,0.17};
+%dct.hRot = {0};
 %dct.hRot = {0.2,0.2,0.2,-0.25,-0.25,-0.25,-0.25,-0.25,-0.25,-0.25};
 % $$$ dct.pch  = cf(@(t)    fet_HB_pitch(t,dct.sampleRate),                                Trials       );
 % $$$ dct.fet  = cf(@(t)    fet_HB_pitchB(t,dct.sampleRate),                               Trials       );
@@ -1390,6 +1392,16 @@ for p = 1:8,
         phzBinCenters((p+1).*double(p<=7)+mod(p+1,8).*double(p>7));
 end
 dphz = tmpdphz;
+
+
+
+tmpdphz = dphz;
+for p = 1:8,
+    tmpdphz(ismember(dtind,[1])&phzBinCenters(p)==dphz) = ...
+    phzBinCenters((p+4).*double(p<=4)+mod(p+4,8).*double(p>4));
+end
+dphz = tmpdphz;
+
 
 
 
@@ -3053,4 +3065,3 @@ text(sax(end-1).Position(1)+sax(end-1).Position(3)/2,               ...
 
 %%%>>>
 
-%%%>>>%%%>>>

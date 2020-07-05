@@ -1363,8 +1363,8 @@ dtind   = cf(@(p,t)  repmat(t.*ones([size(p,1),1]),[8,1]), dct.post,num2cell(tin
 
 tmpdphz = dphz;
 for p = 1:8,
-    tmpdphz(ismember(dtind,[1,2])&phzBinCenters(p)==dphz) = ...
-    phzBinCenters((p+2).*double(p<=6)+mod(p+2,8).*double(p>6));
+    tmpdphz(ismember(dtind,[1,2,6,7])&phzBinCenters(p)==dphz) = ...
+    phzBinCenters((p+4).*double(p<=4)+mod(p+4,8).*double(p>4));
 end
 dphz = tmpdphz;
 % $$$ 

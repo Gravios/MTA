@@ -84,6 +84,10 @@ u = 1;
 % RESTRICT periods by drz and ddz
 dper = MTADepoch([],[],abs(drz(:,u))<threshRate & ddz(:,u)<threshDist,                           ...
                  fet.sampleRate,fet.sync.copy(),fet.origin,'TimeSeries','sts',[],'tdrz','d');
+if sum(double(dper.data))==0,
+    dper.data(:) = true;
+end
+
 drzState{u} = cast(dper&tper,'TimePeriods');
 
 pfsArgs.units  = units(u);
@@ -99,6 +103,10 @@ for u = 1:numel(units);
 % RESTRICT periods by drz and ddz
     dper = MTADepoch([],[],abs(drz(:,u))<threshRate & ddz(:,u)<threshDist,...
                      fet.sampleRate,fet.sync.copy(),fet.origin,'TimeSeries','sts',[],'tdrz','d');
+    if sum(double(dper.data))==0,
+        dper.data(:) = true;
+    end
+    
     drzState{u} = cast(dper&tper,'TimePeriods');
     pfsArgs.units  = units(u);
     pfsArgs.states = drzState{u};

@@ -636,15 +636,18 @@ switch sessionList
   case 'MjgER2016',
     tmy_nlx = my_nlx;
     tmy_xyz = my_xyz;
-    
+
     % 1-2
     % er01 
     my_xyz = fullfile(my_xyz,'er01');
     Sessions(1) = struct('sessionName',  'er01-20110719',   ...
+                         'subjects',     {{'er01'}},        ...
                          'mazeName',     'cof',             ...
                          'trialName',    'all',             ...
-                         'xyz_host',      my_xyz,           ...
-                         'nlx_host',      my_nlx,           ...
+                         'dLoggers',     {{'nlx','vicon'}}, ...
+                         'dPaths',                          ...
+                             struct('xyz', my_xyz,          ...
+                                    'nlx', my_nlx),         ...
                          'xyzSampleRate', 119.881035,       ...
                          'hostServer',   'lmu',             ...
                          'dataServer',   'lmu',             ...
@@ -669,8 +672,8 @@ switch sessionList
     my_nlx = '/storage/evgeny/data/processed/ER06';    
     Sessions(end+1) = Sessions(end);    
     Sessions(end).sessionName    = 'ER06-20130612';
-    Sessions(end).xyz_host       = my_xyz;
-    Sessions(end).nlx_host       = my_nlx;
+    Sessions(end).subjects    = 'ER06';    
+    Sessions(end).dPaths         = struct('xyz', my_xyz,'nlx', my_nlx);
     Sessions(end).xyzSampleRate  = 199.997752;
     Sessions(end).TTLValue       = 'Vicon start';
     Sessions(end).includeSyncInd = [1,3,4,6,7];
@@ -697,13 +700,13 @@ switch sessionList
     my_nlx = '/storage/eduardo/data/processed/nlx/Ed10';
     Sessions(end+1) =    Sessions(end);   
     Sessions(end).sessionName = 'Ed10-20140813';
+    Sessions(end).subjects    = 'Ed10';
     Sessions(end).mazeName    = 'cof';
-    Sessions(end).xyz_host    =  my_xyz;
-    Sessions(end).nlx_host    =  my_nlx;
-    Sessions(end).xyzSampleRate = 119.881035;    
-    Sessions(end).TTLValue    = '0x0002';
-    Sessions(end).includeSyncInd = [];    
-    Sessions(end).thetaRef     = [8:8:32];
+    Sessions(end).dPaths      = struct('xyz', my_xyz,'nlx', my_nlx);
+    Sessions(end).xyzSampleRate   = 119.881035;    
+    Sessions(end).TTLValue        = '0x0002';
+    Sessions(end).includeSyncInd  = [];    
+    Sessions(end).thetaRef        = [8:8:32];
     Sessions(end).thetaRefGeneral = 8;    
 
     % DID I MEAN TO cut out 0813???
@@ -723,10 +726,10 @@ switch sessionList
     my_xyz = fullfile(my_xyz,'jg04');
     Sessions(end+1) = Sessions(end);
     Sessions(end).sessionName = 'jg04-20120128';
+    Sessions(end).subjects    = 'jg04';    
     Sessions(end).mazeName    = 'cof';
     Sessions(end).trialName   = 'all';
-    Sessions(end).xyz_host    = my_xyz;
-    Sessions(end).nlx_host    = my_nlx;
+    Sessions(end).dPaths      = struct('xyz', my_xyz,'nlx', my_nlx);    
     Sessions(end).xyzSampleRate = 119.881035;
     Sessions(end).host          = 'lmu';
     Sessions(end).TTLValue      = '0x4000';
@@ -767,14 +770,14 @@ switch sessionList
     my_xyz = fullfile(tmy_xyz,'jg05');    
     my_nlx = tmy_nlx;
     Sessions(end+1) =   Sessions(end);
-    Sessions(end).sessionName =   'jg05-20120309';
-    Sessions(end).mazeName    =   'cof';
-    Sessions(end).trialName   =   'all';
-    Sessions(end).xyz_host    =   my_xyz;
-    Sessions(end).nlx_host    =   my_nlx;
+    Sessions(end).sessionName = 'jg05-20120309';
+    Sessions(end).subjects    = 'jg05';
+    Sessions(end).mazeName    = 'cof';
+    Sessions(end).trialName   = 'all';
+    Sessions(end).dPaths      = struct('xyz', my_xyz,'nlx', my_nlx);    
     Sessions(end).TTLValue    = '0x0040';
-    Sessions(end).includeSyncInd = [];
-    Sessions(end).thetaRef     = [8:8:64,repmat(69,[1,5])];
+    Sessions(end).includeSyncInd  = [];
+    Sessions(end).thetaRef        = [8:8:64,repmat(69,[1,5])];
     Sessions(end).thetaRefGeneral = 65;        
     Sessions(end).rippleDetectionChannels = [57:64];    
     

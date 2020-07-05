@@ -4,16 +4,38 @@ qnt = load(fullfile(MTA_PROJECT_PATH,'analysis','MjgER2016_req20191104_qntlav.ma
 
 !rm /storage/gravio/data/project/general/analysis/MjgER2016_req20191104_jpdf_2d_PS_6c0239fd1f24d4bd226d1a9d44277e2c.mat
 
+% CA1 
+trialIndex = 1:7;
+clear('sBySes');
 sBySes(1) = load('/storage/gravio/data/project/general/analysis/MjgER2016_req20191104_jpdf_2d_PS_11c7acec34049037cf62dc1324558890.mat');
-sBySes(2) = load('/storage/gravio/data/project/general/analysis/MjgER2016_req20191104_jpdf_2d_PS_053796b66bf5c99fd9a69b898770bfae.mat');
-
-%ca3 
-sBySes(1) = load('/storage/gravio/data/project/general/analysis/MjgER2016_req20191104_jpdf_2d_PS_ca3_11c7acec34049037cf62dc1324558890.mat');
-sBySes(2) = load('/storage/gravio/data/project/general/analysis/MjgER2016_req20191104_jpdf_2d_PS_ca3_053796b66bf5c99fd9a69b898770bfae.mat');
-
-
+%sBySes(end+1) = load('/storage/gravio/data/project/general/analysis/MjgER2016_req20191104_jpdf_2d_PS_053796b66bf5c99fd9a69b898770bfae.mat');
+sBySes(end+1) = load('/storage/gravio/data/project/general/analysis/MjgER2016_req20191104_jpdf_2d_PS_466e97cdf155c3f48319dd13a5b485e7.mat');
 fwdOffset = -25;
 latOffset = 8;
+phzAsc = 2;
+phzDsc = 6;
+phzShift = 0;
+cblen = dblen+20*double(ismember(dtind,[3,4,5]));
+
+
+% CA3 
+trialIndex = 1:4;
+% hba X hvl
+clear('sBySes');
+sBySes(1) = load(['/storage/gravio/data/project/general/analysis/', ...
+                  'MjgER2016_req20191104_jpdf_2d_PS_ca3_11c7acec34049037cf62dc1324558890.mat']);
+% hba X hvf
+sBySes(2) = load(['/storage/gravio/data/project/general/analysis/',...
+                  'MjgER2016_req20191104_jpdf_2d_PS_ca3_053796b66bf5c99fd9a69b898770bfae.mat']);
+% $$$ sBySes(2) = load(['/storage/gravio/data/project/general/analysis/',...
+% $$$                   'MjgER2016_req20191104_jpdf_2d_PS_ca3_37b2060b443d93adcab47ed0681c0059.mat']);
+fwdOffset = -25;
+latOffset = 0;
+phzAsc = 5;
+phzDsc = 2;
+phzShift = 3;
+
+
 
 %%%<<< Compute population mean-EPP over behavioral variables 
 ind =   logical(dstcm(:,1))                             ...
@@ -33,10 +55,8 @@ varBinCnt = 3;
 
 vLbl{end+1} = 'hba';
 vEds{end+1} = [-1.2,-0.3,0.3,1.2];  % length: varBinCnt
-%vEds{end+1} = linspace(0,1.2,6);
 vCtr{end+1} = mean([vEds{end}(2:end); vEds{end}(1:end-1)]);
 vInd{end+1} = discretize(-(dhbang+0.2-0.4*double(~ismember(dtind,[3,4,5]))),vEds{end});
-%vBinLbl{end+1} = {'L','CL','C','CR','R'};
 vBinLbl{end+1} = {'Left','Center','Right'};
 
 vLbl{end+1} = 'hvl';
@@ -50,6 +70,14 @@ vEds{end+1} = [-10,10,25,80]; % length: varBinCnt
 vCtr{end+1} = mean([vEds{end}(2:end); vEds{end}(1:end-1)]);
 vInd{end+1} = discretize(dfhrvf,vEds{end});
 vBinLbl{end+1} = {'rest','slow','fast'};
+
+vLbl{end+1} = 'hbd';
+%vEds{end+1} = [100,125,145,165];
+vEds{end+1} = [100,130,150,175];
+vCtr{end+1} = mean([vbe{end}(2:end); vbe{end}(1:end-1)]);
+vInd{end+1} = discretize(cblen,vEds{end});
+vBinLbl{end+1} = {'short','medium','long'};
+
 
 
 % COMPUTE JPDF(FERROR, PHZ | HBA, HRVL)
@@ -113,10 +141,12 @@ end
 
 %%%<<< STARTFIG ------------------------------------------------------------------------------
 
+
 [hfig,fig,fax,sax] = set_figure_layout(figure(666010),'A4','portrait',[],1,1,0.0,0.0);
 
 %       hba,hvl  hvl,hvf  hvf,hbp  hba,hvf
 vGrp = { [1,2],   [1,3]};
+%vGrp = { [1,2],   [1,4]};
 cmap = 'bcr';
 cmap = 'bgr';    
 
@@ -151,11 +181,11 @@ for x = 1:edx,
         hold(sax(end),'on');
         imagesc(ferrorBinEdges{e},                                           ...
                 [phzBins,phzBins+2*pi],                                      ...
-                imgaussfilt(repmat(out(:,:,x,4-y,e,v,b),[1,2]),[3,0.2])');
+                imgaussfilt(circshift(repmat(out(:,:,x,4-y,e,v,b),[1,2]),phzShift,2),[3,0.2])');
         axis('tight');  axis('xy');  ylim([0,2.*pi]);
         xlim(xl);  
         colormap(sax(end),'jet');
-        Lines([],pi,'k','--',1);
+% $$$         Lines([],pi,'k','--',1);
         Lines(0,[],'k','--',1);
         sax(end).XTickLabel = {};
         sax(end).YTickLabel = {};
@@ -172,9 +202,10 @@ for x = 1:edx,
             yh.Position(1:2) = [yh.Position(1)+65,4];
             %uistack(yh,'top');
         end
-        plot(max(xlim()).*0.25*cos(linspace(-pi,pi,100)),linspace([ylim(),100]),'w')
+        plot(max(xlim()).*0.5*cos(linspace(-pi,pi,100)),linspace([ylim(),100]),'w','LineWidth',2)
     end
 end
+
 
 
 [yind, yOffSet, xind, xOffSet] = deal(yind+1,yOffSet-0.25,1+6*(g-1)+(x-1)*2,xOffSet);
@@ -198,8 +229,8 @@ for x = 1:edx;
     %Lines(0,[],'k',[],1);    
     grid(sax(end),'on');
     
-    boxplot(reshape(sq(mean(sBySes(g).smJpdf(2,phzOrder([2]),x,:,e,1:7,:),ndims(sBySes(g).smJpdf)))'+fwdOffset,[],1),...
-            reshape(ones([7,1]).*[1:3],[],1),...
+    boxplot(reshape(sq(mean(sBySes(g).smJpdf(2,phzOrder(phzAsc),x,:,e,trialIndex,:),ndims(sBySes(g).smJpdf)))'+fwdOffset,[],1),...
+            reshape(ones([numel(trialIndex),1]).*[1:3],[],1),...
             'ori','horizontal',...
             'Colors','bgr',...
             'plotstyle', bxpltOpts.plotstyle,...
@@ -250,8 +281,8 @@ for x = 1:edx;
     %Lines(0,[],'k',[],1);    
     grid(sax(end),'on');    
     
-    boxplot(reshape(sq(mean(sBySes(g).smJpdf(2,phzOrder([6]),x,:,e,1:7,:),ndims(sBySes(g).smJpdf)))'+fwdOffset,[],1),...
-            reshape(ones([7,1]).*[1:3],[],1),...
+    boxplot(reshape(sq(mean(sBySes(g).smJpdf(2,phzOrder(phzDsc),x,:,e,trialIndex,:),ndims(sBySes(g).smJpdf)))'+fwdOffset,[],1),...
+            reshape(ones([numel(trialIndex),1]).*[1:3],[],1),...
             'ori','horizontal',...
             'Colors','bgr',...
             'plotstyle', bxpltOpts.plotstyle,...
@@ -299,11 +330,11 @@ for x = 1:edx
         hold(sax(end),'on');
         imagesc(ferrorBinEdges{e},                                           ...
                 [phzBins,phzBins+2*pi],                                      ...
-                imgaussfilt(repmat(out(:,:,x,4-y,e,v,b),[1,2]),[3,0.2])');
+                imgaussfilt(circshift(repmat(out(:,:,x,4-y,e,v,b),[1,2]),phzShift,2),[3,0.2])');
         axis('tight');  axis('xy');  ylim([0,2.*pi]);
         xlim(xl);  
         colormap(sax(end),'jet');
-        Lines([],pi,'k','--',1);
+% $$$         Lines([],pi,'k','--',1);
         Lines(0,[],'k','--',1);
 
 % $$$         hln = Lines([],pi,'k',[],1);
@@ -322,7 +353,7 @@ for x = 1:edx
             yh.Position(1:2) = [yh.Position(1)+65,4];
             %uistack(yh,'top');
         end
-        plot(max(xlim()).*0.25*cos(linspace(-pi,pi,100)),linspace([ylim(),100]),'w')        
+        plot(max(xlim()).*0.5*cos(linspace(-pi,pi,100)),linspace([ylim(),100]),'w','LineWidth',2)        
     end
 end
 
@@ -348,8 +379,8 @@ for x = 1:edx;
     %Lines(0,[],'k',[],1);    
     grid(sax(end),'on');    
     
-    boxplot(reshape(sq(mean(sBySes(g).smJpdf(2,phzOrder([2]),x,:,e,1:7,:),ndims(sBySes(g).smJpdf)))'+latOffset,[],1),...
-            reshape(ones([7,1]).*[1:3],[],1),...
+    boxplot(reshape(sq(mean(sBySes(g).smJpdf(2,phzOrder(phzAsc),x,:,e,trialIndex,:),ndims(sBySes(g).smJpdf)))'+latOffset,[],1),...
+            reshape(ones([numel(trialIndex),1]).*[1:3],[],1),...
             'ori','horizontal',...
             'Colors','bgr',...
             'plotstyle', bxpltOpts.plotstyle,...
@@ -393,8 +424,8 @@ for x = 1:edx;
     ylim([0.5,3.5]);
     %Lines(0,[],'k',[],1);
     grid(sax(end),'on');
-    boxplot(reshape(sq(mean(sBySes(g).smJpdf(2,phzOrder([6]),x,:,e,1:7,:),ndims(sBySes(g).smJpdf)))'+latOffset,[],1),...
-            reshape(ones([7,1]).*[1:3],[],1),...
+    boxplot(reshape(sq(mean(sBySes(g).smJpdf(2,phzOrder(phzDsc),x,:,e,trialIndex,:),ndims(sBySes(g).smJpdf)))'+latOffset,[],1),...
+            reshape(ones([numel(trialIndex),1]).*[1:3],[],1),...
             'ori','horizontal',...
             'Colors','bgr',...
             'plotstyle', bxpltOpts.plotstyle,...
@@ -440,10 +471,10 @@ for x = 1:edx,
     sax(end).UserData = [vLbl{v},'_',vLbl{b}];
 
     for i = 1:varBinCnt,
-        plot(sq(mout(1,phzOrder(fliplr([2,6])),x,i,2,v,b))+8,...
-             sq(mout(1,phzOrder(fliplr([2,6])),x,i,1,v,b)),[cmap(i),'-'],'LineWidth',1.5)
-        plot(sq(mout(1,phzOrder(fliplr(6)),  x,i,2,v,b))+8,...
-             sq(mout(1,phzOrder(fliplr(6))  ,x,i,1,v,b)),[cmap(i),'o'],'LineWidth',2)
+        plot(sq(mout(1,phzOrder(fliplr([phzAsc,phzDsc])),x,i,2,v,b))+latOffset,...
+             sq(mout(1,phzOrder(fliplr([phzAsc,phzDsc])),x,i,1,v,b)),[cmap(i),'-'],'LineWidth',1.5)
+        plot(sq(mout(1,phzOrder(fliplr(phzDsc)),  x,i,2,v,b))+latOffset,...
+             sq(mout(1,phzOrder(fliplr(phzDsc))  ,x,i,1,v,b)),[cmap(i),'o'],'LineWidth',2)
     end
     xlim([xls]);
     ylim([-60,75]);
@@ -478,42 +509,42 @@ axes(fax);
 hrct = af(@(h) rectangle('Position',h.Position,'LineWidth',1),sax);
 
 
-axes(sax(end));
-yOffSet = -0.5;
-xOffSet = fig.subplot.width/2;
-for s = 1:numel(stsLbls),
-    [yind, yOffSet, xind, xOffSet] = deal(6,yOffSet,s,xOffSet);
-    sax(end+1) = axes('Units','centimeters',                                        ...
-                      'Position',[fig.page.xpos(xind)+xOffSet,                      ...
-                                  fig.page.ypos(yind)+yOffSet,                      ...
-                                  fig.subplot.width ,                               ...
-                                  fig.subplot.height],                              ...
-                      'FontSize', 8,                                                ...
-                      'LineWidth',1);
-    hold(sax(end),'on');
-    imagesc(sq(mean(qnt.qntlav( 2, 3, 2:end-1,1:5,s,1,:),7,'omitnan'))');
-    sax(end).XTickLabel = {};
-    sax(end).YTickLabel = {};
-    colormap(sax(end),'jet');caxis([-30,120]);title(qnt.stsLbls{s});axis('tight');axis('xy');
-end
-
-yOffSet = -0.5;
-xOffSet = fig.subplot.width/2;
-for s = 1:numel(stsLbls),
-    [yind, yOffSet, xind, xOffSet] = deal(7,yOffSet,s,xOffSet);
-    sax(end+1) = axes('Units','centimeters',                                        ...
-                      'Position',[fig.page.xpos(xind)+xOffSet,                      ...
-                                  fig.page.ypos(yind)+yOffSet,                      ...
-                                  fig.subplot.width ,                               ...
-                                  fig.subplot.height],                              ...
-                      'FontSize', 8,                                                ...
-                      'LineWidth',1);
-    hold(sax(end),'on');
-    imagesc(sq(mean(qnt.qntlav( 2, 3, 2:end-1,1:5,s,2,:),7,'omitnan'))');    
-    sax(end).XTickLabel = {};
-    sax(end).YTickLabel = {};
-    colormap(sax(end),'jet');caxis([-70,70]);title(qnt.stsLbls{s});axis('tight');axis('xy');
-end
+% $$$ axes(sax(end));
+% $$$ yOffSet = -0.5;
+% $$$ xOffSet = fig.subplot.width/2;
+% $$$ for s = 1:numel(stsLbls),
+% $$$     [yind, yOffSet, xind, xOffSet] = deal(6,yOffSet,s,xOffSet);
+% $$$     sax(end+1) = axes('Units','centimeters',                                        ...
+% $$$                       'Position',[fig.page.xpos(xind)+xOffSet,                      ...
+% $$$                                   fig.page.ypos(yind)+yOffSet,                      ...
+% $$$                                   fig.subplot.width ,                               ...
+% $$$                                   fig.subplot.height],                              ...
+% $$$                       'FontSize', 8,                                                ...
+% $$$                       'LineWidth',1);
+% $$$     hold(sax(end),'on');
+% $$$     imagesc(sq(mean(qnt.qntlav( 2, 3, 2:end-1,1:5,s,1,:),7,'omitnan'))');
+% $$$     sax(end).XTickLabel = {};
+% $$$     sax(end).YTickLabel = {};
+% $$$     colormap(sax(end),'jet');caxis([-30,120]);title(qnt.stsLbls{s});axis('tight');axis('xy');
+% $$$ end
+% $$$ 
+% $$$ yOffSet = -0.5;
+% $$$ xOffSet = fig.subplot.width/2;
+% $$$ for s = 1:numel(stsLbls),
+% $$$     [yind, yOffSet, xind, xOffSet] = deal(7,yOffSet,s,xOffSet);
+% $$$     sax(end+1) = axes('Units','centimeters',                                        ...
+% $$$                       'Position',[fig.page.xpos(xind)+xOffSet,                      ...
+% $$$                                   fig.page.ypos(yind)+yOffSet,                      ...
+% $$$                                   fig.subplot.width ,                               ...
+% $$$                                   fig.subplot.height],                              ...
+% $$$                       'FontSize', 8,                                                ...
+% $$$                       'LineWidth',1);
+% $$$     hold(sax(end),'on');
+% $$$     imagesc(sq(mean(qnt.qntlav( 2, 3, 2:end-1,1:5,s,2,:),7,'omitnan'))');    
+% $$$     sax(end).XTickLabel = {};
+% $$$     sax(end).YTickLabel = {};
+% $$$     colormap(sax(end),'jet');caxis([-70,70]);title(qnt.stsLbls{s});axis('tight');axis('xy');
+% $$$ end
 
 
 %%%>>>

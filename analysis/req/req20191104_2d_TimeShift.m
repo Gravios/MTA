@@ -2,7 +2,7 @@
 MTA_PROJECT_REPORT_PATH = '/storage/share/Projects/BehaviorPlaceCode/';
 figurePath = fullfile(MTA_PROJECT_REPORT_PATH,'egocentricPP','temporalShift');
 create_directory(figurePath);
- 
+
 vlb = {};
 vdc = {};
 vnm = {};
@@ -20,48 +20,54 @@ vnm{end+1} = 'chbang';
 vbe{end+1} = [0,0.4,0.8,1.2];
 vbc{end+1} = mean([vbe{end}(2:end); vbe{end}(1:end-1)]);
 vun{end+1} = 'rad';
-% $$$ 
+
 % $$$ vlb{end+1} = 'hba';
 % $$$ vdc{end+1} = 'head-body angle';
 % $$$ vnm{end+1} = 'cha';
-% $$$ %vbe{end+1} = [-1.2,-0.4,-0.2,0.2,0.4,1.2];
-% $$$ vbe{end+1} = [-1.2,-0.3,0.3,1.2];
+% $$$ vbe{end+1} = [-1.2,-0.6,-0.2,0.2,0.6,1.2];
 % $$$ vbc{end+1} = mean([vbe{end}(2:end); vbe{end}(1:end-1)]);
 % $$$ vun{end+1} = 'rad';
 
-vlb{end+1} = 'hvl';
-vdc{end+1} = 'lateral head speed';
-vnm{end+1} = 'cfhrvl';
-%vnm{end+1} = 'dfhrvl';
-vbe{end+1} = [-40,-24,-16,-8,-3,3,8,16,24,40];
-%nvbe{end+1} = [-40,-4,4,40];
-vbc{end+1} = mean([vbe{end}(2:end); vbe{end}(1:end-1)]);
-vun{end+1} = 'cm/s';
+% $$$ vlb{end+1} = 'hva';
+% $$$ vdc{end+1} = 'head-body anglular veloctiy';
+% $$$ vnm{end+1} = 'chvang';
+% $$$ vbe{end+1} = [ -0.3,-0.17,-0.05,0.05,0.17,0.3];
+% $$$ vbc{end+1} = mean([vbe{end}(2:end); vbe{end}(1:end-1)]);
+% $$$ vun{end+1} = 'rad';
+
+% $$$ vlb{end+1} = 'hvl';
+% $$$ vdc{end+1} = 'lateral head speed';
+% $$$ %vnm{end+1} = 'cfhrvl';
+% $$$ vnm{end+1} = 'dfhrvl';
+% $$$ vbe{end+1} = [-40,-24,-16,-8,-3,3,8,16,24,40];
+% $$$ %nvbe{end+1} = [-40,-4,4,40];
+% $$$ vbc{end+1} = mean([vbe{end}(2:end); vbe{end}(1:end-1)]);
+% $$$ vun{end+1} = 'cm/s';
 
 %2
 vlb{end+1} = 'hvf';
 vdc{end+1} = 'forward head speed';
 vnm{end+1} = 'dfhrvf';
 %vbe{end+1} = [-4,4,8,16,24,32,40,48,56,64,80];
-%vbe{end+1} = [-4,4,10,20,30,40,50,60,85];
-vbe{end+1} = [-4,4,14,28,42,56,70];
+vbe{end+1} = [-4,4,10,20,30,40,50,60,85];
+%vbe{end+1} = [-4,4,14,28,42,56,70];
 vbc{end+1} = mean([vbe{end}(2:end); vbe{end}(1:end-1)]);
 vun{end+1} = 'cm/s';
 %%%>>>
 
 
-mirror = true;
+mirror = false;
 stgrps = {[10]};
 stlbls = {'Walk'};
-stgrps = {[9]};
-stlbls = {'Turn'};
+% $$$ stgrps = {[9]};
+% $$$ stlbls = {'Turn'};
 % $$$ stgrps = {11};
 % $$$ stlbls = {'Pause'};
 nIter = 20;
 shifts = 0:8:2^8; % sampling shifts
 tShifts =  [-250:5:250];% temporal shifts
 tShifts =  [-100:2:50];% temporal shifts
-                       %tShifts =  [-100:50];% temporal shifts
+tShifts =  [-100:50];% temporal shifts
 tag = DataHash({vlb,stgrps,stlbls,tShifts});
 filepath = fullfile(MTA_PROJECT_PATH,'analysis',['MjgER2016_req20191104_jpdf_hbaCorrected_2d_TS_',tag,'.mat']);
 
@@ -82,7 +88,7 @@ ac = chbang;
 chbang  ( ac<0 ) = -chbang   ( ac<0 );
 cfhrvl  ( ac<0 ) = -cfhrvl   ( ac<0 );
 chroll  ( ac<0 ) = -chroll   ( ac<0 );
-%chvang  ( ac<0 ) = -chvang   ( ac<0 );
+chvang  ( ac<0 ) = -chvang   ( ac<0 );
 chzdza  ( ac<0 ) = -chzdza   ( ac<0 );
 
 
@@ -99,7 +105,7 @@ else
           & any(logical(dstcm(:,stgrps{1})),2)            ...
           & duincI                                        ...
           & dpostI                                        ...        
-          & dhdist<320;% & chbang<0.4;
+          & dhdist<320;%& chbang<0.4;
     for v = 1:numel(vbe),
         vbi{v} = discretize(eval([vnm{v},'(ind)']),vbe{v});
     end
@@ -334,8 +340,9 @@ end
 
 
 j = 1;
-%for s = [60,96];
-    for s = [35,51];    
+for s = [60,96];
+%    for s = [35,51];    
+%    for s = [51];            
 j = j+1;
 k = 1;
 for x = [1:size(smJpdf,3)];

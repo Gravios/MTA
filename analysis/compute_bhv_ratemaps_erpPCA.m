@@ -2,10 +2,16 @@ function [LR,FSr,VT,unitSubset,validDims,zrmMean,zrmStd] = compute_bhv_ratemaps_
 % function [LR,FSr,VT,unitSubset,validDims,zrmMean,zrmStd] = ...
 %     comput_bhv_ratemap_erpPCA(pfs,units,numComp,overwrite)
 %
-% ARGS : 
-%    pfs - cellarray(MTAApfs), all ratemap objects required 
+% Compute Factors (varimax) over behavior ratemaps
 %
-
+%
+% VARARGIN : 
+%    pfs       - cellarray{MTAApfs}, Ratemap objects  
+%    units     - cellarray{Array},   unit sets 
+%    numComp   - Integer,            number of expected components 
+%    range     - Integer,            number of NANs accepted
+%    overwrite - Logical,            FLAG, overwrite save file
+%
 global MTA_PROJECT_PATH
 
 % DEFARGS ------------------------------------------------------------------------------------------
@@ -52,21 +58,27 @@ if ~exist(filePath,'file') || overwrite,
     
 % SUM total nan values per map
     smnd  = sum(~isnan(rmaps),1);
-    unitSubset = find(...                               % SELECT units with good sampling
-                      range(1)<smnd&smnd<range(2)&...   %   SELECT unit subset by range of valid element count 
-                      max(rmaps)>4);                    %   SELECT unit subset by max rate
-    zrmaps = rmaps(:,unitSubset);                       % SELECT a subset of rate maps by units
-    zdims = size(zrmaps);                               % NOTE the dimensions of the original vector space
-    zrmaps(isnan(zrmaps)) = 0;                          % SET all nan valued elements to zeros
-    validDims = sum(zrmaps==0,2)<zdims(2)/10;                % SELECT subspace {1/2 non-zero samples} 
-    zrmaps = zrmaps(validDims,:);                           % REDUCE to selected subspace
-                                                        % DECOMPOSE rate maps
-    %zrind = find(max(zrmaps)>2.5);
+% SELECT units with good sampling    
+% ------ unit subset by range of valid element count 
+% ------ unit subset by max rate
+    unitSubset = find(...                               
+                      range(1)<smnd&smnd<range(2)&...   
+                      max(rmaps)>4);                    
+% SELECT a subset of rate maps by units    
+    zrmaps = rmaps(:,unitSubset);                       
+% NOTE the dimensions of the original vector space    
+    zdims = size(zrmaps);                               
+% SET all nan valued elements to zeros    
+    zrmaps(isnan(zrmaps)) = 0;                          
+% SELECT subspace {1/2 non-zero samples}     
+    validDims = sum(zrmaps==0,2)<zdims(2)/10;               
+% REDUCE to selected subspace    
+    zrmaps = zrmaps(validDims,:);                           
+% DECOMPOSE rate maps
     zrind = find(prctile(zrmaps,90)>2);
     unitSubset = unitSubset(zrind);
     zrmaps = zrmaps(:,zrind);
-    
-    %zrmaps = bsxfun(@rdivide,zrmaps,mean(prctile(zrmaps,90)));
+
     [~,LR,FSr,VT] = erpPCA(zrmaps',numComp);            % COMPUTE covariance-based PCA with Varimax rotation
 
     zrmMean = mean(zrmaps,2);

@@ -15,19 +15,29 @@ classdef MTAApfs < hgsetget %< MTAAnalysis
 %
 %-----------------------------------------------------------------------------
 %  varargin:
-%    units
-%    states
-%    overwrite
-%    tag
-%    binDims
-%    SmoothingWeights
-%    type
-%    spkShuffle
-%    posShuffle
-%    numIter
-%    xyzp
-%    bound_lims
-%    bootstrap
+% 
+%    units      -  Array,        list of units
+%    states     -  String,       computation periods
+%    overwrite  -  Logical,      overwrite rate maps
+%    tag        -  String,       optional string for filename 
+%    binDims    -  Array,        dimensions of ratemap bins (mm)
+%    SmoothingWeights - Array,   std of gaussian kernel (bins)
+%    type       -  String,       dimension discriptive characters (e.g. xy, xyz)
+%    spkShuffle -  Logical,      FLAG, shuffle spiketimes  randomly
+%    posShuffle -  Logical,      FLAG, shuflle position (blocks) randomly
+%    numIter    -  Integer,      number of bootstrap iterations
+%    xyzp       -  MTAData,      Alternative data object for ratemap space
+%    boundaryLimits - Matrix,    Computational boundaries (default->Trial.maze.boundaries)
+%    bootstrap  -  Logical,      FLAG, Compute bootstrap ratemaps
+%    halfsample -  Logical,      FLAG, Compute each bootstrap with half the data
+%    shuffleBlockSize - Double,  Data block size in seconds
+%    trackingMarker   - String,  Marker name within MTADxyz object 
+%                                (ignored if xyzp not empty)
+%    autoSaveFlag - Logical,     FLAG save between unit computations
+%    spkMode      - Logical,     FLAG remove burst (ignored if spk is provided)
+%    spk          - MTASpk,      contains unit res and clu
+%    compute_pfs  - function,    function handle to computational core
+%    loadMethod   - RESERVED FOR FUTURE USE
 %
 %-----------------------------------------------------------------------------
 %  Description
@@ -128,18 +138,17 @@ classdef MTAApfs < hgsetget %< MTAAnalysis
                 'spkMode',                        'deburst',                                     ...
                 'spk',                            [],                                            ...
                 'compute_pfs',                    @PlotPF,                                       ...
-                'load_method',                    ''                                             ...
+                'loadMethod',                    ''                                             ...
             );            
             [units,states,overwrite,tag,binDims,SmoothingWeights,type,spkShuffle,posShuffle,     ...
              numIter,xyzp,boundaryLimits,bootstrap,halfsample,shuffleBlockSize,trackingMarker,   ...
-             autoSaveFlag,spkMode,spk,compute_pfs,load_method] = DefaultArgs(varargin,defargs,'--struct');
+             autoSaveFlag,spkMode,spk,compute_pfs,loadMethod] = DefaultArgs(varargin,defargs,'--struct');
 %---------------------------------------------------------------------------------------------------
                 
 
-            switch class(Obj)
-                case 'MTATrial'
-                    Session = Obj;
 
+            if isa(Obj,'MTASession')
+                Session = Obj;
                     
 % $$$                     if ~isempty(tag),
 % $$$                         filepath = fullfile(Session.spath,[Session.filebase,'.Pfs.' tag '.mat']);
@@ -155,115 +164,112 @@ classdef MTAApfs < hgsetget %< MTAAnalysis
                     
 
 % SET path
-                    Pfs.path                  = Session.spath;
-                    Pfs.tag                   = tag;
+                Pfs.path                  = Session.spath;
+                Pfs.tag                   = tag;
 % SET session
-                    Pfs.session.sessionName   = Session.name;
-                    Pfs.session.trialName     = Session.trialName;
-                    Pfs.session.mazeName      = Session.maze.name;
+                Pfs.session.sessionName   = Session.name;
+                Pfs.session.trialName     = Session.trialName;
+                Pfs.session.mazeName      = Session.maze.name;
 % SET parameters
-                    Pfs.parameters.binDims    = binDims;                    
-                    Pfs.parameters.type       = type;
-                    Pfs.parameters.spkMode    = spkMode;                    
-                    Pfs.parameters.spkShuffle = spkShuffle;
-                    Pfs.parameters.posShuffle = posShuffle;
-                    Pfs.parameters.numIter    = numIter;
-                    Pfs.parameters.bootstrap  = bootstrap;
-                    Pfs.parameters.smoothingWeights = SmoothingWeights;
-                    Pfs.parameters.states     = '';
-                    
-                    Pfs.adata.trackingMarker  = trackingMarker;
+                Pfs.parameters.binDims    = binDims;                    
+                Pfs.parameters.type       = type;
+                Pfs.parameters.spkMode    = spkMode;                    
+                Pfs.parameters.spkShuffle = spkShuffle;
+                Pfs.parameters.posShuffle = posShuffle;
+                Pfs.parameters.numIter    = numIter;
+                Pfs.parameters.bootstrap  = bootstrap;
+                Pfs.parameters.smoothingWeights = SmoothingWeights;
+                Pfs.parameters.states     = '';
+                
+                Pfs.adata.trackingMarker  = trackingMarker;
                     
 % SET the epochs
-                    if ischar(states),
-                        Pfs.parameters.states = states;
-                        pfsState = Session.stc{states};
-                    elseif isa(states,'MTAData'),
-                        pfsState = states.copy;
-                        Pfs.parameters.states = pfsState.label;                       
-                    end
+                if ischar(states),
+                    Pfs.parameters.states = states;
+                    pfsState = Session.stc{states};
+                elseif isa(states,'MTAData'),
+                    pfsState = states.copy;
+                    Pfs.parameters.states = pfsState.label;                       
+                end
 % ASSIGN computational boundaries
-                    if isempty(boundaryLimits),
-                        boundaryLimits = Session.maze.boundaries(1:numel(type),:);
-                    end
+                if isempty(boundaryLimits),
+                    boundaryLimits = Session.maze.boundaries(1:numel(type),:);
+                end
+                assert(all(diff(boundaryLimits,1,2)>0),'MTA:MTAApfs:BoundaryLimitRangeNegative');
 % COMPUTE bin count based on bin dimension and computational boundaries
-                    Pfs.adata.binSizes = round(abs(diff(boundaryLimits(1:numel(binDims),:),1,2))./binDims');
-                    
-                    Pfs.update_filename(Session,tag);
-
-                    if exist(fpath(Pfs),'file') && ~overwrite
+                Pfs.adata.binSizes = round(abs(diff(boundaryLimits(1:numel(binDims),:),1,2))./binDims');
+                
+                Pfs.update_filename(Session,tag);
+             if exist(fpath(Pfs),'file') && ~overwrite
 % LOAD place fields 
-                        load(Pfs.fpath);
-                        if all(ismember(units,Pfs.data.clu)),
-                            return;
-                        end
+                    load(Pfs.fpath);
+                    if all(ismember(units,Pfs.data.clu)),
+                        return;
                     end
+                end
                     
 % SET the independent variabels
-                    if isempty(xyzp),
+                if isempty(xyzp),
+                    try,
+                        xyz = preproc_xyz(Session,'trb');
+                    catch err,
+                        disp(err)
                         try,
-                            xyz = preproc_xyz(Session,'trb');
-                        catch err,
-                            disp(err)
-                            try,
-                                xyz = preproc_xyz(Session);
-                                trackingMarker = 'hcom';
-                            catch
-                                xyz = Session.load('xyz');
-                                trackingMarker = 'hcom';
-                            end
-                        end
-                        xyz.resample(16);
-                        xyz.data = sq(xyz(:,trackingMarker,1:numel(binDims)));
-                    else
-                        xyz = xyzp;
-                    end
-% RESAMPLE state to new sampleRate
-                    resample(pfsState,xyz);                    
-                    
-                    
-                case 'MTAApfs'
-                    Pfs = Obj;
-                    Session = MTATrial(Obj.session.sessionName,...
-                                       Obj.session.mazeName,...
-                                       Obj.session.trialName);
-                    
-% RESET the independent variabels
-                    if xyzp.isempty,
-                        try,
-                            xyz = preproc_xyz(Session,'trb');
-                        catch err,
-                            disp(err)
                             xyz = preproc_xyz(Session);
                             trackingMarker = 'hcom';
+                        catch
+                            xyz = Session.load('xyz');
+                            trackingMarker = 'hcom';
                         end
-                        xyz.resample(16);
-                        xyz.data = sq(xyz(:,trackingMarker,1:numel(binDims)));
-                    else
-                        xyz = xyzp;
                     end
+                    xyz.resample(16);
+                    xyz.data = sq(xyz(:,trackingMarker,1:numel(binDims)));
+                else
+                    xyz = xyzp;
+                end
+% RESAMPLE state to new sampleRate
+                resample(pfsState,xyz);                    
+                
+                
+            elseif isa(Obj,'MTAApfs'),
+                Pfs = Obj;
+                Session = MTATrial(Obj.session.sessionName,...
+                                   Obj.session.mazeName,...
+                                   Obj.session.trialName);
+% RESET the independent variabels
+                if xyzp.isempty,
+                    try,
+                        xyz = preproc_xyz(Session,'trb');
+                    catch err,
+                        disp(err)
+                        xyz = preproc_xyz(Session);
+                        trackingMarker = 'hcom';
+                    end
+                    xyz.resample(16);
+                    xyz.data = sq(xyz(:,trackingMarker,1:numel(binDims)));
+                else
+                    xyz = xyzp;
+                end
                     
 % RESET the epochs
-                    if ischar(states),
-                        Pfs.parameters.states = states;
-                        pfsState = Session.stc{states};
-                        resample(pfsState,xyz);
-                    elseif isa(states,'MTAData'),
-                        pfsState = states.copy;
-                        resample(pfsState,xyz);
-                        Pfs.parameters.states = pfsState.label;                       
-                    end
+                if ischar(states),
+                    Pfs.parameters.states = states;
+                    pfsState = Session.stc{states};
+                    resample(pfsState,xyz);
+                elseif isa(states,'MTAData'),
+                    pfsState = states.copy;
+                    resample(pfsState,xyz);
+                    Pfs.parameters.states = pfsState.label;                       
+                end
 % ASSIGN computational boundaries
-                    if isempty(boundaryLimits),
-                        boundaryLimits = Session.maze.boundaries(1:numel(type),:);
-                    end
+                if isempty(boundaryLimits),
+                    boundaryLimits = Session.maze.boundaries(1:numel(type),:);
+                end
 % COMPUTE bin count based on bin dimension and computational boundaries
-                    Pfs.adata.binSizes = round(abs(diff(boundaryLimits(1:numel(binDims),:),1,2))./binDims');
-                    
-                otherwise,
-                  return
-                  
-            end%switch Obj
+                Pfs.adata.binSizes = round(abs(diff(boundaryLimits(1:numel(binDims),:),1,2))./binDims');
+            else,
+                return
+            end%if isa
                         
             numUnits = numel(units);
             selected_units = units;

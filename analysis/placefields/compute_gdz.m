@@ -3,7 +3,10 @@ function [gdz,fieldCenter,pfds] = compute_gdz(Trial,varargin)
 %
 %  place field center distance 
 %
-%  colapse 2d place field 
+%  colapse 2d place field using the trajectory heading to asign toward and away from field as 
+%  -1 and +1 resepectively.
+%
+%
 %
 %  varargin:
 %
@@ -35,7 +38,7 @@ defargs = struct('units',                  [],                                  
                                                   'methodRateMap',    'linear'),                 ...
                  'feature',                '',                                                   ...
                  'sampleRate',             [],                                                   ...
-                 'sigma',                  []                                                    ...
+                 'sigma',                  [150]                                                 ...
 );
 [units,pft,pfstats,filtCutOffFreq,marker,interpPar,feature,sampleRate,sigma] =                   ...
     DefaultArgs(varargin,defargs,'--struct');
