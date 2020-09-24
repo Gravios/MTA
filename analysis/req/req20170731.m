@@ -109,16 +109,29 @@ generate_nn_label_stats_multi_session('display')
 % $$$ generate_nn_label_stats_multi_session('display', [],'fet_bref_rev12','nIter',10,'randomizationMethod','WSBT')
 
 % COMPLETE 
-generate_nn_label_stats_multi_session('train',   [],'fet_mis','nIter',10,'randomizationMethod','WSBT')
-generate_nn_label_stats_multi_session('compute', [],'fet_mis','nIter',10,'randomizationMethod','WSBT')
-generate_nn_label_stats_multi_session('optimize',[],'fet_mis','nIter',10,'randomizationMethod','WSBT')
-generate_nn_label_stats_multi_session('display', [],'fet_mis','nIter',10,'randomizationMethod','WSBT')
+% $$$ generate_nn_label_stats_multi_session('train',   [],'fet_mis','nIter',10,'randomizationMethod','WSBT')
+% $$$ generate_nn_label_stats_multi_session('compute', [],'fet_mis','nIter',10,'randomizationMethod','WSBT')
+% $$$ generate_nn_label_stats_multi_session('optimize',[],'fet_mis','nIter',10,'randomizationMethod','WSBT')
+% $$$ generate_nn_label_stats_multi_session('display', [],'fet_mis','nIter',10,'randomizationMethod','WSBT')
 
 % INCOMPLETE 
-generate_nn_label_stats_multi_session('train',   [],'fet_mis','nIter',100,'randomizationMethod','WSBT')
-generate_nn_label_stats_multi_session('compute', [],'fet_mis','nIter',100,'randomizationMethod','WSBT')
-generate_nn_label_stats_multi_session('optimize',[],'fet_mis','nIter',100,'randomizationMethod','WSBT')
-generate_nn_label_stats_multi_session('display', [],'fet_mis','nIter',100,'randomizationMethod','WSBT')
+% $$$ generate_nn_label_stats_multi_session('train',   [],'fet_mis','nIter',100,'randomizationMethod','WSBT')
+% $$$ generate_nn_label_stats_multi_session('compute', [],'fet_mis','nIter',100,'randomizationMethod','WSBT')
+% $$$ generate_nn_label_stats_multi_session('optimize',[],'fet_mis','nIter',100,'randomizationMethod','WSBT')
+% $$$ generate_nn_label_stats_multi_session('display', [],'fet_mis','nIter',100,'randomizationMethod','WSBT')
+
+% COMPLETE 
+generate_nn_label_stats_multi_session('train',   [],'fet_bref_ext','nIter',10,'randomizationMethod','WSBT')
+generate_nn_label_stats_multi_session('compute', [],'fet_bref_ext','nIter',10,'randomizationMethod','WSBT')
+generate_nn_label_stats_multi_session('optimize',[],'fet_bref_ext','nIter',10,'randomizationMethod','WSBT')
+generate_nn_label_stats_multi_session('display', [],'fet_bref_ext','nIter',10,'randomizationMethod','WSBT')
+
+generate_nn_label_stats_multi_session('train',   [],'fet_bref_ext','nIter',10,'randomizationMethod','WSB')
+generate_nn_label_stats_multi_session('compute', [],'fet_bref_ext','nIter',10,'randomizationMethod','WSB')
+generate_nn_label_stats_multi_session('optimize',[],'fet_bref_ext','nIter',10,'randomizationMethod','WSB')
+generate_nn_label_stats_multi_session('display', [],'fet_bref_ext','nIter',10,'randomizationMethod','WSB')
+
+[pm,ps] = load_normalization_parameters_unity('fet_bref_ext','jg05-20120317.cof.all','hand_labeled');
 
 
 if isempty(sessionList),

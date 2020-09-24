@@ -39,7 +39,7 @@ if exist(filename,'file') && ~overwrite
 else,
     spk = Trial.spk.copy();
     Trial.load('nq');    
-    pft = pfs_2d_theta(Trial,[],false,true,1);
+    pft = pfs_2d_theta(Trial);
     mrt = pft.maxRate(spk.map(:,1));
     units = select_units(Trial,'pyr');
     units = units(mrt(units)>0.5);

@@ -31,6 +31,11 @@ switch features.label
   case 'fet_href_HF'
     fetInds   = [1,2];
     diffFun   = repmat({@minus},1,numel(fetInds));
+    
+  case 'fet_bref_ext'
+    fetInds   = [1:15];
+    diffFun   = repmat({@minus},1,numel(fetInds));
+    
   case 'fet_bref_SMSU'
     fetInds   = [1:12];
     diffFun   = repmat({@minus},1,numel(fetInds));

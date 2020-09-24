@@ -224,7 +224,7 @@ switch mode
 % SET figure save paths
     OwnDir = '/storage/gravio/nextcloud/';
     FigDir = 'Shared/Behavior Paper/Figures/Figure_1/parts';
-    try,mkdir(fullfile(OwnDir,FigDir));end    
+    create_directory(fullfile(OwnDir,FigDir));
 
 % SET figure dimensions
     fig.w = 6;

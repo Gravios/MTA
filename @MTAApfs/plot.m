@@ -78,27 +78,36 @@ else
     else,
         ind = 1;
     end
-    switch mode            
-      case 'mean',    ratemap = mean(Pfs.data.rateMap(:,Pfs.data.clu==unit,ind),3,'omitnan');
-      case 'mean_circ_smooth', 
-        ratemap = mean(RectFilter(sq(Pfs.data.rateMap(:,Pfs.data.clu==unit,ind)),3,1,'circular'),2,'omitnan');
-      case 'all_circ_smooth', 
-        ratemap = RectFilter(sq(Pfs.data.rateMap(:,Pfs.data.clu==unit,ind)),3,1,'circular');
-      case 'std' ,    ratemap = std(Pfs.data.rateMap(:,Pfs.data.clu==unit,ind),[],3,'omitnan');
-      case 'snr',     ratemap = mean(Pfs.data.rateMap(:,Pfs.data.clu==unit,ind),3,'omitnan')...
-            ./std(Pfs.data.rateMap(:,Pfs.data.clu==unit,ind),[],3,'omitnan');
-        ratemap(isinf(ratemap)) = nan;                          
-      case 'snrs',    
-        tStd = std(Pfs.data.rateMap(:,Pfs.data.clu==unit,ind),[],3,'omitnan');
-        tStd(tStd<1) = 1;
-        ratemap = mean(Pfs.data.rateMap(:,Pfs.data.clu==unit,ind),3,'omitnan')./tStd;
-        ratemap(isinf(ratemap)) = nan;                          
-      case 'sig'
-        ratemap = 1./sum((repmat(max(Pfs.data.rateMap(:,Pfs.data.clu==unit,:)),[size(Pfs.data.rateMap,1),1,1])...
-                          -repmat(Pfs.data.rateMap(:,Pfs.data.clu==unit,1),[1,1,Pfs.parameters.numIter]))<0,3)';
-      otherwise
+    
+    % yep.... i'm going there
+    if ischar(mode),
+        switch mode            
+          case 'mean',    ratemap = mean(Pfs.data.rateMap(:,Pfs.data.clu==unit,ind),3,'omitnan');
+          case 'mean_circ_smooth', 
+            ratemap = mean(RectFilter(sq(Pfs.data.rateMap(:,Pfs.data.clu==unit,ind)),3,1,'circular'),2,'omitnan');
+          case 'all_circ_smooth', 
+            ratemap = RectFilter(sq(Pfs.data.rateMap(:,Pfs.data.clu==unit,ind)),3,1,'circular');
+          case 'std' ,    ratemap = std(Pfs.data.rateMap(:,Pfs.data.clu==unit,ind),[],3,'omitnan');
+          case 'snr',     ratemap = mean(Pfs.data.rateMap(:,Pfs.data.clu==unit,ind),3,'omitnan')...
+                ./std(Pfs.data.rateMap(:,Pfs.data.clu==unit,ind),[],3,'omitnan');
+            ratemap(isinf(ratemap)) = nan;                          
+          case 'snrs',    
+            tStd = std(Pfs.data.rateMap(:,Pfs.data.clu==unit,ind),[],3,'omitnan');
+            tStd(tStd<1) = 1;
+            ratemap = mean(Pfs.data.rateMap(:,Pfs.data.clu==unit,ind),3,'omitnan')./tStd;
+            ratemap(isinf(ratemap)) = nan;                          
+          case 'sig'
+            ratemap = 1./sum((repmat(max(Pfs.data.rateMap(:,Pfs.data.clu==unit,:)),[size(Pfs.data.rateMap,1),1,1])...
+                              -repmat(Pfs.data.rateMap(:,Pfs.data.clu==unit,1),[1,1,Pfs.parameters.numIter]))<0,3)';
+          otherwise
+            ratemap = Pfs.data.rateMap(:,Pfs.data.clu==unit,1);
+        end                    
+    elseif iscell(mode),
+        ratemap = Pfs.data.rateMap(:,Pfs.data.clu==unit,mode{end});
+    else
         ratemap = Pfs.data.rateMap(:,Pfs.data.clu==unit,1);
-    end                    
+    end
+    
 end
 
 % COMPUTE ratemap output type    
@@ -151,7 +160,7 @@ if numel(Pfs.adata.binSizes) > 1,
             if numel(mazeMask)==1,
                 width = binSizes(1);
                 height =binSizes(2);
-                radius = round(binSizes(1)/2)-find(bins{1}<-450,1,'last');
+                radius = round(binSizes(1)/2)-find(bins{1}<=-450,1,'last');
                 centerW = width/2;
                 centerH = height/2;
                 [W,H] = meshgrid(1:width,1:height);           
@@ -218,28 +227,137 @@ if numel(Pfs.adata.binSizes) > 1,
         axis('xy');
         
       case 3
+        if iscell(mode),
+            mode = mode(1:end-1);
+            ratemap = sq(ratemap(mode{:}));
+            primaryDims = find(cellfun(@ischar,mode));
+            
+            if ~isempty(interpPar),
+                % INTERPOLATE ratemap 
+                interpGrids= cell([1,numel(interpPar.bins)]);
+                [interpGrids{:}] = ndgrid(interpPar.bins{:});
 
-        if ~isempty(interpPar),
-            % INTERPOLATE ratemap 
-            interpGrids= cell([1,numel(interpPar.bins)]);
-            % WARNING!!! Double check for non symetric placefields due to the incongruence between
-            %            meshgrid and ndgrid.
-            [interpGrids{:}] = ndgrid(interpPar.bins{:});
+                nanMask = double(isnan(ratemap));
+                % Shold I use mean rate again for zeros interpolation?        
+                ratemap(isnan(ratemap)) = 0;
 
-            nanMask = double(isnan(ratemap));
-            % Shold I use mean rate again for zeros interpolation?        
-            ratemap(isnan(ratemap)) = 0;
 
-            ratemap        = interpn(Pfs.adata.bins{:},ratemap,interpGrids{:},interpPar.methodRateMap);
-            interpdNanMask = interpn(Pfs.adata.bins{:},nanMask,interpGrids{:},interpPar.methodNanMap);
+                ratemap        = interp2(Pfs.adata.bins{:},ratemap',interpGrids{:},interpPar.methodRateMap);
+                interpdNanMask = interp2(Pfs.adata.bins{:},nanMask',interpGrids{:},interpPar.methodNanMap);
 
-            % SMOOTH edges with interpolated nan mask
-            ratemap(interpdNanMask>interpPar.nanMaskThreshold) = nan;
-            % CORRECT for cubic undershoot 
-            ratemap(ratemap<0) = 0;
+                if numel(mazeMask)>1,
+                    mazeMask = double(interp2(Pfs.adata.bins{:},...
+                                              double(mazeMask)',...
+                                              interpGrids{:},...
+                                              interpPar.methodRateMap)>0.5);
+                end
+                % SMOOTH edges with interpolated nan mask
+                ratemap(interpdNanMask>interpPar.nanMaskThreshold) = nan;
+                % CORRECT for cubic undershoot 
+                ratemap(ratemap<0) = 0;
+
+                bins = interpPar.bins;
+                binSizes = cellfun(@numel,interpPar.bins);
+            else
+                bins = Pfs.adata.bins;
+                binSizes = Pfs.adata.binSizes;
+            end
+            
+            if mazeMaskFlag,
+                % RESTRICT ratemap area to within the maze radius
+                if numel(mazeMask)==1,
+                    width = binSizes(1);
+                    height =binSizes(2);
+                    radius = round(binSizes(1)/2)-find(bins{1}<-450,1,'last');
+                    centerW = width/2;
+                    centerH = height/2;
+                    [W,H] = meshgrid(1:width,1:height);           
+                    mazeMask = double(sqrt((W-centerW-.5).^2 + (H-centerH-.5).^2) < radius);
+                end
+            end
+            if islogical(mazeMask),
+                mazeMask = double(mazeMask);
+            end
+            mazeMask(mazeMask==0)=nan;
+
+            ratemap = ratemap.*mazeMask;
+            
+            
+            
+            if nargout>0,return,end
+
+            % ASSIGN maximum rate of colormap
+            if isempty(maxRate), maxRate = max(ratemap(:)); end
+            if isnan(maxRate), maxRate = 0; end    
+            if numel(maxRate)<2, maxRate = [0,maxRate]; end
+
+            % ASSIGN elements with nans a black color value
+            %ratemap(isnan(ratemap)) = -1;
+            if flipAxesFlag,
+                bins = fliplr(bins(:)');
+                imagescnan({bins{primaryDims},...
+                            fliplr(rot90(ratemap',-1))},...
+                           maxRate,'linear',false,nanColor,[],[],colorMap);
+            else
+                imagescnan({bins{primaryDims},ratemap'},maxRate,'linear',false,nanColor,[],[],colorMap);
+            end
+            
+            if islogical(rateReportMethod) && rateReportMethod,
+                rateReportMethod = 'colorbar';
+            elseif islogical(rateReportMethod) && ~rateReportMethod,
+                rateReportMethod = '';
+            end
+            
+            if ~iscell(rateReportMethod)
+                rateReportMethod = {rateReportMethod};
+            end
+            
+            for method = rateReportMethod,
+                switch method{1}
+                  case 'colorbar'
+                    colorbar();
+                    colormap(func2str(colorMap));
+                    caxis([maxRate]);
+                  case 'text'
+                    mrate = max(ratemap(:));
+                    if mrate < 10
+                        text(Pfs.adata.bins{1}(end)-0.45*diff(Pfs.adata.bins{1}([1,end])),...
+                             Pfs.adata.bins{2}(end)-0.10*diff(Pfs.adata.bins{2}([1,end])),...
+                             sprintf('%2.1f',max(ratemap(:))),...
+                             'Color','w','FontWeight','bold','FontSize',8)
+                    else
+                        text(Pfs.adata.bins{1}(end)-0.45*diff(Pfs.adata.bins{1}([1,end])),...     
+                             Pfs.adata.bins{2}(end)-0.10*diff(Pfs.adata.bins{2}([1,end])),...
+                             sprintf('%2.0f',max(ratemap(:))),...
+                             'Color','w','FontWeight','bold','FontSize',8)
+                    end
+                end
+            end
+
+            axis('xy');
+        else,
+            if ~isempty(interpPar),
+                % INTERPOLATE ratemap 
+                interpGrids= cell([1,numel(interpPar.bins)]);
+                % WARNING!!! Double check for non symetric placefields due to the incongruence between
+                %            meshgrid and ndgrid.
+                [interpGrids{:}] = ndgrid(interpPar.bins{:});
+
+                nanMask = double(isnan(ratemap));
+                % Shold I use mean rate again for zeros interpolation?        
+                ratemap(isnan(ratemap)) = 0;
+
+                ratemap        = interpn(Pfs.adata.bins{:},ratemap,interpGrids{:},interpPar.methodRateMap);
+                interpdNanMask = interpn(Pfs.adata.bins{:},nanMask,interpGrids{:},interpPar.methodNanMap);
+
+                % SMOOTH edges with interpolated nan mask
+                ratemap(interpdNanMask>interpPar.nanMaskThreshold) = nan;
+                % CORRECT for cubic undershoot 
+                ratemap(ratemap<0) = 0;
+            end
+            
+            ratemap = ratemap.*mazeMask;
         end
-        
-        ratemap = ratemap.*mazeMask;
         
 % $$$     c = eye(3);
 % $$$     r = [1.2,3,6];

@@ -1,4 +1,4 @@
-function [pfs] = compute_egohba_ratemap(Trial,units,xyz,spk,pft,rot,hbaCorrection,thetaPhzChan,phzCorrection,overwrite)
+function [pfs] = compute_egothp_ratemap(Trial,units,xyz,spk,pft,rot,hbaCorrection,thetaPhzChan,phzCorrection,overwrite)
 
 sampleRate = xyz.sampleRate;
 binPhzs = linspace(0,2*pi,6);
@@ -31,15 +31,15 @@ end;% if
 
 
 % COMPUTE anglular difference between the head and body
-headBodyAng = [xyz(:,'spine_upper',[1,2])-xyz(:,'bcom',[1,2]),...
-               xyz(:,'nose',[1,2])-xyz(:,'hcom',[1,2])];
-headBodyAng = sq(bsxfun(@rdivide,headBodyAng,sqrt(sum(headBodyAng.^2,3))));
-headBodyAng = cart2pol(headBodyAng(:,:,1),headBodyAng(:,:,2));
-headBodyAng = circ_dist(headBodyAng(:,2),headBodyAng(:,1));
-headBodyAng = MTADfet.encapsulate(Trial,...
-                                  -(headBodyAng+hbaCorrection),...
-                                  sampleRate,...
-                                  'hba','hba','h');
+% $$$ headBodyAng = [xyz(:,'spine_upper',[1,2])-xyz(:,'bcom',[1,2]),...
+% $$$                xyz(:,'nose',[1,2])-xyz(:,'hcom',[1,2])];
+% $$$ headBodyAng = sq(bsxfun(@rdivide,headBodyAng,sqrt(sum(headBodyAng.^2,3))));
+% $$$ headBodyAng = cart2pol(headBodyAng(:,:,1),headBodyAng(:,:,2));
+% $$$ headBodyAng = circ_dist(headBodyAng(:,2),headBodyAng(:,1));
+% $$$ headBodyAng = MTADfet.encapsulate(Trial,...
+% $$$                                   -(headBodyAng+hbaCorrection),...
+% $$$                                   sampleRate,...
+% $$$                                   'hba','hba','h');
 
 % TRANSFORM Local Field Potential -> theta phase
 Trial.lfp.filename = [Trial.name,'.lfp'];
@@ -67,11 +67,11 @@ pfTemp = Trial;
 pargs = get_default_args('MjgER2016','MTAApfs','struct');        
 pargs.units        = units;
 pargs.tag          = 'egofield';
-pargs.binDims      = [20, 20, 0.6];                           % X Y HBA
-pargs.SmoothingWeights = [2, 2, 0.5];                     % X Y HBA
+pargs.binDims      = [20, 20];                           % X Y
+pargs.SmoothingWeights = [3, 3];                         % X Y
 pargs.halfsample   = false;
 pargs.numIter      = 1;   
-pargs.boundaryLimits = [-400,400;-400,400;-1.5,1.5];
+pargs.boundaryLimits = [-400,400;-400,400];
 pargs.states       = '';
 pargs.overwrite    = true;
 pargs.autoSaveFlag = false;    
@@ -86,8 +86,10 @@ end
 
 for phase = 1:numel(binPhzc)
 % CHECK existence of pfs object
-    pargs.tag = ['egofield_theta_phase_hba_',num2str(phase),stag];
-    filepath = fullfile(Trial.spath, [Trial.filebase,'.Pfs.',pargs.tag,'.mat']);
+    pargs.tag = ['egofield_theta_phase_',num2str(phase),stag];
+    
+    filepath = fullfile(Trial.spath,...
+                        [Trial.filebase,'.Pfs.',pargs.tag,'.mat']);
     
     if exist(filepath,'file'),
         pfs{phase} = load(filepath).Pfs;
@@ -117,10 +119,9 @@ for phase = 1:numel(binPhzc)
         [mxr,mxp] = pft.maxRate(units(unit));
         pfsCenterHR = MTADfet.encapsulate(Trial,                                           ...
                                           [multiprod(bsxfun(@minus,                        ...
-                                                          mxp,                           ...
-                                                          sq(xyz(:,'hcom',[1,2]))),      ...
-                                                     hvec,2,[2,3]),...
-                                           headBodyAng.data],           ...
+                                                          mxp,                             ...
+                                                          sq(xyz(:,'hcom',[1,2]))),        ...
+                                                     hvec,2,[2,3])],                       ...
                                           sampleRate,                                      ...
                                           'egocentric_placefield',                         ...
                                           'egopfs',                                        ...

@@ -157,7 +157,7 @@ btrajMeanD = sqrt(sum(btrajMean.^2,2));
 vmv = vtrajMeanD.*vtrajVarD;
 wf = mean(log10(vmv(:,1:2)),2);
 
-af =  log10(abs(MTADxyz('data',circ_mean(atrajMean,[],2).*atrajVarD,'sampleRate',trajSampleRate).filter('ButFilter',3,3,'low').data));
+af =  log10(abs(get(MTADxyz('data',circ_mean(atrajMean,[],2).*atrajVarD,'sampleRate',trajSampleRate).filter('ButFilter',3,3,'low'),'data')));
 
 sf =  Filter0(gausswin(21)./sum(gausswin(21)),circ_mean(strajMean,[],2).*mean(strajVarD,2));
 bf =  Filter0(gausswin(21)./sum(gausswin(21)),circ_mean(btrajMean,[],2).*mean(btrajVarD,2));

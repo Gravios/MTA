@@ -38,6 +38,7 @@ classdef MTAApfs < hgsetget %< MTAAnalysis
 %    spk          - MTASpk,      contains unit res and clu
 %    compute_pfs  - function,    function handle to computational core
 %    loadMethod   - RESERVED FOR FUTURE USE
+%    posShuffleDims - Array(Numeric), specify shuffling dimentions
 %
 %-----------------------------------------------------------------------------
 %  Description
@@ -138,11 +139,13 @@ classdef MTAApfs < hgsetget %< MTAAnalysis
                 'spkMode',                        'deburst',                                     ...
                 'spk',                            [],                                            ...
                 'compute_pfs',                    @PlotPF,                                       ...
-                'loadMethod',                    ''                                             ...
+                'loadMethod',                     '',                                            ...
+                'posShuffleDims',                  []                                             ...
             );            
             [units,states,overwrite,tag,binDims,SmoothingWeights,type,spkShuffle,posShuffle,     ...
              numIter,xyzp,boundaryLimits,bootstrap,halfsample,shuffleBlockSize,trackingMarker,   ...
-             autoSaveFlag,spkMode,spk,compute_pfs,loadMethod] = DefaultArgs(varargin,defargs,'--struct');
+             autoSaveFlag,spkMode,spk,compute_pfs,loadMethod,posShuffleDims] = ...
+                DefaultArgs(varargin,defargs,'--struct');
 %---------------------------------------------------------------------------------------------------
                 
 
@@ -495,10 +498,14 @@ classdef MTAApfs < hgsetget %< MTAAnalysis
 
                     
                     
+                    if isempty(posShuffleDims),
+                        posShuffleDims = 1:size(sstpos,2);
+                    end
                     
 % COMPUTE Place Field, the first always uses all available data
                     tic; %disp(unit);
-                    sstposf = shuffle_positions(sstpos);
+                    sstposf = sstpos;
+                    sstposf(:,posShuffleDims) = shuffle_positions(sstpos(:,posShuffleDims));
                     [Pfs.data.rateMap(:,dind(i),1), ... Rate Map
                      Pfs.adata.bins,                ... Bins
                      Pfs.data.si(:,dind(i)),        ... Spatial Information
@@ -518,7 +525,8 @@ classdef MTAApfs < hgsetget %< MTAAnalysis
                     if numIter>1,
                         tic
                         for bsi = 2:numIter
-                            sstposf = shuffle_positions(sstpos);
+                            sstposf = sstpos;
+                            sstposf(:,posShuffleDims) = shuffle_positions(sstpos(:,posShuffleDims));
                             Pfs.data.rateMap(:,dind(i),bsi) = ...
                                 compute_pfs(Session,...
                                             sstposf(sresind(ismember(sresind(:,bsi),halfSampleInd(:,bsi)),bsi),:),...

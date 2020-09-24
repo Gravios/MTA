@@ -1,4 +1,4 @@
-function [pfs] = compute_egohba_ratemap(Trial,units,xyz,spk,pft,rot,hbaCorrection,thetaPhzChan,phzCorrection,overwrite)
+function [pfs] = compute_egohba_ratemap_shuffled(Trial,units,xyz,spk,pft,rot,hbaCorrection,thetaPhzChan,phzCorrection,overwrite)
 
 sampleRate = xyz.sampleRate;
 binPhzs = linspace(0,2*pi,6);
@@ -69,12 +69,16 @@ pargs.units        = units;
 pargs.tag          = 'egofield';
 pargs.binDims      = [20, 20, 0.6];                           % X Y HBA
 pargs.SmoothingWeights = [2, 2, 0.5];                     % X Y HBA
+pargs.type         = 'xyw';
+pargs.spkShuffle   = false;
+pargs.posShuffle   = true;
 pargs.halfsample   = false;
-pargs.numIter      = 1;   
+pargs.numIter      = 100;   
 pargs.boundaryLimits = [-400,400;-400,400;-1.5,1.5];
 pargs.states       = '';
 pargs.overwrite    = true;
 pargs.autoSaveFlag = false;    
+pargs.posShuffleDims = 3;
 electrode = 0;
 
 % Don't judge me
@@ -86,8 +90,9 @@ end
 
 for phase = 1:numel(binPhzc)
 % CHECK existence of pfs object
-    pargs.tag = ['egofield_theta_phase_hba_',num2str(phase),stag];
+    pargs.tag = ['egofield_theta_phase_hba_shuffled_',num2str(phase),stag];
     filepath = fullfile(Trial.spath, [Trial.filebase,'.Pfs.',pargs.tag,'.mat']);
+
     
     if exist(filepath,'file'),
         pfs{phase} = load(filepath).Pfs;
@@ -117,10 +122,10 @@ for phase = 1:numel(binPhzc)
         [mxr,mxp] = pft.maxRate(units(unit));
         pfsCenterHR = MTADfet.encapsulate(Trial,                                           ...
                                           [multiprod(bsxfun(@minus,                        ...
-                                                          mxp,                           ...
-                                                          sq(xyz(:,'hcom',[1,2]))),      ...
-                                                     hvec,2,[2,3]),...
-                                           headBodyAng.data],           ...
+                                                          mxp,                             ...
+                                                          sq(xyz(:,'hcom',[1,2]))),        ...
+                                                     hvec,2,[2,3]),                        ...
+                                           headBodyAng.data],                              ...
                                           sampleRate,                                      ...
                                           'egocentric_placefield',                         ...
                                           'egopfs',                                        ...
@@ -141,3 +146,43 @@ for phase = 1:numel(binPhzc)
     pfs{phase} = pfTemp;    
     pfTemp = Trial;
 end;% for phase
+
+% $$$ lims = {[-250,250],[-250,250]};
+% $$$ figure();
+% $$$ al = 1:5;
+% $$$ numAng = numel(al);
+% $$$ sax = gobjects([0,1]);
+% $$$ for p = 4
+% $$$     rmap = plot(pfs{p},15);
+% $$$     for a = 1:numAng,
+% $$$         sax(end+1) = subplot2(1,5,1,a);
+% $$$         pcolor(pfs{p}.adata.bins{1},...
+% $$$                        pfs{p}.adata.bins{2},...
+% $$$                        rmap(:,:,al(a)));
+% $$$         
+% $$$         caxis   (sax(end),[0,10]);
+% $$$         colormap(sax(end),'jet');
+% $$$         shading (sax(end),'flat');
+% $$$         axis    (sax(end),'xy');
+% $$$         xlim    (sax(end),lims{1});
+% $$$         ylim    (sax(end),lims{2});        
+% $$$         
+% $$$         Lines([],0,'k');
+% $$$         Lines(0,[],'k');
+% $$$         
+% $$$         set(sax(end),'XTick',[]);
+% $$$         set(sax(end),'YTick',[]);        
+% $$$         
+% $$$         % ADD subject
+% $$$ % $$$         if p %== 4,
+% $$$ % $$$             subject = struct(rat);
+% $$$ % $$$             subject = update_subject_patch(subject,'head',[], false,hbaBinEdg,hbaBinCtr);
+% $$$ % $$$             subject = update_subject_patch(subject,'body', numAng+1-a,  true,hbaBinEdg,hbaBinCtr);
+% $$$ % $$$             patch(subject.body.patch.vert{:},   [0.75,0.75,0.75]);
+% $$$ % $$$             patch(subject.head.patch.vert{:},   [0.75,0.75,0.75]);
+% $$$ % $$$             patch(subject.body.overlay.vert{:},[0.75,0.50,0.50],'FaceAlpha',0.3);
+% $$$ % $$$             line(subject.head.midline.vert{:}, 'Color', subject.head.midline.color);
+% $$$ % $$$             line(subject.body.midline.vert{:}, 'Color', subject.body.midline.color);
+% $$$ % $$$         end
+% $$$     end
+% $$$ end

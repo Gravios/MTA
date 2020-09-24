@@ -550,7 +550,7 @@ for t = 1:numel(Trials),
 
         pause(0.01);
         
-        FigName = ['pfs','_',Trial.filebase,'_unit-',num2str(unit)];
+        FigName = ['pfs','_',Trial.filebase,'_unit-',num2str(unit,'%04.f')];
         %print(hfig,'-depsc2',fullfile(FigDir,Trial.filebase,[FigName,'.eps']));        
         print(hfig,'-dpng',  fullfile(FigDir,Trial.filebase,[FigName,'.png']));
 toc

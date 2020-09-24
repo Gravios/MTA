@@ -55,7 +55,7 @@ if isempty(tag)
     tag = DataHash(cf(@(p,ps)  [p.filename,ps.filename],  bfrm,bfrmShuffled));
 end
 
-filePath = fullfile(MTA_PROJECT_PATH,'analysis',[mfilename,'-',tag,'.mat']);
+filePath = fullfile(MTA_PROJECT_PATH,'analysis',[mfilename(),'-',tag,'.mat']);
 
 if exist(filePath,'file') && ~overwrite,
     load(filePath);

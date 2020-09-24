@@ -16,7 +16,29 @@ function pfs = pfs_2d_theta(Trial,varargin)
 %
 %    pfsArgsOverride: struct, list of vars and arguments to be overridden when computing placefield
 %
-
+%        units      -  Array,        list of units
+%        states     -  String,       computation periods
+%        overwrite  -  Logical,      overwrite rate maps
+%        tag        -  String,       optional string for filename 
+%        binDims    -  Array,        dimensions of ratemap bins (mm)
+%        SmoothingWeights - Array,   std of gaussian kernel (bins)
+%        type       -  String,       dimension discriptive characters (e.g. xy, xyz)
+%        spkShuffle -  Logical,      FLAG, shuffle spiketimes  randomly
+%        posShuffle -  Logical,      FLAG, shuflle position (blocks) randomly
+%        numIter    -  Integer,      number of bootstrap iterations
+%        xyzp       -  MTAData,      Alternative data object for ratemap space
+%        boundaryLimits - Matrix,    Computational boundaries (default->Trial.maze.boundaries)
+%        bootstrap  -  Logical,      FLAG, Compute bootstrap ratemaps
+%        halfsample -  Logical,      FLAG, Compute each bootstrap with half the data
+%        shuffleBlockSize - Double,  Data block size in seconds
+%        trackingMarker   - String,  Marker name within MTADxyz object 
+%                                    (ignored if xyzp not empty)
+%        autoSaveFlag - Logical,     FLAG save between unit computations
+%        spkMode      - Logical,     FLAG remove burst (ignored if spk is provided)
+%        spk          - MTASpk,      contains unit res and clu
+%        compute_pfs  - function,    function handle to computational core
+%        loadMethod   - RESERVED FOR FUTURE USE
+%
 
 % DEFARGS ---------------------------------------------------------------------------------------
 defargs = struct('units',          Trial.spk.map(:,1)',                                       ...

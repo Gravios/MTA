@@ -1,4 +1,5 @@
-function [pfs] = compute_egohba_ratemap(Trial,units,xyz,spk,pft,rot,hbaCorrection,thetaPhzChan,phzCorrection,overwrite)
+function [pfs] = compute_egohbahvl_radTraj_ratemap(Trial,units,xyz,spk,pft,rot,hbaCorrection,thetaPhzChan,phzCorrection,overwrite)
+
 
 sampleRate = xyz.sampleRate;
 binPhzs = linspace(0,2*pi,6);
@@ -7,7 +8,7 @@ pfs = cell([1,numel(binPhzc)]);
 verbose = true;
 
 if verbose,
-    disp(['[status]        compute_egohba_ratemap: processing trial: ',Trial.filebase]);
+    disp(['[status]        compute_egohbahvl_ratemap: processing trial: ',Trial.filebase]);
 end
 
 
@@ -23,11 +24,24 @@ end;% if
 % $$$ hvang.data = circ_dist(circshift(hvang.data(:,2),-10),...
 % $$$                                   circshift(hvang.data(:,2),+10));
 % COMPUTE lateral velocity of the head
-% $$$ fhrvfl = fet_href_HXY(Trial,sampleRate,false,'trb',4);
-% $$$ headLatVel = MTADfet.encapsulate(Trial,...
-% $$$                                  fhrvl(:,2),...
-% $$$                                   sampleRate,...
-% $$$                                   'hba','hba','h');
+fhrvfl = fet_href_HXY(Trial,sampleRate,false,'trb',4);
+headVelLat = MTADfet.encapsulate(Trial,...
+                                 fhrvfl(:,2),...
+                                  sampleRate,...
+                                  'headLatVel','hvl','l');
+
+% COMPUTE the angular difference between the body vector 
+%         and the vector from bcom to the maze center
+bodyMazeAng = [-xyz(:,'bcom',[1,2]),...
+               xyz(:,'spine_upper',[1,2])-xyz(:,'bcom',[1,2])];
+bodyMazeAng = sq(bsxfun(@rdivide,bodyMazeAng,sqrt(sum(bodyMazeAng.^2,3))));
+bodyMazeAng = cart2pol(bodyMazeAng(:,:,1),bodyMazeAng(:,:,2));
+bodyMazeAng = circ_dist(bodyMazeAng(:,1),bodyMazeAng(:,2));
+bodyMazeAng = MTADfet.encapsulate(Trial,bodyMazeAng,sampleRate,'bma','bma','b');
+% IN   bodyMazeAng.data > -pi/4  & bodyMazeAng.data < pi/4;
+% OUT (bodyMazeAng.data > pi*3/4 | bodyMazeAng.data < -pi*3/4);
+% CW  -pi*3/4 < bodyMazeAng.data & bodyMazeAng.data < -pi/4;
+% CCW  pi*1/4 < bodyMazeAng.data & bodyMazeAng.data < pi*3/4;
 
 
 % COMPUTE anglular difference between the head and body
@@ -39,7 +53,7 @@ headBodyAng = circ_dist(headBodyAng(:,2),headBodyAng(:,1));
 headBodyAng = MTADfet.encapsulate(Trial,...
                                   -(headBodyAng+hbaCorrection),...
                                   sampleRate,...
-                                  'hba','hba','h');
+                                  'headBodyAng','hba','h');
 
 % TRANSFORM Local Field Potential -> theta phase
 Trial.lfp.filename = [Trial.name,'.lfp'];
@@ -67,8 +81,8 @@ pfTemp = Trial;
 pargs = get_default_args('MjgER2016','MTAApfs','struct');        
 pargs.units        = units;
 pargs.tag          = 'egofield';
-pargs.binDims      = [20, 20, 0.6];                           % X Y HBA
-pargs.SmoothingWeights = [2, 2, 0.5];                     % X Y HBA
+pargs.binDims      = [20, 20, 0.6];
+pargs.SmoothingWeights = [2.5, 2.5, 0.8];
 pargs.halfsample   = false;
 pargs.numIter      = 1;   
 pargs.boundaryLimits = [-400,400;-400,400;-1.5,1.5];
@@ -77,17 +91,13 @@ pargs.overwrite    = true;
 pargs.autoSaveFlag = false;    
 electrode = 0;
 
-% Don't judge me
-if pargs.SmoothingWeights(1)~=2,
-    stag = ['_SW',num2str(pargs.SmoothingWeights(1))];
-else
-    stag = '';
-end
-
 for phase = 1:numel(binPhzc)
 % CHECK existence of pfs object
-    pargs.tag = ['egofield_theta_phase_hba_',num2str(phase),stag];
-    filepath = fullfile(Trial.spath, [Trial.filebase,'.Pfs.',pargs.tag,'.mat']);
+    tagbase = 'egofield_hbahvl_radTraj_theta_phase_';
+    pargs.tag = [tagbase,num2str(phase)];
+    
+    filepath = fullfile(Trial.spath,...
+                        [Trial.filebase,'.Pfs.',tagbase,num2str(phase),'.mat']);
     
     if exist(filepath,'file'),
         pfs{phase} = load(filepath).Pfs;
@@ -106,8 +116,16 @@ for phase = 1:numel(binPhzc)
             %electrode = spk.map(spk.map(:,1)==units(unit),2);
             pargs.states = copy(thetaState);
             pargs.states.label = ['thetaPhz_',num2str(phase)];
-            pargs.states.data((phz(:,electrode) < binPhzs(phase) )    ...
-                              | (phz(:,electrode) >= binPhzs(phase+1)) ) = 0;
+            pargs.states.data((phz(:,electrode) < binPhzs(phase) )     ...
+                              | (phz(:,electrode) >= binPhzs(phase+1))   ...
+                              & sign(headVelLat.data) ~= sign(headBodyAng.data) ...
+                              & (-pi*3/4 < bodyMazeAng.data & bodyMazeAng.data < -pi/4 ...
+                                 |pi*1/4 < bodyMazeAng.data & bodyMazeAng.data < pi*3/4 )) = 0;
+% IN   bodyMazeAng.data > -pi/4  & bodyMazeAng.data < pi/4;
+% OUT (bodyMazeAng.data > pi*3/4 | bodyMazeAng.data < -pi*3/4);
+% CW  -pi*3/4 < bodyMazeAng.data & bodyMazeAng.data < -pi/4;
+% CCW  pi*1/4 < bodyMazeAng.data & bodyMazeAng.data < pi*3/4;
+            
             cast(pargs.states,'TimePeriods');
             resInd = WithinRanges(pargs.spk.res,pargs.states.data);
             pargs.spk.res = pargs.spk.res(resInd);

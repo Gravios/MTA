@@ -1,4 +1,4 @@
-function [pfs] = compute_egohba_ratemap(Trial,units,xyz,spk,pft,rot,hbaCorrection,thetaPhzChan,phzCorrection,overwrite)
+function [pfs] = compute_egocentric_ratemap(Trial,units,xyz,spk,pft,rot,hbaCorrection,overwrite)
 
 sampleRate = xyz.sampleRate;
 binPhzs = linspace(0,2*pi,6);
@@ -43,7 +43,7 @@ headBodyAng = MTADfet.encapsulate(Trial,...
 
 % TRANSFORM Local Field Potential -> theta phase
 Trial.lfp.filename = [Trial.name,'.lfp'];
-phz = load(Trial,'lfp',thetaPhzChan).phase([6,12]);
+phz = load(Trial,'lfp',thetaRefChan).phase([6,12]);
 phz.data = unwrap(phz.data);
 phz.resample(xyz);    
 phz.data = mod(phz.data+pi,2*pi)-pi + phzCorrection; % mv phzCorrection -> Trial prop
@@ -67,8 +67,8 @@ pfTemp = Trial;
 pargs = get_default_args('MjgER2016','MTAApfs','struct');        
 pargs.units        = units;
 pargs.tag          = 'egofield';
-pargs.binDims      = [20, 20, 0.6];                           % X Y HBA
-pargs.SmoothingWeights = [2, 2, 0.5];                     % X Y HBA
+pargs.binDims      = [20, 20, 0.6];
+pargs.SmoothingWeights = [2.5, 2.5, 0.8];
 pargs.halfsample   = false;
 pargs.numIter      = 1;   
 pargs.boundaryLimits = [-400,400;-400,400;-1.5,1.5];
@@ -77,17 +77,12 @@ pargs.overwrite    = true;
 pargs.autoSaveFlag = false;    
 electrode = 0;
 
-% Don't judge me
-if pargs.SmoothingWeights(1)~=2,
-    stag = ['_SW',num2str(pargs.SmoothingWeights(1))];
-else
-    stag = '';
-end
-
 for phase = 1:numel(binPhzc)
 % CHECK existence of pfs object
-    pargs.tag = ['egofield_theta_phase_hba_',num2str(phase),stag];
-    filepath = fullfile(Trial.spath, [Trial.filebase,'.Pfs.',pargs.tag,'.mat']);
+    pargs.tag = ['egofield_theta_phase_',num2str(phase)];
+    
+    filepath = fullfile(Trial.spath,...
+                        [Trial.filebase,'.Pfs.egofield_theta_phase_',num2str(phase),'.mat']);
     
     if exist(filepath,'file'),
         pfs{phase} = load(filepath).Pfs;
