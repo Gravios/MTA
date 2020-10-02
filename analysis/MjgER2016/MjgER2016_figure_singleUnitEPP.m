@@ -1,0 +1,299 @@
+% MjgER2016_figure_singleUnitEPP
+%
+% Definitions:
+%    EPP - Egocentric Phase Precession  
+%        FEPP - Forward
+%        LEPP - Lateral
+%    RTM - Realative To Maze
+%    HFV - Head Forward Velocity
+%    HLV - Head Lateral Velocity
+%    HPM - Head Pitch RTM
+%    HRM - Roll RTM
+%    HBA - Head Body Angle
+%
+% Relations:
+%    FEPP ( HFV, HPM, HRM, HRM )
+%    LEPP ( HBA, HFL, HVA )
+%
+
+% 
+
+%%%<<< egohba
+pfs = cf(@(t,u,x,s,p,rt,hc,ch,pc)                              ... Egocentric ratemap given theta phase and head body angle.
+         compute_egohba_ratemap(t,u,x,s,p,rt,hc,ch,pc,true),   ...
+             Trials,                                           ... MTATrial
+             units,                                            ... Unit subset, placefields away from the maze walls
+             xyz,                                              ... MTADxyz object, head position
+             spk,                                              ... MTASpk object, spike time and id collection 
+             pft,                                              ... MTAApfs object, theta state placefields 
+             num2cell(rot),                                    ... head angle correction (horizontal plane)
+             num2cell(hbaCorrection),                          ... head body angle correction (horizontal plane)
+             num2cell(thetaChan),                              ... lfp channel from which phase is computed
+             num2cell(phzCorrection)                           ... theta phase offset
+);
+
+pfsh = cf(@(t,u,x,s,p,rt,hc,ch,pc)                             ... Egocentric ratemap given theta phase and head body angle.
+         compute_egohba_ratemap_shuffled(t,u,x,s,p,rt,hc,ch,pc,true),   ...
+             Trials,                                           ... MTATrial
+             units,                                            ... Unit subset, placefields away from the maze walls
+             xyz,                                              ... MTADxyz object, head position
+             spk,                                              ... MTASpk object, spike time and id collection 
+             pft,                                              ... MTAApfs object, theta state placefields 
+             num2cell(rot),                                    ... head angle correction (horizontal plane)
+             num2cell(hbaCorrection),                          ... head body angle correction (horizontal plane)
+             num2cell(thetaChan),                              ... lfp channel from which phase is computed
+             num2cell(phzCorrection)                           ... theta phase offset
+);
+%%%>>>
+
+%%%<<< egohvf
+t = [1:28];
+pfv = cf(@(t,u,x,s,p,rt,hc,ch,pc)                              ... Egocentric ratemap given theta phase and head body angle.
+         compute_egohvf_ratemap(t,u,x,s,p,rt,hc,ch,pc,false),   ...
+             Trials,                                           ... MTATrial
+             units,                                            ... Unit subset, placefields away from the maze walls
+             xyz,                                              ... MTADxyz object, head position
+             spk,                                              ... MTASpk object, spike time and id collection 
+             pft,                                              ... MTAApfs object, theta state placefields 
+             num2cell(rot),                                    ... head angle correction (horizontal plane)
+             num2cell(hbaCorrection),                          ... head body angle correction (horizontal plane)
+             num2cell(thetaChan),                              ... lfp channel from which phase is computed
+             num2cell(phzCorrection)                           ... theta phase offset
+);
+
+pfsh = cf(@(t,u,x,s,p,rt,hc,ch,pc)                             ... Egocentric ratemap given theta phase and head body angle.
+         compute_egohba_ratemap_shuffled(t,u,x,s,p,rt,hc,ch,pc,true),   ...
+             Trials,                                           ... MTATrial
+             units,                                            ... Unit subset, placefields away from the maze walls
+             xyz,                                              ... MTADxyz object, head position
+             spk,                                              ... MTASpk object, spike time and id collection 
+             pft,                                              ... MTAApfs object, theta state placefields 
+             num2cell(rot),                                    ... head angle correction (horizontal plane)
+             num2cell(hbaCorrection),                          ... head body angle correction (horizontal plane)
+             num2cell(thetaChan),                              ... lfp channel from which phase is computed
+             num2cell(phzCorrection)                           ... theta phase offset
+);
+%%%>>>
+
+%%%<<< SCRATCH
+figure();
+for a = 1:size(Smoother,3)
+    subplot(size(Smoother,3),1,a);
+    imagesc(Smoother(:,:,a)');
+end
+
+sum(nonzeros(Smoother(:,:,3)))
+
+    
+
+vxy = xyz{20}.vel('hcom',[1,2]);
+
+figure,hist(log10(vxy([Trials{20}.stc{'walk+pause&theta'}])),100);
+
+figure,hist((hvf([Trials{20}.stc{'walk+pause&theta'}],1)),100);
+
+% SCRATCH 
+%%%>>>
+
+
+
+ 
+%%%<<< GENERATE spatial mask 
+lims = {[-250,250],[-250,250]};
+maskBinInd = cf(@(p,l) l(1) < p & p < l(2),  pfs{t}{1}.adata.bins([1:2]),lims);
+mask = maskBinInd{1};
+for dim = 2:numel(maskBinInd),
+     mask = bsxfun(@and,mask,permute(maskBinInd{dim},[2:dim,1]));
+end
+maskDimVal = cf(@(p,i) p(i), pfs{t}{1}.adata.bins(1:2),maskBinInd);
+maskBinPos = cell(size(maskDimVal));
+[maskBinPos{:}] = ndgrid(maskDimVal{:});
+maskBinPos = reshape(cat(ndims(maskBinPos)+1,maskBinPos{:}),[],ndims(maskBinPos));
+%%%>>>
+
+
+rateMapNormal = pfs;
+rateMapShuffled = pfsh;
+rateMapNormal = pfl;
+rateMapShuffled = pflh;
+rateMapNormal = pfo;
+
+
+% COMPUTE the rate weighted field postion
+rweightedPos = {};
+trialAnatomicalGroup = {};
+nAng = 5;
+for trialId = 1:numel(Trials); 
+    rweightedPos{trialId} =                                                               ...
+        nan([numel(units{trialId}),                                                       ...
+             2,                                                                           ...
+             numel(rateMapNormal{2}),                                                     ...
+             rateMapNormal{2}{1}.adata.binSizes(end)]);
+    
+    for unitId = 1:numel(units{trialId}),
+        for thetaPhase = 1:numel(rateMapNormal{trialId}),
+            rmap = plot(rateMapNormal{trialId}{thetaPhase},units{trialId}(unitId));
+            rmap(rmap<1)=0;
+            % Ratemap weighted position of egocetric placefield
+            %     maskBinPos - coordinates of each bin
+            %     ratemap normalized to 1
+            for hbAngle = 1:nAng
+                rweightedPos{trialId}(unitId,:,thetaPhase,hbAngle) =                      ...
+                    sum(bsxfun(@times,                                                    ...
+                               maskBinPos,                                                ...                           
+                               reshape(rmap(maskBinInd{:},hbAngle),[],1)                  ...
+                               ./sum(reshape(rmap(maskBinInd{:},hbAngle),[],1),'omitnan'))...
+                        ,'omitnan');
+            end%for hbAngle
+        end%for thetaPhase
+    end%for unitId
+    trialAnatomicalGroup{trialId} = repmat(ismember(trialId,[1,2,6,7,26,27,28]),[numel(units{trialId}),1]);
+end%for trialId
+
+% rwpa
+rateWeightedPosition = cat(1,rweightedPos{:});
+trialAnatomicalGroup = cat(1,trialAnatomicalGroup{:});
+
+rweightedPosSH = {};
+nAng  = 5;
+nIter = size(rateMapShuffled{1}{1}.data.rateMap,3);
+for trialId = 1:numel(Trials); 
+    rweightedPosSH{trialId} =                                                             ...
+        nan([numel(units{trialId}),                                                       ...
+             2,                                                                           ...
+             numel(rateMapShuffled{1}),                                                   ...
+             rateMapShuffled{1}{1}.adata.binSizes(end),                                   ...
+             nIter]);
+    for unitId = 1:numel(units{trialId}),
+        for thetaPhase = 1:numel(rateMapShuffled{trialId}),
+            clusterIndex = units{trialId}(unitId)==pfsh{trialId}{thetaPhase}.data.clu;
+            rmap = reshape(pfsh{trialId}{thetaPhase}                                      ... MTAApfs object
+                             .data                                                        ... data
+                               .rateMap(:,                                                ... rate values
+                                        clusterIndex,                                     ... cluster Index
+                                        :),                                               ... samples
+                           [],nAng,nIter);
+            rmap(rmap<1)=0;            
+            % Ratemap weighted position of egocetric placefield
+            %     maskBinPos - coordinates of each bin
+            %     ratemap normalized to 1
+            rweightedPosSH{trialId}(unitId,:,thetaPhase,:,:) =                            ...
+                permute(sum(bsxfun(@times,                                                ...
+                                repmat(maskBinPos,[1,1,nAng,nIter]),                      ...
+                                permute(rmap(mask(:),:,:),[1,4,2,3])                      ...
+                                   ./ sum(permute(rmap(mask(:),:,:),[1,4,2,3]),           ...
+                                          'omitnan')),                                    ...
+                            'omitnan'),                                                   ...
+                        [1,2,5,3,4]);
+        end%for thetaPhase
+    end%for unitId
+end%for trialId
+
+
+
+unitSessionMap = cf(@(u,i) u*0+i, units,num2cell(1:numel(units)));
+unitSessionMap = cat(2,cat(2,unitSessionMap{:})',cat(2,units{:})');
+
+%rwpaSH = cat(1,rweightedPosSH{:});
+rateWeightedPositionShuffled = cat(1,rweightedPosSH{:});
+
+zscr = (bsxfun(@minus,                                                                    ...
+               rateWeightedPosition,                                                      ...
+               mean(rateWeightedPositionShuffled,5)))                                     ...
+       ./std(rateWeightedPositionShuffled,[],5);
+
+
+zscrFWE = bsxfun(@minus,                                                                                   ...
+               rateWeightedPositionShuffled,                                                               ...
+               repmat(mean(rateWeightedPositionShuffled,5),[1,1,1,1,size(rateWeightedPositionShuffled,5)]))...
+       ./repmat(std(rateWeightedPositionShuffled,[],5),[1,1,1,1,size(rateWeightedPositionShuffled,5)]);
+
+
+
+
+%%%<<< FIGURES epp group stats
+
+figDir = create_directory('/storage/share/Projects/EgoProCode2D/eppGroupStats');
+
+
+p  = 4;
+x  = 1;
+al = 2;
+ar = 4;
+tida   = trialAnatomicalGroup;
+rwpa   = rateWeightedPosition;
+%rwpaSH = rateWeightedPositionShuffled;
+
+
+x  = 1;
+nfn = @(x) ~x;
+figure();
+for p  = 1:nPhz;
+    for a = 1:nAng-1,
+        subplot2(4,5,a,p);
+        hold('on');
+        %bar(linspace(-150,200,30),hist(rwpa(tida,x,p,a)-25,linspace(-150,200,30)),'histc');
+        plot(rwpa(nfn(tida),2,p,a)-16,...
+             rwpa(nfn(tida),1,p,a)-25,...
+             '.');
+        plot(mean(rwpa(nfn(tida),2,p,a))-16,...
+             mean(rwpa(nfn(tida),1,p,a))-25,...
+             '*m');
+        xlim([-100,100]);
+        ylim([-150,200]);
+        grid('on');
+        %Lines(mean(rwpa(tida,x,p,a)-25),[],'r');
+        if p == 1,
+            if a == 3,
+                ylabel({'Forward Head Speed', [num2str(hvfBinCtr(a)),' mm/s']});
+            else
+                ylabel([num2str(hvfBinCtr(a)),' mm/s']);
+            end
+        end
+        if a == 1,
+            if p == 3,
+                title({'theta phase',num2str(binPhzc(p))});
+            else,
+                title(num2str(binPhzc(p)));
+            end
+        end
+    end
+end
+
+
+% MEAN RostCaud erm position 
+hfig = figure();
+cmap = cool(5);
+anaLabels = {'CA3','CA1'};
+
+for i = 0:1;
+    clf(hfig);
+    grid('on');
+    if logical(i),
+        nfn = @(x) ~x;
+    else,
+        nfn = @(x) x;
+    end;%if logical(i),
+    
+    lind = nfn(0)+1;
+
+    hold('on');
+    for p= 1:5,
+        plot(hvfBinCtr,sq(mean(rwpa(nfn(tida),1,p,:)-25)),'-*','Color',cmap(p,:));
+    end
+    ylabel('mm')
+    xlabel('cm/s')
+    legend(cf(@(t) ['\theta=',num2str(round(t,2))], num2cell(binPhzc(1:5))));
+    xlim([-20,100]);ylim([-40,80]);
+    
+    title({'Mean Rostrocaudal Position of',...
+           [anaLabels{lind},' Egofields as a function of'],...
+           ['Theta phase and Forward Head Speed. n = ',num2str(sum(nfn(tida)))]});
+    
+    print(hfig,                                                               ...% figure handle
+          '-dpng',                                                            ...% image format
+          fullfile(figDir,['mean_RC_pos_Fn_thetaPhase_headVelocityFront_Hpc_',anaLabels{lind},'.png']));     % image path
+end
+
+%%%>>>
+

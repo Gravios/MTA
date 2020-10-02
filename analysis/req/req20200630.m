@@ -47,12 +47,12 @@ MjgER2016_load_data();
 
 % SELECTED UNITS
 units = {};
-units{1}  = [ 15, 96, 99,150,207];                                  % er01-20110719  CA3
-units{2}  = [ 23, 75, 86, 99,152,157,159]; %39,74                   % er01-20110721  CA3
+units{1}  = [ ]; %15, 96, 99,150,207                                % er01-20110719  CA3
+units{2}  = [ 23, 86, 99,152,157,159]; %39,74, 75,                  % er01-20110721  CA3
 
 units{3}  = [158,173];%95,                                          % ER06-20130612  CA1
-units{4}  = [ 29, 31,107,126,175,197];                              % ER06-20130613  CA1
-units{5}  = [ 31, 35, 67, 81, 99, 121];%40, 48,119,                 % ER06-20130614  CA1
+units{4}  = [ 29, 31,107];%126,175,197                              % ER06-20130613  CA1
+units{5}  = [ 31, 35, 67, 99, 121];%40, 48, 81,119,                 % ER06-20130614  CA1
 
 units{6}  = [  4,  7, 10, 18, 25, 35, 37, 38, 49, 68,104];%60,      % Ed10-20140816  CA3
 units{7}  = [  1, 10, 24, 33, 38, 57, 63, 64, 73, 82,105,108];      % Ed10-20140817  CA3
@@ -65,15 +65,15 @@ units{12} = [ ];% 2];                                               % jg04-20120
 
 units{13} = [   ];                                                  % jg04-20120210  CA3
 units{14} = [ 20];                                                  % jg04-20120211  CA3
-units{15} = [ 18];                                                  % jg04-20120212  CA3
+units{15} = [   ]; %18                                              % jg04-20120212  CA3
 units{16} = [  5];                                                  % jg04-20120213  CA3
-units{17} = [ 16, 20, 30, 32, 34, 44, 58, 61, 81 ,107];%  7,        % jg05-20120309  CA1
-units{18} = [  9, 11, 18, 21, 29, 33, 35, 42, 49, 50, 54, 60, 63,...% jg05-20120310  CA1
-              74, 75];                            % 78, 80
+units{17} = [   ]; %16, 20, 30, 32, 34, 44, 58, 61, 81 ,107];%  7,        % jg05-20120309  CA1
+units{18} = [  9, 11, 21, 33, 35, 42, 49, 50, 54, 60, 63,...% jg05-20120310  CA1
+              74, 75];                        % 18, 29, 78, 80
 units{19} = [ 10, 13, 27, 28, 33, 50, 53, 63, 66, 67, 97,108,115,...% jg05-20120311  CA1 
              142,152,153,160,172];                % 73,94,139,              
-units{20} = [ 20, 21, 25, 31, 35, 44, 52, 61, 72, 79, 80, 81, 85,...% jg05-20120312  CA1
-             103,104,110,111,116,138,139,151];    %109,
+units{20} = [ 20, 21, 25, 31, 35, 61, 72, 79, 80, 81, 85,...% jg05-20120312  CA1
+             103,104,110,111,116,139,151];    %44, 52,109,138,
 units{21} = [  6, 22, 24, 25, 37, 43, 61, 63, 77];% 33, 44, 62, 68,  % jg05-20120315  CA1
 
 units{22} = [ 13, 18, 30, 41, 48, 56, 58, 61, 65];% 16,19(okwp),42, % jg05-20120316  CA1
@@ -83,11 +83,11 @@ units{23} = [ 10, 29, 40, 50, 54, 63, 72];        %35,              % jg05-20120
 units{24} = [ 18, 26, 48]; %  24,                                   % jg05-20120323  CA1  rear center 28, 52, 53
 units{25} = [ 10, 29, 55]; %  12, 19,                               % jg05-20120324  CA1
 
-units{26} = [  4, 43, 47, 70, 82,140,145,155,175,211,230];%87,167,  % ER06-20130624  CA3
+units{26} = [  4, 43, 47, 70, 82,140,145,175,230];%87,155,167,211,  % ER06-20130624  CA3
 
 units{27} = [ 39, 51, 83, 92, 98,100,102];                          % Ed10-20140815  CA3
 
-units{28} = [ 91,135,145,187]; % 165,183                            % er01-20110722  CA3
+units{28} = [ 91]; % 135,145,165,183,187                            % er01-20110722  CA3
 
 Trials{24} = MTATrial.validate('jg05-20120323.cof.all'); Trials{24}.load('stc','msnn_ppsvd_raux');
 Trials{25} = MTATrial.validate('jg05-20120324.cof.all'); Trials{25}.load('stc','msnn_ppsvd_raux');
@@ -146,7 +146,6 @@ thetaChan = [sessionList.thetaRefGeneral,72,72,1,8,8];
 % $$$ tphz(tphz<0) = tphz(tphz<0) + 2*pi;
 % $$$ tphz(tphz>2*pi) = tphz(tphz>2*pi) - 2*pi;
 
-
 xyz = cf(@(t) preproc_xyz(t,'trb'),             Trials);
       cf(@(x) x.filter('ButFilter',3,30,'low'), xyz);    
       cf(@(x) x.resample(sampleRate),           xyz);
@@ -159,7 +158,7 @@ pft = cf(@(t,u)  pfs_2d_theta(t,u,'pfsArgsOverride',...
 
 
 pfe = cf(@(t,u,x,s,p,rt,hc)                                    ... Egocentric ratemap given theta phase and head body angle.
-         compute_ego_ratemap(t,u,x,s,p,rt,hc,false),            ...
+         compute_ego_ratemap(t,u,x,s,p,rt,hc,false),           ...
              Trials,                                           ... MTATrial
              units,                                            ... Unit subset, placefields away from the maze walls
              xyz,                                              ... MTADxyz object, head position
@@ -169,7 +168,7 @@ pfe = cf(@(t,u,x,s,p,rt,hc)                                    ... Egocentric ra
              num2cell(hbaCorrection)                           ... head body angle correction (horizontal plane)
 );
 
-pfet = cf(@(t,u,x,s,p,rt,hc,ch,pc)                              ... Egocentric ratemap given theta phase and head body angle.
+pfet = cf(@(t,u,x,s,p,rt,hc,ch,pc)                             ... Egocentric ratemap given theta phase and head body angle.
          compute_egothp_ratemap(t,u,x,s,p,rt,hc,ch,pc,true),   ...
              Trials,                                           ... MTATrial
              units,                                            ... Unit subset, placefields away from the maze walls
@@ -195,7 +194,7 @@ pfs = cf(@(t,u,x,s,p,rt,hc,ch,pc)                              ... Egocentric ra
              num2cell(phzCorrection)                           ... theta phase offset
 );
 
-pfsh = cf(@(t,u,x,s,p,rt,hc,ch,pc)                              ... Egocentric ratemap given theta phase and head body angle.
+pfsh = cf(@(t,u,x,s,p,rt,hc,ch,pc)                             ... Egocentric ratemap given theta phase and head body angle.
          compute_egohba_ratemap_shuffled(t,u,x,s,p,rt,hc,ch,pc,true),   ...
              Trials,                                           ... MTATrial
              units,                                            ... Unit subset, placefields away from the maze walls
@@ -221,7 +220,7 @@ pfl = cf(@(t,u,x,s,p,rt,hc,ch,pc)                              ... Egocentric ra
              num2cell(phzCorrection)                           ... theta phase offset
 );
 
-pflh = cf(@(t,u,x,s,p,rt,hc,ch,pc)                              ... Egocentric ratemap given (TP, HBA, HVL gt 0)
+pflh = cf(@(t,u,x,s,p,rt,hc,ch,pc)                             ... Egocentric ratemap given (TP, HBA, HVL gt 0)
          compute_egohbahvl_ratemap_shuffled(t,u,x,s,p,rt,hc,ch,pc,true),...
              Trials,                                           ... MTATrial
              units,                                            ... Unit subset, placefields away from the maze walls
@@ -233,7 +232,7 @@ pflh = cf(@(t,u,x,s,p,rt,hc,ch,pc)                              ... Egocentric r
              num2cell(thetaChan),                              ... lfp channel from which phase is computed 
              num2cell(phzCorrection)                           ... theta phase offset
 );
-
+  
 % SELECT only tangential trajectories
 pfTan = cf(@(t,u,x,s,p,rt,hc,ch,pc)                            ... Egocentric ratemap given (TP, HBA, HVL gt 0)
            compute_egohbahvl_tanTraj_ratemap(t,u,x,s,p,rt,hc,ch,pc,true),...
@@ -688,8 +687,8 @@ maskBinPos = reshape(cat(ndims(maskBinPos)+1,maskBinPos{:}),[],ndims(maskBinPos)
 
 rateMapNormal = pfs;
 rateMapShuffled = pfsh;
-% $$$ rateMapNormal = pfl;
-% $$$ rateMapShuffled = pflh;
+rateMapNormal = pfl;
+rateMapShuffled = pflh;
 
 % COMPUTE the rate weighted field postion
 rweightedPos = {};
@@ -760,6 +759,11 @@ for trialId = 1:numel(Trials);
         end%for thetaPhase
     end%for unitId
 end%for trialId
+
+
+
+unitSessionMap = cf(@(u,i) u*0+i, units,num2cell(1:numel(units)));
+unitSessionMap = cat(2,cat(2,unitSessionMap{:})',cat(2,units{:})');
 
 %rwpaSH = cat(1,rweightedPosSH{:});
 rateWeightedPositionShuffled = cat(1,rweightedPosSH{:});
@@ -848,7 +852,7 @@ end
 
 
 figure();
-p = 1;
+p = 4;
 for a = 1:nAng, for x = 1:2,
 subplot2(nAng,4,a,x);
     hold('on');
@@ -870,12 +874,14 @@ subplot2(nAng,4,[1:2],[3:4]);
 
 sq(sum(zscr(tida,x,:,ar)>2&-2>zscr(tida,x,:,al)))./sum(tida)*100
 
+sq(sum(zscr(~tida,x,:,ar)>2|-2>zscr(~tida,x,:,al)))./sum(~tida)*100
 
 zu = find( (-2> zscr(:,x,p,al)) & (zscr(:,x,p,ar) > 2) );
  
 figure();
-%for z = 1:170,%zu'
-for z = 60:170,%zu'    
+%for z = 60:170,%zu'    
+for z = zu'
+
 t = clu(z,1);
 u = find(units{t}==clu(z,2));
 pA = 4;
