@@ -8,7 +8,7 @@ if isempty(units)
     return;
 end
 
-tlu   = cf(@(i,u) repmat(i,size(u)), mat2cell(1:numel(units),1,ones([1,numel(units)])),units);
+tlu   = cf(@(i,u) repmat(i,[1,numel(u)]), mat2cell(1:numel(units),1,ones([1,numel(units)])),units);
 
 exu = ~cellfun(@isempty,units);
 pfs = pfs(exu);

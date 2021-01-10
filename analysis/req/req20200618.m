@@ -1,8 +1,17 @@
+% req20200618
+%    Tags: egocentric, phase precession, head-body-angle
+%    Status: active
+%    Type: Analysis
+%    Author: Justin Graboski
+%    Final_Forms: NA
+%    Project: MjgER2016: bhvfields
+%    Description: egocentric coordinates relative to placefield for all placefields
+%    New_methods: 
+
 
 global MTA_PROJECT_PATH
 
 MjgER2016_load_data();
-
 
 states = {'theta',...
           'rear',...
@@ -14,30 +23,44 @@ states = {'theta',...
           'walk',...
           'turn'};
 
+% SELECT placefields with placefield away from maze wall
 units = {};
-units{1} = [15,96,99,150,207];                            % er01-20110719
-units{2} = [20,75,86,99,152,157,159];                     % er01-20110721
-units{3} = [95,158,173];                                  % ER06-20130612
-units{4} = [29,31,107,126,175,197];                       % ER06-20130613
-units{5} = [31,35,40,48,67,81,99,119,121];                % ER06-20130614
-units{6} = [4,7,10,18,25,35,37,38,49,60,68,104];          % Ed10-20140816
-units{7} = [1,10,24,33,38,57,63,64,73,82,105,108];        % Ed10-20140817
-units{8} = [];                                            % jg04-20120128
-units{9} = [];                                            % jg04-20120129
-units{10} = [];                                           % jg04-20120130
-units{11} = [];                                           % jg04-20120131
-units{12} = [];                                           % jg04-20120201
-units{13} = [];                                           % jg04-20120210
-units{14} = [];                                           % jg04-20120211
-units{15} = [];                                           % jg04-20120212
-units{16} = [];                                           % jg04-20120213
-units{17} = [7,16,20,58,81];                              % jg05-20120309
-units{18} = [9,11,18,33,42,49,50,54,60,74,75,78,80];      % jg05-20120310
-units{19} = [27,28,33,50,53,63,66,73,150,153];            % jg05-20120311
-units{20} = [20,21,25,35,44,61,72,79,80,103,104,110,139]; % jg05-20120312
-units{21} = [6,22,24,25,37,43,61,68,77];                  % jg05-20120315
-units{22} = [13,19,30,41,42,48,56,58,61,65];              % jg05-20120316
-units{23} = [29,35,40,50,54,63,72];                       % jg05-20120317
+units{1}  =  [15,96,99,150,207];                           % er01-20110719 CA2/3
+units{2}  =  [20,75,86,99,152,157,159];                    % er01-20110721 CA2/3
+
+units{3}  =  [95,158,173];                                 % ER06-20130612 CA1
+units{4}  =  [29,31,107,126,175,197];                      % ER06-20130613 CA1
+units{5}  =  [31,35,40,48,67,81,99,119,121];               % ER06-20130614 CA1
+
+units{6}  =  [4,7,10,18,25,35,37,38,49,60,68,104];         % Ed10-20140816 CA2/3
+units{7}  =  [1,10,24,33,38,57,63,64,73,82,105,108];       % Ed10-20140817 CA2/3
+
+units{8}  =  [];                                           % jg04-20120128 CA1
+units{9}  =  [];                                           % jg04-20120129 CA1
+units{10} =  [];                                           % jg04-20120130 CA1
+units{11} =  [];                                           % jg04-20120131 CA1
+units{12} =  [];                                           % jg04-20120201 CA1
+
+units{13} =  [];                                           % jg04-20120210 CA3
+units{14} =  [];                                           % jg04-20120211 CA3
+units{15} =  [];                                           % jg04-20120212 CA3
+units{16} =  [];                                           % jg04-20120213 CA3
+
+units{17} =  [7,16,20,58,81];                              % jg05-20120309 CA1
+%units{18} =  [9,11,18,33,42,49,50,54,60,74,75,78,80];      % jg05-20120310 CA1
+units{18} =  [9,11,33,34,42,49,50,54,55,60,61,75,78,80,81,87];% jg05-20120310 CA1
+units{19} =  [27,28,33,50,53,63,66,73,150,153];            % jg05-20120311 CA1
+units{20} =  [20,21,25,35,44,61,72,79,80,103,104,110,139]; % jg05-20120312 CA1
+units{21} =  [6,22,24,25,37,43,61,68,77];                  % jg05-20120315 CA1
+units{22} =  [13,19,30,41,42,48,56,58,61,65];              % jg05-20120316 CA1
+units{23} =  [29,35,40,50,54,63,72];                       % jg05-20120317 CA1
+
+%units{24} =  []; er01-20110722? CA3
+%units{25} =  [8,10,39,42,47,56,57,81,83,92,98,100,101,102]; % Ed10-20140815 CA2/3
+%units{26} =  [4,43,47,70,82,87,140,145,155,167,175,211,230]; %ER06-20130624 CA2/3
+%units{27} =  [11,17,18,24,26,28,48,49,52,53,54]; % jg05-20120323 CA2/3
+%units{28} =  [8,10,19,22,29,39,40,55]; % jg05-20120324 CA2/3
+
 
 tind = find(~cellfun(@isempty,units));
 rot = [0,0,0,0,0,0,0,0,0,0,...
@@ -47,7 +70,8 @@ rot = [0,0,0,0,0,0,0,0,0,0,...
 
 spkvn = load_spk_vars(sessionList,Trials,units,'ego_spk_analysis',states,rot);
 % spkv is old var
- 
+
+% CORRECT phase
 tphz = spkvn.phz;
 tphz = tphz + pi*double(spkvn.map(:,1)==1|spkvn.map(:,1)==2|spkvn.map(:,1)==6|spkvn.map(:,1)==7);
 tphz = tphz + pi*1/4*2*double(spkvn.map(:,1)==3|spkvn.map(:,1)==4|spkvn.map(:,1)==5);
@@ -60,7 +84,9 @@ tphz(tphz>2*pi) = tphz(tphz>2*pi) - 2*pi;
 % plot the 3 scatter for x y and phase, with hba as color
 
 figure,
-ind = ismember(spkvn.map(:,1),[3,4,5,17,18,19,20,21,22,23])&spkvn.stc(:,1)==1&(spkvn.stc(:,1)==7|spkvn.stc(:,8)==8|spkvn.stc(:,9)==9);
+ind = ismember(spkvn.map(:,1),[3,4,5,17,18,19,20,21,22,23]) ...
+      & spkvn.stc(:,1)==1 ...
+      &(spkvn.stc(:,1)==7|spkvn.stc(:,8)==8|spkvn.stc(:,9)==9);
 scatter3(spkvn.ego(ind,1),   ...
          spkvn.ego(ind,15),   ...
          tphz(ind),     ...
@@ -138,7 +164,7 @@ bvec = multiprod(bvec,...
                  [1,2]);
 
 figure
-t = 18;
+t = 20;
 u = 2;
 ny = 5;
 nx = 3;

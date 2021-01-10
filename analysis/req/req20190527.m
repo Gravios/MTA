@@ -28,7 +28,7 @@ sti = {[1],[2],[3,4],[5,6],3,4,5,6};
 
 % BATCH Process Trials
 parp = [];
-for t = 1:23
+for t = 1:numel(Trials)
     %t = 20;    
     Trial = Trials{t}; 
     unitSubset = units{t};        

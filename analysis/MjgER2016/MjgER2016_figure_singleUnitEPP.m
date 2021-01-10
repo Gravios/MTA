@@ -15,12 +15,14 @@
 %    FEPP ( HFV, HPM, HRM, HRM )
 %    LEPP ( HBA, HFL, HVA )
 %
-
+% TODO : compute FWE threshold from Null distributions
 % 
 
+
 %%%<<< egohba
+
 pfs = cf(@(t,u,x,s,p,rt,hc,ch,pc)                              ... Egocentric ratemap given theta phase and head body angle.
-         compute_egohba_ratemap(t,u,x,s,p,rt,hc,ch,pc,true),   ...
+         compute_egohba_ratemap(t,u,x,s,p,rt,hc,ch,pc,headCenterCorrection,true),   ...
              Trials,                                           ... MTATrial
              units,                                            ... Unit subset, placefields away from the maze walls
              xyz,                                              ... MTADxyz object, head position
@@ -33,7 +35,7 @@ pfs = cf(@(t,u,x,s,p,rt,hc,ch,pc)                              ... Egocentric ra
 );
 
 pfsh = cf(@(t,u,x,s,p,rt,hc,ch,pc)                             ... Egocentric ratemap given theta phase and head body angle.
-         compute_egohba_ratemap_shuffled(t,u,x,s,p,rt,hc,ch,pc,true),   ...
+         compute_egohba_ratemap_shuffled(t,u,x,s,p,rt,hc,ch,pc,headCenterCorrection,true),   ...
              Trials,                                           ... MTATrial
              units,                                            ... Unit subset, placefields away from the maze walls
              xyz,                                              ... MTADxyz object, head position
@@ -44,12 +46,13 @@ pfsh = cf(@(t,u,x,s,p,rt,hc,ch,pc)                             ... Egocentric ra
              num2cell(thetaChan),                              ... lfp channel from which phase is computed
              num2cell(phzCorrection)                           ... theta phase offset
 );
+
 %%%>>>
 
-%%%<<< egohvf
-t = [1:28];
-pfv = cf(@(t,u,x,s,p,rt,hc,ch,pc)                              ... Egocentric ratemap given theta phase and head body angle.
-         compute_egohvf_ratemap(t,u,x,s,p,rt,hc,ch,pc,false),   ...
+%%%<<< egohbahvl
+
+pfl = cf(@(t,u,x,s,p,rt,hc,ch,pc)                              ... Egocentric ratemap given (TP, HBA, HVL gt 0)
+         compute_egohbahvl_ratemap(t,u,x,s,p,rt,hc,ch,pc,headCenterCorrection,true),...
              Trials,                                           ... MTATrial
              units,                                            ... Unit subset, placefields away from the maze walls
              xyz,                                              ... MTADxyz object, head position
@@ -57,8 +60,38 @@ pfv = cf(@(t,u,x,s,p,rt,hc,ch,pc)                              ... Egocentric ra
              pft,                                              ... MTAApfs object, theta state placefields 
              num2cell(rot),                                    ... head angle correction (horizontal plane)
              num2cell(hbaCorrection),                          ... head body angle correction (horizontal plane)
-             num2cell(thetaChan),                              ... lfp channel from which phase is computed
+             num2cell(thetaChan),                              ... lfp channel from which phase is computed 
              num2cell(phzCorrection)                           ... theta phase offset
+);
+
+pflh = cf(@(t,u,x,s,p,rt,hc,ch,pc)                             ... Egocentric ratemap given (TP, HBA, HVL gt 0)
+         compute_egohbahvl_ratemap_shuffled(t,u,x,s,p,rt,hc,ch,pc,headCenterCorrection,true),...
+             Trials,                                           ... MTATrial
+             units,                                            ... Unit subset, placefields away from the maze walls
+             xyz,                                              ... MTADxyz object, head position
+             spk,                                              ... MTASpk object, spike time and id collection 
+             pft,                                              ... MTAApfs object, theta state placefields 
+             num2cell(rot),                                    ... head angle correction (horizontal plane)
+             num2cell(hbaCorrection),                          ... head body angle correction (horizontal plane)
+             num2cell(thetaChan),                              ... lfp channel from which phase is computed 
+             num2cell(phzCorrection)                           ... theta phase offset
+);
+
+%%%>>>
+
+%%%<<< egohvf
+t = 1:28;
+pfv = cf(@(t,u,x,s,p,rt,hc,ch,pc)                              ... Egocentric ratemap given theta phase and head body angle.
+         compute_egohvf_ratemap(t,u,x,s,p,rt,hc,ch,pc,false),   ...
+             Trials(t),                                           ... MTATrial
+             units(t),                                            ... Unit subset, placefields away from the maze walls
+             xyz(t),                                              ... MTADxyz object, head position
+             spk(t),                                              ... MTASpk object, spike time and id collection 
+             pft(t),                                              ... MTAApfs object, theta state placefields 
+             num2cell(rot(t)),                                    ... head angle correction (horizontal plane)
+             num2cell(hbaCorrection(t)),                          ... head body angle correction (horizontal plane)
+             num2cell(thetaChan(t)),                              ... lfp channel from which phase is computed
+             num2cell(phzCorrection(t))                           ... theta phase offset
 );
 
 pfsh = cf(@(t,u,x,s,p,rt,hc,ch,pc)                             ... Egocentric ratemap given theta phase and head body angle.
@@ -111,24 +144,30 @@ maskBinPos = cell(size(maskDimVal));
 maskBinPos = reshape(cat(ndims(maskBinPos)+1,maskBinPos{:}),[],ndims(maskBinPos));
 %%%>>>
 
+%%%<<< COMPUTE rate-weighted positions
 
 rateMapNormal = pfs;
 rateMapShuffled = pfsh;
+
 rateMapNormal = pfl;
 rateMapShuffled = pflh;
-rateMapNormal = pfo;
 
+rateMapNormal = pfv;
+%rateMapShuffled = pf;
 
 % COMPUTE the rate weighted field postion
 rweightedPos = {};
 trialAnatomicalGroup = {};
+
+goodTrialInds = find(~cellfun(@isempty,units));
+
 nAng = 5;
-for trialId = 1:numel(Trials); 
+for trialId = goodTrialInds,
     rweightedPos{trialId} =                                                               ...
         nan([numel(units{trialId}),                                                       ...
              2,                                                                           ...
-             numel(rateMapNormal{2}),                                                     ...
-             rateMapNormal{2}{1}.adata.binSizes(end)]);
+             numel(rateMapNormal{trialId}),                                                     ...
+             rateMapNormal{trialId}{1}.adata.binSizes(end)]);
     
     for unitId = 1:numel(units{trialId}),
         for thetaPhase = 1:numel(rateMapNormal{trialId}),
@@ -157,12 +196,12 @@ trialAnatomicalGroup = cat(1,trialAnatomicalGroup{:});
 rweightedPosSH = {};
 nAng  = 5;
 nIter = size(rateMapShuffled{1}{1}.data.rateMap,3);
-for trialId = 1:numel(Trials); 
+for trialId = goodTrialInds,
     rweightedPosSH{trialId} =                                                             ...
         nan([numel(units{trialId}),                                                       ...
              2,                                                                           ...
-             numel(rateMapShuffled{1}),                                                   ...
-             rateMapShuffled{1}{1}.adata.binSizes(end),                                   ...
+             numel(rateMapShuffled{trialId}),                                                   ...
+             rateMapShuffled{trialId}{1}.adata.binSizes(end),                                   ...
              nIter]);
     for unitId = 1:numel(units{trialId}),
         for thetaPhase = 1:numel(rateMapShuffled{trialId}),
@@ -203,12 +242,19 @@ zscr = (bsxfun(@minus,                                                          
        ./std(rateWeightedPositionShuffled,[],5);
 
 
-zscrFWE = bsxfun(@minus,                                                                                   ...
-               rateWeightedPositionShuffled,                                                               ...
-               repmat(mean(rateWeightedPositionShuffled,5),[1,1,1,1,size(rateWeightedPositionShuffled,5)]))...
+zscrFWE = bsxfun(@minus,                                                                    ...
+               rateWeightedPositionShuffled,                                              ...
+               repmat(mean(rateWeightedPositionShuffled,5),[1,1,1,1,size(rateWeightedPositionShuffled,5)]))                                     ...
        ./repmat(std(rateWeightedPositionShuffled,[],5),[1,1,1,1,size(rateWeightedPositionShuffled,5)]);
 
 
+p  = 1;
+x  = 2;
+al = 2;
+ar = 4;
+tida   = logical(trialAnatomicalGroup);
+rwpa   = rateWeightedPosition;
+rwpaSH = rateWeightedPositionShuffled;
 
 
 %%%<<< FIGURES epp group stats
@@ -233,11 +279,11 @@ for p  = 1:nPhz;
         subplot2(4,5,a,p);
         hold('on');
         %bar(linspace(-150,200,30),hist(rwpa(tida,x,p,a)-25,linspace(-150,200,30)),'histc');
-        plot(rwpa(nfn(tida),2,p,a)-16,...
-             rwpa(nfn(tida),1,p,a)-25,...
+        plot(rwpa(nfn(tida),2,p,a),...
+             rwpa(nfn(tida),1,p,a),...
              '.');
-        plot(mean(rwpa(nfn(tida),2,p,a))-16,...
-             mean(rwpa(nfn(tida),1,p,a))-25,...
+        plot(mean(rwpa(nfn(tida),2,p,a)),...
+             mean(rwpa(nfn(tida),1,p,a)),...
              '*m');
         xlim([-100,100]);
         ylim([-150,200]);

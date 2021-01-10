@@ -11,13 +11,13 @@ function req20180921(Trial)
 %    1. select interneurons
 %    2  compute ratemaps
 
-
+%Trial = MTATrial.validate('jg05-20120312.cof.all');
 Trial = MTATrial.validate(Trial);
 %Trial = MTATrial.validate('jg05-20120310.cof.all');
-
+baseFigPath = '/storage/gravio/figures/analysis';
 waitFlag = false;
-figDir = create_directory(['/storage/gravio/figures/analysis/ratemaps_xyhb_interneurons/',...
-                    Trial.filebase]);
+figDir = create_directory(...
+    fullfile(baseFigPath,['ratemaps_xyhb_interneurons/',Trial.filebase]));
 
 unitsInt = select_units(Trial,'int');
 

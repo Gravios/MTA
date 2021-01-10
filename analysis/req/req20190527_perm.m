@@ -28,17 +28,18 @@ sti = {[2],[3,4],[5,6]};
 
 % BATCH Process Trials
 
-for t = 1:23
+for t = 1:numel(Trials),%[24:28];
+%for t =[24:28];
     %t = 20;    
     Trial = Trials{t}; 
-    unitSubset = units{t};        
+    unitTrialSubset = units{t};        
     subjectId = regexp(Trial.name,'^(\w*)-','tokens');
     subjectId = subjectId{1}{1};
     Trial.lfp.filename = [Trial.name,'.lfp'];
 
-    spk = Trial.load('spk',sampleRate,'',unitSubset,'deburst');
+    spk = Trial.load('spk',sampleRate,'',unitTrialSubset,'deburst');
 
-    pft = pfs_2d_theta(Trial,unitSubset);
+    pft = pfs_2d_theta(Trial,unitTrialSubset);
 
     xyz = resample(preproc_xyz(Trial,'trb'),sampleRate);
 
@@ -58,11 +59,11 @@ for t = 1:23
     lfp.resample(xyz);
 
 % DRZ - Directional Rate Zone
-    [hrz,~,drang] = compute_hrz(Trial,unitSubset,pft,'sampleRate',sampleRate);
-    [ddz] = compute_ddz(Trial,unitSubset,pft,'sampleRate',sampleRate);
+    [hrz,~,drang] = compute_hrz(Trial,unitTrialSubset,pft,'sampleRate',sampleRate);
+    [ddz] = compute_ddz(Trial,unitTrialSubset,pft,'sampleRate',sampleRate);
 
     sigma = 150;
-    [ghz] = compute_ghz(Trial,unitSubset,pft,'sampleRate',sampleRate,'sigma',sigma);    
+    [ghz] = compute_ghz(Trial,unitTrialSubset,pft,'sampleRate',sampleRate,'sigma',sigma);    
 
 % NAN sample points where spikes occured lateral to the head
     fxyz = filter(copy(xyz),'ButFilter',3,30,'low');
@@ -70,9 +71,9 @@ for t = 1:23
     hvec = sq(bsxfun(@rdivide,hvec,sqrt(sum(hvec.^2,3))));
     hvec = cat(3,hvec,sq(hvec)*[0,-1;1,0]);
 
-    pfhr = nan([size(xyz,1),numel(unitSubset),2]);
-    for u = 1:numel(unitSubset),%&pft.data.spar>0.15&pft.data.spar<0.3),
-        [mxr,mxp] = pft.maxRate(unitSubset(u));
+    pfhr = nan([size(xyz,1),numel(unitTrialSubset),2]);
+    for u = 1:numel(unitTrialSubset),%&pft.data.spar>0.15&pft.data.spar<0.3),
+        [mxr,mxp] = pft.maxRate(unitTrialSubset(u));
         pfhr(:,u,:) = multiprod(bsxfun(@minus,mxp,sq(fxyz(:,'hcom',[1,2]))),hvec,2,[2,3]);
         ghz(abs(pfhr(:,u,2))>100,u) = nan;
     end
@@ -104,7 +105,7 @@ for t = 1:23
                 aper(aperBoth) = subPeriod;
         
 % PARGS - Default rate map arguments
-                pargs = struct('units',              unitSubset,                           ...
+                pargs = struct('units',              unitTrialSubset,                           ...
                                'states',             'theta',                              ...
                                'overwrite',          false,                                 ...
                                'tag',                ['ddtp-s',num2str(sigma),'-',         ...
@@ -124,27 +125,27 @@ for t = 1:23
                                'spk',                spk                                   ...
                                );
                 pfs = MTAApfs(Trial,'tag',pargs.tag);
-                if all(ismember(pfs.data.clu,unitSubset))
+                if all(ismember(pfs.data.clu,unitTrialSubset)) && ~overwrite
                     continue
                 end
                 
                 pfs.purge_savefile();
                 pfs = Trial;
-                for unit = unitSubset,
+                for unit = unitTrialSubset,
                     [mxr,mxp] = pft.maxRate(unit);        
                     pargs.xyzp = copy(xyz);
-                    pargs.xyzp.data = [ghz(:,unit==unitSubset),phz.data];
+                    pargs.xyzp.data = [ghz(:,unit==unitTrialSubset),phz.data];
                     pargs.units = unit;
                     pargs.states = MTADepoch([],                                                   ...
                                              [],                                                   ...
                                              ThreshCross(aper                                      ...
-                                                         & abs(ddz(:,unit==unitSubset))<300,       ...
+                                                         & abs(ddz(:,unit==unitTrialSubset))<300,       ...
                                                          0.5,1),                                   ...
                                              sampleRate,pargs.xyzp.sync.copy(),                    ...
                                              pargs.xyzp.origin,'TimePeriods','sts',[],'thrz','d');
                     pfsArgs = struct2varargin(pargs);
                     pfs = MTAApfs(pfs,pfsArgs{:});    
-                    if unit==unitSubset(1),
+                    if unit==unitTrialSubset(1),
                         pfs.save();
                     end
                 end

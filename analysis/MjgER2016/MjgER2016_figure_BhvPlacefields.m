@@ -16,7 +16,7 @@
 % 
 %    --- Examination of the neurons' behavior-space-information distribution.
 %    ??? How many neurons have significant behavioral information ???
-%     ??? should the erpPCA only include those with siginificant behavioral information ???
+%    ??? should the erpPCA only include those with siginificant behavioral information ???
 %
 %    B. Eigenvectors of PFD decomposition of HPxBP space
 %    C. t-SNE mapping of fscores within HPxBP of first 3 eigenvectors
@@ -127,7 +127,6 @@ pfssMpSub = pfssMpSub(unitSubset,:,:);
 
 %%%>>>
 
-
 %%%<<< LOAD Behavioral state contours
 [stateContourMaps,stateContourHandles] =                           ...
     bhv_contours(sessionListName,                                  ... sessionListName
@@ -194,7 +193,6 @@ end
 
 %%%>>>
 
-
 %%%<<< SET Figure Opts
 cond_round = @(rate) max([round(rate,0),round(rate,1)].*[rate>=10,rate<10]);
 nanColor = [0.25,0.25,0.25];
@@ -225,7 +223,6 @@ ylim([0,hfig.Position(4)]);
 sp = gobjects([1,0]);
 
 %%%>>>
-
 
 %%%<<< MjgER2016-F2-Sup: behavior and place field examples -> move to supfig
 
@@ -389,10 +386,10 @@ for u = cluMap',
         title(labels{xind});
     end 
     if yind==round(size(cluMap,1)./2),
-        ylabel({'Head Pitch'});
+        ylabel({'Body Pitch'});
     end
     if yind==size(cluMap,1),
-        xlabel({'Body Pitch'});
+        xlabel({'Head-Body','Pitch'});
 % DRAW the scale bars for placefields (spatial ratemaps)
 
         % y-axis scale bar
@@ -850,7 +847,7 @@ bsiZ = ((bsi) - mean((bsiShuffled),2))./std((bsiShuffled),[],2);
 
 
 (log2(bsi(i)) - mean(log2(bsiShuffled(i,:)),2))./std(log2(bsiShuffled(i,:)),[],2)
-
+ 
 u = 1:490;
 figure();
 for i = u,
@@ -870,7 +867,7 @@ for i = u,
         title(bsiZ(i));    
     waitforbuttonpress();
 end
-
+ 
 
 
 

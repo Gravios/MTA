@@ -1,4 +1,4 @@
-function [pfs] = compute_egohbahvl_ratemap(Trial,units,xyz,spk,pft,rot,hbaCorrection,thetaPhzChan,phzCorrection,overwrite)
+function [pfs] = compute_egohbahvl_ratemap(Trial,units,xyz,spk,pft,rot,hbaCorrection,thetaPhzChan,phzCorrection,headCenterCorrection,overwrite)
 
 sampleRate = xyz.sampleRate;
 binPhzs = linspace(0,2*pi,6);
@@ -22,45 +22,48 @@ end;% if
 % $$$ % Positive: CCW (Left)     Negative: CW (Right)
 % $$$ hvang.data = circ_dist(circshift(hvang.data(:,2),-10),...
 % $$$                                   circshift(hvang.data(:,2),+10));
-% COMPUTE lateral velocity of the head
-fhrvfl = fet_href_HXY(Trial,sampleRate,false,'trb',4);
-headVelLat = MTADfet.encapsulate(Trial,...
-                                 fhrvfl(:,2),...
-                                  sampleRate,...
-                                  'headLatVel','hvl','l');
+
+if overwrite,
+% COMPUTE lateral velocity of the head    
+    fhrvfl = fet_href_HXY(Trial,sampleRate,false,'trb',4);
+    headVelLat = MTADfet.encapsulate(Trial,...
+                                     fhrvfl(:,2),...
+                                     sampleRate,...
+                                     'headLatVel','hvl','l');
 
 
 % COMPUTE anglular difference between the head and body
-headBodyAng = [xyz(:,'spine_upper',[1,2])-xyz(:,'bcom',[1,2]),...
-               xyz(:,'nose',[1,2])-xyz(:,'hcom',[1,2])];
-headBodyAng = sq(bsxfun(@rdivide,headBodyAng,sqrt(sum(headBodyAng.^2,3))));
-headBodyAng = cart2pol(headBodyAng(:,:,1),headBodyAng(:,:,2));
-headBodyAng = circ_dist(headBodyAng(:,2),headBodyAng(:,1));
-headBodyAng = MTADfet.encapsulate(Trial,...
-                                  -(headBodyAng+hbaCorrection),...
-                                  sampleRate,...
-                                  'headBodyAng','hba','h');
+    headBodyAng = [xyz(:,'spine_upper',[1,2])-xyz(:,'bcom',[1,2]),...
+                   xyz(:,'nose',[1,2])-xyz(:,'hcom',[1,2])];
+    headBodyAng = sq(bsxfun(@rdivide,headBodyAng,sqrt(sum(headBodyAng.^2,3))));
+    headBodyAng = cart2pol(headBodyAng(:,:,1),headBodyAng(:,:,2));
+    headBodyAng = circ_dist(headBodyAng(:,2),headBodyAng(:,1));
+    headBodyAng = MTADfet.encapsulate(Trial,...
+                                      -(headBodyAng+hbaCorrection),...
+                                      sampleRate,...
+                                      'headBodyAng','hba','h');
 
 % TRANSFORM Local Field Potential -> theta phase
-Trial.lfp.filename = [Trial.name,'.lfp'];
-phz = load(Trial,'lfp',thetaPhzChan).phase([6,12]);
-phz.data = unwrap(phz.data);
-phz.resample(xyz);    
-phz.data = mod(phz.data+pi,2*pi)-pi + phzCorrection; % mv phzCorrection -> Trial prop
-phz.data(phz.data<0) = phz.data(phz.data<0) + 2*pi;
-phz.data(phz.data>2*pi) = phz.data(phz.data>2*pi) - 2*pi;
-
-
-hvec = xyz(:,'nose',[1,2])-xyz(:,'hcom',[1,2]);
-hvec = sq(bsxfun(@rdivide,hvec,sqrt(sum(hvec.^2,3))));
-hvec = cat(3,hvec,sq(hvec)*[0,-1;1,0]);
-hvec = multiprod(hvec,...
-                 [cos(rot),-sin(rot);sin(rot),cos(rot)],...
-                 [2,3],...
-                 [1,2]);
+    Trial.lfp.filename = [Trial.name,'.lfp'];
+    phz = load(Trial,'lfp',thetaPhzChan).phase([6,12]);
+    phz.data = unwrap(phz.data);
+    phz.resample(xyz);    
+    phz.data = mod(phz.data+pi,2*pi)-pi + phzCorrection; % mv phzCorrection -> Trial prop
+    phz.data(phz.data<0) = phz.data(phz.data<0) + 2*pi;
+    phz.data(phz.data>2*pi) = phz.data(phz.data>2*pi) - 2*pi;
+    
+    hvec = xyz(:,'nose',[1,2])-xyz(:,'hcom',[1,2]);
+    hvec = sq(bsxfun(@rdivide,hvec,sqrt(sum(hvec.^2,3))));
+    hvec = cat(3,hvec,sq(hvec)*[0,-1;1,0]);
+    hvec = multiprod(hvec,...
+                     [cos(rot),-sin(rot);sin(rot),cos(rot)],...
+                     [2,3],...
+                     [1,2]);
 
 % GET theta state behaviors, minus rear
-thetaState = resample(cast([Trial.stc{'theta-groom-sit-rear'}],'TimeSeries'),xyz);
+    thetaState = resample(cast([Trial.stc{'theta-groom-sit-rear'}],'TimeSeries'),xyz);
+end
+
 
 pfTemp = Trial;
 
@@ -68,10 +71,10 @@ pargs = get_default_args('MjgER2016','MTAApfs','struct');
 pargs.units        = units;
 pargs.tag          = 'egofield';
 pargs.binDims      = [20, 20, 0.6];
-pargs.SmoothingWeights = [3, 3, 0.6];
+pargs.SmoothingWeights = [3, 3, 0.4];
 pargs.halfsample   = false;
 pargs.numIter      = 1;   
-pargs.boundaryLimits = [-400,400;-400,400;-1.5,1.5];
+pargs.boundaryLimits = [-410,410;-410,410;-1.5,1.5];
 pargs.states       = '';
 pargs.overwrite    = true;
 pargs.autoSaveFlag = false;    
@@ -117,10 +120,13 @@ for phase = 1:numel(binPhzc)
         
         [mxr,mxp] = pft.maxRate(units(unit));
         pfsCenterHR = MTADfet.encapsulate(Trial,                                           ...
-                                          [multiprod(bsxfun(@minus,                        ...
+                                          [bsxfun(                                         ...
+                                              @plus,                                       ...
+                                              multiprod(bsxfun(@minus,                        ...
                                                           mxp,                           ...
                                                           sq(xyz(:,'hcom',[1,2]))),      ...
-                                                     hvec,2,[2,3]),...
+                                                     hvec,2,[2,3]),                    ...
+                                              headCenterCorrection),                      ...                                              
                                            headBodyAng.data],           ...
                                           sampleRate,                                      ...
                                           'egocentric_placefield',                         ...

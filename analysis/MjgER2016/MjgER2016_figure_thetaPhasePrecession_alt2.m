@@ -34,22 +34,37 @@ MjgER2016_general_args('section 1');
 %%%<<< SET args
 
 overwrite = false;
+states = {'theta-groom-sit','rear&theta','hloc&theta','hpause&theta','lloc&theta',...
+          'lpause&theta'};
 stateLabels = {'theta','rear','high','low','hloc','hpause','lloc','lpause'};
 statesLabels = {'theta','rear','H Loc','H Pause','L Loc','L Pause'};
 sampleRate = 250;
-sigma = 150;
+sigma      = 150;
 sessionUnitCnt = cellfun(@numel,units);
 unitCnt = sum(sessionUnitCnt);
 phzOrder = [9:16,1:8];
 %CA1 units
-sesIds = [3:5,8:12,17:23];
+sesIds = [3:5,8:12,17:25];
 %CA3 units
-%sesIds = [1:2,6:7,13:16];
+%sesIds = [1:2,6:7,13:16,26:28];
 sesInds = ismember(cluSessionMap(:,1),sesIds);
 statesPfss = {'loc&theta','lloc&theta','hloc&theta','rear&theta',         ...
               'pause&theta','lpause&theta','hpause&theta'};
 statesPfssInd = [4,3,2];
 statesIndsGPE = [2,3,4];
+statesInds = [2,3,4,5,6];
+statesInds = [4,5,6,7,8];
+
+% MjgER2016_tpp_drzCorrectedPhasePreference
+phzCorrection = [6,6,              ... er01
+                 4,4,4,            ... ER06
+                 6,6,              ... Ed10
+                 0,0,0,0,0,0,0,0,0,... jg04                 
+                 2,2,2,2,2,2,2,2,2 ... jg05
+                 6,6,6]; % new units - ER06, Ed10, er01
+
+
+
 stsColor = 'rgb';
 colorMap = @jet;
 nanColor = [0.15,0.15,0.15];
@@ -66,7 +81,7 @@ pfss        = cf(@(t,u)  pfs_2d_states(t,u),                                    
 pfbs        = cf(@(t,u)  compute_bhv_ratemaps(t,u),                               Trials, units);
 pfbsShuff   = cf(@(t,u)  compute_bhv_ratemaps_shuffled(t,u),                      Trials, units);
 % DEF behaivor field rate maps: theta phase resolved
-[bfstr,metaData]       = req20181106(Trials,[],[],units,'overwrite',false);
+[bfstr,metaData]  = req20181106(Trials,[],[],units,'overwrite',false);
 % DEF Conditional Expectation: req20190527(): phase VS gdz (gaussian distance zone)
 pftHZTPD    = cf(@(s) ...
                  cf(@(T,u) MTAApfs(T,u,'tag',['ddtp-','s',num2str(sigma),'-',s]), Trials, units),...
@@ -95,21 +110,36 @@ else
     load(trjCntFilePath);
 end
 
+% need to refactor code to prevent previous overwrite of states
+states = {'theta-groom-sit','rear&theta','hloc&theta','hpause&theta','lloc&theta',...
+          'lpause&theta'};
+
+
 %[cluSessionMap(cluSessionMap(:,1)==19,2),diff(sq(tper(cluSessionMap(:,1)==19,1,:)),1,2)./60]
 dbins = pftHZTPD{1}{1}.adata.bins{1};
 pbins = circ_rad2ang([pftHZTPD{1}{1}.adata.bins{2};pftHZTPD{1}{1}.adata.bins{2}+2*pi]);
 
 
 % LOAD spike resovled data
-spkv = MjgER2016_load_spikeVars(Trials,units,sessionList); 
+[spkv,statesSpk] = MjgER2016_load_spikeVars(Trials,units,sessionList,'overwrite',true); 
+
+spkv.phc = spkv.map(:,1);
+for p = 1:numel(phzCorrection),
+    spkv.phc(spkv.map(:,1)==p) = ones([sum((spkv.map(:,1)==p)),1]).*phzCorrection(p).*pi/16;
+end
+
 
 % LOAD phase precession statistics
 MjgER2016_tpp_stats();                                         % --> 
 MjgER2016_tpp_drzCorrectedPhasePreference();                   % --> tpp
 MjgER2016_tpp_drzCorrectedPhasePreference_statePermutations(); % --> perm
+filename = fullfile(Trial.path.project,'analysis','MjgER2016_drzCorrectedPhasePreference.mat');
+%save(filename,'tpp','perm','-v7.3');
+load(filename);
 
-rhoSig = 1-sq(sum(abs(rhoHRZall(:,1,1,:))>abs(rhoHRZall(:,1,2:end,s+1)),3)./size(rhoHRZall,3));
-rSig = 1-sq(sum(abs(rHRZall(:,1,1,:))>abs(rHRZall(:,1,2:end,s+1)),3)./size(rHRZall,3));
+
+rhoSig = 1-sq(sum(abs(rhoHRZall(:,1,1,:))>abs(rhoHRZall(:,1,2:end,:)),3)./size(rhoHRZall,3));
+rSig   = 1-sq(sum(abs(rHRZall(:,1,1,:))>abs(rHRZall(:,1,2:end,:)),3)./size(rHRZall,3));
 
 
 [~,bfsMP] = cf(@(p,u) p.maxRate(u,false),pfbs,units);
@@ -239,10 +269,13 @@ exampleUnits = [20,74;...
                 20,59;...
                 20,103];
 
+expUnitsPP = {[21],[6];...
+              [21],[22];...
+              [20],[79]};
 
 
 % INDEX cluSessionMap for each spike
-[~,spkCluSessionMapInd] = max(all(bsxfun(@eq,spkv.map,permute(cluSessionMap,[3,2,1])),2)==true,[],3);
+[~,spkCluSessionMapInd] = max(all(bsxfun(@eq,spkv.map,permute(cluSessionMap(unitSubset,:),[3,2,1])),2)==true,[],3);
 spkv.ppr = sq(rHRZall(spkCluSessionMapInd,1,1,:));
 spkv.ppr(isnan(spkv.ppr)) = 0;
 
@@ -262,9 +295,7 @@ pfdMaps = cat(2,pfdMaps{:});
 
 
 %%%<<< PLOT rate maps and phase precession examples
-expUnitsPP = {[21],[6];...
-              [21],[22];...
-              [20],[79]};
+
 numUnits = sum(cellfun(@numel,expUnitsPP(:,2)));
 [yind, yOffSet, xind, xOffSet] = deal(0, 0, 0, 0);
 ucnt = 1;
@@ -294,7 +325,7 @@ for tind = 1:size(expUnitsPP,1),
         sax(end).XTickLabels = {};
         sax(end).YTickLabels = {};
         if tind == 1 && uind ==1,
-            title({'Place','Field'});
+            title({'Place','Field'},'FontSize',8,'FontWeight','normal'););
 % ADD scale bars        
             line([-490,-250],[490,490],'Color','w','LineWidth',3);
             line([-490,-490],[250,490],'Color','w','LineWidth',3);        
@@ -334,7 +365,7 @@ for tind = 1:size(expUnitsPP,1),
         ylim([-0.5,1.7]);
         
         if tind == 1 && uind ==1,
-            title({'Behavior','Field'});
+            title({'Behavior','Field'},'FontSize',8,'FontWeight','normal');
 % ADD scale bars
             line([-1.65,-1.2],[1.65,1.65],'Color','w','LineWidth',1);
             line([-1.65,-1.65],[1.2,1.65],'Color','w','LineWidth',1);        
@@ -367,7 +398,8 @@ for tind = 1:size(expUnitsPP,1),
                     & abs(spkv.ddz(:,1)) < 350;
 % PLOT ghz vs phz for spikes of selected unit
             plot([spkv.ghz(eind);spkv.ghz(eind)],...
-                 [circ_rad2ang(spkv.phz(eind));circ_rad2ang(spkv.phz(eind))+360],...
+                 [circ_rad2ang(spkv.phz(eind)+spkv.phc(eind));...
+                  circ_rad2ang(spkv.phz(eind)+spkv.phc(eind))+360],...
                  '.b','MarkerSize',3);
             
 % $$$             out = hist2([[spkv.ghz(eind);spkv.ghz(eind)],...
@@ -388,7 +420,7 @@ for tind = 1:size(expUnitsPP,1),
             
 % APPEND labels
             if tind == 1 && ucnt == 1,
-                title(statesLabels{s+1});
+                title(statesLabels{s+1},'FontSize',8,'FontWeight','normal');
             end
             
             if s ~= numel(states)-1 | ucnt ~= 1,
@@ -397,17 +429,16 @@ for tind = 1:size(expUnitsPP,1),
             else,
                 sax(end).XTickLabels = {};                
                 sax(end).YAxisLocation = 'right';
-                %sax(end).YTick = [0,180,360,540];
-                %sax(end).YTick = [0,180,360];
                 sax(end).YTick = [];
             end
 
             
 % PLOT circular-linear regression (phase precession) if significant
-            if   (rhoSig(uExInd,s+1)<0.05                       ... (rho or
-                  | rHRZall(uExInd,1,1,s+1)>0.2)                ...  r significance)
+            if (rhoSig(uExInd,s+1)<0.05                         ... (rho or
+               | rHRZall(uExInd,1,1,s+1)>0.2)                   ...  r significance)
                & parmHRZall(uExInd,1,1,s+1)>-10                 ...  
                & sum(eind)>25,
+               
                 plot([-1,1],                                                   ...
                      circ_rad2ang(parmHRZall(uExInd,1,1,s+1)*[-1,1]            ...
                                   + parmHRZall(uExInd,2,1,s+1))                ...
@@ -434,6 +465,7 @@ for tind = 1:size(expUnitsPP,1),
             axes(fax);
             rectangle('Position',sax(end).Position,'LineWidth',1);
             
+% ADD phase precession theta cycle curve as y-axis label
 % ADJUST subplot coordinates
             [yind, yOffSet, xind, xOffSet] = deal(yind, 0, xind+1, xOffSet);
 % CREATE subplot axes                    
@@ -451,9 +483,15 @@ for tind = 1:size(expUnitsPP,1),
                 plot(-cos(circ_ang2rad(-60:420)),-60:420,'-k','LineWidth',2);
 
                 if ucnt == 1,                    
-                    text(-0,360, '360', 'HorizontalAlignment','center',...
+% $$$                     text(-0,360, '360', 'HorizontalAlignment','center',...
+% $$$                          'FontSize', 8, 'VerticalAlignment',  'middle');
+% $$$                     text(-0,180, '180', 'HorizontalAlignment','center',...
+% $$$                          'FontSize', 8, 'VerticalAlignment',  'middle');                    
+% $$$                     text(-0,  0,   '0', 'HorizontalAlignment','center',...
+% $$$                          'FontSize', 8, 'VerticalAlignment',  'middle');                    
+                    text(-0,360, '2\pi', 'HorizontalAlignment','center',...
                          'FontSize', 8, 'VerticalAlignment',  'middle');
-                    text(-0,180, '180', 'HorizontalAlignment','center',...
+                    text(-0,180, '\pi', 'HorizontalAlignment','center',...
                          'FontSize', 8, 'VerticalAlignment',  'middle');                    
                     text(-0,  0,   '0', 'HorizontalAlignment','center',...
                          'FontSize', 8, 'VerticalAlignment',  'middle');                    
@@ -515,7 +553,7 @@ for s = 1:numel(statesInds);
           & spkv.ppr(:,s+1) > 0.2;
 % PLOT jpdf of data
     out = hist2([repmat(spkv.ghz(ind),[2,1]),...
-                 reshape(bsxfun(@plus,repmat(spkv.phz(ind),[1,2]),[0,2*pi]),[],1)],...
+                 reshape(bsxfun(@plus,repmat(spkv.phz(ind)+spkv.phc(ind),[1,2]),[0,2*pi]),[],1)],...
                 linspace(-1,1,21),...
                 linspace(-pi,3*pi,41));
     imagesc(linspace(-1,1,21),linspace(-pi,3*pi,41),imgaussfilt(out,1)');
@@ -589,7 +627,7 @@ rthresh = 0.2;
 prefBhvId = [];
 prefBhvSlopes = [];
 prefBhvPhases = [];
-for s = 1:numStates;
+for s = 1:numStates-1;
     ind =   ismember(cluSessionMap(:,1),sesIds)                                 ...
           & ismember(cluSessionMap,cluSessionMapSubset(validUnits,:),'rows')    ...
           & rhoSig(:,s+1) < 0.05                                                ...
@@ -684,6 +722,9 @@ for tind = 1:size(tppUnits,1)
              'FontSize',8,'Color',[1,1,1],'HorizontalAlignment','center');
         sax(end).XTickLabels = {};
         sax(end).YTickLabels = {};
+        if ucnt == 1,
+            title('Maze','FontSize',8,'FontWeight','normal');
+        end
 % OVERLAY state conditioned placefield centers 
         pfssCntrMrate = zeros([numel(statesPfssInd),1]);
         pfssCntrPos = zeros([numel(statesPfssInd),2]);
@@ -728,6 +769,10 @@ for tind = 1:size(tppUnits,1)
         sax(end).YTickLabels = {};
         xlim([-1.7,0.5]);
         ylim([-0.5,1.7]);
+        if ucnt == 1,
+            title('Bhv','FontSize',8,'FontWeight','normal');
+        end
+
         % add bounding box        
         axes(fax);
         rectangle('Position',sax(end).Position,'LineWidth',1);
@@ -735,13 +780,13 @@ for tind = 1:size(tppUnits,1)
         
         %%%<<< PLOT behavior theta phase preference
 
-        exbfstr = permute(reshape(bfstr{t}.data.rateMap(:,bfstr{t}.data.clu==u),                 ...
-                                  bfstr{t}.adata.binSizes'),                                     ...
+        exbfstr = permute(reshape(bfstr{t}.data.rateMap(:,bfstr{t}.data.clu==u),...
+                                  bfstr{t}.adata.binSizes'),                    ...
                           [1,3,2]);
-        exbfCpx = sq(sum(reshape(bsxfun(@times,                                                  ...
-                               reshape(exbfstr,[],bfstr{t}.adata.binSizes(2)),                   ...
-                               exp(-i.*bfstr{t}.adata.bins{2})'),                                ...
-                        [size(exbfstr,1),size(exbfstr,2),size(exbfstr,3)]),3)                    ...
+        exbfCpx = sq(sum(reshape(bsxfun(@times,                                 ...
+                               reshape(exbfstr,[],bfstr{t}.adata.binSizes(2)),  ...
+                               exp(-i.*bfstr{t}.adata.bins{2})'),               ...
+                        [size(exbfstr,1),size(exbfstr,2),size(exbfstr,3)]),3)   ...
             ./sum(exbfstr,3));
         exbfAng = angle(exbfCpx);
         exbfRes = abs(exbfCpx);
@@ -752,13 +797,13 @@ for tind = 1:size(tppUnits,1)
 % ADJUST subplot coordinates        
         [yind, yOffSet, xind, xOffSet] = deal(yind, yOffSet, 3, xOffSet);
 % CREATE subplot axes
-        sax(end+1) = axes('Units','centimeters',                                ...
-                          'Position',[fig.page.xpos(xind)+xOffSet,              ...
-                                      fig.page.ypos(yind)+yOffSet,              ...
-                                      fig.subplot.width,                        ...
-                                      fig.subplot.height],                      ...
-                          'FontSize', 8,                                        ...
-                          'LineWidth',1);
+        sax(end+1) = axes('Units','centimeters',                                ... Units
+                          'Position',[fig.page.xpos(xind)+xOffSet,              ... X
+                                      fig.page.ypos(yind)+yOffSet,              ... Y
+                                      fig.subplot.width,                        ... W
+                                      fig.subplot.height],                      ... H
+                          'FontSize', 8,                                        ... FontSize
+                          'LineWidth',1);                                         % LineWidth
 
         imagescnan({bfstr{t}.adata.bins{[1,3]},exbfAng'},                       ... data
                    [0,2*pi],                                                    ... colorlimits
@@ -766,17 +811,24 @@ for tind = 1:size(tppUnits,1)
                    false,                                                       ... colorbar
                    'colorMap',@hsv);                                              % colormap
         axis('xy');
+        if ucnt ==1,
+            title('Mean Phase','FontSize',8,'FontWeight','normal');
+        end
+        
 
-% $$$         if ucnt == numUnits
-% $$$             cax = colorbar(sax(end),'SouthOutside');
-% $$$             colormap(cax,'hsv')
-% $$$             cax.Position = [sax(end).Position(1),...
-% $$$                             sax(end).Position(2)+sax(end).Position(4),...
-% $$$                             sax(end).Position(3),...
-% $$$                             0.2];
-% $$$             caxis([0,2*pi]);
-% $$$         end
-% $$$         
+        if ucnt == size(tppUnits,1),
+            cax = colorbar(sax(end-5),'SouthOutside');
+            colormap(cax,'hsv')
+            cax.Units = 'centimeters';
+            cax.Position = [sax(end-5).Position(1),                               ... X
+                            sax(end-5).Position(2)-0.2,          ... Y
+                            sax(end-5).Position(3),                               ... W
+                            0.2];                                                 % H
+            caxis([0,2*pi]);
+            cax.YTick = [0,pi,2*pi];
+            cax.YTickLabel = {'0','\pi','2\pi'};
+        end
+        
         sax(end).XTickLabels = {};
         sax(end).YTickLabels = {};
         xlim([-1.7,0.5]);
@@ -828,11 +880,11 @@ for tind = 1:size(tppUnits,1)
                      ['-k'],                                     ... LineColor
                      'LineWidth',2);                               % LineWidth
             end
-            ylim([-60,420]);            
+            ylim([-60,420]);
             Lines(0,[],'w','--');
             
             if ucnt == 1,
-                title(perm.states{s});                    
+                title(perm.states{s},'FontSize',8,'FontWeight','normal');
             end
             
             if ucnt == numUnits && s == 1,
@@ -931,7 +983,7 @@ for tind = 1:size(tppUnits,1)
         ylim([-60,420]);
         xlim([0,20]);
         if ucnt == 1,
-            title(sax(end),{'Weighted','Mean Rate'});
+            title(sax(end),{'Weighted','Mean Rate'},'FontSize',8,'FontWeight','normal');
         end
         
         % add bounding box
@@ -1028,28 +1080,34 @@ for s = 1:3;
     tax = title('TPP of Dominant vs Sub-dominant Behavioral State');    
     tax.HorizontalAlignment = 'center';
     tax.Position(1) = 12;
-    
-    % ADD theta phase to y-axis of last state plot
-% CREATE subplot axes                    
+
+% ADD theta phase to y-axis of last state plot
+% CREATE subplot axes
     if s == 3
         sax(end+1) = axes('Units','centimeters',                          ...
-                          'Position',[sum(sax(end).Position([1,3]))+0.1,  ...
-                                      sax(end).Position(2),               ...
-                                      fig.subplot.width/nonzeros([1.5*double(ucnt==1),...
-                                      3*double(ucnt~=1)]),...
-                                      sax(end).Position(4)],              ...
+                          'Position',[sax(end-10).Position([1])-1,  ...
+                                      sax(end-10).Position(2),               ...
+                                      fig.subplot.width/1.5,...
+                                      sax(end-10).Position(4)],              ...
                           'FontSize', 8,                                  ...
                           'LineWidth',1);
         hold(sax(end),'on');
         plot(-cos(circ_ang2rad(-60:420)),-60:420,'-k','LineWidth',2);
 
-        if ucnt == 1,                    
-            text(-0,360, '360', 'HorizontalAlignment','center',...
+        if true,%ucnt == 1,                    
+% $$$             text(-0,360, '360', 'HorizontalAlignment','center',...
+% $$$                  'FontSize', 8, 'VerticalAlignment',  'middle');
+% $$$             text(-0,180, '180', 'HorizontalAlignment','center',...
+% $$$                  'FontSize', 8, 'VerticalAlignment',  'middle');                    
+% $$$             text(-0,  0,   '0', 'HorizontalAlignment','center',...
+% $$$                  'FontSize', 8, 'VerticalAlignment',  'middle');                    
+            text(-0,360, '2\pi', 'HorizontalAlignment','center',...
                  'FontSize', 8, 'VerticalAlignment',  'middle');
-            text(-0,180, '180', 'HorizontalAlignment','center',...
+            text(-0,180, '\pi', 'HorizontalAlignment','center',...
                  'FontSize', 8, 'VerticalAlignment',  'middle');                    
             text(-0,  0,   '0', 'HorizontalAlignment','center',...
                  'FontSize', 8, 'VerticalAlignment',  'middle');                    
+            
         end                
         
         sax(end).YAxisLocation = 'right';
@@ -1071,7 +1129,7 @@ for s = 1:3;
              'HorizontalAlignment','center',        ...
              'Rotation',-90);
 
-    end%if s
+    end%if s==3
     
 
     %%%>>> TPP dom vs sub    
@@ -1161,9 +1219,6 @@ for s = 1:3;
            'VerticalAlignment','middle',                    ... V align 
            'HorizontalAlignment','center',                  ... H align
            'Position',[-0.2,sax(end).Position(4)./2]);        % position
-    
-           
-
 
     % other sub-dominant state
     sax(end+1) = axes('Units','centimeters',                                ... units
@@ -1182,17 +1237,27 @@ for s = 1:3;
     sax(end).XTick = [];
     sax(end).YTick = [];        
     ylabel(sax(end),                                        ... axis_handle
-           perm.states{otherStates(1)},                                  ... label_text
+           perm.states{otherStates(1)},                     ... label_text
            'Units','Centimeters',                           ... unit
            'VerticalAlignment','middle',                    ... V align 
            'HorizontalAlignment','center',                  ... H align
            'Position',[-0.2,sax(end).Position(4)./2]);        % position
     %%%>>> z-scores
 
-    %%%<<< PLOT theta phase 
+    %%%<<< PLOT theta phase curve as y-axis label
 % ADJUST subplot coordinates        
-    [yind, yOffSet, xind, xOffSet] = deal(14, -0.8, xind, 0);
 % CREATE subplot axes
+% RIGHT SIDE
+% $$$     [yind, yOffSet, xind, xOffSet] = deal(14, -0.8, xind, 0);
+% $$$     sax(end+1) = axes('Units','centimeters',                        ...
+% $$$                       'Position',[fig.page.xpos(xind)+xOffSet,      ...
+% $$$                                   fig.page.ypos(yind)+yOffSet+fig.subplot.height/1.5,      ...
+% $$$                                   fig.subplot.width*1.5,            ...
+% $$$                                   fig.subplot.height/3],            ...
+% $$$                       'FontSize', 8,                                ...
+% $$$                       'LineWidth',1);
+% LEFT SIDE
+    [yind, yOffSet, xind, xOffSet] = deal(14, -0.8, xind, 0);    
     sax(end+1) = axes('Units','centimeters',                        ...
                       'Position',[fig.page.xpos(xind)+xOffSet,      ...
                                   fig.page.ypos(yind)+yOffSet+fig.subplot.height/1.5,      ...
@@ -1209,17 +1274,23 @@ for s = 1:3;
     sax(end).XTick = [];
     xlim([0,360]);
     ylim([-1.5,1.5]);
-     if s==1
-        text(360,-0.25, '360', 'HorizontalAlignment','center',     ...
+    if s==1
+% $$$         text(360,-0.25, '360', 'HorizontalAlignment','center',     ...
+% $$$              'FontSize', 8, 'VerticalAlignment',  'middle');
+% $$$         text(180, 0.25, '180', 'HorizontalAlignment','center',     ...
+% $$$              'FontSize', 8, 'VerticalAlignment',  'middle');                    
+% $$$         text(0,  -0.25, '0', 'HorizontalAlignment','center',     ...
+% $$$              'FontSize', 8, 'VerticalAlignment',  'middle');                    
+        text(360,-0.25, '2\pi', 'HorizontalAlignment','center',     ...
              'FontSize', 8, 'VerticalAlignment',  'middle');
-        text(180, 0.25, '180', 'HorizontalAlignment','center',     ...
+        text(180, 0.25, '\pi', 'HorizontalAlignment','center',     ...
              'FontSize', 8, 'VerticalAlignment',  'middle');                    
         text(0,  -0.25, '0', 'HorizontalAlignment','center',     ...
              'FontSize', 8, 'VerticalAlignment',  'middle');                    
     end
 
     %%%>>> theta phase
-end
+end%for s
 
 %%%<<< z-score colorbar
 delete(cax)

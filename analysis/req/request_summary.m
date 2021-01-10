@@ -1207,10 +1207,50 @@
     Type: Analysis
     Author: Justin Graboski
     Final_Forms: NA
-    Project: MjgER2016: bhvfields
+    Project: MjgER2016: BhvPlaceCode
     Description: update req20180123_remove_bad_units
     New_methods: assign_bad_units.m, remove_bad_units.m
 
+** 2020 06 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+*** req20200618
+    Tags: egocentric, phase precession, head-body-angle
+    Status: active
+    Type: Analysis
+    Author: Justin Graboski
+    Final_Forms: NA
+    Project: MjgER2016: EgoProCode2D
+    Description: egocentric coordinates relative to placefield for 
+                 all placefields
+    New_methods: 
+
+** 2020 09 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+*** req20200924
+    Tags: ego, placefield, shifts, spatial information
+    Status: active
+    Type: Analysis
+    Author: Justin Graboski
+    Final_Forms: NA
+    Project: MjgER2016: BhvPlaceCode
+    Description: spatial information of egoPlaceFields as a function of placefield center shifts
 
 
+** 2020 11 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+*** req20201111
+    Tags: interneuron ratemaps
+    Status: active
+    Type: Analysis
+    Author: Justin Graboski
+    Final_Forms: NA
+    Project: MjgER2016: BhvPlaceCode
+    Description: spectral decomposition of marker kinematics
 
+
+*** req20201117
+    Tags: interneuron ratemaps
+    Status: active
+    Type: Analysis
+    Author: Justin Graboski
+    Final_Forms: NA
+    Project: MjgER2016: BhvPlaceCode
+    Description: Interneurons are behaviorally modulated. Plot 4d ratemap 
+                 in xyhb space

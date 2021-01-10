@@ -1,4 +1,4 @@
-function [pfs] = compute_egothp_ratemap(Trial,units,xyz,spk,pft,rot,hbaCorrection,thetaPhzChan,phzCorrection,headCenterCorrection,overwrite)
+function [pfs] = compute_egohvf_ratemap_shuffled(Trial,units,xyz,spk,pft,rot,hbaCorrection,thetaPhzChan,phzCorrection,headCenterCorrection,overwrite)
 
 sampleRate = xyz.sampleRate;
 binPhzs = linspace(0,2*pi,6);
@@ -7,7 +7,7 @@ pfs = cell([1,numel(binPhzc)]);
 verbose = true;
 
 if verbose,
-    disp(['[status]        compute_egothp_ratemap: processing trial: ',Trial.filebase]);
+    disp(['[status]        compute_egohba_ratemap: processing trial: ',Trial.filebase]);
 end
 
 
@@ -40,43 +40,46 @@ end;% if
 % $$$                                   -(headBodyAng+hbaCorrection),...
 % $$$                                   sampleRate,...
 % $$$                                   'hba','hba','h');
+hvfl = fet_href_HXY(Trial,sampleRate,false,'trb',4);
 
-if overwrite
 % TRANSFORM Local Field Potential -> theta phase
-    Trial.lfp.filename = [Trial.name,'.lfp'];
-    phz = load(Trial,'lfp',thetaPhzChan).phase([6,12]);
-    phz.data = unwrap(phz.data);
-    phz.resample(xyz);    
-    phz.data = mod(phz.data+pi,2*pi)-pi + phzCorrection; % mv phzCorrection -> Trial prop
-    phz.data(phz.data<0) = phz.data(phz.data<0) + 2*pi;
-    phz.data(phz.data>2*pi) = phz.data(phz.data>2*pi) - 2*pi;
+Trial.lfp.filename = [Trial.name,'.lfp'];
+phz = load(Trial,'lfp',thetaPhzChan).phase([6,12]);
+phz.data = unwrap(phz.data);
+phz.resample(xyz);    
+phz.data = mod(phz.data+pi,2*pi)-pi + phzCorrection; % mv phzCorrection -> Trial prop
+phz.data(phz.data<0) = phz.data(phz.data<0) + 2*pi;
+phz.data(phz.data>2*pi) = phz.data(phz.data>2*pi) - 2*pi;
 
 
-    hvec = xyz(:,'nose',[1,2])-xyz(:,'hcom',[1,2]);
-    hvec = sq(bsxfun(@rdivide,hvec,sqrt(sum(hvec.^2,3))));
-    hvec = cat(3,hvec,sq(hvec)*[0,-1;1,0]);
-    hvec = multiprod(hvec,...
-                     [cos(rot),-sin(rot);sin(rot),cos(rot)],...
-                     [2,3],...
-                     [1,2]);
+hvec = xyz(:,'nose',[1,2])-xyz(:,'hcom',[1,2]);
+hvec = sq(bsxfun(@rdivide,hvec,sqrt(sum(hvec.^2,3))));
+hvec = cat(3,hvec,sq(hvec)*[0,-1;1,0]);
+hvec = multiprod(hvec,...
+                 [cos(rot),-sin(rot);sin(rot),cos(rot)],...
+                 [2,3],...
+                 [1,2]);
 
 % GET theta state behaviors, minus rear
-    thetaState = resample(cast([Trial.stc{'theta-groom-sit-rear'}],'TimeSeries'),xyz);
-end
+thetaState = resample(cast([Trial.stc{'theta-groom-sit-rear'}],'TimeSeries'),xyz);
 
 pfTemp = Trial;
 
 pargs = get_default_args('MjgER2016','MTAApfs','struct');        
 pargs.units        = units;
 pargs.tag          = 'egofield';
-pargs.binDims      = [20, 20];                           % X Y
-pargs.SmoothingWeights = [3, 3];                         % X Y
+pargs.binDims      = [20, 20, 20];                           % X Y HVF
+pargs.SmoothingWeights = [3, 3, 0.4];                     % X Y HVF
+pargs.type         = 'xyw';
+pargs.spkShuffle   = false;
+pargs.posShuffle   = true;
 pargs.halfsample   = false;
-pargs.numIter      = 1;   
-pargs.boundaryLimits = [-410,410;-410,410];
+pargs.numIter      = 100;   
+pargs.boundaryLimits = [-410,410;-410,410;-10,90];
 pargs.states       = '';
 pargs.overwrite    = true;
 pargs.autoSaveFlag = false;    
+pargs.posShuffleDims = 3;
 electrode = 0;
 
 % Don't judge me
@@ -88,10 +91,9 @@ end
 
 for phase = 1:numel(binPhzc)
 % CHECK existence of pfs object
-    pargs.tag = ['egofield_theta_phase_',num2str(phase),stag];
-    
-    filepath = fullfile(Trial.spath,...
-                        [Trial.filebase,'.Pfs.',pargs.tag,'.mat']);
+    pargs.tag = ['egofield_theta_phase_hba_shuffled_',num2str(phase),stag];
+    filepath = fullfile(Trial.spath, [Trial.filebase,'.Pfs.',pargs.tag,'.mat']);
+
     
     if exist(filepath,'file'),
         pfs{phase} = load(filepath).Pfs;
@@ -123,10 +125,11 @@ for phase = 1:numel(binPhzc)
                                           [bsxfun(                                         ...
                                               @plus,                                       ...
                                               multiprod(bsxfun(@minus,                     ...
-                                                               mxp,                        ...
-                                                               sq(xyz(:,'hcom',[1,2]))),   ...
-                                                         hvec,2,[2,3]),                    ...
-                                              headCenterCorrection)],                      ...
+                                                          mxp,                             ...
+                                                          sq(xyz(:,'hcom',[1,2]))),        ...
+                                                     hvec,2,[2,3]),                        ...
+                                              headCenterCorrection),                       ...                                              
+                                           hvfl(:,1)],                                     ...
                                           sampleRate,                                      ...
                                           'egocentric_placefield',                         ...
                                           'egopfs',                                        ...
@@ -147,3 +150,43 @@ for phase = 1:numel(binPhzc)
     pfs{phase} = pfTemp;    
     pfTemp = Trial;
 end;% for phase
+
+% $$$ lims = {[-250,250],[-250,250]};
+% $$$ figure();
+% $$$ al = 1:5;
+% $$$ numAng = numel(al);
+% $$$ sax = gobjects([0,1]);
+% $$$ for p = 4
+% $$$     rmap = plot(pfs{p},15);
+% $$$     for a = 1:numAng,
+% $$$         sax(end+1) = subplot2(1,5,1,a);
+% $$$         pcolor(pfs{p}.adata.bins{1},...
+% $$$                        pfs{p}.adata.bins{2},...
+% $$$                        rmap(:,:,al(a)));
+% $$$         
+% $$$         caxis   (sax(end),[0,10]);
+% $$$         colormap(sax(end),'jet');
+% $$$         shading (sax(end),'flat');
+% $$$         axis    (sax(end),'xy');
+% $$$         xlim    (sax(end),lims{1});
+% $$$         ylim    (sax(end),lims{2});        
+% $$$         
+% $$$         Lines([],0,'k');
+% $$$         Lines(0,[],'k');
+% $$$         
+% $$$         set(sax(end),'XTick',[]);
+% $$$         set(sax(end),'YTick',[]);        
+% $$$         
+% $$$         % ADD subject
+% $$$ % $$$         if p %== 4,
+% $$$ % $$$             subject = struct(rat);
+% $$$ % $$$             subject = update_subject_patch(subject,'head',[], false,hbaBinEdg,hbaBinCtr);
+% $$$ % $$$             subject = update_subject_patch(subject,'body', numAng+1-a,  true,hbaBinEdg,hbaBinCtr);
+% $$$ % $$$             patch(subject.body.patch.vert{:},   [0.75,0.75,0.75]);
+% $$$ % $$$             patch(subject.head.patch.vert{:},   [0.75,0.75,0.75]);
+% $$$ % $$$             patch(subject.body.overlay.vert{:},[0.75,0.50,0.50],'FaceAlpha',0.3);
+% $$$ % $$$             line(subject.head.midline.vert{:}, 'Color', subject.head.midline.color);
+% $$$ % $$$             line(subject.body.midline.vert{:}, 'Color', subject.body.midline.color);
+% $$$ % $$$         end
+% $$$     end
+% $$$ end

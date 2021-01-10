@@ -74,10 +74,19 @@ end
 
 nsts = numel(states);
 
+% LOAD spks
+% $$$ spk.create(Trial,              ...  
+% $$$            16,     ...
+% $$$            '',            ...
+% $$$            unitSubset,         ...
+% $$$            '');    
+
+
 %% Setup figure paths
 OwnDir = '/storage/gravio/figures/placefields/';
 FigDir = ['pfs_2d_states_',Trial.filebase,'_',tag];
 mkdir(fullfile(OwnDir,FigDir));
+
 
 
 %% compute 3d place fields for the theta state
@@ -92,6 +101,7 @@ for s = 1:nsts
     pargs = get_default_args('MjgER2016','MTAApfs','struct');
     pargs.units = units;
     pargs.states = states{s};
+    %pargs.spk = spk;
     
     if ~isempty(pfsArgsOverride) && isstruct(pfsArgsOverride),
         for f = fieldnames(pfsArgsOverride)'

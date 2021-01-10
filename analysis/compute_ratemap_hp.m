@@ -1,4 +1,4 @@
-function [pfs] = compute_ego_ratemap(Trial,units,xyz,spk,pft,rot,hbaCorrection,headCenterCorrection,overwrite)
+function [pfs] = compute_ratemap_hp(Trial,units,xyz,spk,pft,rot,hbaCorrection,headCenterCorrection,overwrite)
 
 sampleRate = xyz.sampleRate;
 binPhzs = linspace(0,2*pi,6);
@@ -52,11 +52,8 @@ filepath = fullfile(Trial.spath,...
     
 if exist(filepath,'file'),
     pfs = load(filepath);
-    pfs = pfs.Pfs;
-    if overwrite & isa(pfs,'MTAApfs'),
-        pfs.purge_savefile();
-    else,
-        return;
+    if overwrite,
+        %pfs.purge_savefile();
     end;% if overwrite
 end;% if exist
 

@@ -1,4 +1,4 @@
-function [fet,featureTitles,featureDesc] = fet_HB_pitchB(Trial,varargin)
+function [fet,featureTitles,featureDesc] = fet_hbp_rhh(Trial,varargin)
 % function [fet,featureTitles,featureDesc] = fet_head_pitch(Trial,varargin)
 % varargin:
 %     newSampleRate: numeric,  (Trial.xyz.sampleRate) - sample rate of xyz data
@@ -6,8 +6,11 @@ function [fet,featureTitles,featureDesc] = fet_HB_pitchB(Trial,varargin)
 %     procOpts:      CellARY,  ({'SPLINE_SPINE_HEAD_EQD'}), - preprocessing options
 %     referenceTrial'  , 'Ed05-20140529.ont.all'
 %     referenceFeature', ''
-%   
-
+%
+% Relative to room
+%  RHP - relative head pitch
+%  RHH - relative head height
+%
 Trial = MTATrial.validate(Trial);
 
 % DEFARGS ------------------------------------------------------------------------------------------
@@ -16,9 +19,9 @@ defargs = struct('newSampleRate'   , Trial.xyz.sampleRate,                      
                  'procOpts'        , {{}},                                                       ...
                  'referenceTrial'  , '',                                                         ...
                  'referenceFeature', '',                                                         ...
-                 'overwriteFlag'   , false                                                       ...
+                 'offset'          , [0,0]                                                       ...
 );
-[newSampleRate,normalize,procOpts,referenceTrial,referenceFeature,overwriteFlag] = ...
+[newSampleRate,normalize,procOpts,referenceTrial,referenceFeature,offset] = ...
     DefaultArgs(varargin,defargs,'--struct');
 %---------------------------------------------------------------------------------------------------
 
@@ -30,32 +33,29 @@ defargs = struct('newSampleRate'   , Trial.xyz.sampleRate,                      
 fet = MTADfet(Trial.spath,...
               [],...
               [],...
-              Trial.xyz.sampleRate,...
+              newSampleRate,...
               Trial.sync.copy,...
               Trial.sync.data(1),...
               [],'TimeSeries',[],'Head body pitch','fet_HB_pitch','b');                  
 
-fet.updateFilename(Trial);
-
-if overwriteFlag || ~exist(fet.fpath,'file'),
 % XYZ preprocessed 
-    xyz = Trial.load('xyz');
-% LOAD pitches 
-    pch = fet_HB_pitch(Trial);
-    if ~isempty(referenceTrial),
+% NONE
+xyz = preproc_xyz(Trial,'trb');
+
+% PITCHES 
+pch = fet_HB_pitch(Trial);
+if ~isempty(referenceTrial),
 % MAP to reference trial
-        pch.map_to_reference_session(Trial,referenceTrial,referenceFeature);
-    end
-% CONCATENATE features
-    fet.data = [circ_dist(pch(:,3),pch(:,1)),pch(:,1)];
-    fet.data(~nniz(xyz),:)=0;
-    fet.save();
-else
-    load(fet,Trial);
+    pch.map_to_reference_session(Trial,referenceTrial,referenceFeature);
 end
+pch.resample(newSampleRate);
+xyz.resample(newSampleRate);
 
-fet.resample(newSampleRate);
 
+% CONCATENATE features
+fet.data = [circ_dist(pch(:,3),pch(:,1)),xyz(:,'hcom',3)];
+
+fet.data(~nniz(xyz),:)=0;
 featureTitles = {};
 featureDesc = {};
 if nargout>1,
@@ -66,3 +66,5 @@ if nargout>1,
 end
 
 % END MAIN -----------------------------------------------------------------------------------------
+
+

@@ -7,8 +7,9 @@ region = 'ca3_';
 %region = '';
 
 figure();
-    subplot(121);hist(dhbang((logical(dstcm(:,5))|logical(dstcm(:,3)))&ismember(dtind,[1,2])),100)
-    subplot(122);hist(dhbang((logical(dstcm(:,5))|logical(dstcm(:,3)))&~ismember(dtind,[1,2])),100)
+    subplot(311);hist(dhbang((logical(dstcm(:,5))|logical(dstcm(:,3)))&ismember(dtind,[3])),100)
+    subplot(312);hist(dhbang((logical(dstcm(:,5))|logical(dstcm(:,3)))&ismember(dtind,[4])),100)
+    subplot(313);hist(dhbang((logical(dstcm(:,5))|logical(dstcm(:,3)))&ismember(dtind,[5])),100)
 
 figure()
     subplot(121);hist(dblen((logical(dstcm(:,5))|logical(dstcm(:,3)))&ismember(dtind,[1,2])),100)
@@ -193,91 +194,91 @@ end
 
 
 %%%<<< Summary Figures
-% $$$ xc = numel(vbc{1});
-% $$$ yc = numel(vbc{2});
-% $$$ el = 'FL';
-% $$$ elbl = {'Forward','Lateral'};
-% $$$ hfig = figure();
-% $$$ for s = 1:numel(tind);
-% $$$     for e = 1:2;
-% $$$ 
-% $$$         clf(hfig)
-% $$$         hfig.Units = 'Centimeters';
-% $$$         hfig.Position(3:4) = [20,10];
-% $$$         sax = reshape(tight_subplot(yc,xc,[0.01,0.01],0.25,0.1),[xc,yc])';
-% $$$         for x = 1:xc;
-% $$$             for y = 1:yc;
-% $$$                 axes(sax(y,x));
-% $$$                 imagesc(ferrorBinCenters{1},...
-% $$$                         phzBinCenters(phzOrder)+2*pi*double(phzBinCenters(phzOrder)<0), ...
-% $$$                         imgaussfilt(sq(mean(sJpdf(:,phzOrder,x,y,e,s,:),ndims(sJpdf))),[2,0.1])');
-% $$$                 axis('xy');
-% $$$                 Lines(0,[],'k');
-% $$$                 Lines([],pi,'k');
-% $$$                 xlim([-250,250+100*double(e==1)]);
-% $$$                 if round(xc/2)==x & yc==y;
-% $$$                     xlabel(vlb{1});
-% $$$                 end        
-% $$$                 if round(xc/2)==x & y==1;
-% $$$                     title({Trials{s}.filebase,[vdc{1},' vs ',vdc{2}],[elbl{e} ' Egocentric Phase Preccession']});
-% $$$                 end        
-% $$$                 if x==1 & round(yc/2)==y;
-% $$$                     ylabel(vlb{2});
-% $$$                 end        
-% $$$                 if x==1&y==yc,
-% $$$                     xlabel('mm');
-% $$$                     ylabel({'Theta','phase'});
-% $$$                 end
-% $$$                 if x~=1 | y~=yc,
-% $$$                     sax(y,x).XTick = [];
-% $$$                 end
-% $$$                 if y~=yc | x>1,
-% $$$                     sax(y,x).YTick = [];
-% $$$                 end
-% $$$             end
-% $$$         end
-% $$$         colormap('jet');
-% $$$         drawnow();
-% $$$         fax = axes('Position',[0,0,1,1],'Visible','off');
-% $$$         xlim(fax,[0,1]);
-% $$$         ylim(fax,[0,1]); 
-% $$$ 
-% $$$         % LABEL x bins
-% $$$         line([sax(yc,1).Position(1),sax(yc,xc).Position(1)+sax(yc,xc).Position(3)],...
-% $$$              (sax(yc,xc).Position(2)-0.1).*[1,1],'Color','k');
-% $$$         for x = 1:xc,
-% $$$             text(sax(yc,x).Position(1)+sax(yc,x).Position(3)/2,...
-% $$$                  sax(yc,xc).Position(2)-0.13,...
-% $$$                  ['( ',num2str(vbe{1}(x)),' to ',num2str(vbe{1}(x+1)),' )'],...
-% $$$                  'HorizontalAlignment','center');
-% $$$         end
-% $$$         text(mean([sax(yc,1).Position(1),sax(yc,xc).Position(1)+sax(yc,xc).Position(3)]),...
-% $$$              sax(yc,xc).Position(2)-0.19,...
-% $$$              {vdc{1},vun{1}},...
-% $$$              'HorizontalAlignment','center');
-% $$$ 
-% $$$         % LABEL y bins
-% $$$         line((sum(sax(yc,xc).Position([1,3]))+0.02).*[1,1],...
-% $$$              [sax(yc,xc).Position(2),sum(sax(1,xc).Position([2,4]))],...
-% $$$              'Color','k');
-% $$$         for y = 1:yc,
-% $$$             text(sum(sax(yc,xc).Position([1,3]))+0.03,...
-% $$$                  sax(y,xc).Position(2)+sax(y,xc).Position(4)/2,...
-% $$$                  ['( ',num2str(vbe{2}(y)),' to ',num2str(vbe{2}(y+1)),' )'],...
-% $$$                  'HorizontalAlignment','center',...
-% $$$                  'Rotation',90);
-% $$$         end
-% $$$         text(sum(sax(yc,xc).Position([1,3]))+0.06,...
-% $$$              sum(sax(round(yc/2),xc).Position([2,4]).*[1,0.5]),...
-% $$$              {vdc{2},vun{2}},...
-% $$$              'HorizontalAlignment','center',...
-% $$$              'Rotation',90);
-% $$$ 
-% $$$         figureName = [el(e),'EPP_',vlb{1},'_',vlb{2},'_',Trials{s}.filebase];
-% $$$         print(hfig,'-dpng', fullfile(figurePath,[figureName,'.png']));
-% $$$     end
-% $$$ end
-% $$$ 
+xc = numel(vbc{1});
+yc = numel(vbc{2});
+el = 'FL';
+elbl = {'Forward','Lateral'};
+hfig = figure();
+for s = 1:numel(tind);
+    for e = 1:2;
+
+        clf(hfig)
+        hfig.Units = 'Centimeters';
+        hfig.Position(3:4) = [20,10];
+        sax = reshape(tight_subplot(yc,xc,[0.01,0.01],0.25,0.1),[xc,yc])';
+        for x = 1:xc;
+            for y = 1:yc;
+                axes(sax(y,x));
+                imagesc(ferrorBinCenters{1},...
+                        phzBinCenters(phzOrder)+2*pi*double(phzBinCenters(phzOrder)<0), ...
+                        imgaussfilt(sq(mean(sJpdf(:,phzOrder,x,y,e,s,:),ndims(sJpdf))),[2,0.1])');
+                axis('xy');
+                Lines(0,[],'k');
+                Lines([],pi,'k');
+                xlim([-250,250+100*double(e==1)]);
+                if round(xc/2)==x & yc==y;
+                    xlabel(vlb{1});
+                end        
+                if round(xc/2)==x & y==1;
+                    title({Trials{s}.filebase,[vdc{1},' vs ',vdc{2}],[elbl{e} ' Egocentric Phase Preccession']});
+                end        
+                if x==1 & round(yc/2)==y;
+                    ylabel(vlb{2});
+                end        
+                if x==1&y==yc,
+                    xlabel('mm');
+                    ylabel({'Theta','phase'});
+                end
+                if x~=1 | y~=yc,
+                    sax(y,x).XTick = [];
+                end
+                if y~=yc | x>1,
+                    sax(y,x).YTick = [];
+                end
+            end
+        end
+        colormap('jet');
+        drawnow();
+        fax = axes('Position',[0,0,1,1],'Visible','off');
+        xlim(fax,[0,1]);
+        ylim(fax,[0,1]); 
+
+        % LABEL x bins
+        line([sax(yc,1).Position(1),sax(yc,xc).Position(1)+sax(yc,xc).Position(3)],...
+             (sax(yc,xc).Position(2)-0.1).*[1,1],'Color','k');
+        for x = 1:xc,
+            text(sax(yc,x).Position(1)+sax(yc,x).Position(3)/2,...
+                 sax(yc,xc).Position(2)-0.13,...
+                 ['( ',num2str(vbe{1}(x)),' to ',num2str(vbe{1}(x+1)),' )'],...
+                 'HorizontalAlignment','center');
+        end
+        text(mean([sax(yc,1).Position(1),sax(yc,xc).Position(1)+sax(yc,xc).Position(3)]),...
+             sax(yc,xc).Position(2)-0.19,...
+             {vdc{1},vun{1}},...
+             'HorizontalAlignment','center');
+
+        % LABEL y bins
+        line((sum(sax(yc,xc).Position([1,3]))+0.02).*[1,1],...
+             [sax(yc,xc).Position(2),sum(sax(1,xc).Position([2,4]))],...
+             'Color','k');
+        for y = 1:yc,
+            text(sum(sax(yc,xc).Position([1,3]))+0.03,...
+                 sax(y,xc).Position(2)+sax(y,xc).Position(4)/2,...
+                 ['( ',num2str(vbe{2}(y)),' to ',num2str(vbe{2}(y+1)),' )'],...
+                 'HorizontalAlignment','center',...
+                 'Rotation',90);
+        end
+        text(sum(sax(yc,xc).Position([1,3]))+0.06,...
+             sum(sax(round(yc/2),xc).Position([2,4]).*[1,0.5]),...
+             {vdc{2},vun{2}},...
+             'HorizontalAlignment','center',...
+             'Rotation',90);
+
+        figureName = [el(e),'EPP_',vlb{1},'_',vlb{2},'_',Trials{s}.filebase];
+        print(hfig,'-dpng', fullfile(figurePath,[figureName,'.png']));
+    end
+end
+
 % $$$ 
 % $$$ %print(hfig,'-depsc',[filePath,'.eps']);
 % $$$ %%%>>>

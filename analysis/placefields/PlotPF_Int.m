@@ -1,4 +1,4 @@
-function [ratemap, Bins, spatialInformation, sparsity] = PlotPF(Session,spkpos,pos,binDims,SmoothingWeights,type,bound_lims,posSampleRate)
+function [ratemap, Bins, spatialInformation, sparsity] = PlotPF_Int(Session,spkpos,pos,binDims,SmoothingWeights,type,bound_lims,posSampleRate)
 
 % $$$ % DEFARGS ------------------------------------------------------------------------------------------
 % $$$ defargs = struct('binDims',                                50,                                   ...
@@ -106,7 +106,7 @@ else
     SCount = spikeCount;
     soc = occupancy;
 end
-%soc = occupancy;
+soc = occupancy;
 
 
 %OccThresh = 4*(mean(binDims)/200).^numel(binDims);

@@ -27,9 +27,9 @@ for n = 1:numApplications,
       case 'linear',
         Data = cat(1,flipud(Data(1:order,:,:,:,:,:)),...
                    Data,...
-                   flipud(Data(end-order:end,:,:,:,:,:)));
+                   flipud(Data(end-order+1:end,:,:,:,:,:)));
       case 'circular'
-        Data = cat(1,Data(end-order:end,:,:,:,:,:),...
+        Data = cat(1,Data(end-order+1:end,:,:,:,:,:),...
                    Data,...
                    Data(1:order,:,:,:,:,:));
       otherwise
@@ -38,7 +38,7 @@ for n = 1:numApplications,
 
     %hold('on');plot(-3:19,sq(Data(:,20,101,1,1)))
 
-    Data = circshift(sq(mean(GetSegs(Data,1:size(Data,1),order,nan),1,'omitnan')),-floor(order/2)-1);
+    Data = circshift(permute(mean(GetSegs(Data,1:size(Data,1),order,nan),1,'omitnan'),[2:numel(dimensions)+1,1]),-floor(order/2)-1);
     Data = Data(1:dimensions(1),:,:);
                     
 
