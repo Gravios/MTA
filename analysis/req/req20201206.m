@@ -1,7 +1,9 @@
-;; This buffer is for notes you don't want to save, and for Lisp evaluation.
-;; If you want to create a file, visit that file with C-x C-f,
-;; then enter the text in that file's own buffer.
-
+% Current problem redefinition of place cell selection criteria
+%
+% Interneuron classification criteria
+%  - theta phase-locking strength
+%  - theta phase-preference
+%
 figure();
 plot(xyzp(tper,1),xyzp(tper,2),'.');
 Lines([],[-500:100:500],'k');
@@ -93,8 +95,20 @@ sper = [stc{'s',sampleRate}];
 rper = [stc{'r',sampleRate}];
 rper.data(diff(rper.data,1,2)<200,:) = [];
 %sper = [Trial.stc{'t',sampleRate}];
-rper = stc.get_state_transitions(Trial,{'rear','pause'},0.2,xyz);
-rper = rper-80;
+rper = stc.get_state_transitions(Trial,{'rear','pause'}, 0.2, xyz);    
+rper = rper-80;    
+ron  = stc.get_state_transitions(Trial,{'walk','rear' }, 0.2, xyz);  ron  = mean(ron, 2);
+roff = stc.get_state_transitions(Trial,{'rear','pause'}, 0.2, xyz);  roff = mean(roff,2);
+ronp  = stc.get_state_transitions(Trial,{'pause','rear' }, 0.2, xyz);  ronp  = mean(ronp, 2);
+rofft = stc.get_state_transitions(Trial,{'rear','turn'}, 0.2, xyz);  rofft = mean(rofft,2);
+
+figure();
+    hold('on');
+    plot(xyz(:,'spine_upper',3));
+    Lines(rofft,[],'r');
+    
+
+TrigRasters(rofft,1000,res,92*ones(size(res)),250);
 %pch = fet_HB_pitchB(Trial,sampleRate);
 
 figure();
@@ -106,10 +120,8 @@ frq.data = circ_dist(frq.data,circshift(frq.data,1))/(2*pi)*sampleRate;
 figure,plot(frq.data)
 
 
-    
-
-
 figure,
+    t = 20;
 for u = unitsInts{t};
 res = spk(u);    
 res = res(WithinRanges(res,rper));
@@ -121,16 +133,32 @@ waitforbuttonpress();
 end
 
 figure();
-for u = unitsInts{t};
+for u = unitsInts{20};
 res = spk(u);
 %res = res(WithinRanges(res,sper));
 %[mccg,tbins] = CCG([mean(rper.data,2);res],[ones([size(rper,1),1]);2*ones(size(res))],1,100,sampleRate,[1,2]);
-[mccg,tbins] = CCG([rper(:,1);res],[ones([size(rper,1),1]);2*ones(size(res))],4,70,sampleRate,[1,2]);
-subplot(2,2,[1]);plot(pft,u);
-subplot(2,2,[2]);bar(tbins,mccg(:,1,2));
-[mccg,tbins] = CCG([rper(:,2);res],[ones([size(rper,1),1]);2*ones(size(res))],4,70,sampleRate,[1,2]);
-subplot(2,2,[4]);bar(tbins,mccg(:,1,2));
-title(num2str(u));
+subplot2(2,3,1,1);
+    plot(pft,u,1,'text');title(num2str(u));
+
+subplot2(2,3,1,2);
+    [mccg,tbins] = CCG([ron(:,1);res],[ones([size(ron,1),1]);2*ones(size(res))],4,70,sampleRate,[1,2]);
+    bar(tbins,mccg(:,1,2));
+    title('walk to rear');
+    
+subplot2(2,3,1,3);
+    [mccg,tbins] = CCG([ronp(:,1);res],[ones([size(ronp,1),1]);2*ones(size(res))],4,70,sampleRate,[1,2]);
+    bar(tbins,mccg(:,1,2));
+    title('pause to rear');
+
+subplot2(2,3,2,2);
+    [mccg,tbins] = CCG([roff(:,1);res],[ones([size(roff,1),1]);2*ones(size(res))],4,70,sampleRate,[1,2]);
+    bar(tbins,mccg(:,1,2));
+    title('rear to pause');
+    
+subplot2(2,3,2,3);
+    [mccg,tbins] = CCG([rofft(:,1);res],[ones([size(rofft,1),1]);2*ones(size(res))],4,70,sampleRate,[1,2]);
+    bar(tbins,mccg(:,1,2));
+    title('rear to turn');
 waitforbuttonpress();
 end
 
@@ -159,7 +187,7 @@ end
 
 
 figure,
-for u = unitsInts{t};
+gfor u = unitsInts{t};
 res = spk(u);    
 res = res(WithinRanges(res,sper));
 pshift = -8*pi:pi/4:8*pi;
@@ -201,10 +229,282 @@ end
 
 
 
+
+
+% Speed X Interneurons
+
+clear('vel');
+vel = vel(filter(copy(xyz),               ... % copy <= position data
+                 'ButFilter',             ... % filter <= filter class
+                 4,                       ... % filter <= num pole 
+                 1.5,                     ... % filter <= freq boundaries
+                 'low'),                  ... % filter <= filter mode
+          {'spine_lower','hcom'},         ... % vel <= markers
+          [1,2]                           ... % vel <= xyz subspace
+);
+
+
+% $$$ velccg.hst.eds = [0:5:80];
+% $$$ velccg.hst.ctr = mean([velccg.hst.eds(1:end-1);velccg.hst.eds(2:end)]);
+% $$$ velccg.hst.ind = discretize(vel(:,2),velccg.hst.eds);
+
+velccg.hst.eds = [-2:0.2:1.8];
+velccg.hst.ctr = mean([velccg.hst.eds(1:end-1);velccg.hst.eds(2:end)]);
+velccg.hst.ind = discretize(log10(vel(:,1)),velccg.hst.eds);
+
+velccg.ccg.opts.halfBins = 100;
+velccg.ccg.opts.binSize = 1;
+velccg.ccg.opts.sampleRate = spk.sampleRate;
+velccg.ccg.data = zeros([velccg.ccg.opts.halfBins*2+1,numel(velccg.hst.ctr)]);
+velccg.ccg.time = zeros([velccg.ccg.opts.halfBins*2+1,1]);
+
+%u = [92,106];
+u = [15];
+
+for v = 1:numel(velccg.hst.ctr),
+    res = spk(u);
+    res = res(velccg.hst.ind(res)==v);
+    [velccg.ccg.data(:,v),velccg.ccg.time] = ... % CCG( T, G, BinSize, HalfBins, SampleRate, GSubset, Normalization, Epochs)
+        CCG(res,                             ... % CCG <= T
+            ones(size(res)),                 ... % CCG <= G
+            velccg.ccg.opts.binSize,         ... % CCG <= BinSize
+            velccg.ccg.opts.halfBins,        ... % CCG <= HalfBins
+            velccg.ccg.opts.sampleRate,      ... % CCG <= SampleRate
+            1                                ... % CCG <= GSubset
+    ); % CCG
+end
+
+figure();
+imagesc(velccg.ccg.time,velccg.hst.ctr,velccg.ccg.data');
+axis('xy');
+colormap('jet');
+
+
+
+
+figure();
+imagesc(velccg.ccg.time,velccg.hst.ctr,bsxfun(@rdivide,velccg.ccg.data,sum(velccg.ccg.data))');
+axis('xy');
+colormap('jet');
+caxis([0,0.01]);
+
+
+
+
+% hvf(l) X Interneurons
+hfl = fet_href_HXY(Trial,sampleRate,false,'trb',2);
+
+hflccg.hst.eds = [0:5:70];
+%hflccg.hst.eds = [-22.5:5:70];
+%hflccg.hst.eds = [-62.5:5:62.5];
+hflccg.hst.ctr = mean([hflccg.hst.eds(1:end-1);hflccg.hst.eds(2:end)]);
+%hflccg.hst.ind = discretize(hfl(:,1),hflccg.hst.eds);
+
+hflccg.hst.ind = discretize(sqrt(sum(hfl(:,:).^2,2)),hflccg.hst.eds);
+
+hflccg.ccg.opts.halfBins = 100;
+hflccg.ccg.opts.binSize = 1;
+hflccg.ccg.opts.sampleRate = spk.sampleRate;
+hflccg.ccg.data = zeros([hflccg.ccg.opts.halfBins*2+1,numel(hflccg.hst.ctr)]);
+hflccg.ccg.time = zeros([hflccg.ccg.opts.halfBins*2+1,1]);
+
+%u = [92,106];
+u = [92];
+
+for vf = 1:numel(hflccg.hst.ctr),
+    res = spk(u);
+    res = res(hflccg.hst.ind(res)==v);
+    [hflccg.ccg.data(:,v),hflccg.ccg.time] = ... % CCG( T, G, BinSize, HalfBins, SampleRate, GSubset, Normalization, Epochs)
+        CCG(res,                             ... % CCG <= T
+            ones(size(res)),                 ... % CCG <= G
+            hflccg.ccg.opts.binSize,         ... % CCG <= BinSize
+            hflccg.ccg.opts.halfBins,        ... % CCG <= HalfBins
+            hflccg.ccg.opts.sampleRate,      ... % CCG <= SampleRate
+            1                                ... % CCG <= GSubset
+    ); % CCG
+end
+
+figure();
+imagesc(hflccg.ccg.time,hflccg.hst.ctr,hflccg.ccg.data');
+axis('xy');
+colormap('jet');
+
+figure();
+imagesc(hflccg.ccg.time,hflccg.hst.ctr,bsxfun(@rdivide,hflccg.ccg.data,sum(hflccg.ccg.data))');
+axis('xy');
+colormap('jet');
+caxis([0,0.01]);
+
+
+
+
+% hvfl X Interneurons
+hfl = fet_href_HXY(Trial,sampleRate,false,'trb',2);
+
+rottheta = -0.17;
+rotmat = [cos(rottheta),-sin(rottheta);sin(rottheta),cos(rottheta)];
+ind = 10000:10200;
+figure,
+    axes();
+    hold('on');
+    plot(hfl(ind,1),hfl(ind,2));
+    temphfl = multiprod(rotmat,hfl(ind,:),[1,2],[2]);
+    plot(temphfl(:,1),temphfl(:,2));
+    
+figure
+ind = stc{'t'};
+subplot(121);
+    rottheta = 0.0;
+    rotmat = [cos(rottheta),-sin(rottheta);sin(rottheta),cos(rottheta)];
+    hist2(multiprod(rotmat,hfl(ind,:),[1,2],[2]),linspace(-80,80,40),linspace(-80,80,40));
+    caxis([0,600]);
+    Lines([],0,'r');
+subplot(122);
+    rottheta = -0.17;
+    rotmat = [cos(rottheta),-sin(rottheta);sin(rottheta),cos(rottheta)];
+    hist2(multiprod(rotmat,hfl(ind,:),[1,2],[2]),linspace(-80,80,40),linspace(-80,80,40));
+    caxis([0,600]);
+    Lines([],0,'r');
+
+
+
+hfl.data = multiprod(rotmat,hfl.data,[1,2],[2]);
+
+
+hvfccg.hst.eds = [-30:20:90];
+hvfccg.hst.ctr = mean([hvfccg.hst.eds(1:end-1);hvfccg.hst.eds(2:end)]);
+hvfccg.hst.ind = discretize(hfl(:,1),hvfccg.hst.eds);
+
+hvlccg.hst.eds = [-55:10:55];
+hvlccg.hst.ctr = mean([hvlccg.hst.eds(1:end-1);hvlccg.hst.eds(2:end)]);
+hvlccg.hst.ind = discretize(hfl(:,2),hvlccg.hst.eds);
+
+hvflccg.ccg.opts.halfBins = 100;
+hvflccg.ccg.opts.binSize = 1;
+hvflccg.ccg.opts.sampleRate = spk.sampleRate;
+hvflccg.ccg.data = zeros([hvflccg.ccg.opts.halfBins*2+1,numel(hvfccg.hst.ctr),numel(hvlccg.hst.ctr)]);
+hvflccg.ccg.time = zeros([hvflccg.ccg.opts.halfBins*2+1,1]);
+
+%u = [92,106];
+u = [92];
+u = [76];
+u = [50];
+
+for vf = 1:numel(hvfccg.hst.ctr),
+    for vl = 1:numel(hvlccg.hst.ctr),
+    res = spk(u);
+    res = res(hvfccg.hst.ind(res)==vf & hvlccg.hst.ind(res)==vl);
+    [hvflccg.ccg.data(:,vf,vl),hvflccg.ccg.time] = ... % CCG( T, G, BinSize, HalfBins, SampleRate, GSubset, Normalization, Epochs)
+        CCG(res,                               ... % CCG <= T
+            ones(size(res)),                   ... % CCG <= G
+            hvflccg.ccg.opts.binSize,          ... % CCG <= BinSize
+            hvflccg.ccg.opts.halfBins,         ... % CCG <= HalfBins
+            hvflccg.ccg.opts.sampleRate,       ... % CCG <= SampleRate
+            1                                  ... % CCG <= GSubset
+    ); % CCG
+    end
+end
+
+
+figure();
+sp = flipud(tight_subplot(numel(hvfccg.hst.ctr),1,0.01));
+for vf = 1:numel(hvfccg.hst.ctr),
+    axes(sp(vf));
+    imagesc(hvflccg.ccg.time,hvlccg.hst.ctr,sq(hvflccg.ccg.data(:,vf,:))');
+     axis('xy');
+    colormap('jet');
+    caxis([0,50]);
+end
+
+figure();
+sp = flipud(tight_subplot(numel(hvfccg.hst.ctr),1,0.01));
+for vf = 1:numel(hvfccg.hst.ctr),
+    axes(sp(vf));
+    imagesc(hvflccg.ccg.time,hvlccg.hst.ctr,bsxfun(@rdivide,sq(hvflccg.ccg.data(:,vf,:)),sum(sq(hvflccg.ccg.data(:,vf,:))))');
+     axis('xy');
+    colormap('jet');
+    caxis([0,0.01]);
+end
+
+figure();
+imagesc(hflccg.ccg.time,hflccg.hst.ctr,bsxfun(@rdivide,hflccg.ccg.data,sum(hflccg.ccg.data))');
+axis('xy');
+colormap('jet');
+
+
+% Speed X Interneurons
+rbm = {'hcom','nose'};
+hed = xyz.copy();
+hed.data = hed(:,rbm,:);
+hed.model = xyz.model.rb(rbm);
+hed.filter('ButFilter',4,2,'low');
+ang = create(MTADang,Trial,hed);
+
+hav = ang.copy();
+hav.data = circ_dist(circshift(ang(:,1,2,1),-1),ang(:,1,2,1)).*sampleRate;
+hav.data = circ_dist(circshift(ang(:,1,2,2),-1),ang(:,1,2,2)).*sampleRate;
+
+% if theta is driven by vestibular input 
+% if theta is driven by visual path
+% if theta is driven by trajectory
+
+
+
+havccg.hst.eds = [-2:0.3:1];
+havccg.hst.ctr = mean([havccg.hst.eds(1:end-1);havccg.hst.eds(2:end)]);
+havccg.hst.ind = discretize(log10(abs(hav(:,1))),havccg.hst.eds);
+
+havccg.ccg.opts.halfBins = 100;
+havccg.ccg.opts.binSize = 1;
+havccg.ccg.opts.sampleRate = spk.sampleRate;
+havccg.ccg.data = zeros([havccg.ccg.opts.halfBins*2+1,numel(havccg.hst.ctr)]);
+havccg.ccg.time = zeros([havccg.ccg.opts.halfBins*2+1,1]);
+
+%u = [92,106];
+u = [45];
+
+for v = 1:numel(havccg.hst.ctr),
+    res = spk(u);
+    res = res(havccg.hst.ind(res)==v);
+    [havccg.ccg.data(:,v),havccg.ccg.time] = ... % CCG( T, G, BinSize, HalfBins, SampleRate, GSubset, Normalization, Epochs)
+        CCG(res,                             ... % CCG <= T
+            ones(size(res)),                 ... % CCG <= G
+            havccg.ccg.opts.binSize,         ... % CCG <= BinSize
+            havccg.ccg.opts.halfBins,        ... % CCG <= HalfBins
+            havccg.ccg.opts.sampleRate,      ... % CCG <= SampleRate
+            1,                               ... % CCG <= GSubset
+            'hz'                             ... % CCG <= Normalization
+    ); % CCG
+end
+
+figure();
+imagesc(havccg.ccg.time,havccg.hst.ctr,havccg.ccg.data');
+axis('xy');
+colormap('jet');
+colorbar();
+
+figure();
+imagesc(havccg.ccg.time,havccg.hst.ctr,bsxfun(@rdivide,havccg.ccg.data,sum(havccg.ccg.data))');
+axis('xy');
+colormap('jet');
+caxis([0,0.01]);
+
+
+
+
+
+figure,
+%for u = unitsInts{t};
+res = spk(u);    
+res = res(WithinRanges(res,sper));
+
+
+
+
     
 cf(@(t,u) req20201117(t,u,tag,false,false,overwrite), Trials(1),unitsInts(1));
 tag = 'interneurons_xyhb_2020';
-tag = 'interneurons_xyhb_2020_bhv'; overwrite = true;
+tag = 'interneurons_xyhb_2020_final'; overwrite = true;
 pfi = cf(@(t,u) req20201117(t,u,tag,false,false,overwrite), Trials,unitsInts);
 
 
@@ -264,14 +564,15 @@ for x = 1:6,
     end
 end
 
-bmaps = reshape(rmapa(3,3,:,:,:),[],size(rmapa,length(binDims)+1));
+% bmaps = reshape(rmapa(3,4,:,:,:),[],size(rmapa,length(binDims)+1));
 
-figure,
-bar(sum(double(~isnan(bmaps)),2));
-% Valid Dimensions
-disp(sum(double(sum(double(~isnan(bmaps)),2)>100)))
-
-validDims = sum(double(~isnan(bmaps)),2)>200;
+bmaps = [];
+for k = 2:4,
+    for j = 2:4,
+        bmaps(:,:,k,j) = reshape(rmapa(k,j,:,:,:),[],size(rmapa,length(binDims)+1));
+    end
+end
+bmaps = reshape(bmaps,[size(bmaps,1),prod(size(bmaps))/size(bmaps,1)]);
 
 figure();
 imagesc(reshape(validDims,binDims(end-1:end))');
@@ -279,7 +580,7 @@ axis('xy');
 
 
 vmaps = bmaps(validDims,:);
-vmaps(:,sum(isnan(vmaps))>5)= [];
+vmaps(:,sum(isnan(vmaps))>0)= [];
 vmaps(isnan(vmaps(:)))=0;
 
 [LU,LR,FSr,VT] = erpPCA(vmaps',5);
@@ -303,25 +604,82 @@ thpks = [thpks,circshift(thpks,-1)];
 thpks([1,end],:) = [];
 thpks(diff(thpks,1,2)>50,:) = [];
 
+figure();
+for s = 1:5,
+    subplot(1,5,s);
+    hist2([1./(diff(thpks,1,2)./sampleRate),                    ... XData
+           circshift(1./(diff(thpks,1,2)./sampleRate),s-3)],    ... YData
+          linspace(5,13,30),                                    ... XBin edges
+          linspace(5,13,30),                                    ... YBin edges
+          'xyprob',                                             ... Normalization(none,(x)yprob)
+          ''                                                    ... Transform (none,mud)
+    );
+    caxis([0,0.02]);
+    line([5,13],[5,13],'Color','r');
+end
+
 %figure(); hist(diff(thpks,1,2),1000)
-u = 76;
-res = spk(u);
-thspkPPC = nan([size(thpks,1),1]);
-thspkN = nan([size(thpks,1),1]);
-thspkCM = nan([size(thpks,1),1]);
-for t = 1:size(thpks,1),
-    tres = res(WithinRanges(res,thpks(t,:)));
-    thspkN(t) = numel(tres);
-    if thspkN(t)>0,
-        thspkCM(t)  = circ_mean(phz(tres));
-        thspkPPC(t) = PPC(phz(tres));
+nui = numel(unitsInts{20});
+thspkPPC = nan([size(thpks,1),nui]);
+thspkN = nan([size(thpks,1),nui]);
+thspkCM = nan([size(thpks,1),nui]);
+thspkVel = nan([size(thpks,1),nui]);
+thspkHz = nan([size(thpks,1),nui]);
+thspkHvf = nan([size(thpks,1),nui]);
+thspkHvl = nan([size(thpks,1),nui]);
+for u = 1:nui,
+    res = spk(unitsInts{20}(u));
+    for t = 1:size(thpks,1),
+        tres = res(WithinRanges(res,thpks(t,:)));
+        thspkN(t,u) = numel(tres);
+        if thspkN(t,u)>0,
+            thspkHz(t,u)  = mean(xyz(tres,'hcom',3));            
+            thspkVel(t,u)  = mean(vel(tres,2));
+            thspkHvf(t,u)  = mean(hfl(tres,1));        
+            thspkHvl(t,u)  = mean(hfl(tres,2));                
+            thspkCM(t,u)  = circ_mean(phz(tres));
+            thspkPPC(t,u) = PPC(phz(tres));
+        end
     end
 end
 
 
 figure();
-ind = ~isnan(thspkPPC)&~isnan(thspkN);
-hist2([thspkPPC(ind),thspkN(ind)],30,15);
+for u = 1:numel(unitsInts{20}),
+clf();
+    ind = ~isnan(thspkPPC(:,u))&~isnan(thspkN(:,u));
+nmz = ''; %'xprob'
+subplot2(2,3,1,1);
+    hist2([log10(sqrt(sum([thspkHvf(ind,u),thspkHvl(ind,u)].^2,2))),thspkN(ind,u)],linspace(-2,2,30),0.5:1:20,nmz);
+    %    hist2([log10(thspkVel(ind,u)),thspkN(ind,u)],linspace(-2,2,30),0.5:1:20,nmz);
+    %caxis([0,0.2]);
+    colormap('jet');
+subplot2(2,3,1,2);
+    hist2([(thspkHvf(ind,u)),thspkN(ind,u)],linspace(-20,80,30),0.5:1:20,nmz);
+    %caxis([0,0.2]);
+    colormap('jet');
+subplot2(2,3,1,3);
+    hist2([(thspkHvl(ind,u)),thspkN(ind,u)],linspace(-60,60,30),0.5:1:20,nmz);
+    %caxis([0,0.2]);
+    colormap('jet');
+nmz = 'xprob';
+subplot2(2,3,2,1);
+%    hist2([log10(thspkVel(ind,u)),thspkN(ind,u)],linspace(-2,2,30),0.5:1:20,nmz);
+    hist2([log10(sqrt(sum([thspkHvf(ind,u),thspkHvl(ind,u)].^2,2))),thspkN(ind,u)],linspace(-2,2,30),0.5:1:20,nmz);
+    caxis([0,0.2]);
+    colormap('jet');
+subplot2(2,3,2,2);
+    hist2([(thspkHvf(ind,u)),thspkN(ind,u)],linspace(-20,80,30),0.5:1:20,nmz);
+    caxis([0,0.2]);
+    colormap('jet');
+subplot2(2,3,2,3);
+    hist2([(thspkHvl(ind,u)),thspkN(ind,u)],linspace(-60,60,30),0.5:1:20,nmz);
+    caxis([0,0.2]);
+    colormap('jet');
+    title(num2str(unitsInts{20}(u),'%d'))
+waitforbuttonpress();
+end
+
 
 figure();
 ind = ~isnan(thspkPPC) & ~isnan(thspkN) & thspkN>3;

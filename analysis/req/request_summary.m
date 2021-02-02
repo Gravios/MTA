@@ -1254,3 +1254,16 @@
     Project: MjgER2016: BhvPlaceCode
     Description: Interneurons are behaviorally modulated. Plot 4d ratemap 
                  in xyhb space
+
+                 
+** 2020 12 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+*** req20201211
+    Tags: interneuron pfs ego ratemaps
+    Status: active
+    Type: Analysis
+    Author: Justin Graboski
+    Final_Forms: NA
+    Project: MjgER2016: BhvPlaceCode
+    Description: Interneuron interaction with placefield and egocentric positions
+
+		 

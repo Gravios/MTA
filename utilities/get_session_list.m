@@ -21,8 +21,8 @@ function Sessions = get_session_list(sessionList,varargin)
 %|  TTLValue       |  CONTEXT       |   SEE TTLValue bellow   |
 %|  includeSyncInd |  Array[double] |   []                    |
 %|  offsets        |  Array[double] |   [15,-15]              |
-%|  xOffSet        |  Array[double] |   0                     |
-%|  yOffSet        |  String        |   0                     |
+%|  xOffSet        |  Double        |   0                     |
+%|  yOffSet        |  Double        |   0                     |
 %|  stcMode        |  String        |   'default'             |
 %|  rotation       |  Double        |   0                     |
 %|  thetaRef       |  Array[double] |   [8:8:64]              |

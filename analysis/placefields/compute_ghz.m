@@ -22,6 +22,9 @@ function [ghz,fieldCenter,pfds] = compute_ghz(Trial,varargin)
 %
 %    feature - NumericMatrix[Nx2]: trajectories to be compressed to 1 dimension
 %
+%    sampleRate
+%
+%    sigma - 150
 
 % DEFARGS ------------------------------------------------------------------------------------------
 defargs = struct('units',                  [],                                                   ...

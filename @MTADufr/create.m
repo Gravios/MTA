@@ -3,7 +3,7 @@ function Data = create(Data,Session,varargin)
 %
 % Calculate the instantaneous firing rate of individual units
 %
-[RefObj,spk,units,spikeWindow,overwrite,mode] = DefaultArgs(varargin,{Session.lfp,[],[],0.05,false,'gauss'});
+[RefObj,spk,units,spikeWindow,mode,overwrite] = DefaultArgs(varargin,{Session.lfp,[],[],0.05,'gauss',false});
 
 if isa(RefObj,'MTAApfs'),
     %nv units
