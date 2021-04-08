@@ -30,6 +30,8 @@ phzCorrection = [pi*1.25,pi*1.25,                             ... er01
 cf(@(t,p) report_interneuron_summary(t,'phzCorrection',p), Trials(end), num2cell(phzCorrection(end)));
 
 
+
+
 unitsPyr = {...
     [161],...           er01 20110719
     [],...              er01 20110721
@@ -42,7 +44,24 @@ unitsPyr = {...
     [1],...             jg04 20120129
     [18],...            jg04 20120130
     [22],...            jg04 20120131
-    
+    [],...              jg04 20120201
+    [],...              jg04 20120210
+    [],...              jg04 20120211    
+    [],...              jg04 20120212
+    [19],...            jg04 20120213
+    [],...              jg05 20120309
+    [90],...            jg05 20120310
+    [],...              jg05 20120311
+    [171],...           jg05 20120312
+    [],...              jg05 20120315
+    [],...              jg05 20120316
+    [65],...            jg05 20120317
+    [49,65],...         jg05 20120323    
+    [3],...             jg05 20120324
+    [],...              ER06 20130624
+    [],...              Ed10 20140815
+    [115,116,184] ...   er01 20110722
+};
 
 unitsInts = {...
     [ 31, 78, 82,125,169,195,203],...                                    er01 20110719
@@ -59,7 +78,7 @@ unitsInts = {...
     [ 10, 24, 27],...                                                    jg04 20120131
     [ 10],...                                                            jg04 20120201
     [  4,  5],...                                                        jg04 20120210
-    [  4,  5],...                                                        jg04 20120211
+    [  4],...                                                            jg04 20120211
     [  6],...                                                            jg04 20120212
     [  2],...                                                            jg04 20120213
     [  5, 10, 15, 27, 28, 38, 64, 66,100,114,116,117,121,122],...        jg05 20120309
@@ -71,12 +90,62 @@ unitsInts = {...
     [ 17, 28, 49, 55],...                                                jg05 20120316
     [ 15, 16, 17, 52],...                                                jg05 20120317
     [  2,  4, 20, 30, 39, 40, 51],...                                    jg05 20120323
-    [  3,  7, 14, 16, 34],...                                            jg05 20120324
+    [  7, 14, 16, 31, 34],...                                            jg05 20120324
     [  5, 13, 27, 66, 71, 72, 75, 91, 94,105,127,157,209,232,233,251,254],...ER06 20130624
-    [  4, 17, 20, 22, 23, 25, 29 ,30, 31, 40, 66, 69],...                Ed10 20140815
-    [ 93,175] ...                                                         er01 20110722
+    [  4, 17, 20, 22, 23, 25, 29 ,30, 31, 40, 66, 69, 72],...            Ed10 20140815
+    [ 93,175] ...                                                        er01 20110722
 };
+
+
+tppRUN = [];
+tprRUN = [];
+tppREM = [];
+tprREM = [];
+for t = 1:numel(Trials)
+    Trial = Trials{t};    
+    lfp = Trials{t}.load('lfp',sessionList(t).thetaRefGeneral);
+    phz = lfp.phase([5,13]);    
+    phz.data = unwrap(phz.data);
+    phz.data = mod(phz.data+pi,2*pi)-pi + phzCorrection(t); 
+    phz.data(phz.data>pi) = phz.data(phz.data>pi)-2*pi;
     
+    spk = Trial.spk.copy();
+    spk.create(Trial,              ...  
+               phz.sampleRate,     ...
+               '',                 ...
+               unitsInts{t},       ...
+               ''                  ...
+    );    
+    stc = Trials{t}.stc.copy();    
+    runPer = [stc{'theta-groom-sit',phz.sampleRate}];
+    remPer = [stc{'theta&sit'}];              
+    for u = 1:numel(unitsInts{t}),
+        res = spk(unitsInts{t}(u));               
+        resRUN = res(WithinRanges(res,runPer.data));        
+        resREM = res(WithinRanges(res,remPer.data));
+        if numel(resRUN)>3,
+            tppRUN(end+1) = circ_mean(phz(res(WithinRanges(res,runPer.data))));
+            tprRUN(end+1) = circ_r(phz(res(WithinRanges(res,runPer.data))));
+        else,
+            tppRUN(end+1) = nan;
+            tprRUN(end+1) = nan;            
+        if numel(resREM)> 3,
+            tppREM(end+1) = circ_mean(phz(res()));
+            tprREM(end+1) = circ_r(phz(res(WithinRanges(res,remPer.data))));        
+        else,
+            tppREM(end+1) = nan;            
+            tprREM(end+1) = nan;
+        end
+    end%for u
+end%for t
+
+
+
+
+
+
+
+
 
 t = 20;    
 Trial = Trials{t};
@@ -87,7 +156,8 @@ spk.create(Trial,              ...
            unitsInts{t},       ...
            ''                  ...
 );    
-pft = pfs_2d_theta(Trial);
+pft  = pfs_2d_theta(Trial);
+%pfis = pfs_2d_states(Trial.
 
 stc = Trial.stc.copy();    
 rper = [stc{'R&s',sampleRate}];
@@ -504,12 +574,18 @@ res = res(WithinRanges(res,sper));
     
 cf(@(t,u) req20201117(t,u,tag,false,false,overwrite), Trials(1),unitsInts(1));
 tag = 'interneurons_xyhb_2020';
-tag = 'interneurons_xyhb_2020_final'; overwrite = true;
+tag = 'interneurons_xyhb_2020_final';    overwrite = false;
+tag = 'interneurons_xyhb_2020_loc';      overwrite = false;
+tag = 'interneurons_xyhb_2020_loc_rear'; overwrite = true;
+tag = 'interneurons_xyhb_2020_theta';    overwrite = true;
 pfi = cf(@(t,u) req20201117(t,u,tag,false,false,overwrite), Trials,unitsInts);
-
-
-
 [rmaps,cluSessionMap] = decapsulate_and_concatenate_mtaapfs(pfi,unitsInts);
+
+pfti = cf(@(t,u)   pfs_2d_theta(t,u),                             Trials, unitsInts);
+pfsi = cf(@(t,u)   pfs_2d_states(t,u,'pfsArgsOverride',struct('numIter',1,'halfsample',false)), Trials, unitsInts);
+bfsi = cf(@(t,u)   compute_bhv_ratemaps(t,u,[],[],[],[],1,1000),  Trials, unitsInts);
+
+pfsiStates = {'Loc','L Loc','H Loc','Rear','Pause','L Pause','H Pause'};
 
 MjgER2016_load_data();
 configure_default_args();
@@ -541,20 +617,19 @@ bhvLims = [-1.6, 0.6; ...
            -0.5, 1.7];
 
 
-
-
 whos rmaps
 
 bins = pfi{1}.adata.bins;
 binDims = pfi{1}.adata.binSizes';
 
+% RESHAPE rmaps into [ xPosition, yPosition, headPitch, bodyPitch, unit ]
 rmapa = nan([binDims,size(rmaps,2)]);
 for u = 1:size(rmaps,2),
     rmapa(:,:,:,:,u) = reshape(rmaps(:,u),binDims);
 end
 
-
-rmap = rmapa(:,:,:,:,200);
+% PLOT example
+rmap = rmapa(:,:,:,:,201);
 figure();
 for x = 1:6,
     for y = 1:6,
@@ -566,6 +641,7 @@ end
 
 % bmaps = reshape(rmapa(3,4,:,:,:),[],size(rmapa,length(binDims)+1));
 
+% COLLECT inner spatial bins
 bmaps = [];
 for k = 2:4,
     for j = 2:4,
@@ -574,27 +650,323 @@ for k = 2:4,
 end
 bmaps = reshape(bmaps,[size(bmaps,1),prod(size(bmaps))/size(bmaps,1)]);
 
+% PLOT valid elements of the behavior space
 figure();
 imagesc(reshape(validDims,binDims(end-1:end))');
 axis('xy');
 
 
+% COMPRESS bmaps to only valid behavior space elements
 vmaps = bmaps(validDims,:);
 vmaps(:,sum(isnan(vmaps))>0)= [];
 vmaps(isnan(vmaps(:)))=0;
 
+% COMPUTE factors
 [LU,LR,FSr,VT] = erpPCA(vmaps',5);
 
+% PLOT first 5 eigen vectors
 figure()
 for v = 1:5,
     eigVec = nan(binDims(end-1:end));
     eigVec(validDims) = LU(:,v);
-    subplot(1,5,v);
+    subplot(1,6,v);
     imagescnan({bins{end-1:end},eigVec'});
     axis('xy');
 end
+    subplot(1,6,6);
+    plot(VT(1:5,4),'-+')
 
 
+% END overall erpPCA 
+% START individual unit non-negative matrix factorization (nnmf)
+
+[accg,tbins] = cf(@(t,u)  autoccg(t,u), Trials,unitsInts);
+
+tbins = tbins{1};
+accg = cf(@(a,u) a(:,u),   accg, unitsInts);
+accg = cat(2,accg{:});
+
+
+
+imaps = bmaps(validDims,:);
+imaps = reshape(imaps, [sum(validDims), 4*4, 225]);
+%imaps(isnan(imaps)) = 0;
+umaps = imaps(:,:,u);
+%umaps(:,sum(isnan(umaps(:,:)))>0)= [];
+invalidDims = sum(isnan(umaps),2)>0;
+umaps(invalidDims,:) = [];
+
+interMapCorrCoef = [];
+for x = 1:16,
+    for y = 1:16,
+
+        tcc = corrcoef(umaps(:,x),umaps(:,y));
+        interMapCorrCoef(x,y) = tcc(1,2);
+    end
+end
+figure(),
+imagesc(reshape(interMapCorrCoef(1,:),4,4)');,axis('xy');
+figure,hist(nonzeros(triu(interMapCorrCoef,1)),40)
+
+%% Main Plot -----------------------------------------------------
+
+cf(@(t) t.load('nq'), Trials);
+nq = cf(@(t) rmfield(t.nq,'AvSpk'), Trials);
+nq = cf(@(n) StructArray(n), nq);
+nq = cf(@(n,u) n(u), nq, unitsInts);
+nq = cat(1,nq{:});
+
+u = 158;
+u = 127;
+u = 166;
+[sesId,cluId] = deal(cluSessionMap(u,1),cluSessionMap(u,2));
+
+
+umaps = imaps(:,:,u);
+%umaps(:,sum(isnan(umaps(:,:)))>0)= [];
+invalidDims = sum(isnan(umaps),2)>0;
+umaps(invalidDims,:) = [];
+
+% LOAD Session data
+% $$$ stc = Trials{sesId}.stc.copy();    
+% $$$ lfp = Trials{sesId}.load('lfp',sessionList(sesId).thetaRefGeneral);
+% $$$ phz = lfp.phase([5,13]);    
+% $$$ phz.data = unwrap(phz.data);
+% $$$ %phz.resample(xyz);    
+% $$$ phz.data = mod(phz.data+pi,2*pi)-pi + phzCorrection; 
+% $$$ phz.data(phz.data>pi) = phz.data(phz.data>pi)-2*pi;
+% $$$ clear('lfp');
+% $$$ 
+% $$$ xyz = preproc_xyz(Trial,'trb');
+% $$$ xyz.data = xyz(:,{'head_back','head_left','head_front','head_right'},:);
+% $$$ xyz.model = xyz.model.rb({'head_back','head_left','head_front','head_right'});
+% $$$ ang = create(MTADang,Trial,xyz);
+% $$$ 
+% $$$ spkL = Trial.load('spk',phz.sampleRate,'theta-sit-groom',unitsInts{sesId});
+% $$$ spkX = Trial.load('spk',xyz.sampleRate,'loc&theta-sit-groom',unitsInts{sesId});
+% $$$ 
+% $$$ tper = resample(cast([stc{'t&x'}],'TimeSeries'),xyz);
+% $$$ tper = logical(tper.data);
+% $$$ 
+% $$$ hdBinEds = linspace(-pi,pi,37);
+% $$$ hdBinCtr = circ_mean([hdBinEds(2:end);hdBinEds(1:end-1)]);
+% $$$ hdBinInd = discretize(ang(:,'head_back','head_front',1),hdBinEds);
+% $$$ 
+
+% $$$ spkR = Trial.load('spk',xyz.sampleRate,'rear&theta-sit-groom',unitsInts{sesId});
+% $$$ sper = resample(cast([stc{'t&r'}],'TimeSeries'),xyz);
+% $$$ sper = logical(sper.data);
+
+% $$$ spkP = Trial.load('spk',xyz.sampleRate,'pause&theta-sit-groom',unitsInts{sesId});
+% $$$ pper = resample(cast([stc{'t&p'}],'TimeSeries'),xyz);
+% $$$ pper = logical(pper.data);
+
+
+
+%[LUi,LRi,FSri,VTi] = erpPCA(umaps',5);
+[FSri,LRi] = nnmf(umaps',5); LRi=LRi';
+
+% START figure
+figure()
+
+
+% PRINT unit info
+subplot2(4,8,1,1);
+text(0.1,1,{['Unit: ',num2str(cluId)],...
+          Trials{sesId}.filebase,...
+          ['eDist:   ',num2str(nq(u).eDist)],...
+          ['Refrac:  ',num2str(log10(nq(u).Refrac))],...
+          ['SNR:     ',num2str(nq(u).SNR)],...
+          ['AmpSym:  ',num2str(nq(u).AmpSym)],...
+          ['SpkWidthR:  ',num2str(nq(u).SpkWidthR)]...
+         },...
+     'VerticalAlignment','top');
+
+
+% PLOT auto CCG
+subplot2(4,8,1,2);
+bar(tbins,accg(:,u));
+axis('tight');
+
+% PLOT theta phase distribution
+subplot2(4,8,1,3);
+rose(phz(spkL(cluId)),36);
+
+% PLOT head direction distribution
+subplot2(4,8,1,4);
+    hdBinOcc = accumarray(hdBinInd(tper),1,[36,1],@sum);
+    hdBinSpk = accumarray(hdBinInd(spkX(cluId)),1,[36,1],@sum);
+    polar(hdBinCtr',hdBinSpk./hdBinOcc.*xyz.sampleRate);
+    title('Loc');
+    %ylim([0,40]);
+subplot2(4,8,1,5);
+    hdBinOcc = accumarray(hdBinInd(sper),1,[36,1],@sum);
+    hdBinSpk = accumarray(hdBinInd(spkR(cluId)),1,[36,1],@sum);
+    polar(hdBinCtr',hdBinSpk./hdBinOcc.*xyz.sampleRate);
+    title('Rear');
+    %ylim([0,40]);
+subplot2(4,8,1,6);
+    hdBinOcc = accumarray(hdBinInd(pper),1,[36,1],@sum);
+    hdBinSpk = accumarray(hdBinInd(spkP(cluId)),1,[36,1],@sum);
+    polar(hdBinCtr',hdBinSpk./hdBinOcc.*xyz.sampleRate);
+    title('Pause');
+    %ylim([0,40]);
+
+
+% PLOT eigVec
+for v = 1:5,
+    eigVec = nan(binDims(end-1:end));
+    pev = zeros([sum(validDims),1]);
+    %pev(~invalidDims) = LUi(:,v);
+    pev(~invalidDims) = LRi(:,v);
+    eigVec(validDims) = pev;
+    subplot2(4,8,3,v+2);
+    %imagescnan({bins{end-1:end},eigVec'});
+    imagesc(bins{end-1},bins{end},eigVec');
+    colormap('jet');
+    colorbar();
+    axis('xy');
+end
+% PLOT eigScr
+%subplot2(4,8,3,8);
+%plot(VTi(1:5,4),'-+');
+for v = 1:5,
+    subplot2(4,8,4,v+2);    
+    imagesc(reshape(FSri(:,v),4,4)');
+    colormap('jet');
+    colorbar();
+    axis('xy');
+end
+% PLOT spatially binned behavior space ratemaps
+subplot2(4,8,[3,4],[1,2])
+spcBhvMap = reshape(permute(rmapa(2:5,2:5,:,:,u),[3,1,4,2,5]),112,112);
+spcBhvMap(~repmat(reshape(validDims,28,28)',[4,4])) = nan;
+%spcBhvMap(~repmat(validDims,[16,1])) = nan;
+imagesc(spcBhvMap');
+mrate = prctile(spcBhvMap(~isnan(spcBhvMap(:))),[0.1,99.9]);
+caxis([mrate]);
+axis('xy');
+colormap('jet')
+colorbar();
+
+% PLOT theta behavior space ratemap
+subplot2(4,8,2,1)
+plot(bfsi{sesId},cluId,1,'colorbar',[mrate],true,'colorMap',@jet,'mazeMask',reshape(validDims,bfsi{1}.adata.binSizes'));
+
+% PLOT theta spatial ratemap
+subplot2(4,8,2,2);
+plot(pfti{sesId},cluId,1,'text',[mrate],true,'colorMap',@jet);
+title('theta');
+
+% PLOT state spatial ratemap
+stid = [2,3,4,6,7];
+for s = 1:5,
+    subplot2(4,8,2,s+2);
+    plot(pfsi{sesId}{stid(s)},cluId,1,'text',[mrate],true,'colorMap',@jet);
+    title(pfsiStates{stid(s)});
+end
+
+%% END Main Plot -----------------------------------------------------
+
+
+% NEED spk/cycle maps 
+lowSampleRate = 5;
+fxyz = copy(xyz);
+fxyz = resample(fxyz,lowSampleRate);
+
+ufr = Trial.load('ufr',fxyz,[],Trial.spk.map(:,1),1/lowSampleRate,'count');
+
+
+
+uphz = unwrap(phz.data);
+uphz = interp1(1:size(uphz,1),uphz,linspace(round(250/lowSampleRate),size(uphz,1),size(fxyz,1)));
+
+cyc = (circshift(uphz,-1) - uphz)' ./ (2*pi);
+
+spc = bsxfun(@rdivide,ufr.data,cyc);
+vxy = fxyz.vel('hcom',[1,2]);
+
+xbinEds = linspace(-500,500,22);
+xbinCtr = round(mean([xbinEds(2:end);xbinEds(1:end-1)]));
+ybinEds = linspace(-500,500,22);
+ybinCtr = round(mean([ybinEds(2:end);ybinEds(1:end-1)]));
+
+
+
+figure,
+u = 166;
+sts = 'w+n&t';
+state = cast([stc{sts,lowSampleRate}],'TimeSeries');
+state.data(end) = [];
+state.data = logical(state.data);
+subplot(3,3,1);
+plot(log10(vxy(state.data)),ufr(state.data,u)*lowSampleRate+randn(sum(state.data),1),'.');
+xlim([-1,2]);
+subplot(3,3,2);
+hist2([log10(vxy(state.data)),ufr(state.data,u)*lowSampleRate],linspace(-0.5,2,15),linspace(0,70,15),'xprob');
+caxis([0,0.2])
+subplot(3,3,4);
+plot(log10(vxy(state.data)),spc(state.data,u),'.');
+xlim([-1,2]);
+state.data = state.data&vxy.data>0;
+[P,S] = polyfit(log10(vxy(state.data)),spc(state.data,u),1);
+subplot(3,3,5);
+hist2([log10(vxy(state.data)),spc(state.data,u)],linspace(-0.5,2,15),linspace(0,10,15),'xprob');
+caxis([0,0.2])
+
+figure,
+u = 166;
+typ = 'int';
+sts = 'w+n&t';
+state = cast([stc{sts,lowSampleRate}],'TimeSeries');
+state.data(end) = [];
+state.data = logical(state.data);
+xind = discretize(fxyz(state.data,'hcom',1),xbinEds);
+yind = discretize(fxyz(state.data,'hcom',2),ybinEds);
+subplot(221);
+    outufrW = accumarray([xind,yind],ufr(state.data,u)*lowSampleRate,[numel(xbinEds)-1,numel(ybinEds)-1],@mean);
+    imagesc(xbinCtr,ybinCtr,outufrW');axis('xy');
+    colorbar();
+    switch typ,case 'int',caxis([0,70]),otherwise,caxis([0,15]);end
+    colormap('jet');
+subplot(222);
+    outspcW = accumarray([xind,yind],spc(state.data,u),[numel(xbinEds)-1,numel(ybinEds)-1],@mean);
+    imagesc(xbinCtr,ybinCtr,outspcW');axis('xy');
+    colorbar();
+    switch typ,case 'int',caxis([0,7]),otherwise,caxis([0,3]);end    
+    colormap('jet');
+sts = 'p&t';
+state = cast([stc{sts,3}],'TimeSeries');
+state.data(end) = [];
+state.data = logical(state.data);
+xind = discretize(fxyz(state.data,'hcom',1),xbinEds);
+yind = discretize(fxyz(state.data,'hcom',2),ybinEds);
+subplot(223);
+    outufrP = accumarray([xind,yind],ufr(state.data,u)*lowSampleRate,[numel(xbinEds)-1,numel(ybinEds)-1],@mean);
+    imagesc(xbinCtr,ybinCtr,outufrP');axis('xy');
+    colorbar();
+    switch typ,case 'int',caxis([0,70]),otherwise,caxis([0,15]);end    
+    colormap('jet');
+subplot(224);
+    outspcP = accumarray([xind,yind],spc(state.data,u),[numel(xbinEds)-1,numel(ybinEds)-1],@mean);
+    imagesc(xbinCtr,ybinCtr,outspcP');axis('xy');
+    colorbar();
+    switch typ,case 'int',caxis([0,7]),otherwise,caxis([0,3]);end        
+    colormap('jet');
+
+
+% $$$ figure,
+% $$$ subplot(211);hist(outufrP(:)-outufrW(:),100)
+% $$$ subplot(212);hist((outspcP(:)-outspcW(:))*8,100)
+
+
+figure
+subplot(121);
+ind = nniz(outufrW(:))&nniz(outspcW(:));
+hist(outufrW(ind)-outspcW(ind)*8,30);
+subplot(122);
+ind = nniz(outufrW(:))&nniz(outspcW(:));
+hist(outufrP(ind)-outspcP(ind)*8,30);
 
 sper = [Trial.stc{'t-m-s',sampleRate}];
 
@@ -708,74 +1080,52 @@ colormap('jet');
 
 %hist2([diff(thpks,1,2),thspkPPC'],30,30);
 
-
-
-% fet
-
-function [fet,featureTitles,featureDesc] = fet_HB_pitchB(Trial,varargin)
-% function [fet,featureTitles,featureDesc] = fet_head_pitch(Trial,varargin)
-% varargin:
-%     newSampleRate: numeric,  (Trial.xyz.sampleRate) - sample rate of xyz data
-%     normalize:     logical,  (false)                - covert each feature to z-score
-%     procOpts:      CellARY,  ({'SPLINE_SPINE_HEAD_EQD'}), - preprocessing options
-%     referenceTrial'  , 'Ed05-20140529.ont.all'
-%     referenceFeature', ''
-%
-
-Trial = MTATrial.validate(Trial);
-
-% DEFARGS ------------------------------------------------------------------------------------------
-defargs = struct('newSampleRate'   , Trial.xyz.sampleRate,                                       ...
-                 'normalize'       , false,                                                      ...
-                 'procOpts'        , {{}},                                                       ...
-                 'referenceTrial'  , '',                                                         ...
-                 'referenceFeature', '',                                                         ...
-                 'overwriteFlag'   , false                                                       ...
-);
-[newSampleRate,normalize,procOpts,referenceTrial,referenceFeature,overwriteFlag] = ...
-    DefaultArgs(varargin,defargs,'--struct');
 %---------------------------------------------------------------------------------------------------
 
+% fet
+t = 20;
+clearvars('-GLOBAL','AP');
 
+pfsArgs = struct('states',           'theta-groom-sit',      ...
+                 'binDims',          [0.1,0.1,0.2],          ...
+                 'SmoothingWeights', [2,2,2],                ...
+                 'numIter',          1,                      ...
+                 'boundaryLimits',   [-2,0.8;-0.8,2;-2,2],   ...
+                 'halfsample',       false);
+ifs = compute_bhv_ratemaps(Trials{t},unitsInts{t},'fet_HPBPHS',[],'none',pfsArgs,1,inf,false);
 
-% MAIN ---------------------------------------------------------------------------------------------
+ifs = cf(@(T,U)  compute_bhv_ratemaps(T,U,'fet_HPBPHS',[],'none',pfsArgs,1,inf,false), Trials,unitsInts);
 
-% INIT Feature
-fet = MTADfet(Trial.spath,...
-              [],...
-              [],...
-              newSampleRate,...
-              Trial.sync.copy,...
-              Trial.sync.data(1),...
-              [],'TimeSeries',[],'Head body pitch','fet_HB_pitch','b');                  
+[irmaps,~] = decapsulate_and_concatenate_mtaapfs({ifs},unitsInts(20));
 
-if overwriteFlag,
-% XYZ preprocessed 
-    xyz = Trial.load('xyz');
-% LOAD pitches 
-    pch = fet_HB_pitch(Trial);
-    if ~isempty(referenceTrial),
-% MAP to reference trial
-        pch.map_to_reference_session(Trial,referenceTrial,referenceFeature);
-    end
-    pch.resample(newSampleRate);
-    xyz.resample(newSampleRate);
-% CONCATENATE features
-    fet.data = [circ_dist(pch(:,3),pch(:,1)),pch(:,1)];
-    fet.data(~nniz(xyz),:)=0;
-    fet.save();
-else
-    load(fet,Trial);
+ibins = ifs.adata.bins;
+ibinDims = ifs.adata.binSizes';
+
+% RESHAPE rmaps into [ xPosition, yPosition, headPitch, bodyPitch, unit ]
+irmapa = nan([ibinDims,size(irmaps,2)]);
+for u = 1:size(irmaps,2),
+    irmapa(:,:,:,u) = reshape(irmaps(:,u),ibinDims);
 end
 
-
-featureTitles = {};
-featureDesc = {};
-if nargout>1,
-    featureTitles(end+1) = {'Pitch HCHN-BMBU'};    
-    featureDesc(end+1) = {['head pitch relative to xy plane']};
-    featureTitles(end+1) = {'Pitch BMBU'};    
-    featureDesc(end+1) = {['upper body pitch relative to xy plane']};
+figure,
+u = find(45==unitsInts{20});
+for s = 1:20,
+    subplot(5,4,s)
+    imagesc(irmapa(:,:,s,u)')
+    axis('xy');
+    colormap('jet')
 end
+ForAllSubplots('caxis([0,40]);');
 
-% END MAIN -----------------------------------------------------------------------------------------
+
+
+
+%% 
+cf(@(t,u) req20201117(t,u,tag,false,false,overwrite), Trials(1),unitsInts(1));
+tag = 'interneurons_xyhb_2020';
+tag = 'interneurons_xyhb_2020_final';    overwrite = false;
+tag = 'interneurons_xyhb_2020_loc';      overwrite = false;
+tag = 'interneurons_xyhb_2020_loc_rear'; overwrite = true;
+tag = 'interneurons_xyhb_2020_theta';    overwrite = true;
+pfi = cf(@(t,u) req20201117(t,u,tag,false,false,overwrite), Trials,unitsInts);
+

@@ -12,9 +12,9 @@ function Stc = label_ripples(Trial,varargin)
 % NOTE - Expects lfp sample rate to be between 1000 and 1500 Hz
 
 % DEFARGS ------------------------------------------------------------------------------------------
-defargs = struct('Stc',               Trial.stc.copy(),                                         ...
-                 'chans',             [40,48,56,64,68],                                         ...
-                 'freqRange',         [140,220]                                                ...
+defargs = struct('Stc',               [],                                                        ...
+                 'chans',             [40,48,56,64,68],                                          ...
+                 'freqRange',         [140,220]                                                  ...
 );
 [Stc,chans,freqRange] = DefaultArgs(varargin,defargs,'--struct');
 %--------------------------------------------------------------------------------------------------
@@ -23,6 +23,10 @@ defargs = struct('Stc',               Trial.stc.copy(),                         
 % MAIN ---------------------------------------------------------------------------------------------
 
 Trial = MTATrial.validate(Trial);
+if isempty(Stc),
+    Stc = Trial.stc.copy();
+end
+
 Trial.lfp.filename = [Trial.name,'.lfp'];
 lfp = Trial.load('lfp',chans);
 

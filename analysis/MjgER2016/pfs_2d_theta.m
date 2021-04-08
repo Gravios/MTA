@@ -82,6 +82,10 @@ pargs = get_default_args('MjgER2016','MTAApfs','struct');
 pargs.units = units;
 pargs.states = state;
 pargs.overwrite = overwrite;
+pargs.binDims = [20,20];
+pargs.SmoothingWeights = [3,3];
+pargs.numIter = 1;
+pargs.halfsample = false;
 if ~isempty(pfsArgsOverride) && isstruct(pfsArgsOverride),
     for f = fieldnames(pfsArgsOverride)'
         pargs.(f{1}) = pfsArgsOverride.(f{1});

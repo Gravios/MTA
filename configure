@@ -4,15 +4,18 @@
 #
 # MTA assumes a specifec file structure for both data and code
 #
-# matlab code - expected location: /storage/code/matlab
-# data        - expected location: /storage/$USER/data
-#
-# -s : matlab startup path, location of script: startup.m
+# matlab code - expected location: /storage/$USER/code/matlab
+# data dir    - expected location: /storage/$USER/data
+# project dir - expected location: /storage/$USER/data/project
+# 
+# -t : matlab startup path, location of script: startup.m
 # -r : matlab share path, location of the MTA toobox, where labbox and other dependencies reside
 #         /storage/share/matlab/
 # -u : username
-# -d : data storage root (path)
+# -s : storage root (path)
 # -m : MTA code path (by default assumes the matlab share path)
+# -d : Name of data directory
+# -d : Name of project directory
 #
 # USER is your user name
 #
@@ -21,7 +24,7 @@
 #         NOT  /home
 #
 # example
-#     configure -u gravio -d storage2 -m /storage/gravio/code/matlab
+#     configure -u gravio -s storage2 -t /storage/gravio/code/matlab
 #     configure -u 
 # 
 
@@ -30,16 +33,19 @@ STORAGE=''
 MATLAB_SHARE_PATH=''
 MATLAB_STARTUP_PATH=''
 MTA_PATH=''
+DATA_DIR=''
 
-while getopts u:d:s:r:m: option ;
+while getopts u:s:t:r:m:d:p: option ;
 do
     case "${option}" 
     in
     u) USERNAME=${OPTARG};;
-    d) STORAGE=${OPTARG};;
-    s) MATLAB_STARTUP_PATH=${OPTARG};;    
+    s) STORAGE=${OPTARG};;
+    t) MATLAB_STARTUP_PATH=${OPTARG};;    
     r) MATLAB_SHARE_PATH=${OPTARG};;
     m) MTA_PATH=${OPTARG};;
+    d) DATA_DIR=${OPTARG};;
+    p) PROJECT_DIR=${OPTARG};;
     esac
 done
 
@@ -47,6 +53,16 @@ done
 # DEFINE username
 if [ -z "$USERNAME" ]; then
     USERNAME=`whoami`
+fi
+
+# DEFINE DATA_DIR
+if [ -z "$PROJECT_DIR" ]; then
+    PROJECT_DIR="data/project"
+fi
+
+# DEFINE username
+if [ -z "$DATA_DIR" ]; then
+    DATA_DIR="data"
 fi
 
 # DEFINE storage name
@@ -101,7 +117,7 @@ echo "MTAstartup();"                                        >> "$MATLAB_STARTUP_
 
 # ADD environmental variables to aid MTAstartup and MTAconfiguration
 echo "export MTA_PATH=$MTA_PATH"                                      >> "$HOME/.bashrc"
-echo "export MTA_DATA_PATH=/$STORAGE/$USERNAME/data/"            >> "$HOME/.bashrc"
-echo "export MTA_PROJECT_PATH=/$STORAGE/$USERNAME/data/project"  >> "$HOME/.bashrc"
+echo "export MTA_DATA_PATH=/$STORAGE/$USERNAME/$DATA_DIR/"            >> "$HOME/.bashrc"
+echo "export MTA_PROJECT_PATH=/$STORAGE/$USERNAME/$PROJECT_DIR"       >> "$HOME/.bashrc"
 
 source "$HOME/.bashrc"

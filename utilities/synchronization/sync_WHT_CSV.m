@@ -1,4 +1,4 @@
-function Session = sync_WHT_CSV(Session,~,xyzSampleRate)
+function Session = sync_WHT_CSV(Session,recordLengths,xyzSampleRate)
 %
 % Populate a Session with xyz data synchronized to
 % electrophysiological data based on an event file
@@ -28,6 +28,7 @@ ERR.msg  = ['SyncPeriods is empty, check event file that ' ...
 % ASSIGN synchronization periods in sesconds as continuous time
 % CREATE Sync object for lfp
 Par = LoadPar(fullfile(Session.spath, [Session.name '.xml']));            
+%dat = LoadBinary(fullfile(Session.spath, [Session.name '.dat']),1,Par.nChannels,1)';
 lfp = LoadBinary(fullfile(Session.spath, [Session.name '.lfp']),1,Par.nChannels,4)';
 recordSync = [0,numel(lfp)./Par.lfpSampleRate];
 clear('lfp');
@@ -47,51 +48,62 @@ Session.sampleRate = Par.SampleRate;
 
 
 %% Setup session folder in project directory -------------------------
-
-% CREATE directories within current project folder
-if ~exist(Session.spath,'dir')
-    if ~exist(Session.spath,'dir') && ...
-        exist(fullfile(Session.path.project,'nlx',Session.name),'dir') && ...
-        exist(fullfile(Session.path.project,'xyz',Session.name),'dir')
-        create_directory(Session.spath);        
-    else
-        e.message    = ['Session: ' Session.name ', cannot be found or does not exist. ' ...
-                       'Check paths or see the README for the correct directory structure ' ...
-                       'for the MTA toolbox.'];
-        e.identifier = 'MTA:utilities:syncViconNlx:Session404';
-        error(e);
-    end
-end
+create_directory(Session.spath);        
 
 
 %% Load xyz data and marker model ------------------------------------
 
+subjectRecords = load_take_files(Session,recordLengths);
 
-markers = {'head_frontL','head_frontR','head_left','head_back','head_right'};
 
-ds = load(fullfile(Session.spath,Session.maze.name,[Session.name,'.pos.data.mat']));
-% $$$ figure,
-% $$$ plot3(ds.data(10000,:,1),ds.data(10000,:,2),ds.data(10000,:,3),'-+');
-% $$$ hold('on');
-% $$$ plot3(ds.data(10000,1,1),ds.data(10000,1,2),ds.data(10000,1,3),'or');
+% GET first non emtpy record for reference
+rec = find(~cellfun(@isempty,subjectRecords));
+% ASSERT that the sample rate given matches the sample rate of the record
+assert(xyzSampleRate == subjectRecords{rec(1)}(1).sampleRate);
+% GET a list of the subject names
+subjectNameList = {subjectRecords{rec(1)}.name};
+% SET the identity of the primary subject
+primarySubject = recordLengths{rec(1)}{3};
 
-xyzData = ds.data;
+rboData = {};
+for n = 1:numel(subjectNameList),
+    for s = 1:numel(subjectRecords)
+        if isempty(subjectRecords{s})
+            % GENERATE zero padded 
+            rboData{n}{s} = zeros([round(recordLengths{s}{1}./Session.sampleRate.*xyzSampleRate)+1, ...
+                                    size(subjectRecords{rec(1)}(n).data,2),...
+                                    size(subjectRecords{rec(1)}(n).data,3)]);
+        else
+            rboData{n}{s} = cat(1,...
+                                subjectRecords{s}(n).data,...
+                                zeros([round(recordLengths{s}{1}./Session.sampleRate.*xyzSampleRate)+1-size(subjectRecords{s}(n).data,1),...
+                                       size(subjectRecords{s}(n).data,2),...
+                                       size(subjectRecords{s}(n).data,3)]));
+        end
+    end
+    rboLabels{n} = subjectRecords{rec(1)}(n).rboLabels;
+end
+
+   
+%markers = {'head_frontL','head_frontR','head_left','head_back','head_right'};
+
            
 % GENERATE marker model
-s.model = MTAModel(markers,'-mar');;
+%s.model = MTAModel(markers,'-mar');
 
 
 %% Map xyz data to sychronization events -----------------------------
 
 
 % CONCATENATE start and stop events 
-xyzSyncPeriods = [0,ds.timestamps(end)];
+%xyzSyncPeriods = [0,ds.timestamps(end)];
+
 
 
 % SETUP the xyz synchronization periods (only first and last)
 Session.sync = MTADepoch(Session.spath,                      ... Path
                          [Session.filebase '.sync.mat'],     ... FileName
-                         xyzSyncPeriods([1,end]),          ... Data
+                         recordSync,                         ... Data
                          1,                                  ... Sample Rate
                          recordSync,                         ... Sync Periods
                          0,                                  ... Sync Origin
@@ -117,20 +129,58 @@ Session.stc = MTAStateCollection(Session.spath,Session.filebase,'default',[],[],
 Session.stc.updateSync(Session.sync);
 Session.stc.updateOrigin(0);
 
+
+%xyzSyncPeriods = [0,size(data,1)./xyzSampleRate];
+xyzSyncPeriods = recordSync;
+
+xyzData = [];
 % INITIALIZE MTADxyz object to contain vicon data
-Session.xyz = MTADxyz(Session.spath,            ... Path
-                      Session.filebase,         ... File Name
-                      xyzData,                   ... Data
-                      xyzSampleRate,          ... Sample Rate
-                      MTADepoch([],[],          ... Sync Periods
-                                xyzSyncPeriods,    ... Data
+Session.xyz = MTADxyz(Session.spath,           ... Path
+                      Session.filebase,        ... File Name
+                      xyzData,                 ... Data
+                      xyzSampleRate,           ... Sample Rate
+                      MTADepoch([],[],         ... Sync Periods
+                                xyzSyncPeriods,      ... Sync Data
                                 1,                   ... Sample Rate
                                 Session.sync.copy,   ... Sync Periods
                                 0),                  ... Sync Sync Origin
                       Session.sync.data(1),     ... XYZ Sync Origin
-                      Session.model);%          ... model  
+                      []);%          ... model  
 Session.xyz.save;
 Session.xyz.clear;
+
+
+for n = 1:numel(rboData)
+    model = MTAModel(rboLabels{n},'-mar');
+    data = cat(1,rboData{n}{:});
+% INITIALIZE MTADxyz object to contain vicon data
+    rbo = MTADrbo(Session.spath,                ... Path
+                  Session.filebase,             ... File Name
+                  data,                         ... Data
+                  xyzSampleRate,                ... Sample Rate
+                  MTADepoch([],[],              ... Sync Periods
+                            xyzSyncPeriods,... Sync Data
+                            1,                            ... Sync Sample Rate
+                            Session.sync.copy,            ... Sync Periods
+                            0),                           ... Sync Sync Origin
+                  Session.sync.data(1),         ... rbo Sync Origin
+                  model,                        ... rbo model  
+                  'TimeSeries',                 ... data type
+                  'rbo',                        ... extension
+                  subjectNameList{n},           ... name
+                  subjectNameList{n},           ... label
+                  's'                           ... key
+    );% rbo
+    rbo.save;
+    rbo.clear;
+    switch subjectNameList{n}
+      case primarySubject
+        Session.subject = copy(rbo);
+        Session.model = Session.subject.model;
+      case 'Arena'
+        Session.arena = copy(rbo);
+    end
+end    
 
 % INITIALIZE MTADang object for inter marker spherical coordinates
 Session.ang = MTADang(Session.spath,...
@@ -139,7 +189,7 @@ Session.ang = MTADang(Session.spath,...
                       xyzSampleRate,...
                       Session.xyz.sync,...
                       Session.xyz.origin,...
-                      Session.model);
+                      []);
 
 % INITIALIZE MTADufr object to hold unit firing rates computed from MTASpk object
 Session.ufr = MTADufr(Session.spath,...

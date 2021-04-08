@@ -47,31 +47,13 @@ MjgER2016_figure3_args();
 
 
 %%%<<< LOAD data
-% EXAMPLE Trial : jg05-20120312
+        % EXAMPLE Trial : jg05-20120312
 tind = 20;
 Trial = Trials{tind};
 stc = Trials{tind}.stc.copy();
 
 
 % LOAD place restricted behavior fields
-bfs   = cf(@(t,u)   compute_bhv_ratemaps(t,u),  Trials, units);
-bfsEx = bfs{tind};
-bfsTag = {'HPITCHxBPITCH'};
-
-
- 
-pfsa = cf(@(s,t) cat(2,{t},s), pfss,pfts);
-
-% COMPUTE bfs erpPCA
-[eigVecs, eigScrs, eigVars, unitSubset, validDims, zrmMean, zrmStd] = ...
-                    compute_bhv_ratemaps_erpPCA(bfs, units);
-numComp = size(eigVecs,2);
-fpc  = cell([1,numComp]);
-for i = 1:numComp,
-    fpc{i} = nan(size(validDims));
-    fpc{i}(validDims) = eigVecs(:,i);
-end
-fpcLims = [min(cellfun(@min,fpc)),max(cellfun(@max,fpc))];
 
 
 bhvMask = false(size(validDims));

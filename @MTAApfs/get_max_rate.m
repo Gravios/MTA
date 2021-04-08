@@ -1,4 +1,4 @@
-function [mxr,mxp,fo] = maxRate(Pfs,varargin)
+function [mxr,mxp,fo] = get_max_rate(Pfs,varargin)
 % function [mxr,mxp] = maxRate(Pfs,varargin)
 % return the maximum firing rate and location of a unit(s)
 %
@@ -60,12 +60,6 @@ if mazeMaskFlag,
     end
     mask = reshape(mask,[],1);
 end
-
-switch mode
-  case 'COM' % make bin grid
-end
-
-    
 
 mxr = nan(numel(units),1);
 mxp = nan(numel(units),1);
@@ -149,20 +143,13 @@ for u = units(:)',
         mxr(u==units) = prctile(rateMap(nniz(rateMap)),99.9);
         return
         
-      case 'COM' % center of mass
-                 % select bins near max := < sigThresh (default: 200mm)
-% $$$         rateMap = Pfs.data.rateMap(:,Pfs.data.clu==u,1);
-% $$$         if size(rateMap,2)==0,  rateMap = nan([size(Pfs.data.rateMap,1),1]);  end        
-% $$$         [~,mxp(u==units)] = max(rateMap.*mask);
-        % mxp = 
-        
       otherwise
         rateMap = Pfs.data.rateMap(:,Pfs.data.clu==u,1);
         if size(rateMap,2)==0,  rateMap = nan([size(Pfs.data.rateMap,1),1]);  end
         [mxr(u==units),mxp(u==units)] = max(rateMap.*mask);
         
-    end% switch mode
-end%for u
+    end
+end
 
 mxp = Ind2Sub(cellfun(@numel,bins),mxp);
 if numel(Pfs.parameters.type)>2,

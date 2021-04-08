@@ -24,7 +24,8 @@ figDir = create_directory(...
 
 
 sampleRate = 16;
-tper =[Trial.stc{'theta-groom-sit'}];
+tper =[Trial.stc{'loc+rear&theta-groom-sit'}];
+%tper =[Trial.stc{'theta-groom-sit'}];
 
 xyzp = [];
 if overwrite,

@@ -120,7 +120,8 @@ switch mode
     end
 
     if ~isempty(newSR),
-        rhm.resample(newSR);
+        xyz.resample(newSR); % I know ...
+        rhm.resample(xyz);
         temp_ts = Trial.xyz.copy;
         temp_ts.data = ts;
         temp_ts.resample(newSR);

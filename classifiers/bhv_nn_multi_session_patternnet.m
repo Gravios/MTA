@@ -185,16 +185,22 @@ labelingEpochs = cf(@(t,x)  resample(t.stc{'a'}.cast('TimeSeries'),x), Trials,xy
 
 
 % LOAD mapminmax parameters
-psa = load_normalization_parameters_mapminmax(features{1}.label,...
+psa = load_normalization_parameters_mapminmax(featureSet,...
                                               [],... need feature.treatmentRecord
-                                              'hand_labeled');
+                                              'hand_labeled',...
+                                              normalize);
 % LOAD hand labeled state matrix
-shl = {};
-% $$$ if ~any(cell2mat(cf(@(s) strcmp(s.mode,'default'),StcHL))),
-% $$$     shl = cf(@(s,x,sts) MTADxyz('data',double(0<stc2mat(s,x,sts)),...
-% $$$                                 'sampleRate',x.sampleRate),...
-% $$$              StcHL, xyz, states);
-% $$$ end
+
+try
+    if ~any(cell2mat(cf(@(s) strcmp(s.mode,'default'),StcHL))),
+        shl = cf(@(s,x,sts) MTADxyz('data',double(0<stc2mat(s,x,sts)),...
+                                    'sampleRate',x.sampleRate),...
+                 StcHL, xyz, states);
+    end
+catch err
+    disp(err);
+    shl = {};
+end
 
 
 

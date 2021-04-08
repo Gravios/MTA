@@ -11,8 +11,15 @@ afet.data = reshape(afet.data,[],xyz.size(2));
 
 
 mag = zeros([afet.size(1),1]);
+
+% GET avalible markers from list
+mrkInd = Trial.xyz.model.gmi({'spine_lower','pelvis_root','spine_middle','spine_upper',...
+                              'head_back', 'head_front'})
+% REMOVE unavailable markers
+mrkInd(~mrkInd) = [];
+
 for i= 1:afet.size(1),
-mag(i) = PPC(afet(i,[1:5,7]));
+    mag(i) = PPC(afet(i,mrkInd));
 end
 
 msync = Trial.xyz.sync.copy;

@@ -1,7 +1,9 @@
 function [xyzData,markers,viconSampleRate] = concatenate_vicon_files(Session)
-%[xyzData,markers] = concat(Session)
-% Determine number of position tracking 
-% trials and concantenates parts
+%function [xyzData,markers,viconSampleRate] = concatenate_vicon_files(Session)
+%
+% Determine number of position tracking trials and concatenates parts
+%
+    
 dirArray = dir(fullfile(Session.spath, Session.maze.name));
 trialArray = {};
 trialPartSize = {};
@@ -23,7 +25,7 @@ for i = 1:length(dirArray);
 end
 % Sort the names within the cells
 % This is assumed to be in order for the moment
-%Load Files and concantenate
+% Load Files and concantenate
 xyzData = cell(1,lastTrial);
 viconSampleRate = [];
 number_of_markers = 0;

@@ -1,4 +1,4 @@
-function [fet,featureTitles,featureDesc] = fet_xy(Trial,varargin)
+function [fet,featureTitles,featureDesc] = fet_rbo(Trial,varargin)
 % function [fet,featureTitles,featureDesc] = fet_xy(Trial,varargin)
 %
 % varargin:
@@ -12,9 +12,9 @@ function [fet,featureTitles,featureDesc] = fet_xy(Trial,varargin)
 Trial = MTATrial.validate(Trial);
 
 % DEFARGS ------------------------------------------------------------------------------------------
-defargs = struct('sampleRate'   , Trial.xyz.sampleRate,                                       ...
+defargs = struct('sampleRate'   , Trial.xyz.sampleRate,                                          ...
                  'normalize'       , false,                                                      ...
-                 'procOpts'        , 'trb',                                                  ...
+                 'procOpts'        , Trial.subject.label,                                        ...
                  'referenceTrial'  , '',                                                         ...
                  'referenceFeature', ''                                                          ...
 );
@@ -23,6 +23,8 @@ defargs = struct('sampleRate'   , Trial.xyz.sampleRate,                         
 %---------------------------------------------------------------------------------------------------
 
 % MAIN ---------------------------------------------------------------------------------------------
+
+procOpts = 'FS04_AC';
 
 % INIT Feature
 fet = MTADfet(Trial.spath,...
@@ -34,10 +36,9 @@ fet = MTADfet(Trial.spath,...
               [],'TimeSeries',[],'Head body pitch','fet_HB_pitch','b');                  
 
 
+xyz = resample(Trial.load('subject',procOpts),sampleRate);
 
-xyz = resample(preproc_xyz(Trial,'trb'),sampleRate);
-
-fet.data = [sq(xyz(:,'hcom',[1,2]))];
+fet.data = [sq(xyz(:,'Head',[1,2]))];
 
 fet.data(~nniz(xyz),:)=0;
 featureTitles = {};

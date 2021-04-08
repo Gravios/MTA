@@ -267,6 +267,7 @@ Trial = QuickTrialSetup(meta);
 
 Trial = MTATrial.validate([meta.sessionName,'.',meta.mazeName,'.',meta.trialName]);
 
+Trial = MTATrial.validate('FS03-20201222.cof.all');
 pft = pfs_2d_theta(Trial,'pfsArgsOverride',struct('numIter',1,'halfsample',false));
 
 pft = pfs_2d_theta(Trial,'pfsArgsOverride',struct('numIter',1,'halfsample',false));
@@ -323,24 +324,26 @@ numBodyMarkers = 3;
 
 markerData = nan([numFrames, numBodyMarkers.*ndims]);
 rigidBodyData = nan([numFrames, rigidBodyDataSize]);
+
 tic;
 for f = 1:numFrames,
     tdata = [fgetl(fid),','];
     if length(tdata)<10,
         continue;
     end
-    cind = 1;
+    cind = 0;
     ccind = [];
     ccount = 1;
     while ccount <= rigidBodyDataSize,
+        cind = cind + 1;                                 
         ccount = ccount + double(tdata(cind)==',');
-        cind = cind + 1;                         
         if tdata(cind)==',',
             ccind(end+1) = cind;
         end
     end
     %% SOMETHING WRONG HERE
-    rigidBodyData(f,:) = cellfun(@str2double,regexp(tdata(1:cind-3),',','split'));
+    rowRigidBodyData = cellfun(@str2double,regexp(tdata(1:cind),',','split'));
+    rigidBodyData(f,:) = rowRigidBodyData(1:end-1);
     rowMarkerData = cellfun(@str2double,regexp(regexprep(regexprep(tdata((cind-1+find(tdata(cind:end)~=',',1,'first')):end),'(,,)+',','),'(,,)+',','),',','split'));
     markerData(f,1:end+numel(rowMarkerData)-1-size(markerData,2)) = rowMarkerData(1:end-1);
     if mod(f,10000)==0,
@@ -379,10 +382,110 @@ ds = load(fullfile(path.processed.xyz,meta.mazeName,[meta.sessionName,'.pos.csv_
 ds.markerData = ds.markerData * 1000;
 ds.markerData = permute(reshape(ds.markerData,size(ds.markerData,1),3,9),[1,3,2]);
 ds.markerData(ds.markerData==0) = nan;
+ds.markerData = ds.markerData(:,:,[1,3,2]);
+
+figure();
+hold('on');
+plot(ds.markerData(:,1,2));
+plot(ds.markerData(:,2,2));
+plot(ds.markerData(:,3,2));
+plot(ds.markerData(:,4,2));
+
+figure();
+hold('on');
+plot(ds.markerData(:,1,1),ds.markerData(:,1,2),'.');
+
 
 
 figure();
 plot(sqrt(sum((ds.markerData(:,1,:)-circshift(ds.markerData(:,1,:),-1)).^2,3)))
+
+% m-m
+% m-m
+% i1
+
+% MINIMIZE the sum of distance inter-frame markers 
+% MINIMIZE summed marker speed between frames
+% BETWEEN sets of frames a speed vector may be computed
+% OVERALL minimize inter-marker distance and angles
+expMrkCnt = 3;
+goodMarkerDataIndex = 2;
+
+xyz = nan(size(ds.markerData));
+xyz(1,:,:) = ds.markerData(1,:,:);
+
+pPrm = 1:expMrkCnt;
+for frame = goodMarkerDataIndex:size(ds.markerData,1),
+    %frame = 100;
+
+    gMrk = ds.markerData(frame,~isnan(sum(ds.markerData(frame,:,:),3)),:);
+    gMrkCnt = size(gMrk,2);
+    gMrkIndAll = perms(1:gMrkCnt);
+
+    pMrk = xyz(frame-1,1:expMrkCnt,:);    
+    pMrkCnt = find(~isnan(pMrk(1,:,1)));
+    pMrkInd = perms(pMrkCnt);
+    pMrkCnt = numel(pMrkCnt);
+    
+    mMrkCnt = sum([expMrkCnt,gMrkCnt,pMrkCnt,pMrkCnt].* ...
+                  double([gMrkCnt>=expMrkCnt&&pMrkCnt>=expMrkCnt, ...
+                          gMrkCnt<expMrkCnt&&gMrkCnt<pMrkCnt, ...
+                          pMrkCnt<expMrkCnt&&pMrkCnt<gMrkCnt, ...
+                          pMrkCnt<expMrkCnt&&pMrkCnt==gMrkCnt]));
+    pMrkInd = pMrkInd(:,1:mMrkCnt);
+    gMrkInd = gMrkIndAll(:,1:mMrkCnt);
+    
+    % WHAT happends if gMrkCnt is less than expMrkCnt
+
+    fTotDst = nan([size(pMrkInd,1),size(gMrkInd,1)]);
+    for p = 1:size(pMrkInd,1),
+        for g = 1:size(gMrkInd,1),
+            fTotDst(p,g) = sum(sqrt(sum((gMrk(1,gMrkInd(g,:),:)-pMrk(1,pMrkInd(p,:),:)).^2,3)));
+        end
+    end
+
+    % WHAT happends if gMrkCnt is less than expMrkCnt
+
+    if gMrkCnt == expMrkCnt && gMrkCnt == pMrkCnt,
+        [tDst(frame),gPrmInd] = min(fTotDst(end,:));
+        xyz(frame,1:gMrkCnt,:) = gMrk(1,gMrkInd(gPrmInd,:),:);
+        pPrm = gMrkInd(gPrmInd,:);
+        
+    elseif gMrkCnt ~= expMrkCnt && gMrkCnt == pMrkCnt,        
+        [tDst(frame),gPrmInd] = min(fTotDst(end,:));
+        xyz(frame,1:gMrkCnt,:) = gMrk(1,gMrkInd(gPrmInd,:),:);
+        pPrm = gMrkInd(gPrmInd,:);
+        
+        %elseif gMrkCnt > pMrkCnt,        
+        
+    elseif gMrkCnt > pMrkCnt,
+        [tDst(frame),gPrmInd] = min(fTotDst(end,:));
+        xyz(frame,1:gMrkCnt,:) = gMrk(1,gMrkIndAll(gPrmInd,:),:);
+        pPrm = gMrkInd(gPrmInd,:);
+        
+    elseif gMrkCnt < pMrkCnt,                
+        [tDst(frame),gPrmInd] = min(fTotDst(end,:));
+        xyz(frame,1:gMrkCnt,:) = gMrk(1,gMrkInd(gPrmInd,:),:);
+        pPrm = gMrkInd(gPrmInd,:);
+    else
+        break
+    end
+end
+
+
+
+
+
+sqrt(sum(diff(ds.markerData(100:101,:,:)).^2,3))
+
+% SELECT 8 frames
+% SPLIT frames
+% 
+
+
+
+
+
 
 ind = 91582:91590;
 sq(ds.markerData(ind,:,1))
@@ -391,7 +494,7 @@ figure();plot(sqrt(sum((ds.markerData(ind,1,:)-circshift(ds.markerData(ind,1,:),
 
 trajId = nan([size(ds.markerData,1),size(ds.markerData,2)]);
 xyzSampleRate= 180;
-trajThresh = 10;%mm/frame
+trajThresh = 70;%mm/frame
 curTrajId = 1;
 mdist = nan([size(ds.markerData,1),size(ds.markerData,2)]);
 trajSegInds = GetSegs(-5:size(ds.markerData,1),11,1:size(ds.markerData,1),nan);

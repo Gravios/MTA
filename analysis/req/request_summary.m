@@ -1267,3 +1267,26 @@
     Description: Interneuron interaction with placefield and egocentric positions
 
 		 
+
+* 2021
+
+** 2020 03 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+*** req20210325
+    Tags: cabels.gl visualization
+    Status: Active
+    Type: Diagnostic
+    Author: Justin Graboski
+    Final_Forms: NA
+    Project: General
+    Description: Generate json file with xyz data for all markers for input file to cables.gl
+
+            
+** 2020 04 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+*** req20210408
+    Tags: quaternion
+    Status: Active
+    Type: Utility
+    Author: Justin Graboski
+    Final_Forms: NA
+    Project: General
+    Description: building out quaternion functions

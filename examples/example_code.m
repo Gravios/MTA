@@ -2,8 +2,9 @@
 %
 
 %% Hello Session 
-% bellow is the setup info needed for playing with a few sessions
 
+% SYNCHRONIZATION : sync_nlx_vicon -------------------------------------------
+% SETUP information 
 SessionName = 'Ed10-20140817'; % what was once known as filebase
 xyz_path = '/gpfs01/sirota/homes/eduardo/data/xyz';
 nlx_path = '/gpfs01/sirota/homes/eduardo/data/rawnlx';
@@ -27,6 +28,8 @@ overwrite = true;
 ignoredViconTrials = [];
 startStopShift = [18,0]; % shift boundaries of vicon starts and 
                         % stops by some number of seconds
+
+
 
 
 

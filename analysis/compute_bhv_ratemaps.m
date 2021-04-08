@@ -12,7 +12,7 @@ function [pfs] = compute_bhv_ratemaps(Trial,varargin);
 
 % DEFARGS ------------------------------------------------------------------------------------------
 defargs = struct('units',                         [],                                            ...
-                 'get_featureSet',                @fet_HB_pitchB,                                ...
+                 'get_featureSet',                'fet_HB_pitch',                                ...
                  'sampleRate',                    16,                                            ...
                  'pft',                           [],                                            ...
                  'pfsArgs',                       struct('states',           'theta-groom-sit',  ...
@@ -54,17 +54,33 @@ end
 
 
 states = pfsArgs.states;
-if isempty(pft),
+if ischar(pft) && strcmp(pft,'none'),
+    pft = [];
+elseif isempty(pft),
 % LOAD spatial placefields
     pft = pfs_2d_theta(Trial,units);
 end
 
 % LOAD Feature space
-fet  = get_featureSet(Trial,sampleRate);
+fet  = feval(get_featureSet,Trial,sampleRate);
 % LOAD distance metrics
 xyz  = resample(preproc_xyz(Trial,'trb'),sampleRate);
-drz  = compute_drz(Trial,units,pft,'feature',xyz);
-ddz  = compute_ddz(Trial,units,pft,'feature',xyz);
+% TODO add logical statement to ...
+%      IF threshRate >= 1
+%       ... ( skip load ) assign zeros to drz 
+%      IF threshDist >= 
+%       ... ( skip load ) assign zeros to ddz
+if threshRate < 1,
+    drz = compute_drz(Trial,units,pft,'feature',xyz);
+else
+    drz = zeros([size(xyz,1),numel(units)]);
+end
+if threshDist < sqrt(sum(diff(Trial.maze.boundaries(1:2,:),1,2).^2)),
+    ddz = compute_ddz(Trial,units,pft,'feature',xyz);
+else
+    ddz = zeros([size(xyz,1),numel(units)]);
+end
+
 % LOAD theta periods
 tper = resample(cast([Trial.stc{states}],'TimeSeries'),xyz);
 % LOAD Spike clusters
@@ -82,6 +98,7 @@ pfsArgs.overwrite = overwrite;
 drzState = {};
 u = 1;        
 % RESTRICT periods by drz and ddz
+
 dper = MTADepoch([],[],abs(drz(:,u))<threshRate & ddz(:,u)<threshDist,                           ...
                  fet.sampleRate,fet.sync.copy(),fet.origin,'TimeSeries','sts',[],'tdrz','d');
 if sum(double(dper.data))==0,

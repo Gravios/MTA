@@ -99,7 +99,11 @@ classdef MTASession < hgsetget
         %fbr - MTADfbr: (Time,ClusterId) fiber photometery with lfpSampleRate
         fbr = MTADfbr([]);
         
+        %rbo - MTADrbo: (Time,rbo,Dimension) Quaternion,X,Y,Z orientation/position of arena
         arena
+
+        %rbo - MTADrbo: (Time,rbo,Dimension) Quaternion,X,Y,Z orientation/position of each marker
+        subject
 
     end
     

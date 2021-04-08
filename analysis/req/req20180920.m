@@ -11,9 +11,9 @@
 % InterNeuron ccg x head ang
 
 states = {'theta-groom-sit','rear','loc','pause',...
-          'groom','sit','spw'};
+          'groom','sit','R'};
 
-sampleRate = 1000;
+sampleRate = 1250;
 Trial = MTATrial.validate('jg05-20120312.cof.all');
 xyz = preproc_xyz(Trial,'trb');
 xyz.resample(sampleRate);

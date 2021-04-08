@@ -159,6 +159,12 @@ switch features.label
     kurThresh = cat(2, repmat({5},     1,5)     , repmat({15},    1,4));
     diffFun =   cat(2, repmat({@circ_dist},1,5) , repmat({@minus},1,4));
 
+  case 'fet_mis_HRB_B3'
+    fetInds =      [   1:4                      , 6:8                ];
+    stdThresh = cat(2, repmat({.2},    1,4)     , repmat({15},    1,3));
+    kurThresh = cat(2, repmat({5},     1,4)     , repmat({15},    1,3));
+    diffFun =   cat(2, repmat({@circ_dist},1,4) , repmat({@minus},1,3));
+    
   case 'fet_all'
 
     xyz = preproc_xyz(RefTrial,'spline_spine');

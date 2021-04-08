@@ -1,3 +1,4 @@
+% Compute average power and coherence of lfp across spikes
 Trial = MTATrial.validate('jg05-20120312.cof.all');
 stc = Trial.load('stc','msnn_ppsvd_raux');
 phzCorrection = pi/4;
@@ -198,6 +199,13 @@ rlfp = Trial.load('lfp',61);
                                                   'WinLength',2^6,'nOverlap',2^6*.875,...
                                                   'FreqRange',[100,300]));
 
+
+
+figure,imagesc(log10(ys(1:100000,:))');
+Lines(stc{'R'}.data(:,2),[],'r');
+Lines(stc{'R'}.data(:,1),[],'g');
+caxis([2,4.5]);colormap('jet');axis('xy');
+
 figure();
 imagesc(ts,fs,log10(ys.data)');
 axis('xy');
@@ -303,6 +311,8 @@ ind = uc;             plot(nq.SNR(ind),mrt(ind)','.y','MarkerSize',10)
 uc = [38,39,54,55,56,82,94,112,121,125,143,146];
 [uc',Trial.nq.eDist(uc),Trial.nq.Refrac(uc)]
 
+figure,hist(log10(Trial.nq.FirRate),40)
+
 
 Trial.load('nq');    
 mrt = pft.maxRate(spk.map(:,1));
@@ -314,7 +324,14 @@ nq_quality = nq.(usp.quality.fields{2})-polyval(usp.quality.pram,nq.(usp.quality
 
 
     
-[uc',Trial.nq.eDist(uc),Trial.nq.Refrac(uc),nq_type(uc),nq_quality(uc),nq_type(uc)<0,nq_quality(uc)>0,nq.Refrac(uc)&0.001]    
+[uc',                                  ... cluster id
+ Trial.nq.eDist(uc),                   ... mahalanobnis distance
+ Trial.nq.Refrac(uc),                  ... refactory quality
+ nq_type(uc),                          ... int or pyr
+ nq_quality(uc),                       ... quality???
+ nq_type(uc)<0,                        ... int(0) pyr(1)
+ nq_quality(uc)>0,                     ... bad(0) good(1) 
+ nq.Refrac(uc)<0.005]                    % 
 
 units = select_units(Trial,'pyr');
 units = units();
@@ -322,3 +339,21 @@ spk.create(Trial,[],'theta-groom-sit',units,'deburst');
 spkCnt = accumarray(spk.clu,ones([numel(spk.clu),1]),[size(spk.map,1),1],@sum);
 units = units(spkCnt(units)>minSpkCnt);
 %save(filename,'units');
+
+figure();hold('on');
+plot(Trial.nq.TimeSym,Trial.nq.SpkWidthL./Trial.nq.SpkWidthR,'.');
+plot(Trial.nq.TimeSym(unitsInts{20}),...
+     Trial.nq.SpkWidthL(unitsInts{20})./Trial.nq.SpkWidthR(unitsInts{20}),...
+     '.m');
+
+
+figure();hold('on');
+plot(Trial.nq.SpkWidthL,Trial.nq.SpkWidthR,'.');
+plot(Trial.nq.SpkWidthL(unitsInts{20}),...
+     Trial.nq.SpkWidthR(unitsInts{20}),...
+     '.m');
+
+
+unitsInts{20}(  Trial.nq.SpkWidthL(unitsInts{20}) < 0.25 ...
+              & Trial.nq.SpkWidthR(unitsInts{20}) < 0.5  ...
+             )

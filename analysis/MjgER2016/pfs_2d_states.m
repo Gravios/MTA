@@ -98,9 +98,13 @@ for s = 1:nsts
         disp(['MTA:analysis:placefields:pfs_2d_states:processing:',Trial.filebase,':',states{s}.label]);
     end
     
-    pargs = get_default_args('MjgER2016','MTAApfs','struct');
+    pargs = get_default_args('MjgER2016','MTAApfs','struct');    
     pargs.units = units;
     pargs.states = states{s};
+    pargs.binDims = [20,20];
+    pargs.SmoothingWeights = [3,3];
+    pargs.numIter = 1;
+    pargs.halfsample = false;
     %pargs.spk = spk;
     
     if ~isempty(pfsArgsOverride) && isstruct(pfsArgsOverride),

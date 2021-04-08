@@ -3,7 +3,17 @@ function nq = NeuronQuality(Session, varargin)
 %
 %  Compute statistics on the qualities of neuronal unit clusters for a session
 %  
+%  OUTPUT:
 %
+%    nq.eDist         m-dist
+%    nq.bRat          something
+%    nq.Refrac        fration of interspike intervals less than two miliseconds
+%    nq.SNR           ??? signal to noise ratio of ...
+%    nq.SpkWidthC     ??? temporal width of spk at center
+%    nq.SpkWidthR     ??? temporal width of spike waveform from trough to the right 
+%    nq.SpkWidthL     ??? temporal width of spike waveform from trough to the left 
+%    nq.TimeSym       ??? Ratio of SpkWidthR&L
+
 
 Par = LoadXml(fullfile(Session.spath,[Session.name '.xml']));
 

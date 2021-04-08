@@ -5,6 +5,14 @@ is a:
 	2. Toolbox created for analyzing data. 
 	3. Management and analysis package for combined Motion Capture and electrophysiology.
 
+TODO:
+@MTADrbo - rigid body objects
+@MTACskeleton - collection of rbo(s)
+
+TODO MAJOR:
+change zero filling to nan filling where data doesn't exist
+
+
 
 Warning:
 
@@ -219,4 +227,5 @@ The Nature of Behavior:
   2. What do we hope it will teach us in the future about both behavior
      and the brain
          
- 
+
+
