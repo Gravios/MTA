@@ -41,7 +41,7 @@ end
 
 % ROUND position
 % REMOVE bins outside the computational region
-pos = round((pos-repmat(bound_lims(:,1)',size(pos,1),1)).*repmat(k',size(pos,1),1))+1;
+pos = ceil((pos-repmat(bound_lims(:,1)',size(pos,1),1)).*repmat(k',size(pos,1),1));
 for i = 1:ndims   
     pos(pos(:,i)<1|pos(:,i)>Nbin(i)|~nniz(pos),:) = [];
 end

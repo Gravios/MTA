@@ -102,7 +102,8 @@ end
 pfds = zeros([size(feature,1),1]);
 pfdd = zeros([size(feature,1),1]);
 peakPatchRate = maxRate'.*maxRateScaleFactor;
-for unit = units
+for unit = units(:)'
+    try,
     pfhxy = cat(2,permute(feature.data(nind,[1,2]),[1,3,2]),circshift(permute(feature.data(nind,[1,2]),[1,3,2]),1));%round(feature.sampleRate/5)
     pfhxy = cat(2,pfhxy,permute(repmat(fieldCenter(unit==units,:),[sum(nind),1]),[1,3,2]));
     pfhxy = MTADxyz([],[],pfhxy,feature.sampleRate);
@@ -117,7 +118,12 @@ for unit = units
 % TRANSFORM from Cartesian to polar coordinates    
     pfds(nind,unit==units) = circ_dist(cor(:,1),por(:,1));
     pfdd(nind,unit==units) = por(:,2);
-    
+    catch err
+        disp(['Unit: ',num2str(u)]);
+        disp(err);
+
+    end
+
 end
 pfd = zeros(size(pfds));
 pfd(abs(pfds(:))>=pi/2)=-1;

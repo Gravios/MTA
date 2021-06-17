@@ -24,7 +24,6 @@ defargs = struct('sampleRate'   , Trial.xyz.sampleRate,                         
 
 % MAIN ---------------------------------------------------------------------------------------------
 
-procOpts = 'FS04_AC';
 
 % INIT Feature
 fet = MTADfet(Trial.spath,...

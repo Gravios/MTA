@@ -24,17 +24,18 @@ figDir = create_directory(...
 
 
 sampleRate = 16;
-tper =[Trial.stc{'loc+rear&theta-groom-sit'}];
+%tper =[Trial.stc{'theta-groom-sit'}];
+%tper =[Trial.stc{'rear+pause&theta-groom-sit'}];
+tper =[Trial.stc{'rear+loc&theta-groom-sit'}];
 %tper =[Trial.stc{'theta-groom-sit'}];
 
 xyzp = [];
-if overwrite,
-    xyz = preproc_xyz(Trial,'trb');
-    xyz.resample(sampleRate);
-    fet = fet_HB_pitchB(Trial,sampleRate);
-    xyzp = xyz.copy();
-    xyzp.data = [xyz(:,'hcom',1),xyz(:,'hcom',2),fet.data];
-end
+xyz = preproc_xyz(Trial,'trb');
+xyz.resample(sampleRate);
+fet = fet_HB_pitchB(Trial,sampleRate);
+xyzp = xyz.copy();
+xyzp.data = [xyz(:,'hcom',1),xyz(:,'hcom',2),fet.data];
+
 
 pargs = get_default_args('MjgER2016','MTAApfs','struct');
 pargs.tag              = tag;

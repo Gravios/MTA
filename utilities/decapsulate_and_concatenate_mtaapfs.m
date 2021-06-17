@@ -1,5 +1,5 @@
 function [rmaps,clu] = decapsulate_and_concatenate_mtaapfs(pfs,units)
-%function [rmaps] = decapsulate_and_concatenate_mtaapfs(pfs,units)
+%function [rmaps,clu] = decapsulate_and_concatenate_mtaapfs(pfs,units)
 %
 % 
 if isempty(units)

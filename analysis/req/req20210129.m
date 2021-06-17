@@ -72,6 +72,8 @@ fpath = dir(path.raw);fpath(1:2) = [];
 
 
 %% PARSE rigidbody marker data ---------------------------------------------------------------------
+
+
 fPosition = fullfile(path.processed.xyz,[filebase,'.pos.csv']);
 
 fid = fopen(fPosition,'r');
@@ -341,7 +343,7 @@ for f = 1:numFrames,
             ccind(end+1) = cind;
         end
     end
-    %% SOMETHING WRONG HERE
+    %% SOMETHING WRONG HERE (I may have fixed this... not sure)
     rowRigidBodyData = cellfun(@str2double,regexp(tdata(1:cind),',','split'));
     rigidBodyData(f,:) = rowRigidBodyData(1:end-1);
     rowMarkerData = cellfun(@str2double,regexp(regexprep(regexprep(tdata((cind-1+find(tdata(cind:end)~=',',1,'first')):end),'(,,)+',','),'(,,)+',','),',','split'));

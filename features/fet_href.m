@@ -92,7 +92,7 @@ for theta = rotationAngles,
     unvec(:,end+1,:) = bsxfun(@rdivide,multiprod(mvec,rotMat,[2,3],[2,3]),sqrt(sum(mvec.^2,3)));
 end
 
-nind = nniz(tvec);
+nind = nniz(tvec(:,1));
 walkFetRot = zeros([size(nind,1),numel(rotationAngles),numel(tmar)]);
 for t = rotationAngles;
     for m = 1:numel(tmar),

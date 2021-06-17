@@ -206,7 +206,7 @@ if numel(Pfs.adata.binSizes) > 1,
             switch method{1}
               case 'colorbar'
                 colorbar();
-                colormap(func2str(colorMap));
+                colormap(gca(),func2str(colorMap));
                 caxis([maxRate]);
               case 'text'
                 mrate = max(ratemap(:));

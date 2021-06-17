@@ -39,7 +39,7 @@ for c = 1:numel(meta.csv),
         continue;
     end
     
-    fPosition = fullfile(meta.path.raw.xyz,csv);
+    fPosition = fullfile(meta.path.raw.xyz.(meta.mazeName),csv);
     fid = fopen(fPosition,'r');
 
 % GET header
@@ -124,7 +124,7 @@ for c = 1:numel(meta.csv),
     end
 
 % SAVE 
-    save(fullfile(meta.path.processed.xyz,meta.mazeName,[meta.sessionName,num2str(find(c==cind),'.take_%04.f.mat')]),...
+    save(fullfile(meta.path.processed.xyz.(meta.mazeName),[meta.sessionName,num2str(find(c==cind),'.take_%04.f.mat')]),...
          'csv', 'frames', 'sampleRate', 'timestamps', 'numFrames', 'numExportedFrames', 'subjects', '-v7.3');
 
     clear('subjects'); 

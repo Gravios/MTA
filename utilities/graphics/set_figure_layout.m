@@ -44,17 +44,28 @@ defargs = struct('hfig',                          [],                           
 
  
 % MAIN --------------------------------------------------------------------------------------------- 
- switch format,
+
+hfig.RendererMode = 'manual';
+hfig.Renderer     = 'Painters';
+hfig.PaperType    = format;
+hfig.PaperOrientation = layout;
+    
+switch format,
     
   case 'A4'
+    
+    
     switch layout
       case 'portrait'
+
         figOpts.page.width    = 21.0;
         figOpts.page.height   = 29.7;
       case 'landscape'
         figOpts.page.width    = 29.7;
         figOpts.page.height   = 21.0;
     end
+    
+
     
     figOpts.page.units                = units;
     figOpts.page.PaperPositionMode    = 'auto';

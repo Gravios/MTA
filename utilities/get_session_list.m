@@ -87,6 +87,89 @@ path = load('MTAPaths.mat');
 
 switch sessionList
 
+  case 'FS04'
+    MTA_DATA_PATH = getenv('MTA_DATA_PATH');
+    
+    meta(1).sessionBase = 'FS04';
+    meta(1).sessionName = 'FS04-20210319a';
+    meta(1).mazeName = 'vrr';
+    meta(1).trialName = 'all';
+    meta(1).dLoggers = {'WHT','CSV'};
+    meta(1).dPaths.xyz   = fullfile('/storage/gravio/data/processed/xyz/',  meta(1).sessionBase);
+    meta(1).dPaths.ephys = fullfile('/storage/gravio/data/processed/ephys/',meta(1).sessionBase);
+    meta(1).xyzSampleRate = 120.00;% ???
+    meta(1).hostServer = 'lmu';
+    meta(1).dataServer = 'lmu';
+    meta(1).project    = 'general';
+    % SET subject info
+    meta(1).primarySubject = 'FS04';
+    meta(1).subjects(1).name = 'FS04';
+    meta(1).subjects(1).type = 'rbo';
+    meta(1).subjects(1).rb(1).name = 'Head';
+    meta(1).subjects(1).rb(1).alias = 'RatW';
+    meta(1).subjects(2).name = 'Arena';
+    meta(1).subjects(2).type = 'rbo';
+    meta(1).subjects(2).rb(1).name = 'Arena';
+    meta(1).subjects(2).rb(1).alias = 'Arena';
+    % SET Trials
+    meta(1).includeSyncInd = [];
+    meta(1).offsets  = [0,0];
+    % SET Maze corrections if the maze isn't already centered
+    meta(1).xOffSet  = 0;
+    meta(1).yOffSet  = 0;
+    meta(1).rotation = 0;
+    % SET State label collection
+    meta(1).stcMode  = 'default';
+    % SET LFP Theta reference channels
+    meta(1).thetaRef = [1:11:64];
+    meta(1).thetaRefGeneral = 1;
+    meta(1).csv = {'Take 2021-03-19 07.48.56 PM.csv',''};
+    meta(1).path.raw.ephys       = create_directory(fullfile(MTA_DATA_PATH,'raw/ephys/',      meta(1).sessionBase,meta(1).sessionName));
+    meta(1).path.raw.xyz         = create_directory(fullfile(MTA_DATA_PATH,'raw/xyz/',        meta(1).sessionBase,meta(1).sessionName,meta(1).mazeName));
+    meta(1).path.processed.xyz   = create_directory(fullfile(MTA_DATA_PATH,'processed/xyz/',  meta(1).sessionBase,meta(1).sessionName,meta(1).mazeName));
+    meta(1).path.processed.ephys = create_directory(fullfile(MTA_DATA_PATH,'processed/ephys/',meta(1).sessionBase,meta(1).sessionName));
+                         
+    
+    meta(2).sessionBase = 'FS04';
+    meta(2).sessionName = 'FS04-20210323a';
+    meta(2).mazeName = 'vrr';
+    meta(2).trialName = 'all';
+    meta(2).dLoggers = {'WHT','CSV'};
+    meta(2).dPaths.xyz   = fullfile('/storage/gravio/data/processed/xyz/',  meta(2).sessionBase);
+    meta(2).dPaths.ephys = fullfile('/storage/gravio/data/processed/ephys/',meta(2).sessionBase);
+    meta(2).xyzSampleRate = 120.00;% ???
+    meta(2).hostServer = 'lmu';
+    meta(2).dataServer = 'lmu';
+    meta(2).project    = 'general';
+    % SET subject info
+    meta(2).primarySubject = 'FS04';
+    meta(2).subjects(1).name = 'FS04';
+    meta(2).subjects(1).type = 'rbo';
+    meta(2).subjects(1).rb(1).name = 'Head';
+    meta(2).subjects(1).rb(1).alias = 'RatW';
+    meta(2).subjects(2).name = 'Arena';
+    meta(2).subjects(2).type = 'rbo';
+    meta(2).subjects(2).rb(1).name = 'Arena';
+    meta(2).subjects(2).rb(1).alias = 'Arena';
+    % SET Trials
+    meta(2).includeSyncInd = [];
+    meta(2).offsets  = [0,0];
+    % SET Maze corrections if the maze isn't already centered
+    meta(2).xOffSet  = 0;
+    meta(2).yOffSet  = 0;
+    meta(2).rotation = 0;
+    % SET State label collection
+    meta(2).stcMode  = 'default';
+    % SET LFP Theta reference channels
+    meta(2).thetaRef = [1:11:64];
+    meta(2).thetaRefGeneral = 1;
+    meta(2).csv = {'Take 2021-03-23 08.07.38 PM.csv'};
+    meta(2).path.raw.ephys       = create_directory(fullfile(MTA_DATA_PATH,'raw/ephys/',      meta(2).sessionBase,meta(2).sessionName));
+    meta(2).path.raw.xyz         = create_directory(fullfile(MTA_DATA_PATH,'raw/xyz/',        meta(2).sessionBase,meta(2).sessionName,meta(2).mazeName));
+    meta(2).path.processed.xyz   = create_directory(fullfile(MTA_DATA_PATH,'processed/xyz/',  meta(2).sessionBase,meta(2).sessionName,meta(2).mazeName));
+    meta(2).path.processed.ephys = create_directory(fullfile(MTA_DATA_PATH,'processed/ephys/',meta(2).sessionBase,meta(2).sessionName));
+                         
+    
   case 'testing'
     Sessions(1) = struct('sessionName',      'jg05-20120312',       ...
                          'subjects',         {{'jg05'}},            ...

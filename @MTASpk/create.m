@@ -30,10 +30,12 @@ Spk.sampleRate = sampleRate;
 Spk.map = Map;
 
 % SELECT specific units
-if isempty(units),
+if isempty(units)
     cind = true(numel(Res),1);
-else
+elseif isnumeric(units)
     cind = find(ismember(Clu,units));
+elseif ischar(units)
+    cind = find(ismember(Clu,get_unit_set(Spk,Session,units)));
 end            
 Res = Res(cind);
 Clu = Clu(cind);

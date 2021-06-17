@@ -97,13 +97,18 @@ unitsInts = {...
 };
 
 
+
+%% COMPUTE theta phase preference for run and rem states
 tppRUN = [];
 tprRUN = [];
 tppREM = [];
 tprREM = [];
+sampleRate = 250;
 for t = 1:numel(Trials)
     Trial = Trials{t};    
+    disp(Trial.name);
     lfp = Trials{t}.load('lfp',sessionList(t).thetaRefGeneral);
+    lfp.resample(sampleRate);
     phz = lfp.phase([5,13]);    
     phz.data = unwrap(phz.data);
     phz.data = mod(phz.data+pi,2*pi)-pi + phzCorrection(t); 
@@ -112,7 +117,7 @@ for t = 1:numel(Trials)
     spk = Trial.spk.copy();
     spk.create(Trial,              ...  
                phz.sampleRate,     ...
-               '',                 ...
+               'theta',                 ...
                unitsInts{t},       ...
                ''                  ...
     );    
@@ -123,19 +128,21 @@ for t = 1:numel(Trials)
         res = spk(unitsInts{t}(u));               
         resRUN = res(WithinRanges(res,runPer.data));        
         resREM = res(WithinRanges(res,remPer.data));
-        if numel(resRUN)>3,
+        if numel(resRUN)>3
             tppRUN(end+1) = circ_mean(phz(res(WithinRanges(res,runPer.data))));
             tprRUN(end+1) = circ_r(phz(res(WithinRanges(res,runPer.data))));
-        else,
+        else
             tppRUN(end+1) = nan;
             tprRUN(end+1) = nan;            
-        if numel(resREM)> 3,
+        end%if
+        
+        if numel(resREM)> 3
             tppREM(end+1) = circ_mean(phz(res()));
             tprREM(end+1) = circ_r(phz(res(WithinRanges(res,remPer.data))));        
-        else,
+        else
             tppREM(end+1) = nan;            
             tprREM(end+1) = nan;
-        end
+        end%if
     end%for u
 end%for t
 
@@ -145,7 +152,7 @@ end%for t
 
 
 
-
+%% State Transitions ------------------------------------------------------------------------------
 
 t = 20;    
 Trial = Trials{t};
@@ -172,6 +179,10 @@ roff = stc.get_state_transitions(Trial,{'rear','pause'}, 0.2, xyz);  roff = mean
 ronp  = stc.get_state_transitions(Trial,{'pause','rear' }, 0.2, xyz);  ronp  = mean(ronp, 2);
 rofft = stc.get_state_transitions(Trial,{'rear','turn'}, 0.2, xyz);  rofft = mean(rofft,2);
 
+
+
+
+
 figure();
     hold('on');
     plot(xyz(:,'spine_upper',3));
@@ -188,6 +199,7 @@ Lines(rper(:),[],'k');
 frq = copy(phz);
 frq.data = circ_dist(frq.data,circshift(frq.data,1))/(2*pi)*sampleRate;    
 figure,plot(frq.data)
+
 
 
 figure,
@@ -581,9 +593,10 @@ tag = 'interneurons_xyhb_2020_theta';    overwrite = true;
 pfi = cf(@(t,u) req20201117(t,u,tag,false,false,overwrite), Trials,unitsInts);
 [rmaps,cluSessionMap] = decapsulate_and_concatenate_mtaapfs(pfi,unitsInts);
 
-pfti = cf(@(t,u)   pfs_2d_theta(t,u),                             Trials, unitsInts);
-pfsi = cf(@(t,u)   pfs_2d_states(t,u,'pfsArgsOverride',struct('numIter',1,'halfsample',false)), Trials, unitsInts);
-bfsi = cf(@(t,u)   compute_bhv_ratemaps(t,u,[],[],[],[],1,1000),  Trials, unitsInts);
+pfti  = cf(@(t,u)   pfs_2d_theta(t,u),                             Trials, unitsInts);
+pftis = cf(@(t,u)   pfs_2d_theta(t,u,'pfsArgsOverride',struct('numIter',1000,'halfsample',true,'posShuffle',true)),  Trials, unitsInts);
+pfsi  = cf(@(t,u)   pfs_2d_states(t,u,'pfsArgsOverride',struct('numIter',1,'halfsample',false)), Trials, unitsInts);
+bfsi  = cf(@(t,u)   compute_bhv_ratemaps(t,u,[],[],[],[],1,1000),  Trials, unitsInts);
 
 pfsiStates = {'Loc','L Loc','H Loc','Rear','Pause','L Pause','H Pause'};
 
@@ -1088,18 +1101,24 @@ clearvars('-GLOBAL','AP');
 
 pfsArgs = struct('states',           'theta-groom-sit',      ...
                  'binDims',          [0.1,0.1,0.2],          ...
-                 'SmoothingWeights', [2,2,2],                ...
+                 'SmoothingWeights', [2,2,0.5],                ...
                  'numIter',          1,                      ...
                  'boundaryLimits',   [-2,0.8;-0.8,2;-2,2],   ...
                  'halfsample',       false);
-ifs = compute_bhv_ratemaps(Trials{t},unitsInts{t},'fet_HPBPHS',[],'none',pfsArgs,1,inf,false);
+pfsArgs = struct('states',           'theta-groom-sit',      ...
+                 'binDims',          [0.1,0.1,0.5],          ...
+                 'SmoothingWeights', [1.8,1.8,0.5],                ...
+                 'numIter',          1,                      ...
+                 'boundaryLimits',   [-2,0.8;-0.8,2;-2,2],   ...
+                 'halfsample',       false);
 
 ifs = cf(@(T,U)  compute_bhv_ratemaps(T,U,'fet_HPBPHS',[],'none',pfsArgs,1,inf,false), Trials,unitsInts);
 
-[irmaps,~] = decapsulate_and_concatenate_mtaapfs({ifs},unitsInts(20));
 
-ibins = ifs.adata.bins;
-ibinDims = ifs.adata.binSizes';
+[irmaps,~] = decapsulate_and_concatenate_mtaapfs(ifs,unitsInts);
+
+ibins = ifs{1}.adata.bins;
+ibinDims = ifs{1}.adata.binSizes';
 
 % RESHAPE rmaps into [ xPosition, yPosition, headPitch, bodyPitch, unit ]
 irmapa = nan([ibinDims,size(irmaps,2)]);
@@ -1108,16 +1127,25 @@ for u = 1:size(irmaps,2),
 end
 
 figure,
-u = find(45==unitsInts{20});
-for s = 1:20,
-    subplot(5,4,s)
-    imagesc(irmapa(:,:,s,u)')
+u = find(ismember(cluSessionMap,[20,8],'rows'));
+cmax = prctile(nonzeros(irmapa(:,:,:,u)),99);
+for s = 1:8,
+    subplot(1,8,s)
+    imagesc(irmapa(:,:,s,u)'.*bhvMask')
     axis('xy');
-    colormap('jet')
+    colormap('jet');
+    caxis([0,cmax]);
 end
-ForAllSubplots('caxis([0,40]);');
+cax = colorbar();
+cax.Position(1) = cax.Position(1) +0.05
 
-
+figure();
+hold('on');
+for y = 10:20
+    for x = 10:20
+        plot(sq(irmapa(x,y,:,u)),'+-');
+    end
+end
 
 
 %% 
@@ -1125,7 +1153,32 @@ cf(@(t,u) req20201117(t,u,tag,false,false,overwrite), Trials(1),unitsInts(1));
 tag = 'interneurons_xyhb_2020';
 tag = 'interneurons_xyhb_2020_final';    overwrite = false;
 tag = 'interneurons_xyhb_2020_loc';      overwrite = false;
-tag = 'interneurons_xyhb_2020_loc_rear'; overwrite = true;
-tag = 'interneurons_xyhb_2020_theta';    overwrite = true;
-pfi = cf(@(t,u) req20201117(t,u,tag,false,false,overwrite), Trials,unitsInts);
+tag = 'interneurons_xyhb_2020_loc_rear'; overwrite = false;
+tag = 'interneurons_xyhb_2020_theta';    overwrite = false;
+pfi    = cf(@(t,u) req20201117(t,u,tag,false,false,overwrite), Trials,unitsInts);
 
+pfi_lr = cf(@(t,u) req20201117(t,u,tag,false,false,overwrite), Trials,unitsInts);
+
+
+
+
+
+
+% 20210331
+% What is my goal? 
+%     - To characterize the firing characteristics of interneuros as the
+%       rat moves and behaviors change.
+%    
+% What do I expect? What has been previously observed 
+%     - Interneuron firing are spatially biased. (non-uniform space-rate tuning curves)
+%     
+
+
+% TANGENT - tmaze, decision arm, place cell fires preceding a left or right turn.
+% What are the spikes prefered theta phase?
+% Does the place cell have a field on the return/goal arm which is visible 
+%    from the decesion arm?
+%
+% POINT of tangent: can a 2D spatial-attenion driven phase-place code account for 
+% turn predictive firing, such that the rat preferentially attends the space of the 
+% rewarded arm. This implies reward arm cells are the directed 

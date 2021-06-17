@@ -28,6 +28,10 @@
 %    
 %    
 %    
+% TODO 
+%       Better differentiate behavior space rate maps from maze space rate maps
+%  
+
 
 
 %%%<<< LOAD MjgER2016 data

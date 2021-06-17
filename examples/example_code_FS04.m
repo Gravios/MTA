@@ -3,61 +3,48 @@
 
 % The Following topics will be discussed
 % 
-%    1. Configuration:  Setting up the MTA environment on linux
-%    2. Data Arangment: Where and how to store your data
-%    3. Meta Data:      Meta data for generating a session object
-%    4. Preprocess CSV: parse_rbo_from_csv.m
-%    5. Build Sessions: generate the MTASession and MTATrial objects
-
-% The session in question for today is \storage2\fabian\Data\raw\FS04\HSW_2021_03_22__20_25_03__30min_44sec__hsamp_64ch_25000sps
-
+%    1. Configuration:      Setting up the MTA environment on linux
+%    2. Data Arangment:     Where and how to store your data
+%    3. Meta Data:          Meta data for generating a session object
+%    4. Preprocess CSV:     parse_rbo_from_csv.m
+%    5. Build Sessions:     generate the MTASession objects
+%    6. Loading Sessions:   Various methods for loading an MTASession object
+%    7. Build Sessions:     generate the MTATrial objects
+%    8. Load Subjects:      Load arena and subject rbo(s) 
+%    9. Label Behaviors:    Label basic behaviors (theta periods, good periods, speed thresholded periods)
+%   10. Compute ratemaps:   Do it.
 
 %% 1. Configuration ----------------------------------------------------------------------------------------------------
 % NOTICE - if your system has never been configured for MTA follow the next step
 % CONFIGURE your OS environmental variables ->  saved in ~/.bashrc 
-
+%
 % shell $> cd /storage/share/matlab/MTA
 % shell $> ./configure -u fabian -s storage2 -d Data -t /storage2/fabian/Code 
 
 
+
 %% 2. Data Arangement --------------------------------------------------------------------------------------------------
-% example for FS04/FS04-20210322
-%
-% DEV NOTES ---------------------------------------------------------------------------------------------------
-% shell $> cp  /storage2/fabian/Data/raw/FS04/HSW_2021_03_22__20_25_03__30min_44sec__hsamp_64ch_25000sps/* /storage/gravio/data/processed/ephys/FS04/FS04-20210322a
-% shell $> rename -n 's/HSW_(\d{4})_(\d{2})_(\d{2})__(.*)(\.{1}[A-Za-z]*(\.\d)+)/FS04-$1$2$3a$5/' ./*
-% shell $> rename -n 's/HSW_(\d{4})_(\d{2})_(\d{2})__(.*)(\.{1}[A-Za-z]*)/FS04-$1$2$3a$5/' ./*
-% TakeList: 
-%    Take 2021-03-22 08.24.46 PM.csv
-%
-% END DEV NOTES  ----------------------------------------------------------------------------------------------
-%    
-%    
+% example for FS04/FS04-20210323a
 %
 % CREATE data directories 
-% shell $> mkdir -p /storage2/fabian/Data/raw/xyz/FS03/FS03-20201223/vrr
-% shell $> mkdir -p /storage2/fabian/Data/processed/xyz/FS03/FS03-20201223/vrr
-% shell $> mkdir -p /storage2/fabian/Data/processed/ephys/FS03/FS03-20201223
+% shell $> mkdir -p /storage2/fabian/Data/raw/xyz/FS04/FS04-20210323/vrr
+% shell $> mkdir -p /storage2/fabian/Data/processed/xyz/FS04/FS04-20210323/vrr
+% shell $> mkdir -p /storage2/fabian/Data/processed/ephys/FS04/FS04-20210323
 %
-% 
-% GOTO data
-% shell $> cd /storage2/fabian/Data/processed/FS03/
+% MOVE data
+% shell $> mv /storage2/fabian/Data/raw/FS04/HSW_2021_03_23__20_07_03__30min_44sec__hsamp_64ch_25000sps /storage2/fabian/Data/processed/ephys/FS04/
+% OR 
+% SYMLINK data
+% shell $> cp -Rs /storage2/fabian/Data/raw/FS04/HSW_2021_03_23__20_07_03__30min_44sec__hsamp_64ch_25000sps /storage2/fabian/Data/processed/ephys/FS04/
 %
-%
-% MOVE data to data directories 
-% shell $> mv /storage2/fabian/Data/processed/FS03/FS03_2020_12_23 /storage2/fabian/Data/processed/ephys/FS03/FS03-20201223
-% shell $> cd /storage2/fabian/Data/processed/ephys/FS03/FS03-20201223
+% RENAME from HSW_ to nlx format
+% shell $> cd /storage2/fabian/Data/processed/FS04/
+% shell $> hsw_rename_files 
 %
 % RENAME data files
-% NOTICE - the flag '-n' lists the filename changes without changing them
-% shell $> rename -n 's/(\w{4})_(\d{4})_(\d{2})_(.*)/$1-$2$3$4/' ./*
-%
-% WARNING - The following line will rename all files in the current directory
-% shell $> rename 's/(\w{4})_(\d{4})_(\d{2})_(.*)/$1-$2$3$4/' ./*
-%
 % MOVE motion tracking csv files to Data/raw/xyz
-% NOTICE - assuming the maze vrr is apporiate for the virtual arena setup
-% shell $> cp /storage2/fabian/Data/processed/ephys/FS03/FS03-20201223/Take*.csv /storage2/fabian/Data/raw/xyz/FS03/FS03-20201223/vrr
+% shell $> cp /storage2/fabian/Data/processed/ephys/FS04/FS04-20210322a/Take*.csv /storage2/fabian/Data/raw/xyz/FS04/FS04-20210323a/vrr
+%
 
 
 
@@ -74,7 +61,7 @@
 %|  xyzSampleRate  |  Double        |   119.881035            |
 %|  hostServer     |  String        |   'lmu'                 |
 %|  dataServer     |  String        |   'lmu',                |
-%|  project        |  String        |   'general'             |
+c%|  project        |  String        |   'general'             |
 %|  TTLValue       |  CONTEXT       |   SEE TTLValue bellow   |
 %|  includeSyncInd |  Array[double] |   []                    |
 %|  offsets        |  Array[double] |   [15,-15]              |
@@ -95,223 +82,217 @@
 %|  video          |  String        |   '/storage/<user>/data/processed/video/<subjectId>/'   |
 %----------------------------------------------------------------------------------------------
 
-% DEFAULT stuff
+% METADATA  ----------------------------------------------------------------------------------
+% SET Session info
 meta.sessionBase = 'FS04';
-meta.sessionName = 'FS04-20210322a';
-
-meta.primarySubject = 'FS04';
-
-meta.subjects(1).name = 'FS04';
-meta.subjects(1).type = 'rbo';
-meta.subjects(1).rb(1).name = 'Head';
-meta.subjects(1).rb(1).alias = 'RatW';
-
-meta.subjects(2).name = 'Arena';
-meta.subjects(2).type = 'rbo';
-meta.subjects(2).rb(1).name = 'Arena';
-meta.subjects(2).rb(1).alias = 'Arena';
-
-%meta.subjects(1).rb(1).nMarkers = 4;
-% $$$ meta.subjects(1).rb(2).name = 'body';
-% $$$ meta.subjects(1).rb(2).alias = 'RatB';
-% $$$ meta.subjects(1).rb(2).nMarkers = 4;
-% $$$ 
-% $$$ meta.subjects(2).name = 'FS04';
-% $$$ meta.subjects(2).rb(1).name = 'head';
-% $$$ meta.subjects(2).rb(1).alias = 'FS04_head';
-% $$$ meta.subjects(2).rb(1).nMarkers = 4;
-
+meta.sessionName = 'FS04-20210326a';
 meta.mazeName = 'vrr';
 meta.trialName = 'all';
 meta.dLoggers = {'WHT','CSV'};
-meta.dPaths.xyz   = fullfile('/storage/gravio/data/processed/xyz/',  meta.subjects(1).name);
-meta.dPaths.ephys = fullfile('/storage/gravio/data/processed/ephys/',meta.subjects(1).name);
+meta.dPaths.xyz   = fullfile('/storage/gravio/data/processed/xyz/',  meta.sessionBase);
+meta.dPaths.ephys = fullfile('/storage/gravio/data/processed/ephys/',meta.sessionBase);
 meta.xyzSampleRate = 120.00;% ???
 meta.hostServer = 'lmu';
 meta.dataServer = 'lmu';
 meta.project    = 'general';
-
-
-% Trials
+% SET subject info
+meta.primarySubject = 'FS04';
+meta.subjects(1).name = 'FS04';
+meta.subjects(1).type = 'rbo';
+meta.subjects(1).rb(1).name = 'Head';
+meta.subjects(1).rb(1).alias = 'RatW';
+meta.subjects(2).name = 'Arena';
+meta.subjects(2).type = 'rbo';
+meta.subjects(2).rb(1).name = 'Arena';
+meta.subjects(2).rb(1).alias = 'Arena';
+% SET Trials
 meta.includeSyncInd = [];
 meta.offsets  = [0,0];
-% Maze corrections if the maze isn't already centered
+% SET Maze corrections if the maze isn't already centered
 meta.xOffSet  = 0;
 meta.yOffSet  = 0;
 meta.rotation = 0;
-% State label collection
+% SET State label collection
 meta.stcMode  = 'default';
-% LFP Theta reference channels
+% SET LFP Theta reference channels
 meta.thetaRef = [1:11:64];
 meta.thetaRefGeneral = 1;
 
+
+% CONSTRUCT paths
+MTA_DATA_PATH = getenv('MTA_DATA_PATH');
+meta.path.raw.ephys       = create_directory(fullfile(MTA_DATA_PATH,'raw/ephys/',      meta.sessionBase,meta.sessionName));
+meta.path.raw.xyz         = create_directory(fullfile(MTA_DATA_PATH,'raw/xyz/',        meta.sessionBase,meta.sessionName,meta.mazeName));
+meta.path.processed.xyz   = create_directory(fullfile(MTA_DATA_PATH,'processed/xyz/',  meta.sessionBase,meta.sessionName,meta.mazeName));
+meta.path.processed.ephys = create_directory(fullfile(MTA_DATA_PATH,'processed/ephys/',meta.sessionBase,meta.sessionName));
+
+
 % Constructed as cell array with empty strings where no mocap occured.
 % WARNING 1 take per record
+% EXAMPLE : given 3 records exist in a session
+%           and record 1 and 3 have associated csv files
+%           the meta.csv field should look like this 
+%
+% meta.csv = {'Take 2021-03-22 08.24.46 PM.csv',     '', 'Take 2021-03-22 09.24.46 PM.csv'};
+%                      record1,                 record2,              record3
+%
 meta.csv = {'Take 2021-03-22 08.24.46 PM.csv'};
 
-MTA_DATA_PATH = getenv('MTA_DATA_PATH');
-meta.path.raw.ephys       = fullfile(MTA_DATA_PATH,'raw/ephys/',      meta.sessionBase,meta.sessionName);
-meta.path.raw.xyz         = fullfile(MTA_DATA_PATH,'raw/xyz/',        meta.sessionBase,meta.sessionName,meta.mazeName);
-meta.path.processed.xyz   = fullfile(MTA_DATA_PATH,'processed/xyz/',  meta.sessionBase,meta.sessionName);
-meta.path.processed.ephys = fullfile(MTA_DATA_PATH,'processed/ephys/',meta.sessionBase,meta.sessionName);
+% MOVE csv file from the raw ephys folder to raw xyz folder
+cf(@(csv) movefile(fullfile(meta.path.processed.ephys,csv),meta.path.raw.xyz), meta.csv(~isempty(meta.csv)));
 
-
+% NOTE : not really a TTLValue
+%
 meta.TTLValue = convert_srs_to_TTLValue(meta);    
+% EXPECTED output
+% meta.TTLValue = { ...                                record1
+%                   {[46029977]},...                     record sample count
+%                   {'FS04-20210322a.take_0001.mat'},... file with extracted rigidbodies
+%                   {'FS04'}...                          session's primary subject
+% }
 
 
 
 %% 4. Preprocess CSV ---------------------------------------------------------------------------------------------------
+%
+% EXTRACTS rigid bodies from the csv file generated by motive
+%
 parse_rbo_from_csv(meta);
 
 
 
-
-% DEV NOTE ---------------------------------------------------------------------
-% INTEGRITY CHECK - data may contain nans where model was temporarily lost
-%    nanGaps = isnan(data(:,3));
-%    nanTot = sum(nanGaps);
-
-% ONCE extracted create MTADrbo.m data type for rigidBodyObjects
-% TODO How to represent and setup rbo is the meta data
-%      subject has one or more rbo.
-%        subjecs may have rbo(s) with same FINAL name (e.g. head or body)
-%        MAP motive rbo names to final common naming scheme 
-%        OR decide upon naming scheme beforehand 
-% FORNOW 
-%      name RatW -> head
-%
-% TODO load/reference scheme
-% rbo = [Trial.load('skeleton','FS03').rbo{'head'}]
-% rat = Trial.load('skeleton','FS03');
-%
-% PROBLEM 
-%    DESCRIPTION unless corrections are applied at data acquisition to correctly 
-%        orient the rbo relative to the marker
-%    CONDITONS 
-%        if rbo construction originates from marker set?
-%        if rbo data is provided but no correction at time of acquisition?
-%
-% END DEV NOTE -----------------------------------------------------------------
-
-
-
-
-
 %% 5. Build Sessions ---------------------------------------------------------------------------------------------------
-
 link_session( meta.sessionName, meta.dPaths)
-% CREATE session objects
-%build_sessions(meta);
+build_sessions(meta);
 % -> generates symbolic link file structure in project folder
 % -> synchronizes lfp and rbo/xyz objecs
 % -> creates default objects
 
 
+
 %% 6. Loading Sessions -------------------------------------------------------------------------------------------------
+% NOTE the next 3 commands do the same thing
 % Meta data struct
 Session = MTASession.validate(meta);
-
 % Piecing together the session name 
 Session = MTASession.validate([meta.sessionName,'.',meta.mazeName,'.',meta.trialName]);
-
 % writing out the session name 
 Session = MTASession.validate('FS04-20210322a.vrr.all');
+
+% $$$ Session.load('spk');
+% $$$ Session.save();
+
 
 
 %% 7. Build Trials -----------------------------------------------------------------------------------------------------
 QuickTrialSetup(meta);
 
 
+
 %% 8. Load Trials ------------------------------------------------------------------------------------------------------
+% NOTE the next 3 commands do the same thing
 % Meta data struct
 Trial = MTATrial.validate(meta);
-
 % Piecing together the session name 
 Trial = MTATrial.validate([meta.sessionName,'.',meta.mazeName,'.',meta.trialName]);
-
 % writing out the session name 
 Trial = MTATrial.validate('FS04-20210322a.vrr.all');
 
-%% 8. Load Subjects ----------------------------------------------------------------------------------------------------
 
+
+%% 8. Load Subjects ----------------------------------------------------------------------------------------------------
+% problem: getting the modified subject objects passed to the pfs computation
+% problem: loading Objects
 
 rat   = Trial.load('subject','FS04');
 Arena = Trial.load('subject','Arena');
 
-figure();
-plot(Arena(:,'Arena',1),Arena(:,'Arena',2),'.')
-hold('on');
-plot(mean(Arena(:,'Arena',1),'omitnan'),mean(Arena(:,'Arena',2),'omitnan'),'or')
-plot(mean([min(Arena(nniz(Arena(:,1,2)),'Arena',1)),max(Arena(nniz(Arena(:,1,2)),'Arena',1))]),...
-     mean([min(Arena(nniz(Arena(:,1,2)),'Arena',2)),max(Arena(nniz(Arena(:,1,2)),'Arena',2))]),...
-     'dg');
-plot([min(Arena(nniz(Arena(:,1,2)),'Arena',1)),max(Arena(nniz(Arena(:,1,2)),'Arena',1))],...
-     [min(Arena(nniz(Arena(:,1,2)),'Arena',2)),max(Arena(nniz(Arena(:,1,2)),'Arena',2))],...
-     'dm');
+
+
+% $$$ figure();
+% $$$ plot(Arena(:,'Arena',1),Arena(:,'Arena',2),'.')
+% $$$ hold('on');
+% $$$ plot(mean(Arena(:,'Arena',1),'omitnan'),mean(Arena(:,'Arena',2),'omitnan'),'or')
+% $$$ plot(mean([min(Arena(nniz(Arena(:,1,2)),'Arena',1)),max(Arena(nniz(Arena(:,1,2)),'Arena',1))]),...
+% $$$      mean([min(Arena(nniz(Arena(:,1,2)),'Arena',2)),max(Arena(nniz(Arena(:,1,2)),'Arena',2))]),...
+% $$$      'dg');
+% $$$ plot([min(Arena(nniz(Arena(:,1,2)),'Arena',1)),max(Arena(nniz(Arena(:,1,2)),'Arena',1))],...
+% $$$      [min(Arena(nniz(Arena(:,1,2)),'Arena',2)),max(Arena(nniz(Arena(:,1,2)),'Arena',2))],...
+% $$$      'dm');
+
 
 mazeVec = [max(Arena(nniz(Arena(:,1,2)),'Arena',1))-min(Arena(nniz(Arena(:,1,2)),'Arena',1)),...
            max(Arena(nniz(Arena(:,1,2)),'Arena',2))-min(Arena(nniz(Arena(:,1,2)),'Arena',2))];
 mazeVec = mazeVec./norm(mazeVec);
 
 
-o = atan2(mazeVec(1),mazeVec(2));
-nArena = multiprod([cos(o),-sin(o);sin(o),cos(o)],sq(Arena(:,1,1:2)),[1,2],[2]);
-figure();
-hold('on');
-plot(Arena(:,'Arena',1),Arena(:,'Arena',2),'.')
-plot(nArena(:,1),nArena(:,2),'.r')
+% $$$ o = atan2(mazeVec(1),mazeVec(2));
+% $$$ nArena = multiprod([cos(o),-sin(o);sin(o),cos(o)],sq(Arena(:,1,1:2)),[1,2],[2]);
+% $$$ figure();
+% $$$ hold('on');
+% $$$ plot(Arena(:,'Arena',1),Arena(:,'Arena',2),'.')
+% $$$ plot(nArena(:,1),nArena(:,2),'.r')
 
 
-nratAC = ratAC.copy();
-nratAC.data(:,1,1:2) = multiprod([cos(o),-sin(o);sin(o),cos(o)],sq(nratAC.data(:,1,1:2)),[1,2],[2]);
 
-figure,
-plot(nratAC(:,1,1),nratAC(:,1,2),'.');
-
-
-min(Arena(nniz(Arena(:,1,2)),'Arena',1))
-figure,
-plot(rat(:,1,1),rat(:,1,2),'.');
-
-figure();
-plot(Arena(:,'Arena',1))
-figure();
-plot(Arena(:,'Arena',2))
-figure();
-plot(Arena(:,'Arena',3))
-
-figure();
-plot(ratAC(:,'Head',1),ratAC(:,'Head',2),'.');
-
-xyzShift = [min(Arena(nniz(Arena(:,1,1)),'Arena',1)),min(Arena(nniz(Arena(:,1,2)),'Arena',2)),median(Arena(nniz(Arena(:,1,2)),'Arena',3))];
-
-xyzShift = [min(Arena(nniz(Arena(:,1,1)),'Arena',1)),min(Arena(nniz(Arena(:,1,2)),'Arena',2)),median(Arena(nniz(Arena(:,1,2)),'Arena',3))];
-xyzShift = [mean([min(Arena(nniz(Arena(:,1,1)),'Arena',1)),max(Arena(nniz(Arena(:,1,1)),'Arena',1))]),...
-            mean([min(Arena(nniz(Arena(:,1,2)),'Arena',2)),max(Arena(nniz(Arena(:,1,2)),'Arena',2))]),...
-            median(Arena(nniz(Arena(:,1,2)),'Arena',3))];
+% $$$ figure,
+% $$$ plot(nratAC(:,1,1),nratAC(:,1,2),'.');
+% $$$ figure,
+% $$$ plot(rat(:,1,1),rat(:,1,2),'.');
+% $$$ figure();
+% $$$ plot(Arena(:,'Arena',1))
+% $$$ figure();
+% $$$ plot(Arena(:,'Arena',2))
+% $$$ figure();
+% $$$ plot(Arena(:,'Arena',3))
+% $$$ figure();
+% $$$ plot(ratAC(:,'Head',1),ratAC(:,'Head',2),'.');
+% $$$ 
+% $$$ xyzShift = [min(Arena(nniz(Arena(:,1,1)),'Arena',1)),min(Arena(nniz(Arena(:,1,2)),'Arena',2)),median(Arena(nniz(Arena(:,1,2)),'Arena',3))];
+% $$$ 
+% $$$ xyzShift = [min(Arena(nniz(Arena(:,1,1)),'Arena',1)),min(Arena(nniz(Arena(:,1,2)),'Arena',2)),median(Arena(nniz(Arena(:,1,2)),'Arena',3))];
+% $$$ xyzShift = [mean([min(Arena(nniz(Arena(:,1,1)),'Arena',1)),max(Arena(nniz(Arena(:,1,1)),'Arena',1))]),...
+% $$$             mean([min(Arena(nniz(Arena(:,1,2)),'Arena',2)),max(Arena(nniz(Arena(:,1,2)),'Arena',2))]),...
+% $$$             median(Arena(nniz(Arena(:,1,2)),'Arena',3))];
 
 xyzShift = [mean([min(Arena(nniz(Arena(:,1,1)),'Arena',1)),max(Arena(nniz(Arena(:,1,1)),'Arena',1))]),...
             mean([min(Arena(nniz(Arena(:,1,2)),'Arena',2)),max(Arena(nniz(Arena(:,1,2)),'Arena',2))]),...
             median(Arena(nniz(Arena(:,1,2)),'Arena',3))];
 
+
+% CONVERT the xyz coordinates to Room frame of refrences centered on mean Arena position
 ratRC = copy(rat);
+% TRANSLATE 
 ratRC.data(:,1,1:3) = bsxfun(@minus,ratRC.data(:,1,1:3),permute(xyzShift,[1,3,2]));
+% ROTATE 
+o = 0.0349065850398866;
+ratRC.data(:,1,1:2) = multiprod([cos(o),-sin(o);sin(o),cos(o)],sq(ratRC.data(:,1,1:2)),[1,2],[2]);
 ratRC.label = [ratRC.label,'_RC'];
-ratRC.update_filename('FS04-20210322a.vrr.all.rbo.FS04_RC.s.mat');
+ratAC.update_filename([Trial.filebase,'.rbo.',rat.name,'_RC.s.mat']);
 ratRC.save();
 
 
-quatC = quaternion(sq(Arena(:,'Arena',4:8)));
-
-
+% CONVERT the xyz coordinates to Arena frame of refrences centered on the Arena
 ratAC = copy(rat);
+% TRANSLATE 
 ratAC.data(:,1,1:3) = ratAC(:,'Head',1:3) - [Arena(:,'Arena',1:3);zeros([1,1,3])];
+% ROTATE 
+o = 0.0349065850398866;
+ratAC.data(:,1,1:2) = multiprod([cos(o),-sin(o);sin(o),cos(o)],sq(ratAC.data(:,1,1:2)),[1,2],[2]);
 ratAC.label = [ratAC.label,'_AC'];
-ratAC.update_filename('FS04-20210322a.vrr.all.rbo.FS04_AC.s.mat')
+ratAC.update_filename([Trial.filebase,'.rbo.',rat.name,'_AC.s.mat']);
 ratAC.save();
-%label_theta(Session);
 
 
+
+
+%% 9. Label Behaviors --------------------------------------------------------------------------------------------------
+% LABEL 
+
+% LABEL theta periods from lfp
+label_theta(Session);
+
+% LABEL Non nan periods
 gper = ThreshCross(double(nniz(rat(:,1,1))),0.5,10);
 Trial.stc.addState(Trial.spath,...
                    Trial.filebase,...
@@ -320,15 +301,13 @@ Trial.stc.addState(Trial.spath,...
                    Trial.sync.copy,...
                    Trial.sync.data(1),...
                    'gper','a');
+Trial.stc.states{end}.save(1);
 
 
-
+% LABEL speed thresholded periods
 ratFilt = filter(copy(ratAC),'ButFilter',4,1,'low');
-
-figure();plot(sqrt(sum(diff(ratFilt(:,1,1:2)).^2,3)).*ratFilt.sampleRate./10)
-
+%figure();plot(sqrt(sum(diff(ratFilt(:,1,1:2)).^2,3)).*ratFilt.sampleRate./10)
 vper = ThreshCross(double(sqrt(sum(diff(ratFilt(:,1,1:2)).^2,3)).*ratFilt.sampleRate./10>2),0.5,10);
-
 Trial.stc.addState(Trial.spath,...
                    Trial.filebase,...
                    vper,...
@@ -336,171 +315,464 @@ Trial.stc.addState(Trial.spath,...
                    Trial.sync.copy,...
                    Trial.sync.data(1),...
                    'vel','v');
+Trial.stc.states{end}.save(1);
 
 
 
+%ArenaConfigA
+xyzShift = [mean([min(Arena(nniz(Arena(:,1,1)),'Arena',1)),max(Arena(nniz(Arena(:,1,1)),'Arena',1))]),...
+            mean([min(Arena(nniz(Arena(:,1,2)),'Arena',2)),max(Arena(nniz(Arena(:,1,2)),'Arena',2))]),...
+            median(Arena(nniz(Arena(:,1,2)),'Arena',3))];
+arenaConfA = ThreshCross(double(Arena(:,'Arena',2)>974),0.5,10);
+Trial.stc.addState(Trial.spath,...
+                   Trial.filebase,...
+                   arenaConfA,...
+                   rat.sampleRate,...
+                   Trial.sync.copy,...
+                   Trial.sync.data(1),...
+                   'ArenaConfA','A');
+Trial.stc.states{end}.save(1);
+
+arenaConfB = ThreshCross(double(Arena(:,'Arena',2)<700),0.5,10);
+Trial.stc.addState(Trial.spath,...
+                   Trial.filebase,...
+                   arenaConfB,...
+                   rat.sampleRate,...
+                   Trial.sync.copy,...
+                   Trial.sync.data(1),...
+                   'ArenaConfB','B');
+Trial.stc.states{end}.save(1);
+
+arenaConfC = ThreshCross(double(Arena(:,'Arena',2)<974&Arena(:,'Arena',2)>700),0.5,10);
+Trial.stc.addState(Trial.spath,...
+                   Trial.filebase,...
+                   arenaConfC,...
+                   rat.sampleRate,...
+                   Trial.sync.copy,...
+                   Trial.sync.data(1),...
+                   'ArenaConfC','C');
+Trial.stc.states{end}.save(1);
+
+
+
+
+
+
+
+%% 10. Compute ratemaps ------------------------------------------------------------------------------------------------
 % SUBSET of xyz within active stae
 % p(s)
-activeState = 'theta&gper&vel';
+% 
+%
+activeState = 'theta&gper&vel'; 
+
+
+% ROOM frame of reference  (X,Y)
+pfsArgs = struct('states',           activeState,                  ... Computational Periods 
+                 'binDims',          [30,30],                      ... Physical size of bins in milimeters
+                 'SmoothingWeights', [2.5,2.5],                    ... Gaussian smoother prameters, std deviation in bins 
+                 'numIter',          1,                            ... number of bootstraps
+                 'boundaryLimits',   [-500,500;-1000,1000],        ... Computational domain
+                 'halfsample',       false);                      %... throw out half of the data each iteration ... or don't
+
+pfs = compute_ratemaps(Trial,                                      ... MTATrial
+                       [],                                         ... Unit list (e.g. [1, 2, ... , N])
+                       @fet_rbo_RC,                                ... Function handle, ratemap space
+                       [],                                         ... sampleRate, default 16Hz to speed it up
+                       pfsArgs,                                    ... Arguments to the MTAApfs 
+                       'overwrite',true);
+
+                       
+% ARENA frame of reference (X,Y)
 pfsArgs = struct('states',           activeState,                  ...
-                 'tag',              'FS04_test',                  ...
-                 'binDims',          [20,20],                      ...
-                 'SmoothingWeights', [3.5,3.5],                    ...
+                 'binDims',          [30,30],                      ...
+                 'SmoothingWeights', [2.5,2.5],                    ...
                  'numIter',          1,                            ...
                  'boundaryLimits',   [-500,500;-1000,1000],        ...
                  'halfsample',       false);
-pfs = compute_ratemaps(Trial,[],@fet_rbo,[],pfsArgs,'overwrite',true);
+pfa = compute_ratemaps(Trial,[],@fet_rbo_AC,[],pfsArgs,'overwrite',true);
 
 
-activeState = 'theta&gper&vel';
-pfsArgs = struct('states',           activeState,                  ...
-                 'tag',              'FS04_test_AC',               ...
-                 'binDims',          [20,20],                      ...
-                 'SmoothingWeights', [3.5,3.5],                    ...
+
+% ARENA frame of reference (X,Y)
+pfsArgs = struct('states',           [activeState, '&ArenaConfA'], ...
+                 'binDims',          [30,30],                      ...
+                 'SmoothingWeights', [2.5,2.5],                    ...
                  'numIter',          1,                            ...
                  'boundaryLimits',   [-500,500;-1000,1000],        ...
                  'halfsample',       false);
-pfa = compute_ratemaps(Trial,[],@fet_rbo,[],pfsArgs,'overwrite',true);
+pfs_A = compute_ratemaps(Trial,[],@fet_rbo_AC,[],pfsArgs,'overwrite',true);
+
+pfsArgs = struct('states',           [activeState, '&ArenaConfB'], ...
+                 'binDims',          [30,30],                      ...
+                 'SmoothingWeights', [2.5,2.5],                    ...
+                 'numIter',          1,                            ...
+                 'boundaryLimits',   [-500,500;-1000,1000],        ...
+                 'halfsample',       false);
+pfs_B = compute_ratemaps(Trial,[],@fet_rbo_AC,[],pfsArgs,'overwrite',true);
+
+pfsArgs = struct('states',           [activeState, '&ArenaConfC'], ...
+                 'binDims',          [30,30],                      ...
+                 'SmoothingWeights', [2.5,2.5],                    ...
+                 'numIter',          1,                            ...
+                 'boundaryLimits',   [-500,500;-1000,1000],        ...
+                 'halfsample',       false);
+pfs_C = compute_ratemaps(Trial,[],@fet_rbo_AC,[],pfsArgs,'overwrite',true);
 
 
-
-activeState = 'theta&gper&vel';
+% ARENA frame of reference (Z,Y)
 pfsArgs = struct('states',           activeState,                  ...
-                 'tag',              'FS04_test_AC',               ...
-                 'binDims',          [20,20],                      ...
-                 'SmoothingWeights', [3.5,3.5],                    ...
+                 'binDims',          [30,30],                      ...
+                 'SmoothingWeights', [2.5,2.5],                    ...
                  'numIter',          1,                            ...
                  'boundaryLimits',   [-1000,1000;-300,0],        ...
                  'halfsample',       false);
 pfz = compute_ratemaps(Trial,[],@fet_rbo_YZ,[],pfsArgs,'overwrite',true);
 
+pfsArgs = struct('states',           [activeState, '&ArenaConfA'], ...
+                 'binDims',          [30,30],                      ...
+                 'SmoothingWeights', [2.5,2.5],                    ...
+                 'numIter',          1,                            ...
+                 'boundaryLimits',   [-1000,1000;-300,0],        ...
+                 'halfsample',       false);
+pfz_A = compute_ratemaps(Trial,[],@fet_rbo_YZ,[],pfsArgs,'overwrite',true);
 
-figure,
-for u = 1:90
-    subplot(131);
-plot(pfs,u,1,'text',[],false);
-    subplot(132);
-plot(pfa,u,1,'text',[],false);    
-    subplot(133);
-plot(pfz,u,1,'text',[],false,'flipAxesFlag',true);    
-xlabel('Low       High');
-title(num2str(u));
-waitforbuttonpress();
+pfsArgs = struct('states',           [activeState, '&ArenaConfB'], ...
+                 'binDims',          [30,30],                      ...
+                 'SmoothingWeights', [2.5,2.5],                    ...
+                 'numIter',          1,                            ...
+                 'boundaryLimits',   [-1000,1000;-300,0],        ...
+                 'halfsample',       false);
+pfz_B = compute_ratemaps(Trial,[],@fet_rbo_YZ,[],pfsArgs,'overwrite',true);
+
+pfsArgs = struct('states',           [activeState, '&ArenaConfC'], ...
+                 'binDims',          [30,30],                      ...
+                 'SmoothingWeights', [2.5,2.5],                    ...
+                 'numIter',          1,                            ...
+                 'boundaryLimits',   [-1000,1000;-300,0],        ...
+                 'halfsample',       false);
+pfz_C = compute_ratemaps(Trial,[],@fet_rbo_YZ,[],pfsArgs,'overwrite',true);
+
+
+
+
+% START fabulous figure  ---------------------------------------------
+
+figpath = fullfile('/storage/gravio/figures/analysis/fabian/',Trial.filebase);
+create_directory(figpath);
+configAColor = 'm';
+configBColor = 'g';
+
+for unit = 1:74;
+
+[hfig,fig,fax,sax] = set_figure_layout(figure(666001),'A4','landscape',[],10,3,0.1,0.2);
+delete(sax);
+sax = gobjects([0,1]);
+
+text(fax,                ... axesHandle
+     fig.page.marginLeft,... xpos
+     fig.page.height-3,  ... ypos
+     {'Vestibular',...
+      '30cm shift',...
+      Trial.filebase,...
+      [' Unit: ',num2str(unit)]},...
+     'FontSize',24);
+
+ratemapXY   = plot(pfs,  unit,[],[],[],false);
+ratemapXYA  = plot(pfs_A,unit,[],[],[],false);
+ratemapXYB  = plot(pfs_B,unit,[],[],[],false);
+clim = [0,max([ratemapXY(:);ratemapXYA(:);ratemapXYB(:)])];
+% ROOM COORDINATES ---------------------------------------------------------------------------------
+secXind = 1;
+secYind = 2;
+
+[yind, yOffSet, xind, xOffSet] = deal(secYind, 0, secXind, 1.5);
+sax(end+1) = axes('Units','centimeters',                                ...
+                  'Position',[fig.page.xpos(xind)+xOffSet,              ...
+                              fig.page.ypos(yind)+yOffSet,              ...
+                              fig.subplot.width,                        ...
+                              fig.subplot.height],                      ...
+                  'FontSize', 8,                                        ...
+                  'LineWidth',1);
+
+
+binsXY      = cell([1,2]);
+[binsXY{:}] = meshgrid(pfs.adata.bins{:});
+binsXY      = cat(2,binsXY,{zeros(size(binsXY{1}))});
+
+hold('on');
+set( surf(binsXY{:},ratemapXY'), 'EdgeColor', 'none');
+view([90,-90]);
+daspect([1,1,1]);
+caxis(clim);
+cax = colorbar(sax(end));
+cax.Units = 'centimeters';
+drawnow();
+pause(0.1);
+cax.Position(1) = sum(sax(end).Position([1,3]))+0.5;
+colormap('parula');
+
+sax(end).XTick = [];
+sax(end).YTick = [];
+sax(end).Color = [0.9,0.9,0.9];
+axis('off')
+
+rax = rectangle('Position',[-510,-1000,1000,1700],'LineWidth',2,'EdgeColor',configAColor);
+rax = rectangle('Position',[-490,-700,1000,1700],'LineWidth',2,'EdgeColor',configBColor);
+
+
+% MAZE COORDINATES CONF A & B XY -----------------------------------------------------------------------
+yOffSet = 2;
+[yind, yOffSet, xind, xOffSet] = deal(secYind+2, yOffSet, secXind, 1);
+sax(end+1) = axes('Units','centimeters',                                ...
+                  'Position',[fig.page.xpos(xind)+xOffSet,              ...
+                              fig.page.ypos(yind)+yOffSet,              ...
+                              fig.subplot.width,                        ...
+                              fig.subplot.height],                      ...
+                  'FontSize', 8,                                        ...
+                  'LineWidth',1);
+
+
+binsXY      = cell([1,2]);
+[binsXY{:}] = meshgrid(pfs.adata.bins{:});
+binsXY      = cat(2,binsXY,{zeros(size(binsXY{1}))});
+
+hold('on');
+set( surf(binsXY{:},ratemapXYA'), 'EdgeColor', 'none');
+view([90,-90]);
+daspect([1,1,1]);
+caxis(clim);
+
+sax(end).XTick = [];
+sax(end).YTick = [];
+sax(end).Color = [0.9,0.9,0.9];
+axis('off')
+
+rax = rectangle('Position',[-500,-850,1000,1700],'LineWidth',2,'EdgeColor',configAColor);
+
+
+[yind, yOffSet, xind, xOffSet] = deal(secYind+3, yOffSet, secXind, 2);
+sax(end+1) = axes('Units','centimeters',                                ...
+                  'Position',[fig.page.xpos(xind)+xOffSet,              ...
+                              fig.page.ypos(yind)+yOffSet,              ...
+                              fig.subplot.width,                        ...
+                              fig.subplot.height],                      ...
+                  'FontSize', 8,                                        ...
+                  'LineWidth',1);
+
+binsXY      = cell([1,2]);
+[binsXY{:}] = meshgrid(pfs.adata.bins{:});
+binsXY      = cat(2,binsXY,{zeros(size(binsXY{1}))});
+
+hold('on');
+set( surf(binsXY{:},ratemapXYB'), 'EdgeColor', 'none');
+view([90,-90]);
+daspect([1,1,1]);
+caxis(clim);
+
+sax(end).XTick = [];
+sax(end).YTick = [];
+sax(end).Color = [0.9,0.9,0.9];
+axis('off')
+
+rax = rectangle('Position',[-500,-850,1000,1700],'LineWidth',2,'EdgeColor',configBColor);
+
+% YZ STUFF
+ratemapYZ = plot(pfz,unit,[],[],[],false);
+ratemapYZA = plot(pfz_A,unit,[],[],[],false);
+ratemapYZB = plot(pfz_B,unit,[],[],[],false);
+clim = [0,max([ratemapYZ(:);ratemapYZA(:);ratemapYZB(:)])];
+% ROOM COORDINATES YZ -------------------------------------------------------------------------------
+secXind = 2;
+[yind, yOffSet, xind, xOffSet] = deal(secYind, 0, secXind, 1.5);
+sax(end+1) = axes('Units','centimeters',                                ...
+                  'Position',[fig.page.xpos(xind)+xOffSet,              ...
+                              fig.page.ypos(yind)+yOffSet,              ...
+                              fig.subplot.width,                        ...
+                              fig.subplot.height],                      ...
+                  'FontSize', 8,                                        ...
+                  'LineWidth',1);
+
+
+binsYZ      = cell([1,2]);
+[binsYZ{:}] = meshgrid(pfz.adata.bins{:});
+binsYZ{2} = binsYZ{2}+300;
+binsYZ      = cat(2,{pfs.adata.bins{1}(end).*ones(size(binsYZ{1}))},binsYZ);
+set( surf(binsYZ{:},ratemapYZ'), 'EdgeColor', 'none');
+view([90,0]);
+hold('on');
+
+zlim([-500,500]);
+
+daspect([1,1,1]);
+caxis(clim);
+
+sax(end).XTick = [];
+sax(end).YTick = [];
+sax(end).Color = [0.9,0.9,0.9];
+axis('off')
+
+cax = colorbar(sax(end));
+cax.Units = 'centimeters';
+drawnow();
+pause(0.1);
+cax.Position(1) = sum(sax(end).Position([1,3]))+0.5;
+colormap('parula');
+
+
+%rax = rectangle('Position',[-510,-1000,1000,1700],'LineWidth',2,'EdgeColor','m');
+%rax = rectangle('Position',[-490,-700,1000,1700], 'LineWidth',2,'EdgeColor','g');
+
+line([0,0],[-1000,700],[-20,-20],'LineWidth',2,'Color',configAColor);
+line([0,0],[-700,1000],[ 0, 0],'LineWidth',2,'Color',configBColor);
+%line([sax(end).Position(1),sum(sax(end).Position([1,3]))]+[1,0],sax(end).Position(2).*[1,1],'EdgeColor','m')
+
+%line([sax(end).Position(1),sum(sax(end).Position([1,3]))]+[0,-1],sax(end).Position(2).*[1,1],'Color','m')
+%line([sax(end).Position(1),sum(sax(end).Position([1,3]))]+[1,0],sax(end).Position(2).*[1,1],'EdgeColor','m')
+
+%rax = rectangle('Position',[-510,-1000,1000,1700],'LineWidth',2,'EdgeColor','m');
+%rax = rectangle('Position',[-490,-700,1000,1700], 'LineWidth',2,'EdgeColor','g');
+
+
+% MAZE COORDINATES CONF A & B YZ -----------------------------------------------------------------------
+yOffSet = 2;
+[yind, yOffSet, xind, xOffSet] = deal(secYind+2, yOffSet, secXind, 1);
+sax(end+1) = axes('Units','centimeters',                                ...
+                  'Position',[fig.page.xpos(xind)+xOffSet,              ...
+                              fig.page.ypos(yind)+yOffSet,              ...
+                              fig.subplot.width,                        ...
+                              fig.subplot.height],                      ...
+                  'FontSize', 8,                                        ...
+                  'LineWidth',1);
+
+
+
+binsYZ      = cell([1,2]);
+[binsYZ{:}] = meshgrid(pfz.adata.bins{:});
+binsYZ{2} = binsYZ{2}+300;
+binsYZ      = cat(2,{pfs.adata.bins{1}(end).*ones(size(binsYZ{1}))},binsYZ);
+set( surf(binsYZ{:},ratemapYZA'), 'EdgeColor', 'none');
+view([90,0]);
+hold('on');
+
+zlim([-500,500]);
+
+daspect([1,1,1]);
+caxis(clim);
+
+sax(end).XTick = [];
+sax(end).YTick = [];
+sax(end).Color = [0.9,0.9,0.9];
+axis('off')
+
+line([0,0],[-900,900],[-40,-40],'LineWidth',2,'Color',configAColor);
+
+
+[yind, yOffSet, xind, xOffSet] = deal(secYind+3, yOffSet, secXind, 2);
+sax(end+1) = axes('Units','centimeters',                                ...
+                  'Position',[fig.page.xpos(xind)+xOffSet,              ...
+                              fig.page.ypos(yind)+yOffSet,              ...
+                              fig.subplot.width,                        ...
+                              fig.subplot.height],                      ...
+                  'FontSize', 8,                                        ...
+                  'LineWidth',1);
+
+
+binsYZ      = cell([1,2]);
+[binsYZ{:}] = meshgrid(pfz.adata.bins{:});
+binsYZ{2} = binsYZ{2}+300;
+binsYZ      = cat(2,{pfs.adata.bins{1}(end).*ones(size(binsYZ{1}))},binsYZ);
+set( surf(binsYZ{:},ratemapYZB'), 'EdgeColor', 'none');
+view([90,0]);
+hold('on');
+
+zlim([-500,500]);
+
+daspect([1,1,1]);
+caxis(clim);
+
+sax(end).XTick = [];
+sax(end).YTick = [];
+sax(end).Color = [0.9,0.9,0.9];
+axis('off')
+
+line([0,0],[-900,900],[-40,-40],'LineWidth',2,'Color',configBColor);
+
+% PRINT it
+figname = [Trial.filebase,'-vst_unit-',num2str(unit,'%04.f')];
+print(gcf, '-depsc2', fullfile(figpath,[figname,'.eps']));
+print(gcf,'-dpng',    fullfile(figpath,[figname,'.png']));
+
 end
 
+% END fabulous figure ------------------------------------------------------------------------------
 
 
 
-xyz = Session.load('xyz');
 
-    
-%plots the height of the front marker on the rats head against time
-plot(Session.xyz(:,Session.trackingMarker,3));
-    %plots x versus y 
-    plot(Session.xyz(:,Session.trackingMarker,1),Session.xyz(:,Session.trackingMarker,2),'.');
 
-    
-    % Returns a Trial object from the data of the Session object 
-    % and do automatic behavioral segmentation
-    Trial = QuickTrialSetup(Session,         ...
-                            TrialName,       ...
-                            startStopShift,  ...
-                            ignoredViconTrials);
 
+% START SIMPLE FIGURE ------------------------------------------------------------------------------
+% PLOT Placefields for each Unit
+hfig = figure();
+u = 1;
+while u~=-1
+    subplot(231);
+        plot(pfs,u,1,'text',[],false);
+        daspect([1,1,1]);
+        title('room coord');
+    subplot(232);
+        plot(pfa,u,1,'text',[],false);    
+        daspect([1,1,1]);
+        title('arena coord');        
+    subplot(233);
+        plot(pfz,u,1,'text',[],false,'flipAxesFlag',true);    
+        daspect([1,1,1]);
+        xlabel('Low       High');
+        title(num2str(u));
+        
+    subplot(234);
+        plot(pfs_A,u,1,'text',[],false);
+        daspect([1,1,1]);
+        title(pfs_A.parameters.states);
+    subplot(235);
+        plot(pfs_B,u,1,'text',[],false);
+        daspect([1,1,1]);
+        title(pfs_B.parameters.states);
+    subplot(236);
+        hold('on');
+        plot(pfs_C,u,1,'text',[],false);
+        daspect([1,1,1]);
+        title(pfs_C.parameters.states);
+        plot(ratAC([Trial.stc{[activeState, '&ArenaConfC']}],1,1),...
+             ratAC([Trial.stc{[activeState, '&ArenaConfC']}],1,2),...
+             '.','MarkerSize',1);
+    u = figure_controls(hfig,u,Trial.spk.map(:,1));
 end
-
-%% Loading stuff
-
-% This loads a trial
-%Trial = MTATrial.validate('jg05-20120312.cof.all');
-Trial = MTATrial (SessionName,    TrialName,MazeName);
-
-
-% Does the same thing as above in a single line.
-xyz = Trial.load('xyz');
-
-
-% You can filter data with an arbitrary window
-%xyz.filter(ones([1,7])./7);
-xyz.filter('ButFilter',3,50,'low'); %see help gtwin for gaussian kernals
-
-% this is crapy though since the angles are not easily smoothed in
-% the time domain, so we can create a new set based on a smoothed xyz
-xyz = Trial.load('xyz');
-xyz.filter('ButFilter',3,50,'low'); 
-ang = create(MTADang,Trial,xyz);
-
-% Marker segment angles are relative to the room coordinate system.
-% The following code plots the distribution of head pitch during rearing
-figure,hist(ang(Trial.stc{'r'},'head_back','head_front',2),100)
-
-% Doing the same thing with numerical indexing
-figure,hist(ang(Trial.stc{'r'},5,7,2),100)
-
-
-%% Loading LFP
-
-% for jg05 how to load the raw lfp of the hippocampus H64BUZ
-lfp = Trial.load('lfp',1:64);
-
-% for jg05 how to load the raw lfp of the hippocampus H32LIN
-lfp = Trial.load('lfp' ,65:96);
-
-lfp = Trial.load('lfp' ,70);
-
-lfp.resample(xyz);
-
-hang = create(MTADang,Trial,xyz);
-
-
-pos = sq(bsxfun(@minus,sq(xyz(:,'head_back',[1:2])),[-100,10]));
-ang = cell([1,2]);
-[ang{:}] = cart2pol(pos(:,1),pos(:,2));
-ang = cat(2,ang{:});
-
-figure,plot(circ_dist(hang(:,'head_back','head_front',1),ang(:,1)),ang(:,2),'.')
+% END SIMPLE FIGURE --------------------------------------------------------------------------------
 
 
 
 
 
-%% Behavior Segmentation stuff - It's automatic if done by Quick trial setup
-% most behaviors are stored as periods in the stc field of a Trial
-% Stc should be a MTAStateCollection object.
-% you can see which states are available by the following commands
-disp(Trial.stc.list_state_attrib('label'))
-disp(Trial.stc.list_state_attrib('key'))
+% CORRECT Yaw for rigid bodies (SIMPLE) ------------------------------------------------------------
 
-% You can reference timeperiods of MTADepoch objects. These are
-% stored in the Trial.stc property: stc = "State Collection".
-% The periods will automatically be resampled if they don't match
-% the sampling rate of the calling object.
-figure,hist(ang(Trial.stc{'r'},'head_back','head_front',2),100)
+% GET head yaw from rat
+ang = quaternion2rad(sq(rat(:,1,5:8)));
+figure,plot(ang(:,1))
 
+% GET trajectory yaw from rat
+trjVect = sq(circshift(ratFilt(:,'Head',[1,2]),-20)-circshift(ratFilt(:,'Head',[1,2]),20)); % vector
+trjVect = bsxfun(@rdivide,trjVect,sqrt(sum(trjVect.^2,2)));                                 % basis
+trjYaw  = atan2(trjVect(:,1),trjVect(:,2));                                                 % yaw
+figure();plot(trjYaw)
 
+% GET XY head speed from rat
+ratFilt = copy(rat);
+ratFilt.filter('ButFilter',4,1.5,'low');
+spdHead = sqrt(sum(sq(ratFilt(:,'Head',[1,2])-circshift(ratFilt(:,'Head',[1,2]),-1)).^2,2)).*ratFilt.sampleRate./10;
+figure();plot(spdHead)
 
-
-
-%% Place Fields
-
-% I'll comment on this another time
-%units = select_units(Trial,18,'pyr');
-
-pfs = MTAAknnpfs(Trial,...
-                 'units',            [],...     % [] = all units (numbered by their clu
-                 'states',           'walk',... % the state you're interested in
-                 'overwrite',        true,...   % this will redo the calculations for
-                                          ...     the specified units
-                 'numIter',          1,...
-                 'ufrShufBlockSize', 0,...
-                 'binDims',          [30,30],...
-                 'distThreshold',    125,...
-                 'nNearestNeighbors',110);
-
-
-
-
-
-
+figure();hist(circ_dist(ang(spdHead>20,1),trjYaw(spdHead>20,1)),linspace(-pi,pi,100))
 
 
