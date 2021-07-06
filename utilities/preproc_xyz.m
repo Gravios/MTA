@@ -14,9 +14,15 @@ function [xyz,ss] = preproc_xyz(Trial,varargin)
 %    SPLINE_SPINE_HEAD_EQD_NO_TRB
 %    trb
 % 
+defargs = struct('procOpts', {{}},...
+                 'sampleRate', [],...
+                 'targetMarkers',{{'spine_lower','pelvis_root','spine_middle','spine_upper','hcom'}},...
+                 'overwrite', false);
+
+[procOpts,sampleRate,targetMarkers,overwrite] = DefaultArgs(varargin,defargs,'--struct');
 
 
-[procOpts,sampleRate,overwrite] = DefaultArgs(varargin,{{},[],false},true);
+
 if ischar(Trial);
     Trial = MTATrial.validate(Trial);
 end
@@ -73,7 +79,6 @@ while ~isempty(procOpts)
 
       case 'SPLINE_SPINE_HEAD_EQI'
         
-        targetMarkers = {'spine_lower','pelvis_root','spine_middle','spine_upper','hcom'};
         numMarkers = numel(targetMarkers);
 
         if ~isempty(list_files(Trial.name,'.sehs.h')) && ~overwrite
@@ -167,7 +172,6 @@ while ~isempty(procOpts)
                            {'head_right','hcom',[0,0,255]}},... 
                              xyz.com(xyz.model.rb({'head_back','head_left','head_front','head_right'})));
 
-            targetMarkers = {'spine_lower','pelvis_root','spine_middle','spine_upper','hcom'};
             numMarkers = numel(targetMarkers);
             mid = xyz.model.gmi(targetMarkers);
             
@@ -297,7 +301,7 @@ end
 % ADD marker: lower Body Center of Mass
 if sum(~cellfun(@isempty,...
                 regexp(xyz.model.ml,...
-                       '(spine_lower)|(pelvis_root)|(spine_middle)|(spine_upper)')))==4,
+                       '(spine_lower)|(pelvis_root)|(spine_middle)|(spine_upper)')))>=3,
     xyz.addMarker('bcom',...     Name
     [.7,0,.7],...  Color
     {{'spine_lower', 'acom',[0,0,255]},... Sticks to visually connect
@@ -314,7 +318,7 @@ if sum(~cellfun(@isempty,...
      {'spine_upper', 'acom',[0,0,255]},...
      {'head_back',   'acom',[0,0,255]},...
      {'head_front',  'acom',[0,0,255]}},...
-        xyz.com(xyz.model.rb({'spine_lower','pelvis_root','spine_middle','spine_upper','head_back','head_front'})));
+        xyz.com(xyz.model.rb({'spine_lower','pelvis_root','spine_middle','head_back','head_front'})));
 end
 
 try

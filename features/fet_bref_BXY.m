@@ -1,5 +1,5 @@
 function [fet,featureTitles,featureDesc,Nmean,Nstd] = fet_bref_BXY(Trial,varargin)
-% function [fet,featureTitles,featureDesc,Nmean,Nstd] = fet_mis(fet_bref_BXY,varargin)
+% function [fet,featureTitles,featureDesc,Nmean,Nstd] = fet_bref_BXY(Trial,varargin)
 % 
 % varargin:
 %     newSampleRate: numeric,  (Trial.xyz.sampleRate) - sample rate of xyz data
@@ -26,7 +26,7 @@ defargs = struct('newSampleRate'  , Trial.xyz.sampleRate,                       
 fet = MTADfet(Trial.spath,...
               [],...
               [],...
-              Trial.xyz.sampleRate,...
+              newSampleRate,...
               Trial.sync.copy,...
               Trial.sync.data(1),...
               [],'TimeSeries',[],'head referenced position and motion','fet_href_H','h');
@@ -34,6 +34,7 @@ fet = MTADfet(Trial.spath,...
 % PREPROC xyz
 % FILTER xyz
 xyz = preproc_xyz(Trial,procOpts);
+xyz.resample(newSampleRate);
 xyz.data(~nniz(xyz),:,:) = 0;
 xyz.filter('ButFilter',4,filterCutoff,'low');
 bcom = xyz(:,'bcom',[1,2]);
@@ -56,7 +57,6 @@ fet.data(:,2) = dot(uvec,nvec(:,2,:),3).*xyz.sampleRate/10;
 % $$$       linspace(-100,100,100),...
 % $$$       linspace(-100,100,100));
 
-fet.resample(newSampleRate);
 featureTitles = {};
 featureDesc = {};
 if nargout>1,

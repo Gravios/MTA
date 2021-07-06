@@ -2,13 +2,22 @@ function [pfs] = compute_bhv_ratemaps(Trial,varargin);
 % function [pfs,auxData] = compute_bhv_ratemaps(Trial,varargin);
 % 
 % Compute spatially restricted behavior ratemaps
-%
-% CODE STRUCTURE
-% 
-%  1. ATTEMPT to load existing MTAApfs object from filesytem
-%  2. IF all units exist return object
-%  2. ELSE Compute
-%
+% VARARGIN :
+%    units          - Array(Numeric): {[]            }
+%    get_featureSet - FuncHandle:     {@fet_HB_pitchB}
+%    sampleRate     - Numeric:        {16            }
+%    pft            - MTAApfs:        {[]            }
+%    pfsArgs        - Struct:         {struct('states',           'theta-groom-sit', 
+%                                             'binDims',          [0.2,0.2],         
+%                                             'SmoothingWeights', [2,2],             
+%                                             'numIter',          1,                 
+%                                             'boundaryLimits',   [-2,0.8;-0.8,2],   
+%                                             'halfsample',       false))}
+%    threshRate     - Numeric:        {[]            }
+%    threshDist     - Numeric:        {[]            }
+%    overwrite      - Logicial:       {false         }
+
+
 
 % DEFARGS ------------------------------------------------------------------------------------------
 defargs = struct('units',                         [],                                            ...
@@ -71,12 +80,12 @@ xyz  = resample(preproc_xyz(Trial,'trb'),sampleRate);
 %      IF threshDist >= 
 %       ... ( skip load ) assign zeros to ddz
 if threshRate < 1,
-    drz = compute_drz(Trial,units,pft,'feature',xyz);
+    drz = compute_drz(Trial,units,pft,'sampleRate',sampleRate);
 else
     drz = zeros([size(xyz,1),numel(units)]);
 end
 if threshDist < sqrt(sum(diff(Trial.maze.boundaries(1:2,:),1,2).^2)),
-    ddz = compute_ddz(Trial,units,pft,'feature',xyz);
+    ddz = compute_ddz(Trial,units,pft,'sampleRate',sampleRate);
 else
     ddz = zeros([size(xyz,1),numel(units)]);
 end

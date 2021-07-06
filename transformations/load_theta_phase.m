@@ -3,10 +3,8 @@ function phz = load_theta_phase(Trial,sampleRate,channel,phzCorrection)
 %
 %    
 Trial.lfp.filename = [Trial.name,'.lfp'];        
-
 lfp = Trial.load('lfp',channel);
-lfp.resample(sampleRate);
-
 phz = lfp.phase([5,13]);    
 phz.data = unwrap(phz.data);
+phz.resample(sampleRate);
 phz.data = mod(phz.data+2*pi+phzCorrection,2*pi);

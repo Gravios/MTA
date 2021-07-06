@@ -1,0 +1,14 @@
+#!/bin/bash
+#hsw_update_txt
+
+subjectname=${PWD##*/}
+
+#shopt -s nullglob
+#files=(*".txt")
+#shopt -u nullglob
+
+for file in $@;
+do
+    sed -ri "s/^HSW_([0-9]{4})_([0-9]{2})_([0-9]{2})__([0-9]{2})_([0-9]{2})_([0-9]{2}).*/${subjectname}-\1\2\3-\4\5\6/" $file
+done;
+

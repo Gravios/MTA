@@ -92,7 +92,7 @@ if ~isempty(pfsArgsOverride) && isstruct(pfsArgsOverride),
     end
 end
 pfsArgs = struct2varargin(pargs);
-disp(['MTA:analysis:placefields:pfs_2d_theta:processing:' Trial.filebase]);
+disp(['[INFO] MTA:analysis:placefields:pfs_2d_theta:processing:' Trial.filebase]);
 pfs = MTAApfs(Trial,pfsArgs{:});
 
 

@@ -1,5 +1,5 @@
 function Data = create(Data,Session,varargin)
-%create(Data,Session,RefObj,spk,units,spikeWindow,overwrite)
+%create(Data,Session,RefObj,spk,units,spikeWindow,mode,overwrite)
 %
 % Calculate the instantaneous firing rate of individual units
 %

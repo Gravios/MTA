@@ -368,7 +368,8 @@ wper = round(ThreshCross(wf_mov,0.5,5)./ntrajSampleRate.*txyz.sampleRate);
 
 
 %% @(BHV-FILTER,MAX_REAR_HEIGHT)
-rear_feature = abs(txyz(:,'head_front',3)-txyz(:,'spine_lower',3)).*tang(:,'spine_middle','spine_upper',2);
+%rear_feature = abs(txyz(:,'head_front',3)-txyz(:,'spine_lower',3)).*tang(:,'spine_middle','spine_upper',2);
+rear_feature = abs(txyz(:,'head_front',3)-txyz(:,'spine_lower',3)).*tang(:,'pelvis_root','spine_middle',2);
 rear_feature(isnan(rear_feature))=0;
 rearThresh = 45;
 minimum_interval = 64;

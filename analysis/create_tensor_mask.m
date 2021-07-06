@@ -1,5 +1,6 @@
 function [mask] = create_tensor_mask(bins,varargin)
 
+
 if ~isempty(varargin),
     boundary = varargin{1};
 else
@@ -65,6 +66,8 @@ switch boundary.shape
 % $$$     bhvMask = repmat(permute(bhvMask,[3,4,1,2]),[pfsBinsDims(1:2),1,1]);    
 % $$$     mask = logical(circMask.*bhvMask);
     
-
+  case 'HB'
+    
+    
 
 end

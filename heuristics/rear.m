@@ -10,7 +10,8 @@ if xyz.sampleRate>120,xyz.resample(120);end
 
 ang = create(MTADang,Trial,xyz);
 
-rear_feature = abs(xyz(:,'head_front',3)-xyz(:,'spine_lower',3)).*ang(:,'spine_middle','spine_upper',2);
+%rear_feature = abs(xyz(:,'head_front',3)-xyz(:,'spine_lower',3)).*ang(:,'spine_middle','spine_upper',2);
+rear_feature = abs(xyz(:,'head_front',3)-xyz(:,'spine_lower',3)).*ang(:,'pelvis_root','spine_middle',2);
 rear_feature(isnan(rear_feature))=0;
 switch method
     

@@ -71,8 +71,12 @@ else
 % ACCUMULATE masked rate maps
     ratemap = zeros([sum(mask(:)),0]);
     for u = 1:numel(units),
-        trm = pfs.plot(units(u),1,false,[],false,0.25,false,interpParPfs);
-        ratemap = cat(2,ratemap,trm(logical(mask(:))));
+        if isa(pfs,'MTAApfs');
+            trm = pfs.plot(units(u),1,false,[],false,0.25,false,interpParPfs);
+            ratemap = cat(2,ratemap,trm(logical(mask(:))));
+        else
+            ratemap = pfs.data.rateMap(logical(mask(:)),:);
+        end
     end
     
     
@@ -103,6 +107,7 @@ else
     for i = 1:ceil(size(ufr,1)/bufferSize)
         tic
         disp([num2str(i),' of ' num2str(ceil(size(ufr,1)/bufferSize))]);
+
         
 % SELECT data subset (bufferSize)
         if i == ceil(size(ufr,1)/bufferSize),
@@ -114,9 +119,9 @@ else
         else        
             ind = (1+bufferSize*(i-1)) : (bufferSize*i);
         end
-
+        
 % COMPUTE posterior
-        E = exp(-sum(ratemap,2)*ones([1,bufferSize])*spikeWindow+log(ratemap)*(ufr.data(ind,:)-eps)');
+        E = exp(-sum(ratemap,2)*ones([1,bufferSize])*spikeWindow+log(ratemap)*(ufr.data(ind,:)+eps)');
         E = bsxfun(@rdivide,E,sum(E));
 
 % LOCATE peak of posterior
@@ -144,6 +149,48 @@ else
         posteriorMax(ind)     = apos;
 
         toc
+        
+
+% $$$         if i == 4, 
+% $$$ 
+% $$$         
+% $$$         % DIAGNOSTIC figure -----------------
+% $$$         xyz = preproc_xyz(Trial,'trb');
+% $$$         xyz.resample(sampleRate);
+% $$$         hxyz = xyz(:,'hcom',1:2);
+% $$$         nxyz = xyz(:,'nose',1:2);        
+% $$$ 
+% $$$         keyboard();
+% $$$ 
+% $$$         figure();
+% $$$         hold('on');
+% $$$         pax = pcolor(pfsBins{:},mask);
+% $$$         pax.EdgeColor = 'none';
+% $$$         lax = plot(0,0,'*m','MarkerSize',10);
+% $$$         lax2 = plot(0,0,'*g','MarkerSize',10);
+% $$$         lax3 = plot(0,0,'*c','MarkerSize',10);        
+% $$$         for j = 1:1:2000,
+% $$$             rmap = nan(size(mask));
+% $$$             rmap(logical(mask(:))) = E(:,j);
+% $$$             pax.CData = rmap';
+% $$$             lax.XData = hxyz(ind(j),1);
+% $$$             lax.YData = hxyz(ind(j),2);            
+% $$$             lax2.XData = nxyz(ind(j),1);
+% $$$             lax2.YData = nxyz(ind(j),2);            
+% $$$             lax3.XData = decEstSax(ind(j),1);
+% $$$             lax3.YData = decEstSax(ind(j),2);            
+% $$$             drawnow();
+% $$$             pause(.05);
+% $$$         end
+% $$$ 
+% $$$         figure();
+% $$$         histogram(sqrt(sum((decEstSax(ind,:)-nxyz(ind,:)).^2,2))./10,linspace(0,100,50));
+% $$$ 
+% $$$         % -----------------------------------
+% $$$         end
+        
+        
+        
     end% i
 
     

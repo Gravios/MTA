@@ -27,20 +27,10 @@ unitsPyr   = remove_bad_units(Trial,unitsPyr);
 %unitsInt = select_units(Trial,'int');
 unitsInt = [];
 
-states = {'loc&theta','lloc&theta','hloc&theta','rear&theta',     ...
-          'pause&theta','lpause&theta','hpause&theta',            ...
-          'theta-groom-sit'};
-statesCcg = {'loc','lloc','hloc','rear','pause','lpause','hpause',...
-             'theta-groom-sit'};
+states = {'rear&theta','hloc&theta','hpause&theta','lloc&theta','lpause&theta','theta-groom-sit'};
 
 numStates = numel(states);
 
-
-
-interpPar = struct('bins',{{linspace(-500,500,100),linspace(-500,500,100)}},             ...
-                   'nanMaskThreshold', 0,                                                ...
-                   'methodNanMap',     'linear',                                         ...
-                   'methodRateMap',    'linear');
 
 
 pfdVersion = '9';

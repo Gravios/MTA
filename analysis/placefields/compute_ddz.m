@@ -82,7 +82,7 @@ end
 % COMPUTE the trajectory heading
 pfds = [];
 pfdd = [];
-for unit = units
+for unit = units(:)'
 % CONCATENATE features and placefield center
     pfhxy = cat(2,permute(feature.data,[1,3,2]),circshift(permute(feature.data,[1,3,2]),round(feature.sampleRate/5)));
     pfhxy = cat(2,pfhxy,permute(repmat(fieldCenter(unit==units,:),[size(feature,1),1]),[1,3,2]));

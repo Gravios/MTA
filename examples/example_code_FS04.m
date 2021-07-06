@@ -61,7 +61,7 @@
 %|  xyzSampleRate  |  Double        |   119.881035            |
 %|  hostServer     |  String        |   'lmu'                 |
 %|  dataServer     |  String        |   'lmu',                |
-c%|  project        |  String        |   'general'             |
+%|  project        |  String        |   'general'             |
 %|  TTLValue       |  CONTEXT       |   SEE TTLValue bellow   |
 %|  includeSyncInd |  Array[double] |   []                    |
 %|  offsets        |  Array[double] |   [15,-15]              |

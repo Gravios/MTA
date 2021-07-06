@@ -1,4 +1,4 @@
-function ratemap = plot(Pfs,varargin)
+function [ratemap] = plot(Pfs,varargin)
 % function ratemap = plot(Pfs,varargin)
 % plot placefield of the specified unit
 %
@@ -67,6 +67,7 @@ defargs = struct('unit',                   [],                                  
 
 
 % MAIN ---------------------------------------------------------------------------------------------
+
 
 if isempty(unit),unit=Pfs.data.clu(1);end
 
@@ -198,31 +199,27 @@ if numel(Pfs.adata.binSizes) > 1,
             rateReportMethod = '';
         end
         
-        if ~iscell(rateReportMethod)
-            rateReportMethod = {rateReportMethod};
-        end
-        
-        for method = rateReportMethod,
-            switch method{1}
-              case 'colorbar'
-                colorbar();
-                colormap(gca(),func2str(colorMap));
-                caxis([maxRate]);
-              case 'text'
-                mrate = max(ratemap(:));
-                if mrate < 10
-                    text(Pfs.adata.bins{1}(end)-0.45*diff(Pfs.adata.bins{1}([1,end])),...
-                         Pfs.adata.bins{2}(end)-0.10*diff(Pfs.adata.bins{2}([1,end])),...
-                         sprintf('%2.1f',max(ratemap(:))),...
-                         'Color','w','FontWeight','bold','FontSize',8)
-                else
-                    text(Pfs.adata.bins{1}(end)-0.45*diff(Pfs.adata.bins{1}([1,end])),...     
-                         Pfs.adata.bins{2}(end)-0.10*diff(Pfs.adata.bins{2}([1,end])),...
-                         sprintf('%2.0f',max(ratemap(:))),...
-                         'Color','w','FontWeight','bold','FontSize',8)
-                end
+
+        switch rateReportMethod,
+          case 'colorbar'
+            colorbar();
+            colormap(gca(),func2str(colorMap));
+            caxis([maxRate]);
+          case 'text'
+            mrate = max(ratemap(:));
+            hax = text;                
+            if mrate < 10
+                hax.String   = sprintf('%2.1f',max(ratemap(:)));                    
+            else
+                hax.String   = sprintf('%2.0f',max(ratemap(:)));
             end
+            hax.Position = [Pfs.adata.bins{1}(end)-0.45*diff(Pfs.adata.bins{1}([1,end])),...
+                            Pfs.adata.bins{2}(end)-0.10*diff(Pfs.adata.bins{2}([1,end]))];
+            hax.Color    = 'w';
+            hax.FontWeight = 'bold';
+            hax.FontSize = 8;
         end
+
 
         axis('xy');
         
@@ -321,12 +318,12 @@ if numel(Pfs.adata.binSizes) > 1,
                   case 'text'
                     mrate = max(ratemap(:));
                     if mrate < 10
-                        text(Pfs.adata.bins{1}(end)-0.45*diff(Pfs.adata.bins{1}([1,end])),...
+                        tax = text(Pfs.adata.bins{1}(end)-0.45*diff(Pfs.adata.bins{1}([1,end])),...
                              Pfs.adata.bins{2}(end)-0.10*diff(Pfs.adata.bins{2}([1,end])),...
                              sprintf('%2.1f',max(ratemap(:))),...
                              'Color','w','FontWeight','bold','FontSize',8)
                     else
-                        text(Pfs.adata.bins{1}(end)-0.45*diff(Pfs.adata.bins{1}([1,end])),...     
+                        tax = text(Pfs.adata.bins{1}(end)-0.45*diff(Pfs.adata.bins{1}([1,end])),...     
                              Pfs.adata.bins{2}(end)-0.10*diff(Pfs.adata.bins{2}([1,end])),...
                              sprintf('%2.0f',max(ratemap(:))),...
                              'Color','w','FontWeight','bold','FontSize',8)
@@ -412,3 +409,6 @@ if numel(Pfs.adata.binSizes) > 1,
 end% if
 
 % END MAIN -----------------------------------------------------------------------------------------
+
+
+

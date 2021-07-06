@@ -121,14 +121,14 @@ end
 %# REMOVE IN FUTURE VERSION -->
 
 % LOAD features
-features = cf(@(t)     fet_bref(t,[],[],'SPLINE_SPINE_HEAD_EQI_SMOOTH'), Trials);
+features = cf(@(t)     fet_bref(t,[],[],'SPLINE_SPINE_HEAD_EQD'), Trials);
            cf(@(f,t,r) f.map_to_reference_session(t,r), features,Trials,repmat({referenceTrial},[1,numTrials]));
 
 ffet     = cf(@(f)  f.copy(),  features);
            cf(@(f)  f.filter('ButFilter',3,[1.2,6],'bandpass'),  ffet);
 
-xyz      = cf(@(t) t.load('xyz'),                      Trials);
-           cf(@(x) x.filter('ButFilter',5,1.5,'low'),  xyz);
+xyz      = cf(@(t) t.load('xyz','trb'),                      Trials);
+           cf(@(x) x.filter('ButFilter',5,1.5,'low'),           xyz);
 
 % $$$ vxy = cf(@(x) xyz.vel({'spine_lower','head_back'},[1,2]), xyz);
 ang      = cf(@(t,x) create(MTADang,t,x), Trials,xyz);
@@ -264,7 +264,9 @@ for s = 1:numTrials,
         keyVec  = stateVectors(find(key==cell2mat(keys)),:);
         angvelThresh = 0.35;
         for rp = StcCor{s}{key}.data',  
-            tang = ang{s}(rp,'spine_lower','spine_upper',1);
+            %tang = ang{s}(rp,'spine_lower','spine_upper',1);
+            %tang = ang{s}(rp,'spine_lower','spine_middle',1);            
+            tang = ang{s}(rp,'spine_lower','spine_middle',1);
             if angvelThresh > abs(circ_dist(tang(1),tang(2))),
 % REASSIGN turn to pause
                 

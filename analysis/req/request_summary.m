@@ -1291,7 +1291,7 @@
     Description: head speed and head rhm fields
 
 
-** 2020 03 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+** 2021 03 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 *** req20210325
     Tags: cabels.gl visualization
     Status: Active
@@ -1302,7 +1302,7 @@
     Description: Generate json file with xyz data for all markers for input file to cables.gl
 
             
-** 2020 04 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+** 2021 04 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 *** req20210408
     Tags: quaternion
     Status: Active
@@ -1311,3 +1311,17 @@
     Final_Forms: NA
     Project: General
     Description: building out quaternion functions
+
+    
+
+            
+** 2021 06 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+*** req20210625
+    Tags: decoding 
+    Status: Active
+    Type: Analysis
+    Author: Justin Graboski
+    Final_Forms: NA
+    Project: General
+    Description: decoding with ratemaps and second order unit coactivation maps
+    

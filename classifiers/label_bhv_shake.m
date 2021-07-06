@@ -85,13 +85,13 @@ end
     
     
 % LOAD Position data
-xyz    = cf(@(t)   preproc_xyz(t)         , Trials);
+xyz    = cf(@(t)   preproc_xyz(t,'trb')         , Trials);
          cf(@(x,s) x.resample(s)          , xyz,sampleRate);
 fxyz   = cf(@(x)   x.copy()               , xyz);
          cf(@(f)   f.filter('ButFilter',5,2.4,'low'),  fxyz);
 
 % LOAD and MAP Features to reference session
-features = cf(@(t,p)   feval(p.featureSet,t),  Trials,repmat({param},[1,numSessions]));
+features = cf(@(t,p)   feval(p.featureSet,t,[],[],{'trb'}),  Trials,repmat({param},[1,numSessions]));
            cf(@(f,t,p) f.map_to_reference_session(t,p.referenceTrial),...
               features,Trials,repmat({param},[1,numSessions]));
 for s = 1:numSessions, features{s}.data(~nniz(xyz{s}),:,:) = 0;end

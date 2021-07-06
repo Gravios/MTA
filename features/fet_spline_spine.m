@@ -27,20 +27,20 @@ defargs = struct('label',                   '3dssh',                            
 % MAIN ---------------------------------------------------------------------------------------------
 
 xyz = Session.load('xyz',xyzMode);
+xyz.addMarker('hcom',...     Name
+              [.7,0,.7],...  Color
+              {{'head_back', 'hcom',[0,0,255]},... Sticks to visually connect
+               {'head_left', 'hcom',[0,0,255]},... new marker to skeleton
+               {'head_front','hcom',[0,0,255]},...
+               {'head_right','hcom',[0,0,255]}},... 
+              xyz.com(xyz.model.rb({'head_back','head_left','head_front','head_right'})));
 
-switch label,
-  case '3dss'
-    markers = {'spine_lower','pelvis_root','spine_middle','spine_upper'};
-  case '3dssh'
-    markers = {'spine_lower','pelvis_root','spine_middle','spine_upper','hcom'};
-    xyz.addMarker('hcom',...     Name
-                  [.7,0,.7],...  Color
-                  {{'head_back', 'hcom',[0,0,255]},... Sticks to visually connect
-                   {'head_left', 'hcom',[0,0,255]},... new marker to skeleton
-                   {'head_front','hcom',[0,0,255]},...
-                   {'head_right','hcom',[0,0,255]}},... 
-                  xyz.com(xyz.model.rb({'head_back','head_left','head_front','head_right'})));
-end
+% $$$ switch label,
+% $$$   case '3dss'
+% $$$     markers = {'spine_lower','pelvis_root','spine_middle','spine_upper'};
+% $$$   case '3dssh'
+% $$$     markers = {'spine_lower','pelvis_root','spine_middle','spine_upper','hcom'};
+% $$$ end
 
 % DELBLOCK if version>=3,
 if isempty(Session.fet),

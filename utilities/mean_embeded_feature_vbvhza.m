@@ -20,7 +20,7 @@ czDom = {};
 % MAIN ---------------------------------------------------------------------------------------------
 
 try,
-    xyz = preproc_xyz(Trial);
+    xyz = preproc_xyz(Trial,'trb');
 catch err
     disp(err)
     xyz = preproc_xyz(Trial);
@@ -52,10 +52,11 @@ else,
     ind.resample(Data);
     ind.data(isnan(ind.data))=0;
 % REQUIRE a hard thresholds to remove groom and rear like periods
-    bang = ang(:,'spine_lower','spine_upper',3).*cos(ang(:,'spine_lower','spine_upper',2));
+    bang = ang(:,'spine_lower','hcom',3).*cos(ang(:,'spine_lower','hcom',2));
+    %bang = ang(:,'spine_lower','spine_upper',3).*cos(ang(:,'spine_lower','spine_upper',2));    
     bang = MTADxyz('data',bang/prctile(bang(nniz(bang)),95),'sampleRate',xyz.sampleRate);
     bang.data(~nniz(bang.data))=0;
-    ind.data = ind.data&bang>.8;
+    ind.data = ind.data&bang>.8&bang<1.1;
 end
 
 mind = nniz([ind_v_b,ind_v_h,ind_z_a])&ind.data==1;

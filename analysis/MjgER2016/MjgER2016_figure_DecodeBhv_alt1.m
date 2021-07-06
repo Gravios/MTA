@@ -102,6 +102,7 @@ ferrorBinCenters = {errorBinCenters,errorBinCenters,perrorBinCenters,perrorBinCe
 
 % SET analysis args
 MjgER2016_figure6_args('section 1');
+configure_default_args();
 
 % GET behavior field rate map
 bfrm        = cf(@(t,u)   compute_bhv_ratemaps(t,u),                 Trials, units);
@@ -125,7 +126,7 @@ load(fullfile(MTA_PROJECT_PATH,'analysis','pfsXYHB_mask.mat'));
 
 
 % SELECT trial subset
-tind = [3:5,17:23];
+tind = [3:5,17:25];
 Trials = Trials(tind);
 units  = units(tind);
 numTrials = numel(Trials);
@@ -136,8 +137,9 @@ stc  = cf(@(t)  t.load('stc','msnn_ppsvd_raux'),  Trials);
 
 %%%<<< DC2 DECODE xy 300ms window
 
-dc2.tag = 'xy_sr30_sw300_HighRes';
-dc2.sampleRate = 30;
+dc2.tag = 'xy_sr30_sw300_HighRes'; spikeWindow = 0.3; dc2.sampleRate = 30;
+dc2.tag = 'xy_sr16_sw400_HighRes_pfs20x20'; spikeWindow = 0.4; dc2.sampleRate = 16;
+
 dc2.smoothingWeights = [250.^2,250.^2];
 
 for t = 1:numel(Trials),
@@ -146,19 +148,19 @@ end
 
 % GET subject position objects
 dc2.xyz = cf(@(t)                                                               ...
-              preproc_xyz( t, 'trb', sampleRate),                               ...
+              preproc_xyz( t, 'trb', dc2.sampleRate),                               ...
               Trials);
 
-dc2.spd = cf(@(x) ...
-             vel(filter(copy(x),'ButFilter',4,1.5,'low'),'hcom',[1,2]),   ...
-             dc2.xyz);
-
-dc2.phz = cf(@(t,c) ...
-             phase( load( copy( t.lfp ), t, c), [6, 12]), ...
-             Trials, num2cell([sessionList(tind).thetaRefGeneral]));
-cf(@(p)   set(p,'data',unwrap(p.data)),         dc2.phz        );
-cf(@(p,x) resample(p,x),                        dc2.phz,dc2.xyz);
-cf(@(p)   set(p,'data',mod(p.data+pi,2*pi)-pi), dc2.phz        );
+% $$$ dc2.spd = cf(@(x) ...
+% $$$              vel(filter(copy(x),'ButFilter',4,1.5,'low'),'hcom',[1,2]),   ...
+% $$$              dc2.xyz);
+% $$$ 
+% $$$ dc2.phz = cf(@(t,c) ...
+% $$$              phase( load( copy( t.lfp ), t, c), [6, 12]), ...
+% $$$              Trials, num2cell([sessionList(tind).thetaRefGeneral]));
+% $$$ cf(@(p)   set(p,'data',unwrap(p.data)),         dc2.phz        );
+% $$$ cf(@(p,x) resample(p,x),                        dc2.phz,dc2.xyz);
+% $$$ cf(@(p)   set(p,'data',mod(p.data+pi,2*pi)-pi), dc2.phz        );
       
 
 % GET spike time objects
@@ -167,15 +169,27 @@ dc2.spk = cf(@(t,x,u)                                                           
               Trials, dc2.xyz, units);
 
 % GET unit firing rate objects
-dc2.ufr = cf(@(t,x,u,s)                                                         ...
-              t.load('ufr',x,s,u,spikeWindow,true,'gauss'),                     ...
-              Trials, dc2.xyz, units, dc2.spk);
+dc2.ufr = cf(@(t,x,s,u)                                                         ...
+              t.load('ufr',x,s,u,spikeWindow,'gauss',true),                     ...
+              Trials, dc2.xyz, dc2.spk, units);
 
 
+% compute_ratemaps ---------------------------------------------------------------------------------
+AP.compute_ratemaps =                                                                            ...
+    struct('get_featureSet',            @fet_xy,                                                 ...
+           'sampleRate',                16,                                                      ...
+           'pfsArgs',                   struct('states',           activeState,                  ...
+                                               'binDims',          [20,20],                      ...
+                                               'SmoothingWeights', [2.4,2.4],                    ...
+                                               'numIter',          1,                            ...
+                                               'boundaryLimits',   [-500,500;-500,500],          ...
+                                               'halfsample',       false)                        ...
+           );
+%---------------------------------------------------------------------------------------------------
 
 % GET placefield ratemap objects
 dc2.pfs = cf(@(t,u)                                                             ...
-              compute_ratemaps(t,u),                                            ...
+              compute_ratemaps(t,u,'overwrite',true),                                            ...
               Trials, units);
 
 % MAKE xy ratemap mask
@@ -198,6 +212,19 @@ dc2.uinc =  cf(@(u)                                                             
                       'tag',dc2.tag),                                           ...
            Trials, units, dc2.ufr, dc2.pfs);
 
+[dc2.com, dc2.max, dc2.sax, dc2.post] =                                         ...
+        cf(@(t,u,r,p)                                                           ...
+           decode_ufr(t, u,                                                     ...
+                      dc2.sampleRate,                                           ...
+                      r, p, [],                                                 ...
+                      dc2.mask,                                                 ...
+                      dc2.smoothingWeights,                                     ...
+                      'tag',dc2.tag,                                            ...
+                      'overwrite',true),                                        ...
+           Trials(7), units(7), dc2.ufr(7), dc2.pfs(7));
+
+
+
 % GET state matrix synced with dc2.xyz objects
 dc2.stcm = cf(@(s,x)                                                            ...
                stc2mat(s,x,states),                                             ...
@@ -207,14 +234,14 @@ dc2.ts   = cf(@(x)                                                              
               [1:size(x,1)]./x.sampleRate,                                      ...
               dc2.xyz);
 
-dc2.tRot = {0,0,0,0.17,0.17,0.17,0.17,0.17,0.17,0.17};
-dc2.hvec = cf(@(x)    x(:,'head_front',[1,2])-x(:,'head_back',[1,2]),                dc2.xyz      );
-dc2.hvec = cf(@(h)    sq(bsxfun(@rdivide,h,sqrt(sum(h.^2,3)))),                      dc2.hvec     );
-dc2.hvec = cf(@(h)    cat(3,h,sq(h)*[0,-1;1,0]),                                     dc2.hvec     );
-dc2.hvec = cf(@(h,r)  multiprod(h,[cos(r),-sin(r);sin(r),cos(r)],[2,3],[1,2]),       dc2.hvec, dc2.tRot);
-dc2.tvec = cf(@(x)    circshift(x(:,'hcom',[1,2]),-1)-circshift(x(:,'hcom',[1,2]),1),dc2.xyz      );
-dc2.tvec = cf(@(h)    sq(bsxfun(@rdivide,h,sqrt(sum(h.^2,3)))),                      dc2.tvec     );
-dc2.tvec = cf(@(h)    cat(3,h,sq(h)*[0,-1;1,0]),                                     dc2.tvec     );
+% $$$ dc2.tRot = {0,0,0,0.17,0.17,0.17,0.17,0.17,0.17,0.17};
+% $$$ dc2.hvec = cf(@(x)    x(:,'head_front',[1,2])-x(:,'head_back',[1,2]),                dc2.xyz      );
+% $$$ dc2.hvec = cf(@(h)    sq(bsxfun(@rdivide,h,sqrt(sum(h.^2,3)))),                      dc2.hvec     );
+% $$$ dc2.hvec = cf(@(h)    cat(3,h,sq(h)*[0,-1;1,0]),                                     dc2.hvec     );
+% $$$ dc2.hvec = cf(@(h,r)  multiprod(h,[cos(r),-sin(r);sin(r),cos(r)],[2,3],[1,2]),       dc2.hvec, dc2.tRot);
+% $$$ dc2.tvec = cf(@(x)    circshift(x(:,'hcom',[1,2]),-1)-circshift(x(:,'hcom',[1,2]),1),dc2.xyz      );
+% $$$ dc2.tvec = cf(@(h)    sq(bsxfun(@rdivide,h,sqrt(sum(h.^2,3)))),                      dc2.tvec     );
+% $$$ dc2.tvec = cf(@(h)    cat(3,h,sq(h)*[0,-1;1,0]),                                     dc2.tvec     );
 
 %%%>>>
 
@@ -250,7 +277,7 @@ dc4.fet = cf(@(t)  fet_HB_pitchB(t,dc4.sampleRate),  Trials);
 
 dc2.error.xy   = cf(@(c,x)                                                      ...
                      sqrt( sum(( c(:,[1,2])-sq( x(:,'nose',[1,2]))).^2,2)),     ...
-                     dc2.com, dc2.xyz);
+                     dc2.sax, dc2.xyz);
 
 dc2.error.ego = cf(@(e,x,h)                                                              ...
                    sq(multiprod(permute(bsxfun(@minus,                                   ...
@@ -299,12 +326,12 @@ dc2.uincInd = cf(@(u) discretize(u,uincBin),  dc2.uinc);
 
 d2spd = cf(@(s) s(:,1), dc2.spd);
 d2spd = cat(1,d2spd{:});
-d2phz = cf(@(e) e(:,1), dc2.phz);
-d2phz = cat(1,d2phz{:});
-d2lon = cf(@(e) e(:,1), dc2.error.ego);
-d2lon = cat(1,d2lon{:});
-d2lat = cf(@(e) e(:,2), dc2.error.ego);
-d2lat = cat(1,d2lat{:});
+% $$$ d2phz = cf(@(e) e(:,1), dc2.phz);
+% $$$ d2phz = cat(1,d2phz{:});
+% $$$ d2lon = cf(@(e) e(:,1), dc2.error.ego);
+% $$$ d2lon = cat(1,d2lon{:});
+% $$$ d2lat = cf(@(e) e(:,2), dc2.error.ego);
+% $$$ d2lat = cat(1,d2lat{:});
 
 % $$$ d2ufz = cf(@(e) e(:,1), dc2.ufz);
 % $$$ d2ufz = cat(1, d2ufz{:});
@@ -315,11 +342,11 @@ d2stcm = cat(1,dc2.stcm{:});
 
 
 
-dc2.phzBinEdges = -pi:pi/8:pi;
-dc2.phzBinCenters = mean(cat(1,dc2.phzBinEdges(2:end),dc2.phzBinEdges(1:end-1)));
-d2phzInd = discretize(d2phz,dc2.phzBinCenters);
-d2lonInd = discretize(d2lon,ferrorBinEdges{1});
-d2latInd = discretize(d2lat,ferrorBinEdges{2});
+% $$$ dc2.phzBinEdges = -pi:pi/8:pi;
+% $$$ dc2.phzBinCenters = mean(cat(1,dc2.phzBinEdges(2:end),dc2.phzBinEdges(1:end-1)));
+% $$$ d2phzInd = discretize(d2phz,dc2.phzBinCenters);
+% $$$ d2lonInd = discretize(d2lon,ferrorBinEdges{1});
+% $$$ d2latInd = discretize(d2lat,ferrorBinEdges{2});
 
 
 figure();
@@ -915,18 +942,17 @@ dct.som  = cell([1,numTrials]);
 dct.post = cell([1,numTrials]);
 dct.uinc = cell([1,numTrials]);
 dct.pufr = cell([1,numTrials]);
-dct.xyz  = cf(@(t)     resample(preproc_xyz(t,'trb'),dct.sampleRate),      Trials);
+dct.xyz  = cf(@(t)    resample(preproc_xyz(t,'trb'),dct.sampleRate),      Trials);
 dct.stc  = cf(@(t)    t.load('stc','msnn_ppsvd_raux'),                               Trials       );
 dct.stcm = cf(@(s,x)  stc2mat(s,x,states),                                           dct.stc,dct.xyz);
 
 for t = 1:numTrials
     Trials{t}.lfp.filename = [Trials{t}.name,'.lfp'];    
 
-    try,   lfp = load(Trials{t},'lfp',sessionList(t).thetaRefGeneral);
-    catch, lfp = load(Trials{t},'lfp',sessionList(t).thetaRefGeneral);
-    end
-    % PHZ : LFP phase restricted to the theta band [6-12Hz]
-    phz = lfp.phase([6,12]);
+    phz = load_theta_phase(Trials{t},                           ...
+                           Trials{t}.lfp.sampleRate,            ...
+                           sessionList(t==tind).thetaRefGeneral,...
+                           phzCorrection(t==tind));
     phzBinInds = discretize(phz.data,phzBins);
     
     spk  = create(copy(Trials{t}.spk),Trials{t},lfp.sampleRate,'',units{t},'deburst');

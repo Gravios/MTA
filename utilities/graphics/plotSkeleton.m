@@ -1,6 +1,12 @@
 function [markers,sticks,markerConnections,traj] = plotSkeleton(Trial,xyz,ind,varargin)
 %function [markers,sticks,markerConnections] = plotSkeleton(Trial,xyz,ind,varargin)
-%[plotType,ang,trajectoryPeriod,trajectoryMarkers,hax] = DefaultArgs(varargin,{'line',[],0,0},true);
+% VARARGIN :
+%     plotType
+%     ang
+%     skeletonMarkers
+%     trajectoryPeriod 
+%     trajectoryMarkers 
+%     hax
 
 defargs = struct('plotType',           'line',...
                  'ang',                [],   ...

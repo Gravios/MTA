@@ -15,6 +15,9 @@ elseif     all(~cellfun(@isempty,regexpi(dataLoggers,{'openephys','optitrack'}))
 elseif     all(~cellfun(@isempty,regexpi(dataLoggers,{'WHT','CSV'})))
     Session = sync_WHT_CSV(Session,TTLValue,xyzSampleRate);
 
+elseif     all(~cellfun(@isempty,regexpi(dataLoggers,{'WHT','vicon'})))
+    Session = sync_WHT_vicon(Session,TTLValue,xyzSampleRate);
+    
 elseif     all(~cellfun(@isempty,regexpi(dataLoggers,{'openephys','sobolev'})))
     Session = sync_openephys_sobolev(Session,TTLValue,xyzSampleRate);
     

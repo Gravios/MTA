@@ -82,6 +82,26 @@ for u = 1:size(tpp.ceMat,3),
     end
 end
 
+phzCorrection = [6,6,              ... er01
+                 4,4,4,            ... ER06
+                 6,6,              ... Ed10
+                 0,0,0,0,0,0,0,0,0,... jg04                 
+                 2,2,2,2,2,2,2,2,2 ... jg05
+                 6,6,6]; % new units - ER06, Ed10, er01
+
+
+for p = 1:numel(phzCorrection)
+    tpp.ceMat(:,:,cluSessionMapSubset(:,1)==p,:,:) = circshift(tpp.ceMat(:,:,cluSessionMapSubset(:,1)==p,:,:),phzCorrection(p),2);
+end    
+
+% DIAGNOSTIC 
+% $$$ my = circshift(tpp.ceMat(:,:,325,1,3),2,2);
+% $$$ my = circshift(tpp.ceMat(:,:,152,1,3),0,2); 
+% $$$ figure;imagesc(my(:,phzOrder)');axis('xy');
+
+
+% circshift ceMat dependent upon session
+
 
 
 [tpp.phzRateMax,tpp.phzRateMaxPosInd] = ...
@@ -161,20 +181,51 @@ validPosOccRlx =  all(sq(sum(any(isnan(tpp.ceMat(10:30,:,:,1,2:3)),2)))<5,2);
 validPosOccRr =  all(sq(sum(any(isnan(tpp.ceMat(10:30,:,:,1,1)),2)))<5,2);
 validUnits = true(size(validPosOccRr));
 
+%stind = find(validPosOccRlx & sesInds(unitSubset)  & validUnits)';
 % drop index:dind:  bad occ in high or low bad
 %            rind:  bad rate est in rear
 %            bind:  bad
 %            mind:  messy field
 %            eind:  bad edge est
 %            lind:  low rate
-dind = [85,52,91,82,85,89,110,152,205,246,248,308,367];
-rind = [44,46,49,59,62,106,112,157,158,186,187,188,191,200,201,202,205,217,220,230,243,253,256,...
-        258,259,262,272,275,286,287,317,330,339,348,357,364,371,374,377,398,402];
-bind = [25,34,40,57,64,65,69,77,87,117,161,199,204,208,209,213,268,285,308,350,361,376,377,381,...
-        383,388];
-mind = [18,37,48,121,153,156,196,210,301,305,324,361,375];
-eind = [191,196,202,372,406];
-lind = [27,72,76,305];
+dind = [ 85, 52, 91, 82, 85, 89,...
+         110,152,205,246,248,308,367];
+rind = [ 44, 46, 49, 59, 62, ...
+         106,112,157,158,186,187,188,191,...
+         200,201,202,205,217,220,230,243,253,256,258,259,262,272,275,286,287,...
+         317,330,339,348,357,364,371,374,377,398,...
+         402,428,];
+bind = [ 25, 34, 40, 57, 64, 65, 69, 77, 87,...
+         117,161,199,204,208,209,213,268,285,...
+         308,350,361,376,377,381,383,388];
+mind = [ 18, 37, 48,...
+         121,153,156,196,...
+         210,...
+         301,305,324,361,375];
+eind = [191,196,...
+        202,...
+        372,...
+        406];
+lind = [ 27, 72, 76,...
+         305];
+
+
+
+dind = [ 52, 82, 85,151,216,295,329];
+rind = [ 38, 44, 46, 59, 62, 68, 89,...
+         111,149,153,155,157,184,186,188,191,197,...
+         200,201,205,207,217,220,230,243,286,287,...
+         330,349,358,365,372,376,378,381,388,399,...
+         403,408,416];
+bind = [ 25, 34, 40, 57, 64, 65, 69, 77, 87,...
+         109,116,152,161,192,198,...
+         208,209,213,256,258,...
+         306,346,351,362,377,404,405,420];
+mind = [ 18, 31,121,156,158,159,187,268,...
+         301,324,414,421];
+eind = [ 81,201,204,215,275,285,308,339,344,382,389,437];
+lind = [ 39,189,228,246,248,261,232];
+         
                
 validPosOccRr(rind) = false;
 validUnits(bind) = false;
@@ -182,12 +233,13 @@ validUnits(eind) = false;
 validUnits(lind) = false;
 validUnits(dind) = false;
 
+
 % CORRECT bhv pref oder where rear cannot be compared 
 tssi = ssi(validPosOccRlx & ~validPosOccRr,[1,2]);
-tssi(tssi(:,1)==1&tssi(:,2)==3,1:2) = [3,2];
-tssi(tssi(:,1)==1&tssi(:,2)==2,1:2) = [2,3];
-tssi(tssi(:,2)==1&tssi(:,1)==3,1:2) = [3,2];
-tssi(tssi(:,2)==1&tssi(:,1)==2,1:2) = [2,3];
+tssi(tssi(:,1)==1&tssi(:,2)==3,1:2) = repmat([3,2],sum(tssi(:,1)==1&tssi(:,2)==3),1);
+tssi(tssi(:,1)==1&tssi(:,2)==2,1:2) = repmat([2,3],sum(tssi(:,1)==1&tssi(:,2)==2),1);
+tssi(tssi(:,2)==1&tssi(:,1)==3,1:2) = repmat([3,2],sum(tssi(:,2)==1&tssi(:,1)==3),1);
+tssi(tssi(:,2)==1&tssi(:,1)==2,1:2) = repmat([2,3],sum(tssi(:,2)==1&tssi(:,1)==2),1);
 ssi(validPosOccRlx & ~validPosOccRr,[1,2]) = tssi;
 ssi(validPosOccRlx & ~validPosOccRr,3) = 1;
 
@@ -274,7 +326,9 @@ end
 
 %%%<<< DIAGNOSTIC figures
 %% EXAMINE units -----------------------------------------------------------------------------------
-% $$$ stind = find(validPosOccRlx & sesInds(unitSubset) & prmMaxRateSrt(:,2) > 4 & validUnits)';
+%stind = find(validPosOccRlx & sesInds(unitSubset) & prmMaxRateSrt(:,2) > 4 & validUnits)';
+% $$$ sclr = 'rgb';
+% $$$ stind = find(validPosOccRlx & sesInds(unitSubset)  & validUnits)';
 % $$$ figure();
 % $$$ for ind = stind(1:end),
 % $$$     clf();
@@ -295,24 +349,23 @@ end
 % $$$         title(num2str([cluSessionMapSubset(ind,:),find(stind==ind), ind]))
 % $$$     waitforbuttonpress();
 % $$$ end
-% $$$ 
-% $$$ 
 
-            
-figure();
-for s = 1:3;
-    subplot(1,3,s);
-    hold('on');
-    for j = nonzeros(double(s~=[1:3]).*[1:3])',
-        ind =  ssi(:,1)==s & ssi(:,2)==j        ...
-               & validPosOccRlx                 ...
-               & sesInds(unitSubset)            ...
-               & validUnits;
-        plot(tpp.prmPhzAngSrtShift(ind,1),...
-             tpp.prmPhzAngSrtShift(ind,2),'.');
-    end
-    line([0,2*pi],[0,2*pi])
-end
+
+
+% $$$ figure();
+% $$$ for s = 1:3;
+% $$$     subplot(1,3,s);
+% $$$     hold('on');
+% $$$     for j = nonzeros(double(s~=[1:3]).*[1:3])',
+% $$$         ind =  ssi(:,1)==s & ssi(:,2)==j        ...
+% $$$                & validPosOccRlx                 ...
+% $$$                & sesInds(unitSubset)            ...
+% $$$                & validUnits;
+% $$$         plot(tpp.prmPhzAngSrtShift(ind,1),...
+% $$$              tpp.prmPhzAngSrtShift(ind,2),'.');
+% $$$     end
+% $$$     line([0,2*pi],[0,2*pi])
+% $$$ end
 
 % $$$ 
 % $$$ sesIds = [3:5,8:12,17:23];

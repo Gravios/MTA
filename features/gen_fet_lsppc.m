@@ -14,9 +14,9 @@ mag = zeros([afet.size(1),1]);
 
 % GET avalible markers from list
 mrkInd = Trial.xyz.model.gmi({'spine_lower','pelvis_root','spine_middle','spine_upper',...
-                              'head_back', 'head_front'})
-% REMOVE unavailable markers
+                              'head_back', 'head_front'});
 mrkInd(~mrkInd) = [];
+% REMOVE unavailable markers
 
 for i= 1:afet.size(1),
     mag(i) = PPC(afet(i,mrkInd));

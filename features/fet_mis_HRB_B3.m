@@ -7,11 +7,12 @@ function [fet,featureTitles,featureDesc,Nmean,Nstd] = fet_mis_HRB_B3(Trial,varar
 
 
 % DEFARGS ------------------------------------------------------------------------------------------
-defargs = struct('newSampleRate', 12,                       ...
+defargs = struct('newSampleRate', 10,                       ...
                  'normalize'    , false,                    ...
-                 'procOpts'     , {{'SPLINE_SPINE_HEAD_EQD'}});
+                 'procOpts'     , {{'SPLINE_SPINE_HEAD_EQD'}},...
+                 'overwrite'    , false );
 
-[newSampleRate,normalize,procOpts] = DefaultArgs(varargin,defargs,'--struct');
+[newSampleRate,normalize,procOpts,overwrite] = DefaultArgs(varargin,defargs,'--struct');
 %--------------------------------------------------------------------------------------------------
 
 
@@ -27,68 +28,79 @@ fet = MTADfet(Trial.spath,...
               Trial.sync.data(1),...
               [],'TimeSeries',[],'req20160310_selected_features','fet_mis_HRB_B3','m');                  
 
-% XYZ preprocessed 
-[xyz,ss] = preproc_xyz(Trial,procOpts);
-xyz.resample(newSampleRate);
-ss.resample(xyz);
+fet.updateFilename(Trial);
 
-% XYZ filtered 
-fxyz = xyz.copy;
-fxyz.filter('ButFilter',3,2.4,'low');
+if overwrite || ~exist(fet.fpath,'file'),
 
-% FVELXY Filtered marker speeds in XY plane
-fvelxy = fxyz.vel({'spine_lower','spine_middle','hcom','acom'},[1,2]);
-fvelxy.data(fvelxy.data<1e-4)=1e-4;
-fvelxy.data = log10(fvelxy.data);
+    % XYZ preprocessed 
+    [xyz,ss] = preproc_xyz(Trial,procOpts);
+    xyz.resample(newSampleRate);
+    ss.resample(xyz);
 
-% FVELZ Filtered marker speeds in Z axis
-fvelz = fxyz.vel({'hcom','acom'},[3]);
-fvelz.filter('ButFilter',3,2.5,'low');
-fvelz.data(fvelz.data<0)=.1;
-fvelz.data = log10(fvelz.data);
+    % XYZ filtered 
+    fxyz = xyz.copy;
+    fxyz.filter('ButFilter',3,2.4,'low');
 
-% FANG Filtered Intermarker angles 
-fang = create(MTADang,Trial,fxyz);
+    % FVELXY Filtered marker speeds in XY plane
+    fvelxy = fxyz.vel({'spine_lower','spine_middle','hcom','acom'},[1,2]);
+    fvelxy.data(fvelxy.data<1e-4)=1e-4;
+    fvelxy.data = log10(fvelxy.data);
 
-% SS 
-sd = sqrt(sum((ss.data-circshift(ss.data,-1,2)).^2,3));
-sn = sum(sd(:,2:end-1),2)./sd(:,end);
-sv = Trial.xyz.copy;
-sv.data = sn;
+    % FVELZ Filtered marker speeds in Z axis
+    fvelz = fxyz.vel({'hcom','acom'},[3]);
+    fvelz.filter('ButFilter',3,2.5,'low');
+    fvelz.data(fvelz.data<0)=.1;
+    fvelz.data = log10(fvelz.data);
+
+    % FANG Filtered Intermarker angles 
+    fang = create(MTADang,Trial,fxyz);
+
+    % SS 
+    sd = sqrt(sum((ss.data-circshift(ss.data,-1,2)).^2,3));
+    sn = sum(sd(:,2:end-1),2)./sd(:,end);
+    sv = Trial.xyz.copy;
+    sv.data = sn;
 
 
-% AV 
-sang = [circ_dist(fang(:,'spine_lower','pelvis_root',1),fang(:,'pelvis_root','spine_middle',1)),...
-        circ_dist(fang(:,'pelvis_root','spine_middle',1),fang(:,'spine_middle','hcom',1))];
-av = fang.copy;
-av.data = abs(sum(sang,2)-circ_mean(sum(sang,2)));
+    % AV 
+    sang = [circ_dist(fang(:,'spine_lower','pelvis_root',1),fang(:,'pelvis_root','spine_middle',1)),...
+            circ_dist(fang(:,'pelvis_root','spine_middle',1),fang(:,'spine_middle','hcom',1))];
+    av = fang.copy;
+    av.data = abs(sum(sang,2)-circ_mean(sum(sang,2)));
 
-% PPC feature
-try
-    man = Trial.load('fet','lsppc');
-catch err
-    gen_fet_lsppc(Trial);    
-    man = Trial.load('fet','lsppc');
+    % PPC feature
+    try
+        man = Trial.load('fet','lsppc');
+    catch err
+        gen_fet_lsppc(Trial);    
+        man = Trial.load('fet','lsppc');
+    end
+    man.filter('ButFilter',3,2,'low');
+    man.resample(fxyz);
+
+    % CAT feature
+    fet.data = [ fang(:,'spine_lower','spine_middle',2),...
+                 fang(:,'spine_lower','hcom',2),        ...
+                 fang(:,'pelvis_root','hcom',2),        ...
+                 fang(:,'spine_middle','hcom',2),       ...
+                 man.data,                              ...
+                 fxyz(:,'spine_lower',3),               ...
+                 fxyz(:,'pelvis_root',3),               ...
+                 fxyz(:,'spine_middle',3),              ...             
+                 fvelxy.data,                           ...
+                 fvelz.data,                            ...
+                 sv.data,                               ...
+                 av.data                                ...
+               ];
+
+    fet.data(~nniz(xyz),:)=0;
+
+else
+    load(fet,Trial);
 end
-man.filter('ButFilter',3,2,'low');
-man.resample(fxyz);
 
-% CAT feature
-fet.data = [ fang(:,'spine_lower','spine_middle',2),...
-             fang(:,'spine_lower','hcom',2),        ...
-             fang(:,'pelvis_root','hcom',2),        ...
-             fang(:,'spine_middle','hcom',2),       ...
-             man.data,                              ...
-             fxyz(:,'spine_lower',3),               ...
-             fxyz(:,'pelvis_root',3),               ...
-             fxyz(:,'spine_middle',3),              ...             
-             fvelxy.data,                           ...
-             fvelz.data,                            ...
-             sv.data,                               ...
-             av.data                                ...
-];
+fet.resample(newSampleRate);
 
-fet.data(~nniz(xyz),:)=0;
 featureTitles = {};
 featureDesc = {};
 if nargout>1,
