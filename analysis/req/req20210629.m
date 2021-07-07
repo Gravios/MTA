@@ -219,7 +219,8 @@ norm = 'xprob';
 %norm = '';
 %sind = dca.stcm(:,5)==5 | dca.stcm(:,3)==3 & dca.hvang<0.001;
 %sind = dca.stcm(:,5)==5 | dca.stcm(:,3)==3 & dca.hdist<300 & ~ismember(dca.sessionId,[3,4,5]);;
-sind = (dca.stcm(:,5)==5 | dca.stcm(:,3)==3) & dca.hdist<300 &  ~ismember(dca.sessionId,[3,4,5]) & dca.ucnt>=2;
+%sind = (dca.stcm(:,5)==5 | dca.stcm(:,3)==3) & dca.hdist<300 &  ~ismember(dca.sessionId,[3,4,5]) & dca.ucnt>=2;
+sind = (dca.stcm(:,5)==5 | dca.stcm(:,3)==3) & dca.hdist<350 &  dca.ucnt>=2;
 %sind = dca.stcm(:,1)==1 & dca.stcm(:,2)~=2;
 %sind = dca.stcm(:,1)==1 & dca.stcm(:,2)~=2 & dca.sessionId==tind(cind);
 subplot(221);
@@ -262,7 +263,6 @@ subplot(224);
     ylabel('hba rad');
     Lines([],0,'k');
     Lines(0,[],'k');
-
 
 
 phzBinc = (phzBins(2:end)+phzBins(1:end-1))./2;

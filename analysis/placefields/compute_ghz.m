@@ -60,14 +60,14 @@ if isempty(feature),
     feature = preproc_xyz(Trial,'trb');
     feature.resample(sampleRate);            
     nind = nniz(feature);    
-    feature.filter('ButFilter',3,filtCutOffFreq,'low');
+    feature.filter('ButFilter',4,filtCutOffFreq,'low');
     feature.data = sq(feature(:,marker,[1,2]));
 elseif isa(feature,'MTADxyz'),
     feature = copy(feature);    
     feature.resample(sampleRate);
     nind = nniz(feature);
-    feature.filter('ButFilter',3,filtCutOffFreq,'low');
-    feature.data = sq(feature(:,marker,[1,2]));
+    feature.filter('ButFilter',4,filtCutOffFreq,'low');
+    feature.data = sq(feature(:,{'hcom',marker},[1,2]));
     feature.data(~nind,:) = 0; % BUG: patch
 else    
     feature.resample(sampleRate);
@@ -94,7 +94,7 @@ end
 pfds = zeros([size(feature,1),1]);
 pfdd = zeros([size(feature,1),1]);
 for unit = units
-    pfhxy = cat(2,permute(feature.data(nind,[1,2]),[1,3,2]),xyz(nind,'hcom',[1,2]));
+    pfhxy = feature.data(nind,:,:);
     pfhxy = cat(2,pfhxy,permute(repmat(fieldCenter(unit==units,:),[sum(nind),1]),[1,3,2]));
     pfhxy = MTADxyz([],[],pfhxy,feature.sampleRate);
 % SUBSTRACT reference trajectory from second trajectory    

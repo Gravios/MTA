@@ -50,7 +50,8 @@ MjgER2016_load_data();
 %%%>>>
 
 %%%<<< SET MjgER2016 figure 3 global default arguments
-MjgER2016_figure_BhvPlacefields_args();
+%MjgER2016_figure_BhvPlacefields_args();
+configure_default_args();
 % MjgER2016_figure_BhvPlacefields_args:
 %
 % Default arument overrides:
@@ -74,8 +75,11 @@ bfsShuff = cf(@(t,u)  compute_bhv_ratemaps_shuffled(t,u), Trials, units);
 
 % COMPUTE bfs erpPCA
 [eigVecs, eigScrs, eigVars, unitSubset, validDims, zrmMean, zrmStd] = ...
-                    compute_bhv_ratemaps_erpPCA(bfs, units, [], [], true);
+                    compute_bhv_ratemaps_erpPCA(bfs, units, [], [], false);
 numComp = size(eigVecs,2);
+
+
+
 fpc  = cell([1,numComp]);
 for i = 1:numComp,
     fpc{i} = nan(size(validDims));
@@ -234,7 +238,6 @@ cluMap = [20,119];
 yind = 1;
 xind = 1;
 
-
 u = cluMap';
 % SET color scale max
 maxPfsRate = max(cell2mat(cf(@(p,u) maxRate(p,u,false,'prctile99',0.5),...
@@ -261,6 +264,7 @@ sp(end+1) = axes('Units','centimeters',...
 plot(pfs{1},u(2),'mean',false,[0,maxPfsRate],true,0.5,false,interpParPfs,@jet,[],nanColor);
 text(-490,-380,num2str(cond_round(maxPfsRate)),'FontSize',10,'Color',[1,1,1]);
 
+%%%<<< ADD contours to ratemap indicating the selected space
 hold('on');
 rmap = plot(pfs{1},u(2),'mean',false,[0,maxPfsRate],true,0.5,false,interpParPfs);
 [~,mxp] = pft.maxRate(u(2));
@@ -303,6 +307,7 @@ line(fax,...
      [sp(end-1).Position(2),sp(end-1).Position(2)+pheight.*1.25],...
      'Color','m','LineWidth',1);      
 uistack(fax,'top');
+%%%>>>
 
 title({'Spatial','Rate Map'});   
 chax = colorbar(sp(end));
