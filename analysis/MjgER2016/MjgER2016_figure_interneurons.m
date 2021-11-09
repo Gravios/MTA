@@ -24,7 +24,7 @@ AP.compute_bhv_ratemaps_shuffled =                                              
            'threshDist',                1000                                                     ...
            );
 %---------------------------------------------------------------------------------------------------
-n
+
 MjgER2016_load_data();
 
 pargs = struct('numIter'   , 1000,...

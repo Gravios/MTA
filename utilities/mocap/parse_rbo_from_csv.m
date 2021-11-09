@@ -34,12 +34,12 @@ cind = find(~cellfun(@isempty,meta.csv));
 for c = 1:numel(meta.csv),
 
 % EXTRACT marker data from csv
-    csv = meta.csv{c};
+    csv = meta.csv{2};
     if isempty(csv),
         continue;
     end
     
-    fPosition = fullfile(meta.path.raw.xyz.(meta.mazeName),csv);
+    fPosition = fullfile(meta.path.raw.xyz,csv);
     fid = fopen(fPosition,'r');
 
 % GET header
@@ -124,7 +124,7 @@ for c = 1:numel(meta.csv),
     end
 
 % SAVE 
-    save(fullfile(meta.path.processed.xyz.(meta.mazeName),[meta.sessionName,num2str(find(c==cind),'.take_%04.f.mat')]),...
+    save(fullfile(meta.path.processed.xyz,[meta.sessionName,num2str(find(c==cind),'.take_%04.f.mat')]),...
          'csv', 'frames', 'sampleRate', 'timestamps', 'numFrames', 'numExportedFrames', 'subjects', '-v7.3');
 
     clear('subjects'); 

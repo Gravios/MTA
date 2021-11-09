@@ -5,19 +5,19 @@ function Data = create(Data,Session,varargin)
 %
 [RefObj,spk,units,spikeWindow,mode,overwrite] = DefaultArgs(varargin,{Session.lfp,[],[],0.05,'gauss',false});
 
-if isa(RefObj,'MTAApfs'),
+if isa(RefObj,'MTAApfs')
     %nv units
-    if isempty(units),
+    if isempty(units)
         units = cat(1,RefObj.data.clu);
     end
     Data.sampleRate = Session.xyz.sampleRate;
     ind = repmat({zeros(Session.xyz.size(1),1)},1,Session.xyz.size(3));
-    for n = 1:numel(RefObj.adata.bins),
+    for n = 1:numel(RefObj.adata.bins)
         [~,ind{n}] = NearestNeighbour(RefObj.adata.bins{n}',Session.xyz(:,Session.trackingMarker,n)');
     end
     Data.data = zeros(Session.xyz.size(1),numel(units));
     c = 1;
-    for u = units,
+    for u = units
         rateMap = RefObj.data.rateMap(:,ismember(RefObj.data.clu,u),1);
         Data.data(:,c) = rateMap(sub2ind(RefObj.adata.binSizes',ind{:}));
         c = c+1;
@@ -28,10 +28,16 @@ else
     Data.sampleRate = RefObj.sampleRate;
 
     % Load unit activity
-    if isempty(spk),
+    if isempty(spk)
         spk = Session.spk.copy();
         spk.create(Session,RefObj.sampleRate,[],units);
     end
+    if spk.sampleRate ~= Data.sampleRate
+        spk = spk.copy();
+        spk.res = round(spk.res./spk.sampleRate.*Data.sampleRate);
+        spk.sampleRate = Data.sampleRate;
+    end
+    
     
     if ~isempty(RefObj),
         dsize = RefObj.size(1);
@@ -43,7 +49,9 @@ else
     Data.data = zeros([dsize,numel(units)]);
     
     % If no units were provided load all units
-    if isempty(units), units = 1:spk.map(end,1);end
+    if isempty(units)
+        units = 1:spk.map(end,1);
+    end
     
     % create convolution window     
     swin = round(spikeWindow*RefObj.sampleRate);    

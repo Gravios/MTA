@@ -20,9 +20,9 @@ defargs = struct('figDir',                '/storage/gravio/figures/analysis/plac
 
 % MAIN ---------------------------------------------------------------------------------------------
 
-
-unitsPyr   = select_placefields(Trial);
-unitsPyr   = remove_bad_units(Trial,unitsPyr);
+unitsPyr = Trial.spk.get_unit_set(Trial,'placefields');
+%unitsPyr   = select_placefields(Trial);
+%unitsPyr   = remove_bad_units(Trial,unitsPyr);
 
 %unitsInt = select_units(Trial,'int');
 unitsInt = [];
@@ -71,7 +71,7 @@ Trial.load('nq');
 
 unitSubset = [unitsPyr,unitsInt];    
 create_directory(fullfile(figDir,Trial.filebase));
-disp(['Processing Trial: ' Trial.filebase]);
+disp(['[INFO] MTA:analysis:report_placefield_summary: Processing Trial - ' Trial.filebase]);
 
 % COPY stc
 % LOAD spike waveforms
@@ -374,14 +374,14 @@ for u = 1:numel(unitSubset),  tic
         
         % PLACEFIELDS MTAAknnpfs
         sp(end+1) = subplot2(ny,numStates+2,[1,2],s+1);
-        plot(pfs{s},unit,1,'none',mpfsRate,true,[],false,interpPar,@jet);
+        plot(pfs{s},unit,1,'none',mpfsRate,true,[],false,[],@jet);
         set(gca,'YTickLabel',{});set(gca,'XTickLabel',{});
         title(sprintf('Max Rate: %3.2f',pfsMaxRates(s)));
 
         
         % PLACEFIELDS MTAApfs
         sp(end+1) = subplot2(ny,numStates+2,[3,4],s+1);
-        plot(pfs{s},unit,'mean','none',mpfsRate,true,0.5,false,interpPar,@jet);
+        plot(pfs{s},unit,'mean','none',mpfsRate,true,0.5,false,[],@jet);
         set(gca,'YTickLabel',{});set(gca,'XTickLabel',{});
         title(sprintf('Max Rate: %3.2f',pfsMaxRatesMean(s)));
         
@@ -392,7 +392,7 @@ for u = 1:numel(unitSubset),  tic
         axis('xy');
         set(gca,'YTickLabel',{});set(gca,'XTickLabel',{});                
         caxis([0,maxocc])
-        title(statesCcg{s});                            
+        title(states{s});                            
 
         % TRAJECTORIES Positions
 % $$$             if unit==unitSubset(1),

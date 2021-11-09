@@ -35,7 +35,10 @@ function MTAConfiguration(projectPath,varargin)
 global MTA_PATH
 global MTA_DATA_PATH;
 global MTA_PROJECT_PATH % use this in the future to set root dir
-    
+global MTA_FIGURES_PATH
+
+MTA_FIGURES_PATH = getenv('MTA_FIGURES_PATH'); 
+
 [flag,project_name,host_server,data_server,overwrite] = DefaultArgs(varargin,{'','','','',true});
 
 if ispc, 
@@ -55,6 +58,8 @@ else
     data = fileparts(projectPath);
     data = fileparts(data);
 end
+
+
     
 
 % SET paths to the data directory

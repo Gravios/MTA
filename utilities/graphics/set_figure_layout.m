@@ -47,13 +47,28 @@ defargs = struct('hfig',                          [],                           
 
 hfig.RendererMode = 'manual';
 hfig.Renderer     = 'Painters';
-hfig.PaperType    = format;
 hfig.PaperOrientation = layout;
-    
+
 switch format,
     
-  case 'A4'
+  case '1080p'
+    units = 'Pixels'
+    figOpts.page.width  = 1920;
+    figOpts.page.height = 1080;
+    figOpts.page.units                = units;
+    figOpts.page.PaperPositionMode    = 'auto';
+    figOpts.page.marginLeft           = 100;
+    figOpts.page.marginTop            = 100;
+    figOpts.subplot.units             = units;
+    figOpts.subplot.width             = subplotWidth;
+    figOpts.subplot.height            = subplotHeight;
+    figOpts.subplot.horizontalPadding = subplotPaddingHorizontal;
+    figOpts.subplot.verticalPadding   = subplotVerticalPadding;
+
     
+    
+  case 'A4'
+    hfig.PaperType    = format;
     
     switch layout
       case 'portrait'
@@ -64,28 +79,29 @@ switch format,
         figOpts.page.width    = 29.7;
         figOpts.page.height   = 21.0;
     end
-    
 
     
     figOpts.page.units                = units;
     figOpts.page.PaperPositionMode    = 'auto';
     figOpts.page.marginLeft           = 2.54;
     figOpts.page.marginTop            = 2.54;
+    figOpts.subplot.units             = units;    
     figOpts.subplot.width             = subplotWidth;
     figOpts.subplot.height            = subplotHeight;
     figOpts.subplot.horizontalPadding = subplotPaddingHorizontal;
     figOpts.subplot.verticalPadding   = subplotVerticalPadding;
 
-    figOpts.page.xpos = figOpts.page.marginLeft                                                  ...
-                        : (figOpts.subplot.width  + figOpts.subplot.horizontalPadding)           ...
-                        : figOpts.page.width;
-    figOpts.page.ypos = fliplr((figOpts.page.height - figOpts.page.marginTop)                    ...
-                               -(figOpts.subplot.height + figOpts.subplot.verticalPadding)       ...
-                               .*floor((figOpts.page.height - figOpts.page.marginTop)            ...
-                                       ./(figOpts.subplot.height + figOpts.subplot.verticalPadding))...
-                        : figOpts.subplot.height + figOpts.subplot.verticalPadding               ...
-                        : figOpts.page.height - figOpts.page.marginTop - figOpts.subplot.height);
 end
+figOpts.page.xpos = figOpts.page.marginLeft                                                  ...
+                    : (figOpts.subplot.width  + figOpts.subplot.horizontalPadding)           ...
+                    : figOpts.page.width;
+figOpts.page.ypos = fliplr((figOpts.page.height - figOpts.page.marginTop)                    ...
+                           -(figOpts.subplot.height + figOpts.subplot.verticalPadding)       ...
+                           .*floor((figOpts.page.height - figOpts.page.marginTop)            ...
+                                ./(figOpts.subplot.height + figOpts.subplot.verticalPadding))...
+                    : figOpts.subplot.height + figOpts.subplot.verticalPadding               ...
+                    : figOpts.page.height - figOpts.page.marginTop - figOpts.subplot.height);
+
 
 % SETUP figure
 if isempty(hfig), 
@@ -98,10 +114,11 @@ hfig.Position = [1,                               ...
                  1,                               ...
                  figOpts.page.width,                  ...
                  figOpts.page.height];
+
 hfig.PaperPositionMode = figOpts.page.PaperPositionMode;
 
 % SETUP Background axes
-fax = axes('Position',[0,0,1,1],'Visible','off','Units','centimeters');
+fax = axes('Position',[0,0,1,1],'Visible','off','Units',units);
 xlim([0,hfig.Position(3)]);
 ylim([0,hfig.Position(4)]);
 

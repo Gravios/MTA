@@ -5,14 +5,18 @@ function Data = create(Data,Session,funcHandle,varargin)
 % 
 % Note: This fuction is not ready for general use
 %
-[data,sampleRate,l,k] = feval(funcHandle,Session);
+[data,l,k] = feval(funcHandle,Session);
 [label,key] = DefaultArgs(varargin,{l,k});
 Data.path = Session.spath;
 Data.filename = Session.filebase;
 Data.data = data;
-Data.sampleRate = sampleRate;
+Data.sampleRate = data.sampleRate;
 Data.label = label;
 Data.key = key;
+Data.sync = Session.sync.copy();
+Data.origin = Session.sync.data(1);
+Data.update_filename(Session);
+
 end
 
  

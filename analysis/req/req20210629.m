@@ -1,4 +1,16 @@
 % req20210629
+% 
+% DECODE: XY 
+% WINDOW: 300ms
+% BINNING: phz
+% 
+% SECTIONS: 
+%    XY Decoding
+%    CONVERT decoding cell to array
+%    PLOT Asc and Dsc Theta phase: JPDF of decoding VAR (ESAX) and behvaior VAR ( HVFL, HBANG ) 
+
+
+
 
 global MTA_PROJECT_PATH
 
@@ -13,7 +25,7 @@ sampleRate = 250;
 phzBins = linspace(0,2*pi,25);
 
 
-%%%<<< XY Decoding -------------------------------------------------
+%%%<<< XY Decoding ---------------------------------------------------------------------------------
 tind = [3:5,17:25];
 cind = 1;
 dc = {};
@@ -24,7 +36,6 @@ for t = tind;
     phzCorr = phzCorrection(t);
     halfSpkWindow = 0.15;
     ufrWindow = 0.02;
-    phzBins = linspace(0,2*pi,25);
     %smoothingWeights = [250.^2,250.^2];
     smoothingWeights = [250.^2,250.^2];
 
@@ -159,9 +170,11 @@ for t = tind;
     cind  = cind +1;
 end                     
 
+%%%>>>
 
 
-% CONVERT cell to array
+
+%%%<<< CONVERT decoding cell to array --------------------------------------------------------------
 cind = 1;
 dca = dc{cind};
 dca.sessionId = tind(cind).*ones(size(dc{cind}.ind));
@@ -210,9 +223,126 @@ for cind = 2:numel(dc),
     dca.pfs   = cat(1,dca.pfs,dc{cind}.pfs);
 end
 
+%%%>>>
 
 
 
+%%%<<< PLOT Asc and Dsc Theta phase: JPDF of decoding VAR (ESAX) and behvaior VAR ( HVFL, HBANG ) --
+
+figure
+norm = 'xprob';
+%norm = '';
+%sind = dca.stcm(:,5)==5 | dca.stcm(:,3)==3 & dca.hvang<0.001;
+%sind = dca.stcm(:,5)==5 | dca.stcm(:,3)==3 & dca.hdist<300 & ~ismember(dca.sessionId,[3,4,5]);;
+sind = (dca.stcm(:,5)==5 | dca.stcm(:,3)==3) & dca.hdist<350 &  ~ismember(dca.sessionId,[3,4,5]) & dca.ucnt>=2;
+%sind = (dca.stcm(:,5)==5 | dca.stcm(:,3)==3) & dca.hdist<350 &  dca.ucnt>=2;
+%sind = dca.stcm(:,1)==1 & dca.stcm(:,2)~=2;
+%sind = dca.stcm(:,1)==1 & dca.stcm(:,2)~=2 & dca.sessionId==tind(cind);
+subplot(221);
+    ind = ismember(dca.iphz,[3:10]) &  sind;
+    hist2([dca.esax(ind,1),...
+           dca.hvfl(ind,1)],...
+           linspace(-200,200,30),...
+           linspace(-10,80,20),norm);
+    xlabel('forward egocentric decoding');%    xlabel('ego forward');    xlabel('ego forward');
+    ylabel('hvfl forward');
+    Lines([],0,'k');
+    Lines(0,[],'k');
+    title('Decending Theta Phase');    
+subplot(222);
+    ind = ismember(dca.iphz,[16:23]) & dca.ucnt>=2  & sind;
+    hist2([dca.esax(ind,1),...
+           dca.hvfl(ind,1)],...
+           linspace(-200,200,30),...
+           linspace(-10,80,20),norm);
+    xlabel('forward egocentric decoding');%    xlabel('ego forward');
+    ylabel('hvfl forward');
+    Lines([],0,'k');
+    Lines(0,[],'k');
+    title('Ascending Theta Phase');            
+subplot(223);
+    ind = ismember(dca.iphz,[3:10]) & dca.ucnt>=2  & sind;
+    hist2([dca.esax(ind,2),...
+           dca.hbang(ind,1)],...
+           linspace(-200,200,30),...
+           linspace(-1.5,1.5,20),norm);
+    xlabel('lateral egocentric decoding');%    xlabel('ego lateral');
+    ylabel('head body Angle');
+    Lines([],0,'k');
+    Lines(0,[],'k');
+subplot(224);
+    ind = ismember(dca.iphz,[16:23]) & dca.ucnt>=2  & sind;
+    hist2([dca.esax(ind,2),...
+           dca.hbang(ind,1)],...
+           linspace(-200,200,30),...
+           linspace(-1.5,1.5,20),norm);
+    xlabel('lateral egocentric decoding');%    xlabel('ego lateral');
+    ylabel('head body Angle');
+    Lines([],0,'k');
+    Lines(0,[],'k');
+
+%%%>>>    
+    
+    
+%%%<<< PLOT Asc and Dsc Theta phase: JPDF of decoding VAR (ESAX) and behvaior VAR ( HVFL, HBANG ) --
+
+figure();
+norm = 'xprob';
+%norm = '';
+sind =    dca.stcm(:,1)==1 ...
+       & (dca.stcm(:,5)==5 | dca.stcm(:,4)==4 | dca.stcm(:,3)==3 | dca.stcm(:,6)==6) ...
+       &  dca.ucnt>=2 ...
+       & dca.hbang<0;
+
+subplot(221);
+    ind = ismember(dca.iphz,[1:8])  & sind;
+    hist2([dca.esax(ind,1),...
+           dca.hvfl(ind,1)],...
+           linspace(-200,200,50),...
+           linspace(-10,80,20),norm);
+    xlabel('forward egocentric decoding');
+    ylabel('forward head speed');
+    Lines([],0,'k');
+    Lines(0,[],'k');
+    title('Decending Theta Phase');
+subplot(222);
+    ind = ismember(dca.iphz,[10:18]) & sind;
+    hist2([dca.esax(ind,1),...
+           dca.hvfl(ind,1)],...
+           linspace(-200,200,50),...
+           linspace(-10,80,20),norm);
+    xlabel('forward egocentric decoding');%    xlabel('ego forward');
+    ylabel('forward head speed');
+    Lines([],0,'k');
+    Lines(0,[],'k');
+    title('Ascending Theta Phase');        
+subplot(223);
+    ind = ismember(dca.iphz,[1:8]) & sind;
+    hist2([dca.esax(ind,2),...
+           dca.hvfl(ind,2)],...
+           linspace(-200,200,50),...
+           linspace(-50,50,20),norm);          
+    %linspace(-1.5,1.5,20),norm);
+    xlabel('lateral egocentric decoding');%    xlabel('ego lateral');
+    ylabel('lateral Head speed');
+    Lines([],0,'k');
+    Lines(0,[],'k');
+subplot(224);
+    ind = ismember(dca.iphz,[10:18])  & sind;
+    hist2([dca.esax(ind,2),...
+           dca.hvfl(ind,2)],...
+           linspace(-200,200,50),...
+           linspace(-50,50,20),norm);
+           %linspace(-1.5,1.5,20),norm);    
+    xlabel('lateral egocentric decoding');%    xlabel('ego lateral');    xlabel('ego lateral');
+    ylabel('lateral Head speed');
+    Lines([],0,'k');
+    Lines(0,[],'k');
+ForAllSubplots('caxis([0,0.08]);');
+
+%%%>>>
+    
+    
 
 figure
 norm = 'xprob';
@@ -220,7 +350,9 @@ norm = 'xprob';
 %sind = dca.stcm(:,5)==5 | dca.stcm(:,3)==3 & dca.hvang<0.001;
 %sind = dca.stcm(:,5)==5 | dca.stcm(:,3)==3 & dca.hdist<300 & ~ismember(dca.sessionId,[3,4,5]);;
 %sind = (dca.stcm(:,5)==5 | dca.stcm(:,3)==3) & dca.hdist<300 &  ~ismember(dca.sessionId,[3,4,5]) & dca.ucnt>=2;
-sind = (dca.stcm(:,5)==5 | dca.stcm(:,3)==3) & dca.hdist<350 &  dca.ucnt>=2;
+sind = (dca.stcm(:,5)==5 | dca.stcm(:,3)==3) & dca.hdist<350 &  ~ismember(dca.sessionId,[3,4,5]) & dca.ucnt>=2& dca.hbang>0;;
+%sind = (dca.stcm(:,5)==5 | dca.stcm(:,3)==3) & dca.hdist<350 &  dca.ucnt>=2;
+%sind = (dca.stcm(:,5)==5 | dca.stcm(:,3)==3) & dca.hdist<350 &  dca.ucnt>=2 & dca.hbang>0;
 %sind = dca.stcm(:,1)==1 & dca.stcm(:,2)~=2;
 %sind = dca.stcm(:,1)==1 & dca.stcm(:,2)~=2 & dca.sessionId==tind(cind);
 subplot(221);
@@ -246,21 +378,21 @@ subplot(222);
 subplot(223);
     ind = ismember(dca.iphz,[3:10]) & dca.ucnt>=2  & sind;
     hist2([dca.esax(ind,2),...
-           dca.hbang(ind,1)],...
+           dca.hvfl(ind,2)],...
            linspace(-200,200,30),...
-           linspace(-1.5,1.5,20),norm);
+           linspace(-60,60,20),norm);
     xlabel('ego lateral');
-    ylabel('hba rad');
+    ylabel('hvfl lateral');
     Lines([],0,'k');
     Lines(0,[],'k');
 subplot(224);
     ind = ismember(dca.iphz,[16:23]) & dca.ucnt>=2  & sind;
     hist2([dca.esax(ind,2),...
-           dca.hbang(ind,1)],...
+           dca.hvfl(ind,2)],...
            linspace(-200,200,30),...
-           linspace(-1.5,1.5,20),norm);
+           linspace(-60,60,20),norm);
     xlabel('ego lateral');
-    ylabel('hba rad');
+    ylabel('hvfl lateral');
     Lines([],0,'k');
     Lines(0,[],'k');
 
@@ -360,4 +492,4 @@ ylabel('hba rad');
 Lines([],0,'k');
 Lines(0,[],'k');
 
-%%%>>>
+

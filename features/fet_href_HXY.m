@@ -5,7 +5,9 @@ function [fet,featureTitles,featureDesc,Nmean,Nstd] = fet_href_HXY(Trial,varargi
 %     newSampleRate: numeric,  (Trial.xyz.sampleRate) - sample rate of xyz data
 %     normalize:     logical,  (false)                - covert each feature to z-score
 %     procOpts:      CellARY,  ({'SPLINE_SPINE_HEAD_EQD'}), - preprocessing options
-%
+%     filterCutoff:  numeric,  (4) - lowpass filter in Hz
+%     theta:         numeric,  (0) - angle to rotate head coordinates
+%     markers:       CellARY,  {'head_back','head_left','head_front','head_right'} 
 
 % DEFARGS ------------------------------------------------------------------------------------------
 defargs = struct('newSampleRate'  , Trial.xyz.sampleRate,                                        ...

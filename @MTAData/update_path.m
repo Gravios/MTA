@@ -9,5 +9,9 @@ function Data = update_path(Data,path)
 %   Data - MTAData: Original object passed to this function with an
 %                   updated path
 %
-Data.path = path;
+    if isa(path,'MTASession')
+        Data.path = path.spath;
+    else
+        Data.path = path;
+    end
 end

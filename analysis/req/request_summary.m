@@ -1325,3 +1325,25 @@
     Project: General
     Description: decoding with ratemaps and second order unit coactivation maps
     
+
+** 2021 11 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+*** req20211103
+    Tags: multi session place field analysis
+    Status: Active
+    Type: Analysis
+    Author: Justin Graboski
+    Final_Forms: NA
+    Project: General
+    Description: computation of ego place fields over multiple sessions
+        
+*** req20211104
+    Tags: features correction 
+    Status: Active
+    Type: Analysis
+    Author: Justin Graboski
+    Final_Forms: MjgER2016_feature_corrections.m
+    Project: General
+    Description: more empirical method for correcting deviant features
+    
+    
+    

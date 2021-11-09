@@ -1,0 +1,353 @@
+
+MjgER2016_load_data();
+
+configure_default_args();
+
+
+for t = 21:25;
+sampleRate = 250;
+% PREPROC xyz
+xyz = preproc_xyz(Trials{t},'trb',sampleRate);
+
+tper = cast(Trials{t}.stc{'t'},'TimeSeries');
+tper.resample(xyz);
+tper = logical(tper.data);
+wper = cast(Trials{t}.stc{'x'},'TimeSeries');
+wper.resample(xyz);
+wper = logical(wper.data);
+pper = cast(Trials{t}.stc{'p'},'TimeSeries');
+pper.resample(xyz);
+pper = logical(pper.data);
+
+fet = fet_hbp_hba(Trials{t},sampleRate);
+fet.data(:,2) = fet.data(:,2)+hbangCorrection(t);
+fet.data(:,2) = -fet.data(:,2); % flip [left(+),right(-)] -> [left(-),right(+)]
+
+pch = fet_HB_pitchB(Trials{t},sampleRate);
+
+% CREATE lowpass filtered xyz object
+% COMPUTE basis vector aligned to the head
+fxyz = filter(copy(xyz),'ButFilter',3,20,'low');    
+hvec = fxyz(:,'head_front',[1,2])-fxyz(:,'head_back',[1,2]);
+hvec = sq(bsxfun(@rdivide,hvec,sqrt(sum(hvec.^2,3))));
+hvec = cat(3,hvec,sq(hvec)*[0,-1;1,0]);
+r = headRotation{t};
+hvec = multiprod(hvec,[cos(r),-sin(r);sin(r),cos(r)],[2,3],[1,2]);
+
+hvfl = fet_href_HXY(Trials{t},sampleRate,[],'trb',1.5);
+
+hang = transform_origin(Trials{t},copy(fxyz),'hcom','nose',{'hcom','head_right'});
+roll = fxyz.copy();
+roll.data = real(hang.roll);
+roll.data = roll.data + headRollCorrection{t};
+
+spk  = create(copy(Trials{t}.spk),Trials{t},sampleRate,'theta',units{t},'deburst');
+
+phz = load_theta_phase(Trials{t},                           ... Session
+                       xyz,                                 ... match sample rate to object
+                       sessionList(t).thetaRefGeneral,      ... theta reference channel 
+                       phzCorrection(t));                     % phase shift
+
+                       
+pft = pfs_2d_theta(Trials{t},units{t});
+bfrm = compute_bhv_ratemaps(Trials{t},units{t});
+
+
+
+for uid = units{t}
+[mxr,mxp] = pft.maxRate(uid);
+pfsCenterHR = MTADfet.encapsulate(Trials{t},                                           ...
+                                  multiprod(bsxfun(@minus,mxp,sq(xyz(:,'hcom',[1,2]))),...
+                                            hvec,2,[2,3]),                             ...
+                                  sampleRate,                                          ...
+                                  'placefield_center_referenced_to_head',              ...
+                                  'pfsCenterHR',                                       ...
+                                  'p'                                                  ...
+                                  );
+partitions = {{[-0.15,-1.5],@gt}, {[0.15,-0.15],@gt}, {[1.5,0.15],@gt};...
+              {[-0.15,-1.5],@lt}, {[0.15,-0.15],@lt}, {[1.5,0.15],@lt}};
+aper = tper & (pper|wper);
+
+%% startfig
+[hfig,fig,fax,sax] = set_figure_layout(figure(666013),'A4','landscape',[],4,4,0.2,0.2); 
+
+globalXOffset = 0;
+globalYOffset = 1;
+%%%<<< PLOT placefield
+% ADJUST subplot coordinates
+[yind, yOffSet, xind, xOffSet] = deal(1, 0, 1, 0);
+% CREATE subplot axes
+sax(end+1) = axes('Units','centimeters',                                ...
+                  'Position',[fig.page.xpos(xind)+xOffSet+globalXOffset,...
+                              fig.page.ypos(yind)+yOffSet+globalYOffset,...
+                              fig.subplot.width,                        ...
+                              fig.subplot.height],                      ...
+                  'FontSize', 8,                                        ...
+                  'LineWidth',1);
+hold('on');
+plot(pft,uid,1,'text','colorMap',@jet);
+title({Trials{t}.filebase,num2str(uid,'Unit: %d')});
+%%%>>>
+
+%%%<<< PLOT bhv-placefield
+% ADJUST subplot coordinates
+[yind, yOffSet, xind, xOffSet] = deal(2, -2, 1, 0);
+% CREATE subplot axes
+sax(end+1) = axes('Units','centimeters',                                ...
+                  'Position',[fig.page.xpos(xind)+xOffSet+globalXOffset,...
+                              fig.page.ypos(yind)+yOffSet+globalYOffset,...
+                              fig.subplot.width,                        ...
+                              fig.subplot.height],                      ...
+                  'FontSize', 8,                                        ...
+                  'LineWidth',1);
+hold('on');
+plot(bfrm,uid,1,'text',[],false,'colorMap',@jet);
+axis(sax(end),'tight');
+%%%>>>
+
+%%%<<< PLOT JPDF roll X hba 
+% ADJUST subplot coordinates
+[yind, yOffSet, xind, xOffSet] = deal(1, 0, 3, -2.5);
+% CREATE subplot axes
+sax(end+1) = axes('Units','centimeters',                                ...
+                  'Position',[fig.page.xpos(xind)+xOffSet+globalXOffset,...
+                              fig.page.ypos(yind)+yOffSet+globalYOffset,...
+                              fig.subplot.width,                        ...
+                              fig.subplot.height],                      ...
+                  'FontSize', 8,                                        ...
+                  'LineWidth',1);
+hold('on');
+
+ind = sqrt(sum(diff(bsxfun(@minus,sq(xyz(:,'hcom',[1:2])),mxp),1,2).^2,2))<300 ...
+      & nniz(xyz(:,1,1))                                                       ...
+      & 4 < phz.data&phz.data < 6                                              ...
+      & abs(hvfl(:,2)) < 10                                                    ...
+      & aper;
+res = spk(uid);
+res(res>size(xyz,1)) = [];
+res = res(sqrt(sum(diff(bsxfun(@minus,sq(xyz(res,'hcom',[1:2])),mxp),1,2).^2,2))<300 ...
+      & nniz(xyz(res,1,1))                                                           ...
+      & 4 < phz(res)&phz(res) < 6                                                    ...
+      & abs(hvfl(res,2)) < 10                                                        ...
+      & aper(res));
+         
+hist2([fet(ind,2),roll(ind,1)],linspace(-pi/2,pi/2,30),linspace(-pi/2,pi/2,30));
+daspect([1,1,1]);
+axis('tight');
+caxj = colorbar(sax(end));
+caxj.Units = hfig.Units;
+caxj.Position(1) = sum(sax(2).Position([1,3]))+0.1;
+ylabel('roll (rad)');
+xlabel('hba (rad)');
+title('JPDF hba X pitch');
+
+%caxis([0,2000]);
+
+%%%>>>
+
+%%%<<< PLOT spikes in roll X hba space
+[yind, yOffSet, xind, xOffSet] = deal(1, 0, 4, 0);
+% CREATE subplot axes
+sax(end+1) = axes('Units','centimeters',                                ...
+                  'Position',[fig.page.xpos(xind)+xOffSet+globalXOffset,...
+                              fig.page.ypos(yind)+yOffSet+globalYOffset,...
+                              fig.subplot.width,                        ...
+                              fig.subplot.height],                      ...
+                  'FontSize', 8,                                        ...
+                  'LineWidth',1);
+hold('on');
+scatter3(fet(res,2),roll(res,1),ones([numel(res),1]), 10,pfsCenterHR(res,2),'filled');
+caxis([-150,150]);
+colormap('jet');
+view([2])
+xlim([-pi,pi]/2);
+ylim([-pi,pi]/2);
+Lines(-0.15,[],'c');
+Lines(0.15,[],'g');
+Lines([],0,'m');
+daspect([1,1,1]);
+ylabel('roll (rad)');
+xlabel('hba (rad)');
+caxk = colorbar(sax(end));
+caxk.Units = hfig.Units;
+title({'Spikes of Ascending Theta Phase',...
+       'Lat Head speed < 10cm/s'});
+ylabel(caxk,'  Left    (mm)    Right');
+%%%>>>
+
+%%%<<< PLOT JPDF of roll X hvl within placefield
+[yind, yOffSet, xind, xOffSet] = deal(1, 0, 5, 3);
+% CREATE subplot axes
+sax(end+1) = axes('Units','centimeters',                                ...
+                  'Position',[fig.page.xpos(xind)+xOffSet+globalXOffset,...
+                              fig.page.ypos(yind)+yOffSet+globalYOffset,...
+                              fig.subplot.width,                        ...
+                              fig.subplot.height],                      ...
+                  'FontSize', 8,                                        ...
+                  'LineWidth',1);
+hold('on');
+ind = sqrt(sum(diff(bsxfun(@minus,sq(xyz(:,'hcom',[1:2])),mxp),1,2).^2,2))<300 ...
+      & nniz(xyz(:,1,1))                                                       ...
+      & 4 < phz.data&phz.data < 6                                              ...
+      & aper;
+hist2([roll(ind),hvfl(ind,2)],linspace(-1,1,30),linspace(-60,60,100),'xprob');
+Lines([],0,'r');
+Lines(0,[],'r');
+caxis([0,0.25]);
+colormap('jet');
+ylabel('lateral head speed (cm/s)');
+xlabel('roll (rad)');
+%%%>>>
+
+
+%%%<<< PLOT spikes in headLat X headFwd space
+for x = 1:3,for y = 1:2
+    [yind, yOffSet, xind, xOffSet] = deal(y+2, 2, x+2, 0);
+    sax(end+1) = axes('Units','centimeters',                                ...
+                      'Position',[fig.page.xpos(xind)+xOffSet+globalXOffset,...
+                                  fig.page.ypos(yind)+yOffSet+globalYOffset,...
+                                  fig.subplot.width,                        ...
+                                  fig.subplot.height],                      ...
+                      'FontSize', 8,                                        ...
+                      'LineWidth',1);
+    hold('on');
+    res = spk(uid);
+    res(res>size(xyz,1)) = [];
+    res = res(sqrt(sum(diff(bsxfun(@minus,sq(xyz(res,'hcom',[1:2])),mxp),1,2).^2,2))<300 ...
+              & nniz(xyz(res,1,1))                                                       ...
+              & 4 < phz(res)&phz(res) < 6                                                ...
+              & fet(res,2)<partitions{y,x}{1}(1)                                         ...
+              & fet(res,2)>partitions{y,x}{1}(2)                                         ...
+              & abs(hvfl(res,2))<10                                                      ...
+              & aper(res)                                                                ...
+              & partitions{y,x}{2}(roll(res,1),0));
+    ind = (sqrt(sum(diff(bsxfun(@minus,sq(xyz(:,'hcom',[1:2])),mxp),1,2).^2,2))<300      ...
+              & nniz(xyz(:,1,1))                                                         ...
+              & 4 < phz(:)&phz(:) < 6                                                    ...
+              & fet(:,2)<partitions{y,x}{1}(1)                                           ...
+              & fet(:,2)>partitions{y,x}{1}(2)                                           ...
+              & abs(hvfl(:,2))<10                                                        ...
+              & aper                                                                     ...
+              & partitions{y,x}{2}(roll(:,1),0));
+    scatter(pfsCenterHR(res,2),...
+             pfsCenterHR(res,1),...
+             20,                ...
+             roll(res),'Filled');
+    caxis([-0.5,0.5]);
+    colormap('jet');
+    zlim([0,2*pi]);
+    xlim([-300,300]);
+    ylim([-300,300]);
+    view([0,90])
+    Lines([],0,'k');
+    Lines(0,[],'k');
+    grid('on');    
+    daspect([1,1,1]);
+    sax(end).XTick = [-200,-100,0,100,200];
+    sax(end).YTick = [-200,-100,0,100,200];
+    plot(mean(pfsCenterHR(res,2)),...
+         mean(pfsCenterHR(res,1)),...
+         'om','MarkerSize',20);
+     if ~(x==1&&y==2)
+        sax(end).XTickLabel = {};
+        sax(end).YTickLabel = {};
+    else
+        ylabel('caudal       rostral');
+        xlabel({'left         right','Head FOR'});
+    end
+    if x==2 && y==1
+        title('Location of Place Field Center in Head Frame of Reference for each Spike Time');
+    end
+    end
+end
+%%%>>>
+
+%%%<<< ADD Lines
+
+% Vertical Line
+line(fax,...
+     [sum(sax(end-4).Position([1,3]))]+[0.1,0.1],...
+     [sax(end-2).Position(2),sax(end-2).Position(2)+sax(end).Position(4).*2+fig.subplot.verticalPadding],...
+     'Color','c',...
+     'LineWidth',3);
+line(fax,...
+     [sum(sax(end-2).Position([1,3]))]+[0.15,0.15],...
+     [sax(end-2).Position(2),sax(end-2).Position(2)+sax(end).Position(4).*2+fig.subplot.verticalPadding],...
+     'Color','g',...
+     'LineWidth',3);
+% Horizontal Line
+line(fax,...
+     [sax(end-5).Position(1),sum(sax(end).Position([1,3]))],...
+     [sum(sax(end).Position([2,4]))+fig.subplot.verticalPadding/2].*[1,1],...
+     'Color','m',...
+     'LineWidth',3);
+
+%%%>>>
+
+% matlab sucks 
+caxr = colorbar(sax(end));
+caxr.Units = hfig.Units;
+ylabel(caxr,'  Left    (roll)    Right');
+caxr.Position = [sum(sax(end).Position([1,3]))+0.1,sax(end).Position(2),0.5,sax(end).Position(4)];
+caxj.Position = [sum(sax(3).Position([1,3]))+0.1,sax(3).Position(2),0.5,sax(3).Position(4)];
+caxk.Position = [sum(sax(4).Position([1,3]))+0.1,sax(4).Position(2),0.5,sax(4).Position(4)];
+
+drawnow()
+
+caxr.Position = [sum(sax(end).Position([1,3]))+0.1,sax(end).Position(2),0.5,sax(end).Position(4)];
+caxj.Position = [sum(sax(3).Position([1,3]))+0.1,sax(3).Position(2),0.5,sax(3).Position(4)];
+caxk.Position = [sum(sax(4).Position([1,3]))+0.1,sax(4).Position(2),0.5,sax(4).Position(4)];
+
+
+figDir = fullfile(MTA_FIGURES_PATH,'placefields_ego_roll_hba');
+create_directory(fullfile(MTA_FIGURES_PATH,'placefields_ego_roll_hba',Trials{t}.filebase));
+figName = ['pfs','_',Trials{t}.filebase,'_unit-',num2str(uid,'%04.f')];
+print(hfig,'-dpng',  fullfile(figDir,Trials{t}.filebase,[figName,'.png']));
+
+end%for uid
+end%for t
+%endfig
+
+
+
+% $$$ %uid = 61;
+% $$$ [mxr,mxp] = pft.maxRate(uid);
+% $$$ pfsCenterHR = MTADfet.encapsulate(Trials{t},                                               ...
+% $$$                                   multiprod(bsxfun(@minus,mxp,sq(xyz(:,'hcom',[1,2]))),...
+% $$$                                         hvec,2,[2,3]),                             ...
+% $$$                                   sampleRate,                                          ...
+% $$$                                   'placefield_center_referenced_to_head',              ...
+% $$$                                   'pfsCenterHR',                                       ...
+% $$$                                   'p'                                                  ...
+% $$$                                   );
+% $$$ 
+% $$$ res = spk(uid);
+% $$$ res(res>size(xyz,1)) = [];
+% $$$ res = res(nniz(xyz(res,1,1))                                                     ...
+% $$$       & 4 < phz(res)&phz(res) < 6                                                ...
+% $$$       & abs(hvfl(res,2)) < 20                                                    ...
+% $$$       & pch(res,2) < 0.4 ...          
+% $$$       & tper(res) ...
+% $$$           & roll(res)<0);
+% $$$ figure
+% $$$ histogram(pfsCenterHR(res,1)
+    
+    
+    % $$$ 
+% $$$ figure();
+% $$$ res = spk(uid);
+% $$$ res(res>size(xyz,1)) = [];
+% $$$ res = res(sqrt(sum(diff(bsxfun(@minus,sq(xyz(res,'hcom',[1:2])),mxp),1,2).^2,2))<200 & nniz(xyz(res,1,1)));
+% $$$ scatter3([pfsCenterHR(res,1)./10;pfsCenterHR(res,1)./10;pfsCenterHR(res,1)./10],...
+% $$$          [pfsCenterHR(res,2)./10;pfsCenterHR(res,2)./10;pfsCenterHR(res,1)./10],...
+% $$$          [phz(res);phz(res)+2*pi;phz(res)+4*pi],...
+% $$$          20,...
+% $$$          'k','Filled');
+% $$$ caxis([pi,3*pi]);
+% $$$ colormap('hsv');
+% $$$ zlim([pi,5*pi]);
+% $$$ xlim([-25,25]);
+% $$$ ylim([-25,25]);
+% $$$ view([0,0])
+% $$$ 
+% $$$ 

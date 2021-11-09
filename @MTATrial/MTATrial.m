@@ -70,24 +70,33 @@ classdef MTATrial < MTASession
             
             Trial.trialName = trialName;
             Trial.filebase = [Trial.name '.' Trial.maze.name '.' Trial.trialName];
-            
-            if exist(fullfile(Trial.spath, [Trial.filebase '.trl.mat']),'file')&&~overwrite
-                
+
+            % LOAD ? Trial file            
+            if ~overwrite && exist(fullfile(Trial.spath, [Trial.filebase '.trl.mat']),'file') 
+
                 ds = load(fullfile(Trial.spath, [Trial.filebase '.trl.mat']));
                 Trial.sync = ds.sync;
                 try
-                 if isfield(ds,'stcmode'),
-                     if ~isempty(ds.stcmode),
-                         Trial.stc.updateFilename([Trial.filebase,'.stc.' ds.stcmode '.mat']);
-                         Trial.stc.updateMode(ds.stcmode);
-                         if exist(Trial.stc.fpath,'file')
-                             Trial.stc.load;
-                         else
-                             Trial.stc.updateMode('default');                  
-                             Trial.stc.load;
-                         end                    
-                     end
-                 end
+                    % LOAD ? saved state collection by mode
+                    if isfield(ds,'stcmode')
+                        if ~isempty(ds.stcmode)
+                            Trial.stc.updateFilename([Trial.filebase,'.stc.' ds.stcmode '.mat']);
+                            Trial.stc.updateMode(ds.stcmode);
+                            if exist(Trial.stc.fpath,'file')
+                                Trial.stc.load;
+                            else
+                                Trial.stc.updateMode('default');                  
+                                Trial.stc.load;
+                            end                    
+                        end
+                    end
+                    % LOAD ? subject
+                    if isfield(ds,'subject')
+                        if ~isempty(ds,'subject')
+                            % TODO 
+                        end
+                    end
+                    
                 end             
             else
                 

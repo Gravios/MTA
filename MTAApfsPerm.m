@@ -16,7 +16,7 @@ classdef MTAApfsPerm < hgsetget %< MTAAnalysis
 
         function Pfs = MTAApfsPerm(Obj, varargin)     
         % MTAApfs(Obj,{units,states,overwrite,tag,binDims,SmoothingWeights,type,spkShuffle,posShuffle,numIter})
-            [units,states,overwrite,tag,binDims,SmoothingWeights,type,spkShuffle,posShuffle,numIter,xyz,bound_lims]=...
+            [units,states,overwrite,tag,binDims,SmoothingWeights,type,spkShuffle,posShuffle,numIter,xyz,bound_lims,spk]=...
             DefaultArgs(varargin,{[],{'rear','walk'},0,[],[30,30],[1.2,1.2],'xy',0,0,1,MTADxyz([]),[]});
 
             units = units(:)';            
@@ -208,8 +208,9 @@ classdef MTAApfsPerm < hgsetget %< MTAAnalysis
 
             
             %% load Units into spk object;
-            Session.spk.create(Session,xyz.sampleRate,'theta',units);
-
+            if isempty(spk)
+                Session.spk.create(Session,xyz.sampleRate,'theta',units);
+            end
 
 
 

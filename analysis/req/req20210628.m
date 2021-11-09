@@ -161,7 +161,6 @@ end
 
 
 
-
 % CONVERT cell to array
 cind = 1;
 dca = dc{cind};
@@ -214,7 +213,6 @@ end
 
 
 phzBinc = (phzBins(2:end)+phzBins(1:end-1))./2;
-
 msaxf = [];
 for p = 1:24,
     ind = dca.iphz==p & dca.ucnt>=2  & dca.stcm(:,2)~=2;
@@ -284,10 +282,11 @@ hist2([dca.phz(sind),dca.esax(sind,3)],phzBins,linspace(-1.5,1.5,40))
 
 figure
 %sind = dca.stcm(:,1)==1 & dca.stcm(:,2)~=2 & dca.ucnt>=2;
+nu = 2;
 sind = dca.stcm(:,1)==1 & dca.ucnt>=nu;
 %norm = '';
 norm = 'xprob';
-nu = 2;
+
 %err = 'ecom';
 err = 'esax';
 subplot2(3,2,1,1);

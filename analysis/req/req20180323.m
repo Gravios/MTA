@@ -231,17 +231,17 @@ end
 
 
 
-Sessions = {MTATrial.validate('jg05-20120316.cof.all'),MTATrial.validate('jg05-20120317.cof.all')};
+Sessions = {MTATrial.validate('jg05-20120315.cof.all'),MTATrial.validate('jg05-20120316.cof.all')};
 for t = 1:numel(Sessions),
     s = MTASession.validate(Sessions{t});
     s.spk.create(s);
     s.save();
 end
-Sessions = {MTATrial.validate('jg05-20120316.cof.all'),MTATrial.validate('jg05-20120317.cof.all')};
+Sessions = {MTATrial.validate('jg05-20120315.cof.all'),MTATrial.validate('jg05-20120316.cof.all')};
 spk      = cf(@(s)    s.spk.copy(),                    Sessions);
 spk      = cf(@(k,s)  k.load_spk(s),                   spk,Sessions);
 
-units    = cf(@(k)    k.map(k.map(:,2)==6,1),          spk);
+units    = cf(@(k)    k.map(k.map(:,2)==8,1),          spk);
 
 pfs = cf(@(s,u) pfs_2d_states(s,u,[],[],[],[],true,1),  Sessions, units);
 
@@ -254,15 +254,25 @@ ny = numel(pfs);
 spk{1}.map(spk{1}.map(:,2)==8,:)
 spk{2}.map(spk{2}.map(:,2)==8,:)
 
-
-
-
 % Testing Pair
 
+% MATCH PYR
+% MATCH INT
 
-unit = {14,33};
 
-hfig = figure(39394);
+unit = {66,47};% GUESS PYR
+
+unit = {63,54};% GUESS PYR
+
+
+
+
+
+
+
+
+
+hfig = figure(39393);
 set(hfig,'Position',[       97         528        1460         207])
 clf();
 for y = 1:ny,
@@ -273,10 +283,10 @@ for y = 1:ny,
 end
 
 
-    
-    
-    
-    
-    
+
+
+
+
+
 
 

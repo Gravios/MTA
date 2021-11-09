@@ -61,7 +61,11 @@ defArgs = struct('sessionList',                 '',                             
 % MAIN ------------------------------------------------------------------------------------------
 
 % LOAD Trials which have the target state collections
-Trials = af(@(Trial)  MTATrial.validate(Trial), get_session_list(sessionList));
+if ~iscell(sessionList),
+    Trials = af(@(Trial)  MTATrial.validate(Trial), get_session_list(sessionList));
+else
+    Trials = sessionList;
+end
 numTrials = numel(Trials);
 
 

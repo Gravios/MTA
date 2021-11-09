@@ -1,5 +1,5 @@
 function [Stc,antecedentStateIndices,subsequentStateIndices] = get_state_transitions(Stc,Trial,varargin)
-% function get_state_transitions(Stc,Trialvarargin)
+% function get_state_transitions(Stc,Trial,varargin)
 % 
 % Return TimePoints or TimePeriods of transitions from the
 % states{1} to states{2}.

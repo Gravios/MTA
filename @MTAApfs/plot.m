@@ -207,14 +207,17 @@ if numel(Pfs.adata.binSizes) > 1,
             caxis([maxRate]);
           case 'text'
             mrate = max(ratemap(:));
-            hax = text;                
+            hax = text;
+            
             if mrate < 10
-                hax.String   = sprintf('%2.1f',max(ratemap(:)));                    
+                hax.String   = sprintf('%2.1f ',max(ratemap(:)));                    
             else
-                hax.String   = sprintf('%2.0f',max(ratemap(:)));
+                hax.String   = sprintf('%2.0f ',max(ratemap(:)));
             end
-            hax.Position = [Pfs.adata.bins{1}(end)-0.45*diff(Pfs.adata.bins{1}([1,end])),...
-                            Pfs.adata.bins{2}(end)-0.10*diff(Pfs.adata.bins{2}([1,end]))];
+            %hax.Position = [Pfs.adata.bins{1}(end)-0.45*diff(Pfs.adata.bins{1}([1,end])),...
+            %                Pfs.adata.bins{2}(end)-0.10*diff(Pfs.adata.bins{2}([1,end]))];
+            hax.Position(1:2) = [Pfs.adata.bins{1}(end) - hax.Extent(3),...
+                                 Pfs.adata.bins{2}(end) - hax.Extent(4)];
             hax.Color    = 'w';
             hax.FontWeight = 'bold';
             hax.FontSize = 8;

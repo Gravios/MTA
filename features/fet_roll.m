@@ -10,9 +10,9 @@ fs = []; ts = [];
 xyz = Trial.load('xyz');
 
 % if xyz sampling rat e is greater than 120 Hz then resample it to 120 Hz
-if xyz.sampleRate > 120, 
-    xyz.resample(120); 
-end
+% $$$ if xyz.sampleRate > 120, 
+% $$$     xyz.resample(120); 
+% $$$ end
 if ~isempty(sampleRate),
     xyz.resample(sampleRate);
 end

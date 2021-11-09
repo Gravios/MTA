@@ -6,6 +6,10 @@
 %
 %% ACCUMULATE phase precession stats ----------------------------------------------------------------
 %
+% PLOT rate maps and phase precession examples
+%    PLOT theta example
+% JPDF HRZ vs PHZ : all spikes
+%
 % Subplots:
 %    A. phase precession examples across states
 %        1. auto correlogram of unit
@@ -216,7 +220,7 @@ for tind = 1:size(expUnitsPP,1),
         unit = expUnitsPP{tind,2}(uind);
         maxPfsRate = max(cell2mat(cf(@(p,u) maxRate(p,u,false,'prctile99',0.5),...
                                      [pfts(t),pfbs(t)],repmat({unit},[1,1+numel(pfbs{t})]))));
-        %%%<<< PLOT theta example    
+        %%%<<< PLOT theta pfs example    
         yind = yind+1;
         xind = 1;    
         sax(end+1) = axes('Units','centimeters',...

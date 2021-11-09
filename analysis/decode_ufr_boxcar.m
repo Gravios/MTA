@@ -74,6 +74,8 @@ else
 % COMPUTE Posterior distribution base on ratemaps and unit firing rates
     ratemap(isnan(ratemap)) = 0;
     ratemap = ratemap+1e-3;    
+    logRatemap = log(ratemap);
+    priorRatemap = -sum(ratemap,2)*ufr.spikeWindow;
 
 % ESTIMATE number of valid samples
     esamp = size(nonzeros(sum(ufr.data>=1/(ufr.spikeWindow*sampleRate),2)),1).*3;
@@ -83,6 +85,8 @@ else
     dc.max  = nan([esamp*2,ndims]);    
     dc.com  = nan([esamp*2,ndims]);
     dc.sax  = nan([esamp*2,ndims]);
+    dc.lom  = nan([esamp*2,ndims]);
+    dc.lax  = nan([esamp*2,ndims]);
     dc.post = nan([esamp*2,1]);
     dc.ucnt = nan([esamp*2,1]);    
     dc.uinc = nan([esamp*2,size(ufr,2)]);    
@@ -112,7 +116,7 @@ else
             dc.uinc(cindex,:) = gind;
 
 % COMPUTE posterior
-            E = exp(-sum(ratemap,2)*ufr.spikeWindow+log(ratemap)*(cufr+eps)');
+            E = exp(priorRatemap+logRatemap*(cufr+eps)');
             E = E./sum(E,'omitnan');
 
 % LOCATE peak of posterior
@@ -122,11 +126,24 @@ else
 % COMPUTE COM and weighted max of posterior
             wbinm = bsxfun(@minus,gbinm,gbinm(tbin,:));                
             weights = exp(multiprod(-wbinm,multiprod(inv(smoothingWeights),wbinm,[1,2],[2]),[2],[2]));
-            weights = weights./sum(weights);
+            weights = weights./sum(weights,'omitnan');
             weights = bsxfun(@times,weights,repmat(E(:),[1,ndims]));
-            weights = weights./sum(weights);
+            weights = weights./sum(weights,'omitnan');
             dc.sax(cindex,:) = sum(gbinm.*weights,'omitnan');
             dc.com(cindex,:) = sum(gbinm.*repmat(E(:),[1,ndims]),'omitnan');     
+            
+            lpost = log10(E(:));
+            lpost = lpost+8;
+            lpost(lpost<=0) = eps;
+            lpost = lpost./sum(lpost,'omitnan');
+            dc.lom(cindex,:) = sum(gbinm.*repmat(lpost(:),[1,ndims]),'omitnan');
+    
+            wbinm = bsxfun(@minus,gbinm,gbinm(tbin,:));
+            weights = exp(multiprod(-wbinm,multiprod(inv(smoothingWeights),wbinm,[1,2],[2]),[2],[2]));
+            weights = weights./sum(weights,'omitnan');
+            weights = bsxfun(@times,weights,repmat(lpost(:),[1,ndims]));
+            weights = weights./sum(weights,'omitnan');
+            dc.lax(cindex,:) = sum(gbinm.*weights,'omitnan');
             
             cindex = cindex + 1;
             
@@ -139,6 +156,8 @@ else
     dc.max (isnan(dc.ind),:) = [];
     dc.com (isnan(dc.ind),:) = [];
     dc.sax (isnan(dc.ind),:) = [];
+    dc.lom (isnan(dc.ind),:) = [];
+    dc.lax (isnan(dc.ind),:) = [];
     dc.post(isnan(dc.ind),:) = [];
     dc.ucnt(isnan(dc.ind),:) = [];
     dc.uinc(isnan(dc.ind),:) = [];

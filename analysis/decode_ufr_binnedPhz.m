@@ -86,6 +86,8 @@ else
 % COMPUTE Posterior distribution base on ratemaps and unit firing rates
     ratemap(isnan(ratemap)) = 0;
     ratemap = ratemap+1e-3;    
+    priorRatemap = -sum(ratemap,2)*ufr.spikeWindow;
+    logRatemap = log(ratemap);
 
 % ESTIMATE number of valid samples
     esamp = size(nonzeros(sum(ufr.data>=1/(ufr.spikeWindow*sampleRate),2)),1).*3;
@@ -108,6 +110,7 @@ else
         gbinm(:,d) = cat(2,binGrid{d}(logical(mask(:))));
     end
 
+    disp(['[INFO] MTA:analysis:decode_ufr_binnedPhz:Processeing: ',Trial.filebase]);
     cindex = 1;    
     tic        
     for tind = (1+abs(spkWindow(1))):(size(ufr,1)-abs(spkWindow(2))-10)
@@ -130,7 +133,7 @@ else
             dc.uinc(cindex,:) = gind;
 
 % COMPUTE posterior
-            E = exp(-sum(ratemap,2)*ufr.spikeWindow+log(ratemap)*(cufr+eps)');
+            E = exp(priorRatemap+logRatemap*(cufr+eps)');
             E = E./sum(E,'omitnan');
 
 % LOCATE peak of posterior

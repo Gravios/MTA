@@ -4,6 +4,35 @@
 % BP:= Body Pitch
 % PFD:= behavior field restricted to DRZ[-0.5,0.5]
 %
+% Goals:
+% 1. Show the behavioral dependence of place cell firing rates
+%  
+%  Given:
+%
+%   -  The firing rate of place cells change depending on the environment and the cues placed within and around
+%      the environment. 
+%   -  T
+%
+%  Hypothesis:
+%      The firing rate of place cells change dependent upon the active behavioral state.
+% 
+%  Measure:
+%      Mean Firing rate within field 
+%        1. definition of field - Set of contiguous locations around the p
+%
+%  Results:
+%   -  The firing rate of several place cells change significantly depending upon behavioral state
+%   ?  Definitions of signifcance.
+%      -  within patch state permutations of mean rate
+%         1. equal sample size 
+%         2. 3 state pairs 
+%            a. rear vs high
+%            b. rear vs low
+%            c. high vs low
+%         3. 
+% 
+% 2. Intra field firing maps onto the
+% 
 % Subplots:
 %    A. Place field examples
 %        1. ratemaps posture HPxBP
@@ -24,7 +53,11 @@
 %
 % Suplementary plots
 %    Place field centers for each state where the max rate is greater than 3 Hz.
-%    
+%    For each cell get max rate in each state
+%    Plot position of place field
+%        rear vs low
+%        rear vs high
+%        high vs low
 %    
 %    
 %    
@@ -34,7 +67,7 @@
 
 
 
-%%%<<< LOAD MjgER2016 data
+%%%<<< LOAD MjgER2016 data -------------------------------------------------------------------------
 
 MjgER2016_load_data();
 %  MjgER2016_load_data:
@@ -49,7 +82,7 @@ MjgER2016_load_data();
 
 %%%>>>
 
-%%%<<< SET MjgER2016 figure 3 global default arguments
+%%%<<< SET default arguments -----------------------------------------------------------------------
 %MjgER2016_figure_BhvPlacefields_args();
 configure_default_args();
 % MjgER2016_figure_BhvPlacefields_args:
@@ -61,7 +94,7 @@ configure_default_args();
 %     compute_bhv_ratemap_erpPCA
 %%%>>>
 
-%%%<<< LOAD data
+%%%<<< LOAD data -----------------------------------------------------------------------------------
 % EXAMPLE Trial : jg05-20120312
 tind = 20;
 Trial = Trials{tind};
@@ -113,8 +146,37 @@ end
 pfs = pfs(psi);
 
 pfst = cf(@(t,u)  pfs_2d_theta(t,u),  Trials,units);
-pfss = cf(@(t,u)  pfs_2d_states(t),   Trials,units);
+pfss = cf(@(t,u)  pfs_2d_states(t,u),   Trials,units);
+pfsr = cf(@(t,u)  pfs_2d_states(t,u,'',{'rear&theta','hbhv&theta','lbhv&theta'}),   Trials,units);
 pfsa = cf(@(s,t)  cat(2,{t},s),       pfss,pfst);
+
+t = 20;
+figure,plot(pfsr{t}{1},20)
+
+% ACCUMULATE place fields
+t = 20;
+[pfstats] = PlaceFieldStats(Trials{t},pfsr{t}{1},20,2,false,true);
+for t = 1:28,
+    for u = units{t},
+        [pfstats(end+1,1)] = PlaceFieldStats(Trials{t},pfsr{t}{1},u,2,false,true);
+        [pfstats(end  ,2)] = PlaceFieldStats(Trials{t},pfsr{t}{2},u,2,false,true);
+        [pfstats(end  ,3)] = PlaceFieldStats(Trials{t},pfsr{t}{3},u,2,false,true);
+    end
+end
+pfstats(1,:) = [];
+
+figure();
+subplot(131);plot([pfstats(:,1).peakFR],[pfstats(:,2).peakFR],'.');xlim([0,30]);ylim([0,30]);line([0,30],[0,30],'Color','k');
+subplot(132);plot([pfstats(:,1).peakFR],[pfstats(:,3).peakFR],'.');xlim([0,30]);ylim([0,30]);line([0,30],[0,30],'Color','k');
+subplot(133);plot([pfstats(:,2).peakFR],[pfstats(:,3).peakFR],'.');xlim([0,30]);ylim([0,30]);line([0,30],[0,30],'Color','k');
+
+rpatches = sq([pfstats(:,3).patchMFR]);
+figure,plot(rpatches(:,1),rpatches(:,2),'.')
+line([0,30],[0,30],'Color','k');
+
+
+
+pfstats.patchRateMap(1,1,1,~isnan(pfstats.patchRateMap(1,1,1,:)))
 
 % COMPUTE place field centers for each state
 pfssMr = {};
@@ -151,11 +213,11 @@ pfssMpSub = pfssMpSub(unitSubset,:,:);
 
 %%%<<< LOAD and TRANSFORM(tSNE) erpPCA scores
 
-% $$$ [fsrcz,FSrC,rmaps,FSCFr,FSrM,FSrS,fsrsMean,fsrsStd,rmapsShuffledMean,rmapsShuffled] = ...
-% $$$     compute_bhv_ratemaps_erpPCA_scores(Trials,units,bfs,bfsShuff,eigVecs,validDims,unitSubset,true);    
-
 [fsrcz,FSrC,rmaps,FSCFr,FSrM,FSrS,fsrsMean,fsrsStd,rmapsShuffledMean,rmapsShuffled] = ...
-    compute_bhv_ratemaps_erpPCA_scores('tag','3ec62cb0b4448aad1959fd9da9db8c54');
+    compute_bhv_ratemaps_erpPCA_scores(Trials,units,bfs,bfsShuff,eigVecs,validDims,unitSubset,true);    
+
+% $$$ [fsrcz,FSrC,rmaps,FSCFr,FSrM,FSrS,fsrsMean,fsrsStd,rmapsShuffledMean,rmapsShuffled] = ...
+% $$$     compute_bhv_ratemaps_erpPCA_scores('tag','3ec62cb0b4448aad1959fd9da9db8c54');
 %    compute_bhv_ratemaps_erpPCA_scores('tag','68536b9a930748fd25a91dfc8ca84d39');
 
 
@@ -184,8 +246,9 @@ cluSessionSubset = cluSessionMap(unitSubset,:);
 % $$$     uind = find(ismember(cluSessionSubset,u','rows'));
 % $$$     sigUnits(uind);
 % $$$ end
+colorOrder = [2,1,3];
 
-cc = eigScrs(:,[1,2,3])+0.75;
+cc = eigScrs(:,colorOrder)+0.75;
 cc(~sigUnits,:) = repmat([0.75,0.75,0.75],[sum(~sigUnits),1]);
 
 if ~exist('mapa','var'),
@@ -193,10 +256,15 @@ if ~exist('mapa','var'),
     mapn = tsne([FSrC(:,1:3)],[],2,3,15);    
     %figure,scatter(mapn(:,1),mapn(:,2),10,cc,'Filled')    
     mapa = tsne([FSrC(:,1:3)],[],2,3,40);
-    mapa = tsne([FSrC(:,1:3)],[],2,3,40);    
 
+figure();
+
+mi = [1,2];
+%scatter3(FSrC(:,1),FSrC(:,3),FSrC(:,2),5,cc,'o','filled'); 
+scatter(mapa(:,mi(1)),mapa(:,mi(2)),10,cc,'o','filled'); 
+    
 % $$$     mapa = tsne([fsrcz(:,1:3),(si(unitSubset)'-mean(si(unitSubset))')./std(si(unitSubset))'],[],2,4,80);
-% $$$     mapa = tsne([fsrcz(:,1:3),si(unitSubset)'],[],2,3,50);
+    mapa = tsne([fsrcz(:,1:3),si(unitSubset)'],[],2,3,50);
 end
 
 %%%>>>
@@ -205,66 +273,68 @@ end
 cond_round = @(rate) max([round(rate,0),round(rate,1)].*[rate>=10,rate<10]);
 nanColor = [0.25,0.25,0.25];
 
-pageWidth  = 21.;
-pageHeight = 29.7;
-pwidth = 1.5;
-pheight = 1.5;
-xpad = 0.05;
-ypad = 0.05;
-
-xpos = 3.5:(pwidth+xpad):pageWidth;
-ypos = fliplr(0.5:(pheight+xpad):pageHeight-3.7);
-
 % SET figure opts
-hfig = figure(666003);
-clf();
-% $$$ [hfig, figOpts, fax, sax] = set_figure_layout(hfig,'A4','portrait','centimeters',...
+[hfig,fig,fax,sax] = set_figure_layout(figure(666007),'A4','portrait',[],1.5,1.5,0.05,0.05);
 
-hfig.Units = 'centimeters';
-hfig.Position = [1, 1, pageWidth,pageHeight];
-hfig.PaperPositionMode = 'auto';
+% $$$ pageWidth  = 21.;
+% $$$ pageHeight = 29.7;
+% $$$ pwidth = 1.5;
+% $$$ pheight = 1.5;
+% $$$ xpad = 0.05;
+% $$$ ypad = 0.05;
+% $$$ xpos = 3.5:(pwidth+xpad):pageWidth;
+% $$$ ypos = fliplr(0.5:(pheight+xpad):pageHeight-3.7);
 
-fax = axes('Position',[0,0,1,1],'Visible','off','Units','centimeters');
-xlim([0,hfig.Position(3)]);
-ylim([0,hfig.Position(4)]);
-
-sp = gobjects([1,0]);
 
 %%%>>>
 
-%%%<<< MjgER2016-F2-Sup: behavior and place field examples -> move to supfig
+% $$$ %%%<<< MjgER2016-F2-Sup: behavior and place field examples -> move to supfig
+% $$$ 
+% $$$ cluMap = [20,119];
+% $$$ yind = 1;
+% $$$ xind = 1;
+% $$$ 
+% $$$ u = cluMap';
+% $$$ % SET color scale max
+% $$$ maxPfsRate = max(cell2mat(cf(@(p,u) maxRate(p,u,false,'prctile99',0.5),...
+% $$$                              {pfs{1},bfsEx},repmat({u(2)},[1,2]))));
+% $$$ 
+% $$$ 
+% $$$ % ADJUST subplot coordinates
+% $$$ [yind, yOffSet, xind, xOffSet] = deal(1,0, 1, 0);
+% $$$ % CREATE subplot axes
+% $$$ sax(end+1) = axes('Units','centimeters',                                        ...
+% $$$                   'Position',[fig.page.xpos(xind)+xOffSet,                      ...
+% $$$                               fig.page.ypos(yind)+yOffSet,                      ...
+% $$$                               fig.subplot.width.*1.25,                          ...
+% $$$                               fig.subplot.height.*1.25],                        ...
+% $$$                   'FontSize', 8,                                                ...
+% $$$                   'LineWidth',1);
+% $$$ hold(sax(end),'on');
+% $$$ bfs{tind}.plot(u(2),'mean',false,[0,maxPfsRate],true,0.5,false,[],@jet,bhvMask,nanColor);
+% $$$ text(-2,-0.45,num2str(cond_round(bfs{tind}.maxRate(u(2),false,1))),'FontSize',10,'Color',[1,1,1]);
+% $$$ xlabel({'HP (rad)'});
+% $$$ ylabel({'BP (rad)'});
+% $$$ xind = xind+2;
+% $$$ xlim([-2,nonzeros(xlim.*[0,1])-0.2])
+% $$$ sax(end).Color = nanColor;
+% $$$ title({'Behavior','Rate Map'});    
+% $$$ 
+% $$$ [yind, yOffSet, xind, xOffSet] = deal(1,0, 3, 0);
+% $$$ % CREATE subplot axes
+% $$$ sax(end+1) = axes('Units','centimeters',                                        ...
+% $$$                   'Position',[fig.page.xpos(xind)+xOffSet,                      ...
+% $$$                               fig.page.ypos(yind)+yOffSet,                      ...
+% $$$                               fig.subplot.width.*1.25,                          ...
+% $$$                               fig.subplot.height.*1.25],                        ...
+% $$$                   'FontSize', 8,                                                ...
+% $$$                   'LineWidth',1);
+% $$$ hold(sax(end),'on');
+% $$$ plot(pfs{1},u(2),'mean',false,[0,maxPfsRate],true,0.5,false,interpParPfs,@jet,[],nanColor);
+% $$$ text(-490,-380,num2str(cond_round(maxPfsRate)),'FontSize',10,'Color',[1,1,1]);
+% $$$ 
+% $$$ %%%<<< ADD contours to ratemap indicating the selected space
 
-cluMap = [20,119];
-yind = 1;
-xind = 1;
-
-u = cluMap';
-% SET color scale max
-maxPfsRate = max(cell2mat(cf(@(p,u) maxRate(p,u,false,'prctile99',0.5),...
-                             {pfs{1},bfsEx},repmat({u(2)},[1,2]))));
-
-
-xind = 1;
-sp(end+1) = axes('Units','centimeters',...
-                 'Position',[xpos(xind),ypos(yind),pwidth,pheight],...
-                 'FontSize', 8);
-bfs{tind}.plot(u(2),'mean',false,[0,maxPfsRate],false,0.5,false,[],@jet,[],nanColor);
-text(-2,-0.45,num2str(cond_round(bfs{tind}.maxRate(u(2),false,1))),'FontSize',10,'Color',[1,1,1]);
-xlabel({'HP (rad)'});
-ylabel({'BP (rad)'});
-xind = xind+2;
-xlim([-2,nonzeros(xlim.*[0,1])-0.2])
-sp(end).Color = nanColor;
-title({'Behavior','Rate Map'});    
-
-
-sp(end+1) = axes('Units','centimeters',...
-                 'Position',[xpos(xind),ypos(yind),pwidth*1.25,pheight*1.25],...
-                 'FontSize', 8);
-plot(pfs{1},u(2),'mean',false,[0,maxPfsRate],true,0.5,false,interpParPfs,@jet,[],nanColor);
-text(-490,-380,num2str(cond_round(maxPfsRate)),'FontSize',10,'Color',[1,1,1]);
-
-%%%<<< ADD contours to ratemap indicating the selected space
 hold('on');
 rmap = plot(pfs{1},u(2),'mean',false,[0,maxPfsRate],true,0.5,false,interpParPfs);
 [~,mxp] = pft.maxRate(u(2));
@@ -283,50 +353,52 @@ contMaxPos = sq(binGrid(contMaxInd(1),contMaxInd(2),:));
 contMinPos = sq(binGrid(contMinInd(1),contMinInd(2),:));
 
 line(fax,...
-     [sp(end-1).Position(1)+pwidth.*1.25,sp(end).Position(1)+(contMaxInd(1)./numel(interpParPfs.bins{1})).*pwidth.*1.25],...
-     [sp(end-1).Position(2)+pheight.*1.25,sp(end).Position(2)+(contMaxInd(2)./numel(interpParPfs.bins{2})).*pheight.*1.25],...
+     [sax(end-1).Position(1)+fig.subplot.width.*1.25,sax(end).Position(1)+(contMaxInd(1)./numel(interpParPfs.bins{1})).*fig.subplot.width.*1.25],...
+     [sax(end-1).Position(2)+fig.subplot.height.*1.25,sax(end).Position(2)+(contMaxInd(2)./numel(interpParPfs.bins{2})).*fig.subplot.height.*1.25],...
      'Color','m','LineWidth',1);
 line(fax,...
-     [sp(end-1).Position(1)+pwidth.*1.25,sp(end).Position(1)+(contMinInd(1)./numel(interpParPfs.bins{1})).*pwidth.*1.25],...
-     [sp(end-1).Position(2),sp(end).Position(2)+(contMinInd(2)./numel(interpParPfs.bins{2})).*pheight.*1.25],...
+     [sax(end-1).Position(1)+fig.subplot.width.*1.25,sax(end).Position(1)+(contMinInd(1)./numel(interpParPfs.bins{1})).*fig.subplot.width.*1.25],...
+     [sax(end-1).Position(2),sax(end).Position(2)+(contMinInd(2)./numel(interpParPfs.bins{2})).*fig.subplot.height.*1.25],...
      'Color','m','LineWidth',1);
 line(fax,...
-     [sp(end-1).Position(1),sp(end-1).Position(1)+pwidth.*1.25],...
-     [sp(end-1).Position(2),sp(end-1).Position(2)],...
+     [sax(end-1).Position(1),sax(end-1).Position(1)+fig.subplot.width.*1.25],...
+     [sax(end-1).Position(2),sax(end-1).Position(2)],...
      'Color','m','LineWidth',1);      
 line(fax,...
-     [sp(end-1).Position(1),sp(end-1).Position(1)+pwidth.*1.25],...
-     [sp(end-1).Position(2)+pheight.*1.25,sp(end-1).Position(2)+pheight.*1.25],...
+     [sax(end-1).Position(1),sax(end-1).Position(1)+fig.subplot.width.*1.25],...
+     [sax(end-1).Position(2)+fig.subplot.height.*1.25,sax(end-1).Position(2)+fig.subplot.height.*1.25],...
      'Color','m','LineWidth',1);      
 line(fax,...
-     [sp(end-1).Position(1)+pwidth.*1.25,sp(end-1).Position(1)+pwidth.*1.25],...
-     [sp(end-1).Position(2),sp(end-1).Position(2)+pheight.*1.25],...
+     [sax(end-1).Position(1)+fig.subplot.width.*1.25,sax(end-1).Position(1)+fig.subplot.width.*1.25],...
+     [sax(end-1).Position(2),sax(end-1).Position(2)+fig.subplot.height.*1.25],...
      'Color','m','LineWidth',1);      
 line(fax,...
-     [sp(end-1).Position(1),sp(end-1).Position(1)],...
-     [sp(end-1).Position(2),sp(end-1).Position(2)+pheight.*1.25],...
+     [sax(end-1).Position(1),sax(end-1).Position(1)],...
+     [sax(end-1).Position(2),sax(end-1).Position(2)+fig.subplot.height.*1.25],...
      'Color','m','LineWidth',1);      
 uistack(fax,'top');
-%%%>>>
-
-title({'Spatial','Rate Map'});   
-chax = colorbar(sp(end));
-chax.LineWidth = 1;
-chax.Units = 'centimeters';
-colormap(sp(end),'jet');
-caxis([0,maxPfsRate]);
-chax.Position(1) = sp(end).Position(1)+pwidth*1.25+0.1;
-
-sp(end).YTickLabel = {};
-sp(end).XTickLabel = {};
-line(fax,xpos(xind)+[0,pwidth*1.25/2],ypos(yind).*[1,1]-0.125,'Color','k','LineWidth',2);
-text(fax,xpos(xind),ypos(yind)-0.35,'50cm','FontSize',8,'Color',[0,0,0]);
 
 %%%>>>
+% $$$ 
+% $$$ title({'Spatial','Rate Map'});   
+% $$$ chax = colorbar(sax(end));
+% $$$ chax.LineWidth = 1;
+% $$$ chax.Units = 'centimeters';
+% $$$ colormap(sax(end),'jet');
+% $$$ caxis([0,maxPfsRate]);
+% $$$ chax.Position(1) = sax(end).Position(1)+fig.subplot.width*1.25+0.1;
+% $$$ 
+% $$$ sax(end).YTickLabel = {};
+% $$$ sax(end).XTickLabel = {};
+% $$$ line(fax,fig.page.xpos(xind)+[0,fig.subplot.width*1.25/2],fig.page.ypos(yind).*[1,1]-0.125,'Color','k','LineWidth',2);
+% $$$ text(fax,fig.page.xpos(xind),fig.page.ypos(yind)-0.35,'50cm','FontSize',8,'Color',[0,0,0]);
+% $$$ 
+% $$$ %%%>>>
 
 
 %%%<<< MjgER2016-F2-A: behavior and place field examples
 
+[hfig,fig,fax,sax] = set_figure_layout(figure(666007),'A4','portrait',[],1.5,1.5,0.05,0.05);
 % $$$ % Multisession examples
 % $$$ % selected units session x unit id
 % $$$ clumap = [17,147;...
@@ -378,18 +450,18 @@ for u = cluMap',
     
 
 % DRZFIELDS 
-    sp(end+1) = axes('Units','centimeters',...
-                     'Position',[xpos(xind),ypos(yind),pwidth,pheight],...
+    sax(end+1) = axes('Units','centimeters',...
+                     'Position',[fig.page.xpos(xind),fig.page.ypos(yind),fig.subplot.width,fig.subplot.height],...
                      'FontSize', 8);
 
     bfsEx.plot(u(2),'mean',false,[0,maxPfsRate],false,0.5,false,[],@jet,bhvMask,nanColor);
-    sp(end).YTickLabel = {};
-    sp(end).XTickLabel = {};        
+    sax(end).YTickLabel = {};
+    sax(end).XTickLabel = {};        
     %text(-0.1,1.5,num2str(cond_round(bfsMaxRatesMean)),'FontSize',8,'Color',[1,1,1]);
     text(0.55,1.5,num2str(round(bfsMaxRatesMean)),'FontSize',8,'Color',[1,1,1],'HorizontalAlignment','right');
     xlim(bhvLims(1,:));
     ylim(bhvLims(2,:));
-    sp(end).Color = nanColor;
+    sax(end).Color = nanColor;
 
     if yind == yinit, 
         title(labels{xind});
@@ -403,14 +475,14 @@ for u = cluMap',
 
         % y-axis scale bar
         line(fax,...
-             [sp(end).Position([1])].*[1,1]-0.15,...     
-             [sp(end).Position([2]),sum(sp(end).Position([2,4]).*[1,0.5])],...     
+             [sax(end).Position([1])].*[1,1]-0.15,...     
+             [sax(end).Position([2]),sum(sax(end).Position([2,4]).*[1,0.5])],...     
              'LineWidth',1,...
              'Color',[0,0,0]);
         
         text(fax,...
-             sp(end).Position(1)-0.35,...
-             sum(sp(end).Position([2,4]).*[1,0.25]),...
+             sax(end).Position(1)-0.35,...
+             sum(sax(end).Position([2,4]).*[1,0.25]),...
              '1 rad',...
              'HorizontalAlignment','center',...
              'VerticalAlignment','middle',...
@@ -422,13 +494,13 @@ for u = cluMap',
     xind = 2;
     for s = 1:numStates,
 % PLACEFIELDS MTAApfs
-        sp(end+1) = axes('Units','centimeters',...
-                         'Position',[xpos(xind)+0.2+0.2.*double(s>=2),ypos(yind),pwidth,pheight],...
+        sax(end+1) = axes('Units','centimeters',...
+                         'Position',[fig.page.xpos(xind)+0.2+0.2.*double(s>=2),fig.page.ypos(yind),fig.subplot.width,fig.subplot.height],...
                          'FontSize', 8);
 
         plot(pfs{s},u(2),'mean',false,[0,maxPfsRate],true,0.5,false,interpParPfs,@jet,[],nanColor);
-        sp(end).YTickLabel = {};
-        sp(end).XTickLabel = {};
+        sax(end).YTickLabel = {};
+        sax(end).XTickLabel = {};
         if yind == yinit, 
             tax = title(labels{xind});
             if s==1,
@@ -476,51 +548,51 @@ for u = cluMap',
             if yind == 1,
              % TOP line                
              line(fax,...
-                  [sp(end-1).Position(1)+pwidth, sp(end).Position(1)+(contMaxXind./numel(interpParPfs.bins{1})).*pwidth],...
-                  [sp(end-1).Position(2)+pheight,sp(end).Position(2)+(contMaxYind./numel(interpParPfs.bins{2})).*pheight],...
+                  [sax(end-1).Position(1)+fig.subplot.width, sax(end).Position(1)+(contMaxXind./numel(interpParPfs.bins{1})).*fig.subplot.width],...
+                  [sax(end-1).Position(2)+fig.subplot.height,sax(end).Position(2)+(contMaxYind./numel(interpParPfs.bins{2})).*fig.subplot.height],...
                   'Color','m','LineWidth',1);
             % BOTTOM line            
              line(fax,...
-                  [sp(end-1).Position(1)+pwidth, sp(end).Position(1)+(contMinXind./numel(interpParPfs.bins{1})).*pwidth],...
-                  [sp(end-1).Position(2),sp(end).Position(2)+(contMinYind./numel(interpParPfs.bins{2})).*pheight],...
+                  [sax(end-1).Position(1)+fig.subplot.width, sax(end).Position(1)+(contMinXind./numel(interpParPfs.bins{1})).*fig.subplot.width],...
+                  [sax(end-1).Position(2),sax(end).Position(2)+(contMinYind./numel(interpParPfs.bins{2})).*fig.subplot.height],...
                   'Color','m','LineWidth',1);
 % $$$             % TOP line
 % $$$             line(fax,...
-% $$$                  [sp(end-1).Position(1)+pwidth,sp(end).Position(1)+(contMaxInd(1)./numel(interpParPfs.bins{1})).*pwidth],...
-% $$$                  [sp(end-1).Position(2)+pheight,sp(end).Position(2)+(contMaxInd(2)./numel(interpParPfs.bins{2})).*pheight],...
+% $$$                  [sax(end-1).Position(1)+fig.subplot.width,sax(end).Position(1)+(contMaxInd(1)./numel(interpParPfs.bins{1})).*fig.subplot.width],...
+% $$$                  [sax(end-1).Position(2)+fig.subplot.height,sax(end).Position(2)+(contMaxInd(2)./numel(interpParPfs.bins{2})).*fig.subplot.height],...
 % $$$                  'Color','m','LineWidth',1);
 % $$$             % BOTTOM line            
 % $$$             line(fax,...
-% $$$                  [sp(end-1).Position(1)+pwidth,sp(end).Position(1)+(contMinInd(1)./numel(interpParPfs.bins{1})).*pwidth],...
-% $$$                  [sp(end-1).Position(2),sp(end).Position(2) + (contMinInd(2)./numel(interpParPfs.bins{2})).*pheight], ...
+% $$$                  [sax(end-1).Position(1)+fig.subplot.width,sax(end).Position(1)+(contMinInd(1)./numel(interpParPfs.bins{1})).*fig.subplot.width],...
+% $$$                  [sax(end-1).Position(2),sax(end).Position(2) + (contMinInd(2)./numel(interpParPfs.bins{2})).*fig.subplot.height], ...
 % $$$                  'Color','m','LineWidth',1);
             
-             rectangle(fax,'Position',sp(end-1).Position+[-0.02,-0.02,0.04,0.04],'EdgeColor','m');
+             rectangle(fax,'Position',sax(end-1).Position+[-0.02,-0.02,0.04,0.04],'EdgeColor','m');
 % $$$             % 
 % $$$             line(fax,                                                                             ...
-% $$$                  [sp(end-1).Position(1),sp(end-1).Position(1)+pwidth],                      ...
-% $$$                  [sp(end-1).Position(2),sp(end-1).Position(2)],                                   ...
+% $$$                  [sax(end-1).Position(1),sax(end-1).Position(1)+fig.subplot.width],                      ...
+% $$$                  [sax(end-1).Position(2),sax(end-1).Position(2)],                                   ...
 % $$$                  'Color','m','LineWidth',1);      
 % $$$             line(fax,                                                                             ...
-% $$$                  [sp(end-1).Position(1),sp(end-1).Position(1)+pwidth],                      ...
-% $$$                  [sp(end-1).Position(2)+pheight,sp(end-1).Position(2)+pheight],       ...
+% $$$                  [sax(end-1).Position(1),sax(end-1).Position(1)+fig.subplot.width],                      ...
+% $$$                  [sax(end-1).Position(2)+fig.subplot.height,sax(end-1).Position(2)+fig.subplot.height],       ...
 % $$$                  'Color','m','LineWidth',1);      
 % $$$             line(fax,                                                                             ...
-% $$$                  [sp(end-1).Position(1)+pwidth,sp(end-1).Position(1)+pwidth],         ...
-% $$$                  [sp(end-1).Position(2),sp(end-1).Position(2)+pheight],                     ...
+% $$$                  [sax(end-1).Position(1)+fig.subplot.width,sax(end-1).Position(1)+fig.subplot.width],         ...
+% $$$                  [sax(end-1).Position(2),sax(end-1).Position(2)+fig.subplot.height],                     ...
 % $$$                  'Color','m','LineWidth',1);      
 % $$$             line(fax,                                                                             ...
-% $$$                  [sp(end-1).Position(1),sp(end-1).Position(1)],                                   ...
-% $$$                  [sp(end-1).Position(2),sp(end-1).Position(2)+pheight],                     ...
+% $$$                  [sax(end-1).Position(1),sax(end-1).Position(1)],                                   ...
+% $$$                  [sax(end-1).Position(2),sax(end-1).Position(2)+fig.subplot.height],                     ...
 % $$$                  'Color','m','LineWidth',1);      
             end% if yind==1
             uistack(fax,'top');
         end% if xind==3
         if  yind == 1 && s == numStates,
-            cax = colorbar(sp(end));
+            cax = colorbar(sax(end));
             colormap(cax,'jet');
             cax.Units = 'centimeters';
-            cax.Position = [sum(sp(end).Position([1,3]))+0.15,sp(end).Position(2),0.15,sp(end).Position(4)];
+            cax.Position = [sum(sax(end).Position([1,3]))+0.15,sax(end).Position(2),0.15,sax(end).Position(4)];
             cax.XTick = [0,1];
             cax.XTickLabel = {'0','Max'};
             cax.Label.String = 'Hz';
@@ -535,30 +607,30 @@ end
 
 % DRAW line and arrows for theta to behavioral state decomposition
 s = 7*size(cluMap,1)-2;
-%sp(end-s:end-s+5)
+%sax(end-s:end-s+5)
 % HORIZONTAL line
 line(fax,                                                                                         ...
-     [sp(end-s).Position(1)+pwidth-0.2,sp(end-(s-5)).Position(1)+pwidth/2+0.07],                  ...
-      repmat(sp(end-s).Position(2)+sp(end-s).Position(4)+0.575,[1,2]),                            ...
+     [sax(end-s).Position(1)+fig.subplot.width-0.2,sax(end-(s-5)).Position(1)+fig.subplot.width/2+0.07],                  ...
+      repmat(sax(end-s).Position(2)+sax(end-s).Position(4)+0.575,[1,2]),                            ...
      'Color','k',                                                                                 ...
      'LineWidth',1);
 for a = 1:5,
     patch(fax,                                                                                    ...
-          repmat(sp(end-(s-a)).Position(1)+pwidth/2,[1,3])+[-0.07,0.07,0],                        ...
-          repmat(sp(end-s).Position(2)+sp(end-s).Position(4)+0.475,[1,3])+[0.1,0.1,-0.09],        ...
+          repmat(sax(end-(s-a)).Position(1)+fig.subplot.width/2,[1,3])+[-0.07,0.07,0],                        ...
+          repmat(sax(end-s).Position(2)+sax(end-s).Position(4)+0.475,[1,3])+[0.1,0.1,-0.09],        ...
           'k');
 end
 
 % DRAW the scale bars for placefields (spatial ratemaps)
 % x-axis scale bar
 line(fax,...
-     [sum(sp(end).Position([1,3]).*[1,0.5]),sum(sp(end).Position([1,3]))],...
-     [sp(end).Position([2]),sp(end).Position([2])]-0.15,...
+     [sum(sax(end).Position([1,3]).*[1,0.5]),sum(sax(end).Position([1,3]))],...
+     [sax(end).Position([2]),sax(end).Position([2])]-0.15,...
      'LineWidth',1,...
      'Color',[0,0,0]);
 text(fax,...
-     sum(sp(end).Position([1,3]).*[1,0.75]),...
-     sp(end).Position([2])-0.35,...
+     sum(sax(end).Position([1,3]).*[1,0.75]),...
+     sax(end).Position([2])-0.35,...
      '50cm',...
      'HorizontalAlignment','center',...
      'VerticalAlignment','middle',...
@@ -566,13 +638,13 @@ text(fax,...
 
 % y-axis scale bar
 line(fax,...
-     [sum(sp(end).Position([1,3])),sum(sp(end).Position([1,3]))]+0.15,...     
-     [sp(end).Position([2]),sum(sp(end).Position([2,4]).*[1,0.5])],...     
+     [sum(sax(end).Position([1,3])),sum(sax(end).Position([1,3]))]+0.15,...     
+     [sax(end).Position([2]),sum(sax(end).Position([2,4]).*[1,0.5])],...     
      'LineWidth',1,...
      'Color',[0,0,0]);
 text(fax,...
-     sum(sp(end).Position([1,3]))+0.35,...
-     sum(sp(end).Position([2,4]).*[1,0.25]),...
+     sum(sax(end).Position([1,3]))+0.35,...
+     sum(sax(end).Position([2,4]).*[1,0.25]),...
      '50cm',...
      'HorizontalAlignment','center',...
      'VerticalAlignment','middle',...
@@ -590,8 +662,8 @@ grid   = [1:csteps];
 angle  = grid*2*pi/csteps;
 xind = 2;
 for s = 1:6,
-        sp(end+1) = axes('Units','centimeters',...
-                         'Position',[xpos(xind)+0.2+0.2.*double(s>=2),ypos(yind)-0.2,pwidth,pheight],...
+        sax(end+1) = axes('Units','centimeters',...
+                         'Position',[fig.page.xpos(xind)+0.2+0.2.*double(s>=2),fig.page.ypos(yind)-0.2,fig.subplot.width,fig.subplot.height],...
                          'FontSize', 8,...
                          'Color', nanColor);
         hold('on');
@@ -601,8 +673,8 @@ for s = 1:6,
         plot(pfssMpSub(sind,1,s)+randn([sum(sind),1])*10,...
              pfssMpSub(sind,2,s)+randn([sum(sind),1])*10,'.b');
         xind = xind +1;
-        sp(end).YTickLabel = {};
-        sp(end).XTickLabel = {};        
+        sax(end).YTickLabel = {};
+        sax(end).XTickLabel = {};        
 end
 
 
@@ -612,10 +684,13 @@ end
 %%%<<< MjgER2016-F2-B: behavior field erpPCA eigenvectors
 
 % PLOT 
-yind = size(cluMap,1)+2;
+yind = size(cluMap,1)+3;
 for i = 1:3,
-    sp(end+1) = axes('Units','centimeters',...
-                     'Position',[xpos(1),ypos(yind),pwidth,pheight],...
+    sax(end+1) = axes('Units','centimeters',                    ...
+                     'Position',[fig.page.xpos(1),              ...
+                                 fig.page.ypos(yind),           ...
+                                 fig.subplot.width,             ...
+                                 fig.subplot.height],           ...
                      'FontSize', 8);    
     imagescnan({bfsEx.adata.bins{:},abs(reshape_eigen_vector(fpc{i},{bfsEx}))},...
                fpcLims,'linear',false,nanColor,1,1);                % PRINT eigenvectors
@@ -623,11 +698,11 @@ for i = 1:3,
     axis('tight');
     hold('on');    
     for s = 1:numel(stateContourHandles),                            % OVERLAY state Contours
-        copyobj(stateContourHandles{s},sp(end));
+        copyobj(stateContourHandles{s},sax(end));
     end
-    sp(end).YTickLabel = {};
-    sp(end).XTickLabel = {};
-    sp(end).Color = nanColor;
+    sax(end).YTickLabel = {};
+    sax(end).XTickLabel = {};
+    sax(end).Color = nanColor;
     ylabel(['F',num2str(i)])
     xlim(bfsEx.adata.bins{1}([1,end]));
     xlim([-2,nonzeros(xlim.*[0,1])-0.2])            
@@ -637,7 +712,7 @@ for i = 1:3,
         title({'erpPCA','Factors'});
     end
 end
-af(@(ax) set(ax,'LineWidth',1), sp);
+af(@(ax) set(ax,'LineWidth',1), sax);
 
 %%%>>>
 
@@ -647,8 +722,8 @@ af(@(ax) set(ax,'LineWidth',1), sp);
 gca();
 yind = yind-1;
 xind = 2;
-sp(end+1) = axes('Units','centimeters',...
-                 'Position',[xpos(xind)+0.2,ypos(yind),(pwidth+0.1)*3-0.1,(pheight+0.1)*3-0.1],...
+sax(end+1) = axes('Units','centimeters',...
+                 'Position',[fig.page.xpos(xind)+0.2,fig.page.ypos(yind),(fig.subplot.width+0.1)*3-0.1,(fig.subplot.height+0.1)*3-0.1],...
                  'FontSize', 8);    
 
 % $$$ figure,scatter(mapa(:,1),mapa(:,2),5,cc,'filled');
@@ -658,12 +733,11 @@ sp(end+1) = axes('Units','centimeters',...
 %mapa = tsne([FSrC(:,1:3),(si(unitSubset)'-mean(si(unitSubset))')./std(si(unitSubset))'],[],2,3,40);
 %figure();
 
-cla();
 mi = [1,2];
 %scatter3(FSrC(:,1),FSrC(:,3),FSrC(:,2),5,cc,'o','filled'); 
 scatter(mapa(:,mi(1)),mapa(:,mi(2)),10,cc,'o','filled'); 
-sp(end).YTickLabel = {};
-sp(end).XTickLabel = {};
+sax(end).YTickLabel = {};
+sax(end).XTickLabel = {};
 box('on');
 axis('tight')
 xlim(xlim.*1.05);
@@ -672,7 +746,7 @@ ylim(ylim.*1.05);
 set(gca(),'Color',nanColor)
 title({'t-SNE Transformed','erpPCA F-Scores'});
     
-% $$$ sp(end+1)=subplot(359); hold('on');scatter(mapz(:,1)/10,mapz(:,2)/10,10,cc,'o','filled'); grid('on');
+% $$$ sax(end+1)=subplot(359); hold('on');scatter(mapz(:,1)/10,mapz(:,2)/10,10,cc,'o','filled'); grid('on');
 % $$$ title('tsne on zscores')
 
 %plot(mapa(:,1),mapa(:,2),'.');
@@ -687,41 +761,46 @@ title({'t-SNE Transformed','erpPCA F-Scores'});
 %%%<<< MjgER2016-F2-E: ECDF of eigenvector significances
 yind = yind-1;
 xind = 5;
-sp(end+1) = axes('Units','centimeters',...
-                 'Position',[xpos(xind)+0.4,ypos(yind)+(pheight+0.1)*0.5,(pwidth+0.1)*3-0.1,(pheight+0.1)*1.5],...
+sax(end+1) = axes('Units','centimeters',...
+                 'Position',[fig.page.xpos(xind)+0.4,...
+                             fig.page.ypos(yind)+(fig.subplot.height+0.1)*0.5,...
+                            (fig.subplot.width+0.1)*3-0.1,...
+                            (fig.subplot.height+0.1)*1.5],...
                  'FontSize', 8);    
 
 hold('on');
 sclr = 'rgb';
+sclr = sclr(colorOrder);
 for i = [1,2,3],
     [F,X] = ecdf(fsrcz(:,i));
     cax = cdfplot(X);
     cax.Color = sclr(i);
 end
-set(sp(end),'YAxisLocation','right')
+set(sax(end),'YAxisLocation','right')
 Lines(-1.96,[],'k');
 Lines(1.96,[],'k');
 Lines(-3.1,[],'k');
 Lines(3.1,[],'k');
-lax = legend({'rear','high','low'},'Location','southoutside');
+legendLabels = {'rear','high','low'};
+lax = legend(legendLabels(colorOrder),'Location','southoutside');
 lax.Units = 'centimeters';
 
 xlim([-20,20])
-lax.Position(1) = sp(end).Position(1);
+lax.Position(1) = sax(end).Position(1);
 drawnow();
-lax.Position(2) = sp(end).Position([2])-1.75;
+lax.Position(2) = sax(end).Position([2])-1.75;
 
-sp(end).YTick  = [0,0.2,0.4,0.6,0.8,1];
+sax(end).YTick  = [0,0.2,0.4,0.6,0.8,1];
 
 %%%>>>
 
 
 % END FIGURE ---------------------------------------------------------------
-
-RESULTS
-
-FACTOR ANALYSIS OF THE RATE MAPS OF THE POSTURE SPACE RESULTED IN # PRIMARY 
-FACTORS WHICH CORRESPOND WELL WITH REAR< HIGH< AND LOW BEHAVIORS
+% $$$ 
+% $$$ RESULTS
+% $$$ 
+% $$$ FACTOR ANALYSIS OF THE RATE MAPS OF THE POSTURE SPACE RESULTED IN # PRIMARY 
+% $$$ FACTORS WHICH CORRESPOND WELL WITH REAR< HIGH< AND LOW BEHAVIORS
 
 
 % low loc cells

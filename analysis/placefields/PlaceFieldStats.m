@@ -19,7 +19,8 @@ if verbose,
     fprintf('Unit: %i\n',unit)
 end
     
-map = sq(pf.data.rateMap(:,unit==pf.data.clu,:));
+map = reshape(pf.plot(unit,'mazeMaskFlag',maskFlag),[],1);
+%map = sq(pf.data.rateMap(:,unit==pf.data.clu,:));
 pkfr = max(map(:,1));
 
 rateThreshold = select_rate_threshold(Trial,pf,unit,thresholdMethod); %helper function (see end)

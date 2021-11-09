@@ -19,9 +19,10 @@ switch mode
                    [],...
                    featureSet,...
                    'nIter',10,...
-                   'randomizationMethod','WSB');
+                   'randomizationMethod','WSBNT');
 % OPTIMIZE state labels based on heuristics
-    optimize_stc_transition('msnn',sessionList);
+    optimize_stc_transition('msnn',Trials);
+    %optimize_stc_transition('msnn',Trials);    
 % LABEL Shakes based on shaking of the body 
     cf(@(t)  label_bhv_shake('msnn_ppsvd',t),  Trials);
 % CREATE composite state of walk and turn

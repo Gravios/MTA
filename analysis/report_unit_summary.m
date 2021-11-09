@@ -34,9 +34,9 @@ numStates = numel(states);
 
 Trial.load('nq');
 
-pft = pfs_2d_theta(Trial,units,'overwrite',true);
-pfs = pfs_2d_states(Trial,units,'msnn_ppsvd_raux',states,'overwrite',true);
-bfs = compute_bhv_ratemaps(Trial,units,'overwrite',true);
+pft = pfs_2d_theta(Trial,units);
+pfs = pfs_2d_states(Trial,units,'msnn_ppsvd_raux',states);
+bfs = compute_bhv_ratemaps(Trial,units);
 
 [accg,tbins] = autoccg(Trial);
 
@@ -58,9 +58,19 @@ hvec = cat(3,hvec,sq(hvec)*[0,-1;1,0]);
 
 %drz = compute_drz(Trial,units,pfs{1},[],[],'hcom',[],xyz);
 %hrz = compute_hrz(Trial,units,pfs{1},[],[],'hcom',[],xyz);
-ghz = compute_ghz(Trial,units,pfs{1},[],[],'hcom',[],xyz);    
-gdz = compute_gdz(Trial,units,pfs{1},[],[],'hcom',[],xyz);    
+[ghz,~,pfdsGHZ] = compute_ghz(Trial,units,pfs{1},[],[],'hcom',[],xyz);    
+[gdz,~,pfdsGDZ] = compute_gdz(Trial,units,pfs{1},[],[],'hcom',[],xyz);    
 ddz = compute_ddz(Trial,units,pfs{1},[],[],'hcom',[],xyz);    
+
+figure,
+%histcirc(pfdsGHZ(:,11),32);
+histcirc(pfdsGDZ(:,11),32);
+
+wper = [stc{'w',xyz.sampleRate}];
+wper.cast('TimeSeries',xyz);
+wper= logical(wper.data);
+figure,
+histcirc(circ_dist(pfdsGDZ(wper,11),pfdsGHZ(wper,11)),32);
 
 phz = load_theta_phase(Trial,xyz,2,0);
 
@@ -163,7 +173,7 @@ sax(end).XTickLabel = {};
 
 
 % PLOT theta phase distribution    
-[yind, yOffSet, xind, xOffSet] = deal(2, -0.5, 2, fig.subplot.width-0.5);
+[yind, yOffSet, xind, xOffSet] = deal(6, -0.5, 1, 0.5);
 sax(end+1) = axes(axOpts{:},                                            ...
                   'Position',[fig.page.xpos(xind)+xOffSet,              ...
                               fig.page.ypos(yind)+yOffSet,              ...
@@ -223,6 +233,7 @@ for sts = 1:numStates,
         %gind = ~isnan(drzspk)&~isnan(phzspk)&~isnan(ghzspk)&~isnan(gdzspk);
         %gind = ~isnan(hrzspk)&~isnan(phzspk)&~isnan(ghzspk);
         gind = ~isnan(gdzspk)&~isnan(phzspk)&~isnan(ghzspk);
+        pfdsGDZspk = pfdsGDZ(res,unit);
     else
         res = [];
         drzspk=[];
@@ -232,12 +243,13 @@ for sts = 1:numStates,
         gdzspk=[];
         gind=[];
     end
+    %gsHeadDir    
     [yind, yOffSet, xind, xOffSet] = deal(2, 0, sts+3, 0);
     sax(end+1) = axes(axOpts{:},                                            ...
                       'Position',[fig.page.xpos(xind)+xOffSet,              ...
-                        fig.page.ypos(yind)+yOffSet,              ...
-                        fig.subplot.width,                        ...
-                        fig.subplot.height]);
+                                  fig.page.ypos(yind)+yOffSet,              ...
+                                  fig.subplot.width,                        ...
+                                  fig.subplot.height]);
     hold(sax(end),'on');
     if sum(gind)>10,
         plot([ghzspk(gind);ghzspk(gind)],...
@@ -248,14 +260,18 @@ for sts = 1:numStates,
     end        
     sax(end).YTickLabel = {};
     sax(end).XTickLabel = {};
+    if sts==1
+        ylabel({'Head Dir VS','Theta Phase'});
+    end
 
-    
+
+% PLOT gsTrajDir
     [yind, yOffSet, xind, xOffSet] = deal(3, 0, sts+3, 0);
     sax(end+1) = axes(axOpts{:},                                            ...
                       'Position',[fig.page.xpos(xind)+xOffSet,              ...
-                        fig.page.ypos(yind)+yOffSet,              ...
-                        fig.subplot.width,                        ...
-                        fig.subplot.height]);
+                                  fig.page.ypos(yind)+yOffSet,              ...
+                                  fig.subplot.width,                        ...
+                                  fig.subplot.height]);
     hold(sax(end),'on');
     if sum(gind)>10,
         plot([gdzspk(gind);gdzspk(gind)],...
@@ -266,24 +282,26 @@ for sts = 1:numStates,
     end
     sax(end).YTickLabel = {};
     sax(end).XTickLabel = {};
+    if sts==1
+        ylabel({'Traj Dir VS','Theta Phase'});
+    end
+    
     
 
-        % GET placefield center
-        % COMPUTE position of the placefield center relative to head basis
-        [mxr,mxp] = pfs{1}.maxRate(unit);
-        pfsCenterHR = MTADfet.encapsulate(Trial,                                               ...
-                                          multiprod(bsxfun(@minus,mxp,sq(xyz(:,'nose',[1,2]))),...
-                                                    hvec,2,[2,3]),                             ...
-                                          tppSampleRate,                                       ...
-                                          'placefield_center_referenced_to_head',              ...
-                                          'pfsCenterHR',                                       ...
-                                          'p'                                                  ...
-                                          );
-        
     
-        %res = res(WithinRanges(res,get([stc{'x+p&t'}],'data'))&cind(res));
-        
-        % MEAN spike theta phase at location of place field center relative to head (Wait ... what?)
+% PLOT egocentric placefield center at spike colored by theta phase
+    % GET placefield center
+    % COMPUTE position of the placefield center relative to head basis
+    [mxr,mxp] = pfs{1}.maxRate(unit);
+    pfsCenterHR = MTADfet.encapsulate(Trial,                                               ...
+                                      multiprod(bsxfun(@minus,mxp,sq(xyz(:,'nose',[1,2]))),...
+                                                hvec,2,[2,3]),                             ...
+                                      tppSampleRate,                                       ...
+                                      'placefield_center_referenced_to_head',              ...
+                                      'pfsCenterHR',                                       ...
+                                      'p'                                                  ...
+                                      );
+
     [yind, yOffSet, xind, xOffSet] = deal(4, 0, sts+3, 0);
     sax(end+1) = axes(axOpts{:},                                            ...
                       'Position',[fig.page.xpos(xind)+xOffSet,              ...
@@ -309,8 +327,9 @@ for sts = 1:numStates,
         ylabel('egocentric');
     end
     
-
-        % MEAN spike theta phase at location of place field center relative to head (Wait ... what?)
+% PLOT egocentric placefield center at spike colored by theta phase
+    % GET placefield center
+    % COMPUTE position of the placefield center relative to head basis
     [yind, yOffSet, xind, xOffSet] = deal(5, 0, sts+3, 0);
     sax(end+1) = axes(axOpts{:},                                            ...
                       'Position',[fig.page.xpos(xind)+xOffSet,              ...
@@ -318,38 +337,50 @@ for sts = 1:numStates,
                         fig.subplot.width,                        ...
                         fig.subplot.height]);
     hold(sax(end),'on');
+    if sum(gind)>10&sum(sqrt(sum(pfsCenterHR(res,:).^2,2))<350)>10,
+        myPhz = phz(res(gdzspk>0),1);
+        myPhz(myPhz>pi) = myPhz(myPhz>pi)-2*pi;
+        scatter(pfsCenterHR(res(gdzspk>0),1),pfsCenterHR(res(gdzspk>0),2),5,...
+                myPhz,'filled');
+        colormap(sax(end),'hsv');
+        caxis([-pi,pi]);
+        set(gca,'Color',[0.75,0.75,0.75]);
+        ylim([-300,300]);
+        xlim([-300,300]);
+        sax(end).YTickLabel = {};
+        sax(end).XTickLabel = {};
         
-
-        if sum(gind)>10&sum(sqrt(sum(pfsCenterHR(res,:).^2,2))<350)>10,
-            bins = linspace(-300,300,15);
-            hind = discretize(pfsCenterHR(res,:),bins);
-            mtph = accumarray(hind(nniz(hind),:),                                ... subs
-            phz(res(nniz(hind)),1),... vals
-            repmat(numel(bins),[1,2]),                         ... size
-            @circ_mean);                                         % func
-            mtph(mtph==0) = nan;
-            pax = pcolor(bins,bins,mtph');
-            pax.EdgeColor = 'none';
-            caxis(sax(end),[-pi,pi]);
-            colormap(sax(end),'hsv');
-            if sts == numStates
-                cax = colorbar(sax(end));
-                cax.Units = 'centimeters';
-                cax.Position(1) = sum(sax(end).Position([1,3])) + 0.1;
-            end
-            %imagescnan({bins,bins,mtph'},[0,2*pi],'circular',true,'colorMap',@hsv);
-            xlim([-300,300])
-            ylim([-300,300])            
-            axis('xy');
-            sax(end).YTickLabel = {};
-            sax(end).XTickLabel = {};
-
-        end
-
+    end
     if sts==1,
         ylabel('egocentric');
     end
-    
+% PLOT egocentric placefield center at spike colored by theta phase
+    % GET placefield center
+    % COMPUTE position of the placefield center relative to head basis
+    [yind, yOffSet, xind, xOffSet] = deal(6, 0, sts+3, 0);
+    sax(end+1) = axes(axOpts{:},                                            ...
+                      'Position',[fig.page.xpos(xind)+xOffSet,              ...
+                        fig.page.ypos(yind)+yOffSet,              ...
+                        fig.subplot.width,                        ...
+                        fig.subplot.height]);
+    hold(sax(end),'on');
+    if sum(gind)>10&sum(sqrt(sum(pfsCenterHR(res,:).^2,2))<350)>10,
+        myPhz = phz(res(gdzspk<0),1);
+        myPhz(myPhz>pi) = myPhz(myPhz>pi)-2*pi;
+        scatter(pfsCenterHR(res(gdzspk<0),1),pfsCenterHR(res(gdzspk<0),2),5,...
+                myPhz,'filled');
+        colormap(sax(end),'hsv');
+        caxis([-pi,pi]);
+        set(gca,'Color',[0.75,0.75,0.75]);
+        ylim([-300,300]);
+        xlim([-300,300]);
+        sax(end).YTickLabel = {};
+        sax(end).XTickLabel = {};
+        
+    end
+    if sts==1,
+        ylabel('egocentric');
+    end
 
 end
     pause(0.01);

@@ -1,4 +1,4 @@
- g% MjgER2016_figure5
+% MjgER2016_figure5
 % Behavior Theta Decomposition
 
 % DECOMPOSITION of behavior space across theta phases

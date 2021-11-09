@@ -152,6 +152,25 @@ if sempty||overwrite,
     hang.filename = [Trial.filebase '.sst.hpause.j.mat'];
     hang.resample(pausePeriods.sampleRate);    
     Stc.states{end+1} = hang&wind.data;
+
+% CREATE high pause state    
+    hper = [Stc{'hloc+hpause'}];
+    hper.fillgaps();
+    hper.label = 'hbhv';
+    hper.key   = 'u';
+    hper.update_filename(Trial);
+    hper.update_path(Trial);
+    hper.update_hash();
+    hper.save(1);
+% CREATE low pause state    
+    lper = [Stc{'lloc+lpause'}];
+    lper.fillgaps();
+    lper.label = 'lbhv';
+    lper.key   = 'd';
+    lper.update_filename(Trial);
+    lper.update_path(Trial);
+    lper.update_hash();
+    lper.save(1);
     
 end
 

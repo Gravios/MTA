@@ -493,14 +493,14 @@ classdef MTAStateCollection < hgsetget
                     event_prox_ind = [];
                     for i = 1:length(Sts_onset_ind)
                         event_prox = ExState.data(:,2)-sts_periods(i,1);
-                        event_prox_ind = find(event_prox>-ExThresh & event_prox < 0,1,'first');
+                        event_prox_ind = find(event_prox>-ExThresh & event_prox <= 0,1,'first');
                         if ~isempty(event_prox_ind),
                             temp_sts_onset_ind(i)  = true;
                         end
                     end
                     for i = 1:length(Sts_offset_ind)
                         event_prox = ExState.data(:,1)-sts_periods(i,2);
-                        event_prox_ind = find(event_prox< ExThresh & event_prox > 0,1,'first');
+                        event_prox_ind = find(event_prox< ExThresh & event_prox >= 0,1,'first');
                         if ~isempty(event_prox_ind),
                             temp_sts_offset_ind(i)  = true;
                         end
