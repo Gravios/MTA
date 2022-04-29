@@ -1,27 +1,10 @@
 MTA
 ===
-is a:
-	1. Magic Toolbox of Analysis
-	2. Toolbox created for analyzing data. 
-	3. Management and analysis package for combined Motion Capture and electrophysiology.
+Management and analysis package for combined Motion Capture and electrophysiology.
 
 TODO:
 @MTADrbo - rigid body objects
 @MTACskeleton - collection of rbo(s)
-
-TODO MAJOR:
-change zero filling to nan filling where data doesn't exist
-
-
-
-Warning:
-
-	Please consult your doctor before applying this code to your
-    data. Side effects may include confusion, nausea, restless leg
-    syndrome and occational bouts of procrastination. If you
-    experience any absent mindedness, do not painic this is normal.
-
-
 
 Installation:
 
@@ -54,21 +37,13 @@ Setup:
 		data located in a different
 		location. 
 		
-	5. Add the following lines to your startup.m file in the specified
+	5. Add the following line to your startup.m file in the specified
        order.
-
-       Note: The order is important. Some functions within MTA must
-       override their counterpart in the labbox.
-
-       %% Labbox
-       addpath(genpath('/gpfs01/sirota/homes/share/matlab/labbox'));
-       rmpath(genpath('/gpfs01/sirota/homes/share/matlab/labbox/.git'));
 
        %% MTA
        MTAstartup.m;
 
 	6. Try it out: See MTA/analysis/example_code.m to get started.
 
-	7. Complain to me if there are any bugs, but only if it has 7 or
-       11 legs, if it has 6 use your entomology skills to identify it.
+	7. Complain to me if there are any bugs.
 
