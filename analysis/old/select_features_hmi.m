@@ -20,6 +20,7 @@ while numel(gStates) > 2
 
     [mixy,fetRanges] = calculate_MI_states_vs_features(stc,fet,gStates,fetRanges);
 
+% ACCUMULATE the positive changes in mutual information between all states and minus one state.
     dms = [];
     for s = 1:numel(gStates)
         dm = (mixy(1,:)-mixy(s+1,:))';
@@ -27,8 +28,10 @@ while numel(gStates) > 2
         dms(end+1) = sum(dm(dm>0));
     end
 
+% FIND the state which with the greatest positive chang
     [~,sind] = max(dms);
     dm = (mixy(1,:)-mixy(sind+1,:))';
+% FIND the feature indices where the change in mutual information is greater than 0.2bits;
     fetInds{end+1} =  find(dm>0.20);
     stateOrd{end+1} = gStates{sind};
 

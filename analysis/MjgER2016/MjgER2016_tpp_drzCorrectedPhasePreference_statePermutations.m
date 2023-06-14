@@ -17,7 +17,7 @@
 perm.states = statesTPP;
 perm.sigma = sigma;
 perm.statePairs = {};
-perm.numIter = 100;
+perm.numIter = 101;
 nSts = numel(perm.states);
 % GET all pair-wise state permutations
 perm.statePairs = cat(1,...
@@ -30,23 +30,35 @@ perm.stateComparisons = {{'rear','high'},{'rear','low'},{'low','high'}};
 %%%<<< COLLECT all pair-wise permutation rate maps
 
 % LOAD drzphz fields
+
 perm.ce = cf(@(s1,s2) ...
              cf(@(T,u) ...
-                MTAApfs(T,u,'tag',['ddtp-','s',num2str(perm.sigma),'-',s1,'-',s2,'-1']), ...
+                MTAApfs(T,u,'tag',['ddtp2-','s',num2str(perm.sigma),'-',s1,'-',s2,'-1']), ...
                 Trials, units), ...
              perm.statePairs(:,1),perm.statePairs(:,2));
 for n = 2:perm.numIter,
-    ceTemp = cf(@(s1,s2) ...
-                cf(@(T,u) ...
-                   MTAApfs(T,u,'tag',['ddtp-','s',num2str(perm.sigma),'-',s1,'-',s2,'-',num2str(n)]), ...
-                   Trials, units), ...
-                perm.statePairs(:,1),perm.statePairs(:,2));    
-    for p = 1:size(perm.statePairs,1),
-        for t = 1:numel(Trials),
+    ceTemp = {};
+    for p = 1:size(perm.statePairs,1)
+        for tt = 1:numel(Trials)
+            ceTemp{p}{tt} = MTAApfs(Trials{tt},units{tt},...
+                    'tag',['ddtp2-s150-',perm.statePairs{p,1},'-',perm.statePairs{p,2},'-',num2str(n)]);
+        end
+    end
+    
+
+% $$$     ceTemp = cf(@(s1,s2) ...
+% $$$                 cf(@(T,u) ...
+% $$$                    MTAApfs(T,u,'tag',['ddtp2-','s',num2str(perm.sigma),'-',s1,'-',s2,'-',num2str(n)]), ...
+% $$$                    Trials, units), ...
+% $$$                 perm.statePairs(:,1),perm.statePairs(:,2));    
+    for p = 1:size(perm.statePairs,1)
+        for t = 1:numel(Trials)
             perm.ce{p}{t}.data.rateMap = cat(3,perm.ce{p}{t}.data.rateMap,ceTemp{p}{t}.data.rateMap);
         end
     end
 end
+
+
 
 %%%>>>
 
@@ -129,6 +141,19 @@ end
 
 
 
+% $$$ phzCorrection = [6,6,              ... er01
+% $$$                  4,4,4,            ... ER06
+% $$$                  6,6,              ... Ed10
+% $$$                  0,0,0,0,0,0,0,0,0,... jg04                 
+% $$$                  2,2,2,2,2,2,2,2,2 ... jg05
+% $$$                  6,6,6]; % new units - ER06, Ed10, er01
+% $$$ 
+% $$$ 
+% $$$ for p = 1:numel(phzCorrection)
+% $$$     perm.ceMat(:,:,cluSessionMapSubset(:,1)==p,:,:) = circshift(perm.ceMat(:,:,cluSessionMapSubset(:,1)==p,:,:),phzCorrection(p),2);
+% $$$ end    
+
+
 
 [perm.phzRateMax,perm.phzRateMaxPosInd] = ...
     max(sq(mean(perm.ceMat,4,'omitnan')));
@@ -158,9 +183,7 @@ perm.phzRateStd  = std(perm.phzRateMeanAll,[],4,'omitnan');
 
 %%%<<< COMPUTE complex value vector of phzRateMax
 
-perm.phzRateMeanCpx = bsxfun(@times,                                                     ...
-                perm.phzRateMean,                                                     ...
-                exp(i.*(perm.phzBins+double(perm.phzBins<0).*2*pi)));
+perm.phzRateMeanCpx = bsxfun(@times, perm.phzRateMean, exp(i.*perm.phzBins));
 perm.phzRateMeanCpxMean = sq(sum(perm.phzRateMeanCpx)./sum(perm.phzRateMean,1,'omitnan'));
 
 %%%>>>
@@ -337,486 +360,486 @@ perm.zScrShfCpxMean = sq(sum(zScrShfCpx)./sum(zScrShf,1,'omitnan'));
 %%%>>>
 
 
-spb = sort(perm.phzBins+double(perm.phzBins<0).*2*pi);
-
-u = ismember(cluSessionMapSubset,[5,31],'rows');
-
-u = ismember(cluSessionMapSubset,[21,22],'rows');
-figure();
-subplot(211);
-    hold('on');
-    plot(spb,sq( tpp.phzRateMeanDiff(phzOrder,u,1:150,4)),'r');
-    plot(spb,sq(perm.phzRateMeanDiff(phzOrder,u,1:150,4)),'b');
-    title('hloc-lloc (red)   hlperm (blue)')
-    ylabel('rate difference');
-    xlim([0,2*pi]);
-subplot(212);
-    hold('on');
-    plot(spb,sq(tpp.zscore(phzOrder,u,1:150,4)),'c');
-    plot(spb,sq(tpp.zscore(phzOrder,u,1,4)),'k','LineWidth',5);
-    ylabel('z-score')
-    xlabel('Theta phase');
-    xlim([0,2*pi]);
-
-    
-    
-    
-for p = 1:16;
-[hsig(p),pval(p)] =ttest2(sq(tpp.phzRateMeanDiff(p,u,:,4)),sq(perm.phzRateMeanDiff(p,u,:,4)))
-end
-
-figure,plot(sq(tmap(:,u,tind(:))))
-
-
-
-figure,
-hold('on'),
-plot(sq(tpp.phzRateMeanDiff(:,u,:,4)),'r');
-plot(reshape(tpp.phzRateMeanAll(:,u,2,:)...
-                            -permute(tpp.phzRateMeanAll(:,u,3,:),[1,2,4,3]),...
-                                   numel(tpp.phzBins),[]))
-
-
-figure();
-hold('on');
-plot(tpp.phzRateMean(:,u,3,1),'b')
-plot(tpp.phzRateMean(:,u,2,1),'g');
-
-
-figure,
-hold('on');
-plot(reshape(tpp.phzRateMeanAll(:,u,2,:)-permute(tpp.phzRateMeanAll(:,u,3,:),[1,2,4,3]),...
-             numel(tpp.phzBins),[]),'r')
-plot(reshape(perm.phzRateMeanAll(:,u,4,:)-permute(perm.phzRateMeanAll(:,u,6,:),[1,2,4,3]),...
-             numel(tpp.phzBins),[]),'b')
-
-
-stind = find(validPosOccRlx & sesInds(unitSubset) & prmMaxRateSrt(:,2) > 4 & validUnits)';
-
-set(0,'defaultAxesFontSize',10);
-
-figure();
-for ind = 306;%stind(150:end),
-    clf();
-    t = cluSessionMapSubset(ind,1);
-    u = cluSessionMapSubset(ind,2);
-    mrateHZTPD = max(cell2mat(cf(@(p) p{t}.maxRate(u,false), pftHZTPD(statesIndsGPE(:)))));    
-    subplot(241);
-        plot(pfts{t},u,'mean','text',[],false,[],[],[],@jet,[],nanColor);
-    for s = 1:3,
-        sp2 = subplot(4,4,s+1);
-        plot(pftHZTPD{statesIndsGPE(s)}{t},u,'mean','',[0,mrateHZTPD],false,[],[],[],@jet,[],nanColor); 
-        sp1 = subplot(4,4,s+1+4);
-        plot(pftHZTPD{statesIndsGPE(s)}{t},u,'mean','',[0,mrateHZTPD],false,[],[],[],@jet,[],nanColor); 
-        sp1.Position(2) =         sp1.Position(2)+0.05;
-    end
-    subplot(245);
-        hold('on');        
-        for s = 1:3,
-            plot(sq(tpp.phzRateMeanAll(phzOrder,ind,s,1:101)),sclr(s));
-        end    
-        title(num2str([cluSessionMapSubset(ind,:),find(stind==ind), ind]))
-    subplot(2,4,6);
-        hold('on')
-        plot(spb,sq( tpp.zscore(phzOrder,ind,1:150,1)),'r');
-        ylabel('z-score')        
-        xlabel('theta phase')                
-        title('rear vs high')
-        xlim([0,2*pi])
-        ylim([-10,10]);
-    subplot(2,4,7);
-        hold('on')
-        plot(spb,sq( tpp.zscore(phzOrder,ind,1:150,4)),'g');
-        ylabel('z-score')        
-        xlabel('theta phase')                
-        title('high vs low')        
-        xlim([0,2*pi])        
-        ylim([-10,10]);        
-    subplot(2,4,8);
-        hold('on')
-        plot(sq( tpp.zscore(phzOrder,ind,1:150,5)),'b');
-        ylabel('z-score')        
-        xlabel('theta phase')                
-        title('low vs rear')                
-        xlim([0,2*pi])        
-        ylim([-10,10]);        
-    waitforbuttonpress();
-end
-
-
-
-
-
-stind = find(  validPosOccRlx             ...
-             & sesInds(unitSubset)        ...
-             & tpp.prmMaxRateSrt(:,2) > 4 ...
-             & validUnits                 ...
-             & ssi(:,1)==2 & ssi(:,2)==3 )';
-
-
-% mean phz vs res
-figure();
-stind = find(  validPosOccRlx             ...
-             & sesInds(unitSubset)        ...
-             & tpp.prmMaxRateSrt(:,2) > 4 ...
-             & validUnits                 ...
-             & ssi(:,1)==3 & ssi(:,2)==2 )';
-plot(angle(perm.zScrPosCpxMean(stind,1,6)),abs(perm.zScrPosCpxMean(stind,1,6)),'.b','MarkerSize',15);
-stind = find(  validPosOccRlx             ...
-             & sesInds(unitSubset)        ...
-             & tpp.prmMaxRateSrt(:,2) > 4 ...
-             & validUnits                 ...
-             & ssi(:,1)==2 & ssi(:,2)==3 )';
-hold('on');
-plot(angle(perm.zScrPosCpxMean(stind,1,4)),abs(perm.zScrPosCpxMean(stind,1,4)),'.g','MarkerSize',15);
-stind = find(  validPosOccRlx             ...
-             & sesInds(unitSubset)        ...
-             & tpp.prmMaxRateSrt(:,2) > 4 ...
-             & validUnits                 ...
-             & ssi(:,1)==1 & ssi(:,2)==2 )';
-hold('on');
-plot(angle(perm.zScrPosCpxMean(stind,1,1)),abs(perm.zScrPosCpxMean(stind,1,1)),'.r','MarkerSize',15);
-
-
-
-
-figure();
-subplot(325);
-stind = find(  validPosOccRlx             ...
-             & sesInds(unitSubset)        ...
-             & tpp.prmMaxRateSrt(:,2) > 4 ...
-             & validUnits                 ...
-             & ssi(:,1)==3 & ssi(:,2)==2 )';
-plot(angle(perm.zScrPosCpxMean(stind,1,6)),tpp.prmPhzAngSrt(stind,3),'.');
-title('LOW, high') 
-subplot(323);
-stind = find(  validPosOccRlx             ...
-             & sesInds(unitSubset)        ...
-             & tpp.prmMaxRateSrt(:,2) > 4 ...
-             & validUnits                 ...
-             & ssi(:,1)==2 & ssi(:,2)==3 )';
-hold('on');
-histogram(angle(perm.zScrPosCpxMean(stind,1,4)),linspace(-pi,pi,17));
-title('HIGH, low') 
-subplot(321);
-stind = find(  validPosOccRlx             ...
-             & sesInds(unitSubset)        ...
-             & tpp.prmMaxRateSrt(:,2) > 4 ...
-             & validUnits                 ...
-             & ssi(:,1)==1 & ssi(:,2)==2 )';
-hold('on');
-histogram(angle(perm.zScrPosCpxMean(stind,1,1)),linspace(-pi,pi,17));
-title('REAR, high') 
-
-
-figure();
-    stind = find(    validPosOccRlx             ...
-                   & sesInds(unitSubset)        ...
-                   & tpp.prmMaxRateSrt(:,2) > 4 ...
-                   & validUnits                 ...
-                   & ssi(:,1)==3 & ssi(:,2)==2 )';                         
-%                   & (ssi(:,1)==3 | ssi(:,2)==2) )';                             
-    %plot(max(tpp.zscore(:,stind,1,6)),std(tpp.zscore(:,stind,1,6)),'.')
-    %plot(sum(tpp.zscore(:,stind,1,6)>3.1)+randn([1,numel(stind)])/5,mean(tpp.zscore(:,stind,1,6)),'.');
-subplot(121);
-    plot(abs(perm.zScrShfCpxMean(stind,1,6)),sum(tpp.zscore(:,stind,1,6)>3.1)+randn([1,numel(stind)])/5,'.');
-subplot(122);    
-    plot(abs(perm.zScrShfCpxMean(stind,1,6)),max(tpp.zscore(:,stind,1,6)),'.');
-
-% phase of positive zscore of units which fire secondary state
-figure();
-subplot(313);
-    hold('on')
-    stind = find(  validPosOccRlx             ...
-                   & sesInds(unitSubset)        ...
-                   & tpp.prmMaxRateSrt(:,2) > 4 ...
-                   & validUnits                 ...
-                   & ssi(:,1)==3 & ssi(:,2)==2 )';
-    histogram(angle(perm.zScrShfCpxMean(stind,1,6)),linspace(-pi,pi,17));
-    stind = find(  validPosOccRlx             ...
-                   & sesInds(unitSubset)        ...
-                   & tpp.prmMaxRateSrt(:,2) > 4 ...
-                   & validUnits                 ...
-                   & ssi(:,1)==3 & ssi(:,2)==1 )';
-    histogram(angle(perm.zScrShfCpxMean(stind,1,5)),linspace(-pi,pi,17));
-    title('LOW, high,rear') 
-
-subplot(312);
-    stind = find(  validPosOccRlx             ...
-                   & sesInds(unitSubset)        ...
-                   & tpp.prmMaxRateSrt(:,2) > 4 ...
-                   & validUnits                 ...
-                   & ssi(:,1)==2 & ssi(:,2)==3 )';
-    hold('on');
-    histogram(angle(perm.zScrShfCpxMean(stind,1,4)),linspace(-pi,pi,17));
-    stind = find(  validPosOccRlx             ...
-                   & sesInds(unitSubset)        ...
-                   & tpp.prmMaxRateSrt(:,2) > 4 ...
-                   & validUnits                 ...
-                   & ssi(:,1)==2 & ssi(:,2)==1 )';
-    hold('on');
-    histogram(angle(perm.zScrShfCpxMean(stind,1,3)),linspace(-pi,pi,17));
-    title('HIGH, low','rear') 
-
-subplot(311);
-    stind = find(  validPosOccRlx             ...
-                   & sesInds(unitSubset)        ...
-                   & tpp.prmMaxRateSrt(:,2) > 4 ...
-                   & validUnits                 ...
-                   & ssi(:,1)==1 & ssi(:,2)==2 )';
-    hold('on');
-    histogram(angle(perm.zScrShfCpxMean(stind,1,1)),linspace(-pi,pi,17));
-    stind = find(  validPosOccRlx             ...
-                   & sesInds(unitSubset)        ...
-                   & tpp.prmMaxRateSrt(:,2) > 4 ...
-                   & validUnits                 ...
-                   & ssi(:,1)==1 & ssi(:,2)==3 )';
-    hold('on');
-    histogram(angle(perm.zScrShfCpxMean(stind,1,2)),linspace(-pi,pi,17));
-    title('REAR, high, low') 
-
-ForAllSubplots('ylim([0,10]);')
-ForAllSubplots('xlim([-pi,pi]);')
-
-
-
-
-
-figure
-stind = find(  validPosOccRlx             ...
-             & sesInds(unitSubset)        ...
-             & tpp.prmMaxRateSrt(:,2) <= 4 ...
-             & validUnits                 ...
-             & ssi(:,1)==s)';
-histogram(tpp.prmPhzAngSrt(stind,s),linspace(-pi,pi,17));
-title('LOW') ;
-
-
-
-
-figure();
-stind = find(  validPosOccRlx             ...
-             & sesInds(unitSubset)        ...
-             & tpp.prmMaxRateSrt(:,2) > 4 ...
-             & validUnits                 ...
-             & ssi(:,1)==2 & ssi(:,2)==3 )';
-plot(angle(perm.zScrPosCpxMean(stind,1,4)),...
-     angle(perm.zScrNegCpxMean(stind,1,4)),...
-     '.g','MarkerSize',15);
-hold('on');
-stind = find(  validPosOccRlx             ...
-             & sesInds(unitSubset)        ...
-             & tpp.prmMaxRateSrt(:,2) > 4 ...
-             & validUnits                 ...
-             & ssi(:,1)==3 & ssi(:,2)==2 )';
-plot(angle(perm.zScrPosCpxMean(stind,1,6)),...
-     angle(perm.zScrNegCpxMean(stind,1,6)),...
-     '.b','MarkerSize',15);
-stind = find(  validPosOccRlx             ...
-             & sesInds(unitSubset)        ...
-             & tpp.prmMaxRateSrt(:,2) > 4 ...
-             & validUnits                 ...
-             & ssi(:,1)==1 & ssi(:,2)==2 )';
-plot(angle(perm.zScrPosCpxMean(stind,1,1)),...
-     angle(perm.zScrNegCpxMean(stind,1,1)),...
-     '.r','MarkerSize',15);
-
-
-
-
-
- 
-% Sort the z-scores 
-stind = find(  validPosOccRlx             ...
-             & sesInds(unitSubset)        ...
-             & tpp.prmMaxRateSrt(:,2) > 4 ...
-             & validUnits                 ...
-             & ssi(:,1)==2 & ssi(:,2)==3 )';
-figure();
-imagesc(tpp.zscore(phzOrder,stind,1,4)');
-caxis([-5.2,5.2]);
-
-
-% High Dominant -> Low
-figure();
-stind = find(  validPosOccRlx             ...
-             & sesInds(unitSubset)        ...
-             & tpp.prmMaxRateSrt(:,2) > 4 ...
-             & validUnits                 ...
-             & ssi(:,1)==2 & ssi(:,2)==3 )';
-[~,sind] = sortrows([angle(perm.zScrPosCpxMean(stind,1,4)),abs(perm.zScrPosCpxMean(stind,1,4))],[1,2]);
-zscrs = tpp.zscore(phzOrder,stind,1,4);;
-imagesc(zscrs(:,sind)');
-caxis([-5.2,5.2]);
-colormap('jet');
-
-% High Dominant -> Rear
-figure();
-stind = find(  validPosOccRlx             ...
-             & sesInds(unitSubset)        ...
-             & tpp.prmMaxRateSrt(:,2) > 4 ...
-             & validUnits                 ...
-             & ssi(:,1)==2 & ssi(:,2)==1 )';
-[~,sind] = sortrows([angle(perm.zScrPosCpxMean(stind,1,3)),abs(perm.zScrPosCpxMean(stind,1,3))],[1,2]);
-zscrs = tpp.zscore(phzOrder,stind,1,3);;
-imagesc(zscrs(:,sind)');
-caxis([-5.2,5.2]);
-colormap('jet');
-
-
-
-% Rear Dominant -> High
-figure();
-stind = find(  validPosOccRlx             ...
-             & sesInds(unitSubset)         ...
-             & tpp.prmMaxRateSrt(:,2) > 4 ...
-             & validUnits                 ...
-             & ssi(:,1)==1 & ssi(:,2)==2  ...
-             & sum(tpp.zscore(phzOrder,:,1,1)>2.1)'>4)';
-[~,sind] = sort(angle(perm.zScrPosCpxMean(stind,1,1)));
-zscrs = tpp.zscore(phzOrder,stind,1,1);
-imagesc(repmat(zscrs(:,sind)',[1,2]));
-caxis([-6.2,6.2]);
-colormap('jet');
-
-% Low Dominant -> High
-figure();
-stind = find(  validPosOccRlx             ...
-             & sesInds(unitSubset)        ...
-             & tpp.prmMaxRateSrt(:,2) > 4 ...
-             & validUnits                 ...
-             & ssi(:,1)==3 & ssi(:,2)==2  ...
-             & sum(tpp.zscore(phzOrder,:,1,6)>2.1)'>4)';
-[~,sind] = sort(angle(perm.zScrPosCpxMean(stind,1,6)));
-zscrs = tpp.zscore(phzOrder,stind,1,6);
-imagesc(repmat(zscrs(:,sind)',[1,2]));
-caxis([-6.2,6.2]);
-colormap('jet');
-% Low Dominant -> Rear
-figure();
-stind = find(  validPosOccRlx             ...
-             & sesInds(unitSubset)        ...
-             & tpp.prmMaxRateSrt(:,2) > 4 ...
-             & validUnits                 ...
-             & ssi(:,1)==3 & ssi(:,2)==1  ...
-             & sum(tpp.zscore(phzOrder,:,1,5)>2.1)'>4)';
-[~,sind] = sort(angle(perm.zScrPosCpxMean(stind,1,5)));
-zscrs = tpp.zscore(phzOrder,stind,1,5);
-imagesc(repmat(zscrs(:,sind)',[1,2]));
-caxis([-6.2,6.2]);
-colormap('jet');
-
-
-% High Dominant -> Low
-figure();
-stind = find(  validPosOccRlx             ...
-             & sesInds(unitSubset)        ...
-             & tpp.prmMaxRateSrt(:,2) > 4 ...
-             & validUnits                 ...
-             & ssi(:,1)==2 & ssi(:,2)==3  ...
-             & sum(tpp.zscore(phzOrder,:,1,4)>2.1)'>4)';
-[~,sind] = sort(angle(perm.zScrPosCpxMean(stind,1,4)));
-zscrs = tpp.zscore(phzOrder,stind,1,4);
-imagesc(repmat(zscrs(:,sind)',[1,2]));
-caxis([-6.2,6.2]);
-colormap('jet');
-
-% High Dominant -> Rear
-figure();
-stind = find(  validPosOccRlx             ...
-             & sesInds(unitSubset)        ...
-             & tpp.prmMaxRateSrt(:,2) > 4 ...
-             & validUnits                 ...
-             & ssi(:,1)==2 & ssi(:,2)==1  ...
-             & sum(tpp.zscore(phzOrder,:,1,3)>2.1)'>4)';
-[~,sind] = sort(angle(perm.zScrPosCpxMean(stind,1,3)));
-zscrs = tpp.zscore(phzOrder,stind,1,3);
-imagesc(repmat(zscrs(:,sind)',[1,2]));
-caxis([-6.2,6.2]);
-colormap('jet');
-
-
-
-
-% Sort the z-scores 
-stind = find(  validPosOccRlx             ...
-             & sesInds(unitSubset)        ...
-             & tpp.prmMaxRateSrt(:,2) > 4 ...
-             & validUnits                 ...
-             & ssi(:,1)==3 & ssi(:,2)==2 )';
-figure();
-imagesc(tpp.zscore(phzOrder,stind,1,6)');
-caxis([-5.2,5.2]);
-colormap('jet');
-
-% Sort the z-scores 
-stind = find(  validPosOccRlx             ...
-             & sesInds(unitSubset)        ...
-             & tpp.prmMaxRateSrt(:,2) > 4 ...
-             & validUnits                 ...
-             & ssi(:,1)==2 & ssi(:,2)==3 )';
-tppz = tpp.zscore(phzOrder,stind,1,4)';
-figure();
-imagesc(tppz);
-caxis([-5.2,5.2]);
-colormap('jet');
-
-% Sort the z-scores 
-stind = find(  validPosOccRlx             ...
-             & sesInds(unitSubset)        ...
-             & tpp.prmMaxRateSrt(:,2) > 4 ...
-             & validUnits                 ...
-             & ssi(:,1)==3 & ssi(:,2)==2 )';
-tppz = sortrows(tpp.zscore(phzOrder,stind,1,6)',5);
-figure();
-imagesc(tppz);
-caxis([-5.2,5.2]);
-colormap('jet');
-colorbar();
-
-
-
-% Sort the z-scores 
-stind = find(  validPosOccRlx             ...
-             & sesInds(unitSubset)        ...
-             & tpp.prmMaxRateSrt(:,2) > 4 ...
-             & validUnits                 ...
-             & ssi(:,1)==2 & ssi(:,2)==3 )';
-
-[~,rsi] = sort(mean(tpp.phzRateMean(:,stind,2),1,'omitnan')-mean(tpp.phzRateMean(:,stind,3),1,'omitnan'));
-figure();
-imagesc(tpp.zscore(phzOrder,stind(rsi),1,4)');
-caxis([-3.2,3.2])
-
-figure();
-subplot(121)
-imagesc(tpp.phzRateMean(phzOrder,stind,3)');
-caxis([0,15.2])
-subplot(122)
-imagesc(tpp.phzRateMean(phzOrder,stind,2)');
-caxis([0,15.2])
-
-figure();
-% z-score rear high
-stind = find(  validPosOccRlx             ...
-             & sesInds(unitSubset)        ...
-             & tpp.prmMaxRateSrt(:,2) > 4 ...
-             & validUnits                 ...
-             & ssi(:,1)==1 & ssi(:,2)==2 )';
-imagesc(tpp.zscore(phzOrder,stind,1,1)');
-caxis([-5.2,5.2]);
-% z-score high rear
-stind = find(  validPosOccRlx             ...
-             & sesInds(unitSubset)        ...
-             & tpp.prmMaxRateSrt(:,2) > 4 ...
-             & validUnits                 ...
-             & ssi(:,1)==1 & ssi(:,2)==2 )';
-imagesc(tpp.zscore(phzOrder,stind,1,1)');
-caxis([-5.2,5.2]);
-
-% z-score high low
-% z-score low  rear
-
-% rear only 
-% high only 
-% low  only
+% $$$ spb = perm.phzBins;
+% $$$ 
+% $$$ u = ismember(cluSessionMapSubset,[5,31],'rows');
+% $$$ 
+% $$$ u = ismember(cluSessionMapSubset,[21,22],'rows');
+% $$$ figure();
+% $$$ subplot(211);
+% $$$     hold('on');
+% $$$     plot(spb,sq( tpp.phzRateMeanDiff(phzOrder,u,1:150,4)),'r');
+% $$$     plot(spb,sq(perm.phzRateMeanDiff(phzOrder,u,1:150,4)),'b');
+% $$$     title('hloc-lloc (red)   hlperm (blue)')
+% $$$     ylabel('rate difference');
+% $$$     xlim([0,2*pi]);
+% $$$ subplot(212);
+% $$$     hold('on');
+% $$$     plot(spb,sq(tpp.zscore(phzOrder,u,1:150,4)),'c');
+% $$$     plot(spb,sq(tpp.zscore(phzOrder,u,1,4)),'k','LineWidth',5);
+% $$$     ylabel('z-score')
+% $$$     xlabel('Theta phase');
+% $$$     xlim([0,2*pi]);
+% $$$ 
+% $$$     
+% $$$     
+% $$$     
+% $$$ for p = 1:16;
+% $$$ [hsig(p),pval(p)] =ttest2(sq(tpp.phzRateMeanDiff(p,u,:,4)),sq(perm.phzRateMeanDiff(p,u,:,4)));
+% $$$ end
+% $$$ 
+% $$$ figure,plot(sq(tmap(:,u,tind(:))))
+% $$$ 
+% $$$ 
+% $$$ 
+% $$$ figure,
+% $$$ hold('on'),
+% $$$ plot(sq(tpp.phzRateMeanDiff(:,u,:,4)),'r');
+% $$$ plot(reshape(tpp.phzRateMeanAll(:,u,2,:)...
+% $$$                             -permute(tpp.phzRateMeanAll(:,u,3,:),[1,2,4,3]),...
+% $$$                                    numel(tpp.phzBins),[]))
+% $$$ 
+% $$$ 
+% $$$ figure();
+% $$$ hold('on');
+% $$$ plot(tpp.phzRateMean(:,u,3,1),'b')
+% $$$ plot(tpp.phzRateMean(:,u,2,1),'g');
+% $$$ 
+% $$$ 
+% $$$ figure,
+% $$$ hold('on');
+% $$$ plot(reshape(tpp.phzRateMeanAll(:,u,2,:)-permute(tpp.phzRateMeanAll(:,u,3,:),[1,2,4,3]),...
+% $$$              numel(tpp.phzBins),[]),'r')
+% $$$ plot(reshape(perm.phzRateMeanAll(:,u,4,:)-permute(perm.phzRateMeanAll(:,u,6,:),[1,2,4,3]),...
+% $$$              numel(tpp.phzBins),[]),'b')
+% $$$ 
+% $$$ 
+% $$$ stind = find(validPosOccRlx & sesInds(unitSubset) & prmMaxRateSrt(:,2) > 4 & validUnits)';
+% $$$ 
+% $$$ set(0,'defaultAxesFontSize',10);
+% $$$ 
+% $$$ figure();
+% $$$ for ind = 306;%stind(150:end),
+% $$$     clf();
+% $$$     t = cluSessionMapSubset(ind,1);
+% $$$     u = cluSessionMapSubset(ind,2);
+% $$$     mrateHZTPD = max(cell2mat(cf(@(p) p{t}.maxRate(u,false), pftHZTPD(statesIndsGPE(:)))));    
+% $$$     subplot(241);
+% $$$         plot(pfts{t},u,'mean','text',[],false,[],[],[],@jet,[],nanColor);
+% $$$     for s = 1:3,
+% $$$         sp2 = subplot(4,4,s+1);
+% $$$         plot(pftHZTPD{statesIndsGPE(s)}{t},u,'mean','',[0,mrateHZTPD],false,[],[],[],@jet,[],nanColor); 
+% $$$         sp1 = subplot(4,4,s+1+4);
+% $$$         plot(pftHZTPD{statesIndsGPE(s)}{t},u,'mean','',[0,mrateHZTPD],false,[],[],[],@jet,[],nanColor); 
+% $$$         sp1.Position(2) =         sp1.Position(2)+0.05;
+% $$$     end
+% $$$     subplot(245);
+% $$$         hold('on');        
+% $$$         for s = 1:3,
+% $$$             plot(sq(tpp.phzRateMeanAll(phzOrder,ind,s,1:101)),sclr(s));
+% $$$         end    
+% $$$         title(num2str([cluSessionMapSubset(ind,:),find(stind==ind), ind]))
+% $$$     subplot(2,4,6);
+% $$$         hold('on')
+% $$$         plot(spb,sq( tpp.zscore(phzOrder,ind,1:150,1)),'r');
+% $$$         ylabel('z-score')        
+% $$$         xlabel('theta phase')                
+% $$$         title('rear vs high')
+% $$$         xlim([0,2*pi])
+% $$$         ylim([-10,10]);
+% $$$     subplot(2,4,7);
+% $$$         hold('on')
+% $$$         plot(spb,sq( tpp.zscore(phzOrder,ind,1:150,4)),'g');
+% $$$         ylabel('z-score')        
+% $$$         xlabel('theta phase')                
+% $$$         title('high vs low')        
+% $$$         xlim([0,2*pi])        
+% $$$         ylim([-10,10]);        
+% $$$     subplot(2,4,8);
+% $$$         hold('on')
+% $$$         plot(sq( tpp.zscore(phzOrder,ind,1:150,5)),'b');
+% $$$         ylabel('z-score')        
+% $$$         xlabel('theta phase')                
+% $$$         title('low vs rear')                
+% $$$         xlim([0,2*pi])        
+% $$$         ylim([-10,10]);        
+% $$$     waitforbuttonpress();
+% $$$ end
+% $$$ 
+% $$$ 
+% $$$ 
+% $$$ 
+% $$$ 
+% $$$ stind = find(  validPosOccRlx             ...
+% $$$              & sesInds(unitSubset)        ...
+% $$$              & tpp.prmMaxRateSrt(:,2) > 4 ...
+% $$$              & validUnits                 ...
+% $$$              & ssi(:,1)==2 & ssi(:,2)==3 )';
+% $$$ 
+% $$$ 
+% $$$ % mean phz vs res
+% $$$ figure();
+% $$$ stind = find(  validPosOccRlx             ...
+% $$$              & sesInds(unitSubset)        ...
+% $$$              & tpp.prmMaxRateSrt(:,2) > 4 ...
+% $$$              & validUnits                 ...
+% $$$              & ssi(:,1)==3 & ssi(:,2)==2 )';
+% $$$ plot(angle(perm.zScrPosCpxMean(stind,1,6)),abs(perm.zScrPosCpxMean(stind,1,6)),'.b','MarkerSize',15);
+% $$$ stind = find(  validPosOccRlx             ...
+% $$$              & sesInds(unitSubset)        ...
+% $$$              & tpp.prmMaxRateSrt(:,2) > 4 ...
+% $$$              & validUnits                 ...
+% $$$              & ssi(:,1)==2 & ssi(:,2)==3 )';
+% $$$ hold('on');
+% $$$ plot(angle(perm.zScrPosCpxMean(stind,1,4)),abs(perm.zScrPosCpxMean(stind,1,4)),'.g','MarkerSize',15);
+% $$$ stind = find(  validPosOccRlx             ...
+% $$$              & sesInds(unitSubset)        ...
+% $$$              & tpp.prmMaxRateSrt(:,2) > 4 ...
+% $$$              & validUnits                 ...
+% $$$              & ssi(:,1)==1 & ssi(:,2)==2 )';
+% $$$ hold('on');
+% $$$ plot(angle(perm.zScrPosCpxMean(stind,1,1)),abs(perm.zScrPosCpxMean(stind,1,1)),'.r','MarkerSize',15);
+% $$$ 
+% $$$ 
+% $$$ 
+% $$$ 
+% $$$ figure();
+% $$$ subplot(325);
+% $$$ stind = find(  validPosOccRlx             ...
+% $$$              & sesInds(unitSubset)        ...
+% $$$              & tpp.prmMaxRateSrt(:,2) > 4 ...
+% $$$              & validUnits                 ...
+% $$$              & ssi(:,1)==3 & ssi(:,2)==2 )';
+% $$$ plot(angle(perm.zScrPosCpxMean(stind,1,6)),tpp.prmPhzAngSrt(stind,3),'.');
+% $$$ title('LOW, high') 
+% $$$ subplot(323);
+% $$$ stind = find(  validPosOccRlx             ...
+% $$$              & sesInds(unitSubset)        ...
+% $$$              & tpp.prmMaxRateSrt(:,2) > 4 ...
+% $$$              & validUnits                 ...
+% $$$              & ssi(:,1)==2 & ssi(:,2)==3 )';
+% $$$ hold('on');
+% $$$ histogram(angle(perm.zScrPosCpxMean(stind,1,4)),linspace(-pi,pi,17));
+% $$$ title('HIGH, low') 
+% $$$ subplot(321);
+% $$$ stind = find(  validPosOccRlx             ...
+% $$$              & sesInds(unitSubset)        ...
+% $$$              & tpp.prmMaxRateSrt(:,2) > 4 ...
+% $$$              & validUnits                 ...
+% $$$              & ssi(:,1)==1 & ssi(:,2)==2 )';
+% $$$ hold('on');
+% $$$ histogram(angle(perm.zScrPosCpxMean(stind,1,1)),linspace(-pi,pi,17));
+% $$$ title('REAR, high') 
+% $$$ 
+% $$$ 
+% $$$ figure();
+% $$$     stind = find(    validPosOccRlx             ...
+% $$$                    & sesInds(unitSubset)        ...
+% $$$                    & tpp.prmMaxRateSrt(:,2) > 4 ...
+% $$$                    & validUnits                 ...
+% $$$                    & ssi(:,1)==3 & ssi(:,2)==2 )';                         
+% $$$ %                   & (ssi(:,1)==3 | ssi(:,2)==2) )';                             
+% $$$     %plot(max(tpp.zscore(:,stind,1,6)),std(tpp.zscore(:,stind,1,6)),'.')
+% $$$     %plot(sum(tpp.zscore(:,stind,1,6)>3.1)+randn([1,numel(stind)])/5,mean(tpp.zscore(:,stind,1,6)),'.');
+% $$$ subplot(121);
+% $$$     plot(abs(perm.zScrShfCpxMean(stind,1,6)),sum(tpp.zscore(:,stind,1,6)>3.1)+randn([1,numel(stind)])/5,'.');
+% $$$ subplot(122);    
+% $$$     plot(abs(perm.zScrShfCpxMean(stind,1,6)),max(tpp.zscore(:,stind,1,6)),'.');
+% $$$ 
+% $$$ % phase of positive zscore of units which fire secondary state
+% $$$ figure();
+% $$$ subplot(313);
+% $$$     hold('on')
+% $$$     stind = find(  validPosOccRlx             ...
+% $$$                    & sesInds(unitSubset)        ...
+% $$$                    & tpp.prmMaxRateSrt(:,2) > 4 ...
+% $$$                    & validUnits                 ...
+% $$$                    & ssi(:,1)==3 & ssi(:,2)==2 )';
+% $$$     histogram(angle(perm.zScrShfCpxMean(stind,1,6)),linspace(-pi,pi,17));
+% $$$     stind = find(  validPosOccRlx             ...
+% $$$                    & sesInds(unitSubset)        ...
+% $$$                    & tpp.prmMaxRateSrt(:,2) > 4 ...
+% $$$                    & validUnits                 ...
+% $$$                    & ssi(:,1)==3 & ssi(:,2)==1 )';
+% $$$     histogram(angle(perm.zScrShfCpxMean(stind,1,5)),linspace(-pi,pi,17));
+% $$$     title('LOW, high,rear') 
+% $$$ 
+% $$$ subplot(312);
+% $$$     stind = find(  validPosOccRlx             ...
+% $$$                    & sesInds(unitSubset)        ...
+% $$$                    & tpp.prmMaxRateSrt(:,2) > 4 ...
+% $$$                    & validUnits                 ...
+% $$$                    & ssi(:,1)==2 & ssi(:,2)==3 )';
+% $$$     hold('on');
+% $$$     histogram(angle(perm.zScrShfCpxMean(stind,1,4)),linspace(-pi,pi,17));
+% $$$     stind = find(  validPosOccRlx             ...
+% $$$                    & sesInds(unitSubset)        ...
+% $$$                    & tpp.prmMaxRateSrt(:,2) > 4 ...
+% $$$                    & validUnits                 ...
+% $$$                    & ssi(:,1)==2 & ssi(:,2)==1 )';
+% $$$     hold('on');
+% $$$     histogram(angle(perm.zScrShfCpxMean(stind,1,3)),linspace(-pi,pi,17));
+% $$$     title('HIGH, low','rear') 
+% $$$ 
+% $$$ subplot(311);
+% $$$     stind = find(  validPosOccRlx             ...
+% $$$                    & sesInds(unitSubset)        ...
+% $$$                    & tpp.prmMaxRateSrt(:,2) > 4 ...
+% $$$                    & validUnits                 ...
+% $$$                    & ssi(:,1)==1 & ssi(:,2)==2 )';
+% $$$     hold('on');
+% $$$     histogram(angle(perm.zScrShfCpxMean(stind,1,1)),linspace(-pi,pi,17));
+% $$$     stind = find(  validPosOccRlx             ...
+% $$$                    & sesInds(unitSubset)        ...
+% $$$                    & tpp.prmMaxRateSrt(:,2) > 4 ...
+% $$$                    & validUnits                 ...
+% $$$                    & ssi(:,1)==1 & ssi(:,2)==3 )';
+% $$$     hold('on');
+% $$$     histogram(angle(perm.zScrShfCpxMean(stind,1,2)),linspace(-pi,pi,17));
+% $$$     title('REAR, high, low') 
+% $$$ 
+% $$$ ForAllSubplots('ylim([0,10]);')
+% $$$ ForAllSubplots('xlim([-pi,pi]);')
+% $$$ 
+% $$$ 
+% $$$ 
+% $$$ 
+% $$$ 
+% $$$ figure
+% $$$ stind = find(  validPosOccRlx             ...
+% $$$              & sesInds(unitSubset)        ...
+% $$$              & tpp.prmMaxRateSrt(:,2) <= 4 ...
+% $$$              & validUnits                 ...
+% $$$              & ssi(:,1)==s)';
+% $$$ histogram(tpp.prmPhzAngSrt(stind,s),linspace(-pi,pi,17));
+% $$$ title('LOW') ;
+% $$$ 
+% $$$ 
+% $$$ 
+% $$$ 
+% $$$ figure();
+% $$$ stind = find(  validPosOccRlx             ...
+% $$$              & sesInds(unitSubset)        ...
+% $$$              & tpp.prmMaxRateSrt(:,2) > 4 ...
+% $$$              & validUnits                 ...
+% $$$              & ssi(:,1)==2 & ssi(:,2)==3 )';
+% $$$ plot(angle(perm.zScrPosCpxMean(stind,1,4)),...
+% $$$      angle(perm.zScrNegCpxMean(stind,1,4)),...
+% $$$      '.g','MarkerSize',15);
+% $$$ hold('on');
+% $$$ stind = find(  validPosOccRlx             ...
+% $$$              & sesInds(unitSubset)        ...
+% $$$              & tpp.prmMaxRateSrt(:,2) > 4 ...
+% $$$              & validUnits                 ...
+% $$$              & ssi(:,1)==3 & ssi(:,2)==2 )';
+% $$$ plot(angle(perm.zScrPosCpxMean(stind,1,6)),...
+% $$$      angle(perm.zScrNegCpxMean(stind,1,6)),...
+% $$$      '.b','MarkerSize',15);
+% $$$ stind = find(  validPosOccRlx             ...
+% $$$              & sesInds(unitSubset)        ...
+% $$$              & tpp.prmMaxRateSrt(:,2) > 4 ...
+% $$$              & validUnits                 ...
+% $$$              & ssi(:,1)==1 & ssi(:,2)==2 )';
+% $$$ plot(angle(perm.zScrPosCpxMean(stind,1,1)),...
+% $$$      angle(perm.zScrNegCpxMean(stind,1,1)),...
+% $$$      '.r','MarkerSize',15);
+% $$$ 
+% $$$ 
+% $$$ 
+% $$$ 
+% $$$ 
+% $$$  
+% $$$ % Sort the z-scores 
+% $$$ stind = find(  validPosOccRlx             ...
+% $$$              & sesInds(unitSubset)        ...
+% $$$              & tpp.prmMaxRateSrt(:,2) > 4 ...
+% $$$              & validUnits                 ...
+% $$$              & ssi(:,1)==2 & ssi(:,2)==3 )';
+% $$$ figure();
+% $$$ imagesc(tpp.zscore(phzOrder,stind,1,4)');
+% $$$ caxis([-5.2,5.2]);
+% $$$ 
+% $$$ 
+% $$$ % High Dominant -> Low
+% $$$ figure();
+% $$$ stind = find(  validPosOccRlx             ...
+% $$$              & sesInds(unitSubset)        ...
+% $$$              & tpp.prmMaxRateSrt(:,2) > 4 ...
+% $$$              & validUnits                 ...
+% $$$              & ssi(:,1)==2 & ssi(:,2)==3 )';
+% $$$ [~,sind] = sortrows([angle(perm.zScrPosCpxMean(stind,1,4)),abs(perm.zScrPosCpxMean(stind,1,4))],[1,2]);
+% $$$ zscrs = tpp.zscore(phzOrder,stind,1,4);;
+% $$$ imagesc(zscrs(:,sind)');
+% $$$ caxis([-5.2,5.2]);
+% $$$ colormap('jet');
+% $$$ 
+% $$$ % High Dominant -> Rear
+% $$$ figure();
+% $$$ stind = find(  validPosOccRlx             ...
+% $$$              & sesInds(unitSubset)        ...
+% $$$              & tpp.prmMaxRateSrt(:,2) > 4 ...
+% $$$              & validUnits                 ...
+% $$$              & ssi(:,1)==2 & ssi(:,2)==1 )';
+% $$$ [~,sind] = sortrows([angle(perm.zScrPosCpxMean(stind,1,3)),abs(perm.zScrPosCpxMean(stind,1,3))],[1,2]);
+% $$$ zscrs = tpp.zscore(phzOrder,stind,1,3);;
+% $$$ imagesc(zscrs(:,sind)');
+% $$$ caxis([-5.2,5.2]);
+% $$$ colormap('jet');
+% $$$ 
+% $$$ 
+% $$$ 
+% $$$ % Rear Dominant -> High
+% $$$ figure();
+% $$$ stind = find(  validPosOccRlx             ...
+% $$$              & sesInds(unitSubset)         ...
+% $$$              & tpp.prmMaxRateSrt(:,2) > 4 ...
+% $$$              & validUnits                 ...
+% $$$              & ssi(:,1)==1 & ssi(:,2)==2  ...
+% $$$              & sum(tpp.zscore(phzOrder,:,1,1)>2.1)'>4)';
+% $$$ [~,sind] = sort(angle(perm.zScrPosCpxMean(stind,1,1)));
+% $$$ zscrs = tpp.zscore(phzOrder,stind,1,1);
+% $$$ imagesc(repmat(zscrs(:,sind)',[1,2]));
+% $$$ caxis([-6.2,6.2]);
+% $$$ colormap('jet');
+% $$$ 
+% $$$ % Low Dominant -> High
+% $$$ figure();
+% $$$ stind = find(  validPosOccRlx             ...
+% $$$              & sesInds(unitSubset)        ...
+% $$$              & tpp.prmMaxRateSrt(:,2) > 4 ...
+% $$$              & validUnits                 ...
+% $$$              & ssi(:,1)==3 & ssi(:,2)==2  ...
+% $$$              & sum(tpp.zscore(phzOrder,:,1,6)>2.1)'>4)';
+% $$$ [~,sind] = sort(angle(perm.zScrPosCpxMean(stind,1,6)));
+% $$$ zscrs = tpp.zscore(phzOrder,stind,1,6);
+% $$$ imagesc(repmat(zscrs(:,sind)',[1,2]));
+% $$$ caxis([-6.2,6.2]);
+% $$$ colormap('jet');
+% $$$ % Low Dominant -> Rear
+% $$$ figure();
+% $$$ stind = find(  validPosOccRlx             ...
+% $$$              & sesInds(unitSubset)        ...
+% $$$              & tpp.prmMaxRateSrt(:,2) > 4 ...
+% $$$              & validUnits                 ...
+% $$$              & ssi(:,1)==3 & ssi(:,2)==1  ...
+% $$$              & sum(tpp.zscore(phzOrder,:,1,5)>2.1)'>4)';
+% $$$ [~,sind] = sort(angle(perm.zScrPosCpxMean(stind,1,5)));
+% $$$ zscrs = tpp.zscore(phzOrder,stind,1,5);
+% $$$ imagesc(repmat(zscrs(:,sind)',[1,2]));
+% $$$ caxis([-6.2,6.2]);
+% $$$ colormap('jet');
+% $$$ 
+% $$$ 
+% $$$ % High Dominant -> Low
+% $$$ figure();
+% $$$ stind = find(  validPosOccRlx             ...
+% $$$              & sesInds(unitSubset)        ...
+% $$$              & tpp.prmMaxRateSrt(:,2) > 4 ...
+% $$$              & validUnits                 ...
+% $$$              & ssi(:,1)==2 & ssi(:,2)==3  ...
+% $$$              & sum(tpp.zscore(phzOrder,:,1,4)>2.1)'>4)';
+% $$$ [~,sind] = sort(angle(perm.zScrPosCpxMean(stind,1,4)));
+% $$$ zscrs = tpp.zscore(phzOrder,stind,1,4);
+% $$$ imagesc(repmat(zscrs(:,sind)',[1,2]));
+% $$$ caxis([-6.2,6.2]);
+% $$$ colormap('jet');
+% $$$ 
+% $$$ % High Dominant -> Rear
+% $$$ figure();
+% $$$ stind = find(  validPosOccRlx             ...
+% $$$              & sesInds(unitSubset)        ...
+% $$$              & tpp.prmMaxRateSrt(:,2) > 4 ...
+% $$$              & validUnits                 ...
+% $$$              & ssi(:,1)==2 & ssi(:,2)==1  ...
+% $$$              & sum(tpp.zscore(phzOrder,:,1,3)>2.1)'>4)';
+% $$$ [~,sind] = sort(angle(perm.zScrPosCpxMean(stind,1,3)));
+% $$$ zscrs = tpp.zscore(phzOrder,stind,1,3);
+% $$$ imagesc(repmat(zscrs(:,sind)',[1,2]));
+% $$$ caxis([-6.2,6.2]);
+% $$$ colormap('jet');
+% $$$ 
+% $$$ 
+% $$$ 
+% $$$ 
+% $$$ % Sort the z-scores 
+% $$$ stind = find(  validPosOccRlx             ...
+% $$$              & sesInds(unitSubset)        ...
+% $$$              & tpp.prmMaxRateSrt(:,2) > 4 ...
+% $$$              & validUnits                 ...
+% $$$              & ssi(:,1)==3 & ssi(:,2)==2 )';
+% $$$ figure();
+% $$$ imagesc(tpp.zscore(phzOrder,stind,1,6)');
+% $$$ caxis([-5.2,5.2]);
+% $$$ colormap('jet');
+% $$$ 
+% $$$ % Sort the z-scores 
+% $$$ stind = find(  validPosOccRlx             ...
+% $$$              & sesInds(unitSubset)        ...
+% $$$              & tpp.prmMaxRateSrt(:,2) > 4 ...
+% $$$              & validUnits                 ...
+% $$$              & ssi(:,1)==2 & ssi(:,2)==3 )';
+% $$$ tppz = tpp.zscore(phzOrder,stind,1,4)';
+% $$$ figure();
+% $$$ imagesc(tppz);
+% $$$ caxis([-5.2,5.2]);
+% $$$ colormap('jet');
+% $$$ 
+% $$$ % Sort the z-scores 
+% $$$ stind = find(  validPosOccRlx             ...
+% $$$              & sesInds(unitSubset)        ...
+% $$$              & tpp.prmMaxRateSrt(:,2) > 4 ...
+% $$$              & validUnits                 ...
+% $$$              & ssi(:,1)==3 & ssi(:,2)==2 )';
+% $$$ tppz = sortrows(tpp.zscore(phzOrder,stind,1,6)',5);
+% $$$ figure();
+% $$$ imagesc(tppz);
+% $$$ caxis([-5.2,5.2]);
+% $$$ colormap('jet');
+% $$$ colorbar();
+% $$$ 
+% $$$ 
+% $$$ 
+% $$$ % Sort the z-scores 
+% $$$ stind = find(  validPosOccRlx             ...
+% $$$              & sesInds(unitSubset)        ...
+% $$$              & tpp.prmMaxRateSrt(:,2) > 4 ...
+% $$$              & validUnits                 ...
+% $$$              & ssi(:,1)==2 & ssi(:,2)==3 )';
+% $$$ 
+% $$$ [~,rsi] = sort(mean(tpp.phzRateMean(:,stind,2),1,'omitnan')-mean(tpp.phzRateMean(:,stind,3),1,'omitnan'));
+% $$$ figure();
+% $$$ imagesc(tpp.zscore(phzOrder,stind(rsi),1,4)');
+% $$$ caxis([-3.2,3.2])
+% $$$ 
+% $$$ figure();
+% $$$ subplot(121)
+% $$$ imagesc(tpp.phzRateMean(phzOrder,stind,3)');
+% $$$ caxis([0,15.2])
+% $$$ subplot(122)
+% $$$ imagesc(tpp.phzRateMean(phzOrder,stind,2)');
+% $$$ caxis([0,15.2])
+% $$$ 
+% $$$ figure();
+% $$$ % z-score rear high
+% $$$ stind = find(  validPosOccRlx             ...
+% $$$              & sesInds(unitSubset)        ...
+% $$$              & tpp.prmMaxRateSrt(:,2) > 4 ...
+% $$$              & validUnits                 ...
+% $$$              & ssi(:,1)==1 & ssi(:,2)==2 )';
+% $$$ imagesc(tpp.zscore(phzOrder,stind,1,1)');
+% $$$ caxis([-5.2,5.2]);
+% $$$ % z-score high rear
+% $$$ stind = find(  validPosOccRlx             ...
+% $$$              & sesInds(unitSubset)        ...
+% $$$              & tpp.prmMaxRateSrt(:,2) > 4 ...
+% $$$              & validUnits                 ...
+% $$$              & ssi(:,1)==1 & ssi(:,2)==2 )';
+% $$$ imagesc(tpp.zscore(phzOrder,stind,1,1)');
+% $$$ caxis([-5.2,5.2]);
+% $$$ 
+% $$$ % z-score high low
+% $$$ % z-score low  rear
+% $$$ 
+% $$$ % rear only 
+% $$$ % high only 
+% $$$ % low  only

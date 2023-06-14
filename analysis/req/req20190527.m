@@ -36,20 +36,18 @@ for t = 1:numel(Trials)
     subjectId = subjectId{1}{1};
     Trial.lfp.filename = [Trial.name,'.lfp'];
 
+% LOAD spikes
     spk = Trial.load('spk',sampleRate,'',unitSubset,'deburst');
-
+% LOAD placefield
     pft = pfs_2d_theta(Trial,unitSubset);
-
+% LOAD marker positions
     xyz = resample(preproc_xyz(Trial,'trb'),sampleRate);
-
-% STCM STATE Matrix
+% LOAD State Matrix
     stcm = stc2mat(Trial.load('stc','msnn_ppsvd_raux'),xyz,states);
-    
 % LFP - Local Field Potential
     try,   lfp = load(Trial,'lfp',sessionList(t).thetaRefGeneral);
     catch, lfp = load(Trial,'lfp',sessionList(t).thetaRefGeneral);
     end
-    
 % PHZ - LFP phase within theta band 
     phz = lfp.phase([6,12]);
     phz.data = unwrap(phz.data);
@@ -76,11 +74,6 @@ for t = 1:numel(Trials)
         pfhr(:,u,:) = multiprod(bsxfun(@minus,mxp,sq(fxyz(:,'hcom',[1,2]))),hvec,2,[2,3]);
         ghz(abs(pfhr(:,u,2))>100,u) = nan;
     end
-    
-% $$$     if isempty(parp),
-% $$$         try,delete(gcp);end
-% $$$         parp = parpool(4);
-% $$$     end
     
     for s = 1:numel(stl)    
 % APER - All good periods
@@ -128,7 +121,6 @@ for t = 1:numel(Trials)
         pfs.save();
     end% for s
 end% for t
-% $$$ delete(parp);
 
 % $$$ figure,
 % $$$ sp = tight_subplot(2,1,0,0.1);
@@ -143,17 +135,17 @@ end% for t
 % $$$ pftHZTPD    = cf(@(s) ...
 % $$$                  cf(@(T,u) MTAApfs(T,u,'tag',['ddtp-','s',num2str(sigma),'-',s]), Trials, units),...
 % $$$                  stateLabels);
-% $$$ 
-t = 5;
-figure,
-sp = tight_subplot(2,8,0,0.1);
-sp = reshape(reshape(sp',8,2)',2,8);
-for u = units{t},
-    for s = 1:8,
-        axes(sp(s*2-1));plot(pftHZTPD{s}{t},u,'mean','text',[],false);
-        axes(sp(s*2));plot(pftHZTPD{s}{t},u,'mean','text',[],false);
-        title(num2str(u));
-    end
-    waitforbuttonpress();
-end
+
+% $$$ t = 5;
+% $$$ figure,
+% $$$ sp = tight_subplot(2,8,0,0.1);
+% $$$ sp = reshape(reshape(sp',8,2)',2,8);
+% $$$ for u = units{t},
+% $$$     for s = 1:8,
+% $$$         axes(sp(s*2-1));plot(pftHZTPD{s}{t},u,'mean','text',[],false);
+% $$$         axes(sp(s*2));plot(pftHZTPD{s}{t},u,'mean','text',[],false);
+% $$$         title(num2str(u));
+% $$$     end
+% $$$     waitforbuttonpress();
+% $$$ end
 

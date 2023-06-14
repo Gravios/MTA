@@ -13,7 +13,7 @@ sampleRate = 250;
 phzBins = linspace(0,2*pi,25);
 
 %%%<<< XYHB fine Decoding -------------------------------------------------
-tind = [1:28];
+tind = [1:30];
 cind = 1;
 dc = {};
 for t = tind;

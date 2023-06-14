@@ -50,14 +50,14 @@ fvelz.data = log10(fvelz.data);
 % FANG Filtered Intermarker angles 
 fang = create(MTADang,Trial,fxyz);
 
-% SS 
+% SS Spine LENGTH
 sd = sqrt(sum((ss.data-circshift(ss.data,-1,2)).^2,3));
 sn = sum(sd(:,2:end-1),2)./sd(:,end);
-sv = Trial.xyz.copy;
+sv = copy(Trial.xyz);
 sv.data = sn;
 
 
-% AV 
+% ANGULAR Velocity 
 sang = [circ_dist(fang(:,'spine_lower','pelvis_root',1),fang(:,'pelvis_root','spine_middle',1)),...
         circ_dist(fang(:,'pelvis_root','spine_middle',1),fang(:,'spine_middle','spine_upper',1)),...
         circ_dist(fang(:,'spine_middle','spine_upper',1),fang(:,'spine_upper','hcom',1))];

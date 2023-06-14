@@ -1,5 +1,5 @@
 % req20200618
-%    Tags: egocentric, phase precession, head-body-angle
+%    Tags: egocentric, phase precession, head-body-angle, trajectories
 %    Status: active
 %    Type: Analysis
 %    Author: Justin Graboski

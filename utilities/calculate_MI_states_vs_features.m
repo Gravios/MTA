@@ -44,8 +44,8 @@ for s = 0:numel(states)
 
         [out,xb,yb,p]=hist2([fx,fy],edx,edy);
         pxy = out./nind;
-        px = histc(fx,xb); px = px(1:end-1)/nind;
-        py = histc(fy,yb); py = py(1:end-1)/nind;
+        px = histc(fx,edx); px = px(1:end-1)/nind;
+        py = histc(fy,edy); py = py(1:end-1)/nind;
         mixy(s+1,f) = nansum(nansum(pxy.*log2(pxy./(px*py'))));
     end
 

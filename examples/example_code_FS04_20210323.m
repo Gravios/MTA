@@ -212,6 +212,9 @@ ratAC.label = [ratAC.label,'_AC'];
 ratAC.update_filename([Trial.filebase,'.rbo.',rat.name,'_AC.s.mat']);
 ratAC.save();
 
+ratAC   = Trial.load('subject','FS04_AC')
+ratAC.data(:,1,3) = ratAC.data(:,1,3) + 270;
+
 
 %% 9. Label Behaviors --------------------------------------------------------------------------------------------------
 % LABEL 
@@ -219,30 +222,33 @@ ratAC.save();
 % LABEL theta periods from lfp
 label_theta(Session);
 
-% LABEL Non nan periods
-gper = ThreshCross(double(nniz(rat(:,1,1))),0.5,10);
-Trial.stc.addState(Trial.spath,                     ... path to project folder
-                   Trial.filebase,                  ... filebase
-                   gper,                            ... state periods [n,2] 
-                   rat.sampleRate,                  ... period sample rate
-                   Trial.sync.copy,                 ... Trial synchronization object
-                   Trial.sync.data(1),              ... Trial synchronization origin
-                   'gper',                          ... state label
-                   'a');
-Trial.stc.states{end}.save();
 
-% LABEL speed thresholded periods
-ratFilt = filter(copy(rat),'ButFilter',4,1,'low');
-%figure();plot(sqrt(sum(diff(ratFilt(:,1,1:2)).^2,3)).*ratFilt.sampleRate./10)
-vper = ThreshCross(double(sqrt(sum(diff(ratFilt(:,1,1:2)).^2,3)).*ratFilt.sampleRate./10>2),0.5,10);
-Trial.stc.addState(Trial.spath,...
-                   Trial.filebase,...
-                   vper,...
-                   rat.sampleRate,...
-                   Trial.sync.copy,...
-                   Trial.sync.data(1),...
-                   'vel','v');
-Trial.stc.states{end}.save();
+beacons = importdata(fullfile(Trial.spath,'BPositions_FS4_20210323-200748','beacons_20210323-200748.txt'));
+bPos = importdata(fullfile(Trial.spath,'BPositions_FS4_20210323-200748','position_20210323-200748.txt'));
+
+bTimes = round(interp1(bPos(:,1),bPos(:,8),beacons(:,1)));
+diff(bTimes)/ratAC.sampleRate
+runId = zeros([size(bTimes)]);
+runId(1:2:end) = 1;
+runId(2:2:end) = 2;
+runId([false;diff(bTimes)/ratAC.sampleRate>60]) = 3;
+% $$$ figure();
+% $$$ hold('on');
+% $$$ plot(ratAC.data(:,1,3)); % height
+% $$$ plot(sqrt(sum(diff(ratFilt(:,1,1:2)).^2,3)).*ratFilt.sampleRate./10) % speed
+% $$$ Lines(bTimes,[],'r');
+posBeacons = unique(beacons(:,end-1:end),'rows');
+
+FS_append_states; % Trial, rat
+
+
+
+
+% $$$ figure();
+% $$$ hold('on');
+% $$$ plot(ratAC.data(:,1,3)); % height
+% $$$ plot(sqrt(sum(diff(ratFilt(:,1,1:2)).^2,3)).*ratFilt.sampleRate./10) % speed
+% $$$ Lines(rper.data(:),[],'r');
 
 
 %% 10. Compute ratemaps ------------------------------------------------------------------------------------------------
@@ -250,33 +256,15 @@ Trial.stc.states{end}.save();
 % p(s)
 % 
 %
-activeState = 'theta&gper&vel'; 
-
-% ROOM frame of reference  (X,Y)
-pfsArgs = struct('states',           activeState,                  ... Computational Periods 
-                 'binDims',          [20,20],                      ... Physical size of bins in milimeters
-                 'SmoothingWeights', [3.5,3.5],                    ... Gaussian smoother prameters, std deviation in bins 
-                 'numIter',          1,                            ... number of bootstraps
-                 'boundaryLimits',   [-500,500;-1000,1000],        ... Computational domain
-                 'halfsample',       false);                      %... throw out half of the data each iteration ... or don't
-
-pfs = compute_ratemaps(Trial,                                      ... MTATrial
-                       [],                                         ... Unit list (e.g. [1, 2, ... , N])
-                       @fet_rbo_AC,                                ... Function handle, ratemap space
-                       [],                                         ... sampleRate, default 16Hz to speed it up
-                       pfsArgs,                                    ... Arguments to the MTAApfs 
-                       'overwrite',true);
-
+activeState = 'theta&gper&vel-rear'; 
+                       
+FS_compute_placefields();                       
 
 % LOAD spk object - holds the spike times and cluster ids ( see MTASpk )
 % help MTASpk
 spkw = Trial.spk.copy();
 spkw.load_spk(Trial);
                        
-
-beacons = importdata('/storage2/fabian/data/project/general/FS04-20210323a/BPositions_FS4_20210323-200748/beacons_20210323-200748.txt');
-
-posBeacons = unique(beacons(:,end-1:end),'rows');
 
 figpath = fullfile('/storage/gravio/figures/analysis/fabian/',Trial.filebase);
 
@@ -372,5 +360,56 @@ end
 
 
 
+
+% PLOT Placefields for each Unit
+hfig = figure(102);
+clf(hfig);
+ax = tight_subplot(2,2,0.1,0.1,0.1)
+for unit = 1:size(Trial.spk.map,1)
+
+    mrate = max(max(plot(pfs,unit,1,'colorbar',[],false,'flipAxesFlag',true)))*1.5;
+    a = 1;
+    axes(ax(a));
+    cla(ax(a))
+    hold(ax(a),'on');
+    plot(pfs,unit,1,'colorbar',[0,mrate],false,'colorMap',@jet,'flipAxesFlag',true);      % PLOT the place field of unit               (MTA::MTAApfs)
+    plot(ax(a),posBeacons(:,2).*1000,posBeacons(:,1).*1000,'om','MarkerSize',10);
+    daspect(ax(a),[1,1,1]);                      % SET the aspect ratio                       (matlab::graph3d)
+    title  (ax(a),['Unit: ',num2str(unit),' Theta-rear']);                % SET the title of the axes (ax)             (matlab::graph2d)
+    
+    a = 2;
+    axes(ax(a));
+    cla(ax(a));
+    hold(ax(a),'on');
+    plot   (pfa,unit,1,'colorbar',[0,mrate],false,'colorMap',@jet,'flipAxesFlag',true);      % PLOT the place field of unit               (MTA::MTAApfs)
+    plot(posBeacons(:,2).*1000,posBeacons(:,1).*1000,'om','MarkerSize',10);
+    daspect(ax(a),[1,1,1]);                      % SET the aspect ratio                       (matlab::graph3d)
+    title  (ax(a),['Unit: ',num2str(unit),' B Approach']);                % SET the title of the axes (ax)             (matlab::graph2d)
+
+    a = 4;
+    axes(ax(a));
+    cla(ax(a));
+    hold(ax(a),'on');
+    plot   (pfd,unit,1,'colorbar',[0,mrate],false,'colorMap',@jet,'flipAxesFlag',true);      % PLOT the place field of unit               (MTA::MTAApfs)
+    plot(posBeacons(:,2).*1000,posBeacons(:,1).*1000,'om','MarkerSize',10);
+    daspect(ax(a),[1,1,1]);                      % SET the aspect ratio                       (matlab::graph3d)
+    title  (ax(a),['Unit: ',num2str(unit),' B Departure']);                % SET the title of the axes (ax)             (matlab::graph2d)
+    
+    a = 3;
+    axes(ax(a));    
+    cla(ax(a));
+    hold(ax(a),'on');
+    plot   (pfr,unit,1,'colorbar',[0,mrate],false,'colorMap',@jet,'flipAxesFlag',true);      % PLOT the place field of unit               (MTA::MTAApfs)
+    plot(posBeacons(:,2).*1000,posBeacons(:,1).*1000,'om','MarkerSize',10);
+    daspect(ax(a),[1,1,1]);                      % SET the aspect ratio                       (matlab::graph3d)
+    title  (ax(a),['Unit: ',num2str(unit),' Rear']);                % SET the title of the axes (ax)             (matlab::graph2d)
+    
+    %waitforbuttonpress();
+    pause(0.1);
+    figname = [Trial.filebase,'-vis_beacon_unit-',num2str(unit,'%04.f')];
+% $$$     print(gcf, '-depsc2', fullfile(figpath,[figname,'.eps']));
+    print(gcf,'-dpng',    fullfile(figpath,[figname,'.png']));
+    
+end
 
 

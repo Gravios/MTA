@@ -28,11 +28,11 @@
 
 global MTA_PROJECT_PATH
 
+configure_default_args();
 MjgER2016_load_data();
-MjgER2016_general_args('section 1');
+overwrite = false;
 
 %%%<<< SET args
-overwrite = false;
 stateLabels = {'theta','rear','high','low','hloc','hpause','lloc','lpause'};
 statesLabels = {'theta','rear','H Loc','H Pause','L Loc','L Pause'};
 sampleRate = 250;
@@ -41,7 +41,7 @@ sessionUnitCnt = cellfun(@numel,units);
 unitCnt = sum(sessionUnitCnt);
 phzOrder = [9:16,1:8];
 %CA1 units
-sesIds = [3:5,8:12,17:23];
+sesIds = [3:5,8:12,17:25];
 %CA3 units
 %sesIds = [1:2,6:7,13:16];
 sesInds = ismember(cluSessionMap(:,1),sesIds);
@@ -56,28 +56,27 @@ cond_round = @(rate) max([round(rate,0),round(rate,1)].*[rate>=10,rate<10]);
 %%%>>>
 
 %%%<<< LOAD data
-
 % DEF place field rate maps
 pfts        = cf(@(t,u)  pfs_2d_theta(t,u),                                       Trials, units);
 pfss        = cf(@(t,u)  pfs_2d_states(t,u),                                      Trials, units);
 % DEF behavior field rate maps
 pfbs        = cf(@(t,u)  compute_bhv_ratemaps(t,u),                               Trials, units);
 pfbsShuff   = cf(@(t,u)  compute_bhv_ratemaps_shuffled(t,u),                      Trials, units);
-% DEF Conditional Expectation: req20190527(): phase VS gdz (gaussian distance zone)
-pftHZTPD    = cf(@(s) ...
-                 cf(@(T,u) MTAApfs(T,u,'tag',['ddtp-','s',num2str(sigma),'-',s]), Trials, units),...
-                 stateLabels);
 % LOAD bhv ratemap erpPCA
 [eigVecs,eigScrs,eigVars,unitSubset,validDims] = compute_bhv_ratemaps_erpPCA(pfbs,units,'overwrite',overwrite);
 cluSessionMapSubset = cluSessionMap(unitSubset,:);
 % LOAD bhv ratemap erpPCA Scores
 [fsrcz,FSrC,rmaps,FSCFr,FSrM,FSrS,fsrsMean,fsrsStd] = ...
     compute_bhv_ratemaps_erpPCA_scores(Trials,units,pfbs,pfbsShuff,eigVecs,validDims,unitSubset,overwrite);
-
-
+% DEF Conditional Expectation: req20190527(): phase VS gdz (gaussian distance zone)
+pftHZTPD    = cf(@(s) ...
+                 cf(@(T,u) MTAApfs(T,u,'tag',['ddtp-','s',num2str(sigma),'-',s]), Trials, units),...
+                 stateLabels);
+% GET ratemap bin centers
+dbins = pftHZTPD{1}{1}.adata.bins{1};
+pbins = circ_rad2ang([pftHZTPD{1}{1}.adata.bins{2};pftHZTPD{1}{1}.adata.bins{2}+2*pi]);
 % GENERAL variables
-phaseBinCenters = pftHZTPD{1}{1}.adata.bins{1}(phzOrder)+2*pi ...
-                  .*double(pftHZTPD{1}{1}.adata.bins{1}(phzOrder)<0);
+phaseBinCenters = pftHZTPD{1}{1}.adata.bins{2}(phzOrder);
 
 uind = ismember(cluSessionMap,cluSessionMap(unitSubset,:),'rows');
 
@@ -91,13 +90,8 @@ else
     load(trjCntFilePath);
 end
 
-%[cluSessionMap(cluSessionMap(:,1)==19,2),diff(sq(tper(cluSessionMap(:,1)==19,1,:)),1,2)./60]
-dbins = pftHZTPD{1}{1}.adata.bins{1};
-pbins = circ_rad2ang([pftHZTPD{1}{1}.adata.bins{2};pftHZTPD{1}{1}.adata.bins{2}+2*pi]);
-
-
 % LOAD spike resovled data
-spkv = MjgER2016_load_spikeVars(Trials,units,sessionList); 
+spkv = MjgER2016_load_spikeVars(Trials,units,sessionList,[],[],[],[],overwrite); 
 
 % LOAD phase precession statistics
 MjgER2016_tpp_stats();                                         % --> 
@@ -111,7 +105,6 @@ rSig = 1-sq(sum(abs(rHRZall(:,1,1,:))>abs(rHRZall(:,1,2:end,s+1)),3)./size(rHRZa
 
 
 %%%<<< DIAGNOSTIC figures
-
 figure,plot(parmHRZall(:,1,1,3),parmHRZall(:,2,1,3),'.');
 figure,plot(parmHRZall(:,1,1,5),parmHRZall(:,2,1,5),'.');
 figure,
@@ -128,7 +121,6 @@ figure,
     title('Zscore vs Rho')
     subplot(224),plot(mean(rhoHRZall(:,1,2:end,3),3),rhoHRZall(:,1,1,3),'.')
     title('E[Rho_{shf}] vs Rho')
-
 %%%>>>
 
 
@@ -140,7 +132,12 @@ exampleUnits = [20,74;...
                 20,59;...
                 20,103];
 
+expUnitsPP = {[20],[79];
+              [22],[48]};
 
+expUnitsPP = {[21],[6];...
+              [21],[22];...
+              [20],[79]};
 
 % INDEX cluSessionMap for each spike
 [~,spkCluSessionMapInd] = max(all(bsxfun(@eq,spkv.map,permute(cluSessionMap,[3,2,1])),2)==true,[],3);
@@ -201,8 +198,7 @@ for tind = 1:size(expUnitsPP,1),
             line([-490,-490],[250,490],'Color','w','LineWidth',3);        
         end
 
-        axes(fax);
-        rectangle('Position',sax(end).Position,'LineWidth',1);        
+        box(sax(end),'on');
         %%%>>>
 
         %%%<<< PLOT Behavior field restricted to theta placefield center
@@ -240,15 +236,14 @@ for tind = 1:size(expUnitsPP,1),
             line([-1.65,-1.65],[1.2,1.65],'Color','w','LineWidth',1);        
         end
         
-        axes(fax);
-        rectangle('Position',sax(end).Position,'LineWidth',1);
+        box(sax(end),'on');
     
         %%%>>>
         
         %%%<<< PLOT phase precession for each state
 % ADJUST subplot coordinates                
         [yind, yOffSet, xind, xOffSet] = deal(yind, 0, xind, xOffSet+0.2);                
-        for s = 1:numel(states)-1
+        for s = 1:numStates-1
             xind = 2+s;
 % CREATE subplot axes                    
             sax(end+1) = axes('Units','centimeters',...
@@ -313,9 +308,7 @@ for tind = 1:size(expUnitsPP,1),
                   [0.2,0.2,0.2],...
                   'EdgeAlpha',0,...
                   'FaceAlpha',0.4);
-
-            axes(fax);
-            rectangle('Position',sax(end).Position,'LineWidth',1);
+            box(sax(end),'on');
             
 % ADJUST subplot coordinates
             [yind, yOffSet, xind, xOffSet] = deal(yind, 0, xind+1, xOffSet);
@@ -471,7 +464,7 @@ rthresh = 0.2;
 prefBhvId = [];
 prefBhvSlopes = [];
 prefBhvPhases = [];
-for s = 1:numStates;
+for s = 1:numStates-1;
     ind =   ismember(cluSessionMap(:,1),sesIds)                                 ...
           & ismember(cluSessionMap,cluSessionMapSubset(validUnits,:),'rows')    ...
           & rhoSig(:,s+1) < 0.05                                                ...
@@ -585,9 +578,7 @@ for tind = 1:size(tppUnits,1)
         end
 
         axis(sax(end),'tight');
-        % add bounding box        
-        axes(fax);
-        rectangle('Position',sax(end).Position,'LineWidth',1);
+        box(sax(end),'on');
 
         %%%>>>
 
@@ -611,8 +602,7 @@ for tind = 1:size(tppUnits,1)
         xlim([-1.7,0.5]);
         ylim([-0.5,1.7]);
         % add bounding box        
-        axes(fax);
-        rectangle('Position',sax(end).Position,'LineWidth',1);
+        box(sax(end),'on');
         %%%>>>
         
         %%%<<< PLOT drzphz field
@@ -684,9 +674,7 @@ for tind = 1:size(tppUnits,1)
                      'FontSize',8,'Color',[1,1,1]);
             end
             
-            % add bounding box
-            axes(fax);
-            rectangle('Position',sax(end).Position,'LineWidth',1);
+            box(sax(end),'on');
             
         end%for s
 
@@ -756,9 +744,7 @@ for tind = 1:size(tppUnits,1)
             title(sax(end),{'Weighted','Mean Rate'});
         end
         
-        % add bounding box
-        axes(fax);
-        rectangle('Position',sax(end).Position,'LineWidth',1);
+        box(sax(end),'on');
 
 % ADJUST subplot coordinates        
         [yind, yOffSet, xind, xOffSet] = deal(yind, yOffSet, xind+1, xOffSet);
@@ -844,8 +830,7 @@ for s = 1:3;
     text(2*pi-2,2*pi-0.55,(perm.states{s}),'HorizontalAlignment','center',...
          'FontSize', 10, 'VerticalAlignment',  'middle');    
     % add bounding box
-    axes(fax);
-    rectangle('Position',sax(end).Position,'LineWidth',1);
+    box(sax(end),'on');
 
 % ADJUST subplot coordinates        
     [yind, yOffSet, xind, xOffSet] = deal(yind, yOffSet, xind+1, 0);

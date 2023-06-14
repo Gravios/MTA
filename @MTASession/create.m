@@ -8,7 +8,8 @@ function Session = create(Session,varargin)
 
 if     all(~cellfun(@isempty,regexpi(dataLoggers,{'nlx','vicon'})))
     Session = sync_nlx_vicon(Session,TTLValue,xyzSampleRate);
-    
+elseif     all(~cellfun(@isempty,regexpi(dataLoggers,{'nlx','whl'})))
+    Session = sync_nlx_whl(Session,TTLValue,xyzSampleRate);
 elseif     all(~cellfun(@isempty,regexpi(dataLoggers,{'openephys','optitrack'})))
     Session = sync_openephys_optitrack(Session,TTLValue,xyzSampleRate);
 

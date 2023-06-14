@@ -104,6 +104,9 @@ classdef MTASession < hgsetget
 
         %rbo - MTADrbo: (Time,rbo,Dimension) Quaternion,X,Y,Z orientation/position of each marker
         subject
+        
+        %meta - struct: contains analysis information regarding probes and subjects
+        meta
 
     end
     
@@ -193,24 +196,30 @@ classdef MTASession < hgsetget
                     Session = MTASession(Session);                                    
                 end
                 
-            elseif isstruct(Session),
+            elseif isstruct(Session)
                 stcMode = '';
-                if isfield(Session,'stcMode'),
+                meta = [];
+                if isfield(Session,'stcMode')
                     stcMode = Session.stcMode;
+                end
+                if isfield(Session,'subject')
+                    meta = Session.subject;
                 end
 
                 Session = MTASession(Session.sessionName,...
                                      Session.mazeName,...
                                      false);
 
-                if ~isempty(stcMode),
-                    try,
+                if ~isempty(stcMode)
+                    try
                         Session.load('stc',stcMode);                        
                     catch err
                         disp(err);
                     end
 
                 end
+                
+                Session.meta = meta;
 
             else
                 error('MTA:validate_trial: unrecognized format');

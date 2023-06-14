@@ -1,19 +1,25 @@
 function [xyz,ss] = preproc_xyz(Trial,varargin)
 %function [xyz,ss] = preproc_xyz(Trial,varargin)
-%[procOpts,overwrite] = DefaultArgs(varargin,{{},false},true);
 %
-% An attempt to normalize marker positions along the spine
-% between subjects using a 
+% Description: 
+% Return an MTADxyz object which contains the position of the markers with 
+% different levels of preprocessing, including head centering or spine
+% marker interpolation for inter-subject coregistration.
 %
-% Current Opts:
-%    NONE
-%    SPLINE_SPINE
-%    SPLINE_SPINE_EQD
-%    SPLINE_SPINE_HEAD_EQI
-%    SPLINE_SPINE_HEAD_EQD
-%    SPLINE_SPINE_HEAD_EQD_NO_TRB
-%    trb
-% 
+% Varargin:
+%     procOpts: cellstr, {{}},
+%         Current Opts:
+%             NONE
+%             SPLINE_SPINE
+%             SPLINE_SPINE_EQD
+%             SPLINE_SPINE_HEAD_EQI
+%             SPLINE_SPINE_HEAD_EQD
+%             SPLINE_SPINE_HEAD_EQD_NO_TRB
+%             trb
+%     sampleRate: numeric, [],
+%     targetMarkers: cellstr, {{'spine_lower','pelvis_root','spine_middle','spine_upper','hcom'}}
+%     overwrite: Logical, false);
+
 defargs = struct('procOpts', {{}},...
                  'sampleRate', [],...
                  'targetMarkers',{{'spine_lower','pelvis_root','spine_middle','spine_upper','hcom'}},...
@@ -321,42 +327,50 @@ if sum(~cellfun(@isempty,...
         xyz.com(xyz.model.rb({'spine_lower','pelvis_root','spine_middle','head_back','head_front'})));
 end
 
-try
-% ADD marker: head Center of Mass
-xyz.addMarker('hcom',...     Name
-              [.7,0,.7],...  Color
-              {{'head_back', 'hcom',[0,0,255]},... Sticks to visually connect
-               {'head_left', 'hcom',[0,0,255]},... new marker to skeleton
-               {'head_front','hcom',[0,0,255]},...
-               {'head_right','hcom',[0,0,255]}},... 
-              xyz.com(xyz.model.rb({'head_back','head_left','head_front','head_right'})));
-catch
-% ADD marker: head Center of Mass
-xyz.addMarker('hcom',...     Name
-              [.7,0,.7],...  Color
-              {{'head_back', 'hcom',[0,0,255]},... Sticks to visually connect
-               {'head_left', 'hcom',[0,0,255]},... new marker to skeleton
-               {'head_right','hcom',[0,0,255]}},... 
-              xyz.com(xyz.model.rb({'head_back','head_left','head_right'})));
+if sum(~cellfun(@isempty,...
+                regexp(xyz.model.ml,...
+                       '(head_back)|(head_left)|(head_front)|(head_right)')))>=3,
+    try
+        % ADD marker: head Center of Mass
+        xyz.addMarker('hcom',...     Name
+        [.7,0,.7],...  Color
+        {{'head_back', 'hcom',[0,0,255]},... Sticks to visually connect
+         {'head_left', 'hcom',[0,0,255]},... new marker to skeleton
+         {'head_front','hcom',[0,0,255]},...
+         {'head_right','hcom',[0,0,255]}},... 
+            xyz.com(xyz.model.rb({'head_back','head_left','head_front','head_right'})));
+    catch
+        % ADD marker: head Center of Mass
+        xyz.addMarker('hcom',...     Name
+        [.7,0,.7],...  Color
+        {{'head_back', 'hcom',[0,0,255]},... Sticks to visually connect
+         {'head_left', 'hcom',[0,0,255]},... new marker to skeleton
+         {'head_right','hcom',[0,0,255]}},... 
+            xyz.com(xyz.model.rb({'head_back','head_left','head_right'})));
+    end
 end
 
-              
+if sum(~cellfun(@isempty,...
+                regexp(xyz.model.ml,...
+                       '(nose)')))<1,
 
-% GENERATE orthogonal basis, origin: head's center of mass
-nz = -cross(xyz(:,'head_back',:)-xyz(:,'hcom',:),xyz(:,'head_left',:)-xyz(:,'hcom',:));
-nz = bsxfun(@rdivide,nz,sqrt(sum((nz).^2,3))); 
-ny = cross(nz,xyz(:,'head_back',:)-xyz(:,'hcom',:));
-ny = bsxfun(@rdivide,ny,sqrt(sum((ny).^2,3)));
-nx = cross(ny,nz);
-nx = bsxfun(@rdivide,nx,sqrt(sum((nx).^2,3)));
-% NOSE 
-xyz.addMarker('nose',...     Name
-              [.7,0,.7],...  Color
-              {{'head_back', 'hcom',[0,0,255]},... Sticks to visually connect
-               {'head_left', 'hcom',[0,0,255]},... new marker to skeleton
-               {'head_front','hcom',[0,0,255]},...
-               {'head_right','hcom',[0,0,255]}},... 
-              xyz(:,'hcom',:)+nx*-40);
+    % GENERATE orthogonal basis, origin: head's center of mass
+    nz = -cross(xyz(:,'head_back',:)-xyz(:,'hcom',:),xyz(:,'head_left',:)-xyz(:,'hcom',:));
+    nz = bsxfun(@rdivide,nz,sqrt(sum((nz).^2,3))); 
+    ny = cross(nz,xyz(:,'head_back',:)-xyz(:,'hcom',:));
+    ny = bsxfun(@rdivide,ny,sqrt(sum((ny).^2,3)));
+    nx = cross(ny,nz);
+    nx = bsxfun(@rdivide,nx,sqrt(sum((nx).^2,3)));
+    % NOSE 
+    xyz.addMarker('nose',...     Name
+    [.7,0,.7],...  Color
+    {{'head_back', 'hcom',[0,0,255]},... Sticks to visually connect
+     {'head_left', 'hcom',[0,0,255]},... new marker to skeleton
+     {'head_front','hcom',[0,0,255]},...
+     {'head_right','hcom',[0,0,255]}},... 
+        xyz(:,'hcom',:)+nx*-40);
+end
+
                                          
 xyz.data(isnan(xyz.data)) = eps;
 

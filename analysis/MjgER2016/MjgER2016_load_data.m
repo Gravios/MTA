@@ -20,19 +20,12 @@
 global MTA_FIGURES_PATH
 
 sessionListName = 'MjgER2016';
-sessionList = get_session_list(sessionListName);
+sessionList = get_session_list_v2(sessionListName);
 
 Trials = af(@(s) MTATrial.validate(s), sessionList);
 
-% $$$ units = cf(@(T)  select_placefields(T),  Trials); 
-% $$$ units = req20180123_remove_bad_units(units);
-% $$$ cf(@(T,U)  T.spk.set_unit_set(T,'placecells',U),  Trials, units); 
-
-
 units = cf(@(T)  T.spk.get_unit_set(T,'placecells'),  Trials); 
 units = cf(@(T,U) remove_bad_units(T,U), Trials,units);
-
-%units = cf(@(T)  T.spk.get_unit_set('placecells'),  Trials); 
 
 
 phzCorrection = ...
@@ -126,9 +119,8 @@ headRollCorrection =                                 ...
      -0.365};                                          % jg05
 
 
+% LOAD interneuron ids -> one cell per Trial
 unitsInts = cf(@(T)  T.spk.get_unit_set(T,'interneurons'),  Trials); 
-
-
 
 
 cluSessionMap = [];

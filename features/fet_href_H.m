@@ -35,8 +35,6 @@ fet = MTADfet(Trial.spath,...
 % FILTER xyz
 xyz = preproc_xyz(Trial,procOpts);
 xyz.data(~nniz(xyz),:,:) = 0;
-%xyz.filter('RectFilter',11,3);
-%xyz.filter('ButFilter',3,2.5,'low');
 rb = xyz.model.rb(markers);
 hcom = xyz.com(rb);
 

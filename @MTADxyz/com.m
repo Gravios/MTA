@@ -12,6 +12,6 @@ function center_of_mass = com(Data,Model,varargin)
 %    center_of_mass = Session.com(Model);
 %   
 %
-[dim] = DefaultArgs(varargin,{[1:3]});
+[dim] = DefaultArgs(varargin,{[1:size(Data,3)]});
 center_of_mass = mean(Data.subsref(substruct('()',{':',Model.ml(),dim})),2);
 end

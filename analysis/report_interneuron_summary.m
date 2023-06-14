@@ -11,6 +11,10 @@ function report_interneuron_summary(Trial,varargin)
 %    spike waveform
 %    place ratemaps given state
 %    Theta phase preference
+%
+% TODO :
+%    ccg of interneuron and SWR 
+%    
 
 % DEFARGS ------------------------------------------------------------------------------------------
 defargs = struct('figDir',                '/storage/gravio/figures/analysis/interneurons',       ...
@@ -26,11 +30,8 @@ defargs = struct('figDir',                '/storage/gravio/figures/analysis/inte
 
 % MAIN ---------------------------------------------------------------------------------------------
 
-
-unitsInt   = select_units(Trial,'int');
-unitsInt   = remove_bad_units(Trial,unitsInt);
-
-%unitsInt = select_units(Trial,'int');
+% LOAD interneuron set
+unitsInts = Trial.spk.get_unit_set(Trial,'interneurons');
 
 
 states = {'loc&theta','lloc&theta','hloc&theta','rear&theta',     ...
@@ -85,7 +86,7 @@ sampleRate = 250;
 % PRINT intent of trial processing
 Trial.load('nq');
 
-unitSubset = [unitsInt];    
+unitSubset = [unitsInts];    
 create_directory(fullfile(figDir,Trial.filebase));
 disp(['Processing Trial: ' Trial.filebase]);
 
@@ -111,15 +112,96 @@ hvec = cat(3,hvec,sq(hvec)*[0,-1;1,0]);
 % LOAD local field potential (lfp)
 % RESAMPLE lfp to xyz sample rate
 % COMPUTE lfp phase in theta band (6-12 Hz)
-Trial.lfp.filename = [Trial.name,'.lfp'];
-lfp = Trial.load('lfp',thetaRef);
-phz = lfp.phase([5,13]);    
-phz.data = unwrap(phz.data);
-phz.resample(xyz);    
-%phz.data = mod(phz.data+pi,2*pi)-pi;
-phz.data = mod(phz.data+pi,2*pi)-pi + phzCorrection; 
-phz.data(phz.data>pi) = phz.data(phz.data>pi)-2*pi;
-lfp.resample(xyz);
+% $$$ phz  = load_theta_phase(Trial,Trial.lfp.sampleRate,thetaRef,phzCorrection(18));
+% $$$ spkt = Trial.load('spk',Trial.lfp.sampleRate,'theta-sit-groom',unitSubset,'');
+% $$$ phzLim = [0,2*pi];
+% $$$ phzBin = linspace([phzLim,36]);
+% $$$ phzCtr = mean([phzBin(1:end-1);phzBin(2:end)]);
+% $$$ 
+% $$$ for i = unitSubset
+% $$$     tpp(i,:) = histcounts(phz(spkt(i)),phzBin);
+% $$$ end
+% $$$ 
+% $$$ % COMPUTE ccg of interneuron and SWR
+% $$$ spks = Trial.load('spk',Trial.lfp.sampleRate,'sit',unitSubset,'');
+% $$$ ripples = [Trial.stc{'R&sit',Trial.lfp.sampleRate}];
+% $$$ 
+% $$$ [accg,tbins] = autoccg(Trial,unitSubset,'theta-groom-sit');
+% $$$ 
+% $$$ rccg = [];
+% $$$ for u = unitSubset,
+% $$$     uRes = spks();
+% $$$     [tccg,tbin] = CCG([uRes;mean(ripples.data,2)],...
+% $$$                       [ones([size(uRes,1),1]);2*ones([size(ripples,1),1])],...
+% $$$                       16,40,spks.sampleRate,[1,2],'scale');
+% $$$     rccg(:,u) = tccg(:,2,1);
+% $$$ end
+% $$$ 
+% $$$ fccg = RectFilter(bsxfun(@minus,rccg,mean(rccg(tbin<-200|tbin>200,:))),3,3);
+% $$$ 
+% $$$ figure,
+% $$$ for u = 1:numel(unitSubset),
+% $$$     subplot2(2,numel(unitSubset),1,u);
+% $$$     bar(tbin,rccg(:,unitSubset(u)));
+% $$$     title(num2str(unitSubset(u)));
+% $$$     subplot2(2,numel(unitSubset),2,u);    
+% $$$     bar(phzCtr,tpp(unitSubset(u),:));
+% $$$ end
+% $$$ 
+% $$$ % mean of each tail between 200-500ms from center of the tail mean subtracted ccg.
+% $$$ % 2 primary functions 
+% $$$ % projection onto gaussian of 50ms std and its derivative 
+% $$$ % 
+% $$$ 
+% $$$ gvect = 1./(50.*sqrt(2*pi)).*exp(-0.5.*(tbin.^2./50.^2));
+% $$$ gvect = gvect./sqrt(sum(gvect.^2));
+% $$$ 
+% $$$ gvectL = 1./(25.*sqrt(2*pi)).*exp(-0.5.*((tbin+50).^2./25.^2));
+% $$$ gvectL = gvectL./sqrt(sum(gvectL.^2));
+% $$$ gvectR = 1./(25.*sqrt(2*pi)).*exp(-0.5.*((tbin-50).^2./25.^2));
+% $$$ gvectR = gvectR./sqrt(sum(gvectR.^2));
+% $$$ 
+% $$$ gvectDt = [0,diff(gvect)];
+% $$$ gvectDt = gvectDt./sqrt(sum(gvectDt.^2));
+% $$$ 
+% $$$ figure,plot(tbin,gvect)
+% $$$ hold('on');
+% $$$ plot(tbin,gvectDt)
+% $$$ plot(tbin,gvectL)
+% $$$ plot(tbin,gvectR)
+% $$$ 
+% $$$ swrCcgStats = [];
+% $$$ for u = 1:numel(unitSubset)    
+% $$$ swrCcgStats(unitSubset(u),:) = [mean(fccg(tbin>-500&tbin<-200,unitSubset(u))),...
+% $$$                                 sum(fccg(:,unitSubset(u)).*gvectL') ...                    
+% $$$                                 sum(fccg(:,unitSubset(u)).*gvect'),...
+% $$$                                 sum(fccg(:,unitSubset(u)).*gvectR'),...
+% $$$                                 mean(fccg(tbin<500&tbin>200,unitSubset(u)))];
+% $$$ end
+% $$$ 
+% $$$ 
+% $$$ 
+% $$$ figure,
+% $$$ for u = 1:numel(unitSubset)
+% $$$     clf();
+% $$$     subplot(311);
+% $$$     bar(tbins,accg(:,unitSubset(u)));
+% $$$     subplot(312);
+% $$$     bar(tbin,fccg(:,unitSubset(u)));
+% $$$     title(num2str(swrCcgStats(unitSubset(u),:)));
+% $$$     subplot(313)
+% $$$     bar(phzCtr,tpp(unitSubset(u),:));
+% $$$         title(num2str(unitSubset(u)));
+% $$$     waitforbuttonpress();
+% $$$ end
+% $$$ 
+% $$$ figure,plot(swrCcgStats(:,1)-swrCcgStats(:,5),swrCcgStats(:,2)-swrCcgStats(:,4),'.')
+% $$$ 
+% $$$ figure,plot3(swrCcgStats(:,1)-swrCcgStats(:,5),swrCcgStats(:,2)-swrCcgStats(:,4),swrCcgStats(:,3),'.')
+
+
+
+phz  = load_theta_phase(Trial,xyz,thetaRef,phzCorrection(18));
 
 
 % SELECT high quality units with place fields

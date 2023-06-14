@@ -34,7 +34,7 @@ cind = find(~cellfun(@isempty,meta.csv));
 for c = 1:numel(meta.csv),
 
 % EXTRACT marker data from csv
-    csv = meta.csv{2};
+    csv = meta.csv{c};
     if isempty(csv),
         continue;
     end

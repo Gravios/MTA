@@ -17,7 +17,7 @@ numComp = size(eigVecs,2);
 
 
 
-overwrite = true
+overwrite = false;
 threshDist = 150;
 sampleRate = 16;
 pfsArgs = struct('states',           'theta-groom-sit',  ...
@@ -30,14 +30,14 @@ pfsArgs = struct('states',           'theta-groom-sit',  ...
 
 unit = 34;
 %% compute_permuted_patch_ratemap
-uids = find(ismember(cluSessionMap(:,1),tid));
+%uids = find(ismember(cluSessionMap(:,1),tid));
 
 rmapA = zeros([784,numUnits,6,6]);
 rmapB = zeros([784,numUnits,6,6]);
 rmapZscr = zeros([784,numUnits,6,6]);
 rmapCorr = zeros([200,numUnits,6,6]);
 for uid = 1:numUnits
-    if tid ~= cluSessionMap(uid,1)
+    if tid ~= cluSessionMap(uid,1) | uid==1
         tid = cluSessionMap(uid,1);
         Trial = Trials{tid};
         xyz = preproc_xyz(Trial,'trb',sampleRate);
@@ -78,7 +78,7 @@ for uid = 1:numUnits
 end
 
 
-
+%%%<<< COMPUTE the patch bhv rate maps -------------------------------------------------------------
 rmapP = zeros([784,numUnits,6]);
 for uid = 1:numUnits
     if tid ~= cluSessionMap(uid,1)
@@ -91,27 +91,32 @@ for uid = 1:numUnits
     unit = cluSessionMap(uid,2);
     numPatches = sum(~isnan(patchCntrF(uid,:,1)));
     tic
-    if numPatches > 1
-        for p = 1:numPatches
-            tag = ['pfsPerm_',num2str([unit,p1,p2],'%d_%d-%d')];
-            [rmapP(:,uid,p)] =                                                  ...
-                    compute_patch_ratemap(Trial,                       ...
-                                                   unit,                        ...
-                                                   [],                          ... fetset
-                                                   sampleRate,                  ...
-                                                   patchCntrF(uid,p,:),         ...
-                                                   'hcom',                      ... marker
-                                                   pfsArgs,                     ... 
-                                                   [],                          ... threshRate
-                                                   threshDist,                  ...
-                                                   xyz,                         ...
-                                                   fet,                         ...
-                                                   spk,                         ...
-                                                   tag,                         ...
-                                                   overwrite);
-        end
+    for p = 1:numPatches
+        [rmapP(:,uid,p)] =                                         ...
+                compute_patch_ratemap(Trial,                       ...
+                                      unit,                        ...
+                                      [],                          ... fetset
+                                      sampleRate,                  ...
+                                      patchCntrF(uid,p,:),         ...
+                                      'hcom',                      ... marker
+                                      pfsArgs,                     ... 
+                                      [],                          ... threshRate
+                                      threshDist,                  ...
+                                      xyz,                         ...
+                                      fet,                         ...
+                                      spk,                         ...
+                                      tag,                         ...
+                                      overwrite);
     end
     toc
+end
+%%%>>>
+
+
+figure,
+for p = 1:6,
+subplot(1,6,p);
+imagesc(reshape(rmapP(:,ismember(cluSessionMap,[20,31],'rows'),p).*validDims,[28,28])');axis('xy');colormap('jet');colorbar();
 end
 
 
@@ -180,36 +185,61 @@ p1 = 1; p2 = 2;
 
 
 
-% COMPUTE inter placecell bhv ratemap correlations
+%%%<<< COMPUTE inter placecell bhv ratemap correlations
 % only compare units on separate electrodes
-% 
-
 rmapIPCorr = [];
 rmapIPDist = [];
+rmapIPBcnt = [];
 for tid = numel(Trials),
     for u1 = units{tid}
         uid1 = find(ismember(cluSessionMap,[tid,u1],'rows'));
         for u2 = units{tid}
-            if u1 == u2 || (Trials{tid}.nq.ElNum(u1)~=Trials{tid}.nq.ElNum(u2) && abs(maxAmpChan(u1)-Trials{tid}.nq.maxAmpChan(u2))<=2)
+            if u1 == u2 || (Trials{tid}.nq.ElNum(u1)==Trials{tid}.nq.ElNum(u2) && abs(Trials{tid}.nq.maxAmpChan(u1)-Trials{tid}.nq.maxAmpChan(u2))<=2)
                 continue
             end
             uid2 = find(ismember(cluSessionMap,[tid,u2],'rows'));
             for gptch1 = find(~isnan(patchCntrF(uid1,:,2)))
                 for gptch2 = find(~isnan(patchCntrF(uid2,:,2)))
                     rmapPC = [rmapP(validDims,uid1,gptch1),rmapP(validDims,uid2,gptch2)];
-                    rmapIPCorr(end+1) = corr(rmapPC(nniz(rmapPC)),'type','Spearman');
+                    if any(sum(~isnan(rmapPC)) > 200)
+                        continue
+                    end
+                    c = corr(rmapPC(~isnan(rmapPC(:,1))&~isnan(rmapPC(:,2)),:),'type','Spearman');
+                    rmapIPCorr(end+1) = c(2);
                     rmapIPDist(end+1) = sqrt(sum((patchCntrF(uid1,gptch1,:)-patchCntrF(uid2,gptch2,:)).^2,3));
+                    rmapIPBcnt(end+1) = sum(double(~isnan(rmapPC(:,1))&~isnan(rmapPC(:,2))));
                 end
             end
         end
     end
 end
 
-                    
-            
-            
-            
-            
+rmapPCA = nan([784,1]);
+rmapPCB = nan([784,1]);
+rmapPCA(validDims) = rmapPC(:,1);
+rmapPCB(validDims) = rmapPC(:,2);
+figure,
+subplot(121);
+pcolor(reshape(rmapPCA,[28,28])');axis('xy');
+subplot(122);
+pcolor(reshape(rmapPCB,[28,28])');axis('xy');
+
+figure,
+uid = find(ismember(cluSessionMap,[20,20],'rows'));
+imagesc(reshape(rmapP(:,uid,1),[28,28])');
+axis('xy');
+
+figure,
+plot(rmapIPDist/10,rmapIPCorr,'.')
+xlabel('Inter Patch Distance (cm)')
+ylabel('Bhv Ratemap Correlation');
+
+patchCntF = sum(~isnan(patchCntrF(:,:,1)),2);
+out = histcounts(patchCntF,0.5:5.5);
+figure,pie(out)
+%%%>>>
+
+
 
 
 
@@ -258,7 +288,7 @@ corr(nrA,nrB,'type','Spearman')
 uid = find(ismember(cluSessionMap,[20,44],'rows'));
 patchCenter = patchCntrF(uid,[1,2],:);
 
-
+% REPORT intra cell patch distance vs correlation 
 figure
 hold('on');
 ph = patch([10.1,10.1,30.0,30.0],[-1,1,1,-1],[0.5,0.5,0.5],'EdgeColor','none','FaceAlpha',0.3);
@@ -267,8 +297,8 @@ rcorr = reshape(rmapCorr(1,unitSubset,:,:),[],1);
 nind = nniz(pd) & nniz(rcorr) & pd>10;
 plot(pd(nind),rcorr(nind),'.');
 box('on');
-xlabel('Inter Patch Distance (cm)')
-ylabel('Bhv Ratemap Correlation');
+xlabel('Patch Distance (cm)')
+ylabel('Bhv Correlation');
 
 
 

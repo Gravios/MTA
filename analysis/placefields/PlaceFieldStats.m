@@ -3,15 +3,18 @@ function [pfstats,pfbstats,pfmstats] = PlaceFieldStats(Trial,pf,unit,varargin)
 
 % DEFARGS ------------------------------------------------------------------------------------------
 defargs = struct('maxNumPatches',                    2,                                          ...
-                 'verbose',                          true,                                        ...
-                 'maskFlag',                         false                                        ...
+                 'verbose',                          true,                                       ...
+                 'maskFlag',                         false,                                      ...
+                 'mazeMask',                         [],                                         ...
+                 'flipAxesFlag',false                                                            ...
 );
-[maxNumPatches,verbose,maskFlag] = DefaultArgs(varargin,defargs,'--struct');
+[maxNumPatches,verbose,maskFlag,mazeMask,flipAxesFlag] = DefaultArgs(varargin,defargs,'--struct');
 %---------------------------------------------------------------------------------------------------
 
 VERSION = '0.1';
 %thresholdMethod = 'shuffle';
-thresholdMethod = 'percentile';
+thresholdMethod = 'percentile'; % rate threshould set at 90th percentile of ratemap bins
+%thresholdMethod = 'halfmax';
 
 if verbose,
     fprintf('PlaceFieldStats v%s \n\n',version)
@@ -19,7 +22,7 @@ if verbose,
     fprintf('Unit: %i\n',unit)
 end
     
-map = reshape(pf.plot(unit,'mazeMaskFlag',maskFlag),[],1);
+map = reshape(pf.plot(unit,'mazeMaskFlag',maskFlag,'mazeMask',mazeMask,'flipAxesFlag',flipAxesFlag),[],1);
 %map = sq(pf.data.rateMap(:,unit==pf.data.clu,:));
 pkfr = max(map(:,1));
 
@@ -33,7 +36,12 @@ maxBinCount = round(prod(pf.adata.binSizes)*0.22);
 %ratemap = reshape(map(:,1)',fliplr(pf.adata.binSizes'))';
 
 
-ratemap = pf.plot(unit,'mazeMaskFlag',maskFlag);
+
+if ~isempty(mazeMask),
+    ratemap = pf.plot(unit,'mazeMaskFlag',maskFlag,'mazeMask',mazeMask,'flipAxesFlag',flipAxesFlag);
+else
+    ratemap = pf.plot(unit,'mazeMaskFlag',maskFlag,'flipAxesFlag',flipAxesFlag);
+end
 
 
 % Maximum firing rate found within the normal place field
@@ -158,7 +166,12 @@ if nargout>1
         fprintf('patch detection:\n')
     end
 
-    ratemap = pf.plot(unit,'mean','mazeMaskFlag',maskFlag);
+    %ratemap = pf.plot(unit,'mean','mazeMaskFlag',maskFlag);
+    if ~isempty(mazeMask),
+        ratemap = pf.plot(unit,'mean','mazeMaskFlag',maskFlag,'mazeMask',mazeMask,'flipAxesFlag',flipAxesFlag);
+    else
+        ratemap = pf.plot(unit,'mean','mazeMaskFlag',maskFlag,'flipAxesFlag',flipAxesFlag);
+    end
         
     [B,L] = bwboundaries(ratemap>rateThreshold,'noholes');
 

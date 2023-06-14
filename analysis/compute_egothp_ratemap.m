@@ -1,65 +1,49 @@
-function [pfs] = compute_egothp_ratemap(Trial,units,xyz,spk,pft,rot,hbaCorrection,thetaPhzChan,phzCorrection,headCenterCorrection,overwrite)
+function [pfs] = compute_egothp_ratemap(Trial,units,varargin)
+% function [pfs] = compute_egothp_ratemap(Trial,units,varargin)
+% 
+% Compute the mean firing rate of a neuron given spike position as the place field center 
+% in the 2d coordinate system of the head and theta phase.
+%
+
+
+% DEFARGS ------------------------------------------------------------------------------------------
+defargs = struct(             'xyz', [],                                                         ...
+                              'spk', [],                                                         ...
+                              'pft', [],                                                         ...
+                'headYawCorrection', Trial.meta.correction.headYaw,                              ...
+             'headCenterCorrection', [0,0],                                                      ...
+                       'overwrite' , false                                                       ...
+);
+[xyz, spk, pft, headYawCorrection, headCenterCorrection, overwrite] = ...
+    DefaultArgs(varargin,defargs,'--struct');
+%---------------------------------------------------------------------------------------------------
 
 sampleRate = xyz.sampleRate;
-binPhzs = linspace(0,2*pi,6);
+binPhzs = linspace(0.5,2*pi-0.5,4);
 binPhzc = (binPhzs(1:end-1)+binPhzs(2:end))./2;
+% $$$ binPhzs = linspace(0,2*pi,6);
+% $$$ binPhzc = mean([binPhzs(1:end-1);binPhzs(2:end)]);
 pfs = cell([1,numel(binPhzc)]);
 verbose = true;
 
 if verbose,
-    disp(['[status]        compute_egothp_ratemap: processing trial: ',Trial.filebase]);
+    disp(['[status] compute_egothp_ratemap: processing trial: ',Trial.filebase]);
 end
 
-
-if isempty(units),
-    return;
-end;% if
-
-
-% COMPUTE anglular velocity of the head 
-% $$$ hvang(:,'nose',[1,2])-hvang(:,'hcom',[1,2]));
-% $$$ hvang.data = cart2pol(xycoor(:,:,1),xycoor(:,:,2));
-% $$$ % Positive: CCW (Left)     Negative: CW (Right)
-% $$$ hvang.data = circ_dist(circshift(hvang.data(:,2),-10),...
-% $$$                                   circshift(hvang.data(:,2),+10));
-% COMPUTE lateral velocity of the head
-% $$$ fhrvfl = fet_href_HXY(Trial,sampleRate,false,'trb',4);
-% $$$ headLatVel = MTADfet.encapsulate(Trial,...
-% $$$                                  fhrvl(:,2),...
-% $$$                                   sampleRate,...
-% $$$                                   'hba','hba','h');
-
-
-% COMPUTE anglular difference between the head and body
-% $$$ headBodyAng = [xyz(:,'spine_upper',[1,2])-xyz(:,'bcom',[1,2]),...
-% $$$                xyz(:,'nose',[1,2])-xyz(:,'hcom',[1,2])];
-% $$$ headBodyAng = sq(bsxfun(@rdivide,headBodyAng,sqrt(sum(headBodyAng.^2,3))));
-% $$$ headBodyAng = cart2pol(headBodyAng(:,:,1),headBodyAng(:,:,2));
-% $$$ headBodyAng = circ_dist(headBodyAng(:,2),headBodyAng(:,1));
-% $$$ headBodyAng = MTADfet.encapsulate(Trial,...
-% $$$                                   -(headBodyAng+hbaCorrection),...
-% $$$                                   sampleRate,...
-% $$$                                   'hba','hba','h');
+if isempty(units), pfs = []; return; end;
 
 if overwrite
 % TRANSFORM Local Field Potential -> theta phase
-    Trial.lfp.filename = [Trial.name,'.lfp'];
-    phz = load(Trial,'lfp',thetaPhzChan).phase([6,12]);
-    phz.data = unwrap(phz.data);
-    phz.resample(xyz);    
-    phz.data = mod(phz.data+pi,2*pi)-pi + phzCorrection; % mv phzCorrection -> Trial prop
-    phz.data(phz.data<0) = phz.data(phz.data<0) + 2*pi;
-    phz.data(phz.data>2*pi) = phz.data(phz.data>2*pi) - 2*pi;
-
-
+    phz = load_theta_phase(Trial,xyz);
+% COMPUTE head basis 
     hvec = xyz(:,'nose',[1,2])-xyz(:,'hcom',[1,2]);
     hvec = sq(bsxfun(@rdivide,hvec,sqrt(sum(hvec.^2,3))));
     hvec = cat(3,hvec,sq(hvec)*[0,-1;1,0]);
     hvec = multiprod(hvec,...
-                     [cos(rot),-sin(rot);sin(rot),cos(rot)],...
+                     [cos(headYawCorrection),-sin(headYawCorrection); ...
+                      sin(headYawCorrection), cos(headYawCorrection)],...
                      [2,3],...
                      [1,2]);
-
 % GET theta state behaviors, minus rear
     thetaState = resample(cast([Trial.stc{'theta-groom-sit-rear'}],'TimeSeries'),xyz);
 end
@@ -69,11 +53,15 @@ pfTemp = Trial;
 pargs = get_default_args('MjgER2016','MTAApfs','struct');        
 pargs.units        = units;
 pargs.tag          = 'egofield';
+%pargs.tag          = 'egofieldR';
+%pargs.tag          = 'egofieldM';
 pargs.binDims      = [20, 20];                           % X Y
-pargs.SmoothingWeights = [3, 3];                         % X Y
+pargs.SmoothingWeights = [2, 2];                         % X Y
+%pargs.SmoothingWeights = [0.8, 0.8];                         % X Y egofieldR
+%pargs.SmoothingWeights = [1.2, 1.2];                         % X Y egofieldM
 pargs.halfsample   = false;
 pargs.numIter      = 1;   
-pargs.boundaryLimits = [-410,410;-410,410];
+pargs.boundaryLimits = [-500,500;-500,500];
 pargs.states       = '';
 pargs.overwrite    = true;
 pargs.autoSaveFlag = false;    
@@ -89,9 +77,8 @@ end
 for phase = 1:numel(binPhzc)
 % CHECK existence of pfs object
     pargs.tag = ['egofield_theta_phase_',num2str(phase),stag];
-    
-    filepath = fullfile(Trial.spath,...
-                        [Trial.filebase,'.Pfs.',pargs.tag,'.mat']);
+
+    filepath = fullfile(Trial.spath, [Trial.filebase,'.Pfs.',pargs.tag,'.mat']);
     
     if exist(filepath,'file'),
         pfs{phase} = load(filepath).Pfs;
@@ -101,17 +88,14 @@ for phase = 1:numel(binPhzc)
             continue;
         end;% if
     end;% if exist
-    
         
     for unit = 1:numel(units),
         if unit==1 | electrode~=spk.map(spk.map(:,1)==units(unit),2), % update phase state            
             pargs.spk = copy(spk);
-            electrode = 1;
-            %electrode = spk.map(spk.map(:,1)==units(unit),2);
             pargs.states = copy(thetaState);
             pargs.states.label = ['thetaPhz_',num2str(phase)];
-            pargs.states.data((phz(:,electrode) < binPhzs(phase) )    ...
-                              | (phz(:,electrode) >= binPhzs(phase+1)) ) = 0;
+            pargs.states.data((phz(:,1) < binPhzs(phase) )    ...
+                              | (phz(:,1) >= binPhzs(phase+1)) ) = 0;
             cast(pargs.states,'TimePeriods');
             resInd = WithinRanges(pargs.spk.res,pargs.states.data);
             pargs.spk.res = pargs.spk.res(resInd);

@@ -113,6 +113,8 @@ classdef MTAModel
                 switch Model.N
                   case 1
                     Model.name = 'HCOM';
+                  case 2
+                    Model.name = 'H2';
                   case 3
                     Model.name = 'H3';
                   case 4

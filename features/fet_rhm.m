@@ -1,14 +1,24 @@
 function [rhm,varargout] = fet_rhm(Trial,varargin)
 % [rhm,fs,ts] = fet_rhm(Trial,varargin)
-% [sampleRate,mode,windowSize] = DefaultArgs(varargin,{Trial.xyz.sampleRate,'spectral',1});
-% Need to update the spectral window size to adapt to the xyz.sampleRate
+% 
+% Computes a rostrocaudal motion feature of the head.
+% 
+% Varargin:
+%           NAME : TYPE    : DEFAULT VAL          : Description
+%     sampleRate : Numeric : Trial.xyz.sampleRate : computational sampling rate
+%           mode : String  : {'mta','mtchglong'}  : Computational mode ( signal or spectra )
+%           wsig : Logical : true                 : flag determining if signal is to be whitened
+%        defspec : Struct  : def_spec_parm(xyz)   : default spetral args
+%      overwrite : Logical : false                : flag for overwriting saved data
+%          newSR : Numeric : []                   : Final sampling rate of output spectra
+%           type : String  : mta                  : Output type
 %
 
 % DEFARGS ------------------------------------------------------------------------------------------
 Trial = MTATrial.validate(Trial);
 parspec = empty_spec;
-xyz = Trial.load('xyz');
-%xyz = preproc_xyz(Trial,'SPLINE_SPINE_HEAD_EQI');
+%xyz = Trial.load('xyz');
+xyz = preproc_xyz(Trial,'trb');
 varargout = cell([1,nargout-1]);
 defargs = struct('sampleRate',                            'xyz',                                 ...
                  'mode',                                  'mta',                                 ...
@@ -31,16 +41,17 @@ hcom = xyz.com(rb);
 xyz.addMarker('fhcom',[.7,1,.7],{{'head_back','head_front',[0,0,1]}},ButFilter(hcom,3,[3]./(xyz.sampleRate/2),'low'));
 xyz.addMarker('hcom',[128,255,128],{{'head_back','head_front',[0,0,1]}},hcom);
 
-% if xyz sampling rat e is greater than 120 Hz then resample it to 120 Hz
+% if xyz sampling rate is greater than 120 Hz then resample it to 120 Hz
 if ischar(sampleRate), sampleRate = Trial.(sampleRate).sampleRate;end
 if isa(sampleRate,'MTAData'),
     xyz.resample(sampleRate);    
 elseif sampleRate > 120, 
-    xyz.resample(120); 
-    defspec.Fs = 120;
+    xyz.resample(sampleRate); 
+    defspec.Fs = sampleRate;
 end
 
-xyz.filter('RectFilter',3,4);
+%xyz.filter('RectFilter',3,4);
+xyz.filter('ButFilter',4,30,'low');
 ang = create(MTADang,Trial,xyz);
 ang.data(~nniz(xyz(:,1,1)),:,:,:) = 0;
 
@@ -52,7 +63,8 @@ rhm = MTADfet.encapsulate(Trial,...
                           'rhythmic head motion',...
                           'rhm',...
                           'r');
-rhm.filter('RectFilter');
+
+rhm.filter('ButFilter',3,[3,20],'bandpass');
 rhm.data = diff(rhm.data);
 rhm.update_hash();
 

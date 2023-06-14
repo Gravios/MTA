@@ -1,4 +1,6 @@
-% [Co f] = Comodugram(x, nFFT, SampleRate, FreqRange, WinLength, NW, Detrend)
+function [Co,Po,fs] = Comodugram(Trial,x,varargin)
+% function [Co, fs] = Comodugram(Trial,x,varargin)
+%
 %
 % Takes an input sequence x and does a multi-pane
 % plot showing correlated changes in power in frequency
@@ -26,85 +28,69 @@
 %
 %          NOTE: you MUST transpose the first input statement (x)
 
-function [Co, f] = Comodugram(Trial,x,varargin)
 
+
+% DEFARGS ------------------------------------------------------------------------------------------
 parspec = empty_spec;
-
-defargs.states   = Trial.stc{'a'};
-defargs.mode    = 'mtcsglong';
-defargs.defspec = def_spec_parm(x);
-
-[states,mode, defspec] = DefaultArgs(varargin,defargs,'--struct');
-
+defargs = struct('states',Trial.stc{'a'},...
+                 'mode','mtcsglong',...
+                 'defspec',def_spec_parm(x));
+[states, mode, defspec] = DefaultArgs(varargin,defargs,'--struct');
 
 dsf = fieldnames(defspec);
 for i = 1:length(dsf),parspec.(dsf{i}) = defspec.(dsf{i});end
-
-
-Clip = 0;
 % if Clip is 1, correlations below 0 will be replaced by 0.
+Clip = 0;
+%---------------------------------------------------------------------------------------------------
+
 
 nChannels = size(x,2);
 nSamples = size(x,1);
 
+%x.data = nunity(x.data);
+
 % calculate spectrograms
-[spex,f,ts] = spec(str2func(mode),x.data,parspec,false);
-spex = log(2*(parspec.NW*2-1)*spex)  - log(repmat(mean(spex), [size(spex,1),1, 1]));
-spex = abs(spex);
-% Modify time stamps and spec; add padding (0's)
-ts = ts+(parspec.WinLength/2)/x.sampleRate;
-ssr = 1/diff(ts(1:2));
-pad = round([ts(1),mod(x.size(1)-round(parspec.WinLength/2),parspec.WinLength)/x.sampleRate].*ssr)-[1,0];
-szy = size(spex);
-spex = MTADlfp('data',cat(1,zeros([pad(1),szy(2:end)]),spex,zeros([pad(2),szy(2:end)])),'sampleRate',ssr);
-ts = cat(2,([1:pad(1)]./ssr),ts',([pad(1)+size(ts,1)]+[1:pad(2)])./ssr)';
+[spex,fs,ts ] = fet_spec(Trial,x,mode,false,[],parspec,[],true);
+%[spex,f,ts] = spec(str2func(mode),x.data,parspec,false);
+% ??? Normalization ???
+thetaState = logical(get(resample(cast([Trial.stc{'theta-groom-sit&gper'}],'TimeSeries'),spex),'data'));
+gthind = thetaState;
+gthind(thetaState) = nniz(spex(thetaState));
+
+spex.data = bsxfun(@minus,...
+                   log(2*(parspec.NW*2-1)*spex.data),...
+                   log(mean(spex.data(gthind,:,:,:))));
+%spex.data = abs(spex.data);
 
 s = 1;
 for state = states,
     state = state{1};
     if ischar(state),
-        state = Trial.stc{state};
+        state = [Trial.stc{state}];
     end
-    state.cast('TimeSeries');
-    state.resample(spex);
+    tspex = spex(logical(get(resample(cast(state,'TimeSeries'),spex),'data')),:,:,:);
 
-    tspex = spex(state.data==1,:,:,:);
-
-    % find frequency bins to consider
-
+    % FIND frequency bins to consider
     nTimeBins = size(tspex,1);
     nFreqBins = size(tspex,2);
 
-    % calculate correlation coefficients
-    DataMat = reshape(tspex, [nTimeBins, nFreqBins*nChannels]);
+    % CALCULATE correlation coefficients
+    dataMat = reshape(tspex, [nTimeBins, nFreqBins*nChannels]);
+    dataMat = dataMat(nniz(dataMat),:);
+    nTimeBins = size(dataMat,1);
+    [corrMat,pvalMat]  = corrcoef(dataMat);
     
-    CorrMat = corrcoef(DataMat);
-    if (Clip) CorrMat = clip(CorrMat, 0, 1); end;
+    if (Clip) corrMat = clip(corrMat, 0, 1); end;
 
     % produce output array and plot(if required)
-    C = zeros(nFreqBins,nFreqBins);
-
     for i=1:nChannels
-	for j=1:nChannels
-            
-            C = CorrMat((i-1)*nFreqBins + (1:nFreqBins), (j-1)*nFreqBins + (1:nFreqBins));
-            
-            if (nargout<1)
-                subplot(nChannels, nChannels, j + (i-1) * nChannels);
-                imagesc(f, f, C(:,:));
-                set(gca,'ydir','norm');
-                drawnow;
-            else
-                Co(:,:,i,j,s) = C(:,:);
-            end
+	for j=i+1:nChannels
+            C = corrMat((i-1)*nFreqBins + (1:nFreqBins), (j-1)*nFreqBins + (1:nFreqBins));
+            Co(:,:,i,j,s) = C(:,:);
+            P = pvalMat((i-1)*nFreqBins + (1:nFreqBins), (j-1)*nFreqBins + (1:nFreqBins));
+            Po(:,:,i,j,s) = P(:,:);
         end
     end
-    
     s = s + 1;
-
 end
 
-% 
-% if nargout >=1
-% 	Co = C(:,:);
-% end

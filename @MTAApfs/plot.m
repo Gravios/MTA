@@ -173,7 +173,10 @@ if numel(Pfs.adata.binSizes) > 1,
         end
         mazeMask(mazeMask==0)=nan;
 
-        ratemap = ratemap.*mazeMask;
+        if ~isempty(mazeMask)
+            ratemap = ratemap.*mazeMask;
+        end
+        
         
         
         
@@ -280,7 +283,10 @@ if numel(Pfs.adata.binSizes) > 1,
             end
             mazeMask(mazeMask==0)=nan;
 
-            ratemap = ratemap.*mazeMask;
+            if ~isempty(mazeMask)
+                ratemap = ratemap.*mazeMask;
+            end
+            
             
             
             

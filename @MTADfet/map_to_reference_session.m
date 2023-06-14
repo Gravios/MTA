@@ -13,6 +13,11 @@ end
 
 
 switch features.label
+  case 'fet_hzp'
+    fetInds   = [1,2];
+    stdThresh = {0.2,10};
+    diffFun   = {@circ_dist,@minus};
+    
   case 'fet_HB_pitch'
     fetInds   = [1,2,3];
     stdThresh = {0.2,0.2,0.2};
@@ -118,6 +123,13 @@ switch features.label
 % $$$     kurThresh = repmat({20},1,10);
     diffFun   = repmat({@minus},1,15);
 
+  case 'fet_mis_HBREF'    
+    fetInds = [7:12];
+    fetInds =      [   7:8                      , 9:12                ];
+    stdThresh = cat(2, repmat({.2},    1,2)     , repmat({15},    1,4));
+    kurThresh = cat(2, repmat({5},     1,2)     , repmat({15},    1,4));
+    diffFun =   cat(2, repmat({@circ_dist},1,2) , repmat({@minus},1,4));
+    
   case 'fet_svd_mis'
     fetInds =      [   1:5                      , 7:10                ];
     stdThresh = cat(2, repmat({.2},    1,5)     , repmat({15},    1,4));

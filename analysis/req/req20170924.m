@@ -63,16 +63,16 @@ anatGrpSWPCenter{end}(9) = 3.5;
 anatGrpSWPCenter{end}(10) = 4.5;
 anatGrpSWPCenter{end}(11:12) = nan;
 
-% $$$ Trials{end+1} = 'jg05-20120311.cof.all';
-% $$$ anatGrpSWPCenter{end+1}(1:3) = nan;
-% $$$ anatGrpSWPCenter{end}(4) = 8;
-% $$$ anatGrpSWPCenter{end}(5) = 7;
-% $$$ anatGrpSWPCenter{end}(6) = 3;
-% $$$ anatGrpSWPCenter{end}(7) = 1;
-% $$$ anatGrpSWPCenter{end}(8) = 1;
-% $$$ anatGrpSWPCenter{end}(9) = 6;
-% $$$ anatGrpSWPCenter{end}(10) = 2;
-% $$$ anatGrpSWPCenter{end}(11:12) = nan;
+Trials{end+1} = 'jg05-20120311.cof.all';
+anatGrpSWPCenter{end+1}(1:3) = nan;
+anatGrpSWPCenter{end}(4) = 8;
+anatGrpSWPCenter{end}(5) = 7;
+anatGrpSWPCenter{end}(6) = 3;
+anatGrpSWPCenter{end}(7) = 1;
+anatGrpSWPCenter{end}(8) = 1;
+anatGrpSWPCenter{end}(9) = 6;
+anatGrpSWPCenter{end}(10) = 2;
+anatGrpSWPCenter{end}(11:12) = nan;
 
 Trials{end+1} = 'jg05-20120312.cof.all';
 anatGrpSWPCenter{end+1}(1:3) = nan;

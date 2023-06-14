@@ -1,3 +1,14 @@
+% req20210219
+%     Tags: rhm bfs
+%     Status: Active
+%     Type: Analysis
+%     Author: Justin Graboski
+%     Final_Forms: NA
+%     Project: General
+%     Description:  This script was made to examine the posibility of using only the theta-trough spikes for theta place field computation.
+
+
+
 
 MjgER2016_load_data();
 configure_default_args();

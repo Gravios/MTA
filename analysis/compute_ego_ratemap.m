@@ -1,25 +1,39 @@
-function [pfs] = compute_ego_ratemap(Trial,units,xyz,spk,pft,rot,hbaCorrection,headCenterCorrection,overwrite)
+function [pfs] = compute_ego_ratemap(Trial,units,varargin)
+% function [pfs] = compute_ego_ratemap(Trial,units,varargin)
+% 
+% Compute the mean firing rate of a neuron given spike position as the place field center 
+% in the 2d coordinate system of the head.
+%
+
+
+% DEFARGS ------------------------------------------------------------------------------------------
+defargs = struct(             'xyz', [],                                                         ...
+                              'spk', [],                                                         ...
+                              'pft', [],                                                         ...
+                 'headYawCorretion', Trial.meta.correction.headYaw,                              ...
+             'headCenterCorrection', [0,0],                                                      ...
+                       'overwrite' , false                                                       ...
+);
+[xyz, spk, pft, headYawCorrection, headCenterCorrection, overwrite] =                            ...
+    DefaultArgs(varargin,defargs,'--struct');
+%---------------------------------------------------------------------------------------------------
 
 sampleRate = xyz.sampleRate;
-binPhzs = linspace(0,2*pi,6);
-binPhzc = (binPhzs(1:end-1)+binPhzs(2:end))./2;
-pfs = cell([1,numel(binPhzc)]);
 verbose = true;
 
 if verbose,
     disp(['[status]        compute_ego_ratemap: processing trial: ',Trial.filebase]);
 end
 
-if isempty(units),
-    return;
-end;% if
+if isempty(units), pfs = []; return; end;% if
 
 % COMPUTE head basis
 hvec = xyz(:,'nose',[1,2])-xyz(:,'hcom',[1,2]);
 hvec = sq(bsxfun(@rdivide,hvec,sqrt(sum(hvec.^2,3))));
 hvec = cat(3,hvec,sq(hvec)*[0,-1;1,0]);
 hvec = multiprod(hvec,...
-                 [cos(rot),-sin(rot);sin(rot),cos(rot)],...
+                 [cos(headYawCorrection),-sin(headYawCorrection);...
+                  sin(headYawCorrection), cos(headYawCorrection)],...
                  [2,3],...
                  [1,2]);
 

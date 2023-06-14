@@ -1,4 +1,4 @@
-
+% new place field calculations
 
 Trial = MTATrial.validate('jg05-20120312.cof.all');
 
@@ -137,63 +137,63 @@ mapW = {};
 end
 
 
-% $$$ %mask = create_tensor_mask({xpos,ypos})
-% $$$ mask = double(sqrt(bsxfun(@plus,xbins.^2,ybins'.^2)') < 445);
-% $$$ mask(~mask) = nan;
-% $$$ 
-% $$$ figure,
-% $$$ shading(gca(),'flat');
-% $$$ set(pcolor(xpos-diff(xpos(1:2))/2,ypos-diff(ypos(1:2))/2,rmap'.*mask),'EdgeColor','none');
-% $$$ axis('xy');
-% $$$ colormap('jet');
-% $$$ colorbar();
-% $$$ ylim([ypos([1,end])+[-1,1].*diff(ypos(1:2))/2])
-% $$$ xlim([xpos([1,end])+[-1,1].*diff(xpos(1:2))/2])
-% $$$ 
-% $$$ 
-% $$$ 
-% $$$ 
-% $$$ nIter= 100;
-% $$$ occBS = nan([numel(mapOcc),nIter]);
-% $$$ sccBS = nan([numel(mapOcc),nIter]);
-% $$$ tic
-% $$$ for lind = 1:numel(mapOcc)
-% $$$     if numel(mapSpk{lind})>256
-% $$$         for iter = 1:nIter
-% $$$             [spkSubsample,rid] = datasample(mapSpk{lind},128,1);
-% $$$             sccBS(lind,iter)  = sum(mapW{lind}(rid).*exp(-sum(spkSubsample.^2,2)./(sigmaDS)),'omitnan');
-% $$$             occBS(lind,iter) = sum(exp(-sum(mapOcc{lind}(rid,:).^2,2)./(sigmaDS)));
-% $$$         end
-% $$$     end
-% $$$ end
-% $$$ toc
-% $$$ 
-% $$$ 
-% $$$ rmap = reshape(mean(sccBS./(occBS./sampleRate),2,'omitnan'),latticeSize);
-% $$$ smap =  reshape(std(sccBS./(occBS./sampleRate),[],2,'omitnan'),latticeSize);
-% $$$ 
-% $$$ figure();
-% $$$ subplot(131);
-% $$$ set(pcolor(xpos-diff(xpos(1:2))/2,ypos-diff(ypos(1:2))/2,rmap'.*mask),'EdgeColor','none');
-% $$$ ylim([ypos([1,end])+[-1,1].*diff(ypos(1:2))/2])
-% $$$ xlim([xpos([1,end])+[-1,1].*diff(xpos(1:2))/2])
-% $$$ colormap('jet');
-% $$$ colorbar();
-% $$$ axis('xy');
-% $$$ subplot(132);
-% $$$ set(pcolor(xpos-diff(xpos(1:2))/2,ypos-diff(ypos(1:2))/2,smap'.*mask),'EdgeColor','none');
-% $$$ ylim([ypos([1,end])+[-1,1].*diff(ypos(1:2))/2])
-% $$$ xlim([xpos([1,end])+[-1,1].*diff(xpos(1:2))/2])
-% $$$ colormap('jet');
-% $$$ colorbar();
-% $$$ axis('xy');
-% $$$ subplot(133);
-% $$$ set(pcolor(xpos-diff(xpos(1:2))/2,ypos-diff(ypos(1:2))/2,rmap'.^2./smap'.^2.*mask),'EdgeColor','none');
-% $$$ ylim([ypos([1,end])+[-1,1].*diff(ypos(1:2))/2])
-% $$$ xlim([xpos([1,end])+[-1,1].*diff(xpos(1:2))/2])
-% $$$ colormap('jet');
-% $$$ colorbar();
-% $$$ axis('xy');
+%mask = create_tensor_mask({xpos,ypos})
+mask = double(sqrt(bsxfun(@plus,xbins.^2,ybins'.^2)') < 445);
+mask(~mask) = nan;
+
+figure,
+shading(gca(),'flat');
+set(pcolor(xpos-diff(xpos(1:2))/2,ypos-diff(ypos(1:2))/2,rmap'.*mask),'EdgeColor','none');
+axis('xy');
+colormap('jet');
+colorbar();
+ylim([ypos([1,end])+[-1,1].*diff(ypos(1:2))/2])
+xlim([xpos([1,end])+[-1,1].*diff(xpos(1:2))/2])
+
+
+
+
+nIter= 1000;
+occBS = nan([numel(mapOcc),nIter]);
+sccBS = nan([numel(mapOcc),nIter]);
+tic
+for lind = 1:numel(mapOcc)
+    if numel(mapSpk{lind})>256
+        for iter = 1:nIter
+            [spkSubsample,rid] = datasample(mapSpk{lind},128,1);
+            sccBS(lind,iter)  = sum(mapW{lind}(rid).*exp(-sum(spkSubsample.^2,2)./(sigmaDS)),'omitnan');
+            occBS(lind,iter) = sum(exp(-sum(mapOcc{lind}(rid,:).^2,2)./(sigmaDS)));
+        end
+    end
+end
+toc
+
+
+rmapBS = reshape(mean(sccBS./(occBS./sampleRate),2,'omitnan'),latticeSize);
+smapBS =  reshape(std(sccBS./(occBS./sampleRate),[],2,'omitnan'),latticeSize);
+
+figure();
+subplot(131);
+set(pcolor(xpos-diff(xpos(1:2))/2,ypos-diff(ypos(1:2))/2,rmapBS'.*mask),'EdgeColor','none');
+ylim([ypos([1,end])+[-1,1].*diff(ypos(1:2))/2])
+xlim([xpos([1,end])+[-1,1].*diff(xpos(1:2))/2])
+colormap('jet');
+colorbar();
+axis('xy');
+subplot(132);
+set(pcolor(xpos-diff(xpos(1:2))/2,ypos-diff(ypos(1:2))/2,smapBS'.*mask),'EdgeColor','none');
+ylim([ypos([1,end])+[-1,1].*diff(ypos(1:2))/2])
+xlim([xpos([1,end])+[-1,1].*diff(xpos(1:2))/2])
+colormap('jet');
+colorbar();
+axis('xy');
+subplot(133);
+set(pcolor(xpos-diff(xpos(1:2))/2,ypos-diff(ypos(1:2))/2,rmapBS'.^2./smapBS'.^2.*mask),'EdgeColor','none');
+ylim([ypos([1,end])+[-1,1].*diff(ypos(1:2))/2])
+xlim([xpos([1,end])+[-1,1].*diff(xpos(1:2))/2])
+colormap('jet');
+colorbar();
+axis('xy');
 
 %% Block shuffling
 
@@ -252,43 +252,56 @@ mask(~mask) = nan;
 rmapb = sccb./(occb./16);
 sax = gobjects([1,0]);
 figure();
-sax(end+1) = subplot(141);
+sax(end+1) = subplot(151);
 set(pcolor(xpos-diff(xpos(1:2))/2,ypos-diff(ypos(1:2))/2,rmap'.*mask),'EdgeColor','none');
 ylim([ypos([1,end])+[-1,1].*diff(ypos(1:2))/2])
 xlim([xpos([1,end])+[-1,1].*diff(xpos(1:2))/2])
 colormap('jet');
 colorbar();
 axis('xy');
-sax(end+1) = subplot(142);
+sax(end+1) = subplot(152);
 set(pcolor(xpos-diff(xpos(1:2))/2,ypos-diff(ypos(1:2))/2,reshape(mean(rmapb,2),latticeSize)'.*mask),'EdgeColor','none');
+title('mean')
 ylim([ypos([1,end])+[-1,1].*diff(ypos(1:2))/2])
 xlim([xpos([1,end])+[-1,1].*diff(xpos(1:2))/2])
 colormap('jet');
 colorbar();
 axis('xy');
-sax(end+1) = subplot(143);
+sax(end+1) = subplot(153);
 set(pcolor(xpos-diff(xpos(1:2))/2,ypos-diff(ypos(1:2))/2,reshape(std(rmapb,[],2),latticeSize)'.*mask),'EdgeColor','none');
+title('std')
 ylim([ypos([1,end])+[-1,1].*diff(ypos(1:2))/2])
 xlim([xpos([1,end])+[-1,1].*diff(xpos(1:2))/2])
 colormap('jet');
 colorbar();
 axis('xy');
-sax(end+1) = subplot(144);
+sax(end+1) = subplot(154);
 rstd = reshape(std(rmapb,[],2),latticeSize)';
 rmean = reshape(mean(rmapb,2),latticeSize)';
-set(pcolor(xpos-diff(xpos(1:2))/2,ypos-diff(ypos(1:2))/2,(rmap'-rmean)./rstd.*mask),'EdgeColor','none');
+zmap = (rmap'-rmean)./rstd.*mask;
+set(pcolor(xpos-diff(xpos(1:2))/2,ypos-diff(ypos(1:2))/2,zmap),'EdgeColor','none');
 ylim([ypos([1,end])+[-1,1].*diff(ypos(1:2))/2])
 xlim([xpos([1,end])+[-1,1].*diff(xpos(1:2))/2])
 colormap('jet');
 colorbar();
 axis('xy');
 hold(gca(),'on');
-contour(xpos,ypos,(rmap'-rmean)./rstd.*mask,[2,2],'-m','LineWidth',2);
+contour(xpos,ypos,(rmap'-rmean)./rstd.*mask,[3,3],'-m','LineWidth',2);
 copyobj(sax(end).Children(1),sax(1));
+sax(end+1) = subplot(155);
+rzmap = zmap;
+rzmap(rzmap<1) = 1;
+rzmap(nniz(rzmap)) = 1;
+set(pcolor(xpos-diff(xpos(1:2))/2,ypos-diff(ypos(1:2))/2,(rmap'.*mask).*(log10(rzmap)./max(log10(rzmap(:))))),'EdgeColor','none');
+ylim([ypos([1,end])+[-1,1].*diff(ypos(1:2))/2])
+xlim([xpos([1,end])+[-1,1].*diff(xpos(1:2))/2])
+colormap('jet');
+colorbar();
+axis('xy');
 
 
-
-zcenter = [270,-210];
+rcenter = [160,-180];
+zcenter = [250,-210];
 
 sampleRate = 250;
 

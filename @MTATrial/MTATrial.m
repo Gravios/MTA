@@ -232,6 +232,11 @@ classdef MTATrial < MTASession
                 if isfield(Trial,'stcMode'),
                     stcMode = Trial.stcMode;
                 end
+                meta = [];
+                if isfield(Trial,'subject')
+                    meta = Trial.subject;
+                end
+                
 
                 try
                     Trial = MTATrial(Trial.sessionName,...
@@ -260,6 +265,8 @@ classdef MTATrial < MTASession
                         disp(err);
                     end
                 end
+                
+                Trial.meta = meta;
 
             else
                 error('MTA:validate_trial: unrecognized format');

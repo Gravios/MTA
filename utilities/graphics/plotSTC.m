@@ -38,10 +38,12 @@ end
 
 % ASSIGN colors to each state
 nsts = numel(states);
-if isempty(stateColors) || nsts~=numel(stateColors),
+if isempty(stateColors)
     c = jet(nsts);
-else
+elseif ischar(stateColors)
     c = stateColors(:);
+else
+    c = stateColors;
 end
 
 % CREATE patch objects for each state on the current axis  

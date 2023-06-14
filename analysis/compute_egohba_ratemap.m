@@ -1,64 +1,59 @@
-function [pfs] = compute_egohba_ratemap(Trial,units,xyz,spk,pft,rot,hbaCorrection,thetaPhzChan,phzCorrection,headCenterCorrection,overwrite)
+function [pfs] = compute_egohba_ratemap(Trial,units,varargin)
+% function [pfs] = compute_egohb_ratemap(Trial,units,varargin)
+% 
+% Compute the mean firing rate of a neuron given spike position as the place field center 
+% in the 2d coordinate system of the head, theta phase and head body angle.
+%
+
+
+% DEFARGS ------------------------------------------------------------------------------------------
+defargs = struct(             'xyz', [],                                                         ...
+                              'spk', [],                                                         ...
+                              'pft', [],                                                         ...
+                'headYawCorrection', Trial.meta.correction.headYaw,                              ...
+             'headCenterCorrection', [0,0],                                                      ...
+                       'overwrite' , false                                                       ...
+);
+[xyz, spk, pft, headYawCorrection, headCenterCorrection, overwrite] = ...
+    DefaultArgs(varargin,defargs,'--struct');
+%---------------------------------------------------------------------------------------------------
 
 sampleRate = xyz.sampleRate;
-binPhzs = linspace(0,2*pi,6);
+binPhzs = linspace(0.5,2*pi-0.5,4);
 binPhzc = (binPhzs(1:end-1)+binPhzs(2:end))./2;
-pfs = cell([1,numel(binPhzc)]);
+binHbas = [-1.2,-0.2,0.2,1.2];
+binHbac = (binHbas(1:end-1)+binHbas(2:end))./2;
+pfs = cell([numel(binPhzc),numel(binHbac)]);
 verbose = true;
 
 if verbose,
-    disp(['[status]        compute_egohba_ratemap: processing trial: ',Trial.filebase]);
+    disp(['[status] compute_egohba_ratemap: processing trial: ',Trial.filebase]);
 end
 
-
-if isempty(units),
-    return;
-end;% if
-
-
-% COMPUTE anglular velocity of the head 
-% $$$ hvang(:,'nose',[1,2])-hvang(:,'hcom',[1,2]));
-% $$$ hvang.data = cart2pol(xycoor(:,:,1),xycoor(:,:,2));
-% $$$ % Positive: CCW (Left)     Negative: CW (Right)
-% $$$ hvang.data = circ_dist(circshift(hvang.data(:,2),-10),...
-% $$$                                   circshift(hvang.data(:,2),+10));
-% COMPUTE lateral velocity of the head
-% $$$ fhrvfl = fet_href_HXY(Trial,sampleRate,false,'trb',4);
-% $$$ headLatVel = MTADfet.encapsulate(Trial,...
-% $$$                                  fhrvl(:,2),...
-% $$$                                   sampleRate,...
-% $$$                                   'hba','hba','h');
-
+if isempty(units), return; end;
 
 if overwrite,
-% COMPUTE anglular difference between the head and body
+% COMPUTE anglular distance between the head and body
     headBodyAng = [xyz(:,'spine_upper',[1,2])-xyz(:,'bcom',[1,2]),...
                    xyz(:,'nose',[1,2])-xyz(:,'hcom',[1,2])];
     headBodyAng = sq(bsxfun(@rdivide,headBodyAng,sqrt(sum(headBodyAng.^2,3))));
     headBodyAng = cart2pol(headBodyAng(:,:,1),headBodyAng(:,:,2));
     headBodyAng = circ_dist(headBodyAng(:,2),headBodyAng(:,1));
     headBodyAng = MTADfet.encapsulate(Trial,...
-                                      -(headBodyAng+hbaCorrection),...
+                                      -(headBodyAng+Trial.meta.correction.headBody),...
                                       sampleRate,...
                                       'hba','hba','h');
-
 % TRANSFORM Local Field Potential -> theta phase
-    Trial.lfp.filename = [Trial.name,'.lfp'];
-    phz = load(Trial,'lfp',thetaPhzChan).phase([6,12]);
-    phz.data = unwrap(phz.data);
-    phz.resample(xyz);    
-    phz.data = mod(phz.data+pi,2*pi)-pi + phzCorrection; % mv phzCorrection -> Trial prop
-    phz.data(phz.data<0) = phz.data(phz.data<0) + 2*pi;
-    phz.data(phz.data>2*pi) = phz.data(phz.data>2*pi) - 2*pi;
-
+    phz = load_theta_phase(Trial,xyz);
+% COMPUTE head basis
     hvec = xyz(:,'nose',[1,2])-xyz(:,'hcom',[1,2]);
     hvec = sq(bsxfun(@rdivide,hvec,sqrt(sum(hvec.^2,3))));
     hvec = cat(3,hvec,sq(hvec)*[0,-1;1,0]);
     hvec = multiprod(hvec,...
-                     [cos(rot),-sin(rot);sin(rot),cos(rot)],...
+                     [cos(headYawCorrection),-sin(headYawCorrection);...
+                      sin(headYawCorrection),cos(headYawCorrection)],...
                      [2,3],...
                      [1,2]);
-
 % GET theta state behaviors, minus rear
     thetaState = resample(cast([Trial.stc{'theta-groom-sit-rear'}],'TimeSeries'),xyz);
 end
@@ -68,15 +63,15 @@ pfTemp = Trial;
 pargs = get_default_args('MjgER2016','MTAApfs','struct');        
 pargs.units        = units;
 pargs.tag          = 'egofield';
-pargs.binDims      = [20, 20, 0.6];                           % X Y HBA
-pargs.SmoothingWeights = [3, 3, 0.4];                     % X Y HBA
+pargs.binDims      = [20, 20];                           % X Y HBA
+pargs.SmoothingWeights = [2, 2];                     % X Y HBA
 pargs.halfsample   = false;
 pargs.numIter      = 1;   
-pargs.boundaryLimits = [-410,410;-410,410;-1.5,1.5];
+pargs.boundaryLimits = [-410,410;-410,410];
 pargs.states       = '';
 pargs.overwrite    = true;
 pargs.autoSaveFlag = false;    
-electrode = 0;
+
 
 % Don't judge me
 if pargs.SmoothingWeights(1)~=2,
@@ -86,45 +81,44 @@ else
 end
 
 for phase = 1:numel(binPhzc)
+    for hba = 1:numel(binHbac)
 % CHECK existence of pfs object
-    pargs.tag = ['egofield_theta_phase_hba_',num2str(phase),stag];
+    pargs.tag = ['egofield_theta_phase_hba_',num2str(hba),'_',num2str(phase),stag];
     filepath = fullfile(Trial.spath, [Trial.filebase,'.Pfs.',pargs.tag,'.mat']);
     
     if exist(filepath,'file'),
-        pfs{phase} = load(filepath).Pfs;
-        if overwrite,
-            pfs{phase}.purge_savefile();
-        else,
+        pfs{phase,hba} = load(filepath).Pfs;
+        if overwrite
+            pfs{phase,hba}.purge_savefile();
+        else
             continue;
         end;% if
     end;% if exist
-    
         
-    for unit = 1:numel(units),
-        if unit==1 | electrode~=spk.map(spk.map(:,1)==units(unit),2), % update phase state            
+    for unit = 1:numel(units)
+        if unit==1
             pargs.spk = copy(spk);
-            electrode = 1;
-            %electrode = spk.map(spk.map(:,1)==units(unit),2);
             pargs.states = copy(thetaState);
             pargs.states.label = ['thetaPhz_',num2str(phase)];
-            pargs.states.data((phz(:,electrode) < binPhzs(phase) )    ...
-                              | (phz(:,electrode) >= binPhzs(phase+1)) ) = 0;
+            pargs.states.data(   phz(:,1) < binPhzs(phase)             ...
+                               | phz(:,1) >= binPhzs(phase+1)          ... 
+                               | headBodyAng.data < binHbas(hba)       ...
+                               | headBodyAng.data >= binHbas(hba+1)) = 0;
             cast(pargs.states,'TimePeriods');
-            resInd = WithinRanges(pargs.spk.res,pargs.states.data);
+            resInd = WithinRanges( pargs.spk.res, pargs.states.data);
             pargs.spk.res = pargs.spk.res(resInd);
             pargs.spk.clu = pargs.spk.clu(resInd);
-        end;% if
+        end% if
         
         [mxr,mxp] = pft.maxRate(units(unit));
         pfsCenterHR = MTADfet.encapsulate(Trial,                                           ...
-                                          [bsxfun(                                         ...
+                                          bsxfun(                                         ...
                                               @plus,                                       ...
-                                              multiprod(bsxfun(@minus,                        ...
-                                                          mxp,                           ...
-                                                          sq(xyz(:,'hcom',[1,2]))),      ...
-                                                     hvec,2,[2,3]),                    ...
-                                              headCenterCorrection),                      ...                                              
-                                           headBodyAng.data],           ...
+                                              multiprod(bsxfun(@minus,                     ...
+                                                          mxp,                             ...
+                                                          sq(xyz(:,'hcom',[1,2]))),        ...
+                                                     hvec,2,[2,3]),                        ...
+                                              headCenterCorrection),                       ...
                                           sampleRate,                                      ...
                                           'egocentric_placefield',                         ...
                                           'egopfs',                                        ...
@@ -134,14 +128,15 @@ for phase = 1:numel(binPhzc)
         pargs.units  = units(unit);
         pfsArgs = struct2varargin(pargs);
         pfTemp = MTAApfs(pfTemp,pfsArgs{:});
-        if unit==1,
+        if unit==1
             try
                 pfTemp.purge_savefile();
             end
             pfTemp.save();        
         end% if 
-    end;% for unit
+    end% for unit
     pfTemp.save();
-    pfs{phase} = pfTemp;    
+    pfs{phase,hba} = pfTemp;    
     pfTemp = Trial;
-end;% for phase
+    end% for hba
+end% for phase

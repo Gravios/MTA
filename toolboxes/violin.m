@@ -147,8 +147,8 @@ end
 lLabels = {'Mean','Median'};
 L=[];
 if plotlegend==1 & plotmean==1 | plotlegend==1 & plotmedian==1
-    L = legend(p(find([plotmean,plotmedian])),lLabels(find([plotmean,plotmedian])))
-    set(L,'box','off','FontSize',8)
+    L = legend(p(find([plotmean,plotmedian])),lLabels(find([plotmean,plotmedian])));
+    set(L,'box','off','FontSize',8);
 
 end
 
@@ -157,8 +157,8 @@ axis('tight');
 xlim(xlim+range(xlim)*0.05.*[-1,1]);
 
 %% Set x-labels
-set(gca,'XTick',xticks)
+set(gca,'XTick',xticks);
 box('on');
-set(gca,'XTickLabel',xlabels)
+set(gca,'XTickLabel',xlabels);
 
 %-------------------------------------------------------------------------

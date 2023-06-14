@@ -37,6 +37,12 @@ pfsTag = DataHash({func2str(get_featureSet),sampleRate,...
 
 % MAIN ---------------------------------------------------------------------------------------------
 
+try, 
+    Trial.stc{pfsArgs.states};
+catch
+    pfsArgs.states = 'vel&gper&theta';
+end
+
 
 % ATTEMPT to load existing MTAApfs object from filesytem
 pfs = [];

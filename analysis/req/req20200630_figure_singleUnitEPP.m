@@ -9,29 +9,26 @@
 %        
 %
 
+% binPhzc
+%
 
-MjgER2016_defargs();
+configure_default_args();
 
-if ~exist('bfrm','var')
-    bfrm = cf(@(t,u)   compute_bhv_ratemaps(t,u),                 Trials, units);
-end
+if ~exist('bfrm','var'),bfrm = cf(@(t,u) compute_bhv_ratemaps(t,u),Trials,units);end;
 
-lims = {[-250,250],[-250,250]};
-lims = {[-400,400],[-400,400]};
+% $$$ lims = {[-250,250],[-250,250]};
+% $$$ lims = {[-400,400],[-400,400]};
+lims = {[-300,300],[-300,300]};
 
 % FIGURE - Examples of individual units
-
-
-ascnPhz = 4;
-descPhz = 2;
-
 %[ 0-120, 120-240, 240-360 ]
+ascnPhz = 3;
+descPhz = 1;
 
-orientationLabels = 'LLCRR';
+orientationLabels = 'LCR';
 
 % LOAD patch model 
 rat = load_patch_model('rat');
-
 
 % GENERAL unit info
 %    UNIT_ID, SESSION
@@ -41,99 +38,93 @@ rat = load_patch_model('rat');
 %    ?? HRZ Vs THETA state ratemaps
 %     
 % MAIN figure
-%    BLOCK 5x5 HBAxPHZ
-
-
-
-
-
+%    BLOCK 3x3 HBAxPHZ
 
 mazeMaskFlag = true;                                      
 pfsPlotMode  = 1;
 reportMethod ='text';
 pfsColorMap  = @jet;
+displayModelFlag = true;
 
-0,20,40,60,80
-
-t = 7;
+t = 20;
 u = 1;
 
-pfo = pfs;
-pfo = pfl;
-pfo = pfv;
-pfo = pfr;
+pfo = pfs; % hba <- req20200630.m
+% $$$ pfo = pfl; % hvl <- req20200630.m
+% $$$ pfo = pfv; % hvf <- req20200630.m
+% $$$ pfo = pfr; % roll<- req20200630.m
 
 % change incase first is empty
 nBins = pfo{2}{1}.adata.binSizes(end);
 nPhz = numel(pfo{2});
 
 
-for  t = [1:17,22:28];numel(Trials),
+for  t = 1:numel(Trials),
     %for  t = 1:numel(Trials),
-Trial = Trials{t};    
-Trial.load('nq');
-figDir = fullfile('/storage/share/Projects/EgoProCode2D/eppSingleUnit',Trial.filebase);
-create_directory(figDir);
-[accg,tbins] = autoccg(Trial);
+    Trial = Trials{t};    
+    Trial.load('nq');
+    figDir = fullfile('/storage/share/Projects/EgoProCode2D/eppSingleUnit',Trial.filebase);
+    create_directory(figDir);
+    [accg,tbins] = autoccg(Trial);
 
 % HBA setup
-hbaBinEdg = -1.5:0.6:1.5;
-hbaBinCtr = mean([hbaBinEdg(1:end-1);hbaBinEdg(2:end)]);
-headBodyAng = [xyz{t}(:,'spine_upper',[1,2])-xyz{t}(:,'bcom',[1,2]),...
-               xyz{t}(:,'nose',[1,2])-xyz{t}(:,'hcom',[1,2])];
-headBodyAng = sq(bsxfun(@rdivide,headBodyAng,sqrt(sum(headBodyAng.^2,3))));
-headBodyAng = cart2pol(headBodyAng(:,:,1),headBodyAng(:,:,2));
-headBodyAng = circ_dist(headBodyAng(:,2),headBodyAng(:,1));
-headBodyAng = MTADfet.encapsulate(Trials{t},-(headBodyAng+hbaCorrection(t)),sampleRate,'hba','hba','h');
-hbaBinInd = discretize(headBodyAng.data, hbaBinEdg);
+    hbaBinEdg = [-1.2,-0.2,0.2,1.2];
+    hbaBinCtr = mean([hbaBinEdg(1:end-1);hbaBinEdg(2:end)]);
+    headBodyAng = [xyz{t}(:,'spine_upper',[1,2])-xyz{t}(:,'bcom',[1,2]),...
+                   xyz{t}(:,'nose',[1,2])-xyz{t}(:,'hcom',[1,2])];
+    headBodyAng = sq(bsxfun(@rdivide,headBodyAng,sqrt(sum(headBodyAng.^2,3))));
+    headBodyAng = cart2pol(headBodyAng(:,:,1),headBodyAng(:,:,2));
+    headBodyAng = circ_dist(headBodyAng(:,2),headBodyAng(:,1));
+    headBodyAng = MTADfet.encapsulate(Trials{t},                                    ...
+                                      -(headBodyAng+Trial.meta.correction.headBody),...
+                                      sampleRate,'hba','hba','h');
+    hbaBinInd = discretize(headBodyAng.data, hbaBinEdg);
 
-
-% HVF setup
+% $$$ 
+% $$$ % HVF setup
 % $$$ hvfl = fet_href_HXY(Trials{t},sampleRate,false,'trb',4);
 % $$$ hvfBinEdg = -10:20:90;
 % $$$ hvfBinCtr = mean([hvfBinEdg(1:end-1);hvfBinEdg(2:end)]);
 % $$$ hvfBinInd = discretize(hvfl(:,1), hvfBinEdg);
-
-% HRL setup
-hang = transform_origin(Trial,filter(copy(xyz{t}),'ButFilter',4,20),'hcom','nose',{'hcom','head_right'});
-hroll = MTADfet.encapsulate(Trial,...
-                                  -(hang.roll+hrlCorrection(t)),...
-                                  xyz{t}.sampleRate,...
-                                  'hrl','hrl','r');
-hrlBinEdg = -0.6:0.24:0.6;
-hrlBinCtr = mean([hrlBinEdg(1:end-1);hrlBinEdg(2:end)]);
-hrlBinInd = discretize(hroll(:,1), hrlBinEdg);
-
-
 % $$$ 
-% $$$ varBinEds = hbaBinEds;
-% $$$ varBinCtr = hbaBinCtr;
-% $$$ varBinInd = hbaBinInd;
+% $$$ % HRL setup
+% $$$ hang = transform_origin(Trial,filter(copy(xyz{t}),'ButFilter',4,20),'hcom','nose',{'hcom','head_right'});
+% $$$ hroll = MTADfet.encapsulate(Trial,...
+% $$$                                   -(hang.roll+hrlCorrection(t)),...
+% $$$                                   xyz{t}.sampleRate,...
+% $$$                                   'hrl','hrl','r');
+% $$$ hrlBinEdg = -0.6:0.24:0.6;
+% $$$ hrlBinCtr = mean([hrlBinEdg(1:end-1);hrlBinEdg(2:end)]);
+% $$$ hrlBinInd = discretize(hroll(:,1), hrlBinEdg);
+% $$$ 
 
-% $$$ varBinEds = hvfBinEdg;
+
+varBinEdg = hbaBinEdg;
+varBinCtr = hbaBinCtr;
+varBinInd = hbaBinInd;
+
+% $$$ varBinEdg = hvfBinEdg;
 % $$$ varBinCtr = hvfBinCtr;
 % $$$ varBinInd = hvfBinInd;
-
-% $$$ varBinEds = hvfBinEdg;
-% $$$ varBinCtr = hvfBinCtr;
-% $$$ varBinInd = hvfBinInd;
-
-varBinEds = hrlBinEdg;
-varBinCtr = hrlBinCtr;
-varBinInd = hrlBinInd;
+% $$$ 
+% $$$ 
+% $$$ varBinEdg = hrlBinEdg;
+% $$$ varBinCtr = hrlBinCtr;
+% $$$ varBinInd = hrlBinInd;
 
 
 hvec = xyz{t}(:,'nose',[1,2])-xyz{t}(:,'hcom',[1,2]);
 hvec = sq(bsxfun(@rdivide,hvec,sqrt(sum(hvec.^2,3))));
 hvec = cat(3,hvec,sq(hvec)*[0,-1;1,0]);
 hvec = multiprod(hvec,...
-                 [cos(rot(t)),-sin(rot(t));sin(rot(t)),cos(rot(t))],...
+                 [cos(Trial.meta.correction.headYaw),-sin(Trial.meta.correction.headYaw);...
+                  sin(Trial.meta.correction.headYaw),cos(Trial.meta.correction.headYaw)],...
                  [2,3],...
                  [1,2]);
 
 
-%ind = [Trials{t}.stc{'w+p+n&t',sampleRate}];
-ind = [Trials{t}.stc{'w+p&t',sampleRate}];
+ind = [Trials{t}.stc{'w+p+n&t',sampleRate}];
+%ind = [Trials{t}.stc{'theta-groom-sit-rear',sampleRate}];
 
 ind.cast('TimeSeries');
 ind.resample(xyz{t});

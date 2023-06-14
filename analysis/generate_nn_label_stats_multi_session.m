@@ -66,8 +66,8 @@ switch mode
         par = parpool(numel(trainingList));
     end
 
-    %for dropIndex = 1:numel(trainingList),
-    parfor dropIndex = 1:numel(trainingList),
+    for dropIndex = 1:numel(trainingList),
+    %parfor dropIndex = 1:numel(trainingList),
     
         bhv_nn_multi_session_patternnet(...
             sessionList,         featureSet, states, keys, model,                             ...
@@ -227,11 +227,11 @@ switch mode
     create_directory(fullfile(OwnDir,FigDir));
 
 % SET figure dimensions
-    fig.w = 6;
-    fig.h = 4;
+    fig.w = 12;
+    fig.h = 8;
     fig.units = 'centimeters';
-    ax.w = 4;
-    ax.h = 3;
+    ax.w = 8;
+    ax.h = 6;
     ax.units = 'centimeters';
 
 % LOAD labeling statistics

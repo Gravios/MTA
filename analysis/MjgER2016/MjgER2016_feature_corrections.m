@@ -30,7 +30,7 @@ rose(mphz+pi/4,16);
 
 
 %hbangCorrection
-for tid = 4:30
+for tid = 1:30
 Trial = Trials{tid};
 hbang = fet_hbp_hba(Trial);
 roll = fet_roll(Trial);

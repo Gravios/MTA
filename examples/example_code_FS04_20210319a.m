@@ -124,6 +124,7 @@ meta.thetaRefGeneral = 1;
 %                      record1,                 record2,              record3
 %
 meta.csv = {'Take 2021-03-19 07.48.56 PM.csv',''};
+meta.beacon = {'BPositions_FS4_20210319-194911',''};
 
 MTA_DATA_PATH = getenv('MTA_DATA_PATH');
 meta.path.raw.ephys       = create_directory(fullfile(MTA_DATA_PATH,'raw/ephys/',      meta.sessionBase,meta.sessionName));
@@ -212,7 +213,7 @@ ratAC.data(:,1,1:2) = multiprod([cos(o),-sin(o);sin(o),cos(o)],sq(ratAC.data(:,1
 ratAC.label = [ratAC.label,'_AC'];
 ratAC.update_filename([Trial.filebase,'.rbo.',rat.name,'_AC.s.mat']);
 ratAC.save();
-
+% '/storage/gravio/data/project/general/FS04-20210319a/FS04-20210319a.vrr.all.rbo.FS04.s.mat'
 
 %% 9. Label Behaviors --------------------------------------------------------------------------------------------------
 % LABEL 
@@ -255,7 +256,7 @@ activeState = 'theta&gper&vel';
 
 % ROOM frame of reference  (X,Y)
 pfsArgs = struct('states',           activeState,                  ... Computational Periods 
-n                 'binDims',          [20,20],                      ... Physical size of bins in milimeters
+                 'binDims',          [20,20],                      ... Physical size of bins in milimeters
                  'SmoothingWeights', [3.5,3.5],                    ... Gaussian smoother prameters, std deviation in bins 
                  'numIter',          1,                            ... number of bootstraps
                  'boundaryLimits',   [-500,500;-1000,1000],        ... Computational domain

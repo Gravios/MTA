@@ -61,7 +61,7 @@ if isempty(feature),
     feature.resample(sampleRate);            
     nind = nniz(feature);    
     feature.filter('ButFilter',4,filtCutOffFreq,'low');
-    feature.data = sq(feature(:,marker,[1,2]));
+    feature.data = sq(feature(:,{'hcom',marker},[1,2]));
 elseif isa(feature,'MTADxyz'),
     feature = copy(feature);    
     feature.resample(sampleRate);
@@ -114,8 +114,8 @@ end
 %    -1 -> towards the placefield center
 %     1 -> outwards from placefield center
 pfd = zeros(size(pfds));
-pfd(abs(pfds(:))>=pi/2)=-1;
-pfd(abs(pfds(:))<pi/2)=1;
+pfd(abs(pfds(:))>=pi/2)=1;
+pfd(abs(pfds(:))<pi/2)=-1;
 
 % CALCULATE DDZ 
 ghz = 1./(sigma.*sqrt(2.*pi)).*exp(-0.5.*(pfdd./sigma).^2);

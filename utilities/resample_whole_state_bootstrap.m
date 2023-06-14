@@ -28,6 +28,7 @@ labelingPerInds = {};
 
 for s = StcHL(states{:}),
     s = s{1};
+    s.data(end,:) = [];
     rprs = randperm(s.size(1));
     % select random sets of the periods
     trainingPerInds(end+1) = {rprs(1:round(s.size(1).*prctTrain/100))};
@@ -36,7 +37,9 @@ for s = StcHL(states{:}),
     l.data = s.data(labelingPerInds{end},:);
     s.data = s.data(trainingPerInds{end},:);
     s.resample(features);
-
+    s.clean();
+    l.clean();
+    
     tmpFeatures.clear;
     tmpFeatures.data = features(s,:);
 

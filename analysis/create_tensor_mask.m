@@ -24,6 +24,20 @@ switch boundary.shape
     [W,H] = meshgrid(1:width,1:height);
     mask = double(sqrt((W-centerW-.5).^2 + (H-centerH-.5).^2) < radius);
 
+  case 'square',    
+    xEdge = bins{1};
+    xEdge(abs(xEdge)>boundary.edgeLength/2) = nan;
+    yEdge = bins{1};
+    yEdge(abs(yEdge)>boundary.edgeLength/2) = nan;
+    mask = ~isnan(xEdge*yEdge');
+  case 'line',    
+    xEdge = bins{1};
+    xEdge(abs(xEdge)>boundary.edgeLength/2) = nan;
+    yEdge = bins{2};
+    yEdge(abs(yEdge)>200) = nan;
+    mask = ~isnan(xEdge*yEdge');
+    
+    
   case 'circular_bhv'
     
 % $$$     width = numel(bins{1});    

@@ -1,9 +1,12 @@
-function [pfs] = compute_egohba_ratemap_shuffled(Trial,units,xyz,spk,pft,rot,hbaCorrection,thetaPhzChan,phzCorrection,headCenterCorrection,overwrite)
+function [pfs] = compute_egohba_ratemap_shuffled(Trial,units,xyz,spk,pft,overwrite)
+
 
 sampleRate = xyz.sampleRate;
-binPhzs = linspace(0,2*pi,6);
+binPhzs = linspace(0.5,2*pi-0.5,4);
 binPhzc = (binPhzs(1:end-1)+binPhzs(2:end))./2;
-pfs = cell([1,numel(binPhzc)]);
+binHbas = [-1.2,-0.2,0.2,1.2];
+binHbac = (binHbas(1:end-1)+binHbas(2:end))./2;
+pfs = cell([numel(binPhzc)]);
 verbose = true;
 
 if verbose,
@@ -16,49 +19,11 @@ if isempty(units),
 end;% if
 
 
-% COMPUTE anglular velocity of the head 
-% $$$ hvang(:,'nose',[1,2])-hvang(:,'hcom',[1,2]));
-% $$$ hvang.data = cart2pol(xycoor(:,:,1),xycoor(:,:,2));
-% $$$ % Positive: CCW (Left)     Negative: CW (Right)
-% $$$ hvang.data = circ_dist(circshift(hvang.data(:,2),-10),...
-% $$$                                   circshift(hvang.data(:,2),+10));
-% COMPUTE lateral velocity of the head
-% $$$ fhrvfl = fet_href_HXY(Trial,sampleRate,false,'trb',4);
-% $$$ headLatVel = MTADfet.encapsulate(Trial,...
-% $$$                                  fhrvl(:,2),...
-% $$$                                   sampleRate,...
-% $$$                                   'hba','hba','h');
-
-
 if overwrite,
-    % COMPUTE anglular difference between the head and body
-    headBodyAng = [xyz(:,'spine_upper',[1,2])-xyz(:,'bcom',[1,2]),...
-                   xyz(:,'nose',[1,2])-xyz(:,'hcom',[1,2])];
-    headBodyAng = sq(bsxfun(@rdivide,headBodyAng,sqrt(sum(headBodyAng.^2,3))));
-    headBodyAng = cart2pol(headBodyAng(:,:,1),headBodyAng(:,:,2));
-    headBodyAng = circ_dist(headBodyAng(:,2),headBodyAng(:,1));
-    headBodyAng = MTADfet.encapsulate(Trial,...
-                                      -(headBodyAng+hbaCorrection),...
-                                      sampleRate,...
-                                      'hba','hba','h');
-
-    % TRANSFORM Local Field Potential -> theta phase
-    Trial.lfp.filename = [Trial.name,'.lfp'];
-    phz = load(Trial,'lfp',thetaPhzChan).phase([6,12]);
-    phz.data = unwrap(phz.data);
-    phz.resample(xyz);    
-    phz.data = mod(phz.data+pi,2*pi)-pi + phzCorrection; % mv phzCorrection -> Trial prop
-    phz.data(phz.data<0) = phz.data(phz.data<0) + 2*pi;
-    phz.data(phz.data>2*pi) = phz.data(phz.data>2*pi) - 2*pi;
-
-
-    hvec = xyz(:,'nose',[1,2])-xyz(:,'hcom',[1,2]);
-    hvec = sq(bsxfun(@rdivide,hvec,sqrt(sum(hvec.^2,3))));
-    hvec = cat(3,hvec,sq(hvec)*[0,-1;1,0]);
-    hvec = multiprod(hvec,...
-                     [cos(rot),-sin(rot);sin(rot),cos(rot)],...
-                     [2,3],...
-                     [1,2]);
+    hba = fet_head_body_angle(Trial, 'xyz', xyz);
+    phz = load_theta_phase(Trial, xyz.sampleRate);
+    rot = transform_vector_to_rotation_matrix( ...
+             xyz,{'hcom','nose'}, Trial.meta.correction.headYaw);
 
     % GET theta state behaviors, minus rear
     thetaState = resample(cast([Trial.stc{'theta-groom-sit-rear'}],'TimeSeries'),xyz);
@@ -125,12 +90,12 @@ for phase = 1:numel(binPhzc)
         pfsCenterHR = MTADfet.encapsulate(Trial,                                           ...
                                           [bsxfun(                                         ...
                                               @plus,                                       ...
-                                              multiprod(bsxfun(@minus,                        ...
-                                                          mxp,                           ...
-                                                          sq(xyz(:,'hcom',[1,2]))),      ...
-                                                     hvec,2,[2,3]),                    ...
-                                              headCenterCorrection),                      ...                                              
-                                           headBodyAng.data],           ...
+                                              multiprod(bsxfun(@minus,                     ...
+                                                          mxp,                             ...
+                                                          sq(xyz(:,'hcom',[1,2]))),        ...
+                                                     rot,2,[2,3]),                         ...
+                                              Trial.meta.correction.headCenter),           ...
+                                           hba.data],                                      ...
                                           sampleRate,                                      ...
                                           'egocentric_placefield',                         ...
                                           'egopfs',                                        ...
@@ -152,6 +117,10 @@ for phase = 1:numel(binPhzc)
     pfTemp = Trial;
 end;% for phase
 
+
+
+
+%% PLOTING EXAMPLES
 % $$$ lims = {[-250,250],[-250,250]};
 % $$$ figure();
 % $$$ al = 1:5;

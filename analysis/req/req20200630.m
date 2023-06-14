@@ -12,6 +12,18 @@
 %        compute_egohba_ratemap
 %        compute_egohba_ratemap_shuffled
 %
+%    HYPOTHESIS :
+%        The hippocampus associates sensorial motifs with space, but ...
+%            ... each subnetwork speciallizes in different computations.
+%                  CA1 : <- CA3 position information
+%                  CA1 : <- EC3 sensory field information
+%                  CA1 : -> spatial signal of the sensory field in allocentric coordinates
+%            ... each subnetwork receives different types of processed sensory information
+%            
+%
+%    LOGIC :
+%        Phase
+%
 %    ANALYSIS : 
 %        Which behavioral variables affect phase precession?
 %            HBA : head-body-angle
@@ -138,6 +150,7 @@ anatomicalLocation = [0,0,                          ... er01
 %%%>>>
 
 %%%<<< Load general variables
+
 sampleRate = 250;
 headCenterCorrection = [-25,-8];
 pfsState = 'theta-groom-sit-rear';
@@ -158,12 +171,13 @@ spk = cf(@(t,u) t.load('spk',sampleRate,'gper',u,'deburst'),Trials,units);
 pft = cf(@(t,u)  pfs_2d_theta(t,u,'pfsArgsOverride',...
                               struct('halfsample',false,'numIter',1)),           ...
                               Trials, units);
+
 %%%>>>
 
-
-%%%<<< ego ratemap
+overwrite = false;
+%%%<<< (pfe) ego ratemap
 pfe = cf(@(t,u,x,s,p,rt,hc)                                    ... Egocentric ratemap given theta phase and head body angle.
-         compute_ego_ratemap(t,u,x,s,p,rt,hc,headCenterCorrection,true),           ...
+         compute_ego_ratemap(t,u,x,s,p,rt,hc,headCenterCorrection,overwrite),           ...
              Trials,                                           ... MTATrial
              units,                                            ... Unit subset, placefields away from the maze walls
              xyz,                                              ... MTADxyz object, head position
@@ -174,9 +188,10 @@ pfe = cf(@(t,u,x,s,p,rt,hc)                                    ... Egocentric ra
 );
 %%%>>>
 
-%%%<<< egothp ratemap
+%%%<<< (pfet) egothp ratemap
+
 pfet = cf(@(t,u,x,s,p,rt,hc,ch,pc)                             ... Egocentric ratemap given theta phase and head body angle.
-         compute_egothp_ratemap(t,u,x,s,p,rt,hc,ch,pc,headCenterCorrection,true),   ...
+         compute_egothp_ratemap(t,u,x,s,p,rt,hc,ch,pc,headCenterCorrection,overwrite),   ...
              Trials,                                           ... MTATrial
              units,                                            ... Unit subset, placefields away from the maze walls
              xyz,                                              ... MTADxyz object, head position
@@ -187,11 +202,13 @@ pfet = cf(@(t,u,x,s,p,rt,hc,ch,pc)                             ... Egocentric ra
              num2cell(thetaChan),                              ... lfp channel from which phase is computed
              num2cell(phzCorrection)                           ... theta phase offset
 );
+
 %%%>>>
 
-%%%<<< egohba ratemap
+%%%<<< (pfs) egohba ratemap
+
 pfs = cf(@(t,u,x,s,p,rt,hc,ch,pc)                              ... Egocentric ratemap given theta phase and head body angle.
-         compute_egohba_ratemap(t,u,x,s,p,rt,hc,ch,pc,headCenterCorrection,true),   ...
+         compute_egohba_ratemap(t,u,x,s,p,rt,hc,ch,pc,headCenterCorrection,overwrite),   ...
              Trials,                                           ... MTATrial
              units,                                            ... Unit subset, placefields away from the maze walls
              xyz,                                              ... MTADxyz object, head position
@@ -204,7 +221,7 @@ pfs = cf(@(t,u,x,s,p,rt,hc,ch,pc)                              ... Egocentric ra
 );
 
 pfsh = cf(@(t,u,x,s,p,rt,hc,ch,pc)                             ... Egocentric ratemap given theta phase and head body angle.
-         compute_egohba_ratemap_shuffled(t,u,x,s,p,rt,hc,ch,pc,headCenterCorrection,true),   ...
+         compute_egohba_ratemap_shuffled(t,u,x,s,p,rt,hc,ch,pc,headCenterCorrection,overwrite),   ...
              Trials,                                           ... MTATrial
              units,                                            ... Unit subset, placefields away from the maze walls
              xyz,                                              ... MTADxyz object, head position
@@ -215,11 +232,13 @@ pfsh = cf(@(t,u,x,s,p,rt,hc,ch,pc)                             ... Egocentric ra
              num2cell(thetaChan),                              ... lfp channel from which phase is computed
              num2cell(phzCorrection)                           ... theta phase offset
 );
+
 %%%>>>
 
-%%%<<< ego hba hvl ratemap
+%%%<<< (pfl) ego hba hvl ratemap
+
 pfl = cf(@(t,u,x,s,p,rt,hc,ch,pc)                              ... Egocentric ratemap given (TP, HBA, HVL gt 0)
-         compute_egohbahvl_ratemap(t,u,x,s,p,rt,hc,ch,pc,headCenterCorrection,true),...
+         compute_egohbahvl_ratemap(t,u,x,s,p,rt,hc,ch,pc,headCenterCorrection,overwrite),...
              Trials,                                           ... MTATrial
              units,                                            ... Unit subset, placefields away from the maze walls
              xyz,                                              ... MTADxyz object, head position
@@ -232,7 +251,7 @@ pfl = cf(@(t,u,x,s,p,rt,hc,ch,pc)                              ... Egocentric ra
 );
 
 pflh = cf(@(t,u,x,s,p,rt,hc,ch,pc)                             ... Egocentric ratemap given (TP, HBA, HVL gt 0)
-         compute_egohbahvl_ratemap_shuffled(t,u,x,s,p,rt,hc,ch,pc,headCenterCorrection,true),...
+         compute_egohbahvl_ratemap_shuffled(t,u,x,s,p,rt,hc,ch,pc,headCenterCorrection,overwrite),...
              Trials,                                           ... MTATrial
              units,                                            ... Unit subset, placefields away from the maze walls
              xyz,                                              ... MTADxyz object, head position
@@ -243,36 +262,59 @@ pflh = cf(@(t,u,x,s,p,rt,hc,ch,pc)                             ... Egocentric ra
              num2cell(thetaChan),                              ... lfp channel from which phase is computed 
              num2cell(phzCorrection)                           ... theta phase offset
 );
+
 %%%>>>
 
+
+t = 20;u = 25;
+figure,
+subplot2(7,5,1,1); plot(pfe{t},u,1,'text',[],false);
+subplot2(7,5,1,2); plot(pft{t},u,1,'text',[],true);
+for p = 1:5,
+    subplot2(7,5,2,p);
+    plot(pfet{t}{p},u,1,'text',[],false);
+    Lines([],0,'k');
+    Lines(0,[],'k');
+end
+
+for p = 1:5,
+    prm = plot(pfl{t}{p},u,1,'text',[],false);
+    for h = 1:5,    
+        subplot2(7,5,p+2,h);
+        imagesc(prm(:,:,h)');axis('xy');
+        Lines([],0,'k');
+        Lines(0,[],'k');
+    end
+end
+
+
 %%%<<< egohrl
-
-pfr = cf(@(t,u,x,s,p,rt,hc,ch,pc)                              ... Egocentric ratemap given theta phase and head body angle.
-         compute_egohrl_ratemap(t,u,x,s,p,rt,hc,ch,pc,headCenterCorrection,true),   ...
-             Trials,                                           ... MTATrial
-             units,                                            ... Unit subset, placefields away from the maze walls
-             xyz,                                              ... MTADxyz object, head position
-             spk,                                              ... MTASpk object, spike time and id collection 
-             pft,                                              ... MTAApfs object, theta state placefields 
-             num2cell(rot),                                    ... head angle correction (horizontal plane)
-             num2cell(hrlCorrection),                          ... head body angle correction (horizontal plane)
-             num2cell(thetaChan),                              ... lfp channel from which phase is computed
-             num2cell(phzCorrection)                           ... theta phase offset
-);
-
-pfrh = cf(@(t,u,x,s,p,rt,hc,ch,pc)                             ... Egocentric ratemap given theta phase and head body angle.
-         compute_egohrl_ratemap_shuffled(t,u,x,s,p,rt,hc,ch,pc,headCenterCorrection,true),   ...
-             Trials,                                           ... MTATrial
-             units,                                            ... Unit subset, placefields away from the maze walls
-             xyz,                                              ... MTADxyz object, head position
-             spk,                                              ... MTASpk object, spike time and id collection 
-             pft,                                              ... MTAApfs object, theta state placefields 
-             num2cell(rot),                                    ... head angle correction (horizontal plane)
-             num2cell(hrlCorrection),                          ... head body angle correction (horizontal plane)
-             num2cell(thetaChan),                              ... lfp channel from which phase is computed
-             num2cell(phzCorrection)                           ... theta phase offset
-);
-% egohrl
+% $$$ pfr = cf(@(t,u,x,s,p,rt,hc,ch,pc)                              ... Egocentric ratemap given theta phase and head body angle.
+% $$$          compute_egohrl_ratemap(t,u,x,s,p,rt,hc,ch,pc,headCenterCorrection,true),   ...
+% $$$              Trials,                                           ... MTATrial
+% $$$              units,                                            ... Unit subset, placefields away from the maze walls
+% $$$              xyz,                                              ... MTADxyz object, head position
+% $$$              spk,                                              ... MTASpk object, spike time and id collection 
+% $$$              pft,                                              ... MTAApfs object, theta state placefields 
+% $$$              num2cell(rot),                                    ... head angle correction (horizontal plane)
+% $$$              num2cell(hrlCorrection),                          ... head body angle correction (horizontal plane)
+% $$$              num2cell(thetaChan),                              ... lfp channel from which phase is computed
+% $$$              num2cell(phzCorrection)                           ... theta phase offset
+% $$$ );
+% $$$ 
+% $$$ pfrh = cf(@(t,u,x,s,p,rt,hc,ch,pc)                             ... Egocentric ratemap given theta phase and head body angle.
+% $$$          compute_egohrl_ratemap_shuffled(t,u,x,s,p,rt,hc,ch,pc,headCenterCorrection,true),   ...
+% $$$              Trials,                                           ... MTATrial
+% $$$              units,                                            ... Unit subset, placefields away from the maze walls
+% $$$              xyz,                                              ... MTADxyz object, head position
+% $$$              spk,                                              ... MTASpk object, spike time and id collection 
+% $$$              pft,                                              ... MTAApfs object, theta state placefields 
+% $$$              num2cell(rot),                                    ... head angle correction (horizontal plane)
+% $$$              num2cell(hrlCorrection),                          ... head body angle correction (horizontal plane)
+% $$$              num2cell(thetaChan),                              ... lfp channel from which phase is computed
+% $$$              num2cell(phzCorrection)                           ... theta phase offset
+% $$$ );
+% $$$ % egohrl
 %%%>>>
 
 pfs = cf(@(t,u,x,s,p,rt,hc,ch,pc)                              ... Egocentric ratemap given theta phase and head body angle.
@@ -290,6 +332,7 @@ pfs = cf(@(t,u,x,s,p,rt,hc,ch,pc)                              ... Egocentric ra
 
 
 %%%<<< ego tan rad ratemap
+
 % SELECT only tangential trajectories
 pfTan = cf(@(t,u,x,s,p,rt,hc,ch,pc)                            ... Egocentric ratemap given (TP, HBA, HVL gt 0)
            compute_egohbahvl_tanTraj_ratemap(t,u,x,s,p,rt,hc,ch,pc,true),...
@@ -317,6 +360,7 @@ pfRad = cf(@(t,u,x,s,p,rt,hc,ch,pc)                            ... Egocentric ra
            num2cell(thetaChan),            ... lfp channel from which phase is computed 
            num2cell(phzCorrection)                             ... theta phase offset
 );
+
 %%%>>>
 
 pfs = cf(@(t,u,x,s,p,r,rt,hc) ...

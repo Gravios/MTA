@@ -42,16 +42,6 @@ antecedentStateTransitionPoints = antecedentState.data(antecedentStateIndices,1)
 
 stsTransitionPeriods = bsxfun(@plus,subsequentStateTransitionPoints,[-tw,tw]);
 
-% $$$ smat = stc2mat(Stc,referenceData,states);
-% $$$ indexShift = round(transitionWindow * referenceData.sampleRate / 2);
-% $$$ stsTransitionMat = logical(reshape(permute(cat(3,...
-% $$$                                        circshift(smat,indexShift),...
-% $$$                                        circshift(smat,-indexShift)),...
-% $$$                                    [1,2,3]),...
-% $$$                            size(smat,1),[]));
-% $$$ stsTargetMat     = repmat([1,0,0,1],size(smat,1),1);
-% $$$ stsTransitionPeriods = ThreshCross(all(stsTransitionMat==stsTargetMat,2),0.5,0);
-% $$$ stsTransitionPeriods = bsxfun(@plus,stsTransitionPeriods,[1,0]);
 
 switch outputType,
   case 'TimePeriods'

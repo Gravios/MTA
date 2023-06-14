@@ -48,6 +48,7 @@ for t = 1:numel(Trials),
 % LOAD local field potential (lfp)
 % RESAMPLE lfp to xyz sample rate
 % COMPUTE lfp phase in theta band (6-12 Hz)
+    phz = load_theta_phase(Trial,xyz,sessionList(t).thetaRefGeneral,phzCorrection(t));
     Trial.lfp.filename = [Trial.name,'.lfp'];
     try, lfp = Trial.load('lfp',sessionList(t).thetaRefGeneral);
     catch, lfp = Trial.load('lfp',sessionList(t).thetaRefGeneral);
@@ -56,7 +57,7 @@ for t = 1:numel(Trials),
     phz.data = unwrap(phz.data);
     phz.resample(xyz);    
     phz.data = mod(phz.data+pi,2*pi)-pi;
-    lfp.resample(xyz);
+
 
 
 

@@ -11,7 +11,7 @@ function [handleImage, handleColorbar] = imagescnan(imageData, varargin)
 % varargin:
 %      colorLimits:  Array[1x2] ([])       Set the color scale limits
 %      dataType:     String     ('linear') 
-%      colorbarFlag: Logical    (false)
+%      colorbarIsRequired: Logical    (false)
 %      nanRGB:       Array[1x3] ([1,0,0.8)
 %      gamma:        Double     (1)
 %      value:        Double     (1)

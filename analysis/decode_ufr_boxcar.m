@@ -1,19 +1,40 @@
 function [dc] = decode_ufr_boxcar(Trial,varargin)
-% function [dc] = decode_ufr(Trial,varargin)
-% 
-% 
+% function [dc] = decode_ufr_boxcar(Trial,varargin)
 %
-% Input:
-%    Trial
-%    sampleRate
-%    units
-%    mode
-%    overwrite
+% NOTATION :
+%      N := number of samples
+%      d := number of reconstruction vars
+%      u := number of units
 %
-% Output:
-%    decEstCom
-%    decEstMax
-%    decteriorMax
+% VARARGIN :
+%     units      - Double  : Units used for decoding
+%     sampleRate - Double  : 
+%     ufr        - MTADufr :
+%     pfs        - MTAApfs :
+%     mask       - Logical : ratemap indicies of pfs that will be remove from decoding
+%                            NOTE: mask must match size(pfs.data.rateMap,1)
+%                            NOTE: move to pfs object in the future 
+%     halfSpkWindow    - Double [1x1] : time in seconds 
+%     smoothingWeights - Double [1xd] : Std of gaussian smoothing kernel 
+%     tag              - String       : tag for the save file
+%     overwrite        - Logical      : recompute and overwrite the savefile
+%
+% OUTPUT : 
+%  
+%     dc - struct: decoded positions
+%          dc.ind  - Double [Nx1] : index in sampleRate (not uniform)
+%          dc.max  - Double [Nxd] : Position at the posterior maximum
+%          dc.com  - Double [Nxd] : Posterior weighted position
+%          dc.sax  - Double [Nxd] : Gaussian-Posterior weight postion
+%          dc.lom  - Double [Nxd]: Log Posterior weighted position
+%          dc.lax  - Double [Nxd]: Log Gaussian-Posterior weight postion
+%          dc.post - Double [Nxd]: Value of posterior maximum
+%          dc.ucnt - Double [Nx1]: Number of units included at each time
+%          dc.uinc - Logical [Nxu]: Vector of units included at each time
+%
+%          dc.smoothingWeights - Double [1xd] : d is the number of reconstruction variables
+%          dc.window - Double [1x1] : Time window around each index point
+%          dc.sampleRate - Double [1x1] sampleRate;
 %
 
 global MTA_PROJECT_PATH
@@ -60,7 +81,7 @@ else
     
     spkWindow = round(halfSpkWindow.*sampleRate).*[-1,1]; %s*i/s
     
-% ACCUMULATE masked rate maps
+% ACCUMULATE rate maps while removing irrelevant bins
     ratemap = zeros([sum(mask(:)),0]);
     for u = 1:numel(units),
         if isa(pfs,'MTAApfs');
@@ -72,10 +93,10 @@ else
     end
     
 % COMPUTE Posterior distribution base on ratemaps and unit firing rates
-    ratemap(isnan(ratemap)) = 0;
-    ratemap = ratemap+1e-3;    
-    logRatemap = log(ratemap);
-    priorRatemap = -sum(ratemap,2)*ufr.spikeWindow;
+    ratemap(isnan(ratemap)) = 0;                    % SET left over NANs to 0
+    ratemap = ratemap+1e-3;                         % ADD offset to aviod infinities
+    logRatemap = log(ratemap);                      % COMPUTE the log of the ratemap
+    priorRatemap = -sum(ratemap,2)*ufr.spikeWindow; % SET constant 
 
 % ESTIMATE number of valid samples
     esamp = size(nonzeros(sum(ufr.data>=1/(ufr.spikeWindow*sampleRate),2)),1).*3;
@@ -91,7 +112,7 @@ else
     dc.ucnt = nan([esamp*2,1]);    
     dc.uinc = nan([esamp*2,size(ufr,2)]);    
 
-% SELECT ratemap bins within mask
+% SELECT ratemap bins within mask, used for weighted mean positions later
     binGrid = cell([1,numel(pfsBins)]); 
     [binGrid{:}] = ndgrid(pfsBins{:});
     gbinm = nan([size(ratemap,1),numel(pfsBins)]);
@@ -99,24 +120,26 @@ else
         gbinm(:,d) = cat(2,binGrid{d}(logical(mask(:))));
     end
 
+% MAIN LOOP 
     cindex = 1;    
     tic        
     for tind = (1+abs(spkWindow(1))):(size(ufr,1)-abs(spkWindow(2))-10)
 
         if mod(cindex,10000)==0,toc,disp(cindex);end
         twind = tind+spkWindow;
-
+        
+% SUM spike probabilities within current time window
         cufr = sum(ufr(twind(1):twind(2),:));
 
+% CREATE logical array to check if any units were active within time window
         gind = cufr>0.5;
-        
         if any(gind)
             dc.ind (cindex,1) = tind;
             dc.ucnt(cindex,1) = sum(gind);            
             dc.uinc(cindex,:) = gind;
 
-% COMPUTE posterior
-            E = exp(priorRatemap+logRatemap*(cufr+eps)');
+% COMPUTE normalizied posterior
+            E = exp( priorRatemap + logRatemap * ( cufr+eps )');
             E = E./sum(E,'omitnan');
 
 % LOCATE peak of posterior
@@ -168,7 +191,7 @@ else
     dc.window = 2*halfSpkWindow;
     dc.sampleRate = sampleRate;
 
-    save(filepath,'dc');
+    save(filepath,'dc','-v7.3');
 end
 
 

@@ -1116,7 +1116,7 @@
     Status: active
     Type: analysis
     Author: Justin Graboski
-    Final_Forms: NA
+    Final_Forms: compute_ratemap_ghz_phz.m
     Project: MjgER2016: BhvPlaceCode
     Description: gaussian distance transform to compute linearized 2d trajectories rate maps
     Protocol: 1. transform distance to max normalized gaussian map
@@ -1290,6 +1290,16 @@
     Project: General
     Description: head speed and head rhm fields
 
+*** req20210219
+    Tags: rhm bfs
+    Status: Active
+    Type: Analysis
+    Author: Justin Graboski
+    Final_Forms: NA
+    Project: General
+    Description:  This script was made to examine the posibility of using only the theta-trough spikes for theta place field computation.
+
+    
 
 ** 2021 03 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 *** req20210325
@@ -1324,7 +1334,29 @@
     Final_Forms: NA
     Project: General
     Description: decoding with ratemaps and second order unit coactivation maps
+
     
+** 2021 08 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+*** req20210831
+    Tags: placefield shuffle
+    Status: Active
+    Type: Analysis
+    Author: Justin Graboski
+    Final_Forms: NA
+    Project: General
+    Description: shuffling given position
+
+
+** 2021 09 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+*** req20210926
+    Tags: network state interneurons immobility 
+    Status: Active
+    Type: Analysis
+    Author: Justin Graboski
+    Final_Forms: NA
+    Project: General
+    Description: find network pattern in interneurons which indicates alert immobility
+
 
 ** 2021 11 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 *** req20211103
@@ -1335,7 +1367,6 @@
     Final_Forms: NA
     Project: General
     Description: computation of ego place fields over multiple sessions
-        
 *** req20211104
     Tags: features correction 
     Status: Active
@@ -1344,6 +1375,97 @@
     Final_Forms: MjgER2016_feature_corrections.m
     Project: General
     Description: more empirical method for correcting deviant features
+*** req20211123
+    Tags: lfp csd inputs
+    Status: Active
+    Type: Analysis
+    Author: Justin Graboski
+    Final_Forms: NA
+    Project: General
+    Description: Identification of lfp and csd components which correlate 
+                 with differential modulation of hippocampal input pathways.
+
+** 2021 12 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+*** req20211210
+    Tags: CSD, gamma, pyramidal layer
+    Status: Retired
+    Type: Analysis
+    Author: Justin Graboski
+    Final_Forms: NA
+    Project: General
+    Description: Using gamma and csd to further parse theta states.
+
     
-    
-    
+* 2022 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+
+** 2022 01 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+
+*** req20220103
+    Tags: realtime state segmentation lm rad ratio thetarc
+    Status: Active
+    Type: Analysis
+    Author: Justin Graboski
+    Final_Forms: NA
+    Project: General
+    Description: theta return current feature used for realtime ephys state segmentation
+
+** 2022 02 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+
+** 2022 03 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+
+
+** 2022 05 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+*** req20220506
+    Tags:  thetarc interneurons
+    Status: Active
+    Type: Analysis
+    Author: Justin Graboski
+    Final_Forms: NA
+    Project: General
+    Description: theta return current feature relation to interneurons
+
+*** req20220506_er06
+    Tags:  thetarc interneurons
+    Status: Active
+    Type: Analysis
+    Author: Justin Graboski
+    Final_Forms: NA
+    Project: General
+    Description: theta return current feature relation to interneurons for specific subject
+
+
+* 2023 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+
+** 2023 03 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+
+*** req20230310
+    Tags: inference joint virtual rigidbody
+    Status: Active
+    Type: Utility
+    Author: Justin Graboski
+    Final_Forms: N/A
+    Project: General
+    Description: find the point of minium speed for a rigidbody 
+
+        
+** 2023 04 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+
+*** req20230403
+    Tags: ccg synaptic transmition
+    Status: Active
+    Type: Utility
+    Author: Justin Graboski
+    Final_Forms: N/A
+    Project: General
+    Description: investigate synaptic transmition gain as function of theta phase
+
+** 2023 05 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+
+*** req20230514
+    Tags: ccg theta power estimation
+    Status: Active
+    Type: Utility
+    Author: Justin Graboski
+    Final_Forms: N/A
+    Project: General
+    Description: using the interneurons to infer theta state
