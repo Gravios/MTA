@@ -217,6 +217,7 @@ Project Link: [https://github.com/your_username/repo_name](https://github.com/yo
 
 <p align="right">(<a href="#readme-top">back to top</a>)</p>
 
+![image](https://github.com/Gravios/MTA/assets/5611096/511518c2-a03d-4a02-8542-8a57e67cd302)
 
 
 <!-- ACKNOWLEDGMENTS -->
