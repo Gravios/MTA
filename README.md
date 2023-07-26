@@ -19,7 +19,7 @@
 *** https://www.markdownguide.org/basic-syntax/#reference-style-links
 -->
 [![Contributors][contributors-shield]][contributors-url]
-[![Forks][forks-shield]][forks-url]
+<!-- [![Forks][forks-shield]][forks-url] -->
 [![Stargazers][stars-shield]][stars-url]
 [![Issues][issues-shield]][issues-url]
 [![MIT License][license-shield]][license-url]
@@ -243,8 +243,10 @@ Use this space to list resources you find helpful and would like to give credit 
 [contributors-shield]: https://img.shields.io/github/contributors/gravios/MTA.svg?style=for-the-badge
 [contributors-url]: https://github.com/gravios/MTA/graphs/contributors
 
+<!-- no forks at the moment
 [forks-shield]: https://img.shields.io/github/forks/gravio/MTA.svg?style=for-the-badge
 [forks-url]: https://github.com/gravios/MTA/network/members
+-->
 
 [stars-shield]: https://img.shields.io/github/stars/gravios/MTA.svg?style=for-the-badge
 [stars-url]: https://github.com/gravios/MTA/stargazers
