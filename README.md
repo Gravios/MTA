@@ -31,9 +31,9 @@
 <br />
 <div align="center">
   <a href="https://github.com/gravios/MTA">
-    <img src="card-capture.png" alt="Logo" width="160" height="160">
-    <img src="card-annotate.png" alt="Logo" width="160" height="160">
-    <img src="card-analyze.png" alt="Logo" width="160" height="160">
+    <img src="card-capture.png" alt="Logo" width="320" height="320">
+    <img src="card-annotate.png" alt="Logo" width="320" height="320">
+    <img src="card-analyze.png" alt="Logo" width="320" height="320">
   </a>
 
   <h3 align="center">Best-README-Template</h3>
