@@ -12,7 +12,7 @@ function [fet,featureTitles,featureDesc] = fet_rbo_AC(Trial,varargin)
 Trial = MTATrial.validate(Trial);
 
 % DEFARGS ------------------------------------------------------------------------------------------
-defargs = struct('sampleRate'   , Trial.xyz.sampleRate,                                          ...
+defargs = struct('sampleRate'   , Trial.subject.sampleRate,                                      ...
                  'normalize'       , false,                                                      ...
                  'procOpts'        , [Trial.subject.label,'_AC'],                                ...
                  'referenceTrial'  , '',                                                         ...
@@ -28,20 +28,23 @@ defargs = struct('sampleRate'   , Trial.xyz.sampleRate,                         
 %procOpts = 'FS04_RC';
 
 % INIT Feature
-fet = MTADfet(Trial.spath,...
-              [],...
-              [],...
-              sampleRate,...
-              Trial.sync.copy,...
-              Trial.sync.data(1),...
-              [],'TimeSeries',[],'Head body pitch','fet_HB_pitch','b');                  
+fet = MTADfet(Trial.spath,                                 ... path
+              [],                                          ... filename
+              [],                                          ... data
+              sampleRate,                                  ... samplerate
+              Trial.subject.sync.copy,                     ... sync
+              Trial.subject.sync.data(1),                  ... origin
+              'TimeSeries',                                ... type
+              [],                                          ... ext
+              'Head Rigid Body Object in Arena Coordinaes',... Name
+              'fet_rbo_AC',                                ... Label
+              'b');                                          % Key
 
+rbo = resample(Trial.load('subject',procOpts),sampleRate);
 
-xyz = resample(Trial.load('subject',procOpts),sampleRate);
+fet.data = [sq(rbo(:,'Head',[1,2]))];
 
-fet.data = [sq(xyz(:,'Head',[1,2]))];
-
-fet.data(~nniz(xyz),:)=0;
+fet.data(~nniz(rbo),:)=0;
 featureTitles = {};
 featureDesc = {};
 if nargout>1,

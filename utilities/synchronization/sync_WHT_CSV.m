@@ -66,25 +66,47 @@ subjectNameList = {subjectRecords{rec(1)}.name};
 primarySubject = recordLengths{rec(1)}{3};
 
 rboData = {};
+msg_pad = ['[INFO] MTA:utilities:synchronization:sync_WHT_CSV - ' ...
+           'subject: %s |  Record: %d | Mode: %s'];
 for n = 1:numel(subjectNameList),
     for s = 1:numel(subjectRecords)
         if isempty(subjectRecords{s})
+            disp(sprintf(msg_pad,subjectNameList{n},s,'no csv pad zeros'))
             % GENERATE zero padded 
-            rboData{n}{s} = zeros([round(recordLengths{s}{1}./Session.sampleRate.*xyzSampleRate)+1, ...
+            rboData{n}{s} = zeros([round(recordLengths{s}{1}./Session.sampleRate.*xyzSampleRate), ...
                                     size(subjectRecords{rec(1)}(n).data,2),...
-                                    size(subjectRecords{rec(1)}(n).data,3)]);
+                                    size(subjectRecords{rec(1)}(n).data,3)])+eps;
         else
-            rboData{n}{s} = cat(1,...
+            % if csv is larger than ephys segment -> truncate csv data
+            if size(subjectRecords{s}(n).data,1) >= round(recordLengths{s}{1}./Session.sampleRate.*xyzSampleRate)+1
+                disp(sprintf(msg_pad,subjectNameList{n},s,'truncate csv'))
+                rboData{n}{s} = subjectRecords{s}(n).data(1:round(recordLengths{s}{1}./Session.sampleRate.*xyzSampleRate),:,:)+ eps;
+            else % pad csv data to match ephys segment
+                disp(sprintf(msg_pad,subjectNameList{n},s,['pad zeros to end of csv']))
+                rboData{n}{s} = cat(1,...
                                 subjectRecords{s}(n).data,...
-                                zeros([round(recordLengths{s}{1}./Session.sampleRate.*xyzSampleRate)+1-size(subjectRecords{s}(n).data,1),...
+                                zeros([round(recordLengths{s}{1}./Session.sampleRate.*xyzSampleRate)-size(subjectRecords{s}(n).data,1),...
                                        size(subjectRecords{s}(n).data,2),...
-                                       size(subjectRecords{s}(n).data,3)]));
+                                       size(subjectRecords{s}(n).data,3)]))+ eps;
+            end
+            %rboData{n}{s} = rboData{n}{s} + eps;
         end
     end
     rboLabels{n} = subjectRecords{rec(1)}(n).rboLabels;
 end
 
-   
+
+
+cumulativeRecordLength = [0,cumsum(cellfun(@length,rboData{1}))]./xyzSampleRate;
+
+xyzSyncPeriods = [];
+%for ind = find(~cellfun(@isempty,subjectRecords))
+for ind = 1:numel(subjectRecords)
+    xyzSyncPeriods(end+1,:) = cumulativeRecordLength([ind,ind+1])+[1/xyzSampleRate,0];
+end
+xyzSyncPeriods(end) = xyzSyncPeriods(end) - 1/xyzSampleRate;
+
+
 %markers = {'head_frontL','head_frontR','head_left','head_back','head_right'};
 
            
@@ -93,11 +115,6 @@ end
 
 
 %% Map xyz data to sychronization events -----------------------------
-
-
-% CONCATENATE start and stop events 
-%xyzSyncPeriods = [0,ds.timestamps(end)];
-
 
 
 % SETUP the xyz synchronization periods (only first and last)
@@ -130,8 +147,6 @@ Session.stc.updateSync(Session.sync);
 Session.stc.updateOrigin(0);
 
 
-%xyzSyncPeriods = [0,size(data,1)./xyzSampleRate];
-xyzSyncPeriods = recordSync;
 
 xyzData = [];
 % INITIALIZE MTADxyz object to contain vicon data
@@ -144,7 +159,7 @@ Session.xyz = MTADxyz(Session.spath,           ... Path
                                 1,                   ... Sample Rate
                                 Session.sync.copy,   ... Sync Periods
                                 0),                  ... Sync Sync Origin
-                      Session.sync.data(1),     ... XYZ Sync Origin
+                      Session.sync.data(1),     ... XYZ Sync Origin %
                       []);%          ... model  
 Session.xyz.save;
 Session.xyz.clear;
@@ -163,7 +178,7 @@ for n = 1:numel(rboData)
                             1,                            ... Sync Sample Rate
                             Session.sync.copy,            ... Sync Periods
                             0),                           ... Sync Sync Origin
-                  Session.sync.data(1),         ... rbo Sync Origin
+                  Session.sync.data(1),         ... rbo Sync Origin 
                   model,                        ... rbo model  
                   'TimeSeries',                 ... data type
                   'rbo',                        ... extension

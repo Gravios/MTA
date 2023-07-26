@@ -1,0 +1,439 @@
+
+
+* Motivation
+** Phenomenon
+The spikes of a place cell contain information regarding the spatial position of the rat's head.
+The network orchestrates sequences of place cells as oscilatory bursts in the theta frequency range (5-12Hz).
+The temporal order of the place cells reflects a spatial representation that sweeps from behind to in front of the animal.
+
+The spikes of the place cells within each sequence are ordered where early-late corresponds to behind-ahead. 
+In a phenomenon referred to as phase precession, a sigle place cell's spikes will apear earlier in each 
+sequence as the rat moves towards, through, and away from its place field center. 
+
+
+Theta sequences
+    Local sequences were observed during foraging and navigation ( Skaggs and McNaughton 1996 )
+
+    Non-local sequences observed during immobility ( Lee and Wilson 2002) 
+    
+    Stationary sequences observed during inter-trial wheel runnig ( Pastalkova and Buzsaki 2008 )
+
+
+Index Theory
+
+
+What is the source of spatial information? ( Where )
+    - MEC, medial entorhinal cortex ( grid cells, border cells ) 
+
+What is the source of orienting information? ( Where )
+    - PS, postsubiculum ( head direction cells )
+
+what is the sounce of contextual information? ( What )
+    - LEC, lateral entorhinal cortex ( )
+    What aspects of context are captured by the LEC?
+        - CELLTYPE
+
+
+
+
+
+
+** place cell
+*** spikes 
+
+
+
+
+A change in a rat's position in time and space is mediated through behavior.
+
+A rat's behavior drives changes in its position and orientation over an epoch of time.
+
+
+*** Place Fields
+    Local Field Potential (LFP)
+
+
+
+*** Phase Precession
+
+Previously explained terms:
+    Local Field Potential (LFP)
+    Place Cell            (PC)
+    Place Field           (PF)
+    
+    
+
+Phase precession is the phenomenon where a neuron fires at progressively 
+earlier phases of theta. The neuron's change in phase is correlated with 
+the rat's progression through the neuron's place field.
+
+It was first recognized in the firing patterns of place cells 
+as rats ran through the cells' place-fields. 
+
+A place cell firing toward the ascending theta phases is associated with 
+an approach to a place field; the trough: the center; 
+The place cell will fire on the descending phase before the departure from 
+the place field. 
+
+
+The initial discovery was demonstrated on a linear track which constrained 
+the rat's movement to shuttling from end to end of a straight track. The 
+linear track afforded several nadvantages over a two dimensional arean. First
+However, in open
+field arenas with unconstrained two dimensional movement place field have a
+gaussian profile.
+
+The entrance to the place field evokes spiking at the peak of theta. Spiking 
+generally terminates at the exit from the place field at around 90 degrees.
+
+** Research
+*** Linear track (o'keefe probably)
+The clearest circular-linear relationship is observed on a linear track, As the
+rat shuttles between ends, encouraged by water rewards at the terminals, the 
+running speed is uniform and the behavior regular. 
+
+*** Open field (skaggs,huxter)
+Phase precession is also observed in 2d environments, although to observe a 
+circular linear relationship between space and spike theta phase a place field
+centric transformation is performed to reduce the spatial dimension from 2 
+dimensions to 1. Spike distance was mapped from the placefield edges onto a
+domain between -1 and 1. The transform distance's sign was assigned based the
+head movement direction relative to the place field center. Negative values 
+represent the movements towards the place field center, and positive 
+values represent the movements away from the place field center. 
+
+*** Circular shuttle (zugaro)
+Phase precession is observed on a circular track where 
+
+*** Novelty and theta phase preference (O'keefe 2010)
+Theta phase preference of place cell are shifted twoards the ascending phase of the in novel situations 
+
+
+* The fence which separates previous my work from previous efforts
+
+** We reformulate allocentric mapping 
+
+
+Hippocampal place cells have one or more randomly postioned 2D gaussian spatial 
+tuning curves,. As the rat traverses through a place field
+the hippocampal network coordinates the place cells' firing in sequential bursts 
+on a timescale of 80 to 120 milliseconds, known as theta sequences, 
+trajectory.  
+
+
+During exploration the hippocampus (contains, holds,) an internal representation of the
+environment, establishing 
+
+
+Sensorimotor information is projected onto preconfigured maps of the hippocampal CA3 
+region.
+
+The extension of of location relative to 
+
+The hippocampal spatial representation is centered on the head, where the majority of a
+rat's sensory organs are situated, and provides the means to bind sensory information to 
+the specific locations, subserving the formation, retention, and recall of episodic 
+memories.
+
+
+
+
+
+The late phase of theta, where the entorhinal cortex (EC) is the dominant input to
+the CA1, via the layer lacosum moleculare, contains prospective information regarding 
+the current trajectory of the rat.
+
+
+An egocentric query of the allocentric location of incoming sensory information.
+
+
+
+CA3 -> CA3 => EC2 -> CA3 =>
+
+CA3 - CA1 => EC3 -> CA1
+
+
+
+Hippocampal place cell activity is organized by intra- and extra-hippocampal 
+network dynamics. Place cells of a rat actively engaged with its environment,
+are orchestrated in rhythmic bursts at the theta frequency (6-12Hz). A single
+cycle contains a sequence (i.e. theta sequence) of place cells, whose temporal
+order reflects the spatial order of the place field centers along the rat's
+current trajectory. 
+
+hippocampus <- input
+               -> timing 
+                  early: CA3->CA1 
+                  late : EC3->CA1
+
+
+
+
+Problems:
+This analysis only considers single field. 
+ - How does this representation help understand multi-field place cells?
+    - Each cell would require an egocentric rate map for each field
+
+
+
+
+We analyze the two dimensional phase precession in an egocentric frame of reference.
+We examine the egocentric phase precession correlates of head-body orientation and movement.
+
+** Embodiment determines the locus of agency
+An entity's embodiment directs its agency, in such that a configuration of an entity's sensory organs determines a
+sensorial subspace within which attention may be directed, and thus constraining the geometry of the sensory view
+in space around the agent, with which it associates the singularity, or "self", within its memories and 
+current attention.
+
+** Sensory and Mnemonic priming 
+Rememberance of an event may be limited by the current sensorimotor state, such that the current attetional
+models restrict their responsiveness to any sensory memories and modes of sensation that said sensorimotor 
+state is best tuned. 
+
+** Evolotionary Considerations
+Sensorimotor states reflect a dynamic pattern of investigation that may be phasic or rhythmic but must be 
+stereotypical within the entity's species (phylogenetic neighbourhood). While a specific behavior may be 
+evoked, over the course of a unique event within an entity's lifetime, by a specific juxtaposition of 
+external and internal configurations. The most basic of such emergent phenomena are reflexes 
+
+
+
+
+
+
+* Methods
+** Electrophisiolgy ( see Project BehaviorPlaceCode )
+** Motion Capture   ( see Project BehaviorPlaceCode )
+
+
+** Head Basis Vector 
+The head basis vector represents the forward and horizontal directions relative to the head. The forward 
+vector was computed as the unit vector originating at the center of the head to the front marker, and the 
+horizontal vector was computed as the unit vector originating at the center of the head to the right marker.
+
+** Head Body Angle (HBA)
+The head body angle (HBA) was computed by calulating the angles of the head vector and the body vector
+relative to the room and then taking their circular difference. 
+
+** Head Forward Velocity (HVF)
+The head forward velocity (HVF) was computed by smoothing the trajectory of the head with a low pass 
+filter with a cut-off of 2.5 Hz and computing the head velocity with respect to the room. The velocity 
+was then projected onto the head basis vector to obtain the foward and lateral speeds of the head relative
+to the head.
+
+
+** Unit Selection
+Place cells were selected with the following criteria
+ - it must express at least one place field in the arena
+    - the place field must be at least 20cm from any other field in the case of a place cell with multiple fields.
+    - the place field must have a maximum firing rate greater than 2 Hz.
+
+
+
+** Allocentric rate maps ( see Project BehaviorPlaceCode )
+** Egocentric rate maps
+The egocentric rate maps were computed in the same manner as the allocentric rate maps, except for a change 
+in reference. The head's position was substracted from the place field center at each timepoint and projected
+onto head basis vector The trajectory of the place field center relative
+to the head was then use to compute the occupancy within the head's frame of reference.
+
+
+
+
+
+* Analisys
+** The egocentric rate map 
+*** Center 
+**** lateral ego-ratemap-center by phase
+*** Size
+*** Symmetry
+*** Theta phase preference
+*** Theta phase
+*** Head body angle
+*** Lateral head movement
+*** Head angular velocity
+
+
+** The decoded egocentric position.
+*** Theta phase
+How does the egofield size change with theta phase?
+*** Head body angle
+Does the ascending phase egofield size correlate with lateralized phase precession?
+*** Lateral head movement
+Do the tranlsational kinematics of the head, i.e. the acceleration/jerk, motion correlate with 
+greater lateralized phase precession?
+*** Head angular velocityp
+Do the angular kinematics of the head, i.e. the acceleration/jerk, motion correlate with greater 
+lateralized phase precession?
+
+
+
+req20191104.m 
+req20191104_2d_TimeShift.m 
+req20191104_ca3.m 
+
+
+Compute place field size in theta partitioned ego-ratemaps tp-ego-ratemaps
+Collect tp-ego-ratemaps' max rate.
+
+The computation of a place field's ratemap is an incomplete representation of the firing characteristics.
+The phase of theta at which a spike occurs is tightly coupled to the position and orientation of the subject.
+
+In the head frame of reference the place field size is on average greater on the ascending than that of 
+the descending and trough phases of theta.
+
+The ascending phase is generally theorized to be coding the posible future locations of the rat.
+If this is probabilistic in nature, what information (e.g. proprioceptive and vestibular) is driving upstream 
+models of the rats trajectory is necessary? and how is this information integrated? Does it truely reflect
+a probalistic model of the future trajectory?
+
+IF not ...
+    ... 
+
+
+Would decoding from more narrow tuning curves, or those derived from theta-trough spikes beter
+reflect the allo-centric tuning curve. 
+
+
+
+Index Theory
+Theta Sequences
+Memory Consolidation
+Latent States
+
+The firing rate of a place cell given the location of o
+
+multi place field distribution is a poisson process which maximizes the randomness of the sets of concomitant 
+firing of cells and generates an orthogonal code for the update of sensory models by the simultaneous inundation 
+of sensory inforamtion and an orthogonal place code in reciprocally connected cortical networks. (EC, PRC, ...)
+
+A given set of neurons provide a representation 
+
+
+What maximizes the orthogonality of assembly compososition in 2D latent space.
+
+
+* Movement -> new neural assembly 
+** How is movement measured ? 
+*** exteroception
+**** under chin whiskers @ head is lowered
+**** carpal whiskers     @ locomatoion w/ gait 
+**** visual flow         @ movement of the head, rotation or translation
+*** interoception
+**** proprioception      @ muscle activation
+**** motor efferent copy @ motor planning/execution
+** How is the body represented
+**** muscle activation and proprioception
+Only a limited number of ground body configurations are normally related to the current 
+vestibular state.
+
+* Trajectories of movement 
+** planned movement vs experienced movement
+
+ 
+
+* Movement -> leads to new space
+* Immobility -> same space, but different focus???
+* 
+
+
+
+* Local Field Potential 
+** Oscillations 
+*** Theta Power
+*** Theta Phase 
+*** Gamma Power
+*** Gamma Phase
+
+
+
+
+* Variable
+** cardinality
+** domain
+** distribution
+*** Empirical 
+**** Parameters
+***** Mean
+***** Standard Deviation
+*** Modeled
+**** Parameters
+***** Mean
+***** Standard Deviation
+
+
+
+
+
+* analysis
+** allo to ego
+*** PlaceField-Allo
+allocentric ratemap: spikes per second given 2D position of the rat's head relative to the environment
+**** Field 
+***** Size 
+Size determination types 2hz threshold on ratemap
+***** Rate
+****** Mean
+****** Max
+*** PlaceField-Ego
+egocentric ratemap: spikes per second given 2D position of the place field center relative to the head of the rat. 
+**** Field 
+***** Size
+***** Rate
+****** Mean
+****** Max
+APF-fieldSize VS EPF-fieldSize
+
+for each moment:
+    A set of EPFs are coactive representing their place preferrence. 
+    
+
+
+
+
+
+**** How does one define the spatial location of attractor basins that is separate from the allocentric representation?
+
+
+** PlaceField-Allo split by head-body-angle
+Hysteresis of place fi
+
+*** PlaceField-Allo | head-body-angle
+allocentric ratemap: spikes per second given 2D position of the place field center relative to the head of the rat. 
+**** Field 
+***** Size
+***** Rate
+****** Mean
+****** Max
+** PlaceField-Ego split by head-body-angle
+*** PlaceField-Ego | head-body-angle
+egocentric ratemap: spikes per second given 2D position of the place field center relative to the head of the rat. 
+**** Field 
+***** Size
+***** Rate
+****** Mean
+****** Max
+
+
+
+** PlaceField-Allo | theta phase
+*** field size
+*** max rate
+
+** PlaceField-Ego | theta phase
+*** field size
+*** max rate
+
+
+** PlaceField-Ego | head-body-angle
+*** field size
+*** max rate
+
+** PlaceField-Ego | theta phase AND head-body-angle
+*** 
+** Decoding
+** Lateral AND theta-phase | head-body-angle AND head-lateral-speed
+*** Permuted head-body-angle paritions
+*** Permuted head-lateral-speed partitions
+

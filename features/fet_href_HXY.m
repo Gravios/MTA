@@ -25,7 +25,7 @@ defargs = struct('newSampleRate'  , Trial.xyz.sampleRate,                       
 
 if isprop(Trial,'meta')
     if isfield(Trial.meta,'correction');
-        theta = -Trial.meta.correction.headYaw;
+        theta = Trial.meta.correction.headYaw;
     end
 end
 

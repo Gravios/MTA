@@ -42,26 +42,26 @@ rper = rper+[-0.2,0.2];
 rper.clean();
 rper.save(true);
 
-Trial.stc.addState(Trial.spath,                     ... path to project folder
-                   Trial.filebase,                  ... filebase
-                   [bTimes-10*rat.sampleRate,bTimes],                            ... state periods [n,2] 
-                   rat.sampleRate,                  ... period sample rate
-                   Trial.sync.copy,                 ... Trial synchronization object
-                   Trial.sync.data(1),              ... Trial synchronization origin
-                   'approach',                          ... state label
-                   'y');
-Trial.stc.states{end}.save(1);
-
-
-Trial.stc.addState(Trial.spath,                     ... path to project folder
-                   Trial.filebase,                  ... filebase
-                   [bTimes,bTimes+10*rat.sampleRate],                            ... state periods [n,2] 
-                   rat.sampleRate,                  ... period sample rate
-                   Trial.sync.copy,                 ... Trial synchronization object
-                   Trial.sync.data(1),              ... Trial synchronization origin
-                   'depart',                          ... state label
-                   'd');
-Trial.stc.states{end}.save(1);
+% $$$ Trial.stc.addState(Trial.spath,                     ... path to project folder
+% $$$                    Trial.filebase,                  ... filebase
+% $$$                    [bTimes-10*rat.sampleRate,bTimes],                            ... state periods [n,2] 
+% $$$                    rat.sampleRate,                  ... period sample rate
+% $$$                    Trial.sync.copy,                 ... Trial synchronization object
+% $$$                    Trial.sync.data(1),              ... Trial synchronization origin
+% $$$                    'approach',                          ... state label
+% $$$                    'y');
+% $$$ Trial.stc.states{end}.save(1);
+% $$$ 
+% $$$ 
+% $$$ Trial.stc.addState(Trial.spath,                     ... path to project folder
+% $$$                    Trial.filebase,                  ... filebase
+% $$$                    [bTimes,bTimes+10*rat.sampleRate],                            ... state periods [n,2] 
+% $$$                    rat.sampleRate,                  ... period sample rate
+% $$$                    Trial.sync.copy,                 ... Trial synchronization object
+% $$$                    Trial.sync.data(1),              ... Trial synchronization origin
+% $$$                    'depart',                          ... state label
+% $$$                    'd');
+% $$$ Trial.stc.states{end}.save(1);
 
 
 

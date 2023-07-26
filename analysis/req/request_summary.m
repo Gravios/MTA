@@ -1469,3 +1469,12 @@
     Final_Forms: N/A
     Project: General
     Description: using the interneurons to infer theta state
+
+*** req20230515
+    Tags: ccg theta power estimation lfp state
+    Status: Active
+    Type: Utility
+    Author: Justin Graboski
+    Final_Forms: N/A
+    Project: General
+    Description: lfp state segmentation

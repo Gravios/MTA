@@ -1,0 +1,251 @@
+<?xml version="1.0" encoding="UTF-8" standalone="no"?>
+<!-- Created with Inkscape (http://www.inkscape.org/) -->
+
+<svg
+   width="210mm"
+   height="297mm"
+   viewBox="0 0 210 297"
+   version="1.1"
+   id="svg25873"
+   inkscape:version="1.1.2 (0a00cf5339, 2022-02-04)"
+   sodipodi:docname="EgoProCode2D_figure1_alt2.svg"
+   xmlns:inkscape="http://www.inkscape.org/namespaces/inkscape"
+   xmlns:sodipodi="http://sodipodi.sourceforge.net/DTD/sodipodi-0.dtd"
+   xmlns="http://www.w3.org/2000/svg"
+   xmlns:svg="http://www.w3.org/2000/svg">
+  <sodipodi:namedview
+     id="namedview25875"
+     pagecolor="#ffffff"
+     bordercolor="#999999"
+     borderopacity="1"
+     inkscape:pageshadow="0"
+     inkscape:pageopacity="0"
+     inkscape:pagecheckerboard="0"
+     inkscape:document-units="mm"
+     showgrid="false"
+     inkscape:lockguides="true"
+     inkscape:zoom="0.64969432"
+     inkscape:cx="-389.4139"
+     inkscape:cy="364.01735"
+     inkscape:window-width="2806"
+     inkscape:window-height="1556"
+     inkscape:window-x="74"
+     inkscape:window-y="27"
+     inkscape:window-maximized="1"
+     inkscape:current-layer="layer1" />
+  <defs
+     id="defs25870">
+    <rect
+       x="283.43485"
+       y="158.70452"
+       width="223.38998"
+       height="45.551375"
+       id="rect5201" />
+    <style
+       id="style27364"><![CDATA[
+.subplot {
+  stroke-width:0.377953;
+}
+]]></style>
+  </defs>
+  <g
+     inkscape:groupmode="layer"
+     id="layer4"
+     inkscape:label="body"
+     sodipodi:insensitive="true">
+    <rect
+       style="fill:#ececec;fill-opacity:1;stroke:#d4d4d4;stroke-width:0;stroke-miterlimit:4;stroke-dasharray:none;stroke-opacity:1"
+       id="body"
+       width="210.00101"
+       height="297.00198"
+       x="5.0058964e-07"
+       y="5.0058964e-07"
+       inkscape:label="#body" />
+  </g>
+  <g
+     inkscape:label="Layer 1"
+     inkscape:groupmode="layer"
+     id="layer1">
+    <rect
+       style="fill:#000000;fill-opacity:1;stroke:#00298e;stroke-width:0.356103"
+       id="EgoProCode2D_f1_subplot_placefieldExample"
+       width="24.643896"
+       height="24.643896"
+       x="32.297974"
+       y="69.525154"
+       inkscape:label="#EgoProCode2D_f1_subplot_placefieldExample" />
+    <rect
+       style="fill:#000000;fill-opacity:1;stroke:#00298e;stroke-width:0.356103"
+       id="EgoProCode2D_f1_subplot_trajectory_allo_head_direction"
+       width="24.643896"
+       height="24.643896"
+       x="60.312084"
+       y="69.525154"
+       inkscape:label="#EgoProCode2D_f1_subplot_trajectory_allo_head_direction" />
+    <rect
+       style="fill:#000000;fill-opacity:1;stroke:#00298e;stroke-width:0.356103"
+       id="EgoProCode2D_f1_subplot_trajectory_ego_head_direction"
+       width="24.643896"
+       height="24.643896"
+       x="93.617874"
+       y="69.525154"
+       inkscape:label="#EgoProCode2D_f1_subplot_trajectory_ego_head_direction" />
+    <rect
+       style="fill:#000000;fill-opacity:1;stroke:#00298e;stroke-width:0.284882"
+       id="EgoProCode2D_f1_subplot_allofieldExample_descending_phase"
+       width="19.715118"
+       height="19.715118"
+       x="32.262363"
+       y="127.36262"
+       inkscape:label="#EgoProCode2D_f1_subplot_allofieldExample_descending_phase" />
+    <rect
+       style="fill:#000000;fill-opacity:1;stroke:#00298e;stroke-width:0.284882"
+       id="EgoProCode2D_f1_subplot_allofieldExample_trough_phase"
+       width="19.715118"
+       height="19.715118"
+       x="54.984818"
+       y="127.36262"
+       inkscape:label="#EgoProCode2D_f1_subplot_allofieldExample_trough_phase" />
+    <rect
+       style="fill:#000000;fill-opacity:1;stroke:#00298e;stroke-width:0.284882"
+       id="EgoProCode2D_f1_subplot_allofieldExample_ascending_phase"
+       width="19.715118"
+       height="19.715118"
+       x="77.707291"
+       y="127.36262"
+       inkscape:label="#EgoProCode2D_f1_subplot_allofieldExample_ascending_phase" />
+    <rect
+       style="fill:#000000;fill-opacity:1;stroke:#00298e;stroke-width:0.284882"
+       id="EgoProCode2D_f1_subplot_egofieldExample_descending_phase"
+       width="19.715118"
+       height="19.715118"
+       x="32.262352"
+       y="149.88966"
+       inkscape:label="#EgoProCode2D_f1_subplot_egofieldExample_descending_phase" />
+    <rect
+       style="fill:#000000;fill-opacity:1;stroke:#00298e;stroke-width:0.284882"
+       id="EgoProCode2D_f1_subplot_forward_field_distrib_every_phase"
+       width="19.715118"
+       height="19.715115"
+       x="110.65158"
+       y="127.36262"
+       inkscape:label="#EgoProCode2D_f1_subplot_forward_field_distrib_every_phase" />
+    <rect
+       style="fill:#000000;fill-opacity:1;stroke:#00298e;stroke-width:0.284882"
+       id="EgoProCode2D_f1_subplot_lateral_field_distrib_every_phase"
+       width="19.715118"
+       height="19.715115"
+       x="110.65158"
+       y="149.88966"
+       inkscape:label="#EgoProCode2D_f1_subplot_lateral_field_distrib_every_phase" />
+    <rect
+       style="fill:#000000;fill-opacity:1;stroke:#00298e;stroke-width:0.284882"
+       id="EgoProCode2D_f1_subplot_lateral_distrib_stats"
+       width="19.715118"
+       height="19.715118"
+       x="143.59586"
+       y="149.88966"
+       inkscape:label="#EgoProCode2D_f1_subplot_lateral_distrib_stats" />
+    <rect
+       style="fill:#000000;fill-opacity:1;stroke:#00298e;stroke-width:0.284882"
+       id="EgoProCode2D_f1_subplot_forward_distrib_stats"
+       width="19.715118"
+       height="19.715118"
+       x="143.59586"
+       y="126.99961"
+       inkscape:label="#EgoProCode2D_f1_subplot_forward_distrib_stats" />
+    <rect
+       style="fill:#000000;fill-opacity:1;stroke:#00298e;stroke-width:0.284882"
+       id="EgoProCode2D_f1_subplot_egofieldExample_trough_phase"
+       width="19.715118"
+       height="19.715118"
+       x="54.984818"
+       y="149.88966"
+       inkscape:label="#EgoProCode2D_f1_subplot_egofieldExample_trough_phase" />
+    <rect
+       style="fill:#000000;fill-opacity:1;stroke:#00298e;stroke-width:0.284882"
+       id="EgoProCode2D_f1_subplot_egofieldExample_ascending_phase"
+       width="19.715118"
+       height="19.715118"
+       x="77.707291"
+       y="149.88966"
+       inkscape:label="#EgoProCode2D_f1_subplot_egofieldExample_ascending_phase" />
+    <rect
+       style="fill:#000000;fill-opacity:1;stroke:#00298e;stroke-width:0.356103"
+       id="EgoProCode2D_f1_subplot_egofieldExample"
+       width="24.643896"
+       height="24.643896"
+       x="121.63194"
+       y="69.525154"
+       inkscape:label="#EgoProCode2D_f1_subplot_egofieldExample" />
+    <rect
+       style="fill:#333333;fill-opacity:1;stroke:#d4d4d4;stroke-width:0;stroke-miterlimit:4;stroke-dasharray:none;stroke-opacity:1"
+       id="EgoProCode2D_f1_subplot_allo_to_ego_schematic"
+       width="113.96854"
+       height="35"
+       x="32.297974"
+       y="30.123913"
+       inkscape:label="#EgoProCode2D_f1_subplot_allo_to_ego_schematic" />
+    <rect
+       style="fill:#333333;fill-opacity:1;stroke:#d4d4d4;stroke-width:0;stroke-miterlimit:4;stroke-dasharray:none;stroke-opacity:1"
+       id="EgoProCode2D_f1_ego_maxrate_stats_ca1"
+       width="73.494759"
+       height="9.999999"
+       x="40.97401"
+       y="194.14871"
+       inkscape:label="#EgoProCode2D_f1_ego_maxrate_stats_ca1" />
+    <rect
+       style="fill:#333333;fill-opacity:1;stroke:#d4d4d4;stroke-width:0;stroke-miterlimit:4;stroke-dasharray:none;stroke-opacity:1"
+       id="EgoProCode2D_f1_ego_maxrate_thetaphase_ca1"
+       width="5.3257065"
+       height="9.999999"
+       x="32.119999"
+       y="194.14822"
+       inkscape:label="#EgoProCode2D_f1_ego_maxrate_thetaphase_ca1" />
+    <rect
+       style="fill:#333333;fill-opacity:1;stroke:#d4d4d4;stroke-width:0;stroke-miterlimit:4;stroke-dasharray:none;stroke-opacity:1"
+       id="EgoProCode2D_f1_ego_maxrate_thetaphase_ca3"
+       width="5.3257065"
+       height="9.9995899"
+       x="32.119999"
+       y="208.26486"
+       inkscape:label="#EgoProCode2D_f1_ego_maxrate_thetaphase_ca3" />
+    <rect
+       style="fill:#333333;fill-opacity:1;stroke:#d4d4d4;stroke-width:0;stroke-miterlimit:4;stroke-dasharray:none;stroke-opacity:1"
+       id="EgoProCode2D_f1_ego_field_size_stats_ca1"
+       width="73.494759"
+       height="9.9995899"
+       x="40.974014"
+       y="208.26527"
+       inkscape:label="#EgoProCode2D_f1_ego_field_size_stats_ca1" />
+    <rect
+       style="fill:#333333;fill-opacity:1;stroke:#d4d4d4;stroke-width:0;stroke-miterlimit:4;stroke-dasharray:none;stroke-opacity:1"
+       id="EgoProCode2D_f1_ego_maxrate_stats_ca3"
+       width="27.693674"
+       height="9.999999"
+       x="117.76931"
+       y="194.14822"
+       inkscape:label="#EgoProCode2D_f1_ego_maxrate_stats_ca3" />
+    <rect
+       style="fill:#333333;fill-opacity:1;stroke:#d4d4d4;stroke-width:0;stroke-miterlimit:4;stroke-dasharray:none;stroke-opacity:1"
+       id="EgoProCode2D_f1_ego_field_size_stats_ca3"
+       width="27.693676"
+       height="9.9995899"
+       x="117.76931"
+       y="208.26486"
+       inkscape:label="#EgoProCode2D_f1_ego_field_size_stats_ca3" />
+    <rect
+       style="fill:#333333;fill-opacity:1;stroke:#d4d4d4;stroke-width:0;stroke-miterlimit:4;stroke-dasharray:none;stroke-opacity:1"
+       id="EgoProCode2D_f1_subplot_theta_cycle_horizontal"
+       width="65.160042"
+       height="9.999999"
+       x="32.262363"
+       y="112.07097"
+       inkscape:label="#EgoProCode2D_f1_subplot_theta_cycle_horizontal" />
+    <text
+       xml:space="preserve"
+       transform="scale(0.26458333)"
+       id="text5199"
+       style="fill:black;fill-opacity:1;stroke:none;font-family:sans-serif;font-style:normal;font-weight:normal;font-size:40px;line-height:1.25;letter-spacing:0px;word-spacing:0px;white-space:pre;shape-inside:url(#rect5201)" />
+  </g>
+</svg>

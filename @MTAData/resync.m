@@ -97,9 +97,9 @@ elseif isa(Data,'MTAData'),
     
     % The periods of data which are already loaded
     loadedData = ones(Data.size(1),1);
-    try
-        loadedData(Data.data(:,1,1,1,1)==0) = 0;
-    end
+    % try % Why would I need this?
+    loadedData(Data.data(:,1,1,1,1)==0) = 0;
+    %end
     loadedData = cat(1,zeros(dataOrigin,1),loadedData);
     tailbuff = dataEpoch.size(1)-size(loadedData,1);
     if tailbuff<0,
@@ -210,17 +210,36 @@ elseif isa(Data,'MTAData'),
     syncZeroIndex = syncFeature==0;
     
     if ~isempty(syncDataPeriods),
-        %syncshift = 0;
+
         syncshift = round(Data.sync.data(1).*Data.sampleRate)-newOrigin-1;
-        %syncshift = Data.sync(1)-newOrigin-1;
-        if syncshift ==-2,syncshift=0;end
-        Data.load(syncDataPeriods,[],syncshift);
-% $$$                 Data.load@MTAData(syncDataPeriods,[],syncshift);
-% $$$                 fh = @(Data,syncDataPeriods,syncshift)load(Data,syncDataPeriods,[],syncshift);
-% $$$                 feval(fh,Data,syncDataPeriods,syncshift)
+
+        if syncshift ==-2,
+            syncshift=0;
+        end
+
+        %if syncshift > 0 % added if statement for sync_WHT_CSV
+        %    load(Data,syncDataPeriods,[],syncshift);
+        %end
+
+        % data removal if data is larger than the final syncDataPeriods
+        %if size(Data.data,1)>syncDataPeriods(end)
+        %    Data.data(syncDataPeriods(end):end,:,:,:,:) = [];
+        %end
+        
+        
         if ~isempty(find(syncZeroIndex,1)),
             Data.data(syncZeroIndex,:,:,:,:) = 0;
         end
+
+        % -- ADDED for fabian/joseph data analysis -- %
+        nper = syncEpoch.copy;
+        if (nper.size(1)-Data.size(1))==1, 
+            nper.data = nper.data(1:Data.size(1));
+            warning(['Synchronization offset 1 index larger than data']);
+        end
+        % ------------------------------------------- %
+        
+        Data.data = Data.data(find(nper==1,1,'first'):find(nper==1,1,'last'),:,:,:,:);        
     else
         if ~isempty(find(syncZeroIndex,1)),
             Data.data(syncZeroIndex,:,:,:,:) = 0;

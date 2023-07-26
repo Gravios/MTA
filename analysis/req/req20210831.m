@@ -1,6 +1,16 @@
+% req20210831
+%     Tags: placefield shuffle
+%     Status: Active
+%     Type: Analysis
+%     Author: Justin Graboski
+%     Final_Forms: NA
+%     Project: General
+%     Description: shuffling given position
+
 % new place field calculations
 
 Trial = MTATrial.validate('jg05-20120312.cof.all');
+Trial = Trials{20};
 
 Trial.load('stc','msnn_ppsvd_raux');
 
@@ -18,11 +28,15 @@ units = Trial.spk.get_unit_set(Trial,'pyramidal');
 
 spk = Trial.load('spk',sampleRate,state,units);
 
+hba = fet_hba(Trial,'xyz',xyz);
 
 latticeInterval = 20;
 xpos = -500:latticeInterval:500;
 ypos = -500:latticeInterval:500;
 latticeSize = [numel(xpos),numel(ypos)];
+
+xbins = xpos;% (xpos(1:end-1)+xpos(2:end))./2;
+ybins = ypos; %(ypos(1:end-1)+ypos(2:end))./2;
 
 
 tper = [Trial.stc{[state]}];
@@ -40,7 +54,7 @@ pfsArgs = struct( 'units',units,...
 
 pft = pfs_2d_theta(Trial,25,false,true,pfsArgs);
 figure,
-plot(pft,25,1,'colorbar');
+plot(pft{20},25,1,'colorbar','colorMap',@jet);
 
 
 %% cell array version 
@@ -64,30 +78,34 @@ for xind = 1:latticeSize(1)
         tempPos = bsxfun(@minus,tpos,[xpos(xind),ypos(yind)]);
         tempDst = sqrt(sum(tempPos.^2,2));
 % $$$         mapDst(sub2ind(latticeSize,xind,yind)) = tempDst(tempDst < sigmaD);
-        mapOcc{xind,yind} = tempPos(tempDst < sigmaD,:);
-        mapInd{xind,yind} = tempDst < sigmaD;
+        pind = tempDst < sigmaD;
+        mapOcc{xind,yind} = tempPos(pind,:);
+        mapInd{xind,yind} = pind;
+
     end
 end
+
+
 
 occ = zeros([numel(mapOcc),1]);
 for lind = 1:numel(mapOcc)
     occ(lind) = sum(exp(-sum(mapOcc{lind}.^2,2)./(sigmaDS)));
 end
-% $$$ figure();
-% $$$ imagesc(reshape(occ,latticeSize)');
-% $$$ axis('xy');
+figure();
+imagesc(reshape(occ,latticeSize)');
+axis('xy');
 
 
 
 
 
-
-for unit = units;
+rmap = nan([numel(xpos),numel(ypos)]);
+for u = 1:numel(units);
     tic
 mapSpk = {};
 mapW = {};
     
-    tres = SelectPeriods(spk(unit),tper.data,'d',1,1);
+    tres = SelectPeriods(spk(units(u)),tper.data,'d',1,1);
     [ures,IA,IC] = unique(tres);
     % GET spike degeneracy weights
     dic = [diff([IC(1)-1;IC])];    
@@ -109,8 +127,6 @@ mapW = {};
     end
 
 % $$$     cwpos = wpos(wpos~=0);
-    
-    
     spos = nan([size(tpos,1),2]);
     spos(tres,:) = tpos(tres,:);
     % assume tres is monotonically increasing
@@ -132,7 +148,7 @@ mapW = {};
 % $$$ imagesc(reshape(scc,latticeSize)');
 % $$$ axis('xy');
 
-    rmap = reshape(scc./(occ./sampleRate),latticeSize);
+    rmap(:,:,u) = reshape(scc./(occ./sampleRate),latticeSize);
     toc
 end
 
@@ -141,9 +157,10 @@ end
 mask = double(sqrt(bsxfun(@plus,xbins.^2,ybins'.^2)') < 445);
 mask(~mask) = nan;
 
+u = find(units==25);
 figure,
 shading(gca(),'flat');
-set(pcolor(xpos-diff(xpos(1:2))/2,ypos-diff(ypos(1:2))/2,rmap'.*mask),'EdgeColor','none');
+set(pcolor(xpos-diff(xpos(1:2))/2,ypos-diff(ypos(1:2))/2,rmap(:,:,u)'.*mask),'EdgeColor','none');
 axis('xy');
 colormap('jet');
 colorbar();
@@ -188,7 +205,8 @@ colormap('jet');
 colorbar();
 axis('xy');
 subplot(133);
-set(pcolor(xpos-diff(xpos(1:2))/2,ypos-diff(ypos(1:2))/2,rmapBS'.^2./smapBS'.^2.*mask),'EdgeColor','none');
+%set(pcolor(xpos-diff(xpos(1:2))/2,ypos-diff(ypos(1:2))/2,rmapBS'.^2./smapBS'.^2.*mask),'EdgeColor','none');
+set(pcolor(xpos-diff(xpos(1:2))/2,ypos-diff(ypos(1:2))/2,smapBS'./rmapBS'.*mask),'EdgeColor','none');
 ylim([ypos([1,end])+[-1,1].*diff(ypos(1:2))/2])
 xlim([xpos([1,end])+[-1,1].*diff(xpos(1:2))/2])
 colormap('jet');

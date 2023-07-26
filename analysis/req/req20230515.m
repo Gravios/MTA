@@ -1,3 +1,11 @@
+% req20230514
+%     Tags: ccg theta power estimation lfp state
+%     Status: Active
+%     Type: Utility
+%     Author: Justin Graboski
+%     Final_Forms: N/A
+%     Project: General
+%     Description: lfp state segmentation
 
 
 MjgER2016_load_data();
@@ -22,6 +30,21 @@ spk = Trial.load('spk',lfp.sampleRate,'',int);
 thetaTroughs = abs(phz.data-pi)<0.1&[0;diff(phz.data-pi)]>0;
 
 thetaTroughs = LocalMinima(-convn(thetaTroughs,ones([1,21]),'same'),0,21);
+
+ilfp = Trial.load('lfp',65:72);
+ilfp.data = mean(ilfp.data,2);
+
+figure,
+hold('on');
+plot([1:size(lfp,1)]./lfp.sampleRate,lfp.data)
+plot([1:size(lfp,1)]./lfp.sampleRate,ilfp.data)
+plot([1:size(lfp,1)]./lfp.sampleRate,rlfp.data+15000,'r')
+plot([1:size(lfp,1)]./lfp.sampleRate,(ilfp.data-lfp.data)*3-15000)
+
+Lines([],15000,'k');
+Lines([],     0,'k');
+Lines([],-15000,'k');
+
 
 rlfp = Trial.load('lfp',Trial.meta.channelGroup.thetarc);
 rlfp.data = diff(rlfp.data,1,2);
@@ -72,17 +95,142 @@ drphz = drlfp.phase([5,13]);
 drthetaTroughs = abs(drphz.data-pi)<0.1&[0;diff(drphz.data-pi)]>0;
 drthetaTroughs = LocalMinima(-convn(drthetaTroughs,ones([1,21]),'same'),0,21);
 
+nfft = 2^8;
+wind = 2^7;
+defspec = struct('nFFT',nfft,'Fs',ilfp.sampleRate,...
+                            'WinLength',wind,'nOverlap',wind*.875,...
+                            'FreqRange',[0,150]);
+[ihm,fs,ts] = fet_spec(Trial,ilfp,'mtchglong',true,[],defspec);
 
-defspec = struct('nFFT',2^8,'Fs',zlfp.sampleRate,...
-                            'WinLength',2^7,'nOverlap',2^7*.875,...
-                            'FreqRange',[4,150]);
-[rhm,fs,ts] = fet_spec(Trial,zlfp,'mtchglong',true,[],defspec);
+defspec = struct('nFFT',nfft,'Fs',rlfp.sampleRate,...
+                            'WinLength',wind,'nOverlap',wind*.875,...
+                            'FreqRange',[0,150]);
+[rhm,fs,ts] = fet_spec(Trial,rlfp,'mtchglong',true,[],defspec);
+
+defspec = struct('nFFT',nfft,'Fs',lfp.sampleRate,...
+                            'WinLength',wind,'nOverlap',wind*.875,...
+                            'FreqRange',[0,220]);
+[lhm,fs,ts] = fet_spec(Trial,lfp,'mtchglong',true,[],defspec);
+
+nfft = 2^11;
+wind = 2^10;
+defspec = struct('nFFT',nfft,'Fs',lfp.sampleRate,...
+                            'WinLength',wind,'nOverlap',wind*.875,...
+                            'FreqRange',[0,150]);
+[thm,tfs,tts] = fet_spec(Trial,lfp,'mtchglong',true,[],defspec);
+
+
+flhm = lhm.copy();
+flhm.data = imgaussfilt(bsxfun(@rdivide,log10(lhm.data),mean(log10(lhm.data(nniz(lhm.data),:)))),1.5);
+
+%f = linspace(3.5,6.5,128);
+f = linspace(0.8,1.2,128);
+%f = linspace(0.006,0.01,128);
+eul = zeros([size(lhm,1),128]);
+ind = 98672; mclr= 'k';
+ind = 322032; mclr= 'r';
+for ind = 41:10:size(lhm,1)
+    for fi = 1:numel(f)
+        %eul(fi) = bweuler(log10(lhm([ind:ind+40]+40,:))<f(fi));
+        %eul(ind,fi) = bweuler(imgaussfilt(log10(lhm([ind-60:ind+60],:)),0.8)<f(fi));
+        eul(ind,fi) = bweuler(flhm([ind-40:ind+40],:)<f(fi));
+        %eul(ind,fi) = bweuler(bsxfun(@rdivide,imgaussfilt(log10(lhm([ind-60:ind+60],:)),1.2),sum(imgaussfilt(log10(lhm([ind-60:ind+60],:)),1.2)))<f(fi));
+    end
+end
+%figure
+hold('on'),plot(eul(ind,:),mclr)
+
+eind = 41:10:size(lhm,1);
+figure,
+subplot(511);
+imagesc(tts,tfs,log10(thm.data)');
+axis('xy');
+colormap('jet');
+subplot(512);
+images(cts,fs,imgaussfilt(bsxfun(@rdivide,log10(lhm.data)',mean(log10(lhm.data(nniz(lhm.data),:)))'),1.5));
+axis('xy');
+colormap('jet');
+subplot(513);
+imagesc([eind]./lhm.sampleRate,1:128,imgaussfilt(eul(eind,:)',3.8))
+%imagesc([eind]./lhm.sampleRate,1:128,eul(eind,:)')
+hold('on'),plot([eind]./lhm.sampleRate,mean(eul(eind,50:70),2))
+hold('on'),plot([eind]./lhm.sampleRate,abs(mean(eul(eind,70:90)+20,2)))
+axis('xy');
+Lines([],20,'k');
+Lines([],60,'k');
+subplot(514);
+hold('on')
+plot([1:size(lpow)]./lpow.sampleRate,log10(lpow.data))
+plot([1:size(lpow)]./lpow.sampleRate,(flpow.data))
+subplot(515);
+plotSTC(Trial.stc,1);
+ylim([0,7.5]);
+linkx();
+
+% Smoothed theta power seems better than gamma euler characteristic
+
+[U,S,V] = svd(eul(31:30:93571,:),0);
+
+[LU, LR, FSr, VT] = erpPCA( eul(31:30:93571,:),4);
+
+feul = imgaussfilt(eul(eind,:),3.8);
 
 figure,
+hold('on');
+plot([eind]./lhm.sampleRate,feul(:,55),'k')
+plot([eind]./lhm.sampleRate,feul(:,84),'r')
+
+
+nfeuel = bsxfun(@minus,feul(1:47479,:),mean(feul(1:47479,:)));
+
+cv = nfeuel'*nfeuel./47479;
+figure,imagesc(cv')
+
+[U,S,V] = svd(cv,0);
+
+whos U,V,S
+
+
+[icasig,A,W] = fastica(nfeuel');
+
+figure,
+subplot(211);
+plot(diag(S),'-+');
+subplot(212);
+imagesc(V');
+
+figure,hold('on');plot(U(:,1))
+
+figure,
+subplot(211)
+hold('on')
+plot([eind(1:47479)]./lhm.sampleRate,nfeuel*U(:,1))
+plot([eind(1:47479)]./lhm.sampleRate,nfeuel*U(:,2),'r')
+plot([eind(1:47479)]./lhm.sampleRate,nfeuel*U(:,3),'c')
+subplot(212)
+plotSTC(Trial.stc,1);
+ylim([0,7.5]);
+linkx();
+
+
+figure,
+subplot(311);
 hold('on');
 imagesc(ts,fs,log10(rhm.data)');
 axis('xy');
 colormap('jet');
+subplot(312);
+hold('on');
+imagesc(ts,fs,log10(ihm.data)');
+axis('xy');
+colormap('jet');
+subplot(313);
+hold('on');
+imagesc(ts,fs,log10(lhm.data)');
+axis('xy');
+colormap('jet');
+linkx();
+
 plot([1:size(lfp,1)]./lfp.sampleRate,zlfp.data./2000+30,'k', 'LineWidth',2);
 
 figure,
@@ -95,7 +243,74 @@ rhm.data = log10(rhm.data);
 rhm.resample(dlfp);
 
 
+rpow = rhm.copy();
+rpow.data = (mean(rhm(:,fs>6&fs<11),2));
+%rpow.filter('ButFilter',4,2,'low');
+ipow = ihm.copy();
+ipow.data = (mean(ihm(:,fs>6&fs<11),2));
+%ipow.filter('ButFilter',4,2,'low');
+lpow = ihm.copy();
+lpow.data = (mean(lhm(:,fs>6&fs<11),2));
 
+gpow.data = (mean(lhm(:,fs>6&fs<11),2));
+
+
+flpow = lpow.copy();
+flpow.data = log10(flpow.data);
+flpow.filter('ButFilter',4,0.2,'low');
+frpow = rpow.copy();
+frpow.data = log10(frpow.data);
+frpow.filter('ButFilter',4,0.2,'low');
+
+figure,plot(log10(rpow./ipow))
+
+
+xrange = [4.4,6.4];
+yrange = [4.4,6.4];
+xbins = linspace([xrange,50]);
+ybins = linspace([yrange,50]);
+yval = polyval([1.25,-1.6],xrange);
+figure,
+subplot(2,2,1),hold('on')
+sper = [stc{'s&t',lfp.sampleRate}];
+hist2([frpow(sper),flpow(sper)],xbins,ybins)
+%hist2([log10(rpow(sper)),log10(lpow(sper))],xbins,ybins)
+line(xrange,yval,'Color','m');
+Lines([],5.4,'w');
+Lines(5.4,[],'w');
+drawnow();pause(0.25);
+xlim(xrange);ylim(yrange);
+subplot(2,2,2),hold('on')
+sper = [stc{'s-t',lfp.sampleRate}];
+hist2([frpow(sper),flpow(sper)],xbins,ybins)
+%hist2([log10(rpow(sper)),log10(lpow(sper))],xbins,ybins)
+line(xrange,yval,'Color','m');
+Lines([],5.4,'w');
+Lines(5.4,[],'w');
+drawnow();pause(0.25);
+xlim(xrange);ylim(yrange);
+subplot(2,2,3),hold('on')
+sper = [stc{'x+p&t-s-m',lfp.sampleRate}];
+hist2([frpow(sper),flpow(sper)],xbins,ybins)
+%hist2([log10(rpow(sper)),log10(lpow(sper))],xbins,ybins)
+line(xrange,yval,'Color','m');
+Lines([],5.4,'w');
+Lines(5.4,[],'w');
+drawnow();pause(0.25);
+xlim(xrange);ylim(yrange);
+    subplot(2,2,4),hold('on')
+sper = [stc{'m',lfp.sampleRate}];
+hist2([frpow(sper),flpow(sper)],xbins,ybins)
+%hist2([log10(rpow(sper)),log10(lpow(sper))],xbins,ybins)
+line(xrange,yval,'Color','m');
+Lines([],5.4,'w');
+Lines(5.4,[],'w');
+drawnow();pause(0.25);
+xlim(xrange);ylim(yrange);
+
+figure
+sper = [stc{'a',lfp.sampleRate}];
+hist2([frpow(sper),flpow(sper)],xbins,ybins)
 
 figure,
 hold('on');

@@ -18,6 +18,9 @@ defargs = struct(     'sampleRate', 250,                                        
 phzBins = linspace(0,2*pi,25);
 states = {'theta','rear','walk','turn','pause','hloc','hpause','lloc','lpause','groom','sit'};
 
+
+disp(['[INFO] MTA:analysis:accumulate_decoding_vars: processing trial: ',Trial.filebase]);
+
 if isempty(xyz),    xyz = preproc_xyz(Trial,'trb',sampleRate);                           end
 if isempty(pfs),    pfs = compute_ratemaps( Trial, units,'overwrite',false);             end
 if isempty(mask),   mask = create_tensor_mask(pfs.adata.bins);                           end
@@ -46,6 +49,17 @@ dc = decode_ufr_boxcar(Trial,          ...
 
 dc.hRot = Trial.meta.correction.headYaw;
 
+dc.ind([1:26,end-26:end],:) = [];
+dc.max([1:26,end-26:end],:) = [];
+dc.com([1:26,end-26:end],:) = [];
+dc.sax([1:26,end-26:end],:) = [];
+dc.lom([1:26,end-26:end],:) = [];
+dc.lax([1:26,end-26:end],:) = [];
+dc.post([1:26,end-26:end],:) = [];
+dc.ucnt([1:26,end-26:end],:) = [];
+dc.uinc([1:26,end-26:end],:) = [];
+
+
 % THETA PHASE at xyz sampling rate
 dc.phz = load_theta_phase(Trial, xyz);
 dc.phz = dc.phz(dc.ind,1);
@@ -64,9 +78,8 @@ dc.lvxy = copy(dc.vxy);
 dc.lvxy.data(dc.lvxy.data<=0) = 0.001;
 dc.lvxy.data = log10(dc.lvxy.data);
 
-% HEAD VECTOR
+% HEAD Basis
 dc.hvec = dc.xyz(:,'nose',[1,2])-dc.xyz(:,'hcom',[1,2]);
-%dc.hvec = dc.xyz(:,'nose',[1,2])-dc.xyz(:,'hcom',[1,2]);
 dc.hvec = sq(bsxfun(@rdivide,dc.hvec,sqrt(sum(dc.hvec.^2,3))));
 dc.hvec = cat(3,dc.hvec,sq(dc.hvec)*[0,-1;1,0]);
 dc.hvec = multiprod(dc.hvec,                           ...
@@ -237,6 +250,11 @@ dc.stcm = dc.stcm(dc.ind,:);
 hvfl = fet_href_HXY(Trial,sampleRate,[],'trb');
 bvfl = fet_bref_BXY(Trial,sampleRate,[],'trb');
 dc.hvfl = hvfl(dc.ind,:);
-dc.bvfl = bvfl(dc.ind,:);    
+dc.bvfl = bvfl(dc.ind,:);
+dc.hvflF = hvfl(dc.ind+25,:);
+dc.bvflF = bvfl(dc.ind+25,:);    
+dc.hvflP = hvfl(dc.ind-25,:);
+dc.bvflP = bvfl(dc.ind-25,:);    
+
 
 dc.states = states;

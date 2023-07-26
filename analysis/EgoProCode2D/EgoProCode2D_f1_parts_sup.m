@@ -1,0 +1,239 @@
+
+
+
+% Plot 
+phaseBin.count = 3;
+phaseBin.labels = {'Descending','Trough','Ascending'};
+phaseBin.titles = {{'Theta','Descent'},{'Theta','Trough'},{'Theta','Ascent'}};
+phaseBin.index
+
+nx = 8;
+
+% units to remove from place cell analysis
+
+
+partsPath='/storage/share/Projects/EgoProCode2D/Suplementary/figure1';
+
+for trialIndex = 1:numel(Trials)
+    
+    mrate = cf(@(p) p.maxRate(units{trialIndex},true,'mean'),cat(2,{placeFieldsNoRear{trialIndex}},ratemapsAlloThp{trialIndex}));
+    mrate = max(cat(2,mrate{:}),[],2);
+
+    pageRowCount = 1;
+    pageCount = 1;
+    [hfig,fig,fax,sax] = set_figure_layout(figure(666002),'A4','portrait',[],1.6,1.6,0.075,0.25);    
+    hfig.InvertHardcopy = 'off';
+
+    group = 1;
+    for unit = unitsEgo{trialIndex};        
+
+        if 10 < pageRowCount
+            %break;
+            [hfig,fig,fax,sax] = set_figure_layout(figure(666002),'A4','portrait',[],1.6,1.6,0.075,0.25);
+            pageRowCount = 1;
+            group = group + 1;
+        end
+
+        unitIndex = find(unit==units{trialIndex});
+        %unit = units{trialIndex}(2);
+        [~,pfsCenter] = placeFieldsNoRear{trialIndex}.maxRate(unit,1,true);
+        
+        
+        xind = 1;
+        yind = pageRowCount+1;
+        
+        % Spike waveform with stats in the legend
+% $$$         sax(end+1) = axes('Units','centimeters',                                                 ...
+% $$$                          'Position',[fig.page.xpos(xind),                                        ...
+% $$$                                      fig.page.ypos(yind),                                        ...
+% $$$                                      fig.subplot.width,                                          ...
+% $$$                                      fig.subplot.height],                                        ...
+% $$$                          'FontSize', 8);
+        % PLACE HOLDER 
+
+% THETA        
+        % Place Cell rate map computed for the theta state (theta-groom-sit)
+        xind = 2;        
+        sax(end+1) = axes('Units','centimeters',                                                 ...
+                         'Position',[fig.page.xpos(xind),                                        ...
+                                     fig.page.ypos(yind),                                        ...
+                                     fig.subplot.width,                                          ...
+                                     fig.subplot.height],                                        ...
+                         'FontSize', 8);
+        hold(sax(end),'on');
+        plot(placeFieldsNoRear{trialIndex}, unit, 1, 'text', [0,mrate(unitIndex)], true, 'colorMap', @jet); 
+        circle(pfsCenter(1),pfsCenter(2),150,'w-');
+        clear_axes_ticks(sax(end));
+
+% ALLO 
+        % allo-centeric place cell rate maps for bins of theta phase
+        for phaseBinIndex = 1:3
+            xind = 3+phaseBinIndex;
+            sax(end+1) = axes('Units','centimeters',                                                  ...
+                              'Position',[fig.page.xpos(xind)-fig.subplot.width/1.25,                 ...
+                                          fig.page.ypos(yind),                                        ...
+                                          fig.subplot.width,                                          ...
+                                          fig.subplot.height],                                        ...
+                              'FontSize', 8);
+            hold(sax(end),'on');
+            plot(ratemapsAlloThp{trialIndex}{phaseBinIndex},unit,1,'',[0,mrate(unitIndex)],false,'colorMap',@jet);
+            circle(pfsCenter(1),pfsCenter(2),150,'w-');
+            clear_axes_ticks(sax(end));            
+% $$$             xlim(sax(end),ratemapsAlloThp{trialIndex}{phaseBinIndex}.adata.bins{1}([1,end])')
+% $$$             ylim(sax(end),ratemapsAlloThp{trialIndex}{phaseBinIndex}.adata.bins{2}([1,end])')
+            xlim(sax(end),[-350,350]+pfsCenter(1));
+            ylim(sax(end),[-350,350]+pfsCenter(2));
+            sax(end).Color = 'k';
+            
+            
+            tmpMR =ratemapsAlloThp{trialIndex}{phaseBinIndex}.maxRate(unit,1,true);
+            if tmpMR>10
+                tmpMR = round(tmpMR);
+            else
+                tmpMR = round(tmpMR,1);
+            end
+            
+                
+            text(sax(end),...
+                 pfsCenter(1)+350 - 200,...
+                 pfsCenter(2)+350 - 100,...
+                 num2str(tmpMR),...
+                 'Color','w',...
+                 'FontSize',8,...
+                 'FontWeight','bold');
+        end
+
+% EGO 
+        for phaseBinIndex = 1:3
+            xind = 6+phaseBinIndex;
+            sax(end+1) = axes('Units','centimeters',                                                  ...
+                              'Position',[fig.page.xpos(xind)-fig.subplot.width/1.5,                    ...
+                                          fig.page.ypos(yind),                                        ...
+                                          fig.subplot.width,                                          ...
+                                          fig.subplot.height],                                        ...
+                              'FontSize', 8);
+            hold(sax(end),'on');            
+            plot(pfet{trialIndex}{phaseBinIndex},unit,1,'text',[0,mrate(unitIndex)],false,'colorMap',@jet,'flipAxesFlag',true);            
+            clear_axes_ticks(sax(end));
+            Lines(0,[],'w','-',1);
+            Lines([],0,'w','-',1);
+            circle(egoMeanRmapPos(ismember(egoCluSessionMap,[trialIndex,unit],'rows'),phaseBinIndex,2).*10,... x
+                   egoMeanRmapPos(ismember(egoCluSessionMap,[trialIndex,unit],'rows'),phaseBinIndex,1).*10+20,... y
+                   150,                                                                                ... radius
+                   'w-');            
+            ylim(sax(end),[-300,400])
+            xlim([-350,350]);
+        end
+
+        if 1 == pageRowCount
+            for phaseBinIndex = 1:3
+                title(sax(1),{'Theta',''});
+                title(sax(1+phaseBinIndex),phaseBin.titles{phaseBinIndex});
+                title(sax(4+phaseBinIndex),phaseBin.titles{phaseBinIndex});
+            end
+            text(fax,...
+                 sax(3).Position(1)+sax(3).Position(3)/2,...
+                 fig.page.height-fig.page.marginTop - 0.75,...
+                 ['Allocentric'],...
+                 'HorizontalAlignment','center');
+            text(fax,...
+                 sax(6).Position(1)+sax(6).Position(3)/2,...
+                 fig.page.height-fig.page.marginTop - 0.75,...
+                 ['Egocentric'],...
+                 'HorizontalAlignment','center');
+        
+        end
+        
+        if 10 == pageRowCount || unit==unitsEgo{trialIndex}(end)
+            
+            text(fax,...
+                 fig.page.width/2,...
+                 fig.page.height-fig.page.marginTop,...
+                 [Trials{trialIndex}.name,': Units ',num2str((group-1)*10+1),' to ' num2str((group-1)*10+pageRowCount)],...
+                 'HorizontalAlignment','center');
+            
+            % add theta phase curves for allo and ego - centric columns
+            sax(end+1) = axes('Units','centimeters',                                                  ...
+                              'Position',[sax(2).Position(1),                                         ...
+                                          fig.page.ypos(yind+1)+fig.subplot.height/2,                 ...
+                                          fig.subplot.width*3+fig.subplot.horizontalPadding*2,        ...
+                                          fig.subplot.height/3],                                      ...
+                              'FontSize', 8);
+            hold(sax(end),'on');            
+
+
+            % SUBPLOT <- theta cycle (color=partions)
+            plot(sax(end),...
+                 linspace(0,1),...
+                 cos(linspace(0,2*pi)),...
+                 'k','LineWidth',2);
+            plims = [0.5,              2.26106176905986];
+            plot(sax(end),...                
+                 linspace(plims(1)/(2*pi),plims(2)/(2*pi)),...
+                 cos(linspace(plims(1),plims(2))),...
+                 'Color',pclr(1,:), 'LineWidth',2);
+            plims = [2.26106176905986, 4.02212353811972];
+            plot(sax(end),...                 
+                 linspace(plims(1)/(2*pi),plims(2)/(2*pi)), ...
+                 cos(linspace(plims(1),plims(2))),...                 
+                 'Color',pclr(2,:), 'LineWidth',2);
+            plims = [4.02212353811972, 5.78318530717959];
+            plot(sax(end),...
+                 linspace(plims(1)/(2*pi),plims(2)/(2*pi)), ...
+                 cos(linspace(plims(1),plims(2))),...                 
+                 'Color',pclr(3,:),'LineWidth',2);
+            % FORMAT subplot
+            xlim([0,1]);
+            sax(end).Visible = 'off';
+            text(sax(end),0.05,0.3,'0','FontSize',8);
+            text(sax(end),0.5, 0.4,'\pi','FontSize',8);
+            text(sax(end),0.95,0.3,'2\pi','FontSize',8);
+
+
+            sax(end+1) = axes('Units','centimeters',                                                  ...
+                              'Position',[sax(5).Position(1),                                         ...
+                                          fig.page.ypos(yind+1)+fig.subplot.height/2,                 ...
+                                          fig.subplot.width*3+fig.subplot.horizontalPadding*2,        ...
+                                          fig.subplot.height/3],                                      ...
+                              'FontSize', 8);
+            hold(sax(end),'on');            
+
+
+            % SUBPLOT <- theta cycle (color=partions)
+            plot(sax(end),...
+                 linspace(0,1),...
+                 cos(linspace(0,2*pi)),...
+                 'k','LineWidth',2);
+            plims = [0.5,              2.26106176905986];
+            plot(sax(end),...                
+                 linspace(plims(1)/(2*pi),plims(2)/(2*pi)),...
+                 cos(linspace(plims(1),plims(2))),...
+                 'Color',pclr(1,:), 'LineWidth',2);
+            plims = [2.26106176905986, 4.02212353811972];
+            plot(sax(end),...                 
+                 linspace(plims(1)/(2*pi),plims(2)/(2*pi)), ...
+                 cos(linspace(plims(1),plims(2))),...                 
+                 'Color',pclr(2,:), 'LineWidth',2);
+            plims = [4.02212353811972, 5.78318530717959];
+            plot(sax(end),...
+                 linspace(plims(1)/(2*pi),plims(2)/(2*pi)), ...
+                 cos(linspace(plims(1),plims(2))),...                 
+                 'Color',pclr(3,:),'LineWidth',2);
+            
+            % FORMAT subplot
+            xlim([0,1]);
+            sax(end).Visible = 'off';
+            text(sax(end),0.05,0.3,'0','FontSize',8);
+            text(sax(end),0.5, 0.4,'\pi','FontSize',8);
+            text(sax(end),0.95,0.3,'2\pi','FontSize',8);
+            
+            % save the figure
+            saveas(hfig, fullfile(partsPath, ['EgoProCode2D_f1_sup_',Trials{trialIndex}.filebase,'-',num2str(group),'.pdf']),'pdf');
+        end
+        pageRowCount = pageRowCount + 1;
+    end
+    
+end
+
+
+

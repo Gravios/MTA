@@ -1,0 +1,9 @@
+
+* 20230717
+** Primary Goals
+*** Diagnose the synchronization problem of MTAData objects in the WHT_motive setup
+    - create emacs session
+    - load Trial FS10-20220222a and try loading a specific trial from those defined in example_code_joseph_multiTrial
+    - compare FS10 to a jg05 session data objects, focusing on the sync object structure
+
+** Secondary Goals
