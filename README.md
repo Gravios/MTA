@@ -34,6 +34,7 @@
   <a href="https://github.com/gravios/MTA">
     <img src="card-capture.png" alt="Logo" width="300" height="300">
     <img src="card-annotate.png" alt="Logo" width="300" height="300">
+    <img src="card-record.png" alt="Logo" width="300" height="300">
     <img src="card-analyze.png" alt="Logo" width="300" height="300">
   </a>
 
