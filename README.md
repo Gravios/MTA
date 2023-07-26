@@ -36,19 +36,19 @@
     <img src="card-analyze.png" alt="Logo" width="320" height="320">
   </a>
 
-  <h3 align="center">Best-README-Template</h3>
+  <h3 align="center">Motion Tracking Analysis</h3>
 
   <p align="center">
-    An awesome README template to jumpstart your projects!
+    Where motion tracking meets neural implants. 
     <br />
-    <a href="https://github.com/othneildrew/Best-README-Template"><strong>Explore the docs »</strong></a>
+    <a href="https://github.com/gravios/MTA"><strong>Explore the docs »</strong></a>
     <br />
     <br />
-    <a href="https://github.com/othneildrew/Best-README-Template">View Demo</a>
+    <a href="https://github.com/gravios/MTA">View Demo</a>
     ·
-    <a href="https://github.com/othneildrew/Best-README-Template/issues">Report Bug</a>
+    <a href="https://github.com/gravios/MTA/issues">Report Bug</a>
     ·
-    <a href="https://github.com/othneildrew/Best-README-Template/issues">Request Feature</a>
+    <a href="https://github.com/gravios/MTA/issues">Request Feature</a>
   </p>
 </div>
 
@@ -92,7 +92,6 @@ The MTA framework synchronizes external data aquisition systems to a reference e
 Here's why:
 * A Neuroscientist needs more than just action potentials and LFP to resolve the mysteries of the brain.
 * A single framework makes data analysis and reporting more consistent.
-* It's good :smile:
 
 Of course, no one template will serve all projects since your needs may be different. So I'll be adding more in the near future. You may also suggest changes by forking this repo and creating a pull request or opening an issue. Thanks to all the people have contributed to expanding this template!
 
