@@ -32,9 +32,9 @@
 <br />
 <div align="center">
   <a href="https://github.com/gravios/MTA">
-    <img src="card-capture.png" alt="Logo" width="320" height="320">
-    <img src="card-annotate.png" alt="Logo" width="320" height="320">
-    <img src="card-analyze.png" alt="Logo" width="320" height="320">
+    <img src="card-capture.png" alt="Logo" width="300" height="300">
+    <img src="card-annotate.png" alt="Logo" width="300" height="300">
+    <img src="card-analyze.png" alt="Logo" width="300" height="300">
   </a>
 
   <h3 align="center">Motion Tracking Analysis</h3>
