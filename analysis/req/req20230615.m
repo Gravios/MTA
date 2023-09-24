@@ -1,22 +1,10 @@
-%% EgoProCode2D_compute_egoratemaps_conditioned_on_hba.m
-%new place field calculations
+% new place field calculations
 
 %Trial = MTATrial.validate('jg05-20120312.cof.all');
 %Trial = Trials{20};
 
-MjgER2016_load_data();
-unitsEgo = cf(@(T)  T.spk.get_unit_set(T,'egocentric'),  Trials); 
-
-pft = cf(@(t,u)  pfs_2d_theta(t,u,'theta-groom-sit-rear'),  Trials, units);
-
-hbaBin.edges = [-1.2,-0.2,0.2,1.2];
-hbaBin.centers = mean([hbaBin.edges(1:end-1);hbaBin.edges(2:end)]);
-hbaBin.count = numel(hbaBin.centers);
-
 sampleRate = 32;
-%state = 'theta-groom-sit';
-state = 'loc&theta';
-state = 'pause&theta';
+state = 'theta-groom-sit';
 stcMode = 'msnn_ppsvd_raux';
 
 latticeInterval = 20;
@@ -51,15 +39,15 @@ for tind = 1:numel(Trials)
     rot = transform_vector_to_rotation_matrix( ...
             xyz,{'hcom','nose'}, Trial.meta.correction.headYaw);
 
-    unitSubset = unitsEgo{tind};
+    units = unitsEgo{tind};
 
-    spk = Trial.load('spk',sampleRate,state,unitSubset);
+    spk = Trial.load('spk',sampleRate,state,units);
 
-    rmap{tind} = nan([numel(xpos),numel(ypos),numel(unitSubset),numel(hbaBin.centers)]);
+    rmap{tind} = nan([numel(xpos),numel(ypos),numel(units),numel(hbaBinEdg)-1]);
     %% cell array version
-    for u = 1:numel(unitSubset)
+    for u = 1:numel(units)
         tic
-        [mxr,mxp] = pft{tind}.maxRate(unitSubset(u));
+        [mxr,mxp] = pft{tind}.maxRate(units(u));
         pfsCenterHR = MTADfet.encapsulate(Trial,                                           ...
                                       bsxfun(                                         ...
                                           @plus,                                       ...
@@ -88,20 +76,20 @@ for tind = 1:numel(Trials)
                 pind = tempDst < sigmaD;
                 mapOcc{xind,yind} = tempPos(pind,:);
                 mapInd{xind,yind} = find(pind);
-                mapHba{xind,yind} = discretize(thba(pind),hbaBin.edges);
+                mapHba{xind,yind} = discretize(thba(pind),hbaBinEdg);
             end
         end
         
         occ = zeros([numel(mapOcc),3]);
         for lind = 1:numel(mapOcc)
-            for hbaInd = 1:numel(hbaBin.centers)
+            for hbaInd = 1:numel(hbaBinEdg)-1
                 occ(lind,hbaInd) = sum(exp(-sum(mapOcc{lind}(mapHba{lind}==hbaInd,:).^2,2)./(sigmaDS)));
             end
         end
         
         mapSpk = {};
         mapW = {};
-        tres = SelectPeriods(spk(unitSubset(u)),tper.data,'d',1,1);
+        tres = SelectPeriods(spk(units(u)),tper.data,'d',1,1);
         [ures,IA,IC] = unique(tres);
         % GET spike degeneracy weights
         dic = [diff([IC(1)-1;IC])];    
@@ -124,7 +112,7 @@ for tind = 1:numel(Trials)
         spos = nan([size(tpos,1),2]);
         spos(tres,:) = tpos(tres,:);
         % assume tres is monotonically increasing
-        for hbaInd = 1:numel(hbaBin.centers)
+        for hbaInd = 1:numel(hbaBinEdg)-1
             for xind = 1:latticeSize(1)
                 for yind = 1:latticeSize(2)
                     tempPos = bsxfun(@minus,spos,[xpos(xind),ypos(yind)]);
@@ -145,12 +133,12 @@ for tind = 1:numel(Trials)
 
     %%%<<< permuted hba
 
-    rmapShuff{tind} = nan([numel(xpos),numel(ypos),numel(unitSubset),numel(hbaBin.centers),100]);
+    rmapShuff{tind} = nan([numel(xpos),numel(ypos),numel(units),numel(hbaBinEdg)-1,100]);
     %% cell array version
-    for u = 1:numel(unitSubset)
+    for u = 1:numel(units)
         tic
 
-        [mxr,mxp] = pft{tind}.maxRate(unitSubset(u));
+        [mxr,mxp] = pft{tind}.maxRate(units(u));
         pfsCenterHR = MTADfet.encapsulate(Trial,                                           ...
                                           bsxfun(                                         ...
                                               @plus,                                       ...
@@ -183,7 +171,7 @@ for tind = 1:numel(Trials)
                 pind = tempDst < sigmaD;
                 mapOcc{xind,yind} = tempPos(pind,:);
                 mapInd{xind,yind} = find(pind);
-                mapHba{xind,yind} = discretize(thba(pind),hbaBin.edges);
+                mapHba{xind,yind} = discretize(thba(pind),hbaBinEdg);
             end
         end
 
@@ -192,7 +180,7 @@ for tind = 1:numel(Trials)
             occ = zeros([numel(mapOcc),3]);
             for lind = 1:numel(mapOcc)
                 tMHba{lind} = mapHba{lind}(randperm(numel(mapHba{lind})));
-                for hbaInd = 1:numel(hbaBin.centers)
+                for hbaInd = 1:numel(hbaBinEdg)-1
                     occ(lind,hbaInd) = sum(exp(-sum(mapOcc{lind}(tMHba{lind}==hbaInd,:).^2,2)./(sigmaDS)));
                 end
             end
@@ -201,7 +189,7 @@ for tind = 1:numel(Trials)
 
             mapSpk = {};
             mapW = {};
-            tres = SelectPeriods(spk(unitSubset(u)),tper.data,'d',1,1);
+            tres = SelectPeriods(spk(units(u)),tper.data,'d',1,1);
             [ures,IA,IC] = unique(tres);
             % GET spike degeneracy weights
             dic = [diff([IC(1)-1;IC])];    
@@ -224,7 +212,7 @@ for tind = 1:numel(Trials)
             spos = nan([size(tpos,1),2]);
             spos(tres,:) = tpos(tres,:);
             % assume tres is monotonically increasing
-            for hbaInd = 1:numel(hbaBin.centers)
+            for hbaInd = 1:numel(hbaBinEdg)-1
                 for xind = 1:latticeSize(1)
                     for yind = 1:latticeSize(2)
                         tempPos = bsxfun(@minus,spos,[xpos(xind),ypos(yind)]);
@@ -244,56 +232,27 @@ end
 
 %%%>>>
 % END permuted hba
-mask = double(sqrt(bsxfun(@plus,xbins.^2,ybins'.^2)') < 445);
-mask(~mask) = nan;
-
-
-
-save(fullfile(Trials{1}.path.project,...
-              'analysis',...
-              'EgoProCode2D_compute_egoratemaps_conditioned_on_hba_DATA_loc.mat'),...
-     'sampleRate',...
-     'state',...
-     'stcMode',...
-     'hbaBin',...
-     'phzBin',...
-     'latticeInterval',...
-     'xpos',...
-     'ypos',...
-     'xbins',...
-     'ybins',...
-     'sigma',...
-     'sigmaD',...
-     'sigmaDS',...
-     'rmap',...
-     'rmapShuff',...
-     'mask');
-
-% $$$ egoHbaRmaps = load(fullfile(Trials{1}.path.project,...
-% $$$               'analysis',...
-% $$$               'EgoProCode2D_compute_egoratemaps_conditioned_on_hba_DATA_pause.mat'));
 
 % $$$ %mask = create_tensor_mask({xpos,ypos})
 % $$$ mask = double(sqrt(bsxfun(@plus,xbins.^2,ybins'.^2)') < 445);
 % $$$ mask(~mask) = nan;
 % $$$ 
-u = find(unitSubset==31);
-iter = 15;
-%u = find(unitSubset==17);
-figure,
-for hbaInd = 1:numel(hbaBin.centers)
-subplot2(2,numel(hbaBin.centers),1,hbaInd);
-shading(gca(),'flat');
-set(pcolor(xpos-diff(xpos(1:2))/2,ypos-diff(ypos(1:2))/2,fliplr(rot90(rmap{20}(:,:,u,hbaInd)',-1)).*mask),'EdgeColor','none');
-axis('xy');
-colormap('jet');
-colorbar();
-ylim([ypos([1,end])+[-1,1].*diff(ypos(1:2))/2])
-xlim([xpos([1,end])+[-1,1].*diff(xpos(1:2))/2])
-Lines([],0,'k');
-Lines(0,[],'k');
-end
-% $$$ subplot2(2,numel(hbaBin.centers),2,hbaInd);
+% $$$ u = find(units==21);
+% $$$ iter = 15;
+% $$$ %u = find(units==17);
+% $$$ figure,
+% $$$ for hbaInd = 1:numel(hbaBinEdg)-1
+% $$$ subplot2(2,numel(hbaBinEdg)-1,1,hbaInd);
+% $$$ shading(gca(),'flat');
+% $$$ set(pcolor(xpos-diff(xpos(1:2))/2,ypos-diff(ypos(1:2))/2,fliplr(rot90(rmap(:,:,u,hbaInd)',-1)).*mask),'EdgeColor','none');
+% $$$ axis('xy');
+% $$$ colormap('jet');
+% $$$ colorbar();
+% $$$ ylim([ypos([1,end])+[-1,1].*diff(ypos(1:2))/2])
+% $$$ xlim([xpos([1,end])+[-1,1].*diff(xpos(1:2))/2])
+% $$$ Lines([],0,'k');
+% $$$ Lines(0,[],'k');
+% $$$ subplot2(2,numel(hbaBinEdg)-1,2,hbaInd);
 % $$$ shading(gca(),'flat');
 % $$$ set(pcolor(xpos-diff(xpos(1:2))/2,ypos-diff(ypos(1:2))/2, ...
 % $$$            fliplr(rot90(rmapShuff(:,:,u,hbaInd,iter)',-1)).*mask),'EdgeColor','none');
@@ -462,12 +421,12 @@ end
 % $$$ 
 % $$$ sampleRate = 250;
 % $$$ 
-% $$$ spk = Trial.load('spk',sampleRate,state,unitSubset);
+% $$$ spk = Trial.load('spk',sampleRate,state,units);
 % $$$ 
 % $$$ xyz = preproc_xyz(Trial,'trb');
 % $$$ xyz.resample(sampleRate);
 % $$$ 
-% $$$ %ghz = compute_ghz(Trial,unitSubset);
+% $$$ %ghz = compute_ghz(Trial,units);
 % $$$ % TODO Compute head referenced field center coordinates for 2d field and plot spikes
 % $$$ 
 % $$$ 

@@ -21,17 +21,20 @@ Theta sequences
 
 Index Theory
 
-
 What is the source of spatial information? ( Where )
     - MEC, medial entorhinal cortex ( grid cells, border cells ) 
 
-What is the source of orienting information? ( Where )
+What is the source of orienting information? ( Where -- anterior thalamic nucleus)
     - PS, postsubiculum ( head direction cells )
 
 what is the sounce of contextual information? ( What )
     - LEC, lateral entorhinal cortex ( )
     What aspects of context are captured by the LEC?
         - CELLTYPE
+
+
+
+The single-cell prospective-coding of allocentric spatial information can be examined by focal
 
 
 
@@ -437,3 +440,7 @@ egocentric ratemap: spikes per second given 2D position of the place field cente
 *** Permuted head-body-angle paritions
 *** Permuted head-lateral-speed partitions
 
+
+
+* FIG1
+** 

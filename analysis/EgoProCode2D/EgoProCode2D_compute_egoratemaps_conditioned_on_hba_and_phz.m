@@ -5,15 +5,26 @@
 %Trial = MTATrial.validate('jg05-20120312.cof.all');
 %Trial = Trials{20};
 
+MjgER2016_load_data();
+unitsEgo = cf(@(T)  T.spk.get_unit_set(T,'egocentric'),  Trials); 
+pft = cf(@(t,u)  pfs_2d_theta(t,u,'theta-groom-sit-rear'),  Trials, units);
+
+
+
 sampleRate = 128;
 state = 'theta-groom-sit-rear';
 stcMode = 'msnn_ppsvd_raux';
+state = 'gper&loc&theta';
+%state = 'pause&theta';
+
 
 hbaBin.edges = [-1.2,-0.2,0.2,1.2];
 hbaBin.centers = mean([hbaBin.edges(1:end-1);hbaBin.edges(2:end)]);
+hbaBin.count = numel(hbaBin.centers);
 
 phzBin.edges = linspace(0.5,2*pi-0.5,4);
-phzBin.centers = (binPhzs(1:end-1)+binPhzs(2:end))./2;
+phzBin.centers = (phzBin.edges(1:end-1)+phzBin.edges(2:end))./2;
+phzBin.count = numel(phzBin.centers);
 
 latticeInterval = 40;
 xpos = -500:latticeInterval:500;
@@ -31,8 +42,8 @@ rmapShuff = {};
 
 for tind = 1:numel(Trials)
 
-    units = unitsEgo{tind};
-    if isempty(units)
+    unitSubset = unitsEgo{tind};
+    if isempty(unitSubset)
         continue
     end
     
@@ -56,16 +67,16 @@ for tind = 1:numel(Trials)
 
 
 
-    spk = Trial.load('spk',sampleRate,state,units);
+    spk = Trial.load('spk',sampleRate,state,unitSubset);
 
     phz = load_theta_phase(Trial,xyz);
     tphz = sq(phz(tper));
     
-    rmap{tind} = nan([numel(xpos),numel(ypos),numel(units),numel(phzBin.centers),numel(hbaBin.centers)]);
+    rmap{tind} = nan([numel(xpos),numel(ypos),numel(unitSubset),numel(phzBin.centers),numel(hbaBin.centers)]);
     %% cell array version
-    for u = 1:numel(units)
+    for u = 1:numel(unitSubset)
         tic
-        [mxr,mxp] = pft{tind}.maxRate(units(u));
+        [mxr,mxp] = pft{tind}.maxRate(unitSubset(u));
         pfsCenterHR = MTADfet.encapsulate(Trial,                                           ...
                                       bsxfun(                                         ...
                                           @plus,                                       ...
@@ -111,7 +122,7 @@ for tind = 1:numel(Trials)
         
         mapSpk = {};
         mapW = {};
-        tres = SelectPeriods(spk(units(u)),tper.data,'d',1,1);
+        tres = SelectPeriods(spk(unitSubset(u)),tper.data,'d',1,1);
         [ures,IA,IC] = unique(tres);
         % GET spike degeneracy weights
         dic = [diff([IC(1)-1;IC])];    
@@ -158,12 +169,12 @@ for tind = 1:numel(Trials)
 
     %%%<<< permuted hba
 
-    rmapShuff{tind} = nan([numel(xpos),numel(ypos),numel(units),numel(phzBin.centers),numel(hbaBin.centers),100]);
+    rmapShuff{tind} = nan([numel(xpos),numel(ypos),numel(unitSubset),numel(phzBin.centers),numel(hbaBin.centers),100]);
     %% cell array version
-    for u = 1:numel(units)
+    for u = 1:numel(unitSubset)
         tic
 
-        [mxr,mxp] = pft{tind}.maxRate(units(u));
+        [mxr,mxp] = pft{tind}.maxRate(unitSubset(u));
         pfsCenterHR = MTADfet.encapsulate(Trial,                                           ...
                                           bsxfun(                                         ...
                                               @plus,                                       ...
@@ -218,7 +229,7 @@ for tind = 1:numel(Trials)
 
             mapSpk = {};
             mapW = {};
-            tres = SelectPeriods(spk(units(u)),tper.data,'d',1,1);
+            tres = SelectPeriods(spk(unitSubset(u)),tper.data,'d',1,1);
             [ures,IA,IC] = unique(tres);
             % GET spike degeneracy weights
             dic = [diff([IC(1)-1;IC])];    
@@ -266,9 +277,16 @@ end
 %%%>>>
 % END permuted hba
 
+
+% $$$ %mask = create_tensor_mask({xpos,ypos})
+mask = double(sqrt(bsxfun(@plus,xbins.^2,ybins'.^2)') < 445);
+mask(~mask) = nan;
+
+
+
 save(fullfile(Trials{1}.path.project,...
               'analysis',...
-              'EgoProCode2D_compute_egoratemaps_conditioned_on_hba_and_phz_DATA.mat'),...
+              'EgoProCode2D_compute_egoratemaps_conditioned_on_hba_and_phz_DATA_loc.mat'),...
      'sampleRate',...
      'state',...
      'stcMode',...
@@ -283,9 +301,10 @@ save(fullfile(Trials{1}.path.project,...
      'sigmaD',...
      'sigmaDS',...
      'rmap',...
-     'rmapShuff');
+     'rmapShuff',...
+     'mask');
 
-egoHbaPhzRmaps = load(fullfile(Trials{1}.path.project,'analysis','EgoProCode2D_compute_egoratemaps_conditioned_on_hba_and_phz_DATA.mat'));
+% $$$ egoHbaPhzRmaps = load(fullfile(Trials{1}.path.project,'analysis','EgoProCode2D_compute_egoratemaps_conditioned_on_hba_and_phz_DATA.mat'));
 
 
 % $$$ %mask = create_tensor_mask({xpos,ypos})
@@ -322,12 +341,13 @@ Lines([],0,'k');
 Lines(0,[],'k');
 end
 
-u = find(units==20);
+
 tind = 20;
+u = find(unitsEgo{tind}==21);
 figure,
-for hbaInd = 1:numel(hbaBin.centers)
-    for phzInd = 1:numel(phzBin.centers)
-        subplot2(numel(phzBin.centers),numel(hbaBin.centers),phzInd,hbaInd);
+for hbaInd = 1:hbaBin.count
+    for phzInd = 1:phzBin.count
+        subplot2(numel(phzBin.centers),numel(hbaBin.centers),hbaBin.count+1-phzInd,hbaInd);
         shading(gca(),'flat');
         set(pcolor(xpos-diff(xpos(1:2))/2,ypos-diff(ypos(1:2))/2,fliplr(rot90(rmap{tind}(:,:,u,phzInd,hbaInd)',-1)).*mask),'EdgeColor','none');
         axis('xy');

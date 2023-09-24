@@ -47,8 +47,11 @@ unitsEgo = cf(@(T)  T.spk.get_unit_set(T,'egocentric'),  Trials);
 
 % SET index arry for each anatomical location in oder of cumulative
 % index within cells
-unitsEgoCA1 = [1:19,44:149];
-unitsEgoCA3 = [20:41,123:127,150:164];
+% $$$ unitsEgoCA1 = [1:19,44:149];
+% $$$ unitsEgoCA3 = [20:41,123:127,150:164];
+unitsEgoCA1 = [1:19,44:122,134:149];
+unitsEgoCA3 = [20:43,123:133,150:164];
+
 
 % MAP 
 cluSessionMap = [];
