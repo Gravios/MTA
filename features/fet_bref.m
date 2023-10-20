@@ -40,10 +40,10 @@ xyz.addMarker('fbcom',[.7,1,.7],{{'head_back','head_front',[0,0,1]}},...
 xyz.addMarker('bcom',[.7,1,.7],{{'head_back','head_front',[0,0,1]}},hcom);
 xyz.addMarker('fsl',[.7,1,.7],{{'head_back','head_front',[0,0,1]}},...
               ButFilter(xyz(:,'spine_lower',:),4,[5]./(xyz.sampleRate/2),'low'));
-rb = xyz.model.rb({'head_back','head_left','head_front','head_right'});
-hcom = xyz.com(rb);
-xyz.addMarker('hcom',[.7,1,.7],{{'head_back','head_front',[0,0,1]}},hcom);
-clear('hcom');
+% $$$ rb = xyz.model.rb({'head_back','head_left','head_front','head_right'});
+% $$$ hcom = xyz.com(rb);
+% $$$ xyz.addMarker('hcom',[.7,1,.7],{{'head_back','head_front',[0,0,1]}},hcom);
+% $$$ clear('hcom');
 
 
 

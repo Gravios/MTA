@@ -1,7 +1,5 @@
 
 
-configure_default_args();
-EgoProCode2D_load_data();
 
 
 % shuffling
@@ -25,7 +23,7 @@ partsPath = fullfile(fullfile(MTA_PROJECT_PATH,'analysis','EgoProCode2D','EgoPro
 overwrite = false;
 rat = load_patch_model('rat');
 
-mask = double(sqrt(bsxfun(@plus,egoHba.xbins.^2,egoHba.ybins'.^2)') < 445);
+mask = double(sqrt(bsxfun(@plus,egoHbaRmaps.xbins.^2,egoHbaRmaps.ybins'.^2)') < 445);
 mask(~mask) = nan;
 
 
@@ -129,20 +127,24 @@ for region = 1%:2
 
 % SUBPLOTS -- EGO FIELD -- partitioned by theta phase
 %%%<<<
-    for p = 1:size(pfs{exampleUnit.trialIndex},1)
+    for phzInd = 1:phzBin.count
         % ADJUST subplot coordinates
-        [yind, yOffSet, xind, xOffSet] = deal(p+1, 0, 1, 0);
+        [yind, yOffSet, xind, xOffSet] = deal(phzInd+1, 0, 1, 0);
         % CREATE subplot axes
         sax(end+1) = axes('Units','centimeters',                                ...
                           'Position',[fig.page.xpos(xind)+xOffSet+globalXOffset,...
-                            fig.page.ypos(yind)+yOffSet+globalYOffset,...
-                            fig.subplot.width,                        ...
-                            fig.subplot.height],                      ...
+                                      fig.page.ypos(yind)+yOffSet+globalYOffset,...
+                                      fig.subplot.width,                        ...
+                                      fig.subplot.height],                      ...
                           'FontSize', 8,                                        ...
                           'LineWidth',1);
         hold(sax(end),'on');
 
-        plot(pfet{exampleUnit.trialIndex}{4-p},exampleUnit.id,1,'',[0,exampleUnit.maxRate],'colorMap',@jet,'mazeMaskFlag',false,'flipAxesFlag',true);
+        plot(pfet{exampleUnit.trialIndex}{4-phzInd},                            ...
+             exampleUnit.id,1,'',[0,exampleUnit.maxRate],                       ...
+             'colorMap',@jet,                                                   ...
+             'mazeMaskFlag',false,                                              ...
+             'flipAxesFlag',true);
 
         % FORMAT subplot
         sax(end).XTickLabel =[];
@@ -155,10 +157,10 @@ for region = 1%:2
         Lines([],0,'w');
         Lines(0,[],'w');
 
-        if p == 2
-            ylabel(sax(end),{'EgoFields Partioned by Head-Body Angle',hbaBin.label{d}})
+        if phzInd == 2
+            ylabel(sax(end),{'EgoFields Partioned by Head-Body Angle',phzBin.label{phzInd}})
         else
-            ylabel(sax(end),hbaBin.label{d})
+            ylabel(sax(end),phzBin.label{phzInd})
         end
         
 
@@ -172,23 +174,27 @@ for region = 1%:2
 
 % SUBPLOTS -- EGO FIELD -- partitioned by theta-phase and head-body-angle
 %%%<<<
-    for p = 1:size(pfs{exampleUnit.trialIndex},1)
-        for d = 1:size(pfs{exampleUnit.trialIndex},2)
+    for phzInd = 1:phzBin.count
+        for hbaInd = 1:hbaBin.count
             
             %%%<<< PLOT egoField (phz x hba)
             % ADJUST subplot coordinates
-            [yind, yOffSet, xind, xOffSet] = deal(p+1, 0, d+1, 0);
+            [yind, yOffSet, xind, xOffSet] = deal(phzInd+1, 0, hbaInd+1, 0);
             % CREATE subplot axes
             sax(end+1) = axes('Units','centimeters',                                ...
                               'Position',[fig.page.xpos(xind)+xOffSet+globalXOffset,...
-                                fig.page.ypos(yind)+yOffSet+globalYOffset,...
-                                fig.subplot.width,                        ...
-                                fig.subplot.height],                      ...
+                                          fig.page.ypos(yind)+yOffSet+globalYOffset,...
+                                          fig.subplot.width,                        ...
+                                          fig.subplot.height],                      ...
                               'FontSize', 8,                                        ...
                               'LineWidth',1);
             hold(sax(end),'on');
 
-            plot(pfs{exampleUnit.trialIndex}{4-p,d},exampleUnit.id,1,'',[0,exampleUnit.maxRate],'colorMap',@jet,'mazeMaskFlag',false,'flipAxesFlag',true);
+            plot(pfs{exampleUnit.trialIndex}{4-phzInd,hbaInd},                      ...
+                 exampleUnit.id,1,'',[0,exampleUnit.maxRate],                       ...
+                 'colorMap',@jet,                                                   ...
+                 'mazeMaskFlag',false,                                              ...
+                 'flipAxesFlag',true);
 
             % FORMAT subplot
             sax(end).XTickLabel =[];
@@ -208,7 +214,7 @@ for region = 1%:2
                                            hbaBin.edges,...
                                            hbaBin.centers);
             subject = update_subject_patch(subject, 'body',...
-                                           numel(hbaBinCtr)+1-d,  true,...
+                                           hbaBin.count+1-hbaInd,  true,...
                                            hbaBin.edges,...
                                            hbaBin.centers);
             patch(subject.body.patch.vert{:},   [0.75,0.75,0.75]);
@@ -217,14 +223,7 @@ for region = 1%:2
             line(subject.head.midline.vert{:}, 'Color', subject.head.midline.color);
             line(subject.body.midline.vert{:}, 'Color', subject.body.midline.color);
 
-
-            %text(ets(exampleRange(1))+0.25,380,'Y');
             axes(fax);
-% $$$ line([sax(end).Position(1)-0.1].*[1,1],                                        ...
-% $$$      sax(end).Position(2)+[0,sax(end).Position(4).*(200/diff(ylim(sax(end))))],...
-% $$$      'Color','k',                                                              ...
-% $$$      'LineWidth',1);
-
         end
     end
 %%%>>>
@@ -317,10 +316,10 @@ for region = 1%:2
     % PLOT subplot
     for hbaInd = 1:hbaBin.count
         [ehpcmpKDE,dxi] = ksdensity(egoHba.control.meanPos(unitsEgoCA1,hbaInd,2));
-        plot(dxi,ehpcmpKDE,['-',hbaBin.color(hbaInd)])
+        plot(dxi,ehpcmpKDE,'-','color',hbaBin.color(hbaInd,:))
         med = median(egoHba.control.meanPos(unitsEgoCA1,hbaInd,2));
         [~,xi] = NearestNeighbour(dxi,med);
-        line(dxi(xi)*[1,1],[0,ehpcmpKDE(xi)],'color',hbaBin.color(hbaInd));
+        line(dxi(xi)*[1,1],[0,ehpcmpKDE(xi)],'color',hbaBin.color(hbaInd,:));
     end
     % FORMAT subplot
     xlim(sax(end),[-10,10])
@@ -349,10 +348,10 @@ for region = 1%:2
     % PLOT subplot
     for hbaInd = 1:hbaBin.count
         [ehpcmpKDE,dxi] = ksdensity(egoHba.control.meanPos(unitsEgoCA1,hbaInd,1));
-        plot(dxi,ehpcmpKDE,['-',hbaBin.color(hbaInd)])
+        plot(dxi,ehpcmpKDE,'-','color',hbaBin.color(hbaInd,:));
         med = median(egoHba.control.meanPos(unitsEgoCA1,hbaInd,1));
         [~,xi] = NearestNeighbour(dxi,med);
-        line(dxi(xi)*[1,1],[0,ehpcmpKDE(xi)],'color',hbaBin.color(hbaInd));
+        line(dxi(xi)*[1,1],[0,ehpcmpKDE(xi)],'color',hbaBin.color(hbaInd,:));
     end
     % FORMAT subplot
     xlim(sax(end),[-15,25])
@@ -382,7 +381,7 @@ for region = 1%:2
     % PLOT subplot
     for hbaInd = 1:hbaBin.count
         [F,X] = ecdf(egoHba.boot.(regions{region}).zscore(:,hbaInd,lat));
-        plot(X,F,'Color',hbaBin.color(hbaInd));
+        plot(X,F,'Color',hbaBin.color(hbaInd,:));
     end
     
     % FORMAT subplot
@@ -405,8 +404,8 @@ for region = 1%:2
     
 % SUBPLOT -- AP BOOT ZSCR ECDF -- partitioned by head-body-angle
 %%%<<<
-    % ADJUST subplot coordinates
-    [yind, yOffSet, xind, xOffSet] = deal(1, 0, 12, -1.2);
+% ADJUST subplot coordinates
+[yind, yOffSet, xind, xOffSet] = deal(1, 0, 12, -1.2);
     % CREATE subplot axes
     sax(end+1) = axes('Units','centimeters',                                ...
                       'Position',[fig.page.xpos(xind)+xOffSet+globalXOffset,...
@@ -419,7 +418,7 @@ for region = 1%:2
     % PLOT subplot
     for hbaInd = 1:hbaBin.count
         [F,X] = ecdf(egoHba.boot.(regions{region}).zscore(:,hbaInd,fwd));
-        plot(X,F,'Color',hbaBin.color(hbaInd));
+        plot(X,F,'Color',hbaBin.color(hbaInd,:));
     end
     
     % FORMAT subplot
@@ -435,39 +434,6 @@ for region = 1%:2
     line(egoHba.perm.(regions{region}).sig.*[1,1],[0,1],'LineStyle','--','Color',[0.25,0.25,0.25]);
     line(-egoHba.perm.(regions{region}).sig.*[1,1],[0,1],'LineStyle','--','Color',[0.25,0.25,0.25]);
 %%%>>>
-
-% $$$     %%%<<< PLOT 
-% $$$     % ADJUST subplot coordinates
-% $$$     [yind, yOffSet, xind, xOffSet] = deal(1, 0, 9, 0);
-% $$$     % CREATE subplot axes
-% $$$     sax(end+1) = axes('Units','centimeters',                                ...
-% $$$                       'Position',[fig.page.xpos(xind)+xOffSet+globalXOffset,...
-% $$$                         fig.page.ypos(yind)+yOffSet+globalYOffset,...
-% $$$                         fig.subplot.width,                        ...
-% $$$                         fig.subplot.height],                      ...
-% $$$                       'FontSize', 8,                                        ...
-% $$$                       'LineWidth',1);
-% $$$     hold(sax(end),'on');
-% $$$     % PLOT subplot
-% $$$     xlim(sax(end),[-10,10]);
-% $$$     ylim(sax(end),[0,1]);
-% $$$     Lines([],0.5,'k');
-% $$$     Lines(0,[],'k');
-% $$$     [F,X] = ecdf(egoHbaPhz.perm.(regions{region}).zscore(:,p,1,2));
-% $$$     plot(X,F,'Color','b');
-% $$$     [F,X] = ecdf(-egoHbaPhz.perm.(regions{region}).zscore(:,p,2,2));        
-% $$$     plot(X,F,'Color','r');
-% $$$     [F,X] = ecdf(egoHbaPhz.perm.(regions{region}).zscore(:,p,3,2));        
-% $$$     plot(X,F,'Color',[219/255,172/255,52/255]);    
-% $$$     % FORMAT subplot
-% $$$     grid(sax(end),'on');
-% $$$     xlim(sax(end),[-10,10]);
-% $$$     ylim(sax(end),[0,1]);
-% $$$     sax(end).XTick = [-10,-5,0,5,10];
-% $$$     sax(end).YTick = [0,0.5,1];
-% $$$     sax(end).XTickLabel = {};
-% $$$     sax(end).XTickLabel = {};
-% $$$     title(sax(end),{'cdf','Lateral - Center'});
 
 
 % SUBPLOTS -- LATERAL POS -- left vs Right lateral coordinatats for egoHba
@@ -530,9 +496,9 @@ for region = 1%:2
         for hbaInd = 1:hbaBin.count
             [ehpcmpKDE,dxi] = ksdensity( egoHbaPhz.control.meanPos(unitsEgoCA1,phzInd,hbaInd,lat) );
             med             = median(    egoHbaPhz.control.meanPos(unitsEgoCA1,phzInd,hbaInd,lat) );
-            plot(dxi,ehpcmpKDE,['-',hbaBin.color(hbaInd)])
+            plot(dxi,ehpcmpKDE,'-','color',hbaBin.color(hbaInd,:))
             [~,xi] = NearestNeighbour(dxi,med);
-            line(dxi(xi)*[1,1],[0,ehpcmpKDE(xi)],'color',hbaBin.color(hbaInd));
+            line(dxi(xi)*[1,1],[0,ehpcmpKDE(xi)],'color',hbaBin.color(hbaInd,:));
         end
         % FORMAT subplot
         xlim(sax(end),[-10,10])
@@ -569,9 +535,9 @@ for region = 1%:2
         for hbaInd = 1:hbaBin.count 
             [ehpcmpKDE,dxi] = ksdensity( egoHbaPhz.control.meanPos(unitsEgoCA1,phzInd,hbaInd,fwd) );
             med             = median(    egoHbaPhz.control.meanPos(unitsEgoCA1,phzInd,hbaInd,fwd) );
-            plot(dxi,ehpcmpKDE,['-',hbaBin.color(hbaInd)])
+            plot(dxi,ehpcmpKDE,'-','color',hbaBin.color(hbaInd,:))
             [~,xi] = NearestNeighbour(dxi,med);
-            line(dxi(xi)*[1,1],[0,ehpcmpKDE(xi)],'color',hbaBin.color(hbaInd));
+            line(dxi(xi)*[1,1],[0,ehpcmpKDE(xi)],'color',hbaBin.color(hbaInd,:));
         end
         % FORMAT subplot
         xlim(sax(end),[-15,20])
@@ -688,7 +654,7 @@ for region = 1%:2
         ylim(sax(end),[0,1]);
         for hbaInd = 1:phzBin.count
             [F,X] = ecdf(egoHbaPhz.boot.(regions{region}).zscore(samples,phzInd,hbaInd,lat));
-            plot(X,F,'Color',hbaBin.color(hbaInd));
+            plot(X,F,'Color',hbaBin.color(hbaInd,:));
         end
         % FORMAT subplot
         grid(sax(end),'on');
@@ -728,13 +694,9 @@ for region = 1%:2
         ylim(sax(end),[0,1]);
         for hbaInd = 1:hbaBin.count
             [F,X] = ecdf(egoHbaPhz.boot.(regions{region}).zscore(:,phzInd,hbaInd,fwd));
-            plot(X,F,'Color',hbaBin.color(hbaInd));
+            plot(X,F,'Color',hbaBin.color(hbaInd,:));
         end
         
-        [F,X] = ecdf(egoHbaPhz.boot.(regions{region}).zscore(:,phzInd,2,1));        
-        plot(X,F,'Color','b');
-        [F,X] = ecdf(egoHbaPhz.boot.(regions{region}).zscore(:,phzInd,3,1));        
-        plot(X,F,'Color','r');    
         % FORMAT subplot
         grid(sax(end),'on');
         xlim(sax(end),[-15,15]);
@@ -761,8 +723,8 @@ for region = 1%:2
     sax(end+1) = axes('Units','centimeters',                                ...
                       'Position',[fig.page.xpos(xind)+xOffSet+globalXOffset,...
                         fig.page.ypos(yind)+yOffSet+globalYOffset,...
-                        fig.subplot.width*1.5,                        ...
-                        fig.subplot.height*1.5],                      ...
+                        fig.subplot.width*1.25,                        ...
+                        fig.subplot.height*1.25],                      ...
                       'FontSize', 8,                                        ...
                       'LineWidth',1);
     hold(sax(end),'on');
@@ -785,29 +747,30 @@ for region = 1%:2
     %ylim(sax(end),[-15,20]);
 % $$$     sax(end).XTick = [-10,-5,0,5,10];
 % $$$     sax(end).YTick = [-5,0,5];
-
-
 %%%>>>
-    
+
+
 % SUBPLOTS -- ASCENDING EGO ANGLE -- 
 %%%<<<    
     phzInd = phzBin.count;
     for hbaInd = 1:hbaBin.count
         % ADJUST subplot coordinates
-        [yind, yOffSet, xind, xOffSet] = deal(7, -1, 1+hbaInd, 2*hbaInd+1);
+        [yind, yOffSet, xind, xOffSet] = deal(6, 0.5, hbaInd, (hbaInd-1));
         % CREATE subplot axes
         sax(end+1) = polaraxes('Units','centimeters',                                ...
                           'Position',[fig.page.xpos(xind)+xOffSet+globalXOffset,...
                             fig.page.ypos(yind)+yOffSet+globalYOffset,          ...
-                            fig.subplot.width*1.5,                              ...
-                            fig.subplot.height*1.5],                            ...
+                            fig.subplot.width,                              ...
+                            fig.subplot.height],                            ...
                           'FontSize', 8,                                        ...
-                          'LineWidth',1);
+                               'LineWidth',1);
         polarhistogram(sax(end),...
                              atan2(-egoHbaPhz.control.meanPos(unitsEgoCA1,3, hbaInd, lat), ...
                              egoHbaPhz.control.meanPos(unitsEgoCA1,3, hbaInd, fwd)),...
                        32,... bins
-                       'FaceColor',hbaBin.color(hbaInd));
+                       'FaceColor',hbaBin.color(hbaInd,:));
+        hold(sax(end),'on');
+        rticklabels(gca(),{'','','10','','20'})
         thetaticklabels(gca(),{'0','','','90','','','180','','','270','','',})
         if hbaInd==2
             title(sax(end),{'Ascending Theta Phase: Head to EgoField Angle','',hbaBin.label{hbaInd}});
@@ -815,7 +778,16 @@ for region = 1%:2
             title(sax(end),...
                   hbaBin.label(hbaInd));
         end
-        
+        tids = {3:5,[6,7,27],18:25,29};
+        for tid = 1:4
+            uinds = ismember(egoCluSessionMap(:,1),tids{tid});
+            polarplot(sax(end),...
+                      -circ_mean(atan2(egoHbaPhz.control.meanPos(uinds,3,hbaInd,2),...
+                                      egoHbaPhz.control.meanPos(uinds,3,hbaInd,1))).*[1,1],...
+                      [0,20],...
+                      '-',...
+                      'LineWidth',2);
+        end
     end
 %%%>>>
 

@@ -387,7 +387,7 @@ end;%for p
 
 
 
-
+unitsEgoHvf = {};
 % er01-20110719
 unitsEgoHvf{1} = [15,42,99];
 % er01-20110721

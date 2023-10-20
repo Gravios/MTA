@@ -75,7 +75,7 @@ numChunks = floor(xyz.size(1)./bufferSize);
 lastPiece = (numChunks*bufferSize+1):xyz.size(1);
 % END DEFARGS --------------------------------------------------------------------------------------
 
-
+newxyz = Session.load('xyz');
 
 
 % MAIN ---------------------------------------------------------------------------------------------
@@ -168,7 +168,9 @@ dtgmori = var(bsxfun(@minus,efet,mefet),[],2);
 switch mode
   case 'AUTO_THRESH'
     nind = nniz(efet);
-    eper = ThreshCross(dtgmori,0.2,round(xyz.sampleRate/8));    
+    eper = ThreshCross(dtgmori,0.006,round(xyz.sampleRate/8));    
+    eper = ThreshCross(dtgmori,0.06,round(xyz.sampleRate/8));    
+    %eper = ThreshCross(dtgmori,0.2,round(xyz.sampleRate/8));    
     eid = zeros(size(nind))';    
     for e = 1:size(eper,1),
         errorInd = zeros(size(nind));
@@ -219,7 +221,7 @@ figure,hold on
 c = jet(numel(errorIds));
 emptyErrIds = [];
 for u = errorIds'
-    if sum(efet(eid==u,1))>1,
+    if sum(efet(eid==u,1))>2
         scatter(efet(eid==u,1),efet(eid==u,5),4,c(u,:));
         eidCount(u) = sum(eid==u);
     else
@@ -238,8 +240,20 @@ for i = errorIds',
       case 'BEST_SWAP_PERMUTATION'
         % marker swap - all permutations 
         ectry = zeros([eidCount(i),nperm]);
-        tectry = zeros([eidCount(i),nperm]);
-        bids = eid==i;    
+        tectry = zeros([eidCount(i),nperm]);        
+        bids = eid==i;
+
+% $$$         for i = errorIds',
+% $$$             [i, sum(eid==i)]
+% $$$         end
+% $$$ 
+% $$$         i = 251
+% $$$         figure();
+% $$$         plot(rxyz(:,'head_back',3));
+% $$$         hold('on')
+% $$$         plot(find(eid==i),rxyz(eid==i,'head_back',3),'r','LineWidth',3);
+% $$$         plot(newxyz(:,'head_back',3),'c');
+        
         % Compute residual for each marker swap permutation
         if sum(bids) < MIN_GRP_SZ,
             continue
@@ -273,7 +287,7 @@ for i = errorIds',
             marInd = xyz.model.gmi(smar(rind));
             corInd = sort(marInd);
             xyz.data(eid==i,corInd,:) = xyz(eid==i,marInd,:);
-            xyz.save;
+
         else
             disp('');
             disp([STATUS_TAG, 'Error Group Id: ' num2str(i) ' , bpVal = ' num2str(bpVal)]);
@@ -289,6 +303,7 @@ for i = errorIds',
 
     
 end    
+xyz.save();
 
 disp('Press <any key> to initiate another round of corrections')
 disp('Exiting...')

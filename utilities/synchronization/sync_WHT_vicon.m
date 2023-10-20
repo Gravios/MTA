@@ -57,7 +57,7 @@ create_directory(Session.spath);
 % CONCATENATE xyz positions files
 if isempty(xyzSampleRate),
     [xyzData, markers, xyzSampleRate] = concatenate_vicon_files(Session);            
-    if isempty(viconSampleRate),
+    if isempty(xyzSampleRate),
         error('MTA:utilities:syncViconNlx:emptySampleRate');
     end
 else

@@ -62,8 +62,9 @@ end
 
 [my_xyz,my_nlx,fieldModifications] = DefaultArgs(varargin,{prjPath_xyz,prjPath_nlx,struct()});
 
+% ASSUMES single vector struct and loading a MTATrial
 if isstruct(sessionList) | isa(sessionList,'MTASession'),
-    Sessions = sessionList;        
+    Sessions = MTATrial.validate(sessionList);
     if isfield(fieldModifications,'stcMode'),
         Sessions.load('stc',fieldModifications.stcMode);
     end

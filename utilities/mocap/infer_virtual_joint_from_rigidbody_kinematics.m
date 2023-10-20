@@ -99,5 +99,5 @@ xyz.updateFilename(Session);
 
 if overwrite || ~exist(xyz.fpath,'file')
 % RENAME & SAVE the MTADxyz object
-    xyz.save;
+    xyz.save();
 end

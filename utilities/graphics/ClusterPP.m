@@ -159,14 +159,12 @@ switch(S)
         
 
         if isempty(data.sh),
-
             setappdata(figureId,'sh',line([data.temp_x, data.temp_x],...
                                           [data.temp_y, data.temp_y],...
                                           'LineStyle'  ,'-',    ...
                                           'Color'      ,[0,0,1],...
                                           'linewidth'  ,2));
         else
-            
             set(data.sh,'XData',[data.local_x, data.temp_x],...
                         'YData',[data.local_y, data.temp_y]);
         end
@@ -186,7 +184,7 @@ switch(S)
         setappdata(figureId,'temp_y',C(1,2));
         setappdata(figureId,'clustercoordinates',...
                             [getappdata(figureId,'clustercoordinates');...
-                            getappdata(figureId,'temp_x'),getappdata(figureId,'temp_y')]);
+                             getappdata(figureId,'temp_x'),getappdata(figureId,'temp_y')]);
 
         data = getappdata(figureId);
 

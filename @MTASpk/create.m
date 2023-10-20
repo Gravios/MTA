@@ -101,8 +101,28 @@ if Spk.sampleRate~=1
     Res = ceil(Res);
 end
 
+
+if ~isempty(Spk.per)
+    newRes = [];
+    newClu = [];
+    for cluInd = unique(Clu)'
+        sper = copy(Spk.per);
+        sper.data = sper.data(Spk.perInd(cluInd,:),:)./sper.sampleRate.*Spk.sampleRate;
+        if isempty(sper.data)
+            continue
+        end
+        [pRes,psind] = SelectPeriods(Res,sper.data,'d',1,0);
+        newRes = cat(1, newRes, pRes);
+        newClu = cat(1, newClu, cluInd*ones(size(pRes)));
+    end
+    [Res,sind] = sort(newRes);
+    Clu        = newClu(sind);
+end
+
+
 [Res, ind] = SelectPeriods(Res,ceil(Session.sync([1,end])*Spk.sampleRate+1*double(Spk.sampleRate~=1)),'d',1,1);
 Clu = Clu(ind);
+
 
 % SELECT specific states
 if ~isempty(states);
@@ -113,7 +133,7 @@ if ~isempty(states);
         sst.resample(Spk.sampleRate);
         [Res,sind] = SelectPeriods(Res,sst.data,'d',1,0);                   
     end
-    Clu = Clu(sind);
+    Clu = Clu(sind);    
 end
 
 

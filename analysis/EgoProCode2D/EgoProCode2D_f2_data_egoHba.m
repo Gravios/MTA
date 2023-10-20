@@ -10,7 +10,7 @@ ucounter = 1;
 egoHba.control.meanPos = []; % egoMeanRmapPosHba
 egoHba.control.peakPos = []; % egoMaxRmapPosHba
 egoHba.control.size = []; %egoSizeHba = []; 
-egoHba.control.maxRate = [] %egoMeanRmapRateHba = [];
+egoHba.control.maxRate = []; %egoMeanRmapRateHba = [];
 %egoHba.control.meanRate = []; %egoMaxRmapRateHba = [];
 
 for trialInd = 1:numel(Trials)
@@ -54,7 +54,7 @@ ucounter = 1;
 egoHba.shuffle.meanPos = [];   % egoMeanRmapPosHba
 egoHba.shuffle.peakPos = [];   % egoMaxRmapPosHba
 egoHba.shuffle.size = [];      % egoSizeHba = []; 
-egoHba.shuffle.maxRate = []    % egoMeanRmapRateHba = [];
+egoHba.shuffle.maxRate = [];    % egoMeanRmapRateHba = [];
 %egoHba.shuffle.meanRate = []; % egoMaxRmapRateHba = [];
 
 for trialInd = 1:numel(Trials)
@@ -136,3 +136,10 @@ for hbaInd = 1:hbaBin.count
 end
 
 egoHba.boot.ca1.sig = abs(norminv(1-(1-0.05)^(1/numel(unitsEgoCA1)) ));
+
+
+egoHba.xpos = egoHbaRmaps.xpos;
+egoHba.ypos = egoHbaRmaps.ypos;
+egoHba.xbins = egoHbaRmaps.xbins;
+egoHba.ybins = egoHbaRmaps.ybins;
+egoHba.rmap =  egoHbaRmaps.rmap;

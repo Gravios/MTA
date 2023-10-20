@@ -1,2 +1,2 @@
-function pSE(Session,figHandle)
-PlotSessionErrors(Session,figHandle);
+function pSE(Session,varargin)
+PlotSessionErrors(Session,varargin{:});

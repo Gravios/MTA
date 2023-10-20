@@ -27,14 +27,18 @@ defargs = struct('label',                   '3dssh',                            
 % MAIN ---------------------------------------------------------------------------------------------
 
 xyz = Session.load('xyz',xyzMode);
-xyz.addMarker('hcom',...     Name
-              [.7,0,.7],...  Color
-              {{'head_back', 'hcom',[0,0,255]},... Sticks to visually connect
-               {'head_left', 'hcom',[0,0,255]},... new marker to skeleton
-               {'head_front','hcom',[0,0,255]},...
-               {'head_right','hcom',[0,0,255]}},... 
-              xyz.com(xyz.model.rb({'head_back','head_left','head_front','head_right'})));
 
+if isempty(xyz.model.gmi('hcom'))
+    xyz.addMarker('hcom',...     Name
+                  [.7,0,.7],...  Color
+                  {{'head_back', 'hcom',[0,0,255]},... Sticks to visually connect
+                   {'head_left', 'hcom',[0,0,255]},... new marker to skeleton
+                   {'head_front','hcom',[0,0,255]},...
+                   {'head_right','hcom',[0,0,255]}},... 
+                  xyz.com(xyz.model.rb({'head_back','head_left','head_front','head_right'})));
+end
+
+                  
 % $$$ switch label,
 % $$$   case '3dss'
 % $$$     markers = {'spine_lower','pelvis_root','spine_middle','spine_upper'};
@@ -57,8 +61,8 @@ end
 filename = cell2mat(cellstr_append_str([Session.spath,'/'],list_files(Session.name,[Session.trialName,'.fet.',label,'.'])));
 if overwrite||isempty(filename),
     txyz = xyz(:,markers,:);
-    pnts = zeros([xyz.size(1),size(fnplt(cscvn(sq(txyz(1,:,:))'))',1),3]);
-    for ind = 1:xyz.size(1),
+    pnts = zeros([xyz.size(1),size(fnplt(cscvn(sq(txyz(find(nniz(xyz),1,'first'),:,:))'))',1),3]);
+    for ind = find(nniz(xyz))',
         try
             pnts(ind,:,:) = fnplt(cscvn(sq(txyz(ind,:,:))'))';
         end

@@ -1,8 +1,4 @@
-%egoHbaPhzRmaps_pause = load(fullfile(Trials{1}.path.project,'analysis','EgoProCode2D_compute_egoratemaps_conditioned_on_hba_and_phz_DATA_pause.mat'));
-
-egoHbaRmaps_pause    = load(fullfile(Trials{1}.path.project,...
-                            'analysis',...
-                            'EgoProCode2D_compute_egoratemaps_conditioned_on_hba_DATA_pause.mat'));
+egoHbaPhzRmaps_pause = load(fullfile(Trials{1}.path.project,'analysis','EgoProCode2D_compute_egoratemaps_conditioned_on_hba_and_phz_DATA_pause.mat'));
 
 
 xbins = egoHbaPhzRmaps_pause.xbins;
@@ -39,7 +35,7 @@ for trialInd = 1:numel(Trials)
                 ratemapCenter = sq(sum(sum(bsxfun(@times,nratemap,mapPosition),'omitnan'),'omitnan'))';
                 egoHbaPhzPause.control.size   (ucounter,phzInd,hbaInd)   = sum(nniz(nratemap(:)));
                 egoHbaPhzPause.control.maxRate(ucounter,phzInd,hbaInd,:) = mean(ratemap(nniz(ratemap(:))),'omitnan');
-                egoHbaPhzPause.control.meanPos(ucounter,phzInd,hbaInd,:) = ratemapCenter./10;%+ [-2,1.6]*ismember(trialInd,[3:5,18:26,30]);
+                egoHbaPhzPause.control.meanPos(ucounter,phzInd,hbaInd,:) = ratemapCenter./10 + offset*ismember(trialInd,[3:5,18:26,30]);
                 [~,maxPos] = max(nratemap(:));
                 if ~isempty(maxPos)
                     [maxX,maxY] = ind2sub(size(nratemap),maxPos);
@@ -88,7 +84,7 @@ for trialInd = 1:numel(Trials)
                     ratemapCenter = sq(sum(sum(bsxfun(@times,nratemap,mapPosition),'omitnan'),'omitnan'))';
                     egoHbaPhzPause.shuffle.size   (ucounter,phzInd,hbaInd,iter)   = sum(nniz(nratemap(:)));
                     egoHbaPhzPause.shuffle.maxRate(ucounter,phzInd,hbaInd,iter,:) = mean(ratemap(nniz(ratemap(:))),'omitnan');
-                    egoHbaPhzPause.shuffle.meanPos(ucounter,phzInd,hbaInd,iter,:) = ratemapCenter./10;%+ [-2,1.6]*ismember(trialInd,[3:5,18:26,30]);
+                    egoHbaPhzPause.shuffle.meanPos(ucounter,phzInd,hbaInd,iter,:) = ratemapCenter./10+ offset*ismember(trialInd,[3:5,18:26,30]);
                     [~,maxPos] = max(nratemap(:));
                     if ~isempty(maxPos)
                         [maxX,maxY] = ind2sub(size(nratemap),maxPos);

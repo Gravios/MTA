@@ -1,4 +1,8 @@
 
+* Glossary
+
+under the condition that : sub conditione, quod : SCQ
+
 
 * Motivation
 ** Phenomenon
@@ -37,6 +41,10 @@ what is the sounce of contextual information? ( What )
 The single-cell prospective-coding of allocentric spatial information can be examined by focal
 
 
+F1 
+F2 HBA 
+F3 Loc Pause HBA HVF
+F4 Decoded
 
 
 
@@ -114,10 +122,70 @@ Theta phase preference of place cell are shifted twoards the ascending phase of 
 
 * The fence which separates previous my work from previous efforts
 
-** We reformulate allocentric mapping 
+** We reformulate allo centric mapping
+*** episodic memory is experienced
+An episodic memory is a sequence of personally experienced events, from the
+first-person perspective and formed from the evolving sensory impressions that are
+driven by movements through space and/or time. The formation, consolidation, and
+recollection of episodic memories is a system wide process involving most of the
+brain, however, the hippocampal formation has been identified as an essential
+structure to these mnemonic processes through case studies of patients with varring
+degrees of bilateral damage to the hippocampal formation, as well as studies of
+controlled hippocampal lesions in animal models.
+
+The hippocampus is preserved among mammals with analogues found in other
+vertebrates. The real-time activity of the hippocampus is investigated by recording
+changes in electical potentials of single (spikes) or groups of neurons (LFP: Local
+Field Potentials) with structured eletrodes, implanted 
+
+As a neuron spans multiple layers where distinct patterns afferents 
+
+QUOTE "enable compensation for sensory consequences of movement and preemptive updating of spatial representations."
 
 
-Hippocampal place cells have one or more randomly postioned 2D gaussian spatial 
+
+INTERNAL MODEL STATES
+
+The separation of similar sensory experiences is necessary for 
+autobiographical distiction, and the generation of semantic models 
+derived from environmental elements of similar category.
+    Categorization process???
+
+
+Incomming sensory information can be of varring complexity
+    Transient behavior repetior (TBR) biases the acquisition space of sensory 
+    information until novel complexity in normally unattended sensory modes 
+    evoke an update in TBR.
+
+        SCQ - contextual appedication may be desired if neutral in valance
+              otherwise positive or negatvie valance lead to partially 
+              orthogonallized contex and representation.
+
+        SCQ - a change in senory information results in cortical repretation 
+              mismatch.
+
+
+
+
+
+
+
+Each trajectory through the sensory space
+*** episodic memory requires a hippocampus
+
+*** context is a model
+amygdala -> context???
+    Contextually dervied allocation of behavioral modes 
+    and their transition probabilities.
+
+within sequences of neural assymblies. 
+
+
+
+
+Hippocampal place cells have place fields. The fields are randomly allocated 
+and generally observed as 2D gaussian tunning curves. 
+ 
 tuning curves,. As the rat traverses through a place field
 the hippocampal network coordinates the place cells' firing in sequential bursts 
 on a timescale of 80 to 120 milliseconds, known as theta sequences, 

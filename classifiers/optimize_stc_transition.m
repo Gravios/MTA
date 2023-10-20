@@ -131,7 +131,7 @@ features = cf(@(t)     fet_bref(t,[],[],'SPLINE_SPINE_HEAD_EQD'), Trials);
 ffet     = cf(@(f)  f.copy(),  features);
            cf(@(f)  f.filter('ButFilter',3,[1.2,6],'bandpass'),  ffet);
 
-xyz      = cf(@(t) t.load('xyz','trb'),                      Trials);
+xyz      = cf(@(t) t.load('xyz','crb'),                      Trials);
            cf(@(x) x.filter('ButFilter',5,1.5,'low'),           xyz);
 
 % $$$ vxy = cf(@(x) xyz.vel({'spine_lower','head_back'},[1,2]), xyz);

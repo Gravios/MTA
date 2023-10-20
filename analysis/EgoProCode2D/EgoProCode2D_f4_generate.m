@@ -1,4 +1,287 @@
 
+[hfig,fig,fax,sax] = set_figure_layout(figure(666003),'A4','portrait',[],1.5,1.5,0.1,0.1);
+
+
+exampleUnit.trialIndex = 20;
+exampleUnit.close.Xlims = [-200,400];
+exampleUnit.close.Ylims = [-400,200];
+exampleUnit.id = 21;
+exampleUnit.maxRate = 16;
+exampleUnit.index = find(unitsEgo{exampleUnit.trialIndex}==exampleUnit.id);
+exampleUnit.trajectoryTimeSeries = [274*250]:[278.5*250];
+uids = unitsEgoCA1;
+globalXOffset = 0;
+globalYOffset = 0;
+
+
+
+exampleUnit.maxRate = 20;
+
+
+
+globalXOffset = -0.8;
+globalYOffset = 0;
+
+for phzInd = 1:phzBin.count
+    for hvfInd = 1:hvfBin.count-1
+        
+        %%%<<< PLOT egoField (phz x hvf)
+        % ADJUST subplot coordinates
+        [yind, yOffSet, xind, xOffSet] = deal(phzBin.count-phzInd+1, phzInd/3-1.5, hvfInd+1, 0);        
+        % CREATE subplot axes
+        sax(end+1) = axes('Units','centimeters',                                ...
+                          'Position',[fig.page.xpos(xind)+xOffSet+globalXOffset,...
+                                      fig.page.ypos(yind)+yOffSet+globalYOffset,...
+                                      fig.subplot.width,                        ...
+                                      fig.subplot.height*1.2],                      ...
+                          'FontSize', 8,                                        ...
+                          'LineWidth',1);
+        hold(sax(end),'on');
+        shading(sax(end),'flat');
+        set(pcolor(egoHvfPhzRmaps.xpos-diff(egoHvfPhzRmaps.xpos(1:2))/2,...
+                   egoHvfPhzRmaps.ypos-diff(egoHvfPhzRmaps.ypos(1:2))/2,...
+                   fliplr(rot90(egoHvfPhzRmaps.rmap{exampleUnit.trialIndex}(:,:,exampleUnit.index,phzInd,hvfInd+1)',-1)).*egoHvfPhzRmaps.mask),'EdgeColor','none');
+        axis(sax(end),'xy');
+        colormap(sax(end),'jet');
+        caxis(sax(end),[0,exampleUnit.maxRate]);
+        
+        % FORMAT subplot
+        sax(end).XTickLabel =[];
+        sax(end).YTickLabel =[];
+        xlim(sax(end),[-250,250]);
+        ylim(sax(end),[-300,300]);
+        daspect(sax(end),[1,1,1]);
+        box(sax(end),'on');
+        Lines([],0,'w');
+        Lines(0,[],'w');
+        % ANNOTATE 
+% $$$         subject = struct(rat);
+% $$$         subject = update_subject_patch(subject, 'head',...
+% $$$                                        [], false,...
+% $$$                                        hvfBin.edges,...
+% $$$                                        hvfBin.centers);
+% $$$         subject = update_subject_patch(subject, 'body',...
+% $$$                                        hvfBin.count+1-hvfInd,  true,...
+% $$$                                        hvfBin.edges,...
+% $$$                                        hvfBin.centers);
+% $$$         patch(subject.body.patch.vert{:},   [0.75,0.75,0.75]);
+% $$$         patch(subject.head.patch.vert{:},   [0.75,0.75,0.75]);
+% $$$         patch(subject.body.overlay.vert{:},[0.75,0.50,0.50],'FaceAlpha',0.3);
+% $$$         line(subject.head.midline.vert{:}, 'Color', subject.head.midline.color);
+% $$$         line(subject.body.midline.vert{:}, 'Color', subject.body.midline.color);
+        axes(fax);
+        rectangle('Position',sax(end).Position, ...
+                  'EdgeColor',phzBin.color(phzInd,:), ...
+                  'FaceColor','None',...
+                  'LineWidth',1);
+        if phzInd==3,
+            line([sax(end).Position(1),sum(sax(end).Position([1,3]))],...
+                  sum(sax(end).Position([2,4])).*[1,1]+0.1,...
+                 'LineWidth',2,...
+                 'Color',hvfBin.color(hvfInd+1,:));
+            title(sax(end),{hvfBin.label{hvfInd+1},' '});
+        end
+    end
+end
+%%%>>>    
+
+% THETA Phase Vertical
+%%%<<<
+[yind, yOffSet, xind, xOffSet] = deal(3, phzInd/3-1.5, 1, 0.6);
+subplotWidth = 0.8;
+subplotHeight = fig.subplot.height *1.2 * 3 + fig.subplot.verticalPadding * 2
+sax(end+1) = axes('Units','centimeters',                                ...
+                  'Position',[fig.page.xpos(xind)+xOffSet+globalXOffset,...
+                              fig.page.ypos(yind)+yOffSet+globalYOffset,...
+                              subplotWidth,                             ...
+                              subplotHeight],                           ...
+                  'FontSize', 8,                                        ...
+                  'LineWidth',1);
+% SUBPLOT <- theta cycle (color=partions)
+hold(sax(end),'on');
+plot(sax(end),-cos(linspace(0,2*pi)),linspace(0,1),'k','LineWidth',2);
+plims = [0.5,              2.26106176905986];
+plot(sax(end),...
+     -cos(linspace(plims(1),plims(2))),...
+     linspace(plims(1)/(2*pi),plims(2)/(2*pi)), 'Color',phzBin.color(1,:), 'LineWidth',2);
+plims = [2.26106176905986, 4.02212353811972];
+plot(sax(end),...
+     -cos(linspace(plims(1),plims(2))),...
+     linspace(plims(1)/(2*pi),plims(2)/(2*pi)), 'Color',phzBin.color(2,:), 'LineWidth',2);
+plims = [4.02212353811972, 5.78318530717959];
+plot(sax(end),...
+     -cos(linspace(plims(1),plims(2))),...
+     linspace(plims(1)/(2*pi),plims(2)/(2*pi)), 'Color',phzBin.color(3,:),'LineWidth',2);
+% FORMAT subplot
+ylim([0,1]);
+text(0.5,0.05,'0','Rotation',90,'FontSize',8);
+text(-0.5,0.5,'\pi','Rotation',90,'FontSize',8);
+text(0.5,0.95,'2\pi','Rotation',90,'FontSize',8);
+ylabel(sax(end),'Theta');
+sax(end).XAxis.Visible = 'off';
+sax(end).YAxis.Color = 'k';
+sax(end).YTick =[];
+sax(end).Color = 'none';
+%%%>>>
+
+
+
+
+
+%globalXOffset = 1;
+% SUBPLOT -- LATERAL POS -- left vs Right lateral coordinatats for egoHba
+%%%<<<
+% ADJUST subplot coordinates
+for phzInd = 1:phzBin.count
+    [yind, yOffSet, xind, xOffSet] = deal(phzBin.count+1-phzInd+8, 0, 6, 0);
+    % CREATE subplot axes
+    sax(end+1) = axes('Units','centimeters',                                ...
+                      'Position',[fig.page.xpos(xind)+xOffSet+globalXOffset,...
+                                  fig.page.ypos(yind)+yOffSet+globalYOffset,...
+                                  fig.subplot.width,                        ...
+                                  fig.subplot.height],                      ...
+                      'FontSize', 8,                                        ...
+                      'LineWidth',1);
+    hold(sax(end),'on');
+    % PLOT subplot
+    xlim(sax(end),[-15,15]);
+    ylim(sax(end),[-15,15]);
+    Lines([],0,'k');
+    Lines(0,[],'k');
+    plot(egoHvfPhz.control.meanPos( unitsEgoHvfCA1, phzInd, 2, fwd) ,...
+         egoHvfPhz.control.meanPos( unitsEgoHvfCA1, phzInd, 4, fwd) ,...
+         '.',                                                   ...
+         'MarkerFaceColor',phzBin.color(phzInd,:),              ...
+         'MarkerEdgeColor',phzBin.color(phzInd,:));
+    % FORMAT subplot
+    grid(sax(end),'on');
+    xlim(sax(end),[-15,15]);
+    ylim(sax(end),[-15,15]);
+    sax(end).XTick = [-10,0,10];
+    sax(end).YTick = [-10,0,10];
+    title(sax(end),{'Pause'});
+    sax(end).YLabel.Units = 'centimeters';
+    sax(end).YLabel.Position = [-0.55,0.74,0];
+    daspect(sax(end),[1,1,1]);
+    if phzInd == 2
+        ylabel(sax(end),'cm');
+        sax(end).YLabel.Units = 'centimeters';
+        sax(end).YLabel.Position = [-0.55,0.74,0];
+    end
+    if phzInd == 1,
+        xlabel(sax(end),'cm');
+        sax(end).XLabel.Units = 'centimeters';
+        sax(end).XLabel.Position = [0.75,-0.4,0];
+    else
+        sax(end).XTickLabel = {};
+    end
+end
+%%%>>>
+
+
+
+% SUBPLOTS -- LAT POS DISTRIB -- partitioned by theta-phase and head-body-angle
+%%%<<<
+for phzInd = 1:phzBin.count
+    % ADJUST subplot coordinates
+    [yind, yOffSet, xind, xOffSet] = deal(phzBin.count+1-phzInd+8, 0, 7, 1.2);
+    % CREATE subplot axes
+    sax(end+1) = axes('Units','centimeters',                                ...
+                      'Position',[fig.page.xpos(xind)+xOffSet+globalXOffset,...
+                        fig.page.ypos(yind)+yOffSet+globalYOffset,...
+                        fig.subplot.width,                        ...
+                        fig.subplot.height],                      ...
+                      'FontSize', 8,                                        ...
+                      'LineWidth',1);
+    hold(sax(end),'on');
+    % PLOT subplot
+    % FORMAT subplot
+    grid(sax(end),'on');
+    % PLOT subplot
+    for hvfInd = 1:hvfBin.count-1
+        [ehpcmpKDE,dxi] = ksdensity( egoHvfPhz.control.meanPos( unitsEgoHvfCA1, phzInd, hvfInd+1, lat) );
+        med             = median(    egoHvfPhz.control.meanPos( unitsEgoHvfCA1, phzInd, hvfInd+1, lat) );
+        plot(dxi,ehpcmpKDE,'-','color',hvfBin.color(hvfInd+1,:));
+        [~,xi] = NearestNeighbour(dxi,med);
+        line(dxi(xi)*[1,1],[0,ehpcmpKDE(xi)],'color',hvfBin.color(hvfInd+1,:));
+    end
+    % FORMAT subplot
+    xlim(sax(end),[-10,10]);
+    ylim(sax(end),[0,0.16]);
+    grid(sax(end),'on');
+    sax(end).YTick = [0,0.05,0.10,0.15];
+    sax(end).YTickLabel = {'0','','0.1',''};
+    sax(end).XTick = [-5,0,5];
+    
+    if phzInd == 2,
+        ylabel(sax(end),'Prob');
+        sax(end).YLabel.Units = 'centimeters';
+        sax(end).YLabel.Position = [-0.55,0.74,0];
+    end
+    
+    if phzInd==1,
+        xlabel(sax(end),'cm');
+        sax(end).XLabel.Units = 'centimeters';
+        sax(end).XLabel.Position = [0.75,-0.4,0];
+    else
+        sax(end).XTickLabel = {};
+    end
+end
+%%%>>>
+
+
+
+% SUBPLOTS -- AP POS DISTRIB -- partitioned by theta-phase and head-body-angle
+%%%<<<
+for phzInd = 1:phzBin.count
+    % ADJUST subplot coordinates
+    [yind, yOffSet, xind, xOffSet] = deal(phzBin.count+1-phzInd+8, 0, 8, 1.2);
+    % CREATE subplot axes
+    sax(end+1) = axes('Units','centimeters',                                ...
+                      'Position',[fig.page.xpos(xind)+xOffSet+globalXOffset,...
+                        fig.page.ypos(yind)+yOffSet+globalYOffset,...
+                        fig.subplot.width*1.75,                        ...
+                        fig.subplot.height],                      ...
+                      'FontSize', 8,                                        ...
+                      'LineWidth',1);
+    hold(sax(end),'on');
+    % PLOT subplot
+    % FORMAT subplot
+    grid(sax(end),'on');
+    % PLOT subplot
+    for hvfInd = 1:hvfBin.count-1
+        [ehpcmpKDE,dxi] = ksdensity( egoHvfPhz.control.meanPos( unitsEgoHvfCA1, phzInd, hvfInd+1, fwd) );
+        med             = median(    egoHvfPhz.control.meanPos( unitsEgoHvfCA1, phzInd, hvfInd+1, fwd) );
+        plot(dxi,ehpcmpKDE,'-','color',hvfBin.color(hvfInd+1,:))
+        [~,xi] = NearestNeighbour(dxi,med);
+        line(dxi(xi)*[1,1],[0,ehpcmpKDE(xi)],'color',hvfBin.color(hvfInd+1,:));
+    end
+    % FORMAT subplot
+    xlim(sax(end),[-15,20])
+    ylim(sax(end),[0,0.16])
+    grid(sax(end),'on');
+    sax(end).YTick = [0,0.05,0.10,0.15];
+    sax(end).YTickLabel = {};
+    sax(end).XTick = [-10,-5,0,5,10,15,20];
+    
+    if phzInd==1,
+        xlabel(sax(end),'cm');
+        sax(end).XLabel.Units = 'centimeters';
+        sax(end).XLabel.Position = [0.75,-0.4,0];
+        sax(end).XTickLabel = {'-10','','0','','10','','20'};
+    else
+        sax(end).XTickLabel = {};
+    end
+end
+%%%>>>
+
+
+
+
+
+
+
+
 configure_default_args();
 EgoProCode2D_load_data();
 

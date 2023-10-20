@@ -6,4 +6,7 @@
     - load Trial FS10-20220222a and try loading a specific trial from those defined in example_code_joseph_multiTrial
     - compare FS10 to a jg05 session data objects, focusing on the sync object structure
 
-** Secondary Goals
+* 20230918
+** Primary Goals
+*** Recompute HBAxPHZ for behavior states: loc&theta and pause&theta
+

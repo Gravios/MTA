@@ -9,7 +9,9 @@ function mxyz = genRotatedMarker(xyz,varargin)
 
 [markers,angle,refMarkers] = DefaultArgs(varargin,{'hbx',45,{'hbx','hrx'}},1);
 
-xyz_t = sq(xyz(:,markers,:)-xyz(:,'hcom',:));
+nind = nniz(xyz);
+mxyz = xyz(:,'hcom',:)
+xyz_t = sq(xyz(nind,markers,:)-mxyz);
 
 xyz_hb = bsxfun(@minus,xyz(:,refMarkers,:),xyz(:,'hcom',:));
 head_norm = cross(sq(xyz_hb(:,1,:)),sq(xyz_hb(:,2,:)));
@@ -33,5 +35,6 @@ j =1:3;
 % Rotated marker;
 nmark = permute(sum(head_rotMat.*permute(reshape(xyz_t(:,j(ones(3,1),:)),[size(head_norm,1),3,3]),[2,3,1]),2),[3,1,2]);
 
-mxyz = permute(nmark,[1,3,2])+xyz(:,'hcom',:);
+
+mxyz(nind,1,:) = permute(nmark,[1,3,2]) + mxyz;
 

@@ -26,7 +26,7 @@ classdef MTATrial < MTASession
 %    sync:            MTADepoch,    New sync object who data field
 %                                   contains new synchronization periods
 %                     numericArray, New periods to select from the
-%                                   MTASession object in secords
+%                                   MTASession object in seconds
 %
 %-- General Use --------------------------------------------------------------------------
 %

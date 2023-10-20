@@ -2,11 +2,54 @@
 
 * Motivation
 ** Phenomenon
-place cells represent the current location of a rat's head.
+The spikes of a place cell contain information regarding the spatial position of the rat's head.
+The network orchestrates sequences of place cells as oscilatory bursts in the theta frequency range (5-12Hz).
+The temporal order of the place cells reflects a spatial representation that sweeps from behind to in front of the animal.
 
-A rat moves their head during locomotion and orientation with several distinct patterns.
-During a turn, the rat experiences vesibular and optic flows.
-The rat 
+The spikes of the place cells within each sequence are ordered where early-late corresponds to behind-ahead. 
+In a phenomenon referred to as phase precession, a sigle place cell's spikes will apear earlier in each 
+sequence as the rat moves towards, through, and away from its place field center. 
+
+
+Theta sequences
+    Local sequences were observed during foraging and navigation ( Skaggs and McNaughton 1996 )
+
+    Non-local sequences observed during immobility ( Lee and Wilson 2002) 
+    
+    Stationary sequences observed during inter-trial wheel runnig ( Pastalkova and Buzsaki 2008 )
+
+
+Index Theory
+
+What is the source of spatial information? ( Where )
+    - MEC, medial entorhinal cortex ( grid cells, border cells ) 
+
+What is the source of orienting information? ( Where -- anterior thalamic nucleus)
+    - PS, postsubiculum ( head direction cells )
+
+what is the sounce of contextual information? ( What )
+    - LEC, lateral entorhinal cortex ( )
+    What aspects of context are captured by the LEC?
+        - CELLTYPE
+
+
+
+The single-cell prospective-coding of allocentric spatial information can be examined by focal
+
+
+F1 
+F2 HBA 
+F3 Loc Pause HBA HVF
+F4 Decoded
+
+
+
+
+** place cell
+*** spikes 
+
+
+
 
 A change in a rat's position in time and space is mediated through behavior.
 
@@ -401,3 +444,7 @@ egocentric ratemap: spikes per second given 2D position of the place field cente
 *** Permuted head-body-angle paritions
 *** Permuted head-lateral-speed partitions
 
+
+
+* FIG1
+** 

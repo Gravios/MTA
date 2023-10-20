@@ -196,6 +196,8 @@ try
         shl = cf(@(s,x,sts) MTADxyz('data',double(0<stc2mat(s,x,sts)),...
                                     'sampleRate',x.sampleRate),...
                  StcHL, xyz, states);
+    else
+        shl = {};
     end
 catch err
     disp(err);

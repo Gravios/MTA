@@ -68,7 +68,8 @@ try,
     Trial.stc{states};
 catch err
     disp(err)
-    Trial.stc{'vel&gper&theta'};
+    Trial.stc{'walk&gper&theta'};
+    states = 'walk&gper&theta';
 end
 
 pargs = get_default_args('MjgER2016','MTAApfs','struct');

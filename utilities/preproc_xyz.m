@@ -90,9 +90,16 @@ while ~isempty(procOpts)
         if ~isempty(list_files(Trial.name,'.sehs.h')) && ~overwrite
             xyz = Trial.load('xyz','sehs');
         else
-                        
-            xyz = Trial.load('xyz','trb');
-            ss = fet_spline_spine(Trial,'3dssh','trb');                
+
+            try 
+                xyz = Trial.load('xyz','trb');
+                ss = fet_spline_spine(Trial,'3dssh','trb');
+            catch err
+                disp(err)
+                xyz = Trial.load('xyz','crb');
+                ss = fet_spline_spine(Trial,'3dssh','crb');
+            end
+            
             
             spineSegmentLength = MTADxyz('data',sqrt(sum(diff(ss.data,1,2).^2,3)),'sampleRate',xyz.sampleRate);
             nind = find(nniz(xyz));
@@ -142,8 +149,13 @@ while ~isempty(procOpts)
             xyz = Trial.load('xyz','sehs');
         end
         
-        if nargout>1,            
-            ss = fet_spline_spine(Trial,'3dssh','trb'); 
+        if nargout>1,
+            try 
+                ss = fet_spline_spine(Trial,'3dssh','trb');
+            catch err
+                disp(err)
+                ss = fet_spline_spine(Trial,'3dssh','crb');
+            end
 % $$$             nind = find(nniz(xyz));
 % $$$             ssn = ss.copy();
 % $$$             ssn.data = zeros([size(ss,1),size(ss,2)-6,size(ss,3)]);
@@ -165,19 +177,26 @@ while ~isempty(procOpts)
         else
             
             %Trial = MTASession.validate(Trial.filebase);
-            xyz = Trial.load('xyz','trb');
-            %ss = fet_spline_spine(Trial,'3dssh','trb','overwrite',true);
-            ss = fet_spline_spine(Trial,'3dssh','trb','overwrite',false);
+            try 
+                xyz = Trial.load('xyz','trb');
+                ss = fet_spline_spine(Trial,'3dssh','trb');                
+            catch err
+                disp(err)
+                xyz = Trial.load('xyz','crb');
+                ss = fet_spline_spine(Trial,'3dssh','crb');
+            end
             
             % COM head Center of Mass
-            xyz.addMarker('hcom',...     Name
-                          [.7,0,.7],...  Color
-                          {{'head_back', 'hcom',[0,0,255]},... Sticks to visually connect
-                           {'head_left', 'hcom',[0,0,255]},... new marker to skeleton
-                           {'head_front','hcom',[0,0,255]},...
-                           {'head_right','hcom',[0,0,255]}},... 
-                             xyz.com(xyz.model.rb({'head_back','head_left','head_front','head_right'})));
-
+            if ~xyz.model.gmi('hcom')
+                xyz.addMarker('hcom',...     Name
+                              [.7,0,.7],...  Color
+                              {{'head_back', 'hcom',[0,0,255]},... Sticks to visually connect
+                               {'head_left', 'hcom',[0,0,255]},... new marker to skeleton
+                               {'head_front','hcom',[0,0,255]},...
+                               {'head_right','hcom',[0,0,255]}},... 
+                                 xyz.com(xyz.model.rb({'head_back','head_left','head_front','head_right'})));
+            end
+            
             numMarkers = numel(targetMarkers);
             mid = xyz.model.gmi(targetMarkers);
             
@@ -253,7 +272,14 @@ while ~isempty(procOpts)
             
             %Trial = MTASession.validate(Trial.filebase);
             xyz = Trial.load('xyz');
-            ss = fet_spline_spine(Trial,'3dssh','trb','overwrite',true);                
+            try
+                ss = fet_spline_spine(Trial,'3dssh','trb', ...
+                                      'overwrite',true);
+            catch err
+                disp(err)
+                ss = fet_spline_spine(Trial,'3dssh','crb', ...
+                                      'overwrite',true);
+            end
 
             % COM head Center of Mass
             xyz.addMarker('hcom',...     Name
@@ -300,7 +326,12 @@ while ~isempty(procOpts)
 end
 
 if nargout>1,
-    ss = fet_spline_spine(Trial,'3dssh','trb');                
+    try
+        ss = fet_spline_spine(Trial,'3dssh','trb');
+    catch err
+        disp(err)
+        ss = fet_spline_spine(Trial,'3dssh','crb');
+    end
 end
 
 
@@ -342,11 +373,10 @@ if sum(~cellfun(@isempty,...
     catch
         % ADD marker: head Center of Mass
         xyz.addMarker('hcom',...     Name
-        [.7,0,.7],...  Color
-        {{'head_back', 'hcom',[0,0,255]},... Sticks to visually connect
-         {'head_left', 'hcom',[0,0,255]},... new marker to skeleton
-         {'head_right','hcom',[0,0,255]}},... 
-            xyz.com(xyz.model.rb({'head_back','head_left','head_right'})));
+                      [.7,0,.7],...  Color
+                      {{'head_back', 'hcom',[0,0,255]},... Sticks to visually connect
+                       {'head_front', 'hcom',[0,0,255]}},... new marker to skeleton
+                      xyz.com(xyz.model.rb({'head_back','head_front'})));
     end
 end
 

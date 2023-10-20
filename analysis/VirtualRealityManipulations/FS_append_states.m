@@ -2,7 +2,8 @@
 
 Trial.stc.states = {};
 % LABEL Non nan periods
-gper = ThreshCross(double(nniz(rat(:,1,1))),0.5,10);
+gper = ThreshCross(double(rat(:,1,1)~=eps),0.5,10);
+
 Trial.stc.addState(Trial.spath,                     ... path to project folder
                    Trial.filebase,                  ... filebase
                    gper,                            ... state periods [n,2] 

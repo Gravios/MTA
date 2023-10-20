@@ -39,7 +39,7 @@ for trialInd = 1:numel(Trials)
                 ratemapCenter = sq(sum(sum(bsxfun(@times,nratemap,mapPosition),'omitnan'),'omitnan'))';
                 egoHbaPhzLoc.control.size   (ucounter,phzInd,hbaInd)   = sum(nniz(nratemap(:)));
                 egoHbaPhzLoc.control.maxRate(ucounter,phzInd,hbaInd,:) = mean(ratemap(nniz(ratemap(:))),'omitnan');
-                egoHbaPhzLoc.control.meanPos(ucounter,phzInd,hbaInd,:) = ratemapCenter./10;%+ [-2,1.6]*ismember(trialInd,[3:5,18:26,30]);
+                egoHbaPhzLoc.control.meanPos(ucounter,phzInd,hbaInd,:) = ratemapCenter./10 + offset*ismember(trialInd,[3:5,18:26,30]);
                 [~,maxPos] = max(nratemap(:));
                 if ~isempty(maxPos)
                     [maxX,maxY] = ind2sub(size(nratemap),maxPos);
@@ -88,7 +88,7 @@ for trialInd = 1:numel(Trials)
                     ratemapCenter = sq(sum(sum(bsxfun(@times,nratemap,mapPosition),'omitnan'),'omitnan'))';
                     egoHbaPhzLoc.shuffle.size   (ucounter,phzInd,hbaInd,iter)   = sum(nniz(nratemap(:)));
                     egoHbaPhzLoc.shuffle.maxRate(ucounter,phzInd,hbaInd,iter,:) = mean(ratemap(nniz(ratemap(:))),'omitnan');
-                    egoHbaPhzLoc.shuffle.meanPos(ucounter,phzInd,hbaInd,iter,:) = ratemapCenter./10;%+ [-2,1.6]*ismember(trialInd,[3:5,18:26,30]);
+                    egoHbaPhzLoc.shuffle.meanPos(ucounter,phzInd,hbaInd,iter,:) = ratemapCenter./10 + offset*ismember(trialInd,[3:5,18:26,30]);
                     [~,maxPos] = max(nratemap(:));
                     if ~isempty(maxPos)
                         [maxX,maxY] = ind2sub(size(nratemap),maxPos);

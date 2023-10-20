@@ -1,89 +1,10 @@
+
+
 configure_default_args();
 EgoProCode2D_load_data(); 
-
-pclr = cool(3);
-
-binPhzs = linspace(0.5,2*pi-0.5,4);
-binPhzc = (binPhzs(1:end-1)+binPhzs(2:end))./2;
-
-hbaBinEdg = [-1.2,-0.2,0.2,1.2];
-hbaBinCtr = mean([hbaBinEdg(1:end-1);hbaBinEdg(2:end)]);
-
-hbaBin.edges = [-1.2,-0.2,0.2,1.2];
-hbaBin.centers = mean([hbaBin.edges(1:end-1);hbaBin.edges(2:end)]);
-hbaBin.count = numel(hbaBin.centers);
-hbaBin.color = 'gbr';
-hbaBin.key = 'LCR';
-hbaBin.label = {'Left','Center','Right'};
-
-phzBin.edges = linspace(0.5,2*pi-0.5,4);
-phzBin.centers = (binPhzs(1:end-1)+binPhzs(2:end))./2;
-phzBin.count = numel(phzBin.centers);
-phzBin.color = cool(3);
-phzBin.key = 'DTA';
-phzBin.label = {'Descending','Trough','Ascending'};
-
-fwd = 1;
-lat = 2;
-
-
-havBin.edges = [-0.3,-0.15,0.15,0.3];
-
-offset = [-2,0.5];
-
-hvang = filter(copy(xyz),'ButFilter',4,2,'low');
-xycoor = cat(2,...
-             hvang(:,'spine_upper',[1,2])-hvang(:,'bcom',[1,2]),... 
-             hvang(:,'nose',[1,2])-hvang(:,'hcom',[1,2]));
-hvang.data = cart2pol(xycoor(:,:,1),xycoor(:,:,2));
-% Positive: CCW (Left)     Negative: CW (Right) 
-hvang.data = circ_dist(circshift(hvang.data(:,2),-10),...
-                       circshift(hvang.data(:,2),+10));
-
-
 EgoProCode2D_f2_data_egoHba()
 EgoProCode2D_f2_data_egoHbaPhz()
-EgoProCode2D_f2_data_egoHbaPhzPause()
-EgoProCode2D_f2_data_egoHbaPhzLoc()
 
-
-
-figure();
-hold('on');
-subplot2(1, 1, 1, 1);
-hold('on')
-for hbaInd = 1:hbaBin.count
-    if hbaInd == 2
-        cdfplot(-egoHba.perm.ca1.zscore(:,hbaInd,2));
-    else            
-        cdfplot(egoHba.perm.ca1.zscore(:,hbaInd,2));
-    end
-end
-Lines(egoHba.perm.ca1.sig,[],'r');
-Lines(-egoHba.perm.ca1.sig,[],'r');
-xlim([-20,30]);
-legend({'R-C','L-C','R-L'},'Location','southeast');
-xlabel('z-score');
-
-
-figure();
-hold('on');
-subplot2(1, 1, 1, 1);
-hold('on')
-for hbaInd = 1:hbaBin.count
-    if hbaInd == 2
-        cdfplot(-egoHba.perm.ca3.zscore(:,hbaInd,2));
-    else            
-        cdfplot(egoHba.perm.ca3.zscore(:,hbaInd,2));
-    end
-end
-Lines(egoHba.perm.ca3.sig,[],'r');
-Lines(-egoHba.perm.ca3.sig,[],'r');
-xlim([-20,30]);
-legend({'R-C','L-C','R-L'},'Location','southeast');
-xlabel('z-score');
-
-% $$$ figure();
 
 
 
@@ -181,7 +102,7 @@ ylabel('lateral displacement (loc)');
 daspect([1,1,1]);
 
 
-% LOC
+% LOC 
 figure,
 for comp = 1:3
     for u =1:10
@@ -192,7 +113,6 @@ for comp = 1:3
                        fliplr(rot90(egoHbaRmaps_loc.rmap{20}(:,:,u,comp)',-1))...
                        ),...
                 'edgecolor','none');
-            %set(pcolor(egoHbaRmaps_pause.xpos,egoHbaRmaps_pause.xpos, fliplr(rot90(egoHbaRmaps_pause.rmap{20}(:,:,u,comp)',-1))),'edgecolor','none');
             xlim(gca(),[-200,200])
             ylim(gca(),[-150,250])
             plot(egoHbaLoc.control.meanPos(ismember(egoCluSessionMap,[20,unitsEgo{20}(u)],'rows'),comp,2)*10,...
@@ -204,8 +124,7 @@ for comp = 1:3
 end
 end
 
-%Pause
-
+% PAUSE 
 figure,
 for comp = 1:3
     for u =1:10
@@ -216,7 +135,6 @@ for comp = 1:3
                        fliplr(rot90(egoHbaRmaps_pause.rmap{20}(:,:,u,comp)',-1))...
                        ),...
                 'edgecolor','none');
-            %set(pcolor(egoHbaRmaps_pause.xpos,egoHbaRmaps_pause.xpos, fliplr(rot90(egoHbaRmaps_pause.rmap{20}(:,:,u,comp)',-1))),'edgecolor','none');
             xlim(gca(),[-200,200])
             ylim(gca(),[-150,250])
             plot(egoHbaPause.control.meanPos(ismember(egoCluSessionMap,[20,unitsEgo{20}(u)],'rows'),comp,2)*10,...
@@ -241,7 +159,6 @@ for comp = 1:3
                        fliplr(rot90(egoHbaRmaps.rmap{20}(:,:,u,comp)',-1))...
                        ),...
                 'edgecolor','none');
-            %set(pcolor(egoHbaRmaps_pause.xpos,egoHbaRmaps_pause.xpos, fliplr(rot90(egoHbaRmaps_pause.rmap{20}(:,:,u,comp)',-1))),'edgecolor','none');
             xlim(gca(),[-200,200])
             ylim(gca(),[-150,250])
             plot(egoHba.control.meanPos(ismember(egoCluSessionMap,[20,unitsEgo{20}(u)],'rows'),comp,2)*10,...
@@ -473,7 +390,7 @@ for phzInd = 1:phzBin.count
     end
 end
 
-hbaBin.color = 'gbr';
+
 figure,
 for phzInd = 1:phzBin.count
     subplot(3,1,phzBin.count+1-phzInd);
@@ -482,7 +399,7 @@ for phzInd = 1:phzBin.count
 % $$$         set(histogram(egoHbaPhz.control.meanPos(unitsEgoCA1,phzInd,hbaInd,2), ...
 % $$$                       linspace(-15,15,32)),'FaceAlpha',0.3);
         [ehpcmpKDE,dxi] = ksdensity(egoHbaPhz.control.meanPos(unitsEgoCA1,phzInd,hbaInd,2));
-        plot(dxi,ehpcmpKDE,['-',hbaBin.color(hbaInd)])
+        plot(dxi,ehpcmpKDE,'-','color',hbaBin.color(hbaInd,:))
         med = median(egoHbaPhz.control.meanPos(unitsEgoCA1,phzInd,hbaInd,2))
         [~,xi] = NearestNeighbour(dxi,med);
         line(dxi(xi)*[1,1],[0,ehpcmpKDE(xi)],'color',hbaBin.color(hbaInd));

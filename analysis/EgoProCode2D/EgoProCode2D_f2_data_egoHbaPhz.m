@@ -9,7 +9,7 @@ ucounter = 1;
 egoHbaPhz.control.meanPos = [];   %egoMeanRmapPosHba
 egoHbaPhz.control.peakPos = [];   %egoMaxRmapPosHba
 egoHbaPhz.control.size = [];      %egoSizeHba = []; 
-egoHbaPhz.control.maxRate = []    %egoMeanRmapRateHba = [];
+egoHbaPhz.control.maxRate = [];    %egoMeanRmapRateHba = [];
 %egoHbaPhz.control.meanRate = []; %egoMaxRmapRateHba = [];
 
 for trialInd = 1:numel(Trials)
@@ -54,7 +54,7 @@ ucounter = 1;
 egoHbaPhz.shuffle.meanPos = []; % egoMeanRmapPosHba
 egoHbaPhz.shuffle.peakPos = []; % egoMaxRmapPosHba
 egoHbaPhz.shuffle.size = []; %egoSizeHba = []; 
-egoHbaPhz.shuffle.maxRate = [] %egoMeanRmapRateHba = [];
+egoHbaPhz.shuffle.maxRate = []; %egoMeanRmapRateHba = [];
 %egoHbaPhz.shuffle.meanRate = []; %egoMaxRmapRateHba = [];
 
 for trialInd = 1:numel(Trials)

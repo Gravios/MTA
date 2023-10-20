@@ -89,7 +89,7 @@ classdef MTAApfs < hgsetget %< MTAAnalysis
         mdata
         
         %adata - struct: auxdata 
-        adata = struct('trackingMarker',          'nose',                                        ...
+        adata = struct('trackingMarker',          'hcom',                                        ...
                        'bins',                    {{}},                                          ...
                        'binSizes',                [],                                            ...
                        'mask',                    []                                             ...
@@ -216,9 +216,10 @@ classdef MTAApfs < hgsetget %< MTAAnalysis
                     try,
                         xyz = preproc_xyz(Session,'trb');
                     catch err,
-                        disp(err)
+                        disp(err)                        
                         try,
-                            xyz = preproc_xyz(Session);
+                            xyz = preproc_xyz(Session,'crb');
+                            %xyz = preproc_xyz(Session);
                             trackingMarker = 'hcom';
                         catch
                             xyz = Session.load('xyz');
