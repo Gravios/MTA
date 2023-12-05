@@ -17,14 +17,11 @@ stcMode = 'msnn_ppsvd_raux';
 state = 'gper&loc&theta';
 %state = 'pause&theta';
 
-
-hbaBin.edges = [-1.2,-0.2,0.2,1.2];
-hbaBin.centers = mean([hbaBin.edges(1:end-1);hbaBin.edges(2:end)]);
-hbaBin.count = numel(hbaBin.centers);
-
-phzBin.edges = linspace(0.5,2*pi-0.5,4);
-phzBin.centers = (phzBin.edges(1:end-1)+phzBin.edges(2:end))./2;
-phzBin.count = numel(phzBin.centers);
+unitsNotEgo = {};
+for tind = 1:numel(Trials)
+    unitsNotEgo{tind} = unitsEgoHvf{tind}(~ismember(unitsEgoHvf{tind},unitsEgo{tind}));
+end
+    
 
 latticeInterval = 40;
 xpos = -500:latticeInterval:500;
@@ -42,7 +39,7 @@ rmapShuff = {};
 
 for tind = 1:numel(Trials)
 
-    unitSubset = unitsEgo{tind};
+    unitSubset = unitsNotEgo{tind};
     if isempty(unitSubset)
         continue
     end
@@ -51,15 +48,14 @@ for tind = 1:numel(Trials)
     Trial = Trials{tind};
     Trial.load('stc',stcMode);
 
+    thetaPeriods = [Trial.stc{[state]}];
+    thetaPeriods.resample(sampleRate);
 
     xyz = preproc_xyz(Trial,'trb',sampleRate);
 
-    tper = [Trial.stc{[state]}];
-    
-    tper.resample(xyz);
 
-    hba = fet_hba(Trial,'xyz',xyz);
-    thba = sq(hba(tper));
+    hvf = fet_hvfl(Trial,sampleRate);
+    hvf.data = hvf.data(:,1);
 
 
     rot = transform_vector_to_rotation_matrix( ...
@@ -70,9 +66,9 @@ for tind = 1:numel(Trials)
     spk = Trial.load('spk',sampleRate,state,unitSubset);
 
     phz = load_theta_phase(Trial,xyz);
-    tphz = sq(phz(tper));
+
     
-    rmap{tind} = nan([numel(xpos),numel(ypos),numel(unitSubset),numel(phzBin.centers),numel(hbaBin.centers)]);
+    rmap{tind} = nan([numel(xpos),numel(ypos),numel(unitSubset),numel(phzBin.centers),numel(hvfBin.centers)]);
     %% cell array version
     for u = 1:numel(unitSubset)
         tic
@@ -90,12 +86,24 @@ for tind = 1:numel(Trials)
                                       'egopfs',                                        ...
                                       'p'                                              ...
                                       );
-        tpos = pfsCenterHR(tper,:);    
+        tper = copy(thetaPeriods);
+        if ~isempty(spk.per)
+            sper = copy(spk.per);
+            sper.data = sper(spk.perInd(unitSubset(u),:),:);
+            sper = resync(sper,Trial,Trial.sync);
+            sper.resample(sampleRate);
+            tper = tper&sper;
+        end
+        
+        thvf = sq(hvf(thetaPeriods));
+        tphz = sq(phz(thetaPeriods));                
+        tpos = pfsCenterHR(tper,:);
+
         mapSpk = {};
         mapOcc = {};
         mapInd = {};
         mapW   = {};
-        mapHba = {};
+        mapHvf = {};
         mapPhz = {};
         
         % Collect the occupancy 
@@ -106,16 +114,16 @@ for tind = 1:numel(Trials)
                 pind = tempDst < sigmaD;
                 mapOcc{xind,yind} = tempPos(pind,:);
                 mapInd{xind,yind} = find(pind);
-                mapHba{xind,yind} = discretize(thba(pind),hbaBin.edges);
+                mapHvf{xind,yind} = discretize(thvf(pind),hvfBin.edges);
                 mapPhz{xind,yind} = discretize(tphz(pind),phzBin.edges);
             end
         end
         
         occ = zeros([numel(mapOcc),3]);
         for lind = 1:numel(mapOcc)
-            for hbaInd = 1:numel(hbaBin.centers)
+            for hvfInd = 1:numel(hvfBin.centers)
                 for phzInd = 1:numel(phzBin.centers)
-                    occ(lind,phzInd,hbaInd) = sum(exp(-sum(mapOcc{lind}(mapHba{lind}==hbaInd&mapPhz{lind}==phzInd,:).^2,2)./(sigmaDS)));
+                    occ(lind,phzInd,hvfInd) = sum(exp(-sum(mapOcc{lind}(mapHvf{lind}==hvfInd&mapPhz{lind}==phzInd,:).^2,2)./(sigmaDS)));
                 end
             end
         end
@@ -145,20 +153,20 @@ for tind = 1:numel(Trials)
         spos = nan([size(tpos,1),2]);
         spos(tres,:) = tpos(tres,:);
         % assume tres is monotonically increasing
-        for hbaInd = 1:numel(hbaBin.centers)
+        for hvfInd = 1:numel(hvfBin.centers)
             for phzInd = 1:numel(phzBin.centers)
                 for xind = 1:latticeSize(1)
                     for yind = 1:latticeSize(2)
                         tempPos = bsxfun(@minus,spos,[xpos(xind),ypos(yind)]);
-                        mapSpk{xind,yind} = tempPos(mapInd{xind,yind}(mapHba{xind,yind}==hbaInd&mapPhz{xind,yind}==phzInd),:);
-                        mapW{xind,yind} = wpos(mapInd{xind,yind}(mapHba{xind,yind}==hbaInd&mapPhz{xind,yind}==phzInd));
+                        mapSpk{xind,yind} = tempPos(mapInd{xind,yind}(mapHvf{xind,yind}==hvfInd&mapPhz{xind,yind}==phzInd),:);
+                        mapW{xind,yind} = wpos(mapInd{xind,yind}(mapHvf{xind,yind}==hvfInd&mapPhz{xind,yind}==phzInd));
                     end
                 end
                 scc = zeros([numel(mapOcc),1]);
                 for lind = 1:numel(mapOcc)
-                    scc(lind,phzInd,hbaInd) = sum(mapW{lind}.*exp(-sum(mapSpk{lind}.^2,2)./(sigmaDS)),'omitnan');
+                    scc(lind,phzInd,hvfInd) = sum(mapW{lind}.*exp(-sum(mapSpk{lind}.^2,2)./(sigmaDS)),'omitnan');
                 end
-                rmap{tind}(:,:,u,phzInd,hbaInd) = reshape(scc(:,phzInd,hbaInd)./(occ(:,phzInd,hbaInd)./sampleRate),latticeSize);
+                rmap{tind}(:,:,u,phzInd,hvfInd) = reshape(scc(:,phzInd,hvfInd)./(occ(:,phzInd,hvfInd)./sampleRate),latticeSize);
             end            
         end
         
@@ -167,9 +175,9 @@ for tind = 1:numel(Trials)
 
 
 
-    %%%<<< permuted hba
+    %%%<<< permuted hvf
 
-    rmapShuff{tind} = nan([numel(xpos),numel(ypos),numel(unitSubset),numel(phzBin.centers),numel(hbaBin.centers),100]);
+    rmapShuff{tind} = nan([numel(xpos),numel(ypos),numel(unitSubset),numel(phzBin.centers),numel(hvfBin.centers),100]);
     %% cell array version
     for u = 1:numel(unitSubset)
         tic
@@ -188,14 +196,26 @@ for tind = 1:numel(Trials)
                                           'egopfs',                                        ...
                                           'p'                                              ...
                                           );
-        tpos = pfsCenterHR(tper,:);    
+        tper = copy(thetaPeriods);
+        if ~isempty(spk.per)
+            sper = copy(spk.per);
+            sper.data = sper(spk.perInd(unitSubset(u),:),:);
+            sper = resync(sper,Trial,Trial.sync);
+            sper.resample(sampleRate);
+            tper = tper&sper;
+        end
+        
+        thvf = sq(hvf(thetaPeriods));
+        tphz = sq(phz(thetaPeriods));                
+        tpos = pfsCenterHR(tper,:);
+        
         mapSpk = {};
         mapOcc = {};
         mapDst = {};
         mapInd = {};
         mapW   = {};
 
-        mapHba = {};
+        mapHvf = {};
         mapPhz = {};
         
         % Collect the occupancy 
@@ -208,19 +228,19 @@ for tind = 1:numel(Trials)
                 pind = tempDst < sigmaD;
                 mapOcc{xind,yind} = tempPos(pind,:);
                 mapInd{xind,yind} = find(pind);
-                mapHba{xind,yind} = discretize(thba(pind),hbaBin.edges);
+                mapHvf{xind,yind} = discretize(thvf(pind),hvfBin.edges);
                 mapPhz{xind,yind} = discretize(tphz(pind),phzBin.edges);
             end
         end
 
         for iter = 1:100
-            tMHba = mapHba;
-            occ = zeros([numel(mapOcc),numel(phzBin.centers),numel(hbaBin.centers)]);
+            tMHvf = mapHvf;
+            occ = zeros([numel(mapOcc),numel(phzBin.centers),numel(hvfBin.centers)]);
             for lind = 1:numel(mapOcc)
-                tMHba{lind} = mapHba{lind}(randperm(numel(mapHba{lind})));
-                for hbaInd = 1:numel(hbaBin.centers)
+                tMHvf{lind} = mapHvf{lind}(randperm(numel(mapHvf{lind})));
+                for hvfInd = 1:numel(hvfBin.centers)
                     for phzInd = 1:numel(phzBin.centers)
-                        occ(lind,phzInd,hbaInd) = sum(exp(-sum(mapOcc{lind}(tMHba{lind}==hbaInd&mapPhz{lind}==phzInd,:).^2,2)./(sigmaDS)));
+                        occ(lind,phzInd,hvfInd) = sum(exp(-sum(mapOcc{lind}(tMHvf{lind}==hvfInd&mapPhz{lind}==phzInd,:).^2,2)./(sigmaDS)));
                     end
                 end
             end
@@ -252,30 +272,32 @@ for tind = 1:numel(Trials)
             spos = nan([size(tpos,1),2]);
             spos(tres,:) = tpos(tres,:);
             % assume tres is monotonically increasing
-            for hbaInd = 1:numel(hbaBin.centers)
+            for hvfInd = 1:numel(hvfBin.centers)
                 for phzInd = 1:numel(phzBin.centers)                
                     for xind = 1:latticeSize(1)
                         for yind = 1:latticeSize(2)
                             tempPos = bsxfun(@minus,spos,[xpos(xind),ypos(yind)]);
-                            mapSpk{xind,yind} = tempPos(mapInd{xind,yind}(tMHba{xind,yind}==hbaInd&mapPhz{xind,yind}==phzInd),:);
-                            mapW{xind,yind} = wpos(mapInd{xind,yind}(tMHba{xind,yind}==hbaInd&mapPhz{xind,yind}==phzInd));
+                            mapSpk{xind,yind} = tempPos(mapInd{xind,yind}(tMHvf{xind,yind}==hvfInd&mapPhz{xind,yind}==phzInd),:);
+                            mapW{xind,yind} = wpos(mapInd{xind,yind}(tMHvf{xind,yind}==hvfInd&mapPhz{xind,yind}==phzInd));
                     end
                 end
-                scc = zeros([numel(mapOcc),numel(phzBin.centers),numel(hbaBin.centers)]);
+                scc = zeros([numel(mapOcc),numel(phzBin.centers),numel(hvfBin.centers)]);
                 for lind = 1:numel(mapOcc)
-                    scc(lind,phzInd,hbaInd) = sum(mapW{lind}.*exp(-sum(mapSpk{lind}.^2,2)./(sigmaDS)),'omitnan');
+                    if ~isempty(mapW{lind}) && ~isempty(mapSpk{lind})
+                        scc(lind,phzInd,hvfInd) = sum(mapW{lind}.*exp(-sum(mapSpk{lind}.^2,2)./(sigmaDS)),'omitnan');
+                    end
                 end
-                rmapShuff{tind}(:,:,u,phzInd,hbaInd,iter) = reshape(scc(:,phzInd,hbaInd)./(occ(:,phzInd,hbaInd)./sampleRate),latticeSize);
+                rmapShuff{tind}(:,:,u,phzInd,hvfInd,iter) = reshape(scc(:,phzInd,hvfInd)./(occ(:,phzInd,hvfInd)./sampleRate),latticeSize);
 
                 end% phzInd
-            end% hbaInd
+            end% hvfInd
         end% iter
         toc
     end% u
 end
 
 %%%>>>
-% END permuted hba
+% END permuted hvf
 
 
 % $$$ %mask = create_tensor_mask({xpos,ypos})
@@ -284,98 +306,98 @@ mask(~mask) = nan;
 
 
 
-save(fullfile(Trials{1}.path.project,...
-              'analysis',...
-              'EgoProCode2D_compute_egoratemaps_conditioned_on_hba_and_phz_DATA_loc.mat'),...
-     'sampleRate',...
-     'state',...
-     'stcMode',...
-     'hbaBin',...
-     'phzBin',...
-     'latticeInterval',...
-     'xpos',...
-     'ypos',...
-     'xbins',...
-     'ybins',...
-     'sigma',...
-     'sigmaD',...
-     'sigmaDS',...
-     'rmap',...
-     'rmapShuff',...
-     'mask');
+% $$$ save(fullfile(Trials{1}.path.project,...
+% $$$               'analysis',...
+% $$$               'EgoProCode2D_compute_egoratemaps_conditioned_on_hvf_and_phz_DATA.mat'),...
+% $$$      'sampleRate',...
+% $$$      'state',...
+% $$$      'stcMode',...
+% $$$      'hvfBin',...
+% $$$      'phzBin',...
+% $$$      'latticeInterval',...
+% $$$      'xpos',...
+% $$$      'ypos',...
+% $$$      'xbins',...
+% $$$      'ybins',...
+% $$$      'sigma',...
+% $$$      'sigmaD',...
+% $$$      'sigmaDS',...
+% $$$      'rmap',...
+% $$$      'rmapShuff',...
+% $$$      'mask');
 
-% $$$ egoHbaPhzRmaps = load(fullfile(Trials{1}.path.project,'analysis','EgoProCode2D_compute_egoratemaps_conditioned_on_hba_and_phz_DATA.mat'));
-
-
-% $$$ %mask = create_tensor_mask({xpos,ypos})
-mask = double(sqrt(bsxfun(@plus,xbins.^2,ybins'.^2)') < 445);
-mask(~mask) = nan;
+% $$$ egoHvfPhzRmaps = load(fullfile(Trials{1}.path.project,'analysis','EgoProCode2D_compute_egoratemaps_conditioned_on_hvf_and_phz_DATA.mat'));
 % $$$ 
-
-%iter = 15;
-u = find(units==20);
-tind = 20;
-figure,
-for hbaInd = 1:numel(hbaBin.centers)
-subplot2(2,numel(hbaBin.centers),1,hbaInd);
-shading(gca(),'flat');
-set(pcolor(xpos-diff(xpos(1:2))/2,ypos-diff(ypos(1:2))/2,fliplr(rot90(rmap{tind}(:,:,u,hbaInd)',-1)).*mask),'EdgeColor','none');
-axis('xy');
-colormap('jet');
-colorbar();
-ylim([ypos([1,end])+[-1,1].*diff(ypos(1:2))/2])
-xlim([xpos([1,end])+[-1,1].*diff(xpos(1:2))/2])
-Lines([],0,'k');
-Lines(0,[],'k');
-subplot2(2,numel(hbaBin.centers),2,hbaInd);
-shading(gca(),'flat');
-set(pcolor(xpos-diff(xpos(1:2))/2,ypos-diff(ypos(1:2))/2, ...
-           fliplr(rot90(rmapShuff{tind}(:,:,u,hbaInd,iter)',-1)).*mask),'EdgeColor','none');
-caxis([2,12])
-axis('xy');
-colormap('jet');
-colorbar();
-ylim([ypos([1,end])+[-1,1].*diff(ypos(1:2))/2])
-xlim([xpos([1,end])+[-1,1].*diff(xpos(1:2))/2])
-Lines([],0,'k');
-Lines(0,[],'k');
-end
-
-
-tind = 20;
-u = find(unitsEgo{tind}==21);
-figure,
-for hbaInd = 1:hbaBin.count
-    for phzInd = 1:phzBin.count
-        subplot2(numel(phzBin.centers),numel(hbaBin.centers),hbaBin.count+1-phzInd,hbaInd);
-        shading(gca(),'flat');
-        set(pcolor(xpos-diff(xpos(1:2))/2,ypos-diff(ypos(1:2))/2,fliplr(rot90(rmap{tind}(:,:,u,phzInd,hbaInd)',-1)).*mask),'EdgeColor','none');
-        axis('xy');
-        colormap('jet');
-        colorbar();
-        ylim([ypos([1,end])+[-1,1].*diff(ypos(1:2))/2])
-        xlim([xpos([1,end])+[-1,1].*diff(xpos(1:2))/2])
-        Lines([],0,'k');
-        Lines(0,[],'k');
-    end
-end
-
-figure,
-for hbaInd = 1:numel(hbaBin.centers)
-    for phzInd = 1:numel(phzBin.centers)
-        subplot2(numel(phzBin.centers),numel(hbaBin.centers),phzInd,hbaInd);
-        shading(gca(),'flat');
-        set(pcolor(xpos-diff(xpos(1:2))/2,ypos-diff(ypos(1:2))/2,fliplr(rot90(rmapShuff{tind}(:,:,u,phzInd,hbaInd,iter)',-1)).*mask),'EdgeColor','none');
-        caxis([2,12])
-        axis('xy');
-        colormap('jet');
-        colorbar();
-        ylim([ypos([1,end])+[-1,1].*diff(ypos(1:2))/2])
-        xlim([xpos([1,end])+[-1,1].*diff(xpos(1:2))/2])
-        Lines([],0,'k');
-        Lines(0,[],'k');
-    end
-end
+% $$$ 
+% $$$ % $$$ %mask = create_tensor_mask({xpos,ypos})
+% $$$ mask = double(sqrt(bsxfun(@plus,xbins.^2,ybins'.^2)') < 445);
+% $$$ mask(~mask) = nan;
+% $$$ % $$$ 
+% $$$ 
+% $$$ %iter = 15;
+% $$$ u = find(units==31);
+% $$$ tind = 20;
+% $$$ figure,
+% $$$ for hvfInd = 1:numel(hvfBin.centers)
+% $$$ subplot2(2,numel(hvfBin.centers),1,hvfInd);
+% $$$ shading(gca(),'flat');
+% $$$ set(pcolor(xpos-diff(xpos(1:2))/2,ypos-diff(ypos(1:2))/2,fliplr(rot90(rmap{tind}(:,:,u,hvfInd)',-1)).*mask),'EdgeColor','none');
+% $$$ axis('xy');
+% $$$ colormap('jet');
+% $$$ colorbar();
+% $$$ ylim([ypos([1,end])+[-1,1].*diff(ypos(1:2))/2])
+% $$$ xlim([xpos([1,end])+[-1,1].*diff(xpos(1:2))/2])
+% $$$ Lines([],0,'k');
+% $$$ Lines(0,[],'k');
+% $$$ subplot2(2,numel(hvfBin.centers),2,hvfInd);
+% $$$ shading(gca(),'flat');
+% $$$ set(pcolor(xpos-diff(xpos(1:2))/2,ypos-diff(ypos(1:2))/2, ...
+% $$$            fliplr(rot90(rmapShuff{tind}(:,:,u,hvfInd,iter)',-1)).*mask),'EdgeColor','none');
+% $$$ caxis([2,12])
+% $$$ axis('xy');
+% $$$ colormap('jet');
+% $$$ colorbar();
+% $$$ ylim([ypos([1,end])+[-1,1].*diff(ypos(1:2))/2])
+% $$$ xlim([xpos([1,end])+[-1,1].*diff(xpos(1:2))/2])
+% $$$ Lines([],0,'k');
+% $$$ Lines(0,[],'k');
+% $$$ end
+% $$$ 
+% $$$ 
+% $$$ tind = 20;
+% $$$ u = find(unitsEgo{tind}==31);
+% $$$ figure,
+% $$$ for hvfInd = 1:hvfBin.count
+% $$$     for phzInd = 1:phzBin.count
+% $$$         subplot2(phzBin.count,hvfBin.count,phzBin.count+1-phzInd,hvfInd);
+% $$$         shading(gca(),'flat');
+% $$$         set(pcolor(xpos-diff(xpos(1:2))/2,ypos-diff(ypos(1:2))/2,fliplr(rot90(rmap{tind}(:,:,u,phzInd,hvfInd)',-1)).*mask),'EdgeColor','none');
+% $$$         axis('xy');
+% $$$         colormap('jet');
+% $$$         colorbar();
+% $$$         ylim([ypos([1,end])+[-1,1].*diff(ypos(1:2))/2])
+% $$$         xlim([xpos([1,end])+[-1,1].*diff(xpos(1:2))/2])
+% $$$         Lines([],0,'k');
+% $$$         Lines(0,[],'k');
+% $$$     end
+% $$$ end
+% $$$ 
+% $$$ figure,
+% $$$ for hvfInd = 1:numel(hvfBin.centers)
+% $$$     for phzInd = 1:numel(phzBin.centers)
+% $$$         subplot2(phzBin.count,hvfBin.count,phzBin.count+1-phzInd,hvfInd);
+% $$$         shading(gca(),'flat');
+% $$$         set(pcolor(xpos-diff(xpos(1:2))/2,ypos-diff(ypos(1:2))/2,fliplr(rot90(rmapShuff{tind}(:,:,u,phzInd,hvfInd,iter)',-1)).*mask),'EdgeColor','none');
+% $$$         caxis([2,12])
+% $$$         axis('xy');
+% $$$         colormap('jet');
+% $$$         colorbar();
+% $$$         ylim([ypos([1,end])+[-1,1].*diff(ypos(1:2))/2])
+% $$$         xlim([xpos([1,end])+[-1,1].*diff(xpos(1:2))/2])
+% $$$         Lines([],0,'k');
+% $$$         Lines(0,[],'k');
+% $$$     end
+% $$$ end
 
 % $$$ 
 % $$$ 

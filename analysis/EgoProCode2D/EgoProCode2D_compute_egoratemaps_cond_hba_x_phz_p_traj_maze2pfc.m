@@ -6,6 +6,7 @@
 %Trial = Trials{20};
 
 MjgER2016_load_data();
+EgoProCode2D_load_data();
 unitsEgo = cf(@(T)  T.spk.get_unit_set(T,'egocentric'),  Trials); 
 pft = cf(@(t,u)  pfs_2d_theta(t,u,'theta-groom-sit-rear'),  Trials, units);
 
@@ -14,19 +15,12 @@ pft = cf(@(t,u)  pfs_2d_theta(t,u,'theta-groom-sit-rear'),  Trials, units);
 sampleRate = 128;
 state = 'theta-groom-sit-rear';
 stcMode = 'msnn_ppsvd_raux';
-state = 'gper&loc&theta';
+%state = 'gper&loc&theta';
 %state = 'pause&theta';
 
 
-hbaBin.edges = [-1.2,-0.2,0.2,1.2];
-hbaBin.centers = mean([hbaBin.edges(1:end-1);hbaBin.edges(2:end)]);
-hbaBin.count = numel(hbaBin.centers);
 
-phzBin.edges = linspace(0.5,2*pi-0.5,4);
-phzBin.centers = (phzBin.edges(1:end-1)+phzBin.edges(2:end))./2;
-phzBin.count = numel(phzBin.centers);
-
-latticeInterval = 40;
+latticeInterval = 20;
 xpos = -500:latticeInterval:500;
 ypos = -500:latticeInterval:500;
 latticeSize = [numel(xpos),numel(ypos)];
@@ -50,47 +44,78 @@ for tind = 1:numel(Trials)
     
     Trial = Trials{tind};
     Trial.load('stc',stcMode);
-
-
-    xyz = preproc_xyz(Trial,'trb',sampleRate);
-
-    tper = [Trial.stc{[state]}];
     
-    tper.resample(xyz);
+    mxyz = preproc_xyz(Trial,'trb');
+    mxyz.resample(sampleRate);
+    
+    rb = mxyz.model.rb({'hcom','nose'});
+    
+    tper = resample(cast([Trial.stc{[state]}],'TimeSeries'),mxyz);
+    tper.data = logical(tper.data);
+    
+    hba = fet_hba(Trial,'xyz',mxyz);
 
-    hba = fet_hba(Trial,'xyz',xyz);
-    thba = sq(hba(tper));
-
-
+    hdir = mxyz.copy();
+    hdir.data = sq(mxyz(:,'nose',[1,2])-mxyz(:,'hcom',[1,2]));
+    hdir.data = atan2(hdir.data(:,2),hdir.data(:,1));
+    
     rot = transform_vector_to_rotation_matrix( ...
-            xyz,{'hcom','nose'}, Trial.meta.correction.headYaw);
-
-
-
-    spk = Trial.load('spk',sampleRate,state,unitSubset);
-
-    phz = load_theta_phase(Trial,xyz);
-    tphz = sq(phz(tper));
+            mxyz,{'hcom','nose'}, Trial.meta.correction.headYaw);
     
-    rmap{tind} = nan([numel(xpos),numel(ypos),numel(unitSubset),numel(phzBin.centers),numel(hbaBin.centers)]);
+    mspk = Trial.load('spk', mxyz.sampleRate, state, unitSubset);
+
+    phz = load_theta_phase(Trial,mxyz);
+    
+    rmap{tind} = nan([numel(xpos),       ...
+                      numel(ypos),       ...
+                      numel(unitSubset), ...
+                      bins.phz.count,    ...
+                      bins.hba.count]);
     %% cell array version
     for u = 1:numel(unitSubset)
         tic
+
         [mxr,mxp] = pft{tind}.maxRate(unitSubset(u));
-        pfsCenterHR = MTADfet.encapsulate(Trial,                                           ...
-                                      bsxfun(                                         ...
-                                          @plus,                                       ...
-                                          multiprod(bsxfun(@minus,                     ...
-                                                      mxp,                             ...
-                                                      sq(xyz(:,'hcom',[1,2]))),        ...
-                                                    rot,2,[2,3]),                        ...
-                                          [0,0]),                       ...   
-                                      sampleRate,                                      ...
-                                      'egocentric_placefield',                         ...
-                                      'egopfs',                                        ...
-                                      'p'                                              ...
-                                      );
-        tpos = pfsCenterHR(tper,:);    
+        
+        hpdiff = bsxfun(@circ_dist,hdir.data,atan2(mxp(2),mxp(1)));
+        hind = -pi/4 < hpdiff & hpdiff < pi/4;
+
+        sper = copy(tper);
+        sper.data = tper.data & hind;
+
+        tphz = sq(phz(sper));        
+
+        txyz = mxyz.copy();
+        txyz.data = mxyz(sper.data,{'hcom','nose'},[1,2]);
+        txyz.model = rb;
+
+        thba = sq(hba(sper));        
+
+        trot = rot(sper.data,:,:);
+        
+        tpos = MTADfet.encapsulate(                          ...
+            Trial,                                           ...
+            bsxfun(                                          ...
+                @plus,                                       ...
+                multiprod(bsxfun(@minus,                     ...
+                                 mxp,                        ...
+                                 sq(txyz(:,'hcom',[1,2]))),...
+                          trot(:,:,:),2,[2,3]),             ...
+                [0,0]),                                      ...   
+            sampleRate,                                      ...
+            'egocentric_placefield',                         ...
+            'egopfs',                                        ...
+            'p'                                              ...
+        );
+
+        tspk = copy(mspk);
+        [tspk.res, rind] = SelectPeriods(tspk.res, cast(copy(sper),'TimePeriods').data,'d',1,1);
+        tspk.clu = tspk.clu(rind);
+        
+        tres = tspk(unitSubset(u));
+        tres(tres>size(tpos,1)) = [];
+        tres(tres<0) = [];
+
         mapSpk = {};
         mapOcc = {};
         mapInd = {};
@@ -101,13 +126,13 @@ for tind = 1:numel(Trials)
         % Collect the occupancy 
         for xind = 1:latticeSize(1)
             for yind = 1:latticeSize(2)
-                tempPos = bsxfun(@minus,tpos,[xpos(xind),ypos(yind)]);
+                tempPos = bsxfun(@minus,tpos.data,[xpos(xind),ypos(yind)]);
                 tempDst = sqrt(sum(tempPos.^2,2));
                 pind = tempDst < sigmaD;
                 mapOcc{xind,yind} = tempPos(pind,:);
                 mapInd{xind,yind} = find(pind);
-                mapHba{xind,yind} = discretize(thba(pind),hbaBin.edges);
-                mapPhz{xind,yind} = discretize(tphz(pind),phzBin.edges);
+                mapHba{xind,yind} = discretize(thba(pind), bins.hba.edges);
+                mapPhz{xind,yind} = discretize(tphz(pind), bins.phz.edges);
             end
         end
         
@@ -122,12 +147,11 @@ for tind = 1:numel(Trials)
         
         mapSpk = {};
         mapW = {};
-        tres = SelectPeriods(spk(unitSubset(u)),tper.data,'d',1,1);
         [ures,IA,IC] = unique(tres);
         % GET spike degeneracy weights
         dic = [diff([IC(1)-1;IC])];    
         
-        % map degenerate spikes
+        % MAP degenerate spikes
         wpos = zeros([size(tpos,1),1]);
         k = 0;
         for di = dic'
@@ -141,17 +165,17 @@ for tind = 1:numel(Trials)
                 wpos(ures(k)) = 1;
             end
         end
-        %cwpos = wpos(wpos~=0);
+
         spos = nan([size(tpos,1),2]);
         spos(tres,:) = tpos(tres,:);
-        % assume tres is monotonically increasing
-        for hbaInd = 1:numel(hbaBin.centers)
-            for phzInd = 1:numel(phzBin.centers)
+        % ASSUME tres is monotonically increasing
+        for hbaInd = 1:bins.hba.count
+            for phzInd = 1:bins.phz.count
                 for xind = 1:latticeSize(1)
                     for yind = 1:latticeSize(2)
                         tempPos = bsxfun(@minus,spos,[xpos(xind),ypos(yind)]);
                         mapSpk{xind,yind} = tempPos(mapInd{xind,yind}(mapHba{xind,yind}==hbaInd&mapPhz{xind,yind}==phzInd),:);
-                        mapW{xind,yind} = wpos(mapInd{xind,yind}(mapHba{xind,yind}==hbaInd&mapPhz{xind,yind}==phzInd));
+                        mapW{xind,yind}   =    wpos(mapInd{xind,yind}(mapHba{xind,yind}==hbaInd&mapPhz{xind,yind}==phzInd));
                     end
                 end
                 scc = zeros([numel(mapOcc),1]);
@@ -164,115 +188,127 @@ for tind = 1:numel(Trials)
         
         toc
     end
+end
 
-
+% $$$     figure,
+% $$$     for hbaInd = 1:bins.hba.count
+% $$$         for phzInd = 1:bins.phz.count
+% $$$             subplot2(bins.hba.count,...
+% $$$                      bins.phz.count,...
+% $$$                      bins.phz.count+1-phzInd,...
+% $$$                      hbaInd);
+% $$$             hold('on');
+% $$$             imagesc(xbins,ybins,rmap{tind}(:,:,u,phzInd,hbaInd)),caxis([0,20])
+% $$$             Lines([],0,'w');
+% $$$             Lines(0,[],'w');
+% $$$         end
+% $$$     end
+    
 
     %%%<<< permuted hba
 
-    rmapShuff{tind} = nan([numel(xpos),numel(ypos),numel(unitSubset),numel(phzBin.centers),numel(hbaBin.centers),100]);
-    %% cell array version
-    for u = 1:numel(unitSubset)
-        tic
-
-        [mxr,mxp] = pft{tind}.maxRate(unitSubset(u));
-        pfsCenterHR = MTADfet.encapsulate(Trial,                                           ...
-                                          bsxfun(                                         ...
-                                              @plus,                                       ...
-                                              multiprod(bsxfun(@minus,                     ...
-                                                          mxp,                             ...
-                                                          sq(xyz(:,'hcom',[1,2]))),        ...
-                                                        rot,2,[2,3]),                        ...
-                                              [0,0]),                       ...   
-                                          sampleRate,                                      ...
-                                          'egocentric_placefield',                         ...
-                                          'egopfs',                                        ...
-                                          'p'                                              ...
-                                          );
-        tpos = pfsCenterHR(tper,:);    
-        mapSpk = {};
-        mapOcc = {};
-        mapDst = {};
-        mapInd = {};
-        mapW   = {};
-
-        mapHba = {};
-        mapPhz = {};
-        
-        % Collect the occupancy 
-        for xind = 1:latticeSize(1)
-            for yind = 1:latticeSize(2)
-                %lpdist = sqrt(sum(bsxfun(@minus,tpos,[xpos(xind),ypos(yind)]).^2,2)) < 2*sigma;
-                tempPos = bsxfun(@minus,tpos,[xpos(xind),ypos(yind)]);
-                tempDst = sqrt(sum(tempPos.^2,2));
-% $$$         mapDst(sub2ind(latticeSize,xind,yind)) = tempDst(tempDst < sigmaD);
-                pind = tempDst < sigmaD;
-                mapOcc{xind,yind} = tempPos(pind,:);
-                mapInd{xind,yind} = find(pind);
-                mapHba{xind,yind} = discretize(thba(pind),hbaBin.edges);
-                mapPhz{xind,yind} = discretize(tphz(pind),phzBin.edges);
-            end
-        end
-
-        for iter = 1:100
-            tMHba = mapHba;
-            occ = zeros([numel(mapOcc),numel(phzBin.centers),numel(hbaBin.centers)]);
-            for lind = 1:numel(mapOcc)
-                tMHba{lind} = mapHba{lind}(randperm(numel(mapHba{lind})));
-                for hbaInd = 1:numel(hbaBin.centers)
-                    for phzInd = 1:numel(phzBin.centers)
-                        occ(lind,phzInd,hbaInd) = sum(exp(-sum(mapOcc{lind}(tMHba{lind}==hbaInd&mapPhz{lind}==phzInd,:).^2,2)./(sigmaDS)));
-                    end
-                end
-            end
-
-
-
-            mapSpk = {};
-            mapW = {};
-            tres = SelectPeriods(spk(unitSubset(u)),tper.data,'d',1,1);
-            [ures,IA,IC] = unique(tres);
-            % GET spike degeneracy weights
-            dic = [diff([IC(1)-1;IC])];    
-            
-            % map degenerate spikes
-            wpos = zeros([size(tpos,1),1]);
-            k = 0;
-            for di = dic'
-                if di==0
-                    wpos(ures(k)) = wpos(ures(k))+1;
-                else
-                    k = k+1;                        
-                    if k == numel(ures)+1
-                        break;
-                    end
-                    wpos(ures(k)) = 1;
-                end
-            end
-            %cwpos = wpos(wpos~=0);
-            spos = nan([size(tpos,1),2]);
-            spos(tres,:) = tpos(tres,:);
-            % assume tres is monotonically increasing
-            for hbaInd = 1:numel(hbaBin.centers)
-                for phzInd = 1:numel(phzBin.centers)                
-                    for xind = 1:latticeSize(1)
-                        for yind = 1:latticeSize(2)
-                            tempPos = bsxfun(@minus,spos,[xpos(xind),ypos(yind)]);
-                            mapSpk{xind,yind} = tempPos(mapInd{xind,yind}(tMHba{xind,yind}==hbaInd&mapPhz{xind,yind}==phzInd),:);
-                            mapW{xind,yind} = wpos(mapInd{xind,yind}(tMHba{xind,yind}==hbaInd&mapPhz{xind,yind}==phzInd));
-                    end
-                end
-                scc = zeros([numel(mapOcc),numel(phzBin.centers),numel(hbaBin.centers)]);
-                for lind = 1:numel(mapOcc)
-                    scc(lind,phzInd,hbaInd) = sum(mapW{lind}.*exp(-sum(mapSpk{lind}.^2,2)./(sigmaDS)),'omitnan');
-                end
-                rmapShuff{tind}(:,:,u,phzInd,hbaInd,iter) = reshape(scc(:,phzInd,hbaInd)./(occ(:,phzInd,hbaInd)./sampleRate),latticeSize);
-
-                end% phzInd
-            end% hbaInd
-        end% iter
-        toc
-    end% u
-end
+% $$$     rmapShuff{tind} = nan([numel(xpos),numel(ypos),numel(unitSubset),numel(phzBin.centers),bins.hba.count,100]);
+% $$$     %% cell array version
+% $$$     for u = 1:numel(unitSubset)
+% $$$         tic
+% $$$ 
+% $$$         [mxr,mxp] = pft{tind}.maxRate(unitSubset(u));
+% $$$         pfsCenterHR = MTADfet.encapsulate(Trial,                                           ...
+% $$$                                           bsxfun(                                         ...
+% $$$                                               @plus,                                       ...
+% $$$                                               multiprod(bsxfun(@minus,                     ...
+% $$$                                                           mxp,                             ...
+% $$$                                                           sq(xyz(:,'hcom',[1,2]))),        ...
+% $$$                                                         rot,2,[2,3]),                        ...
+% $$$                                               [0,0]),                       ...   
+% $$$                                           sampleRate,                                      ...
+% $$$                                           'egocentric_placefield',                         ...
+% $$$                                           'egopfs',                                        ...
+% $$$                                           'p'                                              ...
+% $$$                                           );
+% $$$         tpos = pfsCenterHR(tper,:);    
+% $$$         mapSpk = {};
+% $$$         mapOcc = {};
+% $$$         mapDst = {};
+% $$$         mapInd = {};
+% $$$         mapW   = {};
+% $$$ 
+% $$$         mapHba = {};
+% $$$         mapPhz = {};
+% $$$         
+% $$$         % Collect the occupancy 
+% $$$         for xind = 1:latticeSize(1)
+% $$$             for yind = 1:latticeSize(2)
+% $$$                 %lpdist = sqrt(sum(bsxfun(@minus,tpos,[xpos(xind),ypos(yind)]).^2,2)) < 2*sigma;
+% $$$                 tempPos = bsxfun(@minus,tpos,[xpos(xind),ypos(yind)]);
+% $$$                 tempDst = sqrt(sum(tempPos.^2,2));
+% $$$ % $$$         mapDst(sub2ind(latticeSize,xind,yind)) = tempDst(tempDst < sigmaD);
+% $$$                 pind = tempDst < sigmaD;
+% $$$                 mapOcc{xind,yind} = tempPos(pind,:);
+% $$$                 mapInd{xind,yind} = find(pind);
+% $$$                 mapHba{xind,yind} = discretize(thba(pind),hbaBin.edges);
+% $$$                 mapPhz{xind,yind} = discretize(tphz(pind),phzBin.edges);
+% $$$             end
+% $$$         end
+% $$$ 
+% $$$         for iter = 1:100
+% $$$             tMHba = mapHba;
+% $$$             occ = zeros([numel(mapOcc),numel(phzBin.centers),numel(hbaBin.centers)]);
+% $$$             for lind = 1:numel(mapOcc)
+% $$$                 tMHba{lind} = mapHba{lind}(randperm(numel(mapHba{lind})));
+% $$$                 for hbaInd = 1:bins.hba.count
+% $$$                     for phzInd = 1:bins.phz.count)
+% $$$                         occ(lind,phzInd,hbaInd) = sum(exp(-sum(mapOcc{lind}(tMHba{lind}==hbaInd&mapPhz{lind}==phzInd,:).^2,2)./(sigmaDS)));
+% $$$                     end
+% $$$                 end
+% $$$             end
+% $$$ 
+% $$$             mapSpk = {};
+% $$$             mapW = {};
+% $$$             tres = tspk(unitSubset(u));
+% $$$             [ures,IA,IC] = unique(tres);
+% $$$             % GET spike degeneracy weights
+% $$$             dic = [diff([IC(1)-1;IC])];    
+% $$$             
+% $$$             % map degenerate spikes
+% $$$             wpos = zeros([size(tpos,1),1]);
+% $$$             k = 0;
+% $$$             for di = dic'
+% $$$                 if di==0
+% $$$                     wpos(ures(k)) = wpos(ures(k))+1;
+% $$$                 else
+% $$$                     k = k+1;                        
+% $$$                     if k == numel(ures)+1
+% $$$                         break;
+% $$$                     end
+% $$$                     wpos(ures(k)) = 1;
+% $$$                 end
+% $$$             end
+% $$$             %cwpos = wpos(wpos~=0);
+% $$$             spos = nan([size(tpos,1),2]);
+% $$$             spos(tres,:) = tpos(tres,:);
+% $$$             % assume tres is monotonically increasing
+% $$$             for hbaInd = 1:numel(hbaBin.centers)
+% $$$                 for phzInd = 1:numel(phzBin.centers)                
+% $$$                     for xind = 1:latticeSize(1)
+% $$$                         for yind = 1:latticeSize(2)
+% $$$                             tempPos = bsxfun(@minus,spos,[xpos(xind),ypos(yind)]);
+% $$$                             mapSpk{xind,yind} = tempPos(mapInd{xind,yind}(tMHba{xind,yind}==hbaInd&mapPhz{xind,yind}==phzInd),:);
+% $$$                             mapW{xind,yind} = wpos(mapInd{xind,yind}(tMHba{xind,yind}==hbaInd&mapPhz{xind,yind}==phzInd));
+% $$$                     end
+% $$$                 end
+% $$$                 scc = zeros([numel(mapOcc),numel(phzBin.centers),numel(hbaBin.centers)]);
+% $$$                 for lind = 1:numel(mapOcc)
+% $$$                     scc(lind,phzInd,hbaInd) = sum(mapW{lind}.*exp(-sum(mapSpk{lind}.^2,2)./(sigmaDS)),'omitnan');
+% $$$                 end
+% $$$                 rmapShuff{tind}(:,:,u,phzInd,hbaInd,iter) = reshape(scc(:,phzInd,hbaInd)./(occ(:,phzInd,hbaInd)./sampleRate),latticeSize);
+% $$$ 
+% $$$                 end% phzInd
+% $$$             end% hbaInd
+% $$$         end% iter
+% $$$         toc
+% $$$     end% u
+%end
 
 %%%>>>
 % END permuted hba
@@ -283,10 +319,14 @@ mask = double(sqrt(bsxfun(@plus,xbins.^2,ybins'.^2)') < 445);
 mask(~mask) = nan;
 
 
+switch latticeInterval
+  case 20
+    fname = 'EgoProCode2D_compute_egoratemaps_cond_hba_x_phz_ptraj_maze2pfc_DATA_fine_theta.mat'
+  case 40
+    fname = 'EgoProCode2D_compute_egoratemaps_cond_hba_x_phz_ptraj_maze2pfc_DATA_theta.mat'    
 
-save(fullfile(Trials{1}.path.project,...
-              'analysis',...
-              'EgoProCode2D_compute_egoratemaps_conditioned_on_hba_and_phz_DATA_loc.mat'),...
+fpath = fullfile(Trials{1}.path.project,'analysis')
+save(fullfile(fpath,fname),...
      'sampleRate',...
      'state',...
      'stcMode',...
@@ -327,23 +367,23 @@ ylim([ypos([1,end])+[-1,1].*diff(ypos(1:2))/2])
 xlim([xpos([1,end])+[-1,1].*diff(xpos(1:2))/2])
 Lines([],0,'k');
 Lines(0,[],'k');
-subplot2(2,numel(hbaBin.centers),2,hbaInd);
-shading(gca(),'flat');
-set(pcolor(xpos-diff(xpos(1:2))/2,ypos-diff(ypos(1:2))/2, ...
-           fliplr(rot90(rmapShuff{tind}(:,:,u,hbaInd,iter)',-1)).*mask),'EdgeColor','none');
-caxis([2,12])
-axis('xy');
-colormap('jet');
-colorbar();
-ylim([ypos([1,end])+[-1,1].*diff(ypos(1:2))/2])
-xlim([xpos([1,end])+[-1,1].*diff(xpos(1:2))/2])
-Lines([],0,'k');
-Lines(0,[],'k');
+% $$$ subplot2(2,numel(hbaBin.centers),2,hbaInd);
+% $$$ shading(gca(),'flat');
+% $$$ set(pcolor(xpos-diff(xpos(1:2))/2,ypos-diff(ypos(1:2))/2, ...
+% $$$            fliplr(rot90(rmapShuff{tind}(:,:,u,hbaInd,iter)',-1)).*mask),'EdgeColor','none');
+% $$$ caxis([2,12])
+% $$$ axis('xy');
+% $$$ colormap('jet');
+% $$$ colorbar();
+% $$$ ylim([ypos([1,end])+[-1,1].*diff(ypos(1:2))/2])
+% $$$ xlim([xpos([1,end])+[-1,1].*diff(xpos(1:2))/2])
+% $$$ Lines([],0,'k');
+% $$$ Lines(0,[],'k');
 end
 
-
+unit = 104;
 tind = 20;
-u = find(unitsEgo{tind}==21);
+u = find(unitsEgo{tind}==unit);
 figure,
 for hbaInd = 1:hbaBin.count
     for phzInd = 1:phzBin.count

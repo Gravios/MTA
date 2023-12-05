@@ -1,4 +1,4 @@
-function [pfs] = compute_egohbahvl_radTraj_ratemap(Trial,units,xyz,spk,pft,overwrite)
+function [pfs] = compute_egohbahvl_radMaze_ratemap(Trial,units,xyz,spk,pft,overwrite)
 
 sampleRate = xyz.sampleRate;
 binPhzs = linspace(0,2*pi,4);
@@ -21,6 +21,10 @@ fhrvfl = fet_href_HXY(Trial,sampleRate,false,'trb',4);
 hvlSign = MTADfet.encapsulate(Trial,sign(fhrvfl(:,2)),sampleRate,'headLatVel','hvl','l');
 % COMPUTE head maze angle              -> partition feature
 hma = fet_hma(Trial,sampleRate,false,[],xyz);
+
+hdir = sq(xyz(:,'nose',[1,2])-xyz(:,'hcom',[1,2]));
+hdir = atan2(hdir(:,2),hdir(:,1));
+
 % COMPUTE head body angle               -> partiton feature
 hba = fet_hba(Trial, sampleRate);
 hbaSign = copy(hba);
@@ -53,7 +57,7 @@ electrode = 0;
 for phase = 1:numel(binPhzc)
 
     % CHECK existence of pfs save file;
-    tagbase = 'egofield_hbahvl_radTraj_theta_phase_';
+    tagbase = 'egofield_hbahvl_radMaze_theta_phase_';
     pargs.tag = [tagbase,num2str(phase)];
     filepath = fullfile(Trial.spath,...
                         [Trial.filebase,'.Pfs.',tagbase,num2str(phase),'.mat']);
@@ -69,26 +73,29 @@ for phase = 1:numel(binPhzc)
         
     for unit = 1:numel(units),
 
-        % SETUP pargs 
-        if unit==1 
-            pargs.spk = copy(spk);
-            pargs.states = copy(thetaState);
-            pargs.states.label = ['thetaPhz_',num2str(phase)];
-            pargs.states.data(  (phz.data < binPhzs(phase) )                           ...
-                              | (phz.data >= binPhzs(phase+1))                         ...
-                              & hvlSign.data ~= hbaSign.data                           ...
-                              & ((-pi*3/4 < hma.data & hma.data < -pi/4)                 ...
-                                 | (pi*1/4 < hma.data & hma.data < pi*3/4 ))) = 0;
-            
-            %cast(pargs.states,'TimePeriods');
-            %resInd = WithinRanges(pargs.spk.res, pargs.states.data);
-            resInd = logical(pargs.states.data(pargs.spk.res));
-            pargs.spk.res = pargs.spk.res(resInd);
-            pargs.spk.clu = pargs.spk.clu(resInd);
-        end;% if
-
         % COMPUTE place fields
         [mxr,mxp] = pft.maxRate(units(unit));
+
+        hpdiff = bsxfun(@circ_dist,hdir,atan2(mxp(2),mxp(1)));
+
+        pargs.spk = copy(spk);
+        pargs.spk.res = pargs.spk.res(pargs.spk.clu==units(unit));
+        pargs.spk.clu = pargs.spk.clu(pargs.spk.clu==units(unit));
+        pargs.states = copy(thetaState);
+        pargs.states.label = ['thetaPhz_',num2str(phase)];        
+        pargs.states.data(  (phz.data < binPhzs(phase) )                           ...
+                            | (phz.data >= binPhzs(phase+1)) ... %& hvlSign.data ~= hbaSign.data                           ...
+                            & ~(-pi/4 < hpdiff & hpdiff < pi/4 )) = 0;
+
+        pargs.states.data = logical(pargs.states.data);
+        %cast(pargs.states,'TimePeriods');
+        %resInd = WithinRanges(pargs.spk.res, pargs.states.data);
+        resInd = logical(pargs.states.data(pargs.spk.res));
+        pargs.spk.res = pargs.spk.res(resInd);
+        pargs.spk.clu = pargs.spk.clu(resInd);
+
+        pargs.states.cast('TimePeriods');
+        
         pfsCenterHR = MTADfet.encapsulate(Trial,                                       ...
                                           [multiprod(bsxfun(@minus,                    ...
                                                             mxp,                       ...

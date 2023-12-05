@@ -231,7 +231,6 @@ if numel(Pfs.adata.binSizes) > 1,
         
       case 3
         if iscell(mode),
-            mode = mode(1:end-1);
             ratemap = sq(ratemap(mode{:}));
             primaryDims = find(cellfun(@ischar,mode));
             
@@ -300,10 +299,8 @@ if numel(Pfs.adata.binSizes) > 1,
             % ASSIGN elements with nans a black color value
             %ratemap(isnan(ratemap)) = -1;
             if flipAxesFlag,
-                bins = fliplr(bins(:)');
-                imagescnan({bins{primaryDims},...
-                            fliplr(rot90(ratemap',-1))},...
-                           maxRate,'linear',false,nanColor,[],[],colorMap);
+                bins = fliplr(bins(primaryDims)');
+                imagescnan({bins{:},fliplr(rot90(ratemap',-1))},maxRate,'linear',false,nanColor,[],[],colorMap);
             else
                 imagescnan({bins{primaryDims},ratemap'},maxRate,'linear',false,nanColor,[],[],colorMap);
             end

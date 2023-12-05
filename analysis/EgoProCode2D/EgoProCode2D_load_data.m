@@ -163,7 +163,8 @@ end
 pitchReferenceTrial = 'Ed05-20140529.ont.all';
 
 
-% SET states 
+% SET states
+clear('states')
 states.name = 'msnn_ppsvd_raux';
 states.labels = {{'theta-groom-sit','rear&theta','hloc&theta','hpause&theta','lloc&theta',...
           'lpause&theta'}};
@@ -217,6 +218,44 @@ hvfBin.count = numel(hvfBin.centers);
 hvfBin.color = bone(3);
 hvfBin.key = 'RISF';
 hvfBin.label = {'Reverse','Immobile','Slow','Fast'};
+
+
+% Head Body Angle
+bins.hba.name = 'hba';
+bins.hba.description = 'Head Body Angle';
+bins.hba.edges = [-1.2,-0.2,0.2,1.2];
+bins.hba.centers = mean([bins.hba.edges(1:end-1);bins.hba.edges(2:end)]);
+bins.hba.count = numel(bins.hba.centers);
+bins.hba.color = [0,1,0;...
+                0,0,1;...
+                1,0,0];
+bins.hba.key = 'LCR';
+bins.hba.label = {'Left','Center','Right'};
+
+% Theta Phase
+bins.phz.name = 'phz';
+bins.phz.description = 'CA1 Theta Phase';
+bins.phz.edges = linspace(0.5,2*pi-0.5,4);
+bins.phz.centers = (bins.phz.edges(1:end-1)+bins.phz.edges(2:end))./2;
+bins.phz.count = numel(bins.phz.centers);
+bins.phz.color = cool(3);
+bins.phz.key = 'DTA';
+bins.phz.label = {'Descending','Trough','Ascending'};
+
+% Speed along the Anteroposterior Axis
+bins.phz.name = 'hvf';
+bins.phz.description = 'Speed along Anteroposterior Axis of the Head';
+bins.hvf.edges = [-25,-5,5,25,80];
+bins.hvf.centers = (bins.hvf.edges(1:end-1)+bins.hvf.edges(2:end))./2;
+bins.hvf.count = numel(bins.hvf.centers);
+bins.hvf.color = bone(3);
+bins.hvf.key = 'RISF';
+bins.hvf.label = {'Reverse','Immobile','Slow','Fast'};
+
+
+
+
+
 
 
 

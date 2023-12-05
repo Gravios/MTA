@@ -1,12 +1,26 @@
 
 * 20230717
 ** Primary Goals
-*** Diagnose the synchronization problem of MTAData objects in the WHT_motive setup
+*** DONE Diagnose the synchronization problem of MTAData objects in the WHT_motive setup
     - create emacs session
     - load Trial FS10-20220222a and try loading a specific trial from those defined in example_code_joseph_multiTrial
     - compare FS10 to a jg05 session data objects, focusing on the sync object structure
 
 * 20230918
 ** Primary Goals
-*** Recompute HBAxPHZ for behavior states: loc&theta and pause&theta
+*** DONE Recompute HBAxPHZ for behavior states: loc&theta and pause&theta
+* 20231019
+** Primary Goals
+*** TODO 
+* 20231031
+** Primary Goals
+*** figure 2
+*** figure 3
+*** figure4 
+**** Generated loading code
+**** reviewed the figure code
+
+
+
+
 

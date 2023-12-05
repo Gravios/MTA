@@ -2,8 +2,8 @@
 
 configure_default_args();
 EgoProCode2D_load_data(); 
-EgoProCode2D_f2_data_egoHba()
-EgoProCode2D_f2_data_egoHbaPhz()
+EgoProCode2D_f2_data_egoHba();
+EgoProCode2D_f2_data_egoHbaPhz();
 
 
 

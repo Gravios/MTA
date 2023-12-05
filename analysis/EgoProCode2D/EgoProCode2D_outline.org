@@ -1,4 +1,8 @@
 
+* Glossary
+
+under the condition that : sub conditione, quod : SCQ
+
 
 * Motivation
 ** Phenomenon
@@ -118,10 +122,70 @@ Theta phase preference of place cell are shifted twoards the ascending phase of 
 
 * The fence which separates previous my work from previous efforts
 
-** We reformulate allocentric mapping 
+** We reformulate allo centric mapping
+*** episodic memory is experienced
+An episodic memory is a sequence of personally experienced events, from the
+first-person perspective and formed from the evolving sensory impressions that are
+driven by movements through space and/or time. The formation, consolidation, and
+recollection of episodic memories is a system wide process involving most of the
+brain, however, the hippocampal formation has been identified as an essential
+structure to these mnemonic processes through case studies of patients with varring
+degrees of bilateral damage to the hippocampal formation, as well as studies of
+controlled hippocampal lesions in animal models.
+
+The hippocampus is preserved among mammals with analogues found in other
+vertebrates. The real-time activity of the hippocampus is investigated by recording
+changes in electical potentials of single (spikes) or groups of neurons (LFP: Local
+Field Potentials) with structured eletrodes, implanted 
+
+As a neuron spans multiple layers where distinct patterns afferents 
+
+QUOTE "enable compensation for sensory consequences of movement and preemptive updating of spatial representations."
 
 
-Hippocampal place cells have one or more randomly postioned 2D gaussian spatial 
+
+INTERNAL MODEL STATES
+
+The separation of similar sensory experiences is necessary for 
+autobiographical distiction, and the generation of semantic models 
+derived from environmental elements of similar category.
+    Categorization process???
+
+
+Incomming sensory information can be of varring complexity
+    Transient behavior repetior (TBR) biases the acquisition space of sensory 
+    information until novel complexity in normally unattended sensory modes 
+    evoke an update in TBR.
+
+        SCQ - contextual appedication may be desired if neutral in valance
+              otherwise positive or negatvie valance lead to partially 
+              orthogonallized contex and representation.
+
+        SCQ - a change in senory information results in cortical repretation 
+              mismatch.
+
+
+
+
+
+
+
+Each trajectory through the sensory space
+*** episodic memory requires a hippocampus
+
+*** context is a model
+amygdala -> context???
+    Contextually dervied allocation of behavioral modes 
+    and their transition probabilities.
+
+within sequences of neural assymblies. 
+
+
+
+
+Hippocampal place cells have place fields. The fields are randomly allocated 
+and generally observed as 2D gaussian tunning curves. 
+ 
 tuning curves,. As the rat traverses through a place field
 the hippocampal network coordinates the place cells' firing in sequential bursts 
 on a timescale of 80 to 120 milliseconds, known as theta sequences, 
@@ -446,5 +510,114 @@ egocentric ratemap: spikes per second given 2D position of the place field cente
 
 
 
+
+
+** sampling issues
+The sampling in the outer perimeter is restricts the decoding to
+the left or right with respect to counterclockwise and clockwise
+trajectories 
+
+
+
+* Memory
+** Stable versus Unstable Associations
+
+
+
+
+
+
 * FIG1
-** 
+** Allo to Ego
+*** Diagram of the transform from maze frame of reference to head frame of reference 
+The head frame of reference is a different perspective for place
+cell firing rates. Place fields are often represented
+as 2D gaussian field, centered on point in the
+environment. Aditionally the firing rate has been demonstrated
+to varry 
+
+Place cells have place fields, and change their firing rate monotonically with distance
+to the center of a place field.
+
+* The Hippocampus is Necessary for Episodic Memory
+The hippocampus is a conserved structure of the mammalian brain,
+theorized to provide a neural basis of a mammal's internal map
+of its environment and to distinguish between epochs of similar
+sensory experiences, based on their unique spatio-temporal
+histories. 
+
+In rats, its network of interneurons and pyramidal
+cells change activity with behavioral state. Rhythmic patterns
+of 5-12Hz known as theta activity are observed within the
+hippocampus when a rat assumes a state of vigilance or
+exploration.
+
+
+* Spatial Representation is Encoded by Place Cell Activity
+Spatial represantation within the hippocampus is theorized to be
+a two dimensional surface where the neurons encoding each
+location is a unique subset of place cells. Under the simplest
+condition, a single place cell has a single place field, and the
+animal traverses straight through the place field center. The
+firing rate, computed as the the number of observed action potentials per
+second, increases, reaches a maximum, and descends during each
+traversal of the local field. The tuning curve is the firing rate as a
+function of position within an environtment and generally conforms to a
+gaussian centered on the place field center. The resulting spatial code
+includes both an neuron identity as well as its firing rate,
+which is more accurate than place cell identity alone.
+
+** Simulation of decoding by spike set 
+** Simulation of decoding by spike set and rate
+
+
+* Place Cells Generate Spatial Information
+Pyramidal cells are the primary output of the hippocampus.
+During theta activity, pyramidal cells emit action potentials
+(APs) at specific locations within the environment and are
+therefor named Place Cells (PCs). Place cells have one or more
+place fields, where their firing rate is related to the rat's
+proximity to a place field center. They fire maximally at the
+centers and quickly reduce to zero at all other locations.
+Within and between place cells, the spatial distribution of
+place fields is random. These properties allow a continuous
+representation of the entire environment where every point
+activates a unique sets of place cells.
+
+
+An anditional, temporal code results from the hippocampal network
+dynamics, where the spatial order of the active place cells,
+with respect to each cell's local place field, are compressed
+and ordered within each theta cylce along the current
+orientation and trajectory of the rat.
+
+
+When a rat enters or occupies a state of vigilance or exploration the hippocampal
+network 
+
+
+
+
+
+Action potential autocorrelations contain lobes at 120ms neuron action potentials and extracellular potentials 
+between interneurons and pyramidal cells generate network 
+
+
+The active set of place cells is directly related to the
+location and orientation of the head.
+
+
+
+Theta phase 
+firing rate
+distance to a point
+
+
+
+
+* FIG2
+** Ego HBA
+* FIG3
+** Ego HBA Loc vs Pause
+* FIG4
+** Ego HVF 

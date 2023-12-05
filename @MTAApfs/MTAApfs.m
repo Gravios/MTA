@@ -56,6 +56,7 @@ classdef MTAApfs < hgsetget %< MTAAnalysis
 %-----------------------------------------------------------------------------
 %  NOTES:
 %    hash - future version will include hash mod tracking
+%    states - do not use TimeSeries yet
 %
 %-----------------------------------------------------------------------------
 %  UPDATES:
@@ -386,7 +387,13 @@ classdef MTAApfs < hgsetget %< MTAAnalysis
 
             returnFlag = false;
             if ~isempty(pfsState),
-                asstpos = sq(xyz(pfsState,:));                
+                switch pfsState.type
+                  case 'TimePeriods'
+                    asstpos = sq(xyz(pfsState,:));
+                  case 'TimeSeries'
+                    asstpos = sq(xyz(logical(pfsState(:)),:));
+                end
+                
 % LOAD Units into spk object;
                 if isempty(spk)
                     spk = Session.spk.copy;
@@ -435,7 +442,13 @@ classdef MTAApfs < hgsetget %< MTAAnalysis
                         sstpos = asstpos(spkPer,:);
                     else
                         sstpos = asstpos;
-                        sstres = SelectPeriods(res,pfsState.data,'d',1,1);
+                        switch pfsState.type
+                          case 'TimePeriods'
+                            sstres = SelectPeriods(res,pfsState.data,'d',1,1);
+                          case 'TimeSeries'
+                            sstres = res(pfsState.data(res));
+                        end
+                        
                     end
                     nSpk = size(sstres,1);
                     sresind = repmat(sstres,1,numIter);
