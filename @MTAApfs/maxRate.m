@@ -164,14 +164,19 @@ for u = units(:)',
     end% switch mode
 end%for u
 
-mxp = Ind2Sub(cellfun(@numel,bins),mxp);
+
+[x,y,z,w,v] = ind2sub(cellfun(@numel,bins),mxp);
+
+% $$$ subs = Ind2Sub(cellfun(@numel,bins),mxp);
+% $$$ x = subs(1);
+% $$$ y = subs(2);
 if numel(Pfs.parameters.type)>2,
-    mxp = [bins{1}(mxp(:,1)), ...
-           bins{2}(mxp(:,2)), ...
-           bins{3}(mxp(:,3))];                                
+    mxp = [bins{1}(x), ...
+           bins{2}(y), ...
+           bins{3}(z)];                                
 else
-    mxp = [bins{1}(mxp(:,1)), ...
-           bins{2}(mxp(:,2))];
+    mxp = [bins{1}(x), ...
+           bins{2}(y)];
 end
 
 % END MAIN -----------------------------------------------------------------------------------------

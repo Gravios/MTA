@@ -34,7 +34,6 @@ tind = [3,4,5,17,18,19,20,21,22,23,29];
 %tind = [6,7,26,27,30];
 sampleRate = 250;
 halfSpikeWindow = 0.020;
-
 global AP
 % compute_ratemaps ---------------------------------------------------------------------------------
 AP.compute_ratemaps =                                                                            ...
@@ -47,44 +46,11 @@ AP.compute_ratemaps =                                                           
                                                'boundaryLimits',   [-500,500;-500,500],          ...
                                                'halfsample',       false)                        ...
            );
-%---------------------------------------------------------------------------------------------------                                                                                                                                                                                                                          
-
+%---------------------------------------------------------------------------------------------------
+% LOAD decoded positions
 dca = cf(@(T,U) accumulate_decoding_vars( T, U, sampleRate, ...
                                            halfSpikeWindow), Trials(tind),units(tind));
-%dcao = dca;
-%dca = dcan
 
-
-figure,
-hold('on');
-plot(dca{7}.ind./250,dca{7}.ecom(:,2))
-plot(dca{7}.ind./250,dca{7}.phz*10,'r')
-plot(dca{7}.ind./250,-dca{7}.hbang.data*100,'m')
-
-
-lfp = Trials{20}.load('lfp',Trials{20}.meta.channelGroup.theta);
-lfp.resample(sampleRate);
-
-
-id = WithinRanges(dca{7}.phz,[4,6]) & dca{7}.ucnt>=2 & dca{7}.ucnt<=8 ...
-     &nniz(dca{7}.ecom);
-
-[IMF, RESIDUAL] = emd(dca{7}.ecom(id,2));
-
-figure,
-subplot(5,1,[1:3]);
-ts = dca{7}.ind(id)./sampleRate;
-offs =  0;
-for j = 1:10
-    plot(ts,IMF+offs);
-    offs=offs+100;
-end    
-subplot(5,1,[4]);
-plot(ts,dca{7}.phz(id));
-subplot(5,1,[5]);
-plotSTC(Trials{20}.stc,1)
-ylim([-1,7])
-linkx();
 
 
 [hfig,fig,fax,sax] = set_figure_layout(figure(667001),'A4','portrait',[],2.5,2.5,0.6,0.6);
@@ -109,153 +75,223 @@ ylim([0,hfig.Position(4)]);
 pause(0.5);
 text(0.5 * fig.page.width,                                                 ...
      0.9 * fig.page.height,                                                ...
-     {'Copula Between Lateral Decoded Position in the Head Frame of Reference VS the Head Body Angle',...
-      'for Individual Sessions'},...
+     {['Copula Between Lateral Decoded Position in the ',                  ...
+      'Head Frame of Reference VS the Head Body Angle'],                   ...
+      'for Individual Sessions'},                                          ...
      'HorizontalAlignment','Center'                                        ...
 );
 
 
-
-
-
-s = 3
 figure()
 for t = 1:numel(dca)
-ind = WithinRanges(dca{t}.phz,[4,6]) & dca{t}.ucnt>=2 & dca{t}.ucnt<=4 ...
-      ...& (dca{t}.stcm(:,3)==3|dca{t}.stcm(:,4)==4|dca{t}.stcm(:,5)==5)...
-       & (dca{t}.stcm(:,s)==s)...
-      & dca{t}.hdist.data<300;
-subplot2(4,11,1,t);
-hist2([dca{t}.esax(ind,2),-dca{t}.hbang(ind,1)],7,7,'log','mud');
-colormap(gca,'jet');
-subplot2(4,11,2,t);
-hist2([dca{t}.esax(ind,2),dca{t}.hvflP(ind,2)],7,7,'log','mud');
-colormap(gca,'jet');
-subplot2(4,11,3,t);
-hist2([dca{t}.esax(ind,2),dca{t}.hvfl(ind,2)],7,7,'log','mud');
-colormap(gca,'jet')
-subplot2(4,11,4,t);
-hist2([dca{t}.esax(ind,2),dca{t}.hvflF(ind,2)],7,7,'log','mud');
-colormap(gca,'jet');
+    ind = WithinRanges(dca{t}.phz,[4,6])     ... % theta phase 
+          & dca{t}.ucnt>=2 & dca{t}.ucnt<=4  ... % coactive unit count
+          & (dca{t}.stcm(:,3)==3             ... % behavior state
+             |dca{t}.stcm(:,4)==4            ...
+             |dca{t}.stcm(:,5)==5)           ...
+          & dca{t}.hdist.data<300;               % distance to maze center 
+    subplot2(4,11,1,t);
+        hist2([dca{t}.esax(ind,2),-dca{t}.hbang(ind,1)],7,7,'log','mud');
+        colormap(gca,'jet');
+    subplot2(4,11,2,t);
+        hist2([dca{t}.esax(ind,2),dca{t}.hvflP(ind,2)],7,7,'log','mud');
+        colormap(gca,'jet');
+    subplot2(4,11,3,t);
+        hist2([dca{t}.esax(ind,2),dca{t}.hvfl(ind,2)],7,7,'log','mud');
+        colormap(gca,'jet')
+    subplot2(4,11,4,t);
+        hist2([dca{t}.esax(ind,2),dca{t}.hvflF(ind,2)],7,7,'log','mud');
+        colormap(gca,'jet');
 end
 
 
+
+
+
+% Derive Bin edges by the centers
+% bin_set
+%     bin.domain
+%     bin.type = 'disjoint'
+% 
+
+for xi = xinds
+    phzI = xvals(xi);
+    ind =   within_ranges( decoded.phz, [-0.25, 0.25] + phzI) ...
+            & randi( [0, 1], decoded.nsamples, 1)         ...
+            & within_ranges(decoded.hba,[-0.5, 0.5];
+    
+    [Beta{tg}.(fwd_hvf(:,phzI),~,~,~,stats{tg}.fwd_hvf(phzI,:)] = ...
+     regress = regress(decoded.fwd(ind), [ones([sum(ind),1]), decoded.hvf(ind)]);
+     end
+     
+    % clat, fwd, ang, rad -- VS -- hba, hav, hvf, hvl
+     
+     [B(:,xi),BINT,R,RINT,STATS(xi,:)] = regress( decoded.fwd(ind), [ones([sum(ind),1]), decoded.hvf(ind)]);
+     
+     [beta{tg}.rad_hvf(:,phzI),~,~,~,stats{tg}.rad_hvf(phzI,phzI)] = ...
+     regress
+     if tg == numel(tgroups)
+        %[beta{tg}.rad_hvf(:,phzI),~,~,~,stats{tg}.rad_hvf(phzI,phzI)] = ...
+     end
+
+
+xvals = 0.5:0.1:5.75; % theta phase
+xinds = 1:numel(xvals);
+
+tlabels = {'a','b','c','d','e','f','g','h','ER', 'jg','FS','all'};
+tgroups = { 1 , 2 , 3 , 5 , 6 , 7 , 8 , 11, 1:3,  5:8, 11 ,[1:3,5:8,11]};
+
+for t = [1:3,5:8,11]
 % ACCUMULATE vars for specific subset of decoding
-s = 5;
-decoded = struct('fwd',[],...
-                 'lat',[],...
-                 'tfwd',[],...
-                 'tlat',[],...
-                 'xyz',[],...
-                 'dst',[],...
-                 'hvf',[],...
-                 'hvl',[],...
-                 'bvl',[],...
-                 'hvlF',[],...
-                 'hvlP',[],...                 
-                 'hav',[],...
-                 'hba',[],...
-                 'phz',[]);
-for t = [1:3,5:8,11],
-%for t = [1:11],
-%for t = [5:8],
-    %for t = [1:3,5:8,11],
-mind =   dca{t}.stcm(:,1)==1                                              ...
-...        & (dca{t}.stcm(:,3)==3|dca{t}.stcm(:,5)==5)   ...
-        & (dca{t}.stcm(:,3)==3|dca{t}.stcm(:,4)==4|dca{t}.stcm(:,5)==5)   ...
-...        & (dca{t}.stcm(:,s)==s)   ...                           
-        &  dca{t}.hvfl(:,1)>0                                            ...
-        & dca{t}.ucnt>=4 & dca{t}.ucnt<=10                                 ...
-        & sqrt(sum(dca{t}.xyz(:,'hcom',[1,2]).^2,3))>0                    ...
-        & sqrt(sum(dca{t}.xyz(:,'hcom',[1,2]).^2,3))<500;
-    decoded.fwd = cat(1,decoded.fwd,dca{t}.ecom(mind,1));
-    decoded.lat = cat(1,decoded.lat,dca{t}.ecom(mind,2));%-10*double(t>4)+10*double(t<4));
-    decoded.tfwd = cat(1,decoded.tfwd,dca{t}.tcom(mind,1));
-    decoded.tlat = cat(1,decoded.tlat,dca{t}.tcom(mind,2));%+20*double(t>4));
-    decoded.xyz =  cat(1,decoded.xyz, dca{t}.xyz(mind,{'hcom','nose'},:));
-    decoded.dst =  cat(1,decoded.dst, dca{t}.hdist(mind));
-    decoded.hvf = cat(1,decoded.hvf,dca{t}.hvfl(mind,1));
-    decoded.hvl = cat(1,decoded.hvl,dca{t}.hvfl(mind,2));
-    decoded.bvl = cat(1,decoded.bvl,dca{t}.bvfl(mind,2));    
-    decoded.hvlF = cat(1,decoded.hvlF,dca{t}.hvflF(mind,2));
-    decoded.hvlP = cat(1,decoded.hvlP,dca{t}.hvflP(mind,2));        
-    decoded.hav = cat(1,decoded.hav,dca{t}.hvang(mind,1));
-    decoded.hba = cat(1,decoded.hba,dca{t}.hbang(mind,1));
-    decoded.phz = cat(1,decoded.phz,dca{t}.phz(mind,1));
-end
-headAngle = sq(decoded.xyz(:,2,[1,2])-decoded.xyz(:,1,[1,2]));
-headAngle = atan2(headAngle(:,2),headAngle(:,1));
-mazeAngle =  sq(decoded.xyz(:,1,[1,2]));
-mazeAngle = atan2(mazeAngle(:,2),mazeAngle(:,1));
-decoded.hma = circ_dist(headAngle,mazeAngle);
+        bind =  dca{t}.stcm(:,1)==1 & (dca{t}.stcm(:,3)==3 | dca{t}.stcm(:,4)==4 | dca{t}.stcm(:,5)==5); %  Walk, Turn, Pause
+        % $$$ bind =  dca{t}.stcm(:,1)==1 & (dca{t}.stcm(:,6)==6 | dca{t}.stcm(:,8)==8);                       %  Loc
+        % $$$ bind =  dca{t}.stcm(:,1)==1 & (dca{t}.stcm(:,7)==7 | dca{t}.stcm(:,9)==9);                       %  Pause
+        mind =    bind ...
+                  & dca{t}.hvfl(:,1)>0       ... aterioposterior speed
+                  & dca{t}.ucnt>=3           ... coactive units
+                  & dca{t}.ucnt<=10          ...
+            & sqrt(sum(dca{t}.xyz(:,'hcom',[1,2]).^2,3))>0 ...
+            & sqrt(sum(dca{t}.xyz(:,'hcom',[1,2]).^2,3))<300;
+        decoded.fwd = cat(1,decoded.fwd,dca{t}.ecom(mind,1));
+        decoded.lat = cat(1,decoded.lat,dca{t}.ecom(mind,2)-10*double(t>4)+10*double(t<4));
+        decoded.tfwd = cat(1,decoded.tfwd,dca{t}.tcom(mind,1));
+        decoded.tlat = cat(1,decoded.tlat,dca{t}.tcom(mind,2));%+20*double(t>4));
+        decoded.xyz =  cat(1,decoded.xyz, dca{t}.xyz(mind,{'hcom','nose'},:));
+        decoded.dst =  cat(1,decoded.dst, dca{t}.hdist(mind));
+        decoded.hvf = cat(1,decoded.hvf,dca{t}.hvfl(mind,1));
+        decoded.hvl = cat(1,decoded.hvl,dca{t}.hvfl(mind,2));
+        decoded.bvl = cat(1,decoded.bvl,dca{t}.bvfl(mind,2));
+        decoded.bvf = cat(1,decoded.bvf,dca{t}.bvfl(mind,1));        
+        decoded.hvlF = cat(1,decoded.hvlF,dca{t}.hvflF(mind,2));
+        decoded.hvlP = cat(1,decoded.hvlP,dca{t}.hvflP(mind,2));        
+        decoded.hav = cat(1,decoded.hav,dca{t}.hvang(mind,1));
+        decoded.hba = cat(1,decoded.hba,dca{t}.hbang(mind,1));
+        decoded.phz = cat(1,decoded.phz,dca{t}.phz(mind,1));
+        decoded.trl = cat(1,decoded.trl,t*ones([sum(mind),1]));
+    end
+    
+    headAngle = sq(decoded.xyz(:,2,[1,2])-decoded.xyz(:,1,[1,2]));
+    headAngle = atan2(headAngle(:,2),headAngle(:,1));
+    mazeAngle =  sq(decoded.xyz(:,1,[1,2]));
+    mazeAngle = atan2(mazeAngle(:,2),mazeAngle(:,1));
+    decoded.hma = circ_dist(headAngle,mazeAngle);
  
-[Xe,Ye] = pol2cart(decoded.hma,decoded.dst);
-decoded.correction.lat = mfun(beta,[Xe(:),Ye(:)]);
-decoded.clat = (decoded.lat-decoded.correction.lat)-8;
-decoded.clt = (decoded.lat-decoded.correction.lat)-8;
+    [Xe,Ye] = pol2cart(decoded.hma,decoded.dst);
+    decoded.correction.lat = mfun(beta,[Xe(:),Ye(:)]);
+    decoded.clat = (decoded.lat-decoded.correction.lat)-8;
+    decoded.clt = (decoded.lat-decoded.correction.lat)-8;
+
+    [decoded.ang, decoded.rad] = cart2pol( decoded.fwd, decoded.lat);
+
+    decoded.nsamples = numel(decoded.ind);    
+end
+
+ffun = @(x,ang) x*sin(ang);
+ind = within_ranges(decoded.phz,[4,5.5]);
+x = lsqcurvefit(ffun, 0.1, decoded.ang(ind), decoded.hba(ind));
+
+1-sum((decoded.hba(ind) - ffun(x,decoded.ang(ind))).^2)./sum(decoded.hba(ind).^2)
 
 
-ind = WithinRanges(decoded.phz,[4.5,5.5]) ... 
-     & randn(size(decoded.hba))>1 ...
-      & abs(decoded.hba)<1.2;
-[B,BINT,R,RINT,STATS] = regress(decoded.lat(ind),[ones([sum(ind),1]),decoded.hba(ind)]);STATS
-[B,BINT,R,RINT,STATS] = regress(decoded.clt(ind),[ones([sum(ind),1]),decoded.hba(ind)]);STATS
+%%%<<< APD hvf
+xvals = 0.5:0.1:5.75; % theta phase
+xinds = 1:numel(xvals);
+STATS = [];
+B=[];
+for xi = xinds
+    phzI = xvals(xi);
+    ind = WithinRanges(decoded.phz,[-0.5,0.5]+phzI) & randn(size(decoded.hba))>0 & abs(decoded.hba)<0.5;
+    [B(:,xi),BINT,R,RINT,STATS(xi,:)] = regress( decoded.fwd(ind), [ones([sum(ind),1]), decoded.hvf(ind)]);
+end
+%%%>>>
+%%%<<< RAD hvf
+STATS = [];
+B=[];
+for xi = xinds
+    phzI = xvals(xi);
+    ind = WithinRanges(decoded.phz,[-0.5,0.5]+phzI) & randn(size(decoded.hba))>0 & abs(decoded.hba)<0.5;
+    [B(:,xi),BINT,R,RINT,STATS(xi,:)] = regress( decoded.rad(ind), [ones([sum(ind),1]), decoded.hvf(ind)]);
+end
+%%%>>>
+%%%<<< LAD hba
 
-ind = WithinRanges(decoded.phz,[1.5,2.5]) ... 
-     & randn(size(decoded.hba))>0 ...
-      & abs(decoded.hba)<0.4;
+STATS = [];
+B=[];
+for xi = xinds
+    phzI = xvals(xi);
+    ind = WithinRanges(decoded.phz,[-0.75,0.75]+phzI) & randn(size(decoded.hba))>0;
+    [B(:,xi),BINT,R,RINT,STATS(xi,:)] = regress( decoded.lat(ind), [ones([sum(ind),1]), decoded.hba(ind)]);
+end
 
-figure,
-hist2([decoded.fwd(ind),decoded.hvf(ind)],linspace(-400,400,30),0: ...
-      10:60,'','mud');
+%%%>>>
+%%%<<< LAD hav and hba
+STATS = [];
+B=[];
+for xi = xinds
+    phzI = xvals(xi);
+    ind = WithinRanges(decoded.phz,[-0.25,0.25]+phzI) & randn(size(decoded.hba))>0;
+    [B(:,xi),BINT,R,RINT,STATS(xi,:)] = regress( decoded.lat(ind), [ones([sum(ind),1]), decoded.hav(ind), decoded.hba(ind)]);
+end
+%%%>>>
+%%%<<< LAD hav and hav
+STATS = [];
+B=[];
+for xi = xinds
+    phzI = xvals(xi);
+    ind = WithinRanges(decoded.phz,[-0.25,0.25]+phzI) & randn(size(decoded.hba))>0;
+    [B(:,xi),BINT,R,RINT,STATS(xi,:)] = regress( decoded.lat(ind), [ones([sum(ind),1]), decoded.hav(ind)]);
+end
+%%%>>>
+%%%<<< ANG hba
+STATS = [];
+B=[];
+for xi = xinds
+    phzI = xvals(xi);
+    ind = WithinRanges(decoded.phz,[-0.75,0.75]+phzI) & randn(size(decoded.hba))>0;
+    [B(:,xi),BINT,R,RINT,STATS(xi,:)] = regress( decoded.ang(ind), [ones([sum(ind),1]), decoded.hba(ind)]);
+end
+%%%>>>
+%%%<<< ANG hav
+STATS = [];
+B=[];
+for phzI = xinds
+    phzI = xvals(xi);
+    ind = WithinRanges(decoded.phz,[-0.75,0.75]+phzI) & randn(size(decoded.hba))>0;
+    [B(:,xi),BINT,R,RINT,STATS(xi,:)] = regress( decoded.ang(ind), [ones([sum(ind),1]), decoded.hav(ind)]);
+end
+%%%>>>
+
+figure();
+subplot2(2,4,1,1); plot(xvals,STATS(:,1)); title('R^2');
+subplot2(2,4,1,2); plot(xvals,STATS(:,2)); title('F');
+subplot2(2,4,1,3); plot(xvals,log10(STATS(:,3))); title('log10(P)'); Lines([],log10([0.05]),'r');Lines([],log10([0.01,0.001,0.0001]),'k');
+subplot2(2,4,1,4); plot(xvals,STATS(:,4)); title('EST ERR VAR');
+subplot2(2,4,2,1); plot(xvals,B(1,:));     title('x_0');
+subplot2(2,4,2,2); plot(xvals,B(2,:));     title('x_1');
+if size(B,1)==3,subplot2(2,4,2,3); plot(xvals,B(3,:));     title('x_2');end
+ForAllSubplots('xlim([0, 2*pi]);');
+
+% Lat Hba stuff
+ind = WithinRanges(decoded.phz,[4.5,5.5]) & randn(size(decoded.hba))>0.5 & abs(decoded.hba)<1.2;
+figure, hist2([decoded.clt(ind),decoded.hba(ind)],linspace(-400,400,8),-1.2:0.2:1.2,'','mud');   colormap('jet');
+figure, hist2([decoded.clt(ind),decoded.hba(ind)],linspace(-400,400,8),-1.2:0.2:1.2,'xprob',''); colormap('jet');
+figure, hist2([decoded.lat(ind),decoded.hav(ind)],linspace(-400,400,8),-.5:0.1:.5,'','mud');     colormap('jet');
+figure, hist2([decoded.lat(ind),decoded.hav(ind)],linspace(-400,400,8),-.5:0.1:.5,'xprob','');   colormap('jet');
 
 
-figure,
-hist2([decoded.fwd(ind),decoded.hvf(ind)],linspace(-400,400,30),-5: ...
-      15:65,'','mud');
-
-
-ind = WithinRanges(decoded.phz,[4.5,5.5]) ... 
-      & randn(size(decoded.hba))>0.5 ...
-      & abs(decoded.hba)<1.2;
-figure,
-hist2([decoded.clt(ind),decoded.hba(ind)],linspace(-400,400,8),-1.2:0.2:1.2,'','mud');
-
-figure,
-hist2([decoded.clt(ind),decoded.hba(ind)],linspace(-400,400,8),-1.2:0.2:1.2,'xprob','');
-figure,plot(decoded.clt(ind),decoded.hba(ind),'.')
-
-
-figure,
-hist2([decoded.lat(ind),decoded.hav(ind)],linspace(-400,400,8),-.5:0.1:.5,'','mud');
-
-figure
-hist2([decoded.lat(ind),decoded.hav(ind)],linspace(-400,400,8),-.5:0.1:.5,'xprob','');
-colormap('jet');
-
-
-figure
-hist2([decoded.clt(ind),decoded.hav(ind)],linspace(-400,400,8),-.5:0.1:.5,'xprob','');
-colormap('jet');
-
-ind = WithinRanges(decoded.phz,[5,6]) ... 
-      & randn(size(decoded.hba))>0.5 ...
-      & decoded.hba<-0.2;      
-figure,
-hist2([decoded.lat(ind),decoded.hvl(ind)],linspace(-400,400,30),-40:10:40,'xprob','');
-colormap('jet');
 
 figure,
 hold('on');
 for hbaInd = 1:hbaBin.count
-ind = WithinRanges(decoded.phz,[4.5,5.5]) ... 
+    %ind = WithinRanges(decoded.phz,[4.5,5.5]) ...
+ind = WithinRanges(decoded.phz,[1.5,2]) ...           
       & randn(size(decoded.hba))>0 ...
       & WithinRanges(decoded.hba,hbaBin.edges(hbaInd+[0,1]));      
-%set(histogram(decoded.lat(ind),linspace(-300,300,40)),'EdgeColor','none','FaceAlpha',.3); 
-[F,xi] = ksdensity(decoded.lat(ind)/10);
-plot(xi,F,'-','Color',hbaBin.color(hbaInd,:));
+[F,xi] = ksdensity(decoded.clt(ind)/10);
+plot(xi,F,'-','Color',hbaBin.color(hbaInd,:),'LineWidth',1);
 end
 xlim([-40,40]);
+legend(mat2cell(bins.hba.key,1,ones(size(bins.hba.key))));
 
 
 
@@ -411,7 +447,7 @@ end
 
 
 
-
+decoded = EgoProCode2D_comp_decoded(dca,'theta','all',mfun,beta);
 %mBinHvl.edges = linspace(-35,35,8);
 mBinHvl.edges = linspace(-45,45,8);
 %mBinHvl.edges = linspace(-0.5,0.5,8);
@@ -430,9 +466,9 @@ for a = 1:mBinHba.count
               & WithinRanges(decoded.hvl,mBinHvl.edges([v,v+1])) ...
               & WithinRanges(decoded.hba,mBinHba.edges([a,a+1])) ...              
               & randn(size(decoded.hba))>0;
-        mout(a,v) = mean(decoded.clat(ind),'omitnan');
-        sout(a,v) = std(decoded.clat(ind),'omitnan');
-        [~,tout(a,v)] = ttest(decoded.clat(ind));
+        mout(a,v) = mean(decoded.clat(ind)/10,'omitnan');
+        sout(a,v) = std(decoded.clat(ind)/10,'omitnan');
+        [~,tout(a,v)] = ttest(decoded.clat(ind)/10);
         cout(a,v) = sum(ind);
     end
 end
@@ -679,7 +715,7 @@ for r = 1:numel(rdists)
         mbbang = circ_dist(bbang,mbang);
         
         mind =  dc.stcm(:,1)==1                                      ...
-                & (dc.stcm(:,3)==3|dc.stcm(:,4)==4|dc.stcm(:,5)==5)  ...               
+                & (dc.stcm(:,3)==3|dc.stcm(:,4)==4|dc.stcm(:,5)==5)  ...
                 & dc.hvfl(:,1)>-2 ...
                 & dc.ucnt>=2 & dc.ucnt<10 ...
                 & (sqrt(sum(dc.xyz(:,'hcom',[1,2]).^2,3))./10)<rdists(r)+10 ...
@@ -910,8 +946,18 @@ rdiste = [0,rdists+2.5];
 [X,Y] = pol2cart(THETA,RR);
 [Xc,Yc] = pol2cart(THETAC,RRC);
 
+
+chd = circle(0,55,10);
+ahd = draw_arrow([x0,x1],[y0,y1],direction)
+
+% direction: left, right, both, top, bottom
+%     dependent on angle relative to [x0, y0]
+
+
+%%%<<< DIAGNOSTIC FIGS ---------------------------------------------------------
+
 figure();
-subplot(131);
+subplot(141);
 hold('on');
 for t = 1:numel(sectors)-1 
     for r = 1:numel(rdists)-1
@@ -923,7 +969,7 @@ end
 colormap(gca,'jet')
 caxis([-15,15])
 
-subplot(132);
+subplot(142);
 hold('on');
 for t = 1:numel(sectors)-1
     for r = 1:numel(rdists)-1
@@ -935,7 +981,7 @@ end
 colormap(gca,'jet')
 caxis([-15,15])
 
-subplot(133);
+subplot(143);
 hold('on');
 for t = 1:numel(sectors)-1
     for r = 1:numel(rdists)-1
@@ -948,7 +994,7 @@ colormap(gca,'jet')
 caxis([-15,15])
 
 
-subplot(133);
+subplot(144);
 hold('on');
 for t = 1:numel(sectors)-1
     for r = 1:numel(rdists)-1
@@ -1045,11 +1091,7 @@ plot(Yc(:),medC(:)-medL(:),'og')
 figure,
 histogram(medR(:)-medL(:),linspace(-10,10,20));
 
-
-
-
-
-
+%%%>>> -------------------------------------------------------------------------
 
 
 
@@ -1076,12 +1118,10 @@ decoded.correction.lat = polyval(p,decoded.correction.lat);
 
 
 
-
-
 mfun = @(beta,x) beta(2).*(sum(x.^2,2)).*sin(atan2(x(:,2),x(:,1)))+beta(1);
 [beta,R,J,COVB,MSE,EMI] = nlinfit([Xc(:),Yc(:)].*10,medC(:).*10,mfun,[0,0.0001]);
 
-%figure,plot3(Xc(:),Yc(:),mfun(beta,[Xc(:),Yc(:)]),'o');
+figure,plot3(Xc(:),Yc(:),mfun(beta,[Xc(:),Yc(:)]),'o');
 
 figure,
 hold('on');

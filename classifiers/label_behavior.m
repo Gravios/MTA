@@ -26,9 +26,9 @@ switch mode
 % LABEL Shakes based on shaking of the body 
     cf(@(t)  label_bhv_shake('msnn_ppsvd',t),  Trials);
 % CREATE composite state of walk and turn
-    stc = cf(@(t)  reduce_stc_to_loc(t.load('stc','msnn_ppsvd')),  Trials);
+% $$$ cf(@(t)  reduce_stc_to_loc('msnn_ppsvd',t),  Trials);
 % LABEL sniffing periods
-    cf(@(s,t)  label_bhv_reduced(s,t),  stc,Trials);
+    cf(@(t)  label_bhv_reduced('msnn_ppsvd',t),  Trials);
 % LABEL homebase behavior
     %cf(@(t)  label_bhv_homebase([],t),  Trials);
 

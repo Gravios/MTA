@@ -1,0 +1,2075 @@
+
+% Figure 3 locomotion vs pause lateral decoding 
+%
+% #Description
+% The comparison between the locomotive state, where displacement
+% and reorientation of the body occurs, with the pause state
+% defined as the periods between locomotion where the rat is
+% presumably alert and aware of its immediate surroundings.
+%
+% . The comparison of anteroposterior and lateral head movements in
+%    locomotion and alert immobility as joint probability distributions
+%
+% . ego-field - partition{ PHZ, HBA}
+%
+% . PDF of decoded lateral position partitoned by { PHZ }
+%      Each subplot contains a kernel smoothed probability density
+%        for each hba bin
+%
+% .
+%
+% TODO Compute spectrum of lateral/angular velocity.
+% TODO Compare the distributions of state durations between
+%      locomotion and pause
+
+
+%%%<<< Figure 3 -----------------------------------------------------------------
+
+%%%<<< LOADDATA -----------------------------------------------------------------
+
+%%%<<< LOAD saved data ----------------------------------------------------------
+configure_default_args();
+EgoProCode2D_load_data();
+EgoProCode2D_f3_data_egoHbaPhzPause();
+EgoProCode2D_f3_data_egoHbaPhzLoc();
+egoHbaPhzRmaps_locSmooth = ...
+    load(fullfile(Trials{1}.path.project, 'analysis',...
+                  'EgoProCode2D_compute_egoratemaps_conditioned_on_hba_and_phz_DATA_loc_smooth.mat'));
+egoHbaPhzRmaps_pauseSmooth = ...
+    load(fullfile(Trials{1}.path.project, 'analysis',...
+                  'EgoProCode2D_compute_egoratemaps_conditioned_on_hba_and_phz_DATA_pause_smooth.mat'));
+%%%>>>---------------------------------------------------------------------------
+
+
+mask = double(sqrt(bsxfun(@plus,egoHbaPhzRmaps_loc.xbins.^2,egoHbaPhzRmaps_loc.ybins'.^2)') < 445);
+mask(~mask) = nan;
+rat = load_patch_model('rat');
+sig = 1-(1-0.05)^(1/numel(unitsEgoCA1));
+%pfb = cf(@(t,u)  pfs_2d_states(t,u,'',{'loc&theta','pause&theta'}),   Trials,units);
+
+
+%%%<<< Decoding Loc -------------------------------------------------------------
+% DATA LOC
+decoded_l = EgoProCode2D_comp_decoded( dca, 'loc', 'CA1', mfun, beta);
+mout_l = zeros([mBinHba.count, mBinHav.count, pc]);
+rout_l = zeros([mBinHba.count, mBinHav.count, pc]);
+aout_l = zeros([mBinHba.count, mBinHav.count, pc]);
+fout_l = zeros([mBinHba.count, mBinHba.count, pc]);
+fouts_l= zeros([mBinHba.count, mBinHba.count, pc]);
+cout_l = zeros([mBinHba.count, mBinHba.count, pc]);
+
+for phzI = 1 : pc
+    for hbaI = 1 : mBinHba.count
+        for havI = 1 : mBinHav.count
+            ind =  WithinRanges( decoded_l.phz, bins.phz.edges([phzI, phzI+1])) ...
+                 & WithinRanges(-decoded_l.hav, mBinHav.edges([havI, havI+1])) ...
+                 & WithinRanges( decoded_l.hba,  mBinHba.edges([hbaI, hbaI+1])) ...
+                 & randn(size(decoded_l.hba))>0;
+            [aout_l(hbaI, havI, phzI), rout_l(hbaI, havI, phzI)] = ...
+                cart2pol(mean(decoded_l.fwd(ind),'omitnan'),    ...
+                         mean(decoded_l.clat(ind),'omitnan'));
+            mout_l(hbaI,  havI, phzI) = mean( decoded_l.clat(ind), 'omitnan');
+            sout_l(hbaI,  havI, phzI) =  std( decoded_l.clat(ind), 'omitnan');
+            fout_l(hbaI,  havI, phzI) = mean( decoded_l.fwd(ind), 'omitnan');
+            fouts_l(hbaI, havI, phzI) =  std( decoded_l.fwd(ind), 'omitnan');
+            cout_l(hbaI,  havI, phzI) =  sum(ind);
+        end
+    end
+end
+
+dmask_l = ones([mBinHba.count, mBinHav.count]);
+dmask_l(cout_l(:,:,1) < 32) = nan;
+%%%>>>---------------------------------------------------------------------------
+
+%%%<<< Decoding Pause -----------------------------------------------------------
+% DATA PAUSE
+decoded_p = EgoProCode2D_comp_decoded(dca,'pause','CA1',mfun,beta);
+
+mout_p = zeros([mBinHba.count, mBinHav.count, pc]);
+rout_p = zeros([mBinHba.count, mBinHav.count, pc]);
+aout_p = zeros([mBinHba.count, mBinHav.count, pc]);
+fout_p = zeros([mBinHba.count, mBinHba.count, pc]);
+fouts_p= zeros([mBinHba.count, mBinHba.count, pc]);
+cout_p = zeros([mBinHba.count, mBinHba.count, pc]);
+
+for phzI = 1 : pc
+    for hbaI = 1 : mBinHba.count
+        for havI = 1 : mBinHav.count
+            ind =  WithinRanges( decoded_p.phz, bins.phz.edges([phzI, phzI+1])) ...
+                 & WithinRanges(-decoded_p.hav, mBinHav.edges([havI, havI+1])) ...
+                 & WithinRanges( decoded_p.hba, mBinHba.edges([hbaI, hbaI+1])) ...
+                 & randn(size(decoded_p.hba))>0;
+            [aout_p(hbaI, havI, phzI),rout_p(hbaI, havI, phzI)] = ...
+                cart2pol(mean(decoded_p.fwd(ind),'omitnan'),    ...
+                         mean(decoded_p.clat(ind),'omitnan'));
+            mout_p(hbaI,  havI, phzI) = mean( decoded_p.clat(ind), 'omitnan');
+            sout_p(hbaI,  havI, phzI) =  std( decoded_p.clat(ind), 'omitnan');
+            fout_p(hbaI,  havI, phzI) = mean( decoded_p.fwd(ind), 'omitnan');
+            fouts_p(hbaI, havI, phzI) =  std( decoded_p.fwd(ind), 'omitnan');
+            cout_p(hbaI,  havI, phzI) =  sum(ind);
+        end
+    end
+end
+
+dmask_p = ones([mBinHba.count, mBinHav.count]);
+dmask_p(cout_p(:,:,1) < 32) = nan;
+%%%>>>---------------------------------------------------------------------------
+
+%%%>>>---------------------------------------------------------------------------
+
+
+% BEGINFIG **********************************************************************
+
+
+%%%<<< SETUP FIGURE -------------------------------------------------------------
+
+% CONFIG 
+hfig = figure(666003);
+figureFormat      = 'A4';
+figureOrientation = 'landscape';
+figureUnits       = 'centimeters';
+subplotHeight     = 1.4;%cm
+subplotWidth      = 1.4;%cm
+subplotPadVert    = 0.1;%cm
+subplotPadHorz    = 0.1;%cm
+% SETUP 
+setup_figure(hfig,                  ... 
+             figureFormat,          ... 
+             figureOrientation,     ... 
+             figureUnits,           ...
+             subplotWidth,          ...
+             subplotHeight,         ...
+             subplotPadHorz,        ...
+             subplotPadVert         ...
+             );
+
+%%%>>>
+
+%%%<<< bhv-block ----------------------------------------------------------------
+% START block
+% DESCRIPTION 
+% <description>
+% The comparison of kinematics of the head and the body during locomotion and
+% pause.
+% </description>
+%%%<<< HEAD SPEED  --LOC--  lat vs fwd ------------------------------------------
+
+% DESCRIPTION 
+% <description>
+% Joint distribution of Lateral vs forward head speed.
+% </description>
+% COORDINATES 
+[yindex, yoffset] = deal( 1, 0.5);
+[xindex, xoffset] = deal( 2, 0  );
+[   gyo, gxo    ] = deal( 0, 0  );
+[yscale, xscale ] = deal( 1, 1  );
+% SETUP 
+sax = setup_axes(hfig, yindex, yoffset, xindex, xoffset, gyo, gxo, yscale, xscale);
+% DATA 
+forwardSpeed = clip(abs(decoded_l.hvf), 0.001, 100);
+lateralSpeed = clip(abs(decoded_l.hvl), 0.001, 100);
+fwdSpeedBins = linspace(0, 80, 20);
+latSpeedBins = linspace(0, 80, 20);
+normalization = 'count';%'probability';
+jpdfLatFwdSpd = histcounts2(lateralSpeed, forwardSpeed, ...
+                            latSpeedBins, fwdSpeedBins, ...
+                             'Normalization',normalization);
+% PLOT 
+imagesc(sax, latSpeedBins, fwdSpeedBins, log10(jpdfLatFwdSpd)');
+% FORMAT 
+axis  (sax, 'tight');
+caxis (sax, [0,4.5]);
+title (sax, {'Locomotion','Head Speed'}, 'Color', loc.color , 'FontWeight', 'Normal');
+xlabel(sax, {'Lat (cm/s)'});
+ylabel(sax, {'Fwd (cm/s)'});
+colormap(sax, 'jet');
+% COLORBAR
+cax = colorbar(sax);
+cax.Units = 'centimeters';
+cax.Position(1) = cax.Position(1)+1;
+%%%-----------------------------------------------------------------------------
+
+%%%>>>
+%%%<<< SPEED       --LOC--  head vs body ----------------------------------------
+
+% COORDINATES
+[yindex, yoffset] = deal( 2,-0.5  );
+[xindex, xoffset] = deal( 2, 0    );
+[   gyo, gxo    ] = deal( 0, 0    );
+[yscale, xscale ] = deal( 1, 1    );
+% SETUP 
+sax = setup_axes(hfig, yindex, yoffset, xindex, xoffset, gyo, gxo, yscale, xscale);
+% DATA 
+headSpeed     = clip(sqrt(sum([decoded_l.hvl,decoded_l.hvf].^2,2)),0.001,100);
+bodySpeed     = clip(sqrt(sum([decoded_l.bvl,decoded_l.bvf].^2,2)),0.001,100);
+headSpeedBins = linspace(0,80,20);
+bodySpeedBins = linspace(0,60,20);
+jpdfHeadBodySpeed = hist2([headSpeed, bodySpeed], headSpeedBins,bodySpeedBins);
+% PLOT 
+imagesc(sax,headSpeedBins,bodySpeedBins,log10(jpdfHeadBodySpeed'));
+% FORMAT 
+axis  (sax,'tight');
+caxis (sax, [0,4.5]);
+xlabel(sax, {'head Speed','(cm/s))'});
+ylabel(sax, {'body Speed','(cm/s))'});
+colormap(sax, 'jet');
+% COLORBAR 
+cax = colorbar(sax);
+cax.Units = 'centimeters';
+cax.Position(1) = cax.Position(1)+1;
+
+%%%>>>---------------------------------------------------------------------------
+%%%<<< HEAD SPEED --PAUSE-- lat vs fwd ------------------------------------------
+
+% COORDINATES
+[yindex, yoffset] = deal( 1, 0.5);
+[xindex, xoffset] = deal( 4,-0.5);
+[   gyo, gxo    ] = deal( 0, 0  );
+[yscale, xscale ] = deal( 1, 1  );
+% SETUP 
+sax = setup_axes(hfig, yindex, yoffset, xindex, xoffset, gyo, gxo, yscale, xscale);
+% DATA 
+forwardSpeed  = clip(abs(decoded_p.hvf), 0.001, 100);
+lateralSpeed  = clip(abs(decoded_p.hvl), 0.001, 100);
+fwdSpeedBins  = linspace(0, 80, 20);
+latSpeedBins  = linspace(0, 80, 20);
+normalization = 'count';%'probability';
+jpdfLatFwdSpd = histcounts2(lateralSpeed, forwardSpeed, ...
+                            latSpeedBins, fwdSpeedBins, ...
+                            'Normalization',normalization);
+% PLOT 
+imagesc(sax, latSpeedBins, fwdSpeedBins, log10(jpdfLatFwdSpd)');
+% FORMAT 
+axis  (sax, 'tight');
+title (sax, {'Pause','Head Speed'}, 'color', pause.color, 'FontWeight', 'Normal');
+caxis (sax, [0,4.5]);
+colormap(sax, 'jet');
+xlabel(sax, {'Lat (cm/s))'});
+sax.YTickLabel = {};
+% COLORBAR 
+cax = colorbar(sax);
+ylabel(cax,'log10(count)');
+cax.Units = 'centimeters';
+cax.Position(1) = cax.Position(1)+1;
+%%%-----------------------------------------------------------------------------
+
+%%%>>>
+%%%<<< SPEED      --PAUSE-- head vs body ----------------------------------------
+
+% SUBPLOT  -   New Axes   -  y   yo   x   xo  gyo  gxo   ws    hs
+[yindex, yoffset] = deal( 2,-0.5  );
+[xindex, xoffset] = deal( 4,-0.5  );
+[   gyo, gxo    ] = deal( 0, 0    );
+[yscale, xscale ] = deal( 1, 1    );
+% SETUP 
+sax = setup_axes(hfig, yindex, yoffset, xindex, xoffset, gyo, gxo, yscale, xscale);
+% DATA 
+headSpeed     = clip(sqrt(sum([decoded_p.hvl, decoded_p.hvf].^2,2)), 0.001, 100);
+bodySpeed     = clip(sqrt(sum([decoded_p.bvl, decoded_p.bvf].^2,2)), 0.001, 100);
+headSpeedBins = linspace(0, 80, 20);
+bodySpeedBins = linspace(0, 60, 20);
+jpdfHeadBodySpeed = hist2([headSpeed, bodySpeed], headSpeedBins,bodySpeedBins);
+% PLOT 
+imagesc(sax,headSpeedBins,bodySpeedBins,log10(jpdfHeadBodySpeed'));
+% FORMAT 
+axis  (sax,'tight');
+caxis (sax, [0,4.5]);
+xlabel(sax, {'head Speed', '(cm/s))'});
+colormap(sax, 'jet');
+sax.YTickLabel = {};
+% COLORBAR 
+cax = colorbar(sax);
+ylabel(cax,'log10(count)');
+cax.Units = 'centimeters';
+cax.Position(1) = cax.Position(1)+1;
+%%%-----------------------------------------------------------------------------
+
+%%%>>>
+%%%<<< HEAD DIRECTION  --LOC--  HBA vs HAV --------------------------------------
+
+% DESCRIPTION 
+% <description>
+% Joint distribution of head-body angle versus the head's angular velocity.
+% </description>
+% COORDINATES 
+[yindex, yoffset] = deal( 5, 0.5);
+[xindex, xoffset] = deal( 2, 0  );
+[   gyo, gxo    ] = deal( 0, 0  );
+[yscale, xscale ] = deal( 1, 1  );
+% SETUP 
+sax = setup_axes(hfig, yindex, yoffset, xindex, xoffset, gyo, gxo, yscale, xscale);
+% DATA 
+normalization = 'count';%'probability';
+jpdfLatFwdSpd = histcounts2( decoded_l.hba, -decoded_l.hav, ...
+                             mBinHba.edges, mBinHav.edges, ...
+                             'Normalization',normalization);
+% PLOT 
+imagesc(sax, mBinHba.centers, mBinHav.centers, log10(jpdfLatFwdSpd)');
+% FORMAT
+axis  (sax, 'xy');
+axis  (sax, 'tight');
+title (sax, {'Locomotion'}, 'Color', loc.color , 'FontWeight', 'Normal');
+xlabel(sax, {'Lat (cm/s)'});
+ylabel(sax, {'Fwd (cm/s)'});
+caxis (sax, [0,4.5]);
+colormap(sax, 'jet');
+% COLORBAR
+cax = colorbar(sax);
+cax.Units = 'centimeters';
+cax.Position(1) = cax.Position(1)+1;
+
+%%%>>>-----------------------------------------------------------------------------
+%%%<<< HEAD DIRECTION  --PAUSE--  HBA vs HAV -----------------------------------
+
+% DESCRIPTION 
+% <description>
+% Joint distribution of head-body angle versus the head's angular velocity.
+% </description>
+% COORDINATES 
+[yindex, yoffset] = deal( 5, 0.5);
+[xindex, xoffset] = deal( 4, 0  );
+[   gyo, gxo    ] = deal( 0, 0  );
+[yscale, xscale ] = deal( 1, 1  );
+% SETUP 
+sax = setup_axes(hfig, yindex, yoffset, xindex, xoffset, gyo, gxo, yscale, xscale);
+% DATA 
+normalization = 'count';%'probability';
+jpdfLatFwdSpd = histcounts2( decoded_p.hba, -decoded_p.hav, ...
+                             mBinHba.edges, mBinHav.edges, ...
+                             'Normalization',normalization);
+% PLOT 
+imagesc(sax, mBinHba.centers, mBinHav.centers, log10(jpdfLatFwdSpd)');
+% FORMAT
+axis  (sax, 'xy');
+axis  (sax, 'tight');
+title (sax, {'Pause'}, 'Color', pause.color , 'FontWeight', 'Normal');
+xlabel(sax, {'HBA (deg)'});
+ylabel(sax, {'HAV (deg/s)'});
+colormap(sax, 'jet');
+% COLORBAR
+cax = colorbar(sax);
+cax.Units = 'centimeters';
+cax.Position(1) = cax.Position(1)+1;
+%%%>>>---------------------------------------------------------------------------
+%%%<<< Example PlaceFields ------------------------------------------------------
+% CONFIG 
+clear('exampleFields')
+exampleFields(1).trialIndex = 19;
+exampleFields(1).id         = 50;
+exampleFields(1).maxRate    = 6;
+exampleFields(end+1).trialIndex = 20;
+exampleFields(end  ).id         = 25;
+exampleFields(end  ).maxRate    = 10;
+exampleFields(end+1).trialIndex = 19;
+exampleFields(end  ).id         = 10;
+exampleFields(end  ).maxRate    = 7;
+for ef = 1:numel(exampleFields)
+    eunit  = exampleFields(ef).id;
+    etrial = exampleFields(ef).trialIndex;
+    erate  = exampleFields(ef).maxRate;
+    for s = 1:2
+% COORDINATES 
+        [yindex, yoffset] = deal(    ef,  0.75-0.5*ef./numel(exampleFields) );
+        [xindex, xoffset] = deal( 5 + s,  s * 0.15 -0.5                     );
+        [   gyo, gxo    ] = deal(     0,  0                            );
+        [yscale, xscale ] = deal(     1,  1                            );
+% SETUP 
+        sax = setup_axes(hfig, yindex, yoffset, xindex, xoffset, gyo, gxo, yscale, xscale);
+% PLOT 
+        plot(pfb{etrial}{s}, eunit, 1, 'text', [0, erate], 'colorMap', @jet);
+% FORMAT         
+        sax.XTickLabel = {};
+        sax.YTickLabel = {};
+        colormap(sax, 'jet');
+        if ef == 1
+            if s == 1, title(sax, 'Locomotion', 'Color', loc.color, 'FontWeight', 'Normal'); end
+            if s == 2, title(sax,'Pause', 'Color', pause.color, 'FontWeight', 'Normal');     end
+        end
+        
+        if ef == numel(exampleFields) && s == 2
+            
+            xcoord = sum(sax.Position([ 1, 3])) .* [1, 1]+ 0.1;
+            ycoord = sax.Position(2).*[ 1, 1] + [0, sax.Position(4)*0.2];
+            line(hfig.UserData.fax, xcoord, ycoord, 'LineWidth', 2, 'Color',[0,0,0]);
+            
+            xcoord = sum(sax.Position([1,3]))+0.4;
+            ycoord = sax.Position(2);
+            text(hfig.UserData.fax, xcoord, ycoord, '20 cm', 'Rotation', 90);
+            
+            cax = colorbar(sax, 'SouthOutside');
+            cax.Units = 'Centimeters';
+            cax.Position(2) = cax.Position(2)-1;
+            cax.Position(1) = sax.Position(1);
+            cax.Position(3) = sax.Position(3);
+            cax.Ticks = [0, 1];
+            cax.TickLabels ={'0', 'Max'};
+        end
+    end
+end
+%%%------------------------------------------------------------------------------
+%%%>>>
+%%%<<< ALLO field rates --LOC/PAUSE--  ------------------------------------------
+
+% COORDINATES 
+[yindex, yoffset] = deal(    2,  0.25  );
+[xindex, xoffset] = deal(    9,  0     );
+[   gyo, gxo    ] = deal(    0,  0     );
+[yscale, xscale ] = deal(  1.8,  1.8   );
+% SETUP 
+sax = setup_axes(hfig, yindex, yoffset, xindex, xoffset, gyo, gxo, yscale, xscale);
+% DATA 
+alloLocPauRate = [];
+for trlI = 1:numel(Trials)
+    eunits = unitsEgo{trlI};
+    if isempty(eunits)
+        continue
+    end
+    for unit = eunits,
+        alloLocPauRate(end+1,1) = pfb{trlI}{1}.maxRate(unit,true);
+        alloLocPauRate(end  ,2) = pfb{trlI}{2}.maxRate(unit,true);
+    end
+end
+% PLOT
+line(sax, [0,16], [0,16], 'Color', 'k', 'LineWidth', 1);
+line(sax, [0, 8], [0,16], 'LineStyle','--', 'Color', 'k', 'LineWidth', 1);
+line(sax, [0,16], [0, 8], 'LineStyle','--', 'Color', 'k', 'LineWidth', 1);
+plot(sax, alloLocPauRate(:,1), alloLocPauRate(:,2), '.', 'MarkerSize',10);
+% FORMAT
+xlim(sax, [0,16]);
+ylim(sax, [0,16]);
+grid(sax, 'on');
+sax.XTick = [0,5,10,15];
+sax.YTick = [0,5,10,15];
+tax = title(sax, ' ');
+tax.Units = 'Centimeters';
+xlabel(sax, {'Locomotion', 'Peak Rate (Hz)'}, 'Color', loc.color);
+ylabel(sax, 'Pause Peak Rate (Hz)', 'Color', pause.color);
+%%%>>>---------------------------------------------------------------------------
+
+figure,
+plot(egoHbaPhzLoc.control.maxRate(unitsEgoCA1,2,2),...
+     egoHbaPhzPause.control.maxRate(unitsEgoCA1,2,2),'.')
+title('Loc v Pause Trgh Cntr');
+daspect([1,1,1])
+line([0,12],[0,12])
+
+
+figure,
+plot(egoHbaPhzPause.control.maxRate(unitsEgoCA1,2,1),...
+     egoHbaPhzPause.control.maxRate(unitsEgoCA1,2,2),'.')
+title('Left v Cntr Pause Trgh');
+daspect([1,1,1])
+line([0,12],[0,12])
+
+
+figure
+subplot(221)
+plot(egoHbaPhzPause.control.maxRate(unitsEgoCA1,2,2),...
+     egoHbaPhzPause.control.maxRate(unitsEgoCA1,2,1),'.')
+title('Cntr V left Pause Trgh');
+daspect([1,1,1])
+line([0,12],[0,12])
+subplot(222)
+plot(egoHbaPhzPause.control.maxRate(unitsEgoCA1,2,2),...
+     egoHbaPhzPause.control.maxRate(unitsEgoCA1,2,3),'.')
+title('Cntr V Right Pause Trgh');
+daspect([1,1,1])
+line([0,12],[0,12])
+subplot(223)
+plot(egoHbaPhzLoc.control.maxRate(unitsEgoCA1,2,2),...
+     egoHbaPhzLoc.control.maxRate(unitsEgoCA1,2,1),'.')
+title('Cntr V left Loc Trgh');
+daspect([1,1,1])
+line([0,12],[0,12])
+subplot(224)
+plot(egoHbaPhzLoc.control.maxRate(unitsEgoCA1,2,2),...
+     egoHbaPhzLoc.control.maxRate(unitsEgoCA1,2,3),'.')
+title('Cntr V Right Loc Trgh');
+daspect([1,1,1])
+line([0,12],[0,12])
+
+figure
+subplot(221)
+plot(egoHbaPhzPause.control.maxRate(unitsEgoCA1,3,2),...
+     egoHbaPhzPause.control.maxRate(unitsEgoCA1,3,1),'.')
+title('Cntr V left Pause Trgh');
+daspect([1,1,1])
+line([0,12],[0,12])
+subplot(222)
+plot(egoHbaPhzPause.control.maxRate(unitsEgoCA1,3,2),...
+     egoHbaPhzPause.control.maxRate(unitsEgoCA1,3,3),'.')
+title('Cntr V Right Pause Trgh');
+daspect([1,1,1])
+line([0,12],[0,12])
+subplot(223)
+plot(egoHbaPhzLoc.control.maxRate(unitsEgoCA1,3,2),...
+     egoHbaPhzLoc.control.maxRate(unitsEgoCA1,3,1),'.')
+title('Cntr V left Loc Trgh');
+daspect([1,1,1])
+line([0,12],[0,12])
+subplot(224)
+plot(egoHbaPhzLoc.control.maxRate(unitsEgoCA1,3,2),...
+     egoHbaPhzLoc.control.maxRate(unitsEgoCA1,3,3),'.')
+title('Cntr V Right Loc Trgh');
+daspect([1,1,1])
+line([0,12],[0,12])
+
+figure();
+hist(egoHbaPhzLoc.control.maxRate(unitsEgoCA1,2,2)-egoHbaPhzLoc.control.maxRate(unitsEgoCA1,2,3),20)
+
+[p,h,stats]= signtest(egoHbaPhzLoc.control.maxRate(unitsEgoCA1,3,2),...
+                      egoHbaPhzLoc.control.maxRate(unitsEgoCA1,3,3))
+
+[p,h,stats]= signtest(egoHbaPhzLoc.control.maxRate(unitsEgoCA1,2,2),...
+         egoHbaPhzLoc.control.maxRate(unitsEgoCA1,2,3))
+
+%%%<<< ALLO field Size --LOC/PAUSE--  ------------------------------------------
+% COORDINATES 
+[yindex, yoffset] = deal(    2,  0.25  );
+[xindex, xoffset] = deal(    9,  0     );
+[   gyo, gxo    ] = deal(    0,  0     );
+[yscale, xscale ] = deal(  1.8,  1.8   );
+% SETUP 
+sax = setup_axes(hfig, yindex, yoffset, xindex, xoffset, gyo, gxo, yscale, xscale);
+% DATA 
+alloLocPauSize = [];
+for trlI = 1:numel(Trials)
+    eunits = unitsEgo{trlI};
+    if isempty(eunits)
+        continue
+    end
+    for unit = eunits,
+        alloLocPauSize(end+1,1) = sum( reshape(plot(pfb{trlI}{1},unit),[],1) > 1 );
+        alloLocPauSize(end  ,2) = sum( reshape(plot(pfb{trlI}{2},unit),[],1) > 1 );
+    end
+end
+% PLOT 
+plot  (sax, alloLocPauSize(:,1)*4/10000, alloLocPauSize(:,2)*4/10000,'.', 'MarkerSize',10);
+line  (sax, [0, 0.35], [0, 0.35])
+% FORMAT 
+xlim  (sax, [0, 0.35])
+ylim  (sax, [0, 0.35])
+xlabel(sax, {'Locomotion', 'Field Size (m^2)'}, 'Color', loc.color);
+ylabel(sax, 'Pause Field Size (m^2)', 'Color', pause.color);
+daspect(sax, [1,1,1]);
+grid   (sax, 'on');
+sax.YTick = [0,0.1,0.2,0.3];
+sax.XTick = [0,0.1,0.2,0.3];
+%%%>>>---------------------------------------------------------------------------
+
+
+
+%%%<<< HBA MARGINAL --LOC/PAUSE--   ---------------------------------------------
+% $$$ % COORDINATES 
+% $$$ [yindex, yoffset] = deal(  1,  0.5 );
+% $$$ [xindex, xoffset] = deal( 11,  1   );
+% $$$ [   gyo, gxo    ] = deal(  0,  0   );
+% $$$ [yscale, xscale ] = deal(  1,  2   );
+% $$$ % SETUP 
+% $$$ sax = setup_axes(hfig, yindex, yoffset, xindex, xoffset, gyo, gxo, yscale, xscale);
+% $$$ % DATA 
+% $$$ [F_p,xi_p] = ksdensity(decoded_p.hba);
+% $$$ [F_l,xi_l] = ksdensity(decoded_l.hba);
+% $$$ % PLOT
+% $$$ plot( xi_l, F_l./sum(F_l), '-', 'Color',   loc.color, 'LineWidth', 1.5);
+% $$$ plot( xi_p, F_p./sum(F_p), '-', 'Color', pause.color, 'LineWidth', 1.5);
+% $$$ % FORMAT 
+% $$$ grid(sax,'on')
+% $$$ xlabel(sax,{'Head Body Angle','(radians)'});
+% $$$ ylim(sax, 'auto')
+% $$$ xlim(sax, bins.hba.edges([1,end]));
+% $$$ lax = legend(sax, {'Locomotion', 'Pause'}, 'Location', 'NorthEastOutside');
+% $$$ lax.Position(1) = lax.Position(1)+0.1
+% $$$ % ANNOTATE 
+% $$$ Lines(bins.hba.edges(2:end-1),[],'r');
+%%%------------------------------------------------------------------------------
+
+%%%>>>
+%%%<<< HAV MARGINAL --LOC/PAUSE--   ---------------------------------------------
+% $$$ 
+% $$$ % COORDINATES 
+% $$$ [yindex, yoffset] = deal(  3,  0.5 );
+% $$$ [xindex, xoffset] = deal( 11,  1   );
+% $$$ [   gyo, gxo    ] = deal(  0,  0   );
+% $$$ [yscale, xscale ] = deal(  1,  2   );
+% $$$ % SETUP 
+% $$$ sax = setup_axes(hfig, yindex, yoffset, xindex, xoffset, gyo, gxo, yscale, xscale);
+% $$$ % DATA 
+% $$$ [F_p,xi_p] = ksdensity(decoded_p.hav);
+% $$$ [F_l,xi_l] = ksdensity(decoded_l.hav);
+% $$$ % PLOT 
+% $$$ plot( xi_p, F_p, '-', 'Color', pause.color, 'LineWidth', 1.5);
+% $$$ plot( xi_l, F_l, '-', 'Color',   loc.color, 'LineWidth', 1.5);
+% $$$ % FORMAT
+% $$$ xlim(sax, bins.hav.edges([1,end]));
+% $$$ xlabel(sax,{'Head Angular Vel','(rad/s)'});
+% $$$ grid(sax, 'on');
+% $$$ % ANNOTATE 
+% $$$ Lines(bins.hav.edges(2:end-1),[],'r');
+%%%------------------------------------------------------------------------------
+
+%%%>>>
+%%%<<< LAT hba box plot --LOC/Pause--  ------------------------------------------
+
+% COORDINATES 
+[yindex, yoffset] = deal(    7,  0   );
+[xindex, xoffset] = deal(   12,  4   );
+[   gyo, gxo    ] = deal(    0,  0   );
+[yscale, xscale ] = deal(  2.2,  2   );
+% SETUP 
+sax = setup_axes(hfig, yindex, yoffset, xindex, xoffset, gyo, gxo, yscale, xscale);
+% DATA 
+utrials = unique(decoded_l.trl)';
+meanLat = [];
+mlclr = [];
+mllbl = {};
+for hbaI = 1:bins.hba.count
+    for trialI = utrials
+        %LOCOMOTION
+        ind = WithinRanges(decoded_l.phz, [4.5,5.5])                   ...
+              & randn( size(decoded_l.hba) ) > 0                       ...
+              & WithinRanges( decoded_l.hba, bins.hba.edges(hbaI+[0,1])) ...
+              & decoded_l.trl==trialI;
+        meanLat(trialI == utrials, hbaI*2-1) = mean(decoded_l.clat(ind) / 10);
+        mlclr(hbaI*2-1,:) = loc.color;
+        mllbl(hbaI*2-1) = {['Loc ',bins.hba.key(hbaI)]};
+        %PAUSE
+        ind = WithinRanges(decoded_p.phz, [4.5,5.5])                   ...
+              & randn( size(decoded_p.hba) ) > 0                       ...
+              & WithinRanges(decoded_p.hba, bins.hba.edges(hbaI+[0,1])) ...
+              & decoded_p.trl==trialI;
+        meanLat(trialI == utrials, hbaI*2) = mean(decoded_p.clat(ind) / 10);
+        mlclr(hbaI*2,:) = pause.color;
+        mllbl(hbaI*2) = {['Pause ',bins.hba.key(hbaI)]};
+    end
+end
+% PLOT 
+boxplot(meanLat, 'colors', mlclr, 'labels', mllbl, 'orientation', 'horizontal');
+% FORMAT 
+xlabel(sax,'Lat Head Pos (cm)')
+title (sax,{'Trial Mean Decoded','Lateral Pos by HBA'}, 'FontWeight', 'Normal')
+grid  (sax,'on');
+%%%-----------------------------------------------------------------------------
+
+%%%>>>
+% END block
+%%%>>> bhv-block ----------------------------------------------------------------
+
+%%%<<< loc-block ----------------------------------------------------------------
+
+% START block
+% DESCRIPTION 
+% <description>
+% </description>
+%%%<<< THETA Phase     --LOC--  -------------------------------------------------
+%COORDINATES
+yscale = (fig.subplot.height*3+fig.subplot.verticalPadding*2)./fig.subplot.height;
+[yindex, yoffset] = deal(      3, -0.5 );
+[xindex, xoffset] = deal(      1,  0.25);
+[   gyo, gxo    ] = deal(     -6,  0   );
+[yscale, xscale ] = deal( yscale,  0.5 );    
+% SETUP 
+sax = setup_axes(hfig, yindex, yoffset, xindex, xoffset, gyo, gxo, yscale, xscale);
+% PLOT 
+plot(sax, -cos(linspace(0,2*pi)), linspace(0,1), 'k', 'LineWidth', 2);
+% Desc
+plims = [0.5, 2.26106176905986];
+plot(sax,                                        ...
+     -cos(linspace(plims(1),plims(2))),          ...
+     linspace(plims(1)/(2*pi), plims(2)/(2*pi)), ...
+     'Color', bins.phz.color( 1, :),             ...
+     'LineWidth', 2);
+% Trgh
+plims = [2.26106176905986, 4.02212353811972];
+plot(sax,                                        ...
+     -cos(linspace(plims(1), plims(2))),         ...
+     linspace(plims(1)/(2*pi),plims(2)/(2*pi)),  ...
+     'Color', bins.phz.color( 2, :),             ...
+     'LineWidth', 2);
+% Ascn 
+plims = [4.02212353811972, 5.78318530717959];
+plot(sax,                                        ...
+     -cos(linspace(plims(1),plims(2))),          ...
+     linspace(plims(1)/(2*pi),plims(2)/(2*pi)),  ...
+     'Color', bins.phz.color( 3, :),             ...
+     'LineWidth', 2);
+% FORMAT 
+ylim([0,1]);
+text(0.5,0.05,'0','Rotation',90,'FontSize',8);
+text(-0.5,0.5,'\pi','Rotation',90,'FontSize',8);
+text(0.5,0.95,'2\pi','Rotation',90,'FontSize',8);
+sax.XAxis.Visible = 'off';
+sax.YAxis.Visible = 'off';
+sax.YTick =[];
+sax.Color = 'none';
+axes(hfig.UserData.fax);
+text(sax.Position(1)-0.25,              ...
+     sum(sax.Position([2,4]).*[1, 0.5]),...
+     'Locomotion',                      ...
+     'Color', loc.color,                ...
+     'Rotation', 90,                    ...
+     'HorizontalAlignment', 'center',   ...
+     'VerticalAlignment', 'middle',     ...
+     'FontSize', 10);
+%%%>>>
+%%%<<< EGO FIELD       --LOC--  partitioned by theta-phase and head-body-angle --
+% CONFIG 
+loc.label = 'Locomotion';
+loc.color = [98, 65, 133]./255;
+loc.hex = '#624185';
+pause.label = 'Pause';
+pause.color = [255, 163, 69]./255;
+exampleUnit.trialIndex = 19;
+exampleUnit.close.Xlims = [-200,400];
+exampleUnit.close.Ylims = [-400,200];
+exampleUnit.id = 50;
+exampleUnit.eindex = 1;
+exampleUnit.maxRate = 25;
+exampleUnit.index = find(unitsEgo{exampleUnit.trialIndex}==exampleUnit.id);
+exampleUnit.trajectoryTimeSeries = [274*250]:[278.5*250];
+pc = bins.phz.count;
+hc = bins.hba.count;
+for phzI = 1 : pc
+    for hbaI = 1 : hc
+% COORDINATES 
+        [yindex, yoffset] = deal( pc+1-phzI, -0.5  );
+        [xindex, xoffset] = deal(    1+hbaI,  0    );
+        [   gyo, gxo    ] = deal(        -6,  0    );
+        [yscale, xscale ] = deal(         1,  1    );
+% SETUP         
+        sax = setup_axes(hfig, yindex, yoffset, xindex, xoffset, gyo, gxo, yscale, xscale);
+% DATA 
+        etrial = exampleUnit.trialIndex;
+        eindex  = exampleUnit.eindex;
+        xbins  = egoHbaPhzRmaps_locSmooth.xpos-diff(egoHbaPhzRmaps_locSmooth.xpos(1:2))/2;
+        ybins  = egoHbaPhzRmaps_locSmooth.ypos-diff(egoHbaPhzRmaps_locSmooth.ypos(1:2))/2;
+        ratemap = ...
+            fliplr(...
+            rot90(egoHbaPhzRmaps_locSmooth.rmap(:, :, eindex, phzI, hbaI)',-1)) ...
+            .*egoHbaPhzRmaps_locSmooth.mask;
+% PLOT 
+        set(pcolor(xbins, ybins, ratemap),'EdgeColor','none');
+% FORMAT 
+        shading (sax,'flat');        
+        axis    (sax,'xy');
+        colormap(sax,'jet');
+        caxis   (sax,[0,exampleUnit.maxRate]);
+        xlim    (sax,[-250,250]);
+        ylim    (sax,[-250,250]);
+        daspect (sax,[1,1,1]);
+        box     (sax,'on');
+        Lines([],0,'w');
+        Lines(0,[],'w');
+        sax.XTickLabel =[];
+        sax.YTickLabel =[];
+% ANNOTATE 
+        subject = struct(rat);
+        subject = update_subject_patch(subject, 'head',...
+                                       [], false,...
+                                       bins.hba.edges,...
+                                       bins.hba.centers);
+        subject = update_subject_patch(subject, 'body',...
+                                       bins.hba.count+1-hbaI,  true,...
+                                       bins.hba.edges,...
+                                       bins.hba.centers);
+        patch(subject.body.patch.vert{:},   [0.75,0.75,0.75]);
+        patch(subject.head.patch.vert{:},   [0.75,0.75,0.75]);
+        patch(subject.body.overlay.vert{:},[0.75,0.50,0.50],'FaceAlpha',0.3);
+        line(subject.head.midline.vert{:}, 'Color', subject.head.midline.color);
+        line(subject.body.midline.vert{:}, 'Color', subject.body.midline.color);
+        axes(hfig.UserData.fax);
+        rectangle('Position',sax.Position, ...
+                  'EdgeColor',bins.phz.color(phzI,:), ...
+                  'FaceColor','None',...
+                  'LineWidth',1);
+        if phzI==3,
+            line([sax.Position(1),sum(sax.Position([1,3]))],...
+                  sum(sax.Position([2,4])).*[1,1]+0.15,...
+                 'LineWidth',2,...
+                 'color',bins.hba.color(hbaI,:));
+            title(sax,{bins.hba.label{hbaI},' '}, 'FontWeight', 'Normal', 'Color', bins.hba.color(hbaI,:));
+        end
+        if phzI==1 && hbaI==3,
+            line(sum(sax.Position([1,3])).*[1,1]+0.1,...
+                 sax.Position(2).*[1,1]+[0,sax.Position(4)*0.4],...
+                 'LineWidth',2,...
+                 'Color',[0,0,0]);
+            text(sum(sax.Position([1,3]))+0.4,...
+                 sax.Position(2),...
+                 '20 cm',...
+                 'Rotation',90);
+            cax = colorbar(sax, 'SouthOutside');
+            cax.Units = 'Centimeters';
+            cax.Position(2) = cax.Position(2)-1;
+            cax.Position(1) = sax.Position(1);
+            cax.Position(3) = sax.Position(3);
+            cax.Ticks = [0, 10, 20];
+            cax.TickLabels ={'0', '10','    20Hz'};
+        end
+    end % hbaI
+end % phzI
+
+%%%>>>
+%%%<<< LAT POS         --LOC--  left vs Right lateral coordinates for egoHba ----
+% ADJUST subplot coordinates
+for phzI = 1:pc
+% COORDINATES 
+    [yindex, yoffset] = deal( pc-phzI+1, -0.5);
+    [xindex, xoffset] = deal(         6,  0  );
+    [   gyo, gxo    ] = deal(        -6,  0  );
+    [yscale, xscale ] = deal(         1,  1  );
+% SETUP 
+    sax = setup_axes(hfig, yindex, yoffset, xindex, xoffset, gyo, gxo, yscale, xscale);
+% PLOT 
+    xlim(sax,[-20, 20]);
+    ylim(sax,[-20, 20]);
+    Lines([],0,'k');
+    Lines(0,[],'k');
+    plot(egoHbaPhzLoc.control.meanPos(unitsEgoCA1, phzI, 3, 2), ...
+         egoHbaPhzLoc.control.meanPos(unitsEgoCA1, phzI, 1, 2), ...
+         '.',                                           ...
+         'MarkerFaceColor', bins.phz.color(phzI, :),      ...
+         'MarkerEdgeColor', bins.phz.color(phzI, :));
+% FORMAT 
+    grid (sax, 'on');
+    xlim (sax, [-10,10]);
+    ylim (sax, [-10,10]);    
+    sax.XTick = [-5,0,5];
+    sax.YTick = [-5,0,5];
+    title(sax, '');
+    if phzI == 2 
+        ylabel(sax,'HBA L (cm)');
+        sax.YLabel.Units = 'centimeters';
+        sax.YLabel.Position = [-0.55,0.74,0];
+    end
+    if phzI == 1
+        xlabel(sax,'HBA R (cm)');
+        sax.XLabel.Units = 'centimeters';
+        sax.XLabel.Position = [0.75,-0.4,0];
+    else
+        sax.XTickLabel = {};
+    end
+    if phzI == 3
+        title(sax, {'Mean Lat','Field Pos'}, 'FontWeight', 'Normal');
+    end
+    daspect(sax, [1,1,1]);
+end
+%%%>>>
+%%%<<< LAT POS DISTRIB --LOC--  partitioned by theta-phase and head-body-angle---
+for phzI = 1:pc
+% COORDINATES 
+    [yindex, yoffset] = deal( pc-phzI+1,-0.5 );
+    [xindex, xoffset] = deal(         7, 1.1 );
+    [   gyo, gxo    ] = deal(        -6, 0   );
+    [yscale, xscale ] = deal(         1, 1   );
+% SETUP     
+    sax = setup_axes(hfig, yindex, yoffset, xindex, xoffset, gyo, gxo, yscale, xscale);
+% PLOT 
+    for hbaI = 1:bins.hba.count
+        meanLatPos = egoHbaPhzLoc.control.meanPos(unitsEgoCA1, phzI, hbaI, lat);
+        [ehpcmpKDE,dxi] = ksdensity(meanLatPos);
+        med             = median(meanLatPos);
+        plot(dxi,ehpcmpKDE,'-','color',bins.hba.color(hbaI,:));
+        [~,xi] = NearestNeighbour(dxi,med);
+        line(dxi(xi)*[1,1],[0,ehpcmpKDE(xi)],'color',bins.hba.color(hbaI,:));
+    end
+% FORMAT 
+    xlim(sax,[-10, 10   ]);
+    ylim(sax,[  0,  0.13]);
+    grid(sax,'on');
+    sax.YTick      = [0, 0.10];
+    sax.XTick      = [-5, 0, 5];
+    if phzI == 1
+        xlabel(sax,'cm');
+        sax.XLabel.Units = 'centimeters';
+        sax.XLabel.Position = [0.75,-0.4,0];
+        sax.YTickLabel = {'0', '', '0.1', ''};
+    else
+        sax.XTickLabel = {};
+    end
+    if phzI == 2
+        ylabel(sax,'(Probability/cm)')
+        sax.YLabel.Units = 'centimeters';
+        sax.YLabel.Position = [-0.55,0.74,0];
+    end
+    if phzI == 3
+        title(sax, {'Mean Field', 'Lat position'}, 'FontWeight','Normal', 'FontSize', 8)
+    end
+end
+%%%>>>
+%%%<<< AP POS DISTRIB  --LOC--  partitioned by theta-phase and head-body-angle---
+for phzI = 1:pc
+% COORDINATES 
+    [yindex, yoffset] = deal( pc-phzI+1, -0.5  );
+    [xindex, xoffset] = deal(         8,  1.2  );
+    [   gyo, gxo    ] = deal(        -6,  0    );
+    [yscale, xscale ] = deal(         1,  1.75 );
+% SETUP 
+    sax = setup_axes(hfig, yindex, yoffset, xindex, xoffset, gyo, gxo, yscale, xscale);
+% PLOT 
+    for hbaI = 1:bins.hba.count
+        meanFwdPos = egoHbaPhzLoc.control.meanPos( unitsEgoCA1, phzI, hbaI, fwd);
+        [ehpcmpKDE,dxi] = ksdensity(meanFwdPos);
+        med             = median(meanFwdPos);
+        plot(dxi,ehpcmpKDE,'-','color',bins.hba.color(hbaI,:))
+        [~,xi] = NearestNeighbour(dxi,med);
+        line(dxi(xi)*[1,1],[0,ehpcmpKDE(xi)],'color',bins.hba.color(hbaI,:));
+    end
+% FORMAT 
+    xlim(sax,[-15,20]);
+    ylim(sax,[0,0.13]);
+    grid(sax,'on');
+    sax.YTick      = [0, 0.05, 0.10];
+    sax.YTickLabel = {};
+    sax.XTick      = [-10, -5, 0, 5, 10, 15, 20];
+    sax.XTickLabel = {};    
+    switch phzI
+      case 1
+        xlabel(sax,'    AP Pos (cm)');
+        sax.XLabel.Units = 'centimeters';
+        sax.XLabel.Position = [0.75, -0.4, 0];
+        sax.XTickLabel = {'-10', '', '0', '', '10', '', '20'};
+      case 3
+        title(sax,                     ...
+              {'Mean Field', 'AP Pos'},...
+              'FontWeight','Normal',   ...
+              'FontSize', 8)
+    end
+end
+%%%>>>
+%%%<<< MEAN angle      --LOC--  (hba vs hvl) by theta phase ---------------------
+
+for phzI = 1:pc
+% COORDINATES 
+    [yindex, yoffset] = deal( pc-phzI+1, -0.5 );
+    [xindex, xoffset] = deal(        11,  0.8 );
+    [   gyo, gxo    ] = deal(        -6,  0   );
+    [yscale, xscale ] = deal(         1,  1   );
+% SETUP 
+    sax = setup_axes(hfig, yindex, yoffset, xindex, xoffset, gyo, gxo, yscale, xscale);
+% DATA 
+    xbins = mBinHba.centers;
+    ybins = mBinHav.centers;
+    maskedMean = aout_l(:,:,phzI)' .* double(cout_l(:,:,phzI)'>32)';
+    maskedMean(maskedMean==0) = nan;
+% PLOT 
+    imagescnan({xbins, ybins, -maskedMean},...
+               [-pi,pi],...
+               'circular',...
+               false,...
+               [0.8, 0.8, 0.8], 1, 1,...
+               @(x) circshift(hsv(x),round(x/3)));
+% FORMAT 
+    axis(sax,'xy');
+    axis(sax,'tight');
+    colormap(sax,'hsv');
+    sax.XTick = bins.hba.centers;
+    sax.XTickLabel = {};
+    sax.YTick = bins.hvl.centers ;        
+    sax.YTickLabelRotation = 90;
+    sax.YTickLabel = {};
+    switch phzI
+      case 2
+        ylabel(sax, {'Head Angular Vel. (HAV) Direction',' '});
+        sax.YTickLabel = mat2cell(bins.hvl.key, 1, ones([1,bins.hvl.count]));        
+      case 3
+        title( sax,{'L   C   R',' '},  'FontWeight', 'Normal');
+        if phzI==3,
+            axes (hfig.UserData.fax);
+            for hbaI = 1:bins.hba.count
+                xcoords = [sax.Position(1)+(hbaI-1)*(sax.Position(3)./3), ...
+                           sax.Position(1) + sax.Position(3)./3 * hbaI];
+                ycoords = sum(sax.Position([2,4])).*[1,1]+0.15;
+                line(xcoords, ycoords,            ...
+                     'LineWidth', 2,              ...
+                     'Color',bins.hba.color(hbaI,:));
+            end
+        end
+    end
+end
+
+%%%------------------------------------------------------------------------------
+%%%>>>
+%%%<<< MEAN radius     --LOC--  (hba vs hvl) by theta phase ---------------------
+for phzI = 1:pc
+% COORDINATES 
+    [yindex, yoffset] = deal( pc-phzI+1, -0.5 );
+    [xindex, xoffset] = deal(        12,  0.8 );
+    [   gyo, gxo    ] = deal(        -6,  0   );
+    [yscale, xscale ] = deal(         1,  1   );
+% SETUP 
+    sax = setup_axes(hfig, yindex, yoffset, xindex, xoffset, gyo, gxo, yscale, xscale);
+% DATA 
+    xbins = mBinHba.centers;
+    ybins = mBinHav.centers;
+    maskedMean = rout_l(:,:,phzI)' .* double(cout_l(:,:,phzI)'>32)';
+    maskedMean(maskedMean==0) = nan;
+% PLOT 
+    imagescnan({xbins, ybins, maskedMean},...
+               [0,10],...
+               'linear',...
+               false,...
+               [0.8, 0.8, 0.8], 1, 1,...
+               @copper);
+% FORMAT 
+    axis(sax,'ij');
+    axis(sax,'tight');
+    colormap(sax,'copper');
+    sax.XTick = bins.hba.centers;
+    sax.XTickLabel = {};
+    sax.YTick = bins.hvl.centers;        
+    sax.YTickLabelRotation = 90;
+    sax.YTickLabel = {};
+    ylabel(sax, '');
+    xlabel(sax, '');
+    switch phzI
+      case 3
+        title( sax,{'L   C   R',' '},  'FontWeight', 'Normal');
+        if phzI==3
+            axes (hfig.UserData.fax);
+            for hbaI = 1:bins.hba.count
+                xcoords = [sax.Position(1)+(hbaI-1)*(sax.Position(3)./3), ...
+                           sax.Position(1) + sax.Position(3)./3 * hbaI];
+                ycoords = sum(sax.Position([2,4])).*[1,1]+0.15;
+                line(xcoords, ycoords,            ...
+                     'LineWidth', 2,              ...
+                     'Color',bins.hba.color(hbaI,:));
+            end
+        end%if
+    end%switch phzI
+end%for phzI
+%%%------------------------------------------------------------------------------
+%%%>>
+
+% END -- LOC ----- LOC ----- LOC ----- LOC ----- LOC ----- LOC ----- LOC --------
+%%%>>>
+% END block
+%%%>>> loc-block ----------------------------------------------------------------
+
+%%%<<< pause-block --------------------------------------------------------------
+
+% START block
+% DESCRIPTION 
+% <description>
+% </description>
+%%%<<< THETA Phase     --PAUSE--  -----------------------------------------------
+% COORDINATES
+yscale = (fig.subplot.height * 3 + fig.subplot.verticalPadding * 2)./fig.subplot.height;
+[yindex, yoffset] = deal(      7, 0   );
+[xindex, xoffset] = deal(      1, 0.25);
+[   gyo, gxo    ] = deal(     -6, 0   );
+[yscale, xscale ] = deal( yscale, 0.5 );    
+% SETUP 
+sax = setup_axes(hfig, yindex, yoffset, xindex, xoffset, gyo, gxo, yscale, xscale);
+% PLOT 
+hold(sax,'on');
+plot(sax,-cos(linspace(0,2*pi)),linspace(0,1),'k','LineWidth',2);
+plims = [0.5,              2.26106176905986];
+plot(sax,                                        ...
+     -cos(linspace(plims(1),plims(2))),          ...
+     linspace(plims(1)/(2*pi),plims(2)/(2*pi)),  ...
+     'Color', bins.phz.color( 1, :),               ...
+     'LineWidth', 2);
+plims = [2.26106176905986, 4.02212353811972];
+plot(sax,                                        ...
+     -cos(linspace(plims(1),plims(2))),          ...
+     linspace(plims(1)/(2*pi),plims(2)/(2*pi)),  ...
+     'Color', bins.phz.color( 2, :),               ...
+     'LineWidth', 2);
+plims = [4.02212353811972, 5.78318530717959];
+plot(sax,                                        ...
+     -cos(linspace(plims(1), plims(2))),         ...
+     linspace(plims(1)/(2*pi), plims(2)/(2*pi)), ...
+     'Color', bins.phz.color( 3, :),               ...
+     'LineWidth', 2);
+% FORMAT subplot
+ylim([0,1]);
+text( 0.5, 0.05,   '0', 'Rotation',90, 'FontSize',8);
+text(-0.5, 0.5 , '\pi', 'Rotation',90, 'FontSize',8);
+text( 0.5, 0.95,'2\pi', 'Rotation',90, 'FontSize',8);
+ylabel(sax,'Pause');
+sax.XAxis.Visible = 'off';
+sax.YAxis.Visible = 'off';
+sax.YTick         = [];
+sax.Color         = 'none';
+axes(hfig.UserData.fax);
+text(sax.Position(1)-0.25,              ...
+     sum(sax.Position([2,4]).*[1, 0.5]),...
+     'Pause',                           ...
+     'Color', pause.color,              ...
+     'Rotation', 90,                    ...
+     'HorizontalAlignment', 'center',   ...
+     'VerticalAlignment', 'middle',     ...
+     'FontSize', 10);
+%%%>>>
+%%%<<< EGO FIELD       --PAUSE-- partitioned by theta-phase and head-body-angle -
+
+% CONFIG  
+etrial = exampleUnit.trialIndex;
+eindex = exampleUnit.eindex;
+erate = 25;
+exbin = egoHbaPhzRmaps_pauseSmooth.xpos-diff(egoHbaPhzRmaps_pauseSmooth.xpos(1:2))/2;
+eybin = egoHbaPhzRmaps_pauseSmooth.ypos-diff(egoHbaPhzRmaps_pauseSmooth.ypos(1:2))/2;
+for phzI = 1:pc
+    for hbaI = 1:bins.hba.count
+% COORDINATES 
+        [yindex, yoffset] = deal( pc-phzI+5,  0  );
+        [xindex, xoffset] = deal(    1+hbaI,  0  );
+        [   gyo, gxo    ] = deal(        -6,  0  );
+        [yscale, xscale ] = deal(         1,  1  );
+% SETUP         
+        sax = setup_axes(hfig, yindex,  yoffset,  xindex, xoffset,  gyo, gxo, yscale, xscale);
+% DATA        
+        ratemap = fliplr(                                                              ...
+                    rot90(egoHbaPhzRmaps_pauseSmooth.rmap(:,:,eindex,phzI,hbaI)',-1)) ...
+                  .*egoHbaPhzRmaps_pauseSmooth.mask;
+% PLOT 
+        set(pcolor(exbin, eybin, ratemap), 'EdgeColor', 'none');
+% FORMAT 
+        hold    (sax, 'on');
+        shading (sax, 'flat');
+        axis    (sax, 'xy');
+        colormap(sax, 'jet');
+        caxis   (sax, [0, erate]);
+        xlim    (sax, [-250, 250]);
+        ylim    (sax, [-250, 250]);
+        daspect (sax, [1, 1, 1]);
+        box     (sax, 'on');
+        sax.XTickLabel = [];
+        sax.YTickLabel = [];
+        Lines([],0,'w');
+        Lines(0,[],'w');
+% ANNOTATE 
+        subject = struct(rat);
+        subject = update_subject_patch( ...
+            subject, 'head', [], false, bins.hba.edges, bins.hba.centers);
+        subject = update_subject_patch( ...
+            subject, 'body', bins.hba.count+1-hbaI, true, bins.hba.edges, bins.hba.centers);
+        patch(subject.body.patch.vert{:},   [0.75, 0.75, 0.75]);
+        patch(subject.head.patch.vert{:},   [0.75, 0.75, 0.75]);
+        patch(subject.body.overlay.vert{:}, [0.75, 0.50, 0.50], 'FaceAlpha', 0.3);
+        line (subject.head.midline.vert{:}, 'Color', subject.head.midline.color);
+        line (subject.body.midline.vert{:}, 'Color', subject.body.midline.color);
+        axes (hfig.UserData.fax);
+        rectangle('Position', sax.Position,                  ...
+                  'EdgeColor', bins.phz.color(phzI,:),         ...
+                  'FaceColor', 'None',                       ...
+                  'LineWidth', 1);
+        if phzI==3,
+            line([sax.Position(1),sum(sax.Position([1,3]))],  ... xcoord
+                  sum(sax.Position([2,4])).*[1,1]+0.1,        ... ycoord
+                 'LineWidth',2,                               ...
+                 'Color',bins.hba.color(hbaI,:));
+        end
+        if phzI == 1
+            if hbaI == 3
+                cax = colorbar(sax, 'SouthOutside');
+                cax.Units = 'Centimeters';
+                cax.Position(2) = cax.Position(2)-1;
+                cax.Position(1) = sax.Position(1);
+                cax.Position(3) = sax.Position(3);
+                cax.Ticks = [0, 10, 20];
+                cax.TickLabels ={'0','10','    20Hz'};
+            end
+        end
+    end % hbaI
+end % phzI
+%%%------------------------------------------------------------------------------
+
+%%%>>>    
+%%%<<< LAT POS         --PAUSE-- left vs Right lateral coordinatats for egoHba --
+% ADJUST subplot coordinates
+for phzI = 1:pc
+% COORDINATES 
+    [yindex, yoffset] = deal( pc-phzI+5, 0  );
+    [xindex, xoffset] = deal(         6, 0  );
+    [   gyo, gxo    ] = deal(        -6, 0  );
+    [yscale, xscale ] = deal(         1, 1  );    
+% SETUP 
+    sax = setup_axes(hfig, yindex,  yoffset,  xindex, xoffset,  gyo, gxo, yscale, xscale);    
+% PLOT     
+    plot(egoHbaPhzPause.control.meanPos( unitsEgoCA1, phzI, 3, lat) ,...
+         egoHbaPhzPause.control.meanPos( unitsEgoCA1, phzI, 1, lat) ,...
+         '.',                                                        ...
+         'MarkerFaceColor', bins.phz.color(phzI,:),                  ...
+         'MarkerEdgeColor', bins.phz.color(phzI,:));
+% FORMAT     
+    grid   (sax, 'on');
+    xlim   (sax, [-10, 10]);
+    ylim   (sax, [-10, 10]);
+    daspect(sax, [1, 1, 1]);
+    sax.XTick        = [-5, 0, 5];
+    sax.YTick        = [-5, 0, 5];
+    sax.YLabel.Units = 'centimeters';
+    sax.YLabel.Position = [-0.55,0.74,0];
+    Lines([],0,'k');
+    Lines(0,[],'k');
+    if phzI == 2
+        ylabel(sax,'HBA L (cm)');
+        sax.YLabel.Units = 'centimeters';
+        sax.YLabel.Position = [-0.55,0.74,0];
+    end
+    if phzI == 1,
+        xlabel(sax,'HBA R (cm)');
+        sax.XLabel.Units = 'centimeters';
+        sax.XLabel.Position = [0.75,-0.4,0];
+    else
+        sax.XTickLabel = {};
+    end
+end
+%%%------------------------------------------------------------------------------
+%%%>>>
+%%%<<< LAT POS DISTRIB --PAUSE-- partitioned by theta-phase and head-body-angle -
+for phzI = 1:pc
+% COORDINATES 
+    [yindex, yoffset] = deal( pc-phzI+5, 0   );
+    [xindex, xoffset] = deal(         7, 1.2 );
+    [   gyo, gxo    ] = deal(        -6, 0   );
+    [yscale, xscale ] = deal(         1, 1   );    
+% SETUP 
+    sax = setup_axes(hfig, yindex,  yoffset,  xindex, xoffset,  gyo, gxo, yscale, xscale);
+% PLOT     
+    for hbaI = 1:bins.hba.count
+        [ehpcmpKDE,dxi] = ksdensity( egoHbaPhzPause.control.meanPos( unitsEgoCA1, phzI, hbaI, lat) );
+        med             = median(    egoHbaPhzPause.control.meanPos( unitsEgoCA1, phzI, hbaI, lat) );
+        plot(dxi,ehpcmpKDE, '-', 'color', bins.hba.color(hbaI, :))
+        [~,xi] = NearestNeighbour(dxi, med);
+        line(dxi(xi)*[1,1], [0, ehpcmpKDE(xi)], 'color', bins.hba.color(hbaI, :));
+    end
+% FORMAT 
+    grid(sax, 'on');
+    xlim(sax, [-10,10])
+    ylim(sax, [0,0.13])
+    sax.YTick = [0,0.05,0.10];
+    sax.YTickLabel = {'0','','0.1'};
+    sax.XTick = [-5,0,5];
+    if phzI == 2,
+        ylabel(sax, 'Probability/cm');
+        sax.YLabel.Units = 'centimeters';
+        sax.YLabel.Position = [-0.55,0.74,0];
+    end
+    if phzI==1,
+        xlabel(sax, 'cm');
+        sax.XLabel.Units = 'centimeters';
+        sax.XLabel.Position = [0.75,-0.4,0];
+    else
+        sax.XTickLabel = {};
+    end
+end
+%%%------------------------------------------------------------------------------
+%%%>>>
+%%%<<< AP POS DISTRIB  --PAUSE-- partitioned by theta-phase and head-body-angle -
+
+for phzI = 1:pc
+% COORDINATES    
+    [yindex, yoffset] = deal( pc-phzI+5, 0    );
+    [xindex, xoffset] = deal(         8, 1.2  );
+    [   gyo, gxo    ] = deal(        -6, 0    );
+    [yscale, xscale ] = deal(         1, 1.75 );    
+% PLOT     
+    sax = setup_axes(hfig, yindex,  yoffset,  xindex,  xoffset,  gyo, gxo, yscale, xscale);
+% PLOT 
+    for hbaI = 1:hbaBin.count
+        [ehpcmpKDE,dxi] = ksdensity( egoHbaPhzPause.control.meanPos( unitsEgoCA1, phzI, hbaI, fwd) );
+        med             = median(    egoHbaPhzPause.control.meanPos( unitsEgoCA1, phzI, hbaI, fwd) );
+        [~,xi]          = NearestNeighbour(dxi,med);
+        plot(dxi, ehpcmpKDE, '-', 'color', bins.hba.color(hbaI, :))
+        line(dxi(xi)*[1, 1], [0, ehpcmpKDE(xi)], 'color', bins.hba.color(hbaI, :));
+    end
+% FORMAT 
+    grid(sax,'on');    
+    xlim(sax,[-15, 20   ]);
+    ylim(sax,[  0,  0.13]);
+    sax.YTick = [0,0.05,0.10];
+    sax.YTickLabel = {};
+    sax.XTick = [-10,-5,0,5,10,15,20];
+    if phzI==1,
+        xlabel(sax,'cm');
+        sax.XLabel.Units = 'centimeters';
+        sax.XLabel.Position = [0.75, -0.4, 0];
+        sax.XTickLabel = {'-10', '', '0', '', '10', '', '20'};
+    else
+        sax.XTickLabel = {};
+    end
+end
+%%%------------------------------------------------------------------------------
+
+%%%>>>
+%%%<<< MEAN angle      --PAUSE-- (hba vs hvl) by theta phase --------------------
+
+for phzI = 1:pc
+    % COORDINATES 
+    [yindex, yoffset] = deal( pc-phzI+5,  0   );
+    [xindex, xoffset] = deal(        11,  0.8 );
+    [   gyo, gxo    ] = deal(        -6,  0   );
+    [yscale, xscale ] = deal(         1,  1   );
+    % SETUP 
+    sax = setup_axes(hfig, yindex, yoffset, xindex, xoffset, gyo, gxo, yscale, xscale);
+% DATA 
+    xbins = mBinHba.centers;
+    ybins = mBinHav.centers;
+    maskedMean = ( aout_p(:,:,phzI) .* double(cout_p(:,:,phzI)>32))';
+    maskedMean(maskedMean==0) = nan;
+% PLOT 
+    imagescnan({xbins, ybins, -maskedMean},...
+               [-pi,pi],...
+               'circular',...
+               false,...
+               [0.8, 0.8, 0.8], 1, 1,...
+               @(x) circshift(hsv(x),round(x/3)));
+% FORMAT 
+    axis(sax,'xy');
+    axis(sax,'tight');
+    colormap(sax, flipud(circshift(hsv(100),round(100/3))));    
+    sax.XTick = bins.hba.centers;
+    sax.XTickLabel = {};
+    sax.YTick = bins.hvl.centers ;        
+    sax.YTickLabelRotation = 90;
+    sax.YTickLabel = {};
+    switch phzI
+      case 1
+        cax = colorbar(sax, 'SouthOutside');
+        cax.Units = 'Centimeters';
+        cax.Position(2) = cax.Position(2)-1;
+        ylabel(cax, 'angle');
+      case 2
+        ylabel(sax, {'Head Angular Vel. (HAV) Direction',' '});
+        sax.YTickLabel = mat2cell(bins.hvl.key, 1, ones([1,bins.hvl.count]));        
+      case 3
+        title( sax,{'L   C   R',' '},  'FontWeight', 'Normal');
+        if phzI==3,
+            axes (hfig.UserData.fax);
+            for hbaI = 1:bins.hba.count
+                xcoords = [sax.Position(1)+(hbaI-1)*(sax.Position(3)./3), ...
+                           sax.Position(1) + sax.Position(3)./3 * hbaI];
+                ycoords = sum(sax.Position([2,4])).*[1,1]+0.15;
+                line(xcoords, ycoords,            ...
+                     'LineWidth', 2,              ...
+                     'Color',bins.hba.color(hbaI,:));
+            end
+        end
+    end
+end
+%%%------------------------------------------------------------------------------
+
+%%%>>>
+%%%<<< MEAN radius     --PAUSE-- (hba vs hvl) by theta phase --------------------
+
+for phzI = 1:pc;
+    % COORDINATES 
+    [yindex, yoffset] = deal( pc-phzI+5,  0   );
+    [xindex, xoffset] = deal(        12,  0.8 );
+    [   gyo, gxo    ] = deal(        -6,  0   );
+    [yscale, xscale ] = deal(         1,  1   );
+    % SETUP 
+    sax = setup_axes(hfig, yindex, yoffset, xindex, xoffset, gyo, gxo, yscale, xscale);
+% DATA 
+    xbins = mBinHba.centers;
+    ybins = mBinHav.centers;
+    maskedMean = (rout_p(:,:,phzI) .* double(cout_p(:,:,phzI)>32))';
+    maskedMean(maskedMean==0) = nan;
+% PLOT 
+    imagescnan({xbins, ybins, maskedMean},...
+               [0,10],...
+               'linear',...
+               false,...
+               [0.8, 0.8, 0.8], 1, 1,...
+               @copper);
+% FORMAT 
+    axis(sax,'ij');
+    axis(sax, 'tight');
+    colormap(sax, 'copper');
+    sax.XTick = mBinHba.edges;
+    sax.XTickLabel = {};
+    sax.YTick = mBinHav.edges;        
+    sax.YTickLabelRotation = 90;
+    sax.YTickLabel = {};
+    switch phzI
+      case 1
+        cax = colorbar(sax, 'SouthOutside');
+        cax.Units = 'Centimeters';
+        cax.Position(2) = cax.Position(2)-1;
+        ylabel(cax, 'radius (cm)');
+      case 3
+        title( sax,{'L   C   R',' '},  'FontWeight', 'Normal');
+        if phzI==3,
+            axes (hfig.UserData.fax);
+            for hbaI = 1:bins.hba.count
+                xcoords = [sax.Position(1)+(hbaI-1)*(sax.Position(3)./3), ...
+                           sax.Position(1) + sax.Position(3)./3 * hbaI];
+                ycoords = sum(sax.Position([2,4])).*[1,1]+0.15;
+                line(xcoords, ycoords,            ...
+                     'LineWidth', 2,              ...
+                     'Color',bins.hba.color(hbaI,:));
+            end
+        end
+    end
+end
+
+%%%------------------------------------------------------------------------------
+%%%>>>
+% END block
+
+%%%>>> pause-block --------------------------------------------------------------
+
+
+% ENDFIG ************************************************************************
+
+ 
+%%%<<< Parts --------------------------------------------------------------------
+
+%%%<<< SG2 (PAUSE) MEAN LAT hba vs hvl ------------------------------------------
+% COORDINATES 
+[yindex, yoffset] = deal(    5,  0     );
+[xindex, xoffset] = deal(   14, 0.25     );
+[   gyo, gxo    ] = deal(    5,  0     );
+[yscale, xscale ] = deal( 1.25,  1.25  );
+% SETUP 
+sax = setup_axes(hfig, yindex, yoffset, xindex, xoffset, gyo, gxo, yscale, xscale);
+% PLOT 
+imagesc(sax,                  ...
+        bins.hba.centers,     ...
+        bins.hvl.centers,     ...
+        mout_p(:,:,3)',              ...
+        [-70,70]);
+% FORMAT 
+axis(sax,'xy');
+axis(sax,'tight');
+colormap(sax,'jet');
+sax.XTick = bins.hba.centers;
+sax.YTick = bins.hvl.centers;
+sax.XTickLabel = mat2cell(bins.hba.key,1,ones([1,bins.hba.count]));
+sax.YTickLabel = [];
+title (sax,{'Pause'}, 'Color', pause.color, 'FontWeight', 'Normal');
+% COLORBAR 
+cax = colorbar(sax);
+ylabel(cax,{'Lateral Position (cm)'});
+cax.Units = 'centimeters';
+cax.Position(1) = cax.Position(1)+1;
+%%%------------------------------------------------------------------------------
+%%%>>>
+%%%<<< SG2 (PAUSE) MEAN LAT hba vs hvl ------------------------------------------
+% COORDINATES 
+[yindex, yoffset] = deal(    5,  0     );
+[xindex, xoffset] = deal(   14, 0.25     );
+[   gyo, gxo    ] = deal(    5,  0     );
+[yscale, xscale ] = deal( 1.25,  1.25  );
+% SETUP 
+sax = setup_axes(hfig, yindex, yoffset, xindex, xoffset, gyo, gxo, yscale, xscale);
+% PLOT 
+imagesc(sax,                  ...
+        bins.hba.centers,     ...
+        bins.hvl.centers,     ...
+        mout_p(:,:,3)',              ...
+        [-70,70]);
+% FORMAT 
+axis(sax,'xy');
+axis(sax,'tight');
+colormap(sax,'jet');
+sax.XTick = bins.hba.centers;
+sax.YTick = bins.hvl.centers;
+sax.XTickLabel = mat2cell(bins.hba.key,1,ones([1,bins.hba.count]));
+sax.YTickLabel = [];
+title (sax,{'Pause'}, 'Color', pause.color, 'FontWeight', 'Normal');
+% COLORBAR 
+cax = colorbar(sax);
+ylabel(cax,{'Lateral Position (cm)'});
+cax.Units = 'centimeters';
+cax.Position(1) = cax.Position(1)+1;
+%%%------------------------------------------------------------------------------
+%%%>>>
+%%%<<< SG1 (LOC) MEAN LAT hba vs hvl --------------------------------------------
+% COORDINATES 
+[yindex, yoffset] = deal(    5,  0     );
+[xindex, xoffset] = deal(   12,  1     );
+[   gyo, gxo    ] = deal(    5,  0     );
+[yscale, xscale ] = deal( 1.25,  1.25  );
+
+% SETUP 
+sax = setup_axes(hfig, yindex, yoffset, xindex, xoffset, gyo, gxo, yscale, xscale);
+% PLOT
+imagesc(sax,                  ...
+        bins.hba.centers,     ...
+        bins.hvl.centers,     ...
+        mout_l(:,:,3)',              ...
+        [-7,7]);
+% FORMAT 
+axis(sax,'xy');
+axis(sax,'tight');
+colormap(sax,'jet');
+sax.XTick = bins.hba.centers;
+sax.YTick = bins.hvl.centers ;   
+sax.XTickLabel = mat2cell(bins.hba.key, 1, ones([1,bins.hba.count]));
+sax.YTickLabel = mat2cell(bins.hvl.key, 1, ones([1,bins.hvl.count]));
+sax.YTickLabelRotation = 90;
+title(sax,{'Locomotion'}, 'Color', loc.color, 'FontWeight', 'Normal');
+%%%------------------------------------------------------------------------------
+%%%>>>
+
+%% FIGURE 4 Stuff
+% $$$ 
+% $$$ figure,
+% $$$ for phzI = 1:pc
+% $$$     subplot(3,1,pc+1-phzI);
+% $$$     plot(egoHbaPhz.control.meanPos(unitsEgoCA3,phzI,1,2), ...
+% $$$          egoHbaPhz.control.meanPos(unitsEgoCA3,phzI,3,2),'.',...
+% $$$          'MarkerSize',20)
+% $$$     xlim([-15,15])
+% $$$     ylim([-15,15])
+% $$$     grid('on')
+% $$$ end
+% $$$ 
+% $$$ figure,
+% $$$ hold('on');
+% $$$ for phzInd = 1:pc
+% $$$ plot(1:4,sq(mean(egoHvfPhz.control.meanPos(unitsEgoHvfCA3,phzInd,:,1))),'-+','Color',bins.phz.color(phzInd,:));
+% $$$ end
+% $$$ 
+% $$$ figure,
+% $$$ hold('on');
+% $$$ for phzInd = 1:pc
+% $$$     plot(1:4,sq(mean(egoHvfPhz.control.meanPos(unitsEgoHvfCA1,phzInd,:,1))),'-+','Color',bins.phz.color(phzInd,:));
+% $$$ end
+% $$$ 
+% $$$ 
+% $$$ for phzInd = 1:pc
+% $$$     for velInd = 1:bins.hvf.count-1
+% $$$     [yind, yOffSet, xind, xOffSet] = deal(pc+1-phzInd+8, 0, velInd, 0);
+% $$$     % CREATE subplot axes
+% $$$     sax(end+1) = axes('Units','centimeters',                                ...
+% $$$                       'Position',[fig.page.xpos(xind)+xOffSet+globalXOffset,...
+% $$$                         fig.page.ypos(yind)+yOffSet+globalYOffset,...
+% $$$                         fig.subplot.width,                        ...
+% $$$                         fig.subplot.height],                      ...
+% $$$                       'FontSize', 8,                                        ...
+% $$$                       'LineWidth',1);
+% $$$     hold(sax,'on');
+% $$$         shading(sax,'flat');
+% $$$         set(pcolor(xpos-diff(xpos(1:2))/2,...
+% $$$                    ypos-diff(ypos(1:2))/2,...
+% $$$                    fliplr(rot90(rmap{exampleUnit.trialIndex}(:,:,exampleUnit.index,phzInd,velInd)',-1)).*mask),'EdgeColor','none');
+% $$$         axis(sax,'xy');
+% $$$         colormap(sax,'jet');
+% $$$         caxis(sax,[0,exampleUnit.maxRate]);
+% $$$     sax.XTickLabel =[];
+% $$$     sax.YTickLabel =[];
+% $$$     xlim(sax,[-250,250])
+% $$$     ylim(sax,[-250,250])
+% $$$     Lines([],0,'w');
+% $$$     Lines(0,[],'w');
+% $$$     end
+% $$$ end
+% $$$ 
+% $$$ 
+% $$$ 
+exampleUnit.trialIndex = 20;
+exampleUnit.close.Xlims = [-200,400];
+exampleUnit.close.Ylims = [-400,200];
+exampleUnit.id = 21;
+exampleUnit.maxRate = 21;
+exampleUnit.index = find(unitsEgo{exampleUnit.trialIndex}==exampleUnit.id);
+exampleUnit.trajectoryTimeSeries = [274*250]:[278.5*250];
+uids = unitsEgoCA1;
+globalXOffset = 0;
+globalYOffset = 0;
+
+figure
+sax = gobjects([0,1]);
+for velInd = 1:bins.hvf.count-1
+    sax(end+1) = subplot(1,3,velInd);
+    hold(sax,'on');
+        shading(sax,'flat');
+        set(pcolor(xpos-diff(xpos(1:2))/2,...
+                   ypos-diff(ypos(1:2))/2,...
+                   fliplr(rot90(rmap{exampleUnit.trialIndex}(:,:,1, velInd)',-1)) .* mask),'EdgeColor','none');
+        axis(sax,'xy');
+        colormap(sax,'jet');
+        %caxis(sax,[0,exampleUnit.maxRate]);
+    sax.XTickLabel =[];
+    sax.YTickLabel =[];
+    xlim(sax,[-350,350])
+    ylim(sax,[-350,350])
+    Lines([],0,'w');
+    Lines(0,[],'w');
+end
+
+
+
+figure
+    set(pcolor(xpos-diff(xpos(1:2))/2,...
+               ypos-diff(ypos(1:2))/2,...
+               fliplr(rot90(rmap{exampleUnit.trialIndex}(:,:,exampleUnit.index,velInd)',-1)).*mask),...
+        'EdgeColor','none');
+% $$$ 
+% $$$ 
+% $$$ figure,plot(atan2(egoHbaPhzLoc.control.meanPos(unitsEgoCA1,3,3,2),egoHbaPhzLoc.control.meanPos(unitsEgoCA1,3,3,1)),atan2(egoHbaPhzPause.control.meanPos(unitsEgoCA1,3,3,2),egoHbaPhzPause.control.meanPos(unitsEgoCA1,3,3,1)),'.','MarkerSize',10)
+% $$$ 
+% $$$ 
+% $$$ ind = false([size(egoHbaPhzLoc.control.meanPos,1),1]);
+% $$$ ind(unitsEgoCA1) = true;
+% $$$ ind(egoHbaPhzLoc.boot.ca1.zscore(:,3,hbaI,2) < egoHbaPhzLoc.boot.ca1.sig) = false;
+% $$$ 
+% $$$ figure()
+% $$$ for hbaI = 1:bins.hba.count
+% $$$ ind = false([size(egoHbaPhzLoc.control.meanPos,1),1]);
+% $$$ ind(unitsEgoCA1) = true;
+% $$$ if hbaI == 1
+% $$$     ind(egoHbaPhzLoc.boot.ca1.zscore(:,3,hbaI,2) > -egoHbaPhzLoc.boot.ca1.sig ...
+% $$$         &egoHbaPhzPause.boot.ca1.zscore(:,3,hbaI,2) > -egoHbaPhzPause.boot.ca1.sig) = false;
+% $$$ elseif hbaI == 2
+% $$$     %ind(abs(egoHbaPhzLoc.boot.ca1.zscore(:,3,hbaI,2)) < egoHbaPhzLoc.boot.ca1.sig) = false;
+% $$$ else
+% $$$     ind(egoHbaPhzLoc.boot.ca1.zscore(:,3,hbaI,2) < egoHbaPhzLoc.boot.ca1.sig ...
+% $$$         &egoHbaPhzPause.boot.ca1.zscore(:,3,hbaI,2) < egoHbaPhzPause.boot.ca1.sig) = false;
+% $$$ end
+% $$$     subplot(bins.hba.count,1,hbaI)
+% $$$     hold('on');
+% $$$ % $$$ plot(atan2(  egoHbaPhzLoc.control.meanPos(unitsEgoCA1,3,hbaI,2),  egoHbaPhzLoc.control.meanPos(unitsEgoCA1,3,hbaI,1)),...
+% $$$ % $$$      atan2(egoHbaPhzPause.control.meanPos(unitsEgoCA1,3,hbaI,2),egoHbaPhzPause.control.meanPos(unitsEgoCA1,3,hbaI,1)),...
+% $$$ % $$$      '.','Color',bins.hba.color(hbaI,:),'MarkerSize',30)
+% $$$ plot(atan2(  egoHbaPhzLoc.control.meanPos(ind,3,hbaI,2),  egoHbaPhzLoc.control.meanPos(ind,3,hbaI,1)),...
+% $$$      atan2(egoHbaPhzPause.control.meanPos(ind,3,hbaI,2),egoHbaPhzPause.control.meanPos(ind,3,hbaI,1)),...
+% $$$      '.','Color',bins.hba.color(hbaI,:),'MarkerSize',30)
+% $$$ grid('on');
+% $$$ xlim([-3,3])
+% $$$ ylim([-3,3])
+% $$$ end
+% $$$ 
+% $$$ figure,plot(egoHvfPhz.control.meanPos(unitsEgoHvfCA1,3,4,2),  egoHvfPhz.control.meanPos(unitsEgoHvfCA1,3,2,1),'.')
+% $$$ 
+% $$$ egoHbaPhzLoc.boot.ca1.zscore(:,3,hbaI,2)> ...
+% $$$     egoHbaPhzLoc.boot.ca1.sig
+% $$$ 
+% $$$ 
+% $$$ 
+% $$$ figure()
+% $$$ for hbaI = 1:bins.hba.count
+% $$$ ind = false([size(egoHbaPhzLoc.control.meanPos,1),1]);
+% $$$ ind(unitsEgoCA1) = true;
+% $$$ if hbaI == 1
+% $$$     ind(egoHbaPhzLoc.boot.ca1.zscore(:,3,hbaI,2) > -egoHbaPhzLoc.boot.ca1.sig ...
+% $$$         &egoHbaPhzPause.boot.ca1.zscore(:,3,hbaI,2) > -egoHbaPhzPause.boot.ca1.sig) = false;
+% $$$ elseif hbaI == 2
+% $$$     %ind(abs(egoHbaPhzLoc.boot.ca1.zscore(:,3,hbaI,2)) < egoHbaPhzLoc.boot.ca1.sig) = false;
+% $$$ else
+% $$$     ind(egoHbaPhzLoc.boot.ca1.zscore(:,3,hbaI,2) < egoHbaPhzLoc.boot.ca1.sig ...
+% $$$         &egoHbaPhzPause.boot.ca1.zscore(:,3,hbaI,2) < egoHbaPhzPause.boot.ca1.sig) = false;
+% $$$ end
+% $$$     subplot(bins.hba.count,1,hbaI)
+% $$$     hold('on');
+% $$$ % $$$ plot(atan2(  egoHbaPhzLoc.control.meanPos(unitsEgoCA1,3,hbaI,2),  egoHbaPhzLoc.control.meanPos(unitsEgoCA1,3,hbaI,1)),...
+% $$$ % $$$      atan2(egoHbaPhzPause.control.meanPos(unitsEgoCA1,3,hbaI,2),egoHbaPhzPause.control.meanPos(unitsEgoCA1,3,hbaI,1)),...
+% $$$ % $$$      '.','Color',bins.hba.color(hbaI,:),'MarkerSize',30)
+% $$$ plot(egoHbaPhzLoc.control.meanPos(ind,3,hbaI,2),...
+% $$$      egoHbaPhzPause.control.meanPos(ind,3,hbaI,2),...
+% $$$      '.','Color',bins.hba.color(hbaI,:),'MarkerSize',30)
+% $$$ plot(mean(egoHbaPhzLoc.control.meanPos(ind,3,hbaI,2)),...
+% $$$      mean(egoHbaPhzPause.control.meanPos(ind,3,hbaI,2)),...
+% $$$      '.','Color','m','MarkerSize',50)
+% $$$ grid('on');
+% $$$ xlim([-15,15])
+% $$$ ylim([-15,15])
+% $$$ Lines([],0,'k');
+% $$$ Lines(0,[],'k');
+% $$$ end
+% $$$ 
+% $$$ 
+% $$$ figure()
+% $$$ for hbaI = 1:bins.hba.count
+% $$$ ind = false([size(egoHbaPhzLoc.control.meanPos,1),1]);
+% $$$ ind(unitsEgoCA1) = true;
+% $$$ if hbaI == 1
+% $$$     ind(egoHbaPhzLoc.boot.ca1.zscore(:,3,hbaI,2) > -egoHbaPhzLoc.boot.ca1.sig ...
+% $$$         &egoHbaPhzPause.boot.ca1.zscore(:,3,hbaI,2) > -egoHbaPhzPause.boot.ca1.sig) = false;
+% $$$ elseif hbaI == 2
+% $$$     %ind(abs(egoHbaPhzLoc.boot.ca1.zscore(:,3,hbaI,2)) < egoHbaPhzLoc.boot.ca1.sig) = false;
+% $$$ else
+% $$$     ind(egoHbaPhzLoc.boot.ca1.zscore(:,3,hbaI,2) < egoHbaPhzLoc.boot.ca1.sig ...
+% $$$         &egoHbaPhzPause.boot.ca1.zscore(:,3,hbaI,2) < egoHbaPhzPause.boot.ca1.sig) = false;
+% $$$ end
+% $$$     subplot(bins.hba.count,1,hbaI)
+% $$$     hold('on');
+% $$$ % $$$ plot(atan2(  egoHbaPhzLoc.control.meanPos(unitsEgoCA1,3,hbaI,2),  egoHbaPhzLoc.control.meanPos(unitsEgoCA1,3,hbaI,1)),...
+% $$$ % $$$      atan2(egoHbaPhzPause.control.meanPos(unitsEgoCA1,3,hbaI,2),egoHbaPhzPause.control.meanPos(unitsEgoCA1,3,hbaI,1)),...
+% $$$ % $$$      '.','Color',bins.hba.color(hbaI,:),'MarkerSize',30)
+% $$$ plot(egoHbaPhzLoc.control.meanPos(ind,3,hbaI,1),...
+% $$$      egoHbaPhzPause.control.meanPos(ind,3,hbaI,1),...
+% $$$      '.','Color',bins.hba.color(hbaI,:),'MarkerSize',30)
+% $$$ plot(mean(egoHbaPhzLoc.control.meanPos(ind,3,hbaI,1)),...
+% $$$      mean(egoHbaPhzPause.control.meanPos(ind,3,hbaI,1)),...
+% $$$      '.','Color','m','MarkerSize',50)
+% $$$ grid('on');
+% $$$ xlim([-15,15])
+% $$$ ylim([-15,15])
+% $$$ Lines([],0,'k');
+% $$$ Lines(0,[],'k');
+% $$$ end
+% $$$ 
+% $$$ 
+% $$$ 
+% $$$ 
+% $$$ % $$$ 
+% $$$ % $$$
+% $$$ % $$$ % COORDINATES 
+% $$$ % $$$ yindex  = 5;
+% $$$ % $$$ yoffset = 0;
+% $$$ % $$$ xindex  = 12;
+% $$$ % $$$ xoffset = 0;
+% $$$ % $$$ yscale = 1.25;
+% $$$ % $$$ xscale = 1.25;
+% $$$ % $$$ % SETUP 
+% $$$ % $$$ sax = setup_axes(hfig, yindex, yoffset, xindex, xoffset, gyo, gxo, yscale, xscale);
+% $$$ % $$$ 
+% $$$ % $$$ % PLOT 
+% $$$ % $$$ for hbaI = 1:bins.hba.count
+% $$$ % $$$     ind = WithinRanges(decoded_p.phz,[4.5,5.5]) ...
+% $$$ % $$$           & randn(size(decoded_p.hba))>0 ...
+% $$$ % $$$           & WithinRanges(decoded_p.hba,bins.hba.edges(hbaI+[0,1]));      
+% $$$ % $$$     [F,xi] = ksdensity(decoded_p.clat(ind)/10);
+% $$$ % $$$     plot(xi, F, '-', ...
+% $$$ % $$$          'Color', bins.hba.color(hbaI,:), ...
+% $$$ % $$$          'LineWidth', 1);
+% $$$ % $$$ end
+% $$$ % $$$ % FORMAT 
+% $$$ % $$$ xlim(sax,[-40,40]);
+% $$$ % $$$ lgd = legend(mat2cell(bins.hba.key,1,ones(size(bins.hba.key))),...
+% $$$ % $$$              'Location','NorthEastOutside');
+% $$$ % $$$ lgd.Units = 'centimeters';
+% $$$ % $$$ lgd.Position(1) = lgd.Position(1)+2
+% $$$ % $$$ xlabel(sax, 'Lat Head Pos (cm)')
+% $$$ % $$$ ylabel(sax, 'Prob')
+% $$$ % $$$ title (sax, {'Mean Decoded', 'Position by Hba'})
+% $$$ % $$$ grid  (sax, 'on');
+% $$$ %%%-----------------------------------------------------------------------------
+% $$$ 
+%%%>>>
+
+%%%>>>
+% END FIGURE 3 ------------------------------------------------------------------
+
+
+
+
+%%%<<< SUPPLEMENTARY ------------------------------------------------------------
+%%%<<< Ego Units Polar phzXhba --------------------------------------------------
+uInd = unitsEgoCA1;
+uInd = unitsEgoCA3;
+figure();
+for phzI = 1:bins.phz.count
+    for hbaI= 1:bins.hba.count
+        xpos = egoHbaPhz.control.meanPos(uInd,phzI,hbaI,1);
+        ypos = egoHbaPhz.control.meanPos(uInd,phzI,hbaI,2);
+        [ehpt,ehpr] = cart2pol( xpos, ypos);
+        subplot2( 3, 3, bins.phz.count+1-phzI, hbaI);
+        polarplot(ehpt,ehpr,'.','color',bins.phz.color(phzI,:));
+        rlim(gca,[0,15]);
+    end
+end
+%%%>>>---------------------------------------------------------------------------
+%%%>>>---------------------------------------------------------------------------
+
+
+
+
+%%%<<< █☰☰☰☰☰☰☰☰☰☰☰☰☰☰☰☰☰☰☰☰☰☰☰☰☰☰ SETUP FIGURE ☰☰☰☰☰☰☰☰☰☰☰☰☰☰☰☰☰☰☰☰☰☰☰☰☰☰☰☰☰☰☰☰☰☰☰☰☰☰☰
+
+% CONFIG 
+hfig = figure(6660031);
+figureFormat      = 'A4';
+figureOrientation = 'landscape';
+figureUnits       = 'centimeters';
+subplotHeight     = 1.4;%cm
+subplotWidth      = 1.4;%cm
+subplotPadVert    = 0.1;%cm
+subplotPadHorz    = 0.1;%cm
+% SETUP 
+setup_figure(hfig,                  ... 
+             figureFormat,          ... 
+             figureOrientation,     ... 
+             figureUnits,           ...
+             subplotWidth,          ...
+             subplotHeight,         ...
+             subplotPadHorz,        ...
+             subplotPadVert         ...
+             );
+%☰█☰☰☰☰☰☰☰☰☰☰☰☰☰☰☰☰☰☰☰☰☰☰☰☰☰☰☰☰☰☰☰☰☰☰☰☰☰☰☰☰☰☰☰☰☰☰☰☰☰☰☰☰☰☰☰☰☰☰☰☰☰☰☰☰☰☰☰☰☰☰☰☰☰☰☰☰☰☰
+%%%>>>---------------------------------------------------------------------------
+
+%%%<<< EGO FIELD       --LOC--  partitioned by theta-phase and head-body-angle --
+% CONFIG 
+loc.label = 'Locomotion';
+loc.color = [98, 65, 133]./255;
+loc.hex = '#624185';
+pause.label = 'Pause';
+pause.color = [255, 163, 69]./255;
+clear('exampleUnit');
+
+     4    28
+     4   119
+
+     5    31
+     5    38
+     5   112     
+
+    18    49
+    21    77
+         
+
+% jg05-0311 merge 152 160
+% jg05-0315: merge 25 33
+% jg05-0317: xcorr 40 54
+
+     49-8-6
+    152-8-15
+    110-8-9
+
+%%%<<< Bad Justin ---------------------------------------------------------------
+    
+%%%<<< Inter-Session Spk Groups jg05-201203-10__11__12 --------------------------
+% Elc-6
+
+%Silent Cells
+%   └> SWR
+%   └> REM
+%   └> SWS
+%
+% {           [96,6,27],[59,6,24]}
+% {       [], [74,6, 6],[44,6, 9]}
+% {[11,6, 8], [78,6,10],       []}
+% {[13,6, 7], [94,6,26],       []}
+% {[ 9,6, 6],        [],       []}
+
+    5     6     2          70     6     2  A INT          37     6     2  -
+    6     6     3          71     6     3  A INT          38     6     3  -
+    7     6     4          72     6     4  A INT          39     6     4  -
+    8     6     5          73     6     5  - OLE          40     6     5  -
+    9     6     6          74     6     6* - GRD         -41     6     6  A
+   10     6     7          75     6     7  - OBE          42     6     7  -
+   11     6     8          76     6     8  - CBR          43     6     8  -
+   12     6     9          77     6     9  - ERW         *44     6     9  A
+   13     6    10        ┍┄78     6    10  A CBR          45     6    10  -
+   14     6    11        ┊ 79     6    11  A ORE          46     6    11  -
+   15     6    12        ┊ 80     6    12  A CUL          47     6    12  -
+   16┐    6    13        ┊ 81     6    13  - M82         -48     6    13  A
+   17┘    6    14        ┊ 82     6    14  - SLN          49     6    14  -
+   18     6    15        ┊ 83     6    15  - ERW          50     6    15  -
+   19     6    16        ┊ 84     6    16  - ERW SLN     -51     6    16  A
+   20     6    17        ┊ 85     6    17  - ERW SLN     -52     6    17  A
+                         X 86     6    18  - OUE SLN      53     6    18  -
+                         ┊ 87     6    19  - OBE SLN      54     6    19  -
+                         ┊ 88     6    20  - ERW SLN      55     6    20  -
+                         ┊ 89     6    21  - ORE SLN      56     6    21  -
+                         ┊ 90     6    22  A ORE          57     6    22  -
+                         ┊ 91     6    23  - OBE SLN      58     6    23  -
+                         ┊ 92     6    24  - SLN         *59     6    24  A
+                         ┊ 93     6    25  A OUE         -60     6    25  A OLE
+                         └ 94     6    26  A OLE          61     6    26  A CBR
+                           95┐    6    27* A OBR          62     6    27  -
+                           96┘    6    28  A OBR          63     6    28  A
+                           97     6    29  A              64     6    29  -
+                                                          65     6    30  -
+                                                          66     6    31  -
+                                                          67     6    32  -
+                                                          68     6    33  A
+                                                          69     6    34  -
+                                                          70     6    35  -
+                                                          71     6    36  -
+
+
+% Elc-8
+%   [ 49,152,110]
+%%%>>>---------------------------------------------------------------------------
+
+%%%<<< Inter-Session Spk Groups jg05-201203-15__16__17 --------------------------
+% Elc-6
+%   [  4, 14, __] 
+%   [  6, 13, 29] x x x
+%   [ 12, 19, 22] l h r remapping
+% Elc-7
+%   [ __, 43, 36] _ h h
+%   [?24, 42, 51] x x x
+%   [ 25, 30, 54] x x x
+%   [ 27, 41, 50] h h h
+%   [ 32, 38, 48] h h h 
+% ⚑ [ 33, 30, 54] x x x 
+%   [ 40, 23, 58] r r r
+%   [ 42, 36,?56] x x x
+% Elc-8    
+%   [ 48, 59, 71] l l l 
+%   [ 61, 48, 72] x x x Ctr
+%   [ 63, 65, 69] x x x Edg
+%   [ 65, 47, 66] l l l dual/remaping
+%   [ 73, 51, 67] r r r
+%   [ 74, 50, 70] s x x
+%   [ 77, 61, 63] x x x
+%%%>>>---------------------------------------------------------------------------
+
+%%%>>>---------------------------------------------------------------------------
+clear exampleUnit
+exampleUnit(1).trialIndex = 19;
+exampleUnit(1).close.Xlims = [-200,400];
+exampleUnit(1).close.Ylims = [-400,200];
+exampleUnit(1).id = 50;
+exampleUnit(1).maxRate = 25;
+% $$$ exampleUnit(end+1).trialIndex = 20;
+% $$$ exampleUnit(end  ).id         = 25;
+% $$$ %exampleUnit(end  ).maxRate    = 10;
+% $$$ exampleUnit(end+1).trialIndex = 19;
+% $$$ exampleUnit(end  ).id         = 10;
+% $$$ %exampleUnit(end  ).maxRate    = 7;
+
+
+exampleUnit.maxRate = 25;
+exampleUnit.index = find(unitsEgo{exampleUnit.trialIndex}==exampleUnit.id);
+egoCluSessionMapTrial = egoCluSessionMap(egoCluSessionMap(:,1)==exampleUnit(end).trialIndex,2);
+exampleUnit.eindex = find(egoCluSessionMapTrial(:,1)==exampleUnit(end).id);
+
+
+pc = bins.phz.count;
+hc = bins.hba.count;
+uc = numel(exampleUnit)
+
+for untI = 1 : uc
+    for phzI = 1 : pc
+        for hbaI = 1 : hc
+% COORDINATES 
+            [yindex, yoffset] = deal( pc+1-phzI+(uc-1)*3, -0.5  );
+            [xindex, xoffset] = deal(    1+hbaI,  0    );
+            [   gyo, gxo    ] = deal(         0,  0    );
+            [yscale, xscale ] = deal(         1,  1    );
+% SETUP         
+            sax = setup_axes(hfig, yindex, yoffset, xindex, xoffset, gyo, gxo, yscale, xscale);
+% DATA 
+            etrial = exampleUnit(untI).trialIndex;
+            eindex  = exampleUnit(untI).eindex;
+            xbins  = egoHbaPhzRmaps_locSmooth.xpos-diff(egoHbaPhzRmaps_locSmooth.xpos(1:2))/2;
+            ybins  = egoHbaPhzRmaps_locSmooth.ypos-diff(egoHbaPhzRmaps_locSmooth.ypos(1:2))/2;
+            ratemap = ...
+                fliplr(...
+                    rot90(egoHbaPhzRmaps_locSmooth.rmap(:, :, eindex, phzI, hbaI)',-1)) ...
+                .*egoHbaPhzRmaps_locSmooth.mask;
+% PLOT 
+            set(pcolor(xbins, ybins, ratemap),'EdgeColor','none');
+% FORMAT 
+            shading (sax,'flat');        
+            axis    (sax,'xy');
+            colormap(sax,'jet');
+            caxis   (sax,[0,exampleUnit(untI).maxRate]);
+            xlim    (sax,[-250,250]);
+            ylim    (sax,[-250,250]);
+            daspect (sax,[1,1,1]);
+            box     (sax,'on');
+            Lines([],0,'w');
+            Lines(0,[],'w');
+            sax.XTickLabel =[];
+            sax.YTickLabel =[];
+% ANNOTATE 
+            subject = struct(rat);
+            subject = update_subject_patch(subject, 'head',...
+                                           [], false,...
+                                           bins.hba.edges,...
+                                           bins.hba.centers);
+            subject = update_subject_patch(subject, 'body',...
+                                           bins.hba.count+1-hbaI,  true,...
+                                           bins.hba.edges,...
+                                           bins.hba.centers);
+            patch(subject.body.patch.vert{:},   [0.75,0.75,0.75]);
+            patch(subject.head.patch.vert{:},   [0.75,0.75,0.75]);
+            patch(subject.body.overlay.vert{:},[0.75,0.50,0.50],'FaceAlpha',0.3);
+            line(subject.head.midline.vert{:}, 'Color', subject.head.midline.color);
+            line(subject.body.midline.vert{:}, 'Color', subject.body.midline.color);
+            axes(hfig.UserData.fax);
+            rectangle('Position',sax.Position, ...
+                      'EdgeColor',bins.phz.color(phzI,:), ...
+                      'FaceColor','None',...
+                      'LineWidth',1);
+            if phzI==3,
+                line([sax.Position(1),sum(sax.Position([1,3]))],...
+                     sum(sax.Position([2,4])).*[1,1]+0.15,...
+                     'LineWidth',2,...
+                     'color',bins.hba.color(hbaI,:));
+                title(sax,{bins.hba.label{hbaI},' '}, 'FontWeight', 'Normal', 'Color', bins.hba.color(hbaI,:));
+            end
+            if phzI==1 && hbaI==3,
+                line(sum(sax.Position([1,3])).*[1,1]+0.1,...
+                     sax.Position(2).*[1,1]+[0,sax.Position(4)*0.4],...
+                     'LineWidth',2,...
+                     'Color',[0,0,0]);
+                text(sum(sax.Position([1,3]))+0.4,...
+                     sax.Position(2),...
+                     '20 cm',...
+                     'Rotation',90);
+                cax = colorbar(sax, 'SouthOutside');
+                cax.Units = 'Centimeters';
+                cax.Position(2) = cax.Position(2)-1;
+                cax.Position(1) = sax.Position(1);
+                cax.Position(3) = sax.Position(3);
+                cax.Ticks = [0, 10, 20];
+                cax.TickLabels ={'0', '10','    20Hz'};
+            end
+        end % hbaI
+    end % phzI
+end
+%%%>>>
+
+%%%<<< Example PlaceFields ------------------------------------------------------
+
+% CONFIG 
+clear('exampleFields')
+exampleFields(1).trialIndex = 19;
+exampleFields(1).id         = 50;
+exampleFields(1).maxRate    = 6;
+exampleFields(end+1).trialIndex = 20;
+exampleFields(end  ).id         = 25;
+exampleFields(end  ).maxRate    = 10;
+exampleFields(end+1).trialIndex = 19;
+exampleFields(end  ).id         = 10;
+exampleFields(end  ).maxRate    = 7;
+exampleFields(end+1).trialIndex = 5;
+exampleFields(end  ).id         = 99;
+exampleFields(end  ).maxRate    = 6;
+for ef = 1:numel(exampleFields)
+    eunit  = exampleFields(ef).id;
+    etrial = exampleFields(ef).trialIndex;
+    erate  = exampleFields(ef).maxRate;
+    for s = 1:2
+% COORDINATES 
+        [yindex, yoffset] = deal(    ef,  0.75-0.5*ef./numel(exampleFields) );
+        [xindex, xoffset] = deal( 5 + s,  s * 0.15 -0.5                     );
+        [   gyo, gxo    ] = deal(     0,  0                            );
+        [yscale, xscale ] = deal(     1,  1                            );
+% SETUP 
+        sax = setup_axes(hfig, yindex, yoffset, xindex, xoffset, gyo, gxo, yscale, xscale);
+% PLOT 
+        plot(pfb{etrial}{s}, eunit, 1, 'text', [0, erate], 'colorMap', @jet);
+% FORMAT         
+        sax.XTickLabel = {};
+        sax.YTickLabel = {};
+        colormap(sax, 'jet');
+        if ef == 1
+            if s == 1, title(sax, 'Locomotion', 'Color', loc.color, 'FontWeight', 'Normal'); end
+            if s == 2, title(sax,'Pause', 'Color', pause.color, 'FontWeight', 'Normal');     end
+        end
+        
+        if ef == numel(exampleFields) && s == 2
+            
+            xcoord = sum(sax.Position([ 1, 3])) .* [1, 1]+ 0.1;
+            ycoord = sax.Position(2).*[ 1, 1] + [0, sax.Position(4)*0.2];
+            line(hfig.UserData.fax, xcoord, ycoord, 'LineWidth', 2, 'Color',[0,0,0]);
+            
+            xcoord = sum(sax.Position([1,3]))+0.4;
+            ycoord = sax.Position(2);
+            text(hfig.UserData.fax, xcoord, ycoord, '20 cm', 'Rotation', 90);
+            
+            cax = colorbar(sax, 'SouthOutside');
+            cax.Units = 'Centimeters';
+            cax.Position(2) = cax.Position(2)-1;
+            cax.Position(1) = sax.Position(1);
+            cax.Position(3) = sax.Position(3);
+            cax.Ticks = [0, 1];
+            cax.TickLabels ={'0', 'Max'};
+        end
+    end
+end
+
+%%%>>>---------------------------------------------------------------------------

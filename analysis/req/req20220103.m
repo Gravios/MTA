@@ -9,18 +9,2388 @@
 %
 
 % Notes:
-%     quarter second time window does not capture the feature of low <20Hz vs high >40 and <200 Hz as well
-%     as the filtered means of the eigth of a second spectra.
-
-MjgER2016_load_data();
-sessionList = get_session_list_v2('MjgER2016');
-sampleRate = 30;
-trialId = 21;
+%  quarter second time window does not capture the feature
+%  of low <20Hz vs high >40 and <200 Hz as well
+%  as the filtered means of the eigth of a second spectra.
 
 
-Trial = Trials{trialId};
-unitSubset = units{trialId};
-meta = sessionList(trialId);
+%STARTHERE
+% detect for other sessions
+% there is a difference between high and low walk
+% also do gamma detection across layers on the linear probe
+% Use shift matching or some numerical depth to align clusters between sessions
+
+%%%<<< Load Data ---------------------------------------------------------------
+ThetaRC_load_data();
+% - sampleRate
+% - xyz
+% - units
+% ... etc
+
+trialIndex = 18;
+
+Trial   = Trials     { trialIndex };
+units   = Units      { trialIndex };
+meta    = sessionList( trialIndex );
+pft = pfs_2d_theta(Trial,units);
+
+
+txyz = preproc_xyz(Trial,'trb',sampleRate);
+headYawCorrection = Trial.meta.correction.headYaw;
+headCenterCorrection = Trial.meta.correction.headCenter;
+% COMPUTE head basis
+hvec = txyz(:,'nose',[1,2])-txyz(:,'hcom',[1,2]);
+hvec = sq(bsxfun(@rdivide,hvec,sqrt(sum(hvec.^2,3))));
+hvec = cat(3,hvec,sq(hvec)*[0,-1;1,0]);
+hvec = multiprod(hvec,...
+                 [cos(headYawCorrection),-sin(headYawCorrection);...
+                  sin(headYawCorrection), cos(headYawCorrection)],...
+                 [2,3],...
+                 [1,2]);
+hvfl = fet_href_HXY(Trial, sampleRate, [], 'trb', 2.4);
+hafl = circshift(hvfl.data,1)-hvfl.data;
+%bvfl = fet_bref_BXY(Trials{trlI}, sampleRate, [], 'trb', 5);
+%bafl = circshift(bvfl(:,1),1)-bvfl(:,1);
+hba = fet_hba(Trial,sampleRate); % Head to Body Angle
+hav = fet_hbav(Trial,sampleRate);
+pch = fet_HB_pitch(Trial,sampleRate);
+pch.data = pch.data(:,3);
+
+
+
+phz = load_theta_phase(Trial,Trial.lfp.sampleRate);
+yphz = load_theta_phase(Trial,sampleRate);
+
+%txyz = preproc_xyz(Trial,'trb',sampleRate);
+fxyz = filter(txyz.copy(),'ButFilter',3,14,'low');
+vxy = vel(filter(txyz.copy(),'ButFilter',3,2.5,'low'),{'spine_lower','hcom'},[1,2]);
+vxyz = vel(filter(txyz.copy(),'ButFilter',3,2.5,'low'),{'spine_lower','hcom'},[1,2,3]);
+lvxy = copy(vxy);
+lvxy.data(lvxy.data<=0.0001) = 0.0001;
+lvxy.data = log10(lvxy.data);
+
+
+lfpPyr = Trial.load('lfp', meta.subject.channelGroup.theta);
+
+lfpPrc = Trial.load('lfp', [48,64]);
+lfpPrc.data = diff(lfpPrc.data, 1, 2);
+%lfp.resample(sampleRate);
+
+cfp = Trial.load('lfp', 60);
+%cfp.resample(sampleRate);
+
+dfp = Trial.load('lfp', meta.subject.channelGroup.thetarc);
+%rfp.resample(sampleRate);
+rfp = copy(dfp)
+rfp.data = diff(dfp.data, 1, 2);
+
+ofp = Trial.load('lfp', [40,48,56]);
+
+afp = Trial.load('lfp', [48,56,64]);
+
+lfpRad = Trial.load('lfp', [73]);
+lfpRrc = Trial.load('lfp', [72,74]);
+lfpRrc.data = diff(lfpRrc.data, 1, 2);
+
+
+lfpLm = Trial.load('lfp', [78]);
+lfpLrc = Trial.load('lfp', [77,79]);
+lfpLrc.data = diff(lfpLrc.data, 1, 2);
+
+flfpRad = Trial.load('lfp', [76]);
+flfpRad.filter('ButFilter',4,[6,12],'bandpass');
+lfpRcsd = Trial.load('lfp', [75,77]);
+lfpRcsd.filter('ButFilter',4,[6,12],'bandpass');
+lfpRcsd.data = sum(lfpRcsd.data,2)-2*lfpRad.data;
+
+lfpWhl = lfpRrc.copy();
+lfpWhl.data = (lfpRrc.data+lfpLrc.data)/2;
+phzWhl = lfpWhl.phase([5,12]);
+
+tslfp = [1:size(lfpPyr,1)]./lfpPyr.sampleRate;
+figure,hold('on');
+plot(tslfp,lfpPyr.data+6000,'k');
+plot(tslfp,lfpPrc.data+6000,'m');
+plot(tslfp,lfpRad.data,'b');
+plot(tslfp,lfpRrc.data,'r');
+plot(tslfp,lfpLm.data-6000,'k');
+plot(tslfp,lfpLrc.data-6000,'m');
+
+plot(tslfp,(lfpRrc.data+lfpLrc.data)/2+10000,'g');
+
+dlfpWhl = copy(lfpWhl);
+dlfpWhl.resample(txyz);
+dphzWhl = dlfpWhl.phase([5,12]);
+dphzWhl.data = dphzWhl.data -pi/2-1;
+dphzWhl.data(dphzWhl.data<0)  = dphzWhl.data(dphzWhl.data<0) +2*pi;
+
+dlfpPyr = copy(lfpPyr);
+dlfpPyr.resample(txyz);
+dphzPyr = dlfpPyr.phase([5,12]);
+dphzPyr.data(dphzPyr.data<0) = dphzPyr.data(dphzPyr.data<0)+2*pi;
+
+dlfpPrc = copy(lfpPrc);
+dlfpPrc.resample(txyz);
+dphzPrc = dlfpPrc.phase([5,12]);
+dphzPrc.data = dphzPrc.data -pi/2;
+dphzPrc.data(dphzPrc.data<0) = dphzPrc.data(dphzPrc.data<0)+2*pi;
+
+
+dlfpLm = copy(lfpLm);
+dlfpLm.resample(txyz);
+dphzLm = dlfpLm.phase([5,12]);
+dphzLm.data = dphzLm.data -pi/2;
+dphzLm.data(dphzLm.data<0) = dphzLm.data(dphzLm.data<0)+2*pi;
+
+dlfpLrc = copy(lfpLrc);
+dlfpLrc.resample(txyz);
+dphzLrc = dlfpLrc.phase([5,12]);
+dphzLrc.data = dphzLrc.data -pi/2-1;
+dphzLrc.data(dphzLrc.data<0) = dphzLrc.data(dphzLrc.data<0)+2*pi;
+
+
+dlfpRad = copy(lfpRad);
+dlfpRad.resample(txyz);
+dphzRad = dlfpRad.phase([5,12]);
+dphzRad.data = dphzRad.data -pi/2;
+dphzRad.data(dphzRad.data<0) = dphzRad.data(dphzRad.data<0)+2*pi;
+
+
+dlfpRrc = copy(lfpRrc);
+dlfpRrc.resample(txyz);
+dphzRrc = dlfpRrc.phase([5,12]);
+dphzRrc.data = dphzRrc.data -pi/2;
+dphzRrc.data(dphzRrc.data<0) = dphzRrc.data(dphzRrc.data<0)+2*pi;
+
+dxy = copy(txyz);
+drz = compute_drz(Trial,units,pft,'feature',dxy);
+ddz = compute_ddz(Trial,units,pft,'feature',dxy);
+ghz = compute_ghz(Trial,units,pft,'feature',dxy);
+
+pyr = Trial.load('spk', sampleRate, 'w+p&theta', units, 'deburst');
+
+dphzWhl.data(dphzWhl.data>pi)= dphzWhl.data(dphzWhl.data>pi) -2*pi;
+dphzPyr.data(dphzPyr.data>pi)= dphzPyr.data(dphzPyr.data>pi) -2*pi;
+
+
+[PWhl,phzStatsWhl,RmaxWhl,rhoWhl] = MjgER2016_phasePrecession(Trial,ghz,ddz,dphzLrc,pyr,units,300,-pi:0.01:pi,'overwrite',true);
+[PPyr,phzStatsPyr,RmaxPyr,rhoPyr] = MjgER2016_phasePrecession(Trial,ghz,ddz,dphzPyr,pyr,units,300,-pi:0.01:pi,'overwrite',true);
+
+pyrS = copy(pyr);
+pyrS.clu = pyrS.clu(abs(hba(pyrS.res))<0.3);
+pyrS.res = pyrS.res(abs(hba(pyrS.res))<0.3);
+pyrT = copy(pyr);
+pyrT.clu = pyrT.clu(abs(hba(pyrT.res))>0.3);
+pyrT.res = pyrT.res(abs(hba(pyrT.res))>0.3);
+
+[PS,phzStatsS,RmaxS,rhoS] = MjgER2016_phasePrecession(Trial,ghz,ddz,dphzPyr,pyrS,units,300,-pi:0.01:pi,'overwrite',true);
+[PT,phzStatsT,RmaxT,rhoT] = MjgER2016_phasePrecession(Trial,ghz,ddz,dphzPyr,pyrT,units,300,-pi:0.01:pi,'overwrite',true);
+
+figure,hold('on');
+plot(PS(:,1),PT(:,1),'.');
+line([-5,5],[-5,5]);
+
+figure,
+hold('on');
+plot(PS(:,2),PT(:,2),'.');
+line([-pi,pi],[-pi,pi]);
+
+figure,hold('on');
+plot(rhoPyr(:,1,1), rhoWhl(:,1,1),'.')
+line([-1,1],[-1,1]);
+
+figure
+histogram(rhoPyr(:,1,1)-rhoWhl(:,1,1),linspace(-1,1,50));
+
+
+[h,p] = ttest(rhoPyr(:,1,1)-rhoWhl(:,1,1))
+
+%    drz:        directional rate zones
+%    ddz:        directional distance zones
+%    phz:        Local field potential phase
+%    spk:        MTASpk object which holds spike events
+%    units:      list of units for computation
+
+
+dphzWhl.data(dphzWhl.data<0)= dphzWhl.data(dphzWhl.data<0) + 2*pi;
+dphzPyr.data(dphzPyr.data<0)= dphzPyr.data(dphzPyr.data<0) + 2*pi;
+
+
+unit = 25;
+res = pyr(unit,[Trial.stc{'w+p&t'}]);
+figure,
+dind = abs(ddz(res,units==unit))<300;
+subplot(421);
+plot(drz(res(dind),units==unit),dphzPrc(res(dind)),'.');
+subplot(422);
+plot(ghz(res(dind),units==unit),dphzPrc(res(dind)),'.');
+subplot(423);
+plot(drz(res(dind),units==unit),dphzPyr(res(dind)),'.');
+subplot(424);
+plot(ghz(res(dind),units==unit),dphzPyr(res(dind)),'.b');
+hold('on');
+plot(ghz(res(dind),units==unit),dphzPyr(res(dind))+2*pi,'.b');
+plot(ghz(res(dind),units==unit),dphzPyr(res(dind))+4*pi,'.b');
+line([-1,1],polyval(PPyr(units==unit,:,1)+[0,2*pi],[-1,1]),'Color','m');
+subplot(425);
+plot(drz(res(dind),units==unit),dphzRrc(res(dind)),'.');
+subplot(426);
+plot(ghz(res(dind),units==unit),dphzRrc(res(dind)),'.');
+subplot(427);
+plot(drz(res(dind),units==unit),dphzLrc(res(dind)),'.');
+subplot(428);
+plot(ghz(res(dind),units==unit),dphzLrc(res(dind)),'.');
+
+
+dind = abs(ddz(res,units==unit))<300 ...
+       & abs(hba(res))>0.4;
+figure
+scatter(ghz(res(dind),units==unit),dphzPyr(res(dind)),15,abs(hba(res(dind))),'filled');
+colormap jet
+caxis([0,1.2]);
+colorbar();
+
+
+dind = abs(ddz(res,units==unit))<300 ...
+       & abs(hba(res))>0.4;
+
+
+
+figure
+hold('on');
+dind = abs(ddz(res,units==unit))<300 & abs(hba(res))>0.3;
+plot(ghz(res(dind),units==unit),dphzPyr(res(dind)),'.r')
+xlim([-1,1]);
+ylim([0,2*pi]);
+
+figure,
+dind = abs(ddz(res,units==unit))<300 & abs(hba(res))<0.3;
+plot(ghz(res(dind),units==unit),dphzPyr(res(dind)),'.k')
+xlim([-1,1]);
+ylim([0,2*pi]);
+
+
+figure
+dind = abs(ddz(res,units==unit))<300 & abs(vxy(res))>5 & abs(hba(res))<0.2;
+plot(ghz(res(dind),units==unit),dphzPyr(res(dind)),'.r')
+xlim([-1,1]);
+ylim([0,2*pi]);
+
+figure
+dind = abs(ddz(res,units==unit))<300 & abs(vxy(res))>5 & abs(hba(res))>0.2;
+plot(ghz(res(dind),units==unit),dphzPyr(res(dind)),'.r')
+xlim([-1,1]);
+ylim([0,2*pi]);
+
+figure,
+dind = abs(ddz(res,units==unit))<300 & abs(vxy(res))<5 & abs(hba(res))<0.2;
+plot(ghz(res(dind),units==unit),dphzPyr(res(dind)),'.k')
+xlim([-1,1]);
+ylim([0,2*pi]);
+
+figure,
+dind = abs(ddz(res,units==unit))<300 & abs(vxy(res))<5 & abs(hba(res))>0.2;
+plot(ghz(res(dind),units==unit),dphzPyr(res(dind)),'.k')
+xlim([-1,1]);
+ylim([0,2*pi]);
+
+figure,
+plot(dphzWhl(res(dind)),dphzPyr(res(dind)),'.');
+
+figure
+scatter(dphzLm(res(dind)),dphzPyr(res(dind)),15,lvxy(res(dind)),'filled');
+colormap jet
+caxis([0,2]);
+
+lfpRrc = Trial.load('lfp', [75,77]);
+lfpRrc.data = diff(lfpR.data, 1, 2);
+
+
+
+
+
+trialIndex = 20;
+bhvState = 'walk+turn+pause&theta';
+Trial   = Trials     { trialIndex };
+units   = Units      { trialIndex };
+meta    = sessionList( trialIndex );
+Pft = pfs_2d_theta(Trial,units);
+Pft     = placeFieldsNoRear{ trialIndex };
+phz = load_theta_phase(Trial,sampleRate);
+txyz = preproc_xyz(Trial,'trb',sampleRate);
+headYawCorrection = Trial.meta.correction.headYaw;
+headCenterCorrection = Trial.meta.correction.headCenter;
+% COMPUTE head basis
+hvec = txyz(:,'nose',[1,2])-txyz(:,'hcom',[1,2]);
+hvec = sq(bsxfun(@rdivide,hvec,sqrt(sum(hvec.^2,3))));
+hvec = cat(3,hvec,sq(hvec)*[0,-1;1,0]);
+hvec = multiprod(hvec,...
+                 [cos(headYawCorrection),-sin(headYawCorrection);...
+                  sin(headYawCorrection), cos(headYawCorrection)],...
+                 [2,3],...
+                 [1,2]);
+bvec = txyz(:,'spine_upper',[1,2])-txyz(:,'spine_lower',[1,2]);
+bvec = sq(bsxfun(@rdivide,bvec,sqrt(sum(bvec.^2,3))));
+bvec = cat(3,bvec,sq(bvec)*[0,-1;1,0]);
+ 
+% $$$ hvfl = fet_href_HXY(Trial, sampleRate, [], 'trb', 2.4);
+% $$$ hafl = circshift(hvfl.data,1)-hvfl.data;
+%bvfl = fet_bref_BXY(Trials{trlI}, sampleRate, [], 'trb', 5);
+%bafl = circshift(bvfl(:,1),1)-bvfl(:,1);
+hba = fet_hba(Trial,sampleRate); % Head to Body Angle
+hav = fet_hbav(Trial,sampleRate);
+pch = fet_HB_pitch(Trial,sampleRate);
+pch.data = pch.data(:,3);
+pyr = Trial.load('spk', sampleRate, bhvState, units, 'deburst');
+headAngle = sq(txyz(:,'nose',[1,2])-txyz(:,'hcom',[1,2]));
+headAngle = atan2(headAngle(:,2),headAngle(:,1));
+mazeAngle =  sq(txyz(:,'hcom',[1,2]));
+mazeAngle = atan2(mazeAngle(:,2),mazeAngle(:,1));
+hma = circ_dist(headAngle,mazeAngle);
+
+% 11    29    33    42    49    52    54    60    75    78    80
+%  6    22    24    25    37    43    44    61    63    68    77
+
+%ED10-0817:   1    10    24    33    38    57    63    64    73   105   108
+%ER06-0613:  28    35    54    61    76   107   119   175
+%JG05-0316:  13    19    30    41    42    48    56    58    61    6
+
+%bhvState = 'lbhv&theta';
+bhvState = 'walk+turn+pause&theta';
+unit = 25;
+rmap = plot(Pft,unit);
+[mxr,mxp] = Pft.maxRate(unit);
+exy = [bsxfun(@plus,                                            ...
+              multiprod(bsxfun(@minus,                          ...
+                               mxp,                             ...
+                               sq(txyz(:,'hcom',[1,2]))),  ...
+                        hvec,2,[2,3]),                          ...
+              0)];
+% $$$ exy = [bsxfun(@plus,                                            ...
+% $$$               multiprod(bsxfun(@minus,                          ...
+% $$$                                mxp,                             ...
+% $$$                                sq(txyz(:,'spine_upper',[1,2]))),  ...
+% $$$                         bvec,2,[2,3]),                          ...
+% $$$               0)];
+sts = [Trial.stc{bhvState}];
+sts.resample(txyz);
+xts = copy(sts);
+xts.cast('TimeSeries');
+xts.resample(txyz);
+xts.data = logical(xts.data);
+ 
+figure
+%for phzI = 1:bins.phz.count;
+phzI = 3
+pfsRadius = sqrt(sum(rmap(:)>2)*20*20/pi);
+for hbaI = 1:bins.hba.count;
+for hmaI = 1:4
+ures = pyr(unit,sts);
+ures = ures(within_ranges(dphzPyr(ures),bins.phz.edges([phzI,phzI+1])));
+switch hmaI
+  case 1
+    spt = 'Center to Edge';
+    ind = within_ranges(hma,[-pi/4, pi/4]) ...
+          & within_ranges(hba,bins.hba.edges([hbaI,hbaI+1]));
+    ures = ures(ind(ures));%towards
+    exyInd = ind & xts.data;
+  case 2
+    spt = 'Edge to Center';
+    ind = within_ranges(hma,[-pi,-pi*3/4; pi*3/4,pi]) ...
+          & within_ranges(hba,bins.hba.edges([hbaI,hbaI+1]));
+    ures = ures(ind(ures));%away
+    exyInd = ind & xts.data;
+  case 3
+    spt = 'CW';
+    ind =  within_ranges(hma,[-pi*3/4,-pi/4]) ...
+         & within_ranges(hba,bins.hba.edges([hbaI,hbaI+1]));
+    ures = ures(ind(ures));%CW
+    exyInd = ind & xts.data;
+  case 4
+    spt = 'CCW';
+    ind = within_ranges(hma,[pi/4,pi*3/4]) ...
+          & within_ranges(hba,bins.hba.edges([hbaI,hbaI+1]));
+    ures = ures(ind(ures)); %CCW
+    exyInd = ind & xts.data;
+end
+subplot2(3,4,hbaI,hmaI); hold('on');
+%plot(exy(exyInd,2),exy(exyInd,1),'.','Color',[0.8,0.8,0.8]);
+scatter(exy(exyInd,2),exy(exyInd,1),2,hma(exyInd),'Filled');
+scatter( exy(ures,2), exy(ures,1), 30, hba(ures), 'Filled','MarkerEdgeColor','k');
+%plot( exy(ures,2), exy(ures,1),'.m','MarkerSize',10);
+circle(0,0,pfsRadius,'-k');
+Lines([],0,'k');
+Lines(0,[],'k');
+colorbar();colormap('hsv');caxis([-pi,pi]);xlim([-250,250]);ylim([-250,250]);daspect([1,1,1]);
+title(['HBA: ',spt]);
+end
+end
+% C2E - HBA_L(<>±Lat), HBA_R(<>±Lat), HBA_L||HBA_R (<|>±Lat)
+%       rate(HBA_L(Lat<0)) vs rate(HBA_R(Lat<0)) Where Lat <= pfsRadius
+%       rate(HBA_L(Lat<0)) vs rate(HBA_L(Lat>0))
+%       rate(HBA_L(Lat<0)) vs rate(HBA_L(Lat>0))
+%       rate(HBA_R(Lat<0)) vs rate(HBA_R(Lat>0))
+% E2C - HBA_L(<>±Lat), HBA_R(<>±Lat), HBA_L||HBA_R (<|>±Lat)
+% Estimated gaussian for forward field
+
+% Head direction preference
+
+
+ind_L = within_ranges(hba,bins.hba.edges([1,2])) & xts.data;
+ind_R = within_ranges(hba,bins.hba.edges([3,4])) & xts.data;
+
+
+usideleng = sqrt(sum(bsxfun(@minus, sq(txyz(:,'spine_upper',[1,2])),mxp).^2, 2));
+tsideleng = sqrt(sum(bsxfun(@minus, sq(txyz(:,'spine_lower',[1,2])),mxp).^2, 2));
+ssideleng = sqrt(sum(sq(txyz(:,'spine_upper',[1,2])-txyz(:,'spine_lower',[1,2])).^2, 2));
+
+bma = acos( (ssideleng.^2 + tsideleng.^2 - usideleng.^2) ./ (2 .* ssideleng .* tsideleng));
+
+headAngle = sq(txyz(:,'nose',[1,2])-txyz(:,'hcom',[1,2]));
+headAngle = atan2(headAngle(:,2),headAngle(:,1));
+fieldAngle =  bsxfun(@minus,sq(txyz(:,'hcom',[1,2])),mxp);
+fieldAngle = atan2(fieldAngle(:,2),fieldAngle(:,1));
+%hfa = circ_dist(headAngle,fieldAngle);
+hfa = fieldAngle;
+
+figure,scatter(txyz(:,'hcom',1),txyz(:,'hcom',2),30,fieldAngle,'filled');
+colormap('hsv');
+colorbar();
+
+
+
+
+
+%bhvState = 'lbhv&theta';
+bhvState = 'walk+turn+pause&theta';
+unit = 25;
+rmap = plot(Pft,unit);
+[mxr,mxp] = Pft.maxRate(unit);
+exy = [bsxfun(@plus,                                            ...
+              multiprod(bsxfun(@minus,                          ...
+                               mxp,                             ...
+                               sq(txyz(:,'hcom',[1,2]))),  ...
+                        hvec,2,[2,3]),                          ...
+              0)];
+sts = [Trial.stc{bhvState}];
+sts.resample(txyz);
+xts = copy(sts);
+xts.cast('TimeSeries');
+xts.resample(txyz);
+xts.data = logical(xts.data);
+headAngle = sq(txyz(:,'nose',[1,2])-txyz(:,'hcom',[1,2]));
+headAngle = atan2(headAngle(:,2),headAngle(:,1));
+fieldAngle =  bsxfun(@minus,sq(txyz(:,'hcom',[1,2])),mxp);
+fieldAngle = atan2(fieldAngle(:,2),fieldAngle(:,1));
+hfa = circ_dist(headAngle,fieldAngle);
+pfa =  bsxfun(@minus,sq(txyz(:,'hcom',[1,2])),mxp);
+pfa = atan2(pfa(:,2),pfa(:,1));
+usideleng = sqrt(sum(bsxfun(@minus, sq(txyz(:,'hcom',[1,2])),mxp).^2, 2));
+figure()
+subplot(131)
+%scatter(txyz(:,'hcom',1),txyz(:,'hcom',2),30,fieldAngle,'filled');
+out = hist2([txyz(xts,'hcom',1),txyz(xts,'hcom',2)], ...
+              bins.x.edges, ...
+              bins.y.edges);
+imagesc(bins.x.centers, bins.x.centers, (out./sampleRate)');
+axis('xy');
+colormap(gca(),'jet');
+colorbar();
+hold('on');
+circle(mxp(1),mxp(2),pfsRadius,'r');
+subplot(132)
+ind =  xts.data & within_ranges(usideleng,radius);
+out = hist2([hfa(ind), fieldAngle(ind)], bins.hfa.edges, bins.hfa.edges);
+imagesc(bins.hfa.centers, bins.hfa.centers, (out./sampleRate)')
+axis('xy');
+colormap(gca(),'jet');
+colorbar()
+set(Lines(-pi/2,[],'k'),'LineWidth',2);
+set(Lines(pi/2,[],'k'),'LineWidth',2);
+subplot(133)
+pfa = fieldAngle;
+ind_L = within_ranges(hba,bins.hba.edges([1,2])) & ind;
+ind_R = within_ranges(hba,bins.hba.edges([3,4])) & ind;
+hfaInds = discretize(hfa(ind_L), bins.hfa.edges);
+pfaInds = discretize(pfa(ind_L), bins.hfa.edges);
+hbaLOcc = accumarray([hfaInds,pfaInds],hba(ind_L),[bins.hfa.count,bins.hfa.count],@numel);
+hfaInds = discretize(hfa(ind_R), bins.hfa.edges);
+pfaInds = discretize(pfa(ind_R), bins.hfa.edges);
+hbaROcc = accumarray([hfaInds,pfaInds],hba(ind_R),[bins.hfa.count,bins.hfa.count],@numel);
+imagescnan({bins.hfa.centers, bins.hfa.centers, (hbaROcc-hbaLOcc)'./sampleRate},'colorbarIsRequired',true,'colorMap',@jet)
+axis('xy');
+set(Lines(-pi/2,[],'k'),'LineWidth',2);
+set( Lines(pi/2,[],'k'),'LineWidth',2);
+
+% pfa
+
+
+% $$$ radius = [0,100];
+radius = [50,200];
+hbaI = 1;
+ures = pyr(unit,sts);
+ures = ures(within_ranges(dphzPyr(ures),bins.phz.edges([phzI,phzI+2])));
+% $$$ ind =  within_ranges(hma,[-pi*3/4,-pi/4]) ...
+% $$$        & within_ranges(hba,bins.hba.edges([hbaI,hbaI+1])) ...
+% $$$        & exy(:,2)>0 ...
+% $$$        & exy(:,1)>-100; %CW
+ind = within_ranges(hma,[pi/4,pi*3/4]) ... 
+      & within_ranges(hba,bins.hba.edges([hbaI,hbaI+1])) ...
+      & exy(:,2)>0 ...
+      & exy(:,1)>-100; %CCW
+ures = ures(ind(ures)); 
+exyInd = ind & xts.data;
+rexy = [exy(exyInd,1),exy(exyInd,2)];
+sexy = exy(ures,:);
+sum(within_ranges(sqrt(sum(sexy.^2,2)),radius))/sum(within_ranges(sqrt(sum(rexy.^2,2)),radius))*sampleRate
+
+%radius = [0,100];
+radius = [25,pfsRadius];
+hbaI = 1;
+ures = pyr(unit,sts);
+ures = ures(within_ranges(dphzPyr(ures),bins.phz.edges([phzI,phzI+2])));
+% $$$ ind = within_ranges(hma,[-pi/4, pi/4]) ...
+% $$$       & within_ranges(hba,bins.hba.edges([hbaI,hbaI+1])) ...
+% $$$       & exy(:,2)<0; % C to E
+ind = within_ranges(hma,[-pi,-pi*3/4; pi*3/4,pi]) ...
+      & within_ranges(hba,bins.hba.edges([hbaI,hbaI+1])) ...
+      & exy(:,2)>0; % E to C
+ures = ures(ind(ures)); 
+exyInd = ind & xts.data;
+rexy = [exy(exyInd,1),exy(exyInd,2)];
+sexy = exy(ures,:);
+sum(within_ranges(sqrt(sum(sexy.^2,2)),radius))/sum(within_ranges(sqrt(sum(rexy.^2,2)),radius))*sampleRate
+
+
+
+
+%bsxfun(@minus, sq(txyz(:,'spine_upper',[1,2])),mxp)
+bfa = atan2(txyz(:,'spine_upper',2)-mxp(2),txyz(:,'spine_upper',1)- mxp(1));
+hfa = atan2(txyz(:,'spine_upper',2)-mxp(2),txyz(:,'spine_upper',1)-mxp(1));
+
+
+
+figure,plot(bfa)
+
+
+
+ind =   xts.data ...
+        & within_ranges(usideleng, [0,400]) ;
+%      & bma < pi/3 ...
+ind_L = within_ranges(hba,bins.hba.edges([1,2])) & ind;
+ind_R = within_ranges(hba,bins.hba.edges([3,4])) & ind;
+
+figure();
+subplot(121);
+hold('on');
+plot(txyz(ind_L,'hcom',1),txyz(ind_L,'hcom',2),'.b')
+circle(mxp(1),mxp(2),pfsRadius,'-k');
+subplot(122);
+hold('on');
+plot(txyz(ind_R,'hcom',1),txyz(ind_R,'hcom',2),'.r')
+circle(mxp(1),mxp(2),pfsRadius,'-k');
+
+
+
+
+ind =   xts.data;
+ind_L = within_ranges(hba,bins.hba.edges([1,2])) & ind;
+ind_C = within_ranges(hba,bins.hba.edges([2,3])) & ind;
+ind_R = within_ranges(hba,bins.hba.edges([3,4])) & ind;
+
+figure();
+subplot(131);
+hold('on');
+plot(txyz(ind_L,'hcom',1),txyz(ind_L,'hcom',2),'.g')
+circle(mxp(1),mxp(2),pfsRadius,'-k');
+xlim([-500,500]),ylim([-500,500])
+title(num2str(sum(ind_L)/sampleRate/60));
+subplot(132);
+hold('on');
+plot(txyz(ind_C,'hcom',1),txyz(ind_C,'hcom',2),'.b')
+circle(mxp(1),mxp(2),pfsRadius,'-k');
+xlim([-500,500]),ylim([-500,500])
+title(num2str(sum(ind_C)/sampleRate/60));
+subplot(133);
+hold('on');
+plot(txyz(ind_R,'hcom',1),txyz(ind_R,'hcom',2),'.r')
+circle(mxp(1),mxp(2),pfsRadius,'-k');
+xlim([-500,500]),ylim([-500,500])
+title(num2str(sum(ind_R)/sampleRate/60));
+
+
+% bma as a function of hba sampled by the
+
+% hma 
+
+% place field direction
+
+
+
+
+
+unit = 61;
+figure,
+for phzI = 1:bins.phz.count
+    subplot(1,4,phzI); % ego field by theta phase
+    plot(pfet{1}{phzI},unit,[],'colorbar',[2,15],false,[],true, ...
+         'colorMap',@jet);
+    xlim([-300,300]);
+    ylim([-200,300]);
+end
+subplot(1,4,4); % allo field in theta state
+plot(pft{20},unit,[],'colorbar','colorMap',@jet);
+
+
+% PLOT  surface of rough ego field by theta phase
+phzI = 3;
+rmap =    plot(pfet{1}{phzI},unit,[],'colorbar',[2,15],false,[],true, ...
+         'colorMap',@jet);
+figure,
+surface(linspace(-400,400,50),linspace(-400,400,50),rmap);
+colormap jet;
+    xlim([-300,300]);
+    ylim([-200,300]);
+
+
+% $$$ radius = [0,100];
+radius = [50,200];
+hbaI = 1;
+ures = pyr(unit,sts);
+ures = ures(within_ranges(dphzPyr(ures),bins.phz.edges([phzI,phzI+2])));
+% $$$ ind =  within_ranges(hma,[-pi*3/4,-pi/4]) ...
+% $$$        & within_ranges(hba,bins.hba.edges([hbaI,hbaI+1])) ...
+% $$$        & exy(:,2)>0 ...
+% $$$        & exy(:,1)>-100; %CW
+ind = within_ranges(hma,[pi/4,pi*3/4]) ... 
+      & within_ranges(hba,bins.hba.edges([hbaI,hbaI+1])) ...
+      & exy(:,2)>0 ...
+      & exy(:,1)>-100; %CCW
+ures = ures(ind(ures)); 
+exyInd = ind & xts.data;
+rexy = [exy(exyInd,1),exy(exyInd,2)];
+sexy = exy(ures,:);
+sum(within_ranges(sqrt(sum(sexy.^2,2)),radius))/sum(within_ranges(sqrt(sum(rexy.^2,2)),radius))*sampleRate
+
+%radius = [0,100];
+radius = [25,pfsRadius];
+hbaI = 1;
+ures = pyr(unit,sts);
+ures = ures(within_ranges(dphzPyr(ures),bins.phz.edges([phzI,phzI+2])));
+% $$$ ind = within_ranges(hma,[-pi/4, pi/4]) ...
+% $$$       & within_ranges(hba,bins.hba.edges([hbaI,hbaI+1])) ...
+% $$$       & exy(:,2)<0; % C to E
+ind = within_ranges(hma,[-pi,-pi*3/4; pi*3/4,pi]) ...
+      & within_ranges(hba,bins.hba.edges([hbaI,hbaI+1])) ...
+      & exy(:,2)>0; % E to C
+ures = ures(ind(ures)); 
+exyInd = ind & xts.data;
+rexy = [exy(exyInd,1),exy(exyInd,2)];
+sexy = exy(ures,:);
+sum(within_ranges(sqrt(sum(sexy.^2,2)),radius))/sum(within_ranges(sqrt(sum(rexy.^2,2)),radius))*sampleRate
+
+
+rmap = plot(Pft,11);
+rmap(rmap<1) = 1;
+
+
+figure,surface(log10(rmap));
+
+xfp = Trial.load('lfp', [63,64]);
+xfp.data = diff(xfp.data, 1, 2);
+
+
+qfp= Trial.load('lfp', [59,60]);
+zfp = Trial.load('lfp', [59,60]);
+zfp.data = diff(zfp.data, 1, 2);
+lts = [1:size(zfp,1)]./Trial.lfp.sampleRate;
+
+dat = LoadBinary([Trial.spath,'/',Trial.name,'.dat'], [57:64], 96,[],[],[],[1,2^23]+round(Trial.sync.data(1)*Trial.sampleRate))';
+dts = [1:size(dat,1)]./Trial.sampleRate;
+
+qat = LoadBinary([Trial.spath,'/',Trial.name,'.dat'], [59,60], 96,[],[],[],[1,2^23]+round(Trial.sync.data(1)*Trial.sampleRate))';
+
+% GET place field centers.
+% FIND location with the lowest place cell denisity.
+% GET Dat segments from that locations and determin if there is an lfp
+%     signature for that location.
+
+
+
+[res,clu,map] = LoadCluRes(fullfile(Trial.spath,Trial.name),8);
+sres = res(clu==2);
+sdat = LoadBinary([Trial.spath,'/',Trial.name,'.dat'], [57:64], 96,[],[],[],[-32,32]+sres)';
+sdat = permute(reshape(sdat,65,[],8),[2,1,3]);
+
+
+[U,S,V] = svd( reshape(sdat,[],65*8), 0);
+
+
+rdat = reshape(sdat,[],65*8);
+
+figure,
+multiprod(rdat,V(:,1)
+
+figure(),
+plot(rdat*V(:,2), rdat*V(:,4),'.')
+
+
+figure()
+plot(rdat*V(:,2), rdat*V(:,4),'.')
+
+
+figure()
+hist(rdat*V(:,2), 100)
+
+
+figure,plot(sq(mean(bsxfun(@minus, sdat, mean(sdat(:,[1:10],:),2)),1)));
+
+figure();
+plot(sq(std(bsxfun( @minus, sdat, mean(sdat(:,[1:10],:),2)),[],1)));
+
+
+figure,plot(cumsum(diff(sq(sdat(100,:,1)))))
+hold('on');,
+%plot(ifft(mean(fft(cumsum(diff(sq(sdat(101,:,1))),2),[],2),1)))
+plot(ifft(fft(mean(sdat(:,:,1)),[],2)))
+
+sq(sdat(100,:,1))
+
+figure(); hold('on');
+plot(sdat(100,:,1))
+plot(sdat(100,2:end,1)-[cumsum(diff(sq(sdat(100,:,1))))])
+
+
+[yo,fo] = mtfft(cumsum(diff(sq(sdat(100,:,1)))), 2^7, Trial.sampleRate, 2^6);
+[syo,sfo] = mtfft(sq(sdat(100,1:end-1,1)), 2^7, Trial.sampleRate, 2^6);
+
+
+figure,
+plot( sq( std( bsxfun( @minus, sdat, mean( sdat(:,[1:10],:), 2)), [], 1)));
+
+
+
+figure,
+plot( sq(bsxfun(@minus,sdat(10,:,:),))
+
+
+figure,plot(mean(rdat(rdat*V(:,2)<0,:)))
+figure,plot(mean(rdat(rdat*V(:,2)>0,:)))
+
+mspk = sq(std(bsxfun( @minus, sdat, mean(sdat(:,[1:10],:),2)),[],1));
+
+figure
+hold('on');
+for chan = 1:8
+    [sys,sfs,sts] = mtcsdglong(mean(sdat(:,:,chan)),128,Trial.sampleRate,65);
+    plot(sfs,log10(sys));
+end
+[sys,sfs,sts] = mtcsdglong(mspk(:,chan),128,Trial.sampleRate,65);
+plot(sfs,log10(sys),'m');
+
+
+
+[dys,dfs,dts] = mtcsdglong()
+
+
+figure,
+subplot(3,1,[1,2]);
+%plot( dts, bsxfun( @plus, diff(dat,1,2)/5, 1000.*[1:7]), 'k')
+hold('on');
+plot( dts, bsxfun( @plus, dat, 9000 + 1000.*[1:8]));
+plot( dts, ButFilter(bsxfun( @plus, diff(dat,1,2), 1000.*[1:7]), 4, 200/(0.5.*Trial.sampleRate),'low'), 'k')
+plot(lts,rfp.data/10,'m')
+plot( dts, ButFilter(bsxfun( @minus, diff(dat(:,[1,3]),1,2), 1000), 4, 200/(0.5.*Trial.sampleRate),'low'), 'r')
+plot( dts, ButFilter(bsxfun( @minus, diff(dat(:,[2,4]),1,2), 2000), 4, 200/(0.5.*Trial.sampleRate),'low'), 'r')
+plot( dts, ButFilter(bsxfun( @minus, dat(:,[4]), 3000), 4, 200/(0.5.*Trial.sampleRate),'low'), 'b')
+
+subplot(3,1,3);
+plotSTC( Trial.stc, ...
+         1,...
+         [],...
+         {'lpause','lloc','hloc','hpause','rear','groom','sit'},...
+         'cbkgrmy');
+linkx()
+
+plot( dts, ButFilter(bsxfun( @minus, diff(dat(:,[2,4]),1,2), 2000), 4, 200/(2.*Trial.sampleRate),'low'), 'r')
+
+figure,
+hold('on'),
+plot( dts, dat/3+2000,    'r')
+plot( dts, diff(qat,1,2),'k')
+plot( dts, -diff(dat,1,2)-2000,'b')
+plot( lts, rfp.data/9,    'm')
+plot( lts, qfp.data/3+3000, 'g');
+
+
+figure,
+hold('on'),
+plot(lts,xfp.data,'r')
+plot(zfp.data,'k')
+plot(lts,rfp.data/10,'m')
+plot(qfp.data/10,'g');
+
+%%%>>>--------------------------------------------------------------------------
+
+
+
+%%%<<< Compute Spectrum of lfp and rfp -----------------------------------------
+
+wfp = copy(rfp);
+wfp.data = [lfp.data, rfp.data, cfp.data];
+
+specArgsTheta = struct('nFFT', 2^9,                                          ...
+                         'Fs', rfp.sampleRate,                               ...
+                  'WinLength', 2^8,                                          ...
+                   'nOverlap', 2^8*0.875,                                    ...
+                         'NW', 3,                                            ...
+                    'Detrend', [],                                           ...
+                    'nTapers', [],                                           ...
+                  'FreqRange', [1,32]);
+overwriteARModel = false;
+[mys,mfs,mts] = fet_spec(Trial, wfp, 'mtcsdglong', false, [], specArgsTheta, ...
+                         overwriteARModel, true);
+%%%>>>--------------------------------------------------------------------------
+
+
+%%%<<< Compute Spectrum of lfp and rfp -----------------------------------------
+wfp = copy(rfp);
+%wfp.data = [afp];
+wfp.data = wfp.data(1:600000,:);
+specArgsTheta = struct('nFFT', 2^8,                                          ...
+                         'Fs', rfp.sampleRate,                               ...
+                  'WinLength', 2^7,                                          ...
+                   'nOverlap', 2^7*0.875,                                    ...
+                         'NW', 3,                                            ...
+                    'Detrend', [],                                           ...
+                    'nTapers', [],                                           ...
+                  'FreqRange', [12,250]);
+overwriteARModel = false;
+[gys,gfs,gts] = fet_spec(Trial, wfp, 'mtcsdglong', true, [], specArgsTheta, ...
+                         overwriteARModel, true);
+%%%>>>--------------------------------------------------------------------------
+
+
+
+%%%<<< Compute Spectrum of lfp and rfp -----------------------------------------
+wfp = copy(rfp);
+wfp.data = [ofp.data,afp.data];
+wfp.data = wfp.data(1:2400000,:);
+specArgsTheta = struct('nFFT', 2^8,                                          ...
+                         'Fs', rfp.sampleRate,                               ...
+                  'WinLength', 2^7,                                          ...
+                   'nOverlap', 2^7*0.875,                                    ...
+                         'NW', 3,                                            ...
+                    'Detrend', [],                                           ...
+                    'nTapers', [],                                           ...
+                  'FreqRange', [12,250]);
+overwriteARModel = false;
+[agys,agfs,agts] = fet_spec(Trial, wfp, 'mtcsdglong', true, [], specArgsTheta, ...
+                         overwriteARModel, false);
+%%%>>>--------------------------------------------------------------------------
+
+
+%%%<<< Compute Spectrum of lfp and rfp -----------------------------------------
+wind = 1:size(rfp,1);
+wfp = copy(rfp);
+%wfp.data = wfp.data(wind,:);
+specArgsTheta = struct('nFFT', 240,                                          ...
+                         'Fs', rfp.sampleRate,                               ...
+                  'WinLength', 80,                                           ...
+                   'nOverlap', 80*0.875,                                     ...
+                         'NW', 3,                                            ...
+                    'Detrend', [],                                           ...
+                    'nTapers', [],                                           ...
+                  'FreqRange', [30,250]);
+overwriteARModel = false;
+[rhys,rhfs,rhts] = fet_spec(Trial, wfp, 'mtcsdglong', false, [], specArgsTheta, ...
+                         overwriteARModel, false);
+
+
+
+
+
+%%%<<< Compute Spectrum of lfp and rfp -----------------------------------------
+wind = 1:size(rfp,1);
+wfp = copy(rfp);
+wfp.data = [ofp.data,afp.data];
+wfp.data = wfp.data(wind,:);
+specArgsTheta = struct('nFFT', 240,                                          ...
+                         'Fs', rfp.sampleRate,                               ...
+                  'WinLength', 80,                                           ...
+                   'nOverlap', 80*0.875,                                     ...
+                         'NW', 3,                                            ...
+                    'Detrend', [],                                           ...
+                    'nTapers', [],                                           ...
+                  'FreqRange', [30,250]);
+overwriteARModel = false;
+[ahys,ahfs,ahts] = fet_spec(Trial, wfp, 'mtcsdglong', false, [], specArgsTheta, ...
+                         overwriteARModel, false);
+
+
+nhys = [];
+for ciy = 1:6,
+    nhys(:,:,ciy) = RectFilter(RectFilter(bsxfun(@rdivide,log10(ahys(:,:,ciy)),mean(log10(ahys(nniz(ahys(:,:,ciy)),:,ciy)))),3,3)',3,3);
+end
+nhys(isinf(nrhys)) = 1;
+
+nrhys = RectFilter(RectFilter(bsxfun(@rdivide,log10(rhys.data),mean(log10(rhys(nniz(rhys.data),:,1)))),3,3)',3,3);
+nrhys(isinf(nrhys)) = 1;
+
+
+[mins,mval] = LocalMinimaN(-mean(nhys(2:end,:,:),3)',-1,5);
+
+rmins = [];
+rvals = [];
+block.index = 1;
+block.size = 2^16;
+block.count = floor(rhys.size(1)/block.size);
+for bindex = 1:block.count
+    startIndex = (bindex - 1)* block.size + 1;
+    stopIndex  = (bindex)    * block.size;
+    timeIndex  = startIndex : stopIndex;
+    [mins,vals] = LocalMinimaN( -nrhys(:, timeIndex, :)', -1, 5);
+    rmins = cat( 1, rmins, mins + [startIndex,0]);
+    rvals = cat( 1, rvals, vals);
+end
+
+
+ymins = [];
+yvals = [];
+block.index = 1;
+block.size = 2^16;
+block.count = floor(rhys.size(1)/block.size);
+for bindex = 1:block.count
+    startIndex = (bindex - 1)* block.size + 1;
+    stopIndex  = (bindex)    * block.size;
+    timeIndex  = startIndex : stopIndex;
+    [mins,vals] = LocalMinimaN( -mean(nhys(:, timeIndex, :),3)', -1, 5);
+    ymins = cat( 1, ymins, mins + [startIndex,0]);
+    yvals = cat( 1, yvals, vals);
+end
+
+
+figure();
+[nx, ny] = deal(1, 8);
+for ciy = 1:6
+    [ix, iy] = deal( 1, ciy);  subplot2(ny, nx, iy, ix);
+    imagesc(ahts, ahfs, RectFilter(RectFilter(bsxfun(@rdivide,log10(ahys(:,:,ciy)),mean(log10(ahys(nniz(ahys(:,:,ciy)),:,ciy)))),3,3)',3,3));  Lines([],7,'k');
+    axis(gca(), 'xy'); colormap(gca(), 'jet'); caxis(gca(),[0.7,1.2]); grid('on');
+if ciy ==1    
+    hold(gca(), 'on'); plot([wind]./ffp.sampleRate, ffp.data(wind,2)./1e2+70,'-w');
+    hold(gca(), 'on'); plot([wind]./rfp.sampleRate, rfp.data(wind)./1e2+90,'-m');
+end
+end
+
+ciy = ciy + 1; 
+[ix, iy] = deal( 1, ciy);  subplot2(ny, nx, iy, ix);  
+imagesc(ahts, ahfs, mean(nhys(2:end,:,:),3));
+axis(gca(), 'xy'); colormap(gca(), 'jet'); grid('on');
+ciy = ciy + 1; 
+[ix, iy] = deal( 1, ciy);  subplot2(ny, nx, iy, ix);  
+plotSTC( Trial.stc, ...
+         1,...
+         [],...
+         {'lpause','lloc','hloc','hpause','rear','groom','sit'},...
+         'cbkgrmy');
+hold(gca(), 'on');
+%plot([1:size(lvxy,1)]./lvxy.sampleRate,lvxy.data);
+plot([1:size(vxy,1)]./vxy.sampleRate,vxy.data/10);
+ylim(gca(), [0,7]); grid('on');
+title('Behavior States');
+linkx()
+
+
+
+figure();
+[nx, ny] = deal(1, 4);
+ciy = 0;
+
+ciy = ciy + 1; 
+[ix, iy] = deal( 1, ciy);  subplot2(ny, nx, iy, ix);
+hold(gca(), 'on'); 
+plot([wind]./ffp.sampleRate, dfp.data(wind,1)./1e2+70,'-r');
+plot([wind]./ffp.sampleRate, cfp.data(wind,1)./1e2+70,'-k');
+plot([wind]./ffp.sampleRate, dfp.data(wind,2)./1e2+70,'-b');
+plot([wind]./rfp.sampleRate, rfp.data(wind)./1e2+90,'-m');
+grid(gca(),'on');
+
+ciy = ciy + 1; 
+[ix, iy] = deal( 1, ciy);  subplot2(ny, nx, iy, ix);  
+imagesc(rhts, rhfs, nrhys(2:end,:,:));
+axis(gca(), 'xy'); colormap(gca(), 'jet'); grid('on');
+hold('on');
+plot(rhts(rmins(:,1)),rhfs(rmins(:,2)),'*m');
+caxis([0.9,1.1])
+
+
+ciy = ciy + 1; 
+[ix, iy] = deal( 1, ciy);  subplot2(ny, nx, iy, ix);  
+imagesc(ahts, ahfs, mean(nhys(2:end,:,:),3));
+axis(gca(), 'xy'); colormap(gca(), 'jet'); grid('on');
+hold('on');
+plot(ahts(ymins(:,1)),ahfs(ymins(:,2)),'*m');
+caxis([0.9,1.1])
+
+ciy = ciy + 1; 
+[ix, iy] = deal( 1, ciy);  subplot2(ny, nx, iy, ix);  
+plotSTC( Trial.stc, ...
+         1,...
+         [],...
+         {'lpause','lloc','hloc','hpause','rear','groom','sit'},...
+         'cbkgrmy');
+hold(gca(), 'on');
+%plot([1:size(lvxy,1)]./lvxy.sampleRate,lvxy.data);
+plot([1:size(vxy,1)]./vxy.sampleRate,vxy.data/10);
+ylim(gca(), [0,7]); grid('on');
+title('Behavior States');
+linkx()
+
+
+%STARTHERE
+fid = 14;
+figure,
+rose(phz(round(ymins(ymins(:,2)==fid& logical(tper(ymins(:,1))),1)./rhys.sampleRate.*lfp.sampleRate)),32)
+
+tper = Trial.stc{'t'};
+tper = Trial.stc{'s&t'};
+tper = [Trial.stc{'w+n+p&t'}];
+tper = [Trial.stc{'a&t-s-m'}];
+tper = [Trial.stc{'lloc&t'}];
+%tper.cast('TimeSeries');
+
+tper.resample(txyz);
+rind =   WithinRanges(ymins(:,1), tper.data) ...
+       & WithinRanges(lvxy(ymins(:,1),2), [0.5,2]);
+       & WithinRanges(-yvals(:), [1.02,2]);
+fid  = ymins(rind,2);
+pind = ymins(rind,1);
+figure,
+hist2([yphz(pind),        ...
+       ahfs(fid)],          ...
+      linspace(0,2*pi,17),    ...
+      ahfs,                 ...
+      'xprob')
+colormap('jet')
+
+
+
+tper = Trial.stc{'t'};
+tper = [Trial.stc{'a&t'}];
+tper.cast('TimeSeries');
+
+
+pvar = zeros([numel(rhfs),1]);
+for fid = 1 : numel(rhfs)
+    pind = round(rmins(rmins(:,2)==fid&rvals<-1.02,1)./rhys.sampleRate.*lfp.sampleRate);
+    pind = pind(logical(tper(pind)));
+    pvar(fid) = circ_mean(phz(pind));
+end
+pvar(pvar<0) = pvar(pvar<0) + 2*pi
+figure,plot(rhfs,pvar);
+
+%%%>>>--------------------------------------------------------------------------
+
+%%%>>>--------------------------------------------------------------------------
+
+
+figure,imagesc(ahts, ahfs, log10(ahys(:,:,1))');
+
+
+
+%%%<<< Plot Spectrograph {lfp,rfp,cfp} -----------------------------------------
+
+figure();
+[nx, ny] = deal(1, 5);
+ 
+[ix, iy] = deal( 1, 1);  subplot2(ny, nx, iy, ix);
+imagesc(gts, gfs, RectFilter(RectFilter(log10(gys.data(:,:,1,1)),3,3)',3,3));  Lines([],7,'k');
+axis(gca(), 'xy'); colormap(gca(), 'jet'); caxis(gca(),[2.5,3.5]); grid('on');
+title('CA1ori');
+ 
+[ix, iy] = deal( 1, 2);  subplot2(ny, nx, iy, ix);
+imagesc(gts, gfs, RectFilter(RectFilter(log10(gys.data(:,:,4,4)),3,3)',3,3));  Lines([],7,'k');
+axis(gca(), 'xy'); colormap(gca(), 'jet'); caxis(gca(),[2.5,3.5]); grid('on');
+hold(gca(), 'on'); plot([1:2400000]./cfp.sampleRate, cfp.data(1:2400000)./1e2+70,'-w');
+hold(gca(), 'on'); plot([1:2400000]./rfp.sampleRate, rfp.data(1:2400000)./1e2+90,'-m');
+title('CA1pyr');
+ 
+[ix, iy] = deal( 1, 3);  subplot2(ny, nx, iy, ix);
+imagesc(gts, gfs, RectFilter(RectFilter(log10(gys.data(:,:,2,2)),3,3)',3,3));  Lines([],7,'k');
+axis(gca(), 'xy'); colormap(gca(), 'jet'); caxis(gca(),[2.5,3.5]); grid('on');
+title('CA1rad');
+ 
+[ix, iy] = deal( 1, 4);  subplot2(ny, nx, iy, ix);
+imagesc(gts, gfs, angle(gys(:,:,1,4))'); Lines([],7,'k');
+axis(gca(), 'xy'); colormap(gca(), 'hsv'); caxis(gca(),[-pi,pi]); grid('on');
+title('PhaseDiff(Pyr,Rec)');
+ 
+[ix, iy] = deal( 1, 5);  subplot2(ny, nx, iy, ix);
+plotSTC( Trial.stc, ...
+         1,...
+         [],...
+         {'lpause','lloc','hloc','hpause','rear','groom','sit'},...
+         'cbkgrmy');
+hold(gca(), 'on');
+%plot([1:size(lvxy,1)]./lvxy.sampleRate,lvxy.data);
+plot([1:size(vxy,1)]./vxy.sampleRate,vxy.data/10);
+ylim(gca(), [0,7]); grid('on');
+title('Behavior States');
+linkx()
+
+%%%>>>--------------------------------------------------------------------------
+
+%%%<<< Plot Spectrograph -------------------------------------------------------
+figure();
+[nx, ny] = deal(1, 7);
+
+[ix, iy] = deal( 1, 1);  subplot2(ny, nx, iy, ix);
+imagesc(gts, gfs, RectFilter(RectFilter(log10(gys.data(:,:,1)),3,3)',3,3));  Lines([],7,'k');
+axis(gca(), 'xy'); colormap(gca(), 'jet'); caxis(gca(),[2.5,3.5]); grid('on');
+title('CA1ori');
+ 
+[ix, iy] = deal( 1, 2);  subplot2(ny, nx, iy, ix);
+imagesc(gts, gfs, RectFilter(RectFilter(log10(gys.data(:,:,2)),3,3)',3,3));  Lines([],7,'k');
+axis(gca(), 'xy'); colormap(gca(), 'jet'); caxis(gca(),[2.5,3.5]); grid('on');
+hold(gca(), 'on'); plot([1:2400000]./cfp.sampleRate, dfp.data(1:2400000,2)./1e2+70,'-w');
+hold(gca(), 'on'); plot([1:2400000]./rfp.sampleRate, rfp.data(1:2400000)./1e2+90,'-m');
+title('CA1pyr');
+ 
+[ix, iy] = deal( 1, 3);  subplot2(ny, nx, iy, ix);
+imagesc(gts, gfs, RectFilter(RectFilter(log10(gys.data(:,:,3)),3,3)',3,3));  Lines([],7,'k');
+axis(gca(), 'xy'); colormap(gca(), 'jet'); caxis(gca(),[2.5,3.5]); grid('on');
+title('CA1rad');
+ 
+[ix, iy] = deal( 1, 4);  subplot2(ny, nx, iy, ix);
+imagesc(gts, gfs, RectFilter(RectFilter(log10(gys.data(:,:,4)),3,3)',3,3));  Lines([],7,'k');
+axis(gca(), 'xy'); colormap(gca(), 'jet'); caxis(gca(),[2.5,3.5]); grid('on');
+title('CA1ori');
+ 
+[ix, iy] = deal( 1, 5);  subplot2(ny, nx, iy, ix);
+imagesc(gts, gfs, RectFilter(RectFilter(log10(gys.data(:,:,5)),3,3)',3,3));  Lines([],7,'k');
+axis(gca(), 'xy'); colormap(gca(), 'jet'); caxis(gca(),[2.5,3.5]); grid('on');
+hold(gca(), 'on'); plot([1:2400000]./ffp.sampleRate, ffp.data(1:2400000,2)./1e2+70,'-w');
+hold(gca(), 'on'); plot([1:2400000]./rfp.sampleRate, rfp.data(1:2400000)./1e2+90,'-m');
+title('CA1pyr');
+ 
+[ix, iy] = deal( 1, 6);  subplot2(ny, nx, iy, ix);
+imagesc(gts, gfs, RectFilter(RectFilter(log10(gys.data(:,:,6)),3,3)',3,3));  Lines([],7,'k');
+axis(gca(), 'xy'); colormap(gca(), 'jet'); caxis(gca(),[2.5,3.5]); grid('on');
+title('CA1rad');
+ 
+[ix, iy] = deal( 1, 7);  subplot2(ny, nx, iy, ix);
+plotSTC( Trial.stc, ...
+         1,...
+         [],...
+         {'lpause','lloc','hloc','hpause','rear','groom','sit'},...
+         'cbkgrmy');
+hold(gca(), 'on');
+%plot([1:size(lvxy,1)]./lvxy.sampleRate,lvxy.data);
+plot([1:size(vxy,1)]./vxy.sampleRate,vxy.data/10);
+ylim(gca(), [0,7]); grid('on');
+title('Behavior States');
+linkx()
+%%%>>>--------------------------------------------------------------------------
+
+
+%%%<<< Plot Spectrograph -------------------------------------------------------
+fgys = log10(cat(3,gys.data(:,:,1,1),gys.data(:,:,2,2),gys.data(:,:,3,3)));
+fgys = RectFilter(permute(RectFilter(fgys,3,3),[2,1,3]),3,3);
+fang = cat(3, ...
+           (angle(gys.data(:,:,1,2))), ...
+           (angle(gys.data(:,:,1,3))), ...
+           (angle(gys.data(:,:,2,3))));
+fang = abs(RectFilter(permute(RectFilter(fang,3,3),[2,1,3]),3,3));
+
+fang = cat(3, ...
+           (angle(gys.data(:,:,1,2))), ...
+           (angle(gys.data(:,:,1,3))), ...
+           (angle(gys.data(:,:,2,3))));
+fang = abs(RectFilter(permute(RectFilter(fang,3,3),[2,1,3]),3,3));
+
+fagys = log10(agys.data);
+fagys = RectFilter(permute(RectFilter(fagys,3,3),[2,1,3]),3,3);
+
+
+figure();
+subplot(411);
+imagesc(agts,agfs,mean(log10(agys(:,:,1:3)),3)');colormap(gca(),'jet');axis('xy');
+subplot(412);
+imagesc(agts,agfs,mean(fagys(:,:,1:6),3));colormap(gca(),'jet');axis('xy');
+subplot(413);
+hold(gca(), 'on'); plot([1:2400000]./ffp.sampleRate, ffp.data(1:2400000,2)./1e2+70,'-k');
+hold(gca(), 'on'); plot([1:2400000]./rfp.sampleRate, rfp.data(1:2400000)./1e2+90,'-m');
+subplot(414);
+plotSTC( Trial.stc, ...
+         1,...
+         [],...
+         {'lpause','lloc','hloc','hpause','rear','groom','sit'},...
+         'cbkgrmy');
+hold(gca(), 'on');
+%plot([1:size(lvxy,1)]./lvxy.sampleRate,lvxy.data);
+plot([1:size(vxy,1)]./vxy.sampleRate,vxy.data/10);
+ylim(gca(), [0,7]); grid('on');
+title('Behavior States');
+linkx();
+
+figure();
+subplot(311);
+imagesc(gts,gfs,mean(fgys,3));colormap(gca(),'jet');axis('xy');
+subplot(312);
+hold(gca(), 'on'); plot([1:600000]./ffp.sampleRate, ffp.data(1:600000,2)./1e2+70,'-k');
+hold(gca(), 'on'); plot([1:600000]./rfp.sampleRate, rfp.data(1:600000)./1e2+90,'-m');
+subplot(313);
+imagesc(gts,gfs,mean(fgys,3)./(1+sum(fang,3)));colormap(gca(),'jet');axis('xy');
+linkx();
+
+figure();
+[nx, ny] = deal(1, 6);
+ciy = 1;
+ 
+[ix, iy] = deal( 1, ciy);  subplot2(ny, nx, iy, ix);  ciy = ciy + 1;
+imagesc(gts, gfs, mean(fgys,3));  Lines([],7,'k');
+axis(gca(), 'xy'); colormap(gca(), 'jet'); caxis(gca(),[2.5,3.5]); grid('on');
+hold(gca(), 'on'); plot([1:600000]./ffp.sampleRate, ffp.data(1:600000,2)./1e2+70,'-w');
+hold(gca(), 'on'); plot([1:600000]./rfp.sampleRate, rfp.data(1:600000)./1e2+90,'-m');
+title('CA1radM');
+ 
+[ix, iy] = deal( 1, ciy);  subplot2(ny, nx, iy, ix);  ciy = ciy + 1;
+imagesc(gts, gfs, mean(fgys,3).*log10(mean(fgys,3)./std(fgys,[],3)));  Lines([],7,'k');
+axis(gca(), 'xy'); colormap(gca(), 'jet'); %caxis(gca(),[2.5,3.5]); grid('on');
+title('CA1radM');
+ 
+ 
+[ix, iy] = deal( 1, ciy);  subplot2(ny, nx, iy, ix);  ciy = ciy + 1;
+imagesc(gts, gfs, fgys(:,:,1));  Lines([],7,'k');
+axis(gca(), 'xy'); colormap(gca(), 'jet'); caxis(gca(),[2.5,3.5]); grid('on');
+title('CA1rad1');
+ 
+[ix, iy] = deal( 1, ciy);  subplot2(ny, nx, iy, ix);  ciy = ciy + 1;
+imagesc(gts, gfs, fgys(:,:,2));  Lines([],7,'k');
+axis(gca(), 'xy'); colormap(gca(), 'jet'); caxis(gca(),[2.5,3.5]); grid('on');
+title('CA1rad2');
+ 
+[ix, iy] = deal( 1, ciy);  subplot2(ny, nx, iy, ix);  ciy = ciy + 1;
+imagesc(gts, gfs, fgys(:,:,3));  Lines([],7,'k');
+axis(gca(), 'xy'); colormap(gca(), 'jet'); caxis(gca(),[2.5,3.5]); grid('on');
+title('CA1rad3');
+ 
+[ix, iy] = deal( 1, ciy);  subplot2(ny, nx, iy, ix);  ciy = ciy + 1;
+plotSTC( Trial.stc, ...
+         1,...
+         [],...
+         {'lpause','lloc','hloc','hpause','rear','groom','sit'},...
+         'cbkgrmy');
+hold(gca(), 'on');
+%plot([1:size(lvxy,1)]./lvxy.sampleRate,lvxy.data);
+plot([1:size(vxy,1)]./vxy.sampleRate,vxy.data/10);
+ylim(gca(), [0,7]); grid('on');
+title('Behavior States');
+linkx()
+%%%>>>--------------------------------------------------------------------------
+
+
+
+
+
+
+figure,hist2([lvxy.data(:,2),rlpd],linspace(-2,2,50),linspace(-pi,pi,50))
+figure,hist2([rtb,rlpd],linspace(4.6,6,30),linspace(-pi,pi,50))
+figure,hist2([ltb,rlpd],linspace(4.2,6,30),linspace(-pi,pi,50))
+figure,hist2([lvxy.data(:,2),rtb],linspace(-2,2,50),linspace(4.6,6,50))
+figure,hist2([lvxy.data(:,2),ltb], linspace(-2,2,50), linspace(4.2,6,50))
+figure,hist2([rtb,ltb],linspace(4.6,6,30),linspace(4.2,6,30))
+
+rtfet = [llb,ltb,lhb,rlb,rtb,rhb,rlpd];
+
+
+
+
+nind = [Trial.stc{'a'}];
+nind.cast('TimeSeries');
+nind.resample(mys);
+nind = logical(nind.data & nniz(nrf.data));
+
+
+xind = [1,4,5,6];
+xind = [2,7];
+
+[B,BINT,R,RINT,STATS] = regress(lvxy.data(nind,2),...
+                                [ones([sum(nind),1]),nrf.data(nind,xind)]);
+
+model.name = 'lfp2vel';
+model.description = ['A linear multivariate model to estimate the ' ...
+                    'speed of an animal based on normalized lfp spectral bands'];
+model.b = B;
+model.stats = STATS;
+model.norm.labels = nrf.labels(xind);
+model.norm.mean   = nrf.mean  (xind);
+
+figure();
+hold('on');
+plot(10.^lvxy.data(nind,2));
+plot(10.^lvxy.data(nind,2)+10.^R);
+
+yhat = [ones([sum(nind),1]),nrf.data(nind,[1,4,5,6])]*B;
+figure();
+hold('on');
+plot(10.^lvxy.data(nind,2));
+plot((21.^yhat));
+
+figure();
+hold('on');
+plot(lvxy.data(nind,2),yhat,'.');
+
+
+corr([lvxy.data(nind,2),log10(21.^yhat)])
+corrcoef([lvxy.data(nind,2),yhat])
+
+
+
+
+
+figure,plot(lvxy.data(nind,2)-yhat);
+hold('on');,plot(R);
+
+lxyz = resample(copy(txyz),mys);
+lvxy = resample(copy(vxy),mys);
+lvxy.data(lvxy.data<=0.0001) = 0.0001;
+lvxy.data = log10(lvxy.data);
+
+vxy = vel(filter(resample(copy(txyz),mys),'ButFilter',3,2.5,'low'),{'spine_lower','hcom'},[1,2]);
+
+fmys = copy(mys);
+fmys.data = log10(mys.data(:,:,1,1));
+fmys.data(:,:,2) = log10(mys.data(:,:,2,2));
+fmys.data(:,:,3) = log10(mys.data(:,:,3,3));
+fmys.filter('ButFilter',4,1,'low');
+
+%%%<<< Plot Spectrograph -------------------------------------------------------
+figure();
+[nx, ny] = deal(1, 5);
+[ix, iy] = deal( 1, 1);  subplot2(ny, nx, iy, ix);
+imagesc(mts, mfs, log10(mys.data(:,:,1,1))');  Lines([],7,'k');
+axis(gca(), 'xy'); colormap(gca(), 'jet')
+[ix, iy] = deal( 1, 2);  subplot2(ny, nx, iy, ix);
+imagesc(mts, mfs, log10(mys.data(:,:,2,2))');  Lines([],7,'k');
+axis(gca(), 'xy'); colormap(gca(), 'jet')
+[ix, iy] = deal( 1, 3);  subplot2(ny, nx, iy, ix);
+imagesc(mts, mfs, log10(mys.data(:,:,3,3))');  Lines([],7,'k');
+axis(gca(), 'xy'); colormap(gca(), 'jet')
+[ix, iy] = deal( 1, 4);  subplot2(ny, nx, iy, ix);
+imagesc(mts, mfs, circ_dist(angle(mys(:,:,1,2)),pi)'); Lines([],7,'k');
+axis(gca(), 'xy'); colormap(gca(), 'hsv')
+[ix, iy] = deal( 1, 5);  subplot2(ny, nx, iy, ix);
+plotSTC( Trial.stc, 1);
+linkx()
+%%%>>>--------------------------------------------------------------------------
+
+
+figure();
+subplot2(2,2,1,1);
+    hold('on');
+    ind = ':';
+    plot(log10(mys(ind,14,2,2)),log10(mys(ind,2,2,2)),'.')
+    ind = [Trial.stc{'w+p'}];
+    plot(log10(mys(ind,14,2,2)),log10(mys(ind,2,2,2)),'.r')
+    xlim([6, 9.5]);
+    ylim([6, 9.5]);
+subplot2(2,2,1,2);
+hold('on');
+    ind = ':';
+    hist2([log10(mys(ind,14,2,2)),...
+           log10(mys(ind,2,2,2))],...
+          linspace(6, 9.5, 25),...
+          linspace(6, 9.5, 25));
+    axis('tight');
+subplot2(2,2,2,1);
+    hold('on');
+    ind = ':';
+    plot(log10(mys(ind,14,1,1)),log10(mys(ind,2,1,1)),'.')
+    ind = [Trial.stc{'w+p'}];
+    plot(log10(mys(ind,14,1,1)),log10(mys(ind,2,1,1)),'.r')
+    xlim([6, 9.5]);
+    ylim([6, 9.5]);
+subplot2(2,2,2,2);
+    hold('on');
+    ind = ':';
+    hist2([log10(mys(ind,14,1,1)),...
+           log10(mys(ind, 2,1,1))],...
+          linspace(6, 9.5, 25),...
+          linspace(6, 9.5, 25));
+    axis('tight');
+
+
+
+
+
+
+figure();
+subplot2(2,2,1,1);
+    hold('on');
+    ind = ':';
+    plot(log10(mys(ind,14,2,2)),mean([log10(mys(ind,2,2,2)),log10(mys(ind,28,2,2))],2),'.')
+    ind = [Trial.stc{'w+p'}];
+    plot(log10(mys(ind,14,2,2)),mean([log10(mys(ind,2,2,2)),log10(mys(ind,28,2,2))],2),'.r')
+    xlim([6, 9.5]);
+    ylim([6, 9.5]);
+subplot2(2,2,1,2);
+hold('on');
+    ind = ':';
+    hist2([log10(mys(ind,14,2,2)),...
+           mean([log10(mys(ind,2,2,2)),log10(mys(ind,28,2,2))],2)],...
+          linspace(6, 9.5, 25),...
+          linspace(6, 9.5, 25));
+    axis('tight');
+subplot2(2,2,2,1);
+    hold('on');
+    ind = ':';
+    plot(log10(mys(ind,24,2,2)),log10(mys(ind,2,1,1)),'.')
+    ind = [Trial.stc{'w+p'}];
+    plot(log10(mys(ind,2,2,2)),log10(mys(ind,2,1,1)),'.r')
+    xlim([6, 9.5]);
+    ylim([6, 9.5]);
+subplot2(2,2,2,2);
+    hold('on');
+    ind = ':';
+    hist2([log10(mys(ind, 2,2,2)),...
+           log10(mys(ind, 2,1,1))],...
+          linspace(6, 9.5, 25),...
+          linspace(6, 9.5, 25));
+    axis('tight');
+
+
+
+figure();
+subplot2(2,2,1,1);
+    hold('on');
+    ind = ':';
+    plot(log10(mys(ind,14,2,2)),mean([log10(mys(ind,2,2,2)),log10(mys(ind,28,2,2))],2),'.')
+    ind = [Trial.stc{'w+p'}];
+    plot(log10(mys(ind,14,2,2)),mean([log10(mys(ind,2,2,2)),log10(mys(ind,28,2,2))],2),'.r')
+    xlim([6, 9.5]);
+    ylim([6, 9.5]);
+subplot2(2,2,1,2);
+    hold('on');
+    ind = ':';
+    hist2([log10(mys(ind,14,2,2)),...
+           mean([log10(mys(ind,2,2,2)),log10(mys(ind,28,2,2))],2)],...
+          linspace(6, 9.5, 25),...
+          linspace(6, 9.5, 25));
+    axis('tight');
+subplot2(2,2,2,1);
+    hold('on');
+    ind = ':';
+    plot(log10(mys(ind,14,1,1)),mean([log10(mys(ind,2,1,1)),log10(mys(ind,28,1,1))],2),'.')
+    ind = [Trial.stc{'w+p'}];
+    plot(log10(mys(ind,14,1,1)),mean([log10(mys(ind,2,1,1)),log10(mys(ind,28,1,1))],2),'.r')
+    xlim([6, 9.5]);
+    ylim([6, 9.5]);
+subplot2(2,2,2,2);
+    hold('on');
+    ind = ':';
+    hist2([log10(mys(ind, 14, 1, 1)),...
+           mean([log10(mys(ind,2,1,1)),log10(mys(ind,28,1,1))],2)],...
+          linspace(6, 9.5, 25),...
+          linspace(6, 9.5, 25));
+    axis('tight');
+    
+
+%%%<<< LFP versus RFP : TD ratio -----------------------------------------------
+
+figure();    
+stss = {':','w+p+n+r','w','p&t','p-t','n','r','m','s&t','s-t'};
+for ci = 1:2
+    for si = 1:numel(stss)
+subplot2(2,numel(stss),ci,si);        
+    hold('on');
+    if si == 1,
+        ind = ':'
+    else
+        ind = [Trial.stc{stss{si}}];
+    end
+    hist2([log10(mys(ind,14,ci,ci)),...
+           mean([log10(mys(ind,2,ci,ci)),log10(mys(ind,28,ci,ci))],2)],...
+          linspace(6.5, 8.75, 25),...
+          linspace(6.5, 8.75, 25));
+    axis('tight');    
+    Lines(8,[],'w');
+    Lines([],7.5,'w');
+    caxis([0,50]);    
+    end
+end
+
+%%%>>>--------------------------------------------------------------------------
+
+%%%<<< LFP versus RFP : PhaseDiff ----------------------------------------------
+figure();    
+stss = {':','w+p+n+r','w','p','n','r','m','s&t','s-t'};
+for si = 1:numel(stss)
+subplot2(1,numel(stss),1,si);        
+    if si == 1,
+        ind = ':'
+    else
+        ind = [Trial.stc{stss{si}}];
+        ind.cast('TimeSeries',mys);
+        ind = ind.data;
+    end
+    rose(mphi(ind,16,1,2),64);
+end
+%%%>>>--------------------------------------------------------------------------
+
+%%%<<< LFP versus RFP : PhaseDiffChar ------------------------------------------
+
+wscd = [];
+for f = 1:numel(mfs)
+    sind = [Trial.stc{'s-t'}];
+    sind.cast('TimeSeries',mys);
+    sind = sind.data;
+    wind = [Trial.stc{'w+p+n&t'}];
+    wind.cast('TimeSeries',mys);
+    wind = wind.data;
+    wscd(f) = circ_dist(            ...
+        circ_mean(mphi(sind,f,1,2)),...
+        circ_mean(mphi(wind,f,1,2)) ...
+        );
+    svar(f) = circ_var(mphi(sind,f,1,2));
+    wvar(f) = circ_var(mphi(wind,f,1,2));
+end
+
+%%%>>>--------------------------------------------------------------------------
+
+    
+figure();
+subplot(121);
+    sind = [Trial.stc{'s-t'}];
+    sind.cast('TimeSeries',mys);
+    sind = sind.data;
+    wind = [Trial.stc{'w+p+n&t'}];
+    wind.cast('TimeSeries',mys);
+    wind = wind.data;
+    rind = [Trial.stc{'r&t'}];
+    rind.cast('TimeSeries',mys);
+    rind = rind.data;
+    hold('on');
+    plot(log10(abs(mys(sind,16,2,2))),circ_dist(angle(mys(sind,16,1,2)),pi),'.')
+    plot(log10(abs(mys(wind,16,2,2))),circ_dist(angle(mys(wind,16,1,2)),pi),'.g')
+    plot(log10(abs(mys(rind,16,2,2))),circ_dist(angle(mys(rind,16,1,2)),pi),'.r')
+subplot(122);
+    wind = [Trial.stc{'s&t'}];
+    wind.cast('TimeSeries',mys);
+    wind = wind.data;
+    hold('on');
+    plot(log10(abs(mys(sind,16,2,2))),circ_dist(angle(mys(sind,16,1,2)),pi),'.')
+    plot(log10(abs(mys(wind,16,2,2))),circ_dist(angle(mys(wind,16,1,2)),pi),'.m')
+
+    
+figure();
+subplot(221);
+    sind = [Trial.stc{'s-t'}];
+    sind.cast('TimeSeries');
+    sind.resample(mys);
+    sind = logical(sind.data);
+    wind = [Trial.stc{'w+p+n',mys.sampleRate}];
+    wind.cast('TimeSeries');
+    wind.resample(mys);
+    wind = logical(wind.data);
+    rind = [Trial.stc{'r',mys.sampleRate}];
+    rind.cast('TimeSeries');
+    rind.resample(mys);    
+    rind = logical(rind.data);
+    hold('on');
+    plot(log10(abs(mys(sind,16,2,2)))-mean([log10(mys(sind,2,2,2)),log10(mys(sind,24,2,2))],2),...
+         circ_dist(angle(mys(sind,16,1,2)),pi),'.')
+    plot(log10(abs(mys(wind,16,2,2)))-mean([log10(mys(wind,2,2,2)),log10(mys(wind,24,2,2))],2),...
+         circ_dist(angle(mys(wind,16,1,2)),pi),'.g')
+    plot(log10(abs(mys(rind,16,2,2)))-mean([log10(mys(rind,2,2,2)),log10(mys(rind,24,2,2))],2),...
+         circ_dist(angle(mys(rind,16,1,2)),pi),'.r')
+subplot(222);
+    sind = [Trial.stc{'a-t'}];
+    sind.cast('TimeSeries');
+    sind.resample(mys);
+    sind = logical(sind.data);
+    wind = [Trial.stc{'a&t'}];
+    wind.cast('TimeSeries');    
+    wind.resample(mys);
+    wind = logical(wind.data);
+    hold('on');
+    plot(log10(abs(mys(sind,16,2,2)))-mean([log10(mys(sind,2,2,2)),log10(mys(sind,24,2,2))],2),...
+         circ_dist(angle(mys(sind,16,1,2)),pi),'.')
+    plot(log10(abs(mys(wind,16,2,2)))-mean([log10(mys(wind,2,2,2)),log10(mys(wind,24,2,2))],2),...
+         circ_dist(angle(mys(wind,16,1,2)),pi),'.m')
+subplot(224);
+    hold('on');
+    plot(log10(abs(mys(sind,16,2,2)))-mean([log10(mys(sind,2,2,2)),log10(mys(sind,24,2,2))],2),...
+         circ_dist(angle(mys(sind,16,1,2)),pi),'.')
+
+
+
+figure();
+subplot(221);
+    sind = [Trial.stc{'a-t'}];
+    sind.cast('TimeSeries');
+    sind.resample(mys);
+    sind = logical(sind.data);
+    soutp = hist2([log10(abs(mys(sind,14,1,1)))-mean([log10(mys(sind,1:8,1,1)),log10(mys(sind,22:26,1,1))],2),...
+           circ_dist(angle(mys(sind,14,1,2)),pi)],...
+          linspace(-1.5,2,50),...
+          linspace(-1.5,1.5,50));
+subplot(223);
+    soutr = hist2([log10(abs(mys(sind,14,2,2)))-mean([log10(mys(sind,1:8,2,2)),log10(mys(sind,22:26,2,2))],2),...
+           circ_dist(angle(mys(sind,14,1,2)),pi)],...
+          linspace(-1.5,2,50),...
+          linspace(-1.5,1.5,50));
+subplot(222);
+    wind = [Trial.stc{'a&t'}];
+    wind.cast('TimeSeries');    
+    wind.resample(mys);
+    wind = logical(wind.data);
+    woutp = hist2([log10(abs(mys(wind,14,1,1)))-mean([log10(mys(wind,1:8,1,1)),log10(mys(wind,22:26,1,1))],2),...
+           circ_dist(angle(mys(wind,14,1,2)),pi)],...
+          linspace(-1.5,2,50),...
+          linspace(-1.5,1.5,50));
+subplot(224);
+    woutr = hist2([log10(abs(mys(wind,14,2,2)))-mean([log10(mys(wind,1:8,2,2)),log10(mys(wind,22:26,2,2))],2),...
+           circ_dist(angle(mys(wind,14,1,2)),pi)],...
+          linspace(-1.5,2,50),...
+          linspace(-1.5,1.5,50));
+ForAllSubplots(...
+    [ ...
+        'Lines([],0.5,''w'');Lines(0.5,[],''w'');', ...
+        'line([-0.5,2],[1.5,-1],''color'',''w'');' ...
+        'caxis([0,250]);' ...
+    ] ...
+);
+
+soutp = soutp./(sum(soutp(:)));
+soutr = soutr./(sum(soutr(:)));
+woutp = woutp./(sum(woutp(:)));
+woutr = woutr./(sum(woutr(:)));
+
+ind = nniz(woutr(:))&nniz(woutp(:));
+-log(sum(sqrt(woutp(ind).*woutr(ind))))
+sqrt(1-sum(sqrt(woutp(ind).*woutr(ind))))
+
+ind = nniz(soutp(:))&nniz(woutp(:));
+-log(sum(sqrt(woutp(ind).*soutp(ind))))
+sqrt(1-sum(sqrt(woutp(ind).*soutp(ind))))
+
+ind = nniz(soutp(:))&nniz(soutr(:));
+-log(sum(sqrt(soutp(ind).*soutr(ind))))
+sqrt(1-sum(sqrt(soutp(ind).*soutr(ind))))
+
+
+ind = nniz(woutr(:))&nniz(soutr(:));
+-log(sum(sqrt(woutr(ind).*soutr(ind))))
+sqrt(1-sum(sqrt(woutr(ind).*soutr(ind))))
+
+
+figure();
+hold('on');
+plot(log10(abs(mys(:,16,2,2)))-mean([log10(mys(:,1:8,2,2)),log10(mys(:,22:26,2,2))],2))
+plot(log10(abs(mys(:,16,1,1)))-mean([log10(mys(:,1:8,1,1)),log10(mys(:,22:26,1,1))],2))
+plot((log10(abs(mys(:,16,2,2)))-mean([log10(mys(:,1:8,2,2)),log10(mys(:,22:26,2,2))],2)) -(log10(abs(mys(:,16,1,1)))-mean([log10(mys(:,1:8,1,1)),log10(mys(:,22:26,1,1))],2)));
+
+
+
+llb = mean(log10(mys(:,1:5,3,3)),2);
+ltb = mean(log10(mys(:,10:18,3,3)),2);
+lhb = mean(log10(mys(:,23:26,3,3)),2);
+rlb = mean(log10(mys(:,1:5,2,2)),2);
+rtb = mean(log10(mys(:,10:18,2,2)),2);
+rhb = mean(log10(mys(:,23:26,2,2)),2);
+
+
+llb = mean(fmys(:,1:5,3),2);
+ltb = mean(fmys(:,10:18,3),2);
+lhb = mean(fmys(:,23:26,3),2);
+rlb = mean(fmys(:,1:5,2),2);
+rtb = mean(fmys(:,10:18,2),2);
+rhb = mean(fmys(:,23:26,2),2);
+
+rlpd = circ_dist(circ_mean(angle(mys(:,14,3,2)),[],2),-pi/2);
+
+figure,
+subplot(211);
+plot(mts,rlpd);
+subplot(212);
+plotSTC( Trial.stc, 1);
+linkx();
+
+figure,plot(lvxy(:,2),rlpd,'.')
+
+sind = [Trial.stc{'a'}];
+sind.cast('TimeSeries');
+sind.resample(mys);
+sind = logical(sind.data);
+ 
+rtfet = [llb,ltb,lhb,rlb,rtb,rhb,rlpd];
+
+
+
+%%%<<< EQUAL state Resampling and Normalization --------------------------------
+sts = {'s-t','s&t','w','n','p','r','m'};
+sampleInds = [];
+% RESAMPLE data
+for stssub = 1:numel(sts)
+    sind = [Trial.stc{sts{stssub}}];
+    sind.cast('TimeSeries',mys);
+    sampleInds = cat(1, sampleInds, randsample( find(sind.data), 500));
+end
+sind = false(size(sind.data));
+sind(sampleInds) = true;
+srf.data = rtfet(sind,:);
+srf.mean = mean(srf.data(2:end,:));
+srf.std  = std(srf.data(2:end,:));
+% NORMALIZE data
+nsrf = bsxfun(@rdivide,                ...
+              bsxfun(@minus,           ...
+                     srf.data(2:end,:),...
+                     srf.mean),        ...
+              srf.std);
+%%%>>>--------------------------------------------------------------------------
+
+%%%<<< PCA-VARIMAX -------------------------------------------------------------
+[LU,LR,FSr,VT] = erpPCA(nsrf',6);
+figure()
+subplot(121);
+imagesc(FSr);
+subplot(122);
+plot(VT(:,4),'+-')
+%%%>>>--------------------------------------------------------------------------
+
+%%%<<< NORMALIZE full data set -------------------------------------------------
+
+nrf.data = rtfet;
+nrf.mean = srf.mean;
+nrf.std  = srf.std;
+nrf.labels = {'CA1pyr_DELTA',      ...
+              'CA1pyr_THETA',      ...
+              'CA1pyr_BETA' ,      ...
+              'CA1prc_DELTA',      ...
+              'CA1prc_THETA',      ...
+              'CA1prc_BETA' ,      ...
+              'CA1_PYRxPRC_PHASE'  ...
+             };
+% NORMALIZE data
+nrf.data = bsxfun(@rdivide,                ...
+              bsxfun(@minus,           ...
+                     nrf.data,         ...
+                     nrf.mean),        ...
+              nrf.std);
+nrf.data(~nniz(lxyz),:) = 0;
+
+%%%>>>--------------------------------------------------------------------------
+
+figure()
+subplot(3,1,[1,2]);
+hold('on');
+plot(mts, nrf.data * FSr(:,1));
+plot(mts, nrf.data * FSr(:,2),'r');
+plot(mts, nrf.data * FSr(:,3),'g');
+plot(mts, nrf.data * FSr(:,4),'k');
+subplot(3,1,3);
+plotSTC( Trial.stc, 1);
+linkx();
+
+
+
+xind = [1:size(nrf.data,2)];
+clear('hmm');
+updateOM = 1;
+hmm.K = 5;
+hmm = hmminit(nrf.data(nniz(nrf.data),xind),hmm,'full');
+hmm.train.cyc = 100;
+hmm.obsmodel='Gauss';
+hmm.train.obsupdate = ones([ 1, hmm.K]) * updateOM;
+hmm.train.init = 1;
+
+sind = [Trial.stc{'a'}];
+sind.cast('TimeSeries',mys);
+sind = sind.data&nniz(nrf.data);
+
+hmm = hmmtrain(nrf.data(sind,xind), sum(sind), hmm);
+
+
+diag(hmm.P)
+
+% COMPUTE hmm states
+[decode] = hmmdecode(nrf.data(sind,xind), sum(sind), hmm);
+decode.q_star = decode.q_star';
+dstates = zeros([size(mys,1),1]);
+dstates(sind) = decode.q_star;
+
+% $$$ dstates = swap_state_vector_ids(dstates,3,1);
+% $$$ dstates = swap_state_vector_ids(dstates,5,3);
+% $$$ dstates = swap_state_vector_ids(dstates,5,2);
+% $$$ dstates = swap_state_vector_ids(dstates,4,1);
+% $$$ dstates(dstates==5) = 4;
+
+figure()
+subplot(5,1,1);
+imagesc(mts, mfs, log10(mys.data(:,:,1,1))');  Lines([],7,'k');
+axis(gca(), 'xy'); colormap(gca(), 'jet')
+subplot(5,1,2);
+imagesc(mts, mfs, log10(mys.data(:,:,2,2))');  Lines([],7,'k');
+axis(gca(), 'xy'); colormap(gca(), 'jet')
+subplot(5,1,3);
+hold('on');
+plot(mts, nrf.data * FSr(:,1));
+plot(mts, nrf.data * FSr(:,2),'r');
+plot(mts, nrf.data * FSr(:,3),'g');
+plot(mts, nrf.data * FSr(:,4),'k');
+subplot(5,1,4);
+plot(mts, dstates);
+ylim([0,hmm.K+1]);
+subplot(5,1,5);
+plotSTC( Trial.stc, 1);
+ylim([1,7]);
+linkx();
+
+
+
+
+%    1,  2,  3,  4,  5,  6,   7
+% [llb,ltb,lhb,rlb,rtb,rhb,rlpd];
+
+figure,
+for sid = 1:hmm.K
+    sax = subplot(1,hmm.K,sid);
+    hist2( nrf.data(dstates==sid,[1,3]),...
+           linspace(-5,5,25),...
+           linspace(-5,5,25));
+    grid(sax,'on');
+    sax.GridAlphaMode = 'manual';  sax.GridAlpha = 0.5;
+    sax.GridColorMode = 'manual';  sax.GridColor = [1,1,1];
+    sax.MinorGridAlphaMode = 'manual';  sax.MinorGridAlpha = 0.5;
+    sax.MinorGridColorMode = 'manual';  sax.MinorGridColor = [1,1,1];
+end
+
+rdr = rtb - mean([ rlb, rhb],2);ldr = ltb - mean([ llb, lhb],2);
+lrd = rdr - ldr;
+
+
+
+bins.rdr.name = 'rdr';
+bins.rdr.description = 'rec theta delta ratio';
+bins.rdr.edges = linspace(-1, 1.75, 25);
+bins.rdr.centers = (bins.rdr.edges(1:end-1)+bins.rdr.edges(2:end))./2;
+bins.rdr.count = numel(bins.rdr.centers);
+
+bins.rdr.name = 'rdr';
+bins.rdr.description = 'rec theta delta ratio';
+bins.rdr.edges = linspace(-1, 1.75, 25);
+bins.rdr.centers = (bins.rdr.edges(1:end-1)+bins.rdr.edges(2:end))./2;
+bins.rdr.count = numel(bins.rdr.centers);
+
+bins.ldr.name = 'ldr';
+bins.ldr.description = 'lfp theta delta ratio';
+bins.ldr.edges = linspace(-1, 1.75, 25);
+bins.ldr.centers = (bins.ldr.edges(1:end-1)+bins.ldr.edges(2:end))./2;
+bins.ldr.count = numel(bins.ldr.centers);
+
+bname = 'rtb';
+bins.(bname).name = bname;
+bins.(bname).description = 'rec theta power';
+bins.(bname).edges = linspace(4, 6.75, 25);
+bins.(bname).centers = (bins.(bname).edges(1:end-1)+bins.(bname).edges(2:end))./2;
+bins.(bname).count = numel(bins.(bname).centers);
+
+bins.lrd.name = 'lrd';
+bins.lrd.description = 'rdr ldr difference';
+bins.lrd.edges = linspace(-1, 1.75, 25);
+bins.lrd.centers = (bins.lrd.edges(1:end-1)+bins.lrd.edges(2:end))./2;
+bins.lrd.count = numel(bins.lrd.centers);
+
+
+xvar = rtb; xlab = 'rtb';
+yvar = lrd; ylab = 'lrd';
+sts = {'s-t','s&t','w','n','p','r','m'};
+nx = ceil(sqrt(numel(sts)));
+ny = nx;
+figure();
+stssub = 1;
+for xsub = 1 : nx
+    for ysub = 1: ny
+        subplot2( ny, nx, xsub, ysub);
+        sind = [Trial.stc{sts{stssub}}];
+        sind.cast('TimeSeries',mys);
+        sind = sind.data;
+        hist2([ xvar(sind),    ...
+                yvar(sind) ],  ...
+              bins.(xlab).edges,   ...
+              bins.(ylab).edges    ...
+              );
+        Lines(bins.(xlab).centers(round(bins.(xlab).count.*[0.25, 0.5, 0.75])),[],'w');
+        Lines([],bins.(ylab).centers(round(bins.(ylab).count.*[0.25, 0.5, 0.75])),'w');
+        line(bins.(xlab).edges([1,end]), bins.(ylab).edges([1,end]),'color','w');
+        title(sts{stssub});
+        if stssub == numel(sts),break;end
+        stssub = stssub + 1;
+    end
+end
+
+figure,
+subplot(211);
+plot(mts,log10(mean(mys(:,[1:5],2,2),2)));
+hold('on');
+plot(mts,(mean(fmys(:,[1:5],2),2)),'r');
+plot(mts,(mean(fmys(:,[11:20],1),2)),'k');
+plot(mts,(mean(fmys(:,[11:20],2),2)),'g');
+subplot(212);
+plotSTC( Trial.stc, 1);
+linkx()
+
+figure();
+subplot(221);
+    sind = [Trial.stc{'s&t'}];
+    sind.cast('TimeSeries');
+    sind.resample(mys);
+    sind = logical(sind.data);
+    hist2([log10(abs(mys(sind,14,2,2)))-mean(log10(mys(sind,1:40,1,1)),2),...
+           circ_dist(angle(mys(sind,14,1,2)),-pi/2)],...
+          linspace(-1.5,2,50),...
+          linspace(-1.5,1.5,50))
+subplot(223);
+    hist2([log10(abs(mys(sind,14,2,2)))-mean(log10(mys(sind,1:40,1,1)),2),...
+           circ_dist(angle(mys(sind,14,1,2)),-pi/2)],...
+          linspace(-1.5,2,50),...
+          linspace(-1.5,1.5,50))
+subplot(222);
+    wind = [Trial.stc{'w+n+p&t'}];
+    wind.cast('TimeSeries');    
+    wind.resample(mys);
+    wind = logical(wind.data);
+    hist2([log10(abs(mys(wind,14,1,1)))-mean(log10(mys(wind,1:40,1,1)),2),...
+           circ_dist(angle(mys(wind,14,1,2)),-pi/2)],...
+          linspace(-1.5,2,50),...
+          linspace(-1.5,1.5,50))
+subplot(224);
+    hist2([log10(abs(mys(wind,14,2,2)))-mean(log10(mys(wind,1:40,1,1)),2),...
+           circ_dist(angle(mys(wind,14,1,2)),-pi/2)],...
+          linspace(-1.5,2,50),...
+          linspace(-1.5,1.5,50))
+ForAllSubplots(...
+    [ ...
+        'Lines([],0.5,''w'');Lines(0.5,[],''w'');', ...
+        'line([-0.5,2],[1.5,-1],''color'',''w'');' ...
+        'caxis([0,250]);' ...
+    ] ...
+);
+
+
+
+% If I see a clear shift in the
+% ind = [Data.parent.stc{statePeriods}];
+
+
+figure,
+subplot(131);
+sind = [Trial.stc{'s-t'}];
+sind.cast('TimeSeries',mys);
+sind = sind.data;
+hist2([log10(mys(sind,16,1,1))  ,...
+       log10(mys(sind,16,2,2)) ],...
+      linspace(6.5, 8.75, 25),...
+      linspace(6.5, 8.75, 25)...
+);
+subplot(132);
+sind = [Trial.stc{'s&t'}];
+sind.cast('TimeSeries',mys);
+sind = sind.data;
+hist2([log10(mys(sind,16,1,1))  ,...
+       log10(mys(sind,16,2,2)) ],...
+      linspace(6.5, 8.75, 25),...
+      linspace(6.5, 8.75, 25)...
+);
+subplot(133);
+sind = [Trial.stc{'w+p+n+r&t'}];
+sind.cast('TimeSeries',mys);
+sind = sind.data;
+hist2([log10(mys(sind,16,1,1))  ,...
+       log10(mys(sind,16,2,2)) ],...
+      linspace(6.5, 8.75, 25),...
+      linspace(6.5, 8.75, 25)...
+);
+ForAllSubplots(...
+    [ ...
+        'Lines([],8,''w'');Lines(7.5,[],''w'');', ...
+        'line([6.5,8.5],[6.75,8.75],''color'',''w'');' ...
+         ... % 'caxis([0,150]);' ...
+    ] ...
+);
+
+
+figure,
+subplot(131);
+sind = [Trial.stc{'s-t'}];
+sind.cast('TimeSeries',mys);
+sind = sind.data;
+hist2([log10(mys(sind,16,1,1))  ,...
+       log10(mys(sind,50,1,1)) ],...
+      linspace(6.5, 8.75, 25),...
+      linspace(4.5, 7, 25)...
+);
+subplot(132);
+sind = [Trial.stc{'s&t'}];
+sind.cast('TimeSeries',mys);
+sind = sind.data;
+hist2([log10(mys(sind,16,1,1))  ,...
+       log10(mys(sind,50,1,1)) ],...
+      linspace(6.5, 8.75, 25),...
+      linspace(4.5, 7, 25)...
+);
+subplot(133);
+sind = [Trial.stc{'w+p+n+r&t'}];
+sind.cast('TimeSeries',mys);
+sind = sind.data;
+hist2([log10(mys(sind,16,1,1))  ,...
+       log10(mys(sind,50,1,1)) ],...
+      linspace(6.5, 8.75, 25),...
+      linspace(4.5, 7, 25)...
+);
+ForAllSubplots(...
+    [ ...
+        'Lines([],8,''w'');Lines(7.5,[],''w'');', ...
+        'line([6.5,8.5],[6.75,8.75],''color'',''w'');' ...
+         ... % 'caxis([0,150]);' ...
+    ] ...
+);
+
+
+
+figure,
+subplot(131);
+sind = [Trial.stc{'s-t'}];
+sind.cast('TimeSeries',fmys);
+sind = sind.data;
+hist2(real([ log10(fmys(sind,16,1))  ,...
+             log10(fmys(sind,16,2)) ]),...
+      linspace(6.5, 8.75, 25),...
+      linspace(6.5, 8.75, 25)...
+);
+subplot(132);
+sind = [Trial.stc{'s&t'}];
+sind.cast('TimeSeries',fmys);
+sind = sind.data;
+hist2(real([ log10(fmys(sind,16,1))  ,...
+             log10(fmys(sind,16,2)) ]),...
+      linspace(6.5, 8.75, 25),...
+      linspace(6.5, 8.75, 25)...
+);
+subplot(133);
+sind = [Trial.stc{'w+p+n+r&t'}];
+sind.cast('TimeSeries',fmys);
+sind = sind.data;
+hist2(real([ log10(fmys(sind,16,1))  ,...
+             log10(fmys(sind,16,2)) ]),...
+      linspace(6.5, 8.75, 25),...
+      linspace(6.5, 8.75, 25)...
+);
+ForAllSubplots(...
+    [ ...
+        'Lines([],8,''w'');Lines(7.5,[],''w'');', ...
+        'line([6.5,8.5],[6.75,8.75],''color'',''w'');' ...
+         ... % 'caxis([0,150]);' ...
+    ] ...
+);
+
+
+
+
+figure,
+subplot(131);
+sind = [Trial.stc{'s-t'}];
+sind.cast('TimeSeries',fmys);
+sind = sind.data;
+hist2(real([ log10(fmys(sind,24,1))  ,...
+             log10(fmys(sind,24,2)) ]),...
+      linspace(6.5, 8.75, 25),...
+      linspace(6.5, 8.75, 25)...
+);
+subplot(132);
+sind = [Trial.stc{'s&t'}];
+sind.cast('TimeSeries',fmys);
+sind = sind.data;
+hist2(real([ log10(fmys(sind,24,1))  ,...
+             log10(fmys(sind,24,2)) ]),...
+      linspace(6.5, 8.75, 25),...
+      linspace(6.5, 8.75, 25)...
+);
+subplot(133);
+sind = [Trial.stc{'w+p+n+r&t'}];
+sind.cast('TimeSeries',fmys);
+sind = sind.data;
+hist2(real([ log10(fmys(sind,24,1))  ,...
+             log10(fmys(sind,24,2)) ]),...
+      linspace(6.5, 8.75, 25),...
+      linspace(6.5, 8.75, 25)...
+);
+ForAllSubplots(...
+    [ ...
+        'Lines([],8,''w'');Lines(7.5,[],''w'');', ...
+        'line([6.5,8.5],[6.75,8.75],''color'',''w'');' ...
+         ... % 'caxis([0,150]);' ...
+    ] ...
+);
+
+figure,
+subplot(131);
+sind = [Trial.stc{'s-t'}];
+sind.cast('TimeSeries',fmys);
+sind = sind.data;
+hist2(real([ log10(fmys(sind,2,1))  ,...
+             log10(fmys(sind,2,2)) ]),...
+      linspace(6.5, 8.75, 25),...
+      linspace(6.5, 8.75, 25)...
+);
+subplot(132);
+sind = [Trial.stc{'s&t'}];
+sind.cast('TimeSeries',fmys);
+sind = sind.data;
+hist2(real([ log10(fmys(sind,2,1))  ,...
+             log10(fmys(sind,2,2)) ]),...
+      linspace(6.5, 8.75, 25),...
+      linspace(6.5, 8.75, 25)...
+);
+subplot(133);
+sind = [Trial.stc{'w+p+n+r&t'}];
+sind.cast('TimeSeries',fmys);
+sind = sind.data;
+hist2(real([ log10(fmys(sind,2,1))  ,...
+             log10(fmys(sind,2,2)) ]),...
+      linspace(6.5, 8.75, 25),...
+      linspace(6.5, 8.75, 25)...
+);
+ForAllSubplots(...
+    [ ...
+        'Lines([],8,''w'');Lines(7.5,[],''w'');', ...
+        'line([6.5,8.5],[6.75,8.75],''color'',''w'');' ...
+         ... % 'caxis([0,150]);' ...
+    ] ...
+);
+
+figure,
+subplot(221);
+sind = [Trial.stc{'s-t'}];
+sind.cast('TimeSeries',mys);
+sind = sind.data;
+hist2([mean([log10(mys(sind,2,2,2)),log10(mys(sind,28,2,2))],2),...
+       log10(mys(sind,16,2,2)) ],...
+      linspace(6.5, 8.75, 25),...
+      linspace(6.5, 8.75, 25)...
+);
+subplot(222);
+sind = [Trial.stc{'w&t'}];
+sind.cast('TimeSeries',mys);
+sind = sind.data;
+hist2([mean([log10(mys(sind,2,2,2)),log10(mys(sind,28,2,2))],2),...
+       log10(mys(sind,16,2,2)) ],...
+      linspace(6.5, 8.75, 25),...
+      linspace(6.5, 8.75, 25)...
+);
+subplot(223);
+sind = [Trial.stc{'p-t'}];
+sind.cast('TimeSeries',mys);
+sind = sind.data;
+hist2([mean([log10(mys(sind,2,2,2)),log10(mys(sind,28,2,2))],2),...
+       log10(mys(sind,16,2,2)) ],...
+      linspace(6.5, 8.75, 25),...
+      linspace(6.5, 8.75, 25)...
+);
+subplot(224);
+sind = [Trial.stc{'p&t'}];
+sind.cast('TimeSeries',mys);
+sind = sind.data;
+hist2([mean([log10(mys(sind,2,2,2)),log10(mys(sind,28,2,2))],2),...
+       log10(mys(sind,16,2,2)) ],...
+      linspace(6.5, 8.75, 25),...
+      linspace(6.5, 8.75, 25)...
+);
+
+fmys = copy(mys);
+fmys.data = mys.data(:,:,1,1);
+fmys.data(:,:,2) = mys.data(:,:,2,2);
+fmys.filter('ButFilter',4,3,'low');
+
+figure,
+subplot(231);
+sind = [Trial.stc{'s-t'}];
+sind.cast('TimeSeries',mys);
+sind = sind.data;
+hist2([real(mean([log10(fmys(sind,2,2)),log10(fmys(sind,28,2))],2)),...
+       real(log10(fmys(sind,16,2))) ],...
+       linspace(6.5, 8.75, 25),...
+       linspace(6.5, 8.75, 25)...
+);
+subplot(232);
+sind = [Trial.stc{'w&t'}];
+sind.cast('TimeSeries',fmys);
+sind = sind.data;
+hist2(real([mean([log10(fmys(sind,2,2)),log10(fmys(sind,28,2))],2),...
+       log10(fmys(sind,16,2)) ]),...
+      linspace(6.5, 8.75, 25),...
+      linspace(6.5, 8.75, 25)...
+);
+subplot(233);
+sind = [Trial.stc{'p-t'}];
+sind.cast('TimeSeries',fmys);
+sind = sind.data;
+hist2([real(mean([log10(fmys(sind,2,2)),log10(fmys(sind,28,2))],2)),...
+       real(log10(fmys(sind,16,2))) ],...
+      linspace(6.5, 8.75, 25),...
+      linspace(6.5, 8.75, 25)...
+      );
+subplot(234);
+sind = [Trial.stc{'s&t'}];
+sind.cast('TimeSeries',fmys);
+sind = sind.data;
+hist2(real([mean([log10(fmys(sind,2,2)),log10(fmys(sind,28,2))],2),...
+       log10(fmys(sind,16,2)) ]),...
+      linspace(6.5, 8.75, 25),...
+      linspace(6.5, 8.75, 25)...
+);
+subplot(235);
+sind = [Trial.stc{'r&t'}];
+sind.cast('TimeSeries',fmys);
+sind = sind.data;
+hist2(real([mean([log10(fmys(sind,2,2)),log10(fmys(sind,28,2))],2),...
+       log10(fmys(sind,16,2)) ]),...
+      linspace(6.5, 8.75, 25),...
+      linspace(6.5, 8.75, 25)...
+);
+subplot(236);
+sind = [Trial.stc{'p&t'}];
+sind.cast('TimeSeries',fmys);
+sind = sind.data;
+hist2(real([mean([log10(fmys(sind,2,2)),log10(fmys(sind,28,2))],2),...
+       log10(fmys(sind,16,2)) ]),...
+      linspace(6.5, 8.75, 25),...
+      linspace(6.5, 8.75, 25)...
+);
+ForAllSubplots('Lines([],8,''w'');Lines(7.5,[],''w'');');
+
+
+
+
+figure,
+subplot(231);
+sind = [Trial.stc{'s-t'}];
+sind.cast('TimeSeries',mys);
+sind = sind.data;
+hist2([real(mean([log10(fmys(sind,2,1)),log10(fmys(sind,28,1))],2)),...
+       real(log10(fmys(sind,16,1))) ],...
+       linspace(6.5, 8.75, 25),...
+       linspace(6.5, 8.75, 25)...
+);
+subplot(232);
+sind = [Trial.stc{'w&t'}];
+sind.cast('TimeSeries',fmys);
+sind = sind.data;
+hist2(real([mean([log10(fmys(sind,2,1)),log10(fmys(sind,28,1))],2),...
+       log10(fmys(sind,16,1)) ]),...
+      linspace(6.5, 8.75, 25),...
+      linspace(6.5, 8.75, 25)...
+);
+subplot(233);
+sind = [Trial.stc{'p-t'}];
+sind.cast('TimeSeries',fmys);
+sind = sind.data;
+hist2([real(mean([log10(fmys(sind,2,1)),log10(fmys(sind,28,1))],2)),...
+       real(log10(fmys(sind,16,2))) ],...
+      linspace(6.5, 8.75, 25),...
+      linspace(6.5, 8.75, 25)...
+      );
+subplot(234);
+sind = [Trial.stc{'s&t'}];
+sind.cast('TimeSeries',fmys);
+sind = sind.data;
+hist2(real([mean([log10(fmys(sind,2,1)),log10(fmys(sind,28,1))],2),...
+       log10(fmys(sind,16,1)) ]),...
+      linspace(6.5, 8.75, 25),...
+      linspace(6.5, 8.75, 25)...
+);
+subplot(235);
+sind = [Trial.stc{'r&t'}];
+sind.cast('TimeSeries',fmys);
+sind = sind.data;
+hist2(real([mean([log10(fmys(sind,2,1)),log10(fmys(sind,28,1))],2),...
+       log10(fmys(sind,16,1)) ]),...
+      linspace(6.5, 8.75, 25),...
+      linspace(6.5, 8.75, 25)...
+);
+subplot(236);
+sind = [Trial.stc{'p&t'}];
+sind.cast('TimeSeries',fmys);
+sind = sind.data;
+hist2(real([mean([log10(fmys(sind,2,1)),log10(fmys(sind,28,1))],2),...
+       log10(fmys(sind,16,1)) ]),...
+      linspace(6.5, 8.75, 25),...
+      linspace(6.5, 8.75, 25)...
+);
+ForAllSubplots('Lines([],8,''w'');Lines(7.5,[],''w'');');
+
+
+figure,
+subplot(231);
+sind = [Trial.stc{'s-t'}];
+sind.cast('TimeSeries',mys);
+sind = sind.data;
+hist2([real(mean([log10(fmys(sind,2,2)),log10(fmys(sind,28,2))],2)),...
+       real(log10(fmys(sind,16,1))) ],...
+       linspace(6.5, 8.75, 25),...
+       linspace(6.5, 8.75, 25)...
+);
+subplot(232);
+sind = [Trial.stc{'w&t'}];
+sind.cast('TimeSeries',fmys);
+sind = sind.data;
+hist2(real([mean([log10(fmys(sind,2,2)),log10(fmys(sind,28,2))],2),...
+       log10(fmys(sind,16,1)) ]),...
+      linspace(6.5, 8.75, 25),...
+      linspace(6.5, 8.75, 25)...
+);
+subplot(233);
+sind = [Trial.stc{'p-t'}];
+sind.cast('TimeSeries',fmys);
+sind = sind.data;
+hist2([real(mean([log10(fmys(sind,2,2)),log10(fmys(sind,28,2))],2)),...
+       real(log10(fmys(sind,16,2))) ],...
+      linspace(6.5, 8.75, 25),...
+      linspace(6.5, 8.75, 25)...
+      );
+subplot(234);
+sind = [Trial.stc{'s&t'}];
+sind.cast('TimeSeries',fmys);
+sind = sind.data;
+hist2(real([mean([log10(fmys(sind,2,2)),log10(fmys(sind,28,2))],2),...
+       log10(fmys(sind,16,1)) ]),...
+      linspace(6.5, 8.75, 25),...
+      linspace(6.5, 8.75, 25)...
+);
+subplot(235);
+sind = [Trial.stc{'r&t'}];
+sind.cast('TimeSeries',fmys);
+sind = sind.data;
+hist2(real([mean([log10(fmys(sind,2,2)),log10(fmys(sind,28,2))],2),...
+       log10(fmys(sind,16,1)) ]),...
+      linspace(6.5, 8.75, 25),...
+      linspace(6.5, 8.75, 25)...
+);
+subplot(236);
+sind = [Trial.stc{'p&t'}];
+sind.cast('TimeSeries',fmys);
+sind = sind.data;
+hist2(real([mean([log10(fmys(sind,2,2)),log10(fmys(sind,28,2))],2),...
+       log10(fmys(sind,16,1)) ]),...
+      linspace(6.5, 8.75, 25),...
+      linspace(6.5, 8.75, 25)...
+);
+ForAllSubplots('Lines([],8,''w'');Lines(7.5,[],''w'');');
+
+
+figure,plot(log10(mys(:,16,1,1))),hold('on');plot(log10(fmys(:,16,1,1)));
+
 
 xyz = preproc_xyz(Trial,'trb',sampleRate);
 fxyz = filter(xyz.copy(),'ButFilter',3,14,'low');
@@ -1105,7 +3475,7 @@ grpNewOrder = [5,1,4,2,6,3];
 grpLabels = {'activeTheta','ImmobileTheta','LowTheta','REMTheta','ImmobileStuff','SWR'};
 
 % REORDER grps
-hmmState = decode.q_star+hmm.K;
+nhmmState = decode.q_star+hmm.K;
 for grp = 1:hmm.K
     hmmState((grpNewOrder(grp)+hmm.K)==hmmState) = grp;
 end

@@ -11,7 +11,7 @@ Trial = MTATrial.validate(Trial);
 % DEFARGS ------------------------------------------------------------------------------------------
 defargs = struct('newSampleRate', Trial.xyz.sampleRate,                                          ...
                  'normalize'    , false,                                                         ...
-                 'procOpts'     , {'SPLINE_SPINE_HEAD_EQD'},                                     ...
+                 'procOpts'     , {{'SPLINE_SPINE_HEAD_EQD'}},                                   ...
                  'referenceTrial'  , 'Ed05-20140529.ont.all',                                    ...
                  'referenceFeature', ''                                                          ...                 
 );
@@ -42,14 +42,24 @@ end
 
 
 
+
 % ANG Filtered Intermarker angles 
 ang = create(MTADang,Trial,xyz);
+
+
+% REMOVE THIS AT SOME POINT... maybe.. who am I kidding this will
+% be here forever.
+mnose = 'nose';
+if ~ang.model.gmi(mnose)
+    mnose = 'head_nose';
+end
+
 
 % CAT feature
 %fet.data = [ang(:,'spine_middle','spine_upper',2),...
 fet.data = [ang(:,'pelvis_root','spine_upper',2),...
             ang(:,'spine_upper','hcom',2),...
-            ang(:,'hcom','nose',2)];
+            ang(:,'hcom',mnose,2)];
 
 
 fet.data(~nniz(xyz),:)=0;

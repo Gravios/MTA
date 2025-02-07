@@ -72,7 +72,9 @@ for tind = 1:numel(Trials)
     phz = load_theta_phase(Trial,xyz);
     tphz = sq(phz(tper));
     
-    rmap{tind} = nan([numel(xpos),numel(ypos),numel(unitSubset),numel(phzBin.centers),numel(hbaBin.centers)]);
+    rmap{tind} = nan([numel(xpos), numel(ypos),                 ...
+                      numel(unitSubset),                        ...
+                      numel(phzBin.centers),numel(hbaBin.centers)]);
     %% cell array version
     for u = 1:numel(unitSubset)
         tic

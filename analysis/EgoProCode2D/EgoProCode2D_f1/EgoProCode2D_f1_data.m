@@ -196,32 +196,233 @@ uidsCA3 = unitsEgoCA3;
 % $$$ 
 % $$$ 
 % $$$ 
-% $$$ k = 1;
-% $$$ for tid = 1:numel(Trials)
-% $$$ for u = 1:numel(unitsEgo{tid})
-% $$$     [mxr,mpx] = placeFieldsNoRear{tid}.maxRate(unitsEgo{tid}(u));
-% $$$     for p = 1:3
-% $$$     rmape = plot(pfet{tid}{p},unitsEgo{tid}(u));
-% $$$     rmapa = plot(ratemapsAlloThp{tid}{p},unitsEgo{tid}(u));
-% $$$     gtinda = ~isnan(rmapa);
-% $$$     gtinde = ~isnan(rmape);
-% $$$     rmapa(isnan(rmapa)|rmapa==0) = eps;
-% $$$     rmape(isnan(rmape)|rmape==0) = eps;
-% $$$     MRate = mean(rmapa(gtinda),'omitnan');
-% $$$     si(1) = nansum(1/sum(double(gtinda(:))).*(rmapa(gtinda)./MRate) .* log2(rmapa(gtinda)./MRate));
-% $$$     sp(1) = nansum(1/sum(double(gtinda(:))).*rmapa(gtinda)).^2./nansum(1/sum(double(gtinda(:))).*rmapa(gtinda).^2);
-% $$$     MRate = mean(rmape(gtinde),'omitnan');
-% $$$     si(2) = nansum(1/sum(double(gtinde(:))).*(rmape(gtinde)./MRate) .* log2(rmape(gtinde)./MRate));
-% $$$     sp(2) = nansum(1/sum(double(gtinde(:))).*rmape(gtinde)).^2./nansum(1/sum(double(gtinde(:))).*rmape(gtinde).^2);
-% $$$     sia(k,p,:) = si;
-% $$$     spa(k,p,:) = sp;
-% $$$     end
-% $$$     mxa(k,:) = mxr;
-% $$$     k = k+1;
-% $$$ end
-% $$$ end
+k = 1;
+for tid = 1:numel(Trials)
+for u = 1:numel(unitsEgo{tid})
+    [mxr,mpx] = placeFieldsNoRear{tid}.maxRate(unitsEgo{tid}(u));
+    for p = 1:3
+    rmape = plot(pfet{tid}{p},unitsEgo{tid}(u));
+    rmapa = plot(ratemapsAlloThp{tid}{p},unitsEgo{tid}(u));
+    gtinda = ~isnan(rmapa);
+    gtinde = ~isnan(rmape);
+    rmapa(isnan(rmapa)|rmapa==0) = eps;
+    rmape(isnan(rmape)|rmape==0) = eps;
+    MRate = mean(rmapa(gtinda),'omitnan');
+    si(1) = nansum(1/sum(double(gtinda(:))).*(rmapa(gtinda)./MRate) .* log2(rmapa(gtinda)./MRate));
+    sp(1) = nansum(1/sum(double(gtinda(:))).*rmapa(gtinda)).^2./nansum(1/sum(double(gtinda(:))).*rmapa(gtinda).^2);
+    MRate = mean(rmape(gtinde),'omitnan');
+    si(2) = nansum(1/sum(double(gtinde(:))).*(rmape(gtinde)./MRate) .* log2(rmape(gtinde)./MRate));
+    sp(2) = nansum(1/sum(double(gtinde(:))).*rmape(gtinde)).^2./nansum(1/sum(double(gtinde(:))).*rmape(gtinde).^2);
+    sia(k,p,:) = si;
+    spa(k,p,:) = sp;
+    end
+    mxa(k,:) = mxr;
+    k = k+1;
+end
+end
+
+
+figure,
+trlI = 20
+unit = 21;
+[mxr,mxp] = ratemapsAlloThp{trlI}{2}.maxRate(unit);
+for phzI = 1:pc
+    subplot2(3,2,pc+1-phzI,1);
+    plot(ratemapsAlloThp{trlI}{phzI}, unit, [], 'colorbar', [0,mxr*1.5], true, [], false,[],@jet);
+        ylim([-200,200]+mxp(2));
+        xlim([-200,200]+mxp(1));
+        daspect([1,1,1]);
+    subplot2(3,2,pc+1-phzI,2);
+        plot(pfet{trlI}{phzI}, unit, [], 'colorbar', [0,mxr*1.5], false, [], true,[],@jet);
+        ylim([-150,250]);
+        xlim([-200,200]);    
+        daspect([1,1,1]);
+end
+
+
+trlI = 20;
+phz = load_theta_phase(Trials{trlI}, sampleRate);
+headYawCorrection = Trials{trlI}.meta.correction.headYaw;
+headCenterCorrection = Trials{trlI}.meta.correction.headCenter;
+% COMPUTE head basis
+hvec = xyz{trlI}(:,'nose',[1,2])-xyz{trlI}(:,'hcom',[1,2]);
+hvec = sq(bsxfun(@rdivide,hvec,sqrt(sum(hvec.^2,3))));
+hvec = cat(3,hvec,sq(hvec)*[0,-1;1,0]);
+hvec = multiprod(hvec,...
+                 [cos(headYawCorrection),-sin(headYawCorrection);...
+                  sin(headYawCorrection), cos(headYawCorrection)],...
+                 [2,3],...
+                 [1,2]);
+hvfl = fet_href_HXY(Trials{trlI}, sampleRate, [], 'trb', 2.4);
+hafl = circshift(hvfl.data,1)-hvfl.data;
+%bvfl = fet_bref_BXY(Trials{trlI}, sampleRate, [], 'trb', 5);
+%bafl = circshift(bvfl(:,1),1)-bvfl(:,1);
+
+sts = [Trials{trlI}.stc{'walk&theta'}];
+sts = [Trials{trlI}.stc{'walk+pause&theta'}];
+%sts = [Trials{trlI}.stc{'pause&theta'}];
+sts.resample(xyz{trlI});
+
+unit = 103;
+ures = spk{trlI}(unit,sts);
+%ures = spk{trlI}(unit);
+ures = ures(within_ranges(phz(ures),[4,5.5]));
+[mxr,mxp] = ratemapsAlloThp{trlI}{2}.maxRate(unit);
+%[mxr,mpx] = pft{trlI}.maxRate(unit);
+exy = [bsxfun(@plus,                                            ...
+              multiprod(bsxfun(@minus,                          ...
+                               mxp,                             ...
+                               sq(xyz{trlI}(:,'hcom',[1,2]))),  ...
+                        hvec,2,[2,3]),                          ...
+              headCenterCorrection)];
+figure,
+ind =  ures(abs(exy(ures,2))<200 ...
+       & within_ranges(exy(ures,1),[-300,300]));
+subplot(2,3,1);
+scatter(hvfl(ind,1) , exy(ind,1), 10, hafl(ind,1)*125,'Filled');
+grid('on'); hold('on'); colormap('jet'); colorbar(); caxis([-100,100]); xlim([-20,100]); ylim([-300,300]);
+plot(0,median(exy(ind,1)),'*m');
+subplot(2,3,2);
+scatter(hafl(ind,1)*125, exy(ind,1), 10, hvfl(ind,1),'Filled');
+grid('on'); hold('on'); colormap('jet'); colorbar(); caxis([-30,100]); xlim([-100,100]); ylim([-300,300]);
+plot(0,median(exy(ind,1)),'*m');
+subplot(2,3,3);
+histogram(hafl(ind,1), linspace(-2,2,24));
+R = corrcoef(hafl(ind,1), exy(ind,1))
+R = corrcoef(hvfl(ind,1), exy(ind,1))
+median(hafl(ind,1))
+ures = spk{trlI}(unit,sts);
+ures = ures(within_ranges(phz(ures),[0.5,2]));
+ind =  ures(abs(exy(ures,2))<200 ...
+       & within_ranges(exy(ures,1),[-300,300]));
+subplot(2,3,4);
+scatter(hvfl(ind,1) , exy(ind,1), 10, hafl(ind,1)*125,'Filled');
+grid('on'); hold('on'); colormap('jet'); colorbar(); caxis([-100,100]); xlim([-20,100]); ylim([-300,300]);
+plot(0,median(exy(ind,1)),'*m');
+subplot(2,3,5);
+scatter(hafl(ind,1)*125, exy(ind,1), 10, hvfl(ind,1),'Filled');
+grid('on'); hold('on'); colormap('jet'); colorbar(); caxis([-30,100]); xlim([-100,100]); ylim([-300,300]);
+plot(0,median(exy(ind,1)),'*m');
+subplot(2,3,6);
+histogram(hafl(ind,1), linspace(-2,2,24));
+median(hafl(ind,1))
 % $$$ 
-% $$$ 
+% $$$ ind =  abs(exy(:,2))<200 ...
+% $$$        & within_ranges(exy(:,1),[-100,50]) ...
+% $$$        & within_ranges(1:numel(exy(:,1)),sts);
+% $$$ figure,
+% $$$ histogram(hafl(ind,1),linspace(-2,2,30))
+% $$$ median(hafl(ind,1))
+% $$$ mean(hafl(ind,1))
+% $$$ figure,
+% $$$ plot(hvfl(ind,1),hafl(ind,1),'.')
+% $$$ hold('on')
+% $$$ ures = spk{trlI}(unit,sts);
+% $$$ ures = ures(within_ranges(phz(ures),[0.5,2.5]));
+% $$$ %ures = ures(within_ranges(phz(ures),[4,6]));
+% $$$ ind =  ures(abs(exy(ures,2))<200 ...
+% $$$        & within_ranges(exy(ures,1),[-300,300]));
+% $$$ plot(hvfl(ind,1),hafl(ind,1),'.r','MarkerSize',10)
+% $$$ Lines([],0,'k');
+% $$$ figure,hist(hafl(ind,1),linspace(-2,2,20))
+% $$$ median(hafl(ind,1))
+% $$$ mean(hafl(ind,1))
+
+
+normalization = 'count';
+ures = spk{trlI}(unit,sts);
+ures = ures(within_ranges(phz(ures),[0.5,1.5]));
+dres =  ures(abs(exy(ures,2))<150 ...
+       & within_ranges(hvfl(ures,1),[-10,50]) ...
+       & within_ranges(exy(ures,1),[-200,200]));
+ures = spk{trlI}(unit,sts);
+ures = ures(within_ranges(phz(ures),[3,6]));
+ares =  ures(abs(exy(ures,1))<250 & within_ranges(hvfl(ures,1),[-10,50]));
+abins = linspace(-250,250,14);
+%abins = linspace(-20,100,6);
+abinc = mean([abins(1:end-1);abins(2:end)]);
+accg = zeros(201,5);
+for a = 1:numel(abinc)
+    adres = dres;
+    aares = ares;
+    %aares = aares(within_ranges(exy(aares,1),abins([a,a+1])));
+    adres = adres(within_ranges(exy(adres,1),abins([a,a+1])));
+    [mccg,t,pairs] = CCG([adres;aares],[ones(size(adres));2*ones(size(aares))],2,100,250,[1,2],normalization);
+    accg(:,a) = mccg(:,1,2);
+end
+
+%STOP THAT
+figure
+imagesc(t,abinc,accg')
+axis('xy')
+colormap('jet')
+
+normalization = 'count';
+ures = spk{trlI}(unit,sts);
+ures = ures(within_ranges(phz(ures),[0.5,2.5]));
+dres =  ures(abs(exy(ures,2))<200 & within_ranges(hvfl(ures,1),[-10,80]) ...
+       & within_ranges(exy(ures,1),[-200,200]));
+ures = spk{trlI}(unit,sts);
+ures = ures(within_ranges(phz(ures),[3,6]));
+ares =  ures(abs(exy(ures,2))<200 & within_ranges(hvfl(ures,1),[-10,80]));
+figure
+% $$$ hist2([ (NearestNeighbour(ares,dres,'both')-dres)./250,exy(dres,1)],linspace(-0.5,0.5,36),linspace(-200,200,14));
+[outl,xb,yb] = hist2([ (NearestNeighbour(ares,dres,'left')-dres)./250,exy(dres,1)],linspace(-0.8,0.8,44),linspace(-200,200,14));
+[outr     ] = hist2([ (NearestNeighbour(ares,dres,'right')-dres)./250,exy(dres,1)],linspace(-0.8,0.8,44),linspace(-200,200,14));
+imagesc(xb,yb,[outl+outr]');
+%imagesc(xb,yb,bsxfun(@rdivide,[outl+outr],sum([outl+outr],1))');
+axis('xy');
+colormap('cool');
+Lines(0,[],'k');
+
+% dec before ace +
+% dec after ace -
+
+
+figure
+hist2([ (NearestNeighbour(ares(2:2:end),ares(1:2:end-1))-ares(1:2:end-1))./250,exy(ares(1:2:end-1),1)],linspace(-0.2,0.2,18),linspace(-200,200,20))
+colormap('cool');
+Lines(0,[],'k');
+
+nu = abs((NearestNeighbour(ares(2:2:end),ares(1:2:end-1))-ares(1:2:end-1))./250)<0.1;
+
+
+figure,
+for hvfI = 1:bins.hvf.count
+    subplot(1, bins.hvf.count, hvfI);
+    ind = ures(within_ranges(hvfl(ures,1),bins.hvf.edges(hvfI:hvfI+1)) ...
+               & abs(exy(ures,2))<200 ...
+               & within_ranges(exy(ures,1),[-200,300]));
+scatter( hvfl(ind,2), exy(ind,1), 10, hvfl(ind,1),'Filled');
+hold('on');
+plot(0,median(exy(ind,1)),'*m');
+colormap('jet')
+colorbar();
+caxis([-20,60]);
+xlim([-200,200]);
+ylim([-200,300]);
+end
+
+figure,
+ind =  ures(abs(exy(ures,2))<200 ...
+       & within_ranges(exy(ures,1),[-200,300]));
+scatter( hvfl(ind,1), exy(ind,1), 10, hvfl(ind,1),'Filled');
+hold('on');
+plot(0,median(exy(ind,1)),'*m');
+colormap('jet')
+colorbar();
+caxis([-20,60]);
+xlim([-20,100]);
+ylim([-200,300]);
+
+
+%caxis([0,80]);
+
+
+18,42
+
+
+
 % $$$ 
 % $$$ figure,
 % $$$ ind = mxa<10;

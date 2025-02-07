@@ -10,7 +10,7 @@ function mxyz = rotate_point_around_vector(xyz,varargin)
 [markers,angle,refMarkers] = DefaultArgs(varargin,{'hbx',45,{'hbx','hrx'}},1);
 
 nind = nniz(xyz);
-mxyz = xyz(:,'hcom',:)
+mxyz = xyz(:,'hcom',:);
 xyz_t = sq(xyz(nind,markers,:)-mxyz);
 
 xyz_hb = bsxfun(@minus,xyz(:,refMarkers,:),xyz(:,'hcom',:));

@@ -47,8 +47,8 @@ nvec =  multiprod([cos(theta),-sin(theta);sin(theta),cos(theta)],nvec,[1,2],[2,3
 
 % COMPUTE hcom projection onto head reference
 uvec = circshift(bcom,-1)-circshift(bcom,1);
-fet.data(:,1) = dot(uvec,nvec(:,1,:),3).*xyz.sampleRate/10;
-fet.data(:,2) = dot(uvec,nvec(:,2,:),3).*xyz.sampleRate/10;
+fet.data(:,1) = dot(uvec,nvec(:,1,:),3).*(xyz.sampleRate/10)*0.5;
+fet.data(:,2) = dot(uvec,nvec(:,2,:),3).*(xyz.sampleRate/10)*0.5;
 
 % DIAGNOSTIC figure
 % $$$ figure,

@@ -382,10 +382,17 @@ end
 
 if sum(~cellfun(@isempty,...
                 regexp(xyz.model.ml,...
-                       '(nose)')))<1,
+                       '(^nose$)')))<1,
 
     % GENERATE orthogonal basis, origin: head's center of mass
-    nz = -cross(xyz(:,'head_back',:)-xyz(:,'hcom',:),xyz(:,'head_left',:)-xyz(:,'hcom',:));
+    hmarker = 'head_left';
+    hsign = @(x) x;
+    if ~xyz.model.gmi(hmarker);
+        hmarker = 'head_right';
+        hsign = @uminus;
+    end
+
+    nz = hsign(cross(xyz(:,'head_back',:)-xyz(:,'hcom',:),xyz(:,hmarker,:)-xyz(:,'hcom',:)));
     nz = bsxfun(@rdivide,nz,sqrt(sum((nz).^2,3))); 
     ny = cross(nz,xyz(:,'head_back',:)-xyz(:,'hcom',:));
     ny = bsxfun(@rdivide,ny,sqrt(sum((ny).^2,3)));

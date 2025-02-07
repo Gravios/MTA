@@ -1,92 +1,94 @@
 
-[hfig,fig,fax,sax] = set_figure_layout(figure(666003),'A4','portrait',[],1.5,1.5,0.1,0.1);
 
+%%%<<< LOADDATA -----------------------------------------------------------------
+configure_default_args();
+EgoProCode2D_load_data();
+EgoProCode2D_f2_data_egoHvfPhz();
 
 exampleUnit.trialIndex = 20;
 exampleUnit.close.Xlims = [-200,400];
 exampleUnit.close.Ylims = [-400,200];
 exampleUnit.id = 21;
-exampleUnit.maxRate = 16;
 exampleUnit.index = find(unitsEgo{exampleUnit.trialIndex}==exampleUnit.id);
 exampleUnit.trajectoryTimeSeries = [274*250]:[278.5*250];
 uids = unitsEgoCA1;
-globalXOffset = 0;
-globalYOffset = 0;
-
-
-
 exampleUnit.maxRate = 20;
+%%%>>> -------------------------------------------------------------------------
 
 
+%%%<<< SETUP FIGURE -------------------------------------------------------------
 
-globalXOffset = -0.8;
-globalYOffset = 0;
+% CONFIG 
+hfig = figure(666003);
+clf(hfig);
+figureFormat      = 'A4';
+figureOrientation = 'portrait';
+figureUnits       = 'centimeters';
+subplotHeight     = 1.4;%cm
+subplotWidth      = 1.4;%cm
+subplotPadVert    = 0.1;%cm
+subplotPadHorz    = 0.1;%cm
+% SETUP 
+setup_figure(hfig,                  ... 
+             figureFormat,          ... 
+             figureOrientation,     ... 
+             figureUnits,           ...
+             subplotWidth,          ...
+             subplotHeight,         ...
+             subplotPadHorz,        ...
+             subplotPadVert         ...
+             );
 
-for phzInd = 1:phzBin.count
-    for hvfInd = 1:hvfBin.count-1
-        
-        %%%<<< PLOT egoField (phz x hvf)
-        % ADJUST subplot coordinates
-        [yind, yOffSet, xind, xOffSet] = deal(phzBin.count-phzInd+1, phzInd/3-1.5, hvfInd+1, 0);        
-        % CREATE subplot axes
-        sax(end+1) = axes('Units','centimeters',                                ...
-                          'Position',[fig.page.xpos(xind)+xOffSet+globalXOffset,...
-                                      fig.page.ypos(yind)+yOffSet+globalYOffset,...
-                                      fig.subplot.width,                        ...
-                                      fig.subplot.height*1.2],                      ...
-                          'FontSize', 8,                                        ...
-                          'LineWidth',1);
-        hold(sax(end),'on');
-        shading(sax(end),'flat');
-        set(pcolor(egoHvfPhzRmaps.xpos-diff(egoHvfPhzRmaps.xpos(1:2))/2,...
-                   egoHvfPhzRmaps.ypos-diff(egoHvfPhzRmaps.ypos(1:2))/2,...
-                   fliplr(rot90(egoHvfPhzRmaps.rmap{exampleUnit.trialIndex}(:,:,exampleUnit.index,phzInd,hvfInd+1)',-1)).*egoHvfPhzRmaps.mask),'EdgeColor','none');
-        axis(sax(end),'xy');
-        colormap(sax(end),'jet');
-        caxis(sax(end),[0,exampleUnit.maxRate]);
+%%%>>> -------------------------------------------------------------------------
+
+
+%%%<<< PLOT egoField (phz x hvf) -----------------------------------------------------------
+gxo = -0.8;
+gyo = 0;
+pc = bins.phz.count;
+hc = bins.hvf.count-1;
+ti = exampleUnit.trialIndex;
+ui = exampleUnit.index;
+mask = egoHvfPhzRmaps.mask;
+for phzI = 1 : pc
+    for hvfI = 1 : hc
+        % SUBPLOT  -   New Axes   -          y          yo       x  xo  gyo  gxo   ws    hs
+        sax = setup_axes(hfig, pc-phzI+1, phzI/3-1.5, hvfI+1,  0,  gyo, gxo,  1, 1.2);
+        shading(sax,'flat');
+        set(pcolor(egoHvfPhzRmaps.xpos-diff(egoHvfPhzRmaps.xpos(1:2))/2,                 ...
+                   egoHvfPhzRmaps.ypos-diff(egoHvfPhzRmaps.ypos(1:2))/2,                 ...
+                   fliplr(rot90(egoHvfPhzRmaps.rmap{ti}(:,:,ui,phzI,hvfI+1)',-1)).*mask),...
+            'EdgeColor','none');
+        axis(sax,'xy');
+        colormap(sax,'jet');
+        caxis(sax, [0, exampleUnit.maxRate]);
         
         % FORMAT subplot
-        sax(end).XTickLabel =[];
-        sax(end).YTickLabel =[];
-        xlim(sax(end),[-250,250]);
-        ylim(sax(end),[-300,300]);
-        daspect(sax(end),[1,1,1]);
-        box(sax(end),'on');
+        sax.XTickLabel =[];
+        sax.YTickLabel =[];
+        xlim(sax,[-250,250]);
+        ylim(sax,[-300,300]);
+        daspect(sax,[1,1,1]);
+        box(sax,'on');
         Lines([],0,'w');
         Lines(0,[],'w');
-        % ANNOTATE 
-% $$$         subject = struct(rat);
-% $$$         subject = update_subject_patch(subject, 'head',...
-% $$$                                        [], false,...
-% $$$                                        hvfBin.edges,...
-% $$$                                        hvfBin.centers);
-% $$$         subject = update_subject_patch(subject, 'body',...
-% $$$                                        hvfBin.count+1-hvfInd,  true,...
-% $$$                                        hvfBin.edges,...
-% $$$                                        hvfBin.centers);
-% $$$         patch(subject.body.patch.vert{:},   [0.75,0.75,0.75]);
-% $$$         patch(subject.head.patch.vert{:},   [0.75,0.75,0.75]);
-% $$$         patch(subject.body.overlay.vert{:},[0.75,0.50,0.50],'FaceAlpha',0.3);
-% $$$         line(subject.head.midline.vert{:}, 'Color', subject.head.midline.color);
-% $$$         line(subject.body.midline.vert{:}, 'Color', subject.body.midline.color);
-        axes(fax);
-        rectangle('Position',sax(end).Position, ...
-                  'EdgeColor',phzBin.color(phzInd,:), ...
+        axes(hfig.UserData.fax);
+        rectangle('Position',sax.Position, ...
+                  'EdgeColor',bins.phz.color(phzI,:), ...
                   'FaceColor','None',...
                   'LineWidth',1);
         if phzInd==3,
-            line([sax(end).Position(1),sum(sax(end).Position([1,3]))],...
-                  sum(sax(end).Position([2,4])).*[1,1]+0.1,...
+            line([sax.Position(1),sum(sax.Position([1,3]))],...
+                  sum(sax.Position([2,4])).*[1,1]+0.1,...
                  'LineWidth',2,...
-                 'Color',hvfBin.color(hvfInd+1,:));
-            title(sax(end),{hvfBin.label{hvfInd+1},' '});
+                 'Color',bins.hvf.color( hvfI, :));
+            title(sax,{bins.hvf.label{ hvfI+1 },' '});
         end
     end
 end
 %%%>>>    
 
-% THETA Phase Vertical
-%%%<<<
+%%%<<< (PREV: ANNOTATION) THETA Phase Vertical -------------------------------------------
 [yind, yOffSet, xind, xOffSet] = deal(3, phzInd/3-1.5, 1, 0.6);
 subplotWidth = 0.8;
 subplotHeight = fig.subplot.height *1.2 * 3 + fig.subplot.verticalPadding * 2
@@ -123,7 +125,7 @@ sax(end).YAxis.Color = 'k';
 sax(end).YTick =[];
 sax(end).Color = 'none';
 %%%>>>
-
+% ----------------------------------------------------------------------------------------
 
 
 
@@ -322,7 +324,7 @@ for t = [1:3,5:8,11],
          ...   & dca{t}.hvfl(:,1)>-2                                             ...
          ...  & abs(dca{t}.hvfl(:,2))>5                                        ...
             & dca{t}.ucnt>=2 & dca{t}.ucnt<8                                 ...
-            & sqrt(sum(dca{t}.xyz(:,'hcom',[1,2]).^2,3))<325;
+            & sqrt(sum(dca{t}.xyz(:,'hcom',[1,2]).^2,3))<500;
     decoded.fwd = cat(1,decoded.fwd,dca{t}.esax(mind,1));
     decoded.lat = cat(1,decoded.lat,dca{t}.esax(mind,2));%+20*double(t>4));
     decoded.hvf = cat(1,decoded.hvf,dca{t}.hvfl(mind,1));
@@ -354,27 +356,29 @@ colormap('jet');
 Lines([],0,'w');
 Lines(0,[],'w');
 
-
-mBinHvl.edges = linspace(-40,40,4);
-mBinHvl.centers = mean([mBinHvl.edges(1:end-1);mBinHvl.edges(2:end)])
+nb =4;
+mBinHvl.edges = [-40,-5,5,40];%linspace(-40,40,nb);
+mBinHvl.centers = mean([mBinHvl.edges(1:end-1);mBinHvl.edges(2:end)]);
 mBinHvl.count = numel(mBinHvl.edges)-1;
-mBinHba.edges = linspace(-1.2,1.2,4);
-mBinHba.centers = mean([mBinHba.edges(1:end-1);mBinHba.edges(2:end)])
+mBinHba.edges = [-1.2, -0.2, 0.2, 1.2];%linspace(-1.2,1.2,nb);
+mBinHba.centers = mean([mBinHba.edges(1:end-1);mBinHba.edges(2:end)]);
 mBinHba.count = numel(mBinHba.edges)-1;
 mout = zeros([mBinHba.count,mBinHvl.count]);
+cout = zeros([mBinHba.count,mBinHvl.count]);
 for a = 1:mBinHba.count
     for v = 1:mBinHvl.count
         ind =   WithinRanges(decoded.phz,phzBin.edges([3,4])) ...
-              & WithinRanges(decoded.hvl,mBinHvl.edges([v,v+1])) ...
+              & WithinRanges(-decoded.hvl,mBinHvl.edges([v,v+1])) ...
               & WithinRanges(decoded.hba,mBinHba.edges([a,a+1])) ...              
               & randn(size(decoded.hba))>0;
-        mout(a,v) = mean(decoded.lat(ind),'omitnan');
+        mout(a,v) = mean(decoded.clat(ind),'omitnan');
+        cout(a,v) = sum(ind);
     end
 end
-
 figure,imagesc(mBinHba.centers,mBinHvl.centers,mout')
-caxis([-60,60])
+caxis([-50,50])
 colormap('jet');
+axis('xy');
 
 
 
@@ -699,3 +703,25 @@ for p = 1:numel(pinds)
 end
                  
 
+#!/bin/bash
+
+# Check if correct number of arguments are provided
+if [ "$#" -ne 2 ]; then
+    echo "Usage: $0 input_file html_tag"
+    exit 1
+fi
+
+# Input file and tag
+input_file="$1"
+html_tag="$2"
+
+# Output file with .txt extension
+output_file="${input_file%.*}.txt"
+
+# Use grep to extract content between specified tags and sed to clean up
+grep -oP "(?<=<$html_tag>).*?(?=</$html_tag>)" "$input_file" | sed 's/^[[:space:]]*//;s/[[:space:]]*$//' > "$output_file"
+
+# Add newline after each entry
+sed -i 's/$/\n/' "$output_file"
+
+echo "Contents extracted to $output_file"

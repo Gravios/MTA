@@ -36,6 +36,9 @@ elseif all(~cellfun(@isempty,regexpi(dataLoggers,{'oephys','vicon'})))
     Session = sync_openephys_vicon(Session,TTLValue,xyzSampleRate);
     
 elseif all(~cellfun(@isempty,regexpi(dataLoggers,{'vicon'})))
+    Session = sync_vicon(Session,xyzSampleRate);
+
+elseif all(~cellfun(@isempty,regexpi(dataLoggers,{'vicon'})))
     Session = loadVicon(Session,xyzSampleRate);
 
 elseif all(~cellfun(@isempty,regexpi(dataLoggers,{'optitrack'})))

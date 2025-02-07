@@ -2,20 +2,18 @@ function Stc = label_bhv_reduced(Stc,Trial,varargin);
 
 
 % DEFARGS -----------------------------------------------------------------------------------------
-defargs = struct('stcMode',                     'msnn_ppsvd',                                  ...
-                 'tag',                         '_raux'                                        ...
-);
-[stcMode,tag] = DefaultArgs(varargin,defargs,'--struct');
+defargs = struct('tag','_raux');
+[tag] = DefaultArgs(varargin,defargs,'--struct');
 % -------------------------------------------------------------------------------------------------
 
-if isempty(Stc),
-    Stc = Trial.load('stc',stcMode);
+if ischar(Stc),
+    Stc = Trial.load('stc',Stc);
 end
 
-Stc = reduce_stc_to_loc(Stc);
+Stc = reduce_stc_to_loc(Stc, Trial);
 
 % LABEL high and low versions of locomotion and pause
-Stc = label_bhv_reduced_aux(Stc,Trial);
+Stc = label_bhv_reduced_aux(Stc, Trial);
 
 % SET modified name for the state collection mode
 Stc.updateMode([Stc.mode,tag]);

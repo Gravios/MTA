@@ -77,7 +77,7 @@ for el=GoodElectrodes
     uClu = setdiff(unique(Clu),[0 1]);
     nClu = length(uClu);
     
-    if nspk>0
+    if numel(Res)>0
         %noise - comes from first 10000 spikes
         %     nNoise = sum(Clu(1:10000)==1);
         %     SpkNoise = LoadSpk([FileBase '.spk.' num2str(el)],length(Par.ElecGp{el}),SpkSamples,10000);
@@ -112,7 +112,7 @@ for el=GoodElectrodes
         if nspk>0 % if there was a .spk file 
             SampleSize = 1000;
             myClu=find(Clu==uClu(cnum));
-            
+            sprintf('Electrode: %d, Cluster: %d',el,cnum);
             if length(myClu)>0
                 SampleSize = min(length(myClu),SampleSize);
                 RndSample  = sort(myClu(randsample(length(myClu),SampleSize)));

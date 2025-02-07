@@ -86,6 +86,7 @@ else,
             % REMOVE spikes outside of distance threshold
             res = spk(unit);
             res(res>size(drz,1))=[];
+            res(drz(res,uind)==0)=[];            
             res (abs(ddz(res, uind))>=distThresh) = [];            
             % SKIP fitting parameters if too few spikes
             if numel(res)<10,

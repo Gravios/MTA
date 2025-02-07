@@ -38,8 +38,8 @@ end
 % LOAD pitches 
 % MAP pitches to reference trial
 pch = fet_HB_pitch(Trial);
-map_to_reference_session(pch,Trial,referenceTrial);    
-filter(pch,'ButFilter',3,1.5,'low');
+map_to_reference_session(pch,Trial,referenceTrial);
+filter( pch, 'ButFilter', 3, 1.5, 'low');
 
 
 % SPLIT locomotion (loc.x) state into high and low

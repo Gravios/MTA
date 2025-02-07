@@ -101,23 +101,23 @@ nbh = cat(2,nx,ny,nz);
 % $$$ nb(:,4,4) = 1;
 % $$$ nb = permute(nb,[1,3,2]);
 
-
-figure,
-subplot(211);
-hold('on');
-plot(xts,newx(:,2))
-plot(xts,newy(:,1))
+% $$$ 
+% $$$ figure,
+% $$$ subplot(211);
+% $$$ hold('on');
 % $$$ plot(xts,newx(:,2))
-% $$$ plot(xts,newx(:,3))
-colormap('jet');
-subplot(212); 
-    hold('on');
-    plotSTC(stc,1,'text',{'theta','sit','groom','pause','turn','walk','rear'},'kymcgbr');
-    ylim([1,9]);
-    plot([1:size(vxy)]./vxy.sampleRate,vxy(:,2)/5+1,'r');
-    plot([1:size(vxy)]./vxy.sampleRate,vxy(:,1)/5+1,'g');
-    xlabel('Time (s)');
-linkaxes(findobj(gcf(),'Type','Axes'),'x');
+% $$$ plot(xts,newy(:,1))
+% $$$ % $$$ plot(xts,newx(:,2))
+% $$$ % $$$ plot(xts,newx(:,3))
+% $$$ colormap('jet');
+% $$$ subplot(212); 
+% $$$     hold('on');
+% $$$     plotSTC(stc,1,'text',{'theta','sit','groom','pause','turn','walk','rear'},'kymcgbr');
+% $$$     ylim([1,9]);
+% $$$     plot([1:size(vxy)]./vxy.sampleRate,vxy(:,2)/5+1,'r');
+% $$$     plot([1:size(vxy)]./vxy.sampleRate,vxy(:,1)/5+1,'g');
+% $$$     xlabel('Time (s)');
+% $$$ linkaxes(findobj(gcf(),'Type','Axes'),'x');
 
 
 

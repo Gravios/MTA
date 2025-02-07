@@ -36,6 +36,9 @@ global MTA_PATH
 global MTA_DATA_PATH;
 global MTA_PROJECT_PATH % use this in the future to set root dir
 global MTA_FIGURES_PATH
+global DELETE_CURRENT_AXES
+
+DELETE_CURRENT_AXES = false;
 
 MTA_FIGURES_PATH = getenv('MTA_FIGURES_PATH'); 
 

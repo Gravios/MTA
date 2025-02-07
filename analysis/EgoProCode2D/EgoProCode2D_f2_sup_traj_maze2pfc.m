@@ -10,7 +10,6 @@ lat = 2;
 
 [scaleW, scaleH] = deal(1,1);
 for phzInd = 1:bins.phz.count
-
     [yind, yoff, xind, xoff] = deal((4-phzInd)+3, 0, 12, -1.2);
     sax(end+1) = setup_axes(fig,yind, yoff, xind, xoff, gyoff, gxoff, scaleW, scaleH);
     
@@ -98,6 +97,46 @@ exampleUnit.trajectoryTimeSeries = [274*250]:[278.5*250];
 
 
 
+% THETA Phase Vertical
+%%%<<<
+[yind, yOffSet, xind, xOffSet] = deal(6, 0, 1, 0.6);
+subplotWidth = 0.8;
+subplotHeight = fig.subplot.height * 3 + fig.subplot.verticalPadding * 2
+sax(end+1) = axes('Units','centimeters',                                ...
+                  'Position',[fig.page.xpos(xind)+xOffSet+globalXOffset,...
+                              fig.page.ypos(yind)+yOffSet+globalYOffset,...
+                              subplotWidth,                             ...
+                              subplotHeight],                           ...
+                  'FontSize', 8,                                        ...
+                  'LineWidth',1);
+% SUBPLOT <- theta cycle (color=partions)
+hold(sax(end),'on');
+plot(sax(end),-cos(linspace(0,2*pi)),linspace(0,1),'k','LineWidth',2);
+plims = [0.5,              2.26106176905986];
+plot(sax(end),...
+     -cos(linspace(plims(1),plims(2))),...
+     linspace(plims(1)/(2*pi),plims(2)/(2*pi)), 'Color',phzBin.color(1,:), 'LineWidth',2);
+plims = [2.26106176905986, 4.02212353811972];
+plot(sax(end),...
+     -cos(linspace(plims(1),plims(2))),...
+     linspace(plims(1)/(2*pi),plims(2)/(2*pi)), 'Color',phzBin.color(2,:), 'LineWidth',2);
+plims = [4.02212353811972, 5.78318530717959];
+plot(sax(end),...
+     -cos(linspace(plims(1),plims(2))),...
+     linspace(plims(1)/(2*pi),plims(2)/(2*pi)), 'Color',phzBin.color(3,:),'LineWidth',2);
+% FORMAT subplot
+ylim([0,1]);
+text(0.5,0.05,'0','Rotation',90,'FontSize',8);
+text(-0.5,0.5,'\pi','Rotation',90,'FontSize',8);
+text(0.5,0.95,'2\pi','Rotation',90,'FontSize',8);
+ylabel(sax(end),'Pause');
+sax(end).XAxis.Visible = 'off';
+sax(end).YAxis.Color = 'k';
+sax(end).YTick =[];
+sax(end).Color = 'none';
+%%%>>>
+
+
 exampleUnit.trialIndex = 20;
 exampleUnit.close.Xlims = [-200,400];
 exampleUnit.close.Ylims = [-400,200];
@@ -148,6 +187,7 @@ exampleUnit.trajectoryTimeSeries = [274*250]:[278.5*250];
         end
     end
 %%%>>>
+
 
 
 

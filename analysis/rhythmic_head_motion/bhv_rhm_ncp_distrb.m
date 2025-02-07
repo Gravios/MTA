@@ -217,6 +217,7 @@ for s = 1;
         yss = yss(ind,:,:,:);
         clear ind;
 
+%%%<<< COMPUTE mean psd
         vsc = [];
         vsp = [];        
         for i = edges,
@@ -239,7 +240,7 @@ for s = 1;
                 end
             end
         end
-
+%%%>>>
         
         %% RHM psd
         sax = subplot2(4,numel(mode),1,m);

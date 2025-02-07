@@ -1,47 +1,40 @@
-
-
-configure_default_args();
-EgoProCode2D_load_data(); 
-EgoProCode2D_f2_data_egoHba();
-EgoProCode2D_f2_data_egoHbaPhz();
+% EgoProCode2D_f2_data(); 
 
 
 
-
-
-
-
+%%%<<< ego pause/loc perm zscore CA1 --------------------------------------------
 figure();
 subplot(131);
 hold('on');
-plot(egoHbaPause.perm.ca1.zscore(:,3,2),egoHbaLoc.perm.ca1.zscore(:,3,2),'.');daspect(gca(),[1,1,1]);grid(gca(),'on');
+plot(egoHbaPause.perm.ca1.zscore(:,3,2),egoHbaLoc.perm.ca1.zscore(:,3,2),'.');
+daspect(gca(),[1,1,1]);grid(gca(),'on');
 circle(0,0,egoHba.perm.ca1.sig,'r-');
 title({'Permutation Test','HBA - Left Vs Right'});
 xlabel('z-score (pause)');
 ylabel('z-score (loc)');
 daspect([1,1,1]);
-
 subplot(132);
 hold('on');
-plot(egoHbaPause.perm.ca1.zscore(:,1,2),egoHbaLoc.perm.ca1.zscore(:,1,2),'.');daspect(gca(),[1,1,1]);grid(gca(),'on');
+plot(egoHbaPause.perm.ca1.zscore(:,1,2),egoHbaLoc.perm.ca1.zscore(:,1,2),'.');
+daspect(gca(),[1,1,1]);grid(gca(),'on');
 circle(0,0,egoHba.perm.ca1.sig,'r-');
 title({'Permutation Test','HBA - Right Vs Center'})
 xlabel('z-score (pause)');
 ylabel('z-score (loc)');
 daspect([1,1,1]);
-
 subplot(133);
 hold('on');
-plot(-egoHbaPause.perm.ca1.zscore(:,2,2),-egoHbaLoc.perm.ca1.zscore(:,2,2),'.');daspect(gca(),[1,1,1]);grid(gca(),'on');
+plot(-egoHbaPause.perm.ca1.zscore(:,2,2),-egoHbaLoc.perm.ca1.zscore(:,2,2),'.');
+daspect(gca(),[1,1,1]);grid(gca(),'on');
 circle(0,0,egoHba.perm.ca1.sig,'r-');
 linkax('xy');
 title({'Permutation Test','HBA - Left Vs Center'});
 xlabel('z-score (pause)');
 ylabel('z-score (loc)');
 daspect([1,1,1]);
-
-
-
+%--------------------------------------------------------------------------------
+%%%>>>
+%%%<<< ego pause/loc perm zscore meanPos CA1 ------------------------------------
 figpath = '/storage/share/Projects/EgoProCode2D/'
 figure();
 comp = 2;
@@ -49,25 +42,27 @@ dim = 1; dimlabel = 'forward'
 dim = 2; dimlabel = 'lateral'
 subplot(121);
 hold('on');
-plot(egoHbaPause.perm.ca1.zscore(:,comp,dim),egoHbaLoc.perm.ca1.zscore(:,comp,dim),'.');daspect(gca(),[1,1,1]);grid(gca(),'on');
+plot(egoHbaPause.perm.ca1.zscore(:,comp,dim),...
+       egoHbaLoc.perm.ca1.zscore(:,comp,dim),'.');
+daspect(gca(),[1,1,1]);grid(gca(),'on');
 circle(0,0,egoHba.perm.ca1.sig,'r-');
 title({'Permutation Test','HBA - Left Vs Right'});
 xlabel([dimlabel,' z-score (pause)']);
 ylabel([dimlabel,' z-score (loc)']);
 daspect([1,1,1]);
-
 subplot(122);
 hold('on');
-plot(egoHbaPause.control.meanPos(unitsEgoCA1,comp,dim),egoHbaLoc.control.meanPos(unitsEgoCA1,comp,dim),'.');daspect(gca(),[1,1,1]);grid(gca(),'on');
-%plot(egoHbaPause.perm.ca1.zscore(:,3,2),egoHbaLoc.perm.ca1.zscore(:,3,2),'.');
-%circle(0,0,egoHba.perm.ca1.sig,'r-');
+plot(egoHbaPause.control.meanPos(unitsEgoCA1,comp,dim),...
+       egoHbaLoc.control.meanPos(unitsEgoCA1,comp,dim),'.');...
+daspect(gca(),[1,1,1]);grid(gca(),'on');
 title({'Permutation Test','HBA - Left Vs Right'});
 xlabel([dimlabel,' displacement cm (pause)']);
 ylabel([dimlabel,' displacement cm (loc)']);
 daspect([1,1,1]);
 saveas(gcf,fullfile(figpath,['hba_permutation_',dimlabel,'_LvR.pdf']),'pdf')
-
-
+%--------------------------------------------------------------------------------
+%%%>>>
+%%%<<< ego pause/loc perm meanPos plot CA1 --------------------------------------
 figure,
 complabels = {'left','center','right'};
 for comp = 1:3
@@ -78,9 +73,10 @@ subplot(1,3,comp)
 end
 dimlabel = 'fwdVlat_loc';
 saveas(gcf,fullfile(figpath,['hba_permutation_',dimlabel,'_LvR.pdf']),'pdf')
+%--------------------------------------------------------------------------------
+%%%>>>
 
-
-
+%%%<<< stuff --------------------------------------------------------------------
 figure();
 subplot(121);
 hold('on');
@@ -366,7 +362,10 @@ end
 % $$$ 
 
 %%% new method
+%--------------------------------------------------------------------------------
+%%%>>>
 
+%%%<<< more stuff ---------------------------------------------------------------
 figure();
 hold('on');
 for phzInd = 1:phzBin.count
@@ -838,3 +837,6 @@ hdist = sqrt(egoHbaPhz.control.meanPos(unitsEgoCA1, phzInd, :, lat).^2 ...
 [h,p] = ttest(hdist(:,2),hdist(:,3))
 
 1-(1-0.05)^(1/numel(unitsEgoCA1))
+%%%>>>---------------------------------------------------------------------------
+
+

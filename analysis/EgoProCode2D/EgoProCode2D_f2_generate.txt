@@ -1,0 +1,8 @@
+
+% Single theta cycle. Each color (magenta, cyan,
+% purple) represents the theta phase domain (ascending, trough, descending)
+% to which the data was restricted for the computation of egocentric rate
+% maps. 
+
+% The firing rate of an example neuron conditioned on allo-centric position
+% (room coordinates), and periods of attentive-prone behavior.

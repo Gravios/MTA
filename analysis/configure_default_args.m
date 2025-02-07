@@ -1,6 +1,9 @@
 % configure_default_args
 clearvars('-GLOBAL','AP');
-global AP
+global AP;
+global DELETE_CURRENT_AXES;
+
+DELETE_CURRENT_AXES = true;
 
 % GENERAL ------------------------------------------------------------------------------------------
 sessionListName = 'MjgER2016';

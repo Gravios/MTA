@@ -35,6 +35,7 @@ fet = MTADfet(Trial.spath,...
 % FILTER xyz
 xyz = preproc_xyz(Trial,procOpts);
 xyz.data(~nniz(xyz),:,:) = 0;
+xyz.filter('ButFilter',4,2,'low');
 rb = xyz.model.rb(markers);
 hcom = xyz.com(rb);
 
@@ -75,8 +76,13 @@ if theta ~= 0,
 end
 
 
+xyz = preproc_xyz(Trial,procOpts);
+xyz.data(~nniz(xyz),:,:) = 0;
+xyz.filter('ButFilter',4,30,'low');
+hcom = xyz.com(rb);
+
 % COMPUTE hcom projection onto head reference
-uvec = circshift(hcom,-10)-circshift(hcom,10);
+uvec = circshift(hcom,-3)-circshift(hcom,3);
 fet.data(:,1) = dot(uvec,nx,3);
 fet.data(:,2) = dot(uvec,ny,3);
 fet.data(:,3) = dot(uvec,nz,3);

@@ -1,17 +1,18 @@
 % EgoProCode2D_f1_load_ratemaps.m
-
+% EgoProCode2D_load_data.m
 
 
 pft = cf(@(t,u)  pfs_2d_theta(t,u),  Trials, units);
 placeFieldsNoRear = cf(@(t,u)  pfs_2d_theta(t,u,'theta-groom-sit-rear'),  Trials, units);
-
+rmapNoRear = placeFieldsNoRear;
 
 overwrite = false;
 %%%<<< (pfe) ego ratemap
-pfe = cf(@(t,u,x,s,p)                                          ... Egocentric ratemap .
-         compute_ego_ratemap(t,u,x,s,p,'overwrite',overwrite), ...
-             Trials,                                           ... MTATrial
-             units,                                            ... Unit subset, placefields away from the maze walls
+pfe = cf(@(t,u,x,s,p)                        ... Egocentric ratemaps
+         compute_ego_ratemap                 ... func name
+         (t,u,x,s,p,'overwrite',overwrite),  ... args
+             Trials,                         ... MTATrial
+             units,                          ... Unit subset, placefields proximal to maze center
              xyz,                                              ... MTADxyz object, head position
              spk,                                              ... MTASpk object, spike time and id collection 
              pft                                               ... MTAApfs object, theta state placefields 
@@ -21,6 +22,20 @@ pfe = cf(@(t,u,x,s,p)                                          ... Egocentric ra
 tind = [1:30];
 %%%<<< (pfet) egothp ratemap
 pfet = cf(@(t,u,x,s,p)                      ... Egocentric ratemap | theta phase.
+         compute_egothp_ratemap(t,u,x,s,p,'overwrite',overwrite),...
+             Trials(tind),                        ... MTATrial
+             units(tind),                         ... Unit subset, placefields away from the maze walls
+             xyz(tind),                           ... MTADxyz object, head position
+             spk(tind),                           ... MTASpk object, spike time and id collection 
+             pft(tind)                            ... MTAApfs object, theta state placefields 
+);
+%%%>>>
+
+
+
+tind = [1:30];
+%%%<<< (pfet) egothp ratemap
+pfetf = cf(@(t,u,x,s,p)                      ... Egocentric ratemap | theta phase.
          compute_egothp_ratemap(t,u,x,s,p,'overwrite',overwrite),...
              Trials(tind),                        ... MTATrial
              units(tind),                         ... Unit subset, placefields away from the maze walls

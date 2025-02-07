@@ -230,15 +230,12 @@ dc.hvang.data = dc.hvang.data(dc.ind);
 
 
 % COMPUTE corrected hbang
-dc.hbang = filter(copy(xyz),'ButFilter',3,14,'low');    
-xycoor = cat(2,...
-             dc.hbang(:,'spine_upper',[1,2])-dc.hbang(:,'bcom',[1,2]),...
-             dc.hbang(:,'nose',[1,2])-dc.hbang(:,'hcom',[1,2]));
-dc.hbang.data = cart2pol(xycoor(:,:,1),xycoor(:,:,2));
-dc.hbang.data = circ_dist(dc.hbang.data(:,2),dc.hbang.data(:,1));
+% Negative: Left     Positive: Right
+dc.hbang = fet_hba(Trial,'xyz',filter(copy(xyz),'ButFilter',3,14,'low'));
+dc.hbavl = circ_dist(circshift(dc.hbang.data,-10),...
+                     circshift(dc.hbang.data,+10));
 dc.hbang.data = dc.hbang.data(dc.ind);
-% hbang correction set in metadata
-dc.hbang.data = dc.hbang.data + Trial.meta.correction.headBody;
+
 
 
 % GENERATE state collection matrix    

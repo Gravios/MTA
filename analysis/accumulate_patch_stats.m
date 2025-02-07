@@ -2,6 +2,22 @@
 % DEPS MjgER2016_figure_BhvPlacefields.m
 
 % ACCUMULATE place fields
+% COMPUTE center point of all good patches
+% ACCUMULATE independent patches 
+% MERGE close patches
+% RECOMPUTE patch distance after merger
+% MERGE close patches again
+% RECOMPUTE patch distance after merger
+% SELECT final patches
+%% SECOND attempt
+% get patch max firing rate across states {'rear','high','low'}
+% compute_permuted_patch_ratemap
+% COMPUTE the patch bhv rate maps
+% COMPUTE inter placecell bhv ratemap correlations
+%         only compare units on separate electrodes
+cf(@(T) T.load('nq'),Trials);
+
+% ACCUMULATE place fields
 t = 20;
 [pfstats] = PlaceFieldStats(Trials{t},pfsr{t}{1},20,2,false,true);
 for t = 1:30,
@@ -460,6 +476,8 @@ pfssMpSub = cat(3,pfssMp{:});
 pfssMpSub = pfssMpSub(unitSubset,:,:);
 
 
+%figure,hist(nonzeros(patchArea)/100,50)
+figure,hist(sqrt(nonzeros(patchArea)),50)
 
 %% Permutations 
 
@@ -529,7 +547,7 @@ for uid = 1:numUnits
 end
 
 % Hmm this is where I need to get the code for the intra patch angle corr... ah copy the p1 p2 part
-% okay got it
+
 
 rmapAngle = zeros([numUnits,6,6]);
 rmapDist = zeros([numUnits,6,6]);;
@@ -550,7 +568,7 @@ end
 
 rangle = abs(reshape(rmapAngle(unitSubset,:,:),[],1));
 pd = reshape(patchDistF(unitSubset,:,:),[],1)/10;
-nind = nniz(pd) & nniz(rangle) & nniz(rcorr) & pd>10;
+% $$$ nind = nniz(pd) & nniz(rangle) & nniz(rcorr) & pd>10;
 % $$$ figure,plot(pd(nind),rcorr(nind),'.');
 % $$$ figure,plot(pd(nind),rangle(nind),'.');
 % $$$ figure,plot(rcorr(nind),rangle(nind),'.');
@@ -715,10 +733,13 @@ pcolor(reshape(rmapPCB,[28,28])');axis('xy');
 % $$$ imagesc(reshape(rmapP(:,uid,1),[28,28])');
 % $$$ axis('xy');
 % $$$ 
-% $$$ figure,
-% $$$ plot(rmapIPDist/10,rmapIPCorr,'.')
-% $$$ xlabel('Inter Patch Distance (cm)')
-% $$$ ylabel('Bhv Ratemap Correlation');
+figure,
+plot(rmapIPDist/10,rmapIPCorr,'.')
+xlabel('Inter Patch Distance (cm)')
+ylabel('Bhv Ratemap Correlation');
+
+figure,hist(rmapIPCorr,20)
+
 % $$$ 
 % $$$ patchCntF = sum(~isnan(patchCntrF(:,:,1)),2);
 % $$$ out = histcounts(patchCntF,0.5:5.5);

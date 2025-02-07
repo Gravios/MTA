@@ -5,6 +5,7 @@ partsPath = fullfile(fullfile(MTA_PROJECT_PATH,'analysis','EgoProCode2D','EgoPro
 overwrite = false;
 %EgoProCode2D_f1_parts( overwrite );
 
+% xmpl,plcfld, egofld allofild
 
 % $$$ document = parse_inkscape_layout(fullfile(MTA_PATH,'analysis','EgoProCode2D',['EgoProCode2D_figure1.layout']),'EgoProCode2D_f1');
 % $$$ document = parse_inkscape_layout(fullfile(MTA_PATH,'analysis','EgoProCode2D',['EgoProCode2D_figure1_alt1.layout']),'EgoProCode2D_f1');

@@ -1,5 +1,5 @@
 
-egoHvfPhzRmaps = load(fullfile(Trials{1}.path.project,'analysis','EgoProCode2D_compute_egoratemaps_conditioned_on_hvf_and_phz_DATA.mat'));
+%egoHvfPhzRmaps = load(fullfile(Trials{1}.path.project,'analysis','EgoProCode2D_compute_egoratemaps_conditioned_on_hvf_and_phz_DATA.mat'));
 egoHvfPhzRmaps = load(fullfile(Trials{1}.path.project,'analysis','EgoProCode2D_compute_egoratemaps_conditioned_on_hvf_and_phz_DATA.mat'));
 
 

@@ -397,7 +397,8 @@ classdef MTAApfs < hgsetget %< MTAAnalysis
 % LOAD Units into spk object;
                 if isempty(spk)
                     spk = Session.spk.copy;
-                    spk.create(Session,xyz.sampleRate,pfsState,units,spkMode);
+                    spk.create(Session, xyz.sampleRate, pfsState, ...
+                               units, spkMode);
                 end
             else
                 spk = Session.spk.copy;
@@ -431,13 +432,15 @@ classdef MTAApfs < hgsetget %< MTAAnalysis
                     
                     % SUPER annoying fix for probe shifts
                     if ~isempty(spk.per) && any(spk.perInd(unit,:))
+                        % Get the periods
                         spkPer = spk.per.copy();
                         spkPer.data(~spk.perInd(unit,:),:) = [];
-                        resync(spkPer,Session);
-                        resample(spkPer,xyz);
-                        
-                        sstres = SelectPeriods(res,get(pfsState&spkPer,'data'),'d',1,1);
-                        cast(spkPer,'TimeSeries');
+                        resync  (spkPer, Session); 
+                        resample(spkPer, xyz    ); % match spkPer to xyz timeframe.
+
+                        psPer = pfsState&spkPer;
+                        sstres = SelectPeriods(res,psPer.data,'d',1,1);
+                        cast(spkPer, 'TimeSeries');
                         spkPer = logical(SelectPeriods(spkPer.data,pfsState,'c',1,1));
                         sstpos = asstpos(spkPer,:);
                     else

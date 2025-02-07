@@ -62,7 +62,6 @@ end
 % LOAD xyz
 % ADD lowpass filtered marker of the head's center of mass
 xyz = Session.load('xyz');                       % MTADxyz 
-xyz.resample(40);
 rb = Session.xyz.model.rb(rigidBodyMarkers);     % MTAModel
 hcom = xyz.com(rb);                              
 xyz.addMarker('fhcom',[0.5,1,0.5],[],ButFilter(hcom,3,[2]./(Session.xyz.sampleRate/2),'low'));
@@ -70,11 +69,15 @@ xyz.addMarker('hcom', [0.5,1,0.5],{{'head_back','hcom',[0,0,1]}},hcom);
 
 
 
-
+hmarker = 'head_left';
+if ~xyz.model.gmi(hmarker);
+    hmarker = 'head_right';
+    hsign = @uminus;
+end
 
 
 % GENERATE orthogonal basis, origin: head's center of mass
-nz = -cross(xyz(:,'head_back',:)-hcom,xyz(:,'head_left',:)-hcom);
+nz = hsign(cross(xyz(:,'head_back',:)-hcom,xyz(:,hmarker,:)-hcom));
 nz = bsxfun(@rdivide,nz,sqrt(sum((nz).^2,3))); 
 nm = nz.*20+hcom;
 xyz.addMarker('htx',  [0.5,1,0.5],[],nm);
@@ -92,26 +95,30 @@ nm = nx.*20+hcom;
 xyz.addMarker('hbx',  [0.5,1,0.5],[],nm);
 
 % GENERATE rotated orthogonal basis, origin: head's center of mass (REDUNDANT)
-xyz.addMarker('hbt',  [0.5,1,0.5],[],genRotatedMarker(xyz,'hbx',45,{'hbx','htx'}));
-xyz.addMarker('hbr',  [0.5,1,0.5],[],genRotatedMarker(xyz,'hbx',45,{'hbx','hrx'}));    
-xyz.addMarker('hbrt', [0.5,1,0.5],[],genRotatedMarker(xyz,'hbr',45,{'hbx','htx'}));
-xyz.addMarker('hrt',  [0.5,1,0.5],[],genRotatedMarker(xyz,'hrx',45,{'hrx','htx'}));
+mcolor = [0.5,1,0.5];
+xyz.addMarker('hbt',  mcolor,[],rotate_marker_around_vector(xyz,pi/2,'htx','hcom',{'hbx','htx'}));
+xyz.addMarker('hbr',  mcolor,[],rotate_marker_around_vector(xyz,pi/2,'hrx','hcom',{'hbx','hrx'}));
+xyz.addMarker('hbrt', mcolor,[],rotate_marker_around_vector(xyz,pi/2,'hbr','hcom',{'hbx','htx'}));
+xyz.addMarker('hrt',  mcolor,[],rotate_marker_around_vector(xyz,pi/2,'hrx','hcom',{'hrx','htx'}));
+
 nhm = {'hcom','hbx','hrx','htx','hbt','hbr','hbrt','hrt'};    
-
 nhm = {'hcom','hbx','hrx','htx'};    
-numberOfVirtualMarkers = numel(nhm)-1;
+nVirtMar = numel(nhm)-1;
 
 
 
 
 
 
-
+figure
 if display,
 %   PLOT the markers 
     clf();
     ind = xyz.get_pose_index();
-    subplot2(numberOfVirtualMarkers,numberOfVirtualMarkers,[1:4],[1:3]);daspect([1,1,1]);hold('on');
+    subplot2(nVirtMar, ...
+             nVirtMar,...
+             [1:3],[1:3]);
+    daspect([1,1,1]);hold('on');
     try    
     m = 'head_front';
     hold on,plot3(xyz(ind,m,1),xyz(ind,m,2),xyz(ind,m,3),'.b')
@@ -120,8 +127,8 @@ if display,
     m = 'head_back';    
     hold on,plot3(xyz(ind,m,1),xyz(ind,m,2),xyz(ind,m,3),'.','Color',[0.5,0,0.5])
     hold on,scatter3(xyz(ind,m,1),xyz(ind,m,2),xyz(ind,m,3),150,[0.5,0,0.5])
-    m = 'head_left';    
-    hold on,plot3(xyz(ind,m,1),xyz(ind,m,2),xyz(ind,m,3),'.g')
+% $$$     m = 'head_left';    
+% $$$     hold on,plot3(xyz(ind,m,1),xyz(ind,m,2),xyz(ind,m,3),'.g')
     m = 'head_right';        
     hold on,plot3(xyz(ind,m,1),xyz(ind,m,2),xyz(ind,m,3),'.r')
     
@@ -150,7 +157,10 @@ if ~exist(FileName_coarse,'file') || overwrite,
     ind = vxy.data > 2  &  vxy.data < 100;
     
     if ~isempty(periods)
-% RESTRICT computations to specified data subset
+        % RESTRICT computations to specified data subset
+        if periods(1,1) < 0,
+            periods(1,1)=1;
+        end
         pind = false([size(vxy,1),1]);
         for p = 1:size(periods,1),
             pind(periods(p,1):periods(p,2)) = true;
@@ -172,7 +182,7 @@ if ~exist(FileName_coarse,'file') || overwrite,
     % find the analysis periods 
     % pad the periods before filtering and note the length of each period in samples
 
-    vxyz = zeros([numberOfVirtualMarkers,numel(i),numel(j),numel(k)]);
+    vxyz = zeros([nVirtMar,numel(i),numel(j),numel(k)]);
     txyz = xyz(:,nhm,:);
     ind = ind  &  nniz(txyz);                                   % REMOVE indices with zeros
     %ind = ind  &  randn([size(ind)]) > 0.5;                     % SUBSAMPLE 
@@ -189,8 +199,8 @@ if ~exist(FileName_coarse,'file') || overwrite,
             for z = 1:numel(k)
                 sxyz = bsxfun(@plus,tnx*i(x)+tny*j(y)+tnz*k(z),txyz);
                 sxyz(:,1,:) = ButFilter(sxyz(:,1,:),3,2/(xyz.sampleRate/2),'low');
-                ang = sum(bsxfun(@minus,sxyz(:,2:numberOfVirtualMarkers+1,:),sxyz(:,1,:)).^2,3)-400;
-                for m = 1:numberOfVirtualMarkers,
+                ang = sum(bsxfun(@minus,sxyz(:,2:nVirtMar+1,:),sxyz(:,1,:)).^2,3)-400;
+                for m = 1:nVirtMar,
                     bnds = prctile(ang(:,m),[1,99]); % remove outliers from untreated "jumps"
 % COMPUTE "power"                    
                     vxyz(m,x,y,z) = sum(ang(bnds(1)<ang(:,m)&ang(:,m)<bnds(2),m)'*ang(bnds(1)<ang(:,m)&ang(:,m)<bnds(2),m),1);
@@ -210,15 +220,15 @@ end
 
 %% Figure of search
 mind = [];
-for m = 1:numberOfVirtualMarkers,
+for m = 1:nVirtMar,
     [mind(m,:),mv] = LocalMinimaN(-sq(vxyz(m,:,:,:)),100,100);
 end
 
 if display,
 % DISPLAY slices through the verticle axis for each marker's gradient
     figure
-    for m = 1:numberOfVirtualMarkers,
-        subplot2(numberOfVirtualMarkers,numberOfVirtualMarkers,5,m);
+    for m = 1:nVirtMar,
+        subplot2(nVirtMar,nVirtMar,3,m);
         imagesc(i,j,log10(sq(vxyz(m,:,:,mind(m,3))))');
         axis xy;
         title([nhm{m+1},':z: ' num2str(k(mind(m,3)))]);
@@ -233,7 +243,7 @@ ijk = cell(1,3);
 [ijk{:}] = meshgrid(j,i,k); % Why did I have to flip ni and nj
 
 % COMPUTE surfaces of thresholded region of the estimation domain
-mset = [1:numberOfVirtualMarkers];
+mset = [1:nVirtMar];
 for m = mset
     svxyz = log10(sq(vxyz(m,:,:,:)));
     iopts = [ijk,{svxyz},{prctile(svxyz(nniz(svxyz(:))),1)}];
@@ -242,7 +252,7 @@ end
 
 if display
 % DISPLAY the surface of each marker's gradient given a threshold.
-%subplot2(numberOfVirtualMarkers,numberOfVirtualMarkers,[1:4],[5:7]);daspect([1,1,1]);hold('on');        
+%subplot2(nVirtMar,nVirtMar,[1:4],[5:7]);daspect([1,1,1]);hold('on');        
     figure();
     hold('on');
     clist = 'rbgymck';    
@@ -262,14 +272,14 @@ end
     
 
 % FIND the center of each field
-mpos = zeros([numberOfVirtualMarkers,3]);
-mind = zeros([numberOfVirtualMarkers,3]);
-for m = 1:numberOfVirtualMarkers,
+mpos = zeros([nVirtMar,3]);
+mind = zeros([nVirtMar,3]);
+for m = 1:nVirtMar,
     mpos(m,:) = mean(isos(m).vertices);
 end
 
 % COMPUTE the vector of the elipsoid field's long aixs
-varLines = zeros([numberOfVirtualMarkers,3]);
+varLines = zeros([nVirtMar,3]);
 for m = mset
     [~,S,V] = svd(bsxfun(@minus,isos(m).vertices,mpos(m,:)),0);
     varLines(m,:) = V(:,1);    
@@ -281,10 +291,10 @@ end
 
 
 % COMPUTE the pairwise point "closest" to each pair of the major axes of the gradient elipsoids 
-scp = nan([numberOfVirtualMarkers, numberOfVirtualMarkers, 3]);
-tcq = nan([numberOfVirtualMarkers, numberOfVirtualMarkers, 3]);
-for p = 1:numberOfVirtualMarkers,
-    for q = p+1:numberOfVirtualMarkers,
+scp = nan([nVirtMar, nVirtMar, 3]);
+tcq = nan([nVirtMar, nVirtMar, 3]);
+for p = 1:nVirtMar,
+    for q = p+1:nVirtMar,
         u = varLines(p,:);
         v = varLines(q,:);
         w = mpos(p,:)-mpos(q,:);
@@ -324,6 +334,7 @@ for marker = rigidBodyMarkers,
         bsxfun(@plus,nx*mpoint(2)+ny*mpoint(1)+nz*mpoint(3),xyz(:,marker,:));
 end
 nxyz.key  = 't';
+nxyz.label = 'trb';
 nxyz.name = 'tr_corrected_head';
 nxyz.updateFilename(Session);      
 nxyz.save;
