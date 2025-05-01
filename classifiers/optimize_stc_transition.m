@@ -61,8 +61,8 @@ defArgs = struct('sessionList',                 '',                             
 % MAIN ------------------------------------------------------------------------------------------
 
 % LOAD Trials which have the target state collections
-if ~iscell(sessionList),
-    Trials = af(@(Trial)  MTATrial.validate(Trial), get_session_list(sessionList));
+if ischar(sessionList),
+    Trials = af(@(Trial)  MTATrial.validate(Trial), get_session_list_v2(sessionList));
 else
     Trials = sessionList;
 end
@@ -131,7 +131,7 @@ features = cf(@(t)     fet_bref(t,[],[],'SPLINE_SPINE_HEAD_EQD'), Trials);
 ffet     = cf(@(f)  f.copy(),  features);
            cf(@(f)  f.filter('ButFilter',3,[1.2,6],'bandpass'),  ffet);
 
-xyz      = cf(@(t) t.load('xyz','crb'),                      Trials);
+xyz      = cf(@(t) t.load('xyz','trb'),                      Trials);
            cf(@(x) x.filter('ButFilter',5,1.5,'low'),           xyz);
 
 % $$$ vxy = cf(@(x) xyz.vel({'spine_lower','head_back'},[1,2]), xyz);
@@ -206,7 +206,7 @@ for s = 1:numTrials,
 % $$$     linkaxes(findobj(stcFig,'Type','axes'),'xy');
 
     
-% UPDATE states collection    
+% UPDATE states collection
     StcCor{s} = mat2stc(stcMatrix,StcCor{s},features{s},Trials{s},states,keys);
     [stcMatrix] = stc2mat(StcCor{s},xyz{s},states);    
 
@@ -219,7 +219,7 @@ for s = 1:numTrials,
     disp([verbosePrefix,'Assign WALK periods with low duration ( < 0.18 sec ) to neighboring states']);    
     [stcMatrix] = reassign_low_duration_state_to_neighboring_states(stcMatrix,StcCor{s}{'w'},0.18*xyz{s}.sampleRate);
 
-% UPDATE states collection    
+    % UPDATE states collection
     StcCor{s} = mat2stc(stcMatrix,StcCor{s},features{s},Trials{s},states,keys);
     [stcMatrix] = stc2mat(StcCor{s},xyz{s},states);    
 
@@ -358,7 +358,7 @@ for s = 1:numTrials,
         disp(err);
     end
 
-% UPDATE stc matrix    
+    % UPDATE stc matrix
     StcCor{s} = mat2stc(stcMatrix,StcCor{s},features{s},Trials{s},states,keys);
     [stcMatrix] = stc2mat(StcCor{s},xyz{s},states);        
     
@@ -393,8 +393,10 @@ for s = 1:numTrials,
 % $$$     subplot(414);
 % $$$     plotSTC(StcDiag{s}); ylim([-0.5,6.5])
 % $$$     linkaxes(findobj(stcFig,'Type','axes'),'xy');
+stccopy = StcCor{s}.copy();
 
-    
+StcCor{s} = stccopy.copy();
+
     StcCor{s} = mat2stc(stcMatrix,StcCor{s},features{s},Trials{s},states,keys);
     
 end

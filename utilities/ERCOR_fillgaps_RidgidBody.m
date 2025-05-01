@@ -200,7 +200,7 @@ switch mode
     disp('*   close group: right click *');
     disp('*   quit:        escape key  *');
     disp('******************************'); 
-    
+
     eid = ClusterPP(hfig);
         
   otherwise

@@ -5,6 +5,8 @@
 %
 %  - attempt to find 
 
+EgoProCode2D_load_data();
+
 trialIndex = 20;
 
 Trial   = Trials     { trialIndex };
@@ -27,11 +29,11 @@ hvec = multiprod(hvec,...
                  [1,2]);
 hvfl = fet_href_HXY(Trial, sampleRate, [], 'trb', 2.4);
 hafl = circshift(hvfl.data,1)-hvfl.data;
-hba = fet_hba(Trial,sampleRate); % Head to Body Angle
-hav = fet_hbav(Trial,sampleRate);
-pch = fet_HB_pitch(Trial,sampleRate);
+hba = fet_hba(Trial, sampleRate); % Head to Body Angle
+hav = fet_hbav(Trial, sampleRate);
+pch = fet_HB_pitch(Trial, sampleRate);
 pch.data = pch.data(:,3);
-phz = load_theta_phase(Trial,sampleRate);
+phz = load_theta_phase(Trial, sampleRate);
 pyr = Trial.load('spk', sampleRate, bhvState, units{trialIndex}, 'deburst');
 fxyz = filter(txyz.copy(),'ButFilter',3,14,'low');
 vxy = vel(filter(txyz.copy(),'ButFilter',3,2.5,'low'),{'spine_lower','hcom'},[1,2]);
@@ -61,7 +63,7 @@ bins.y = bins.x;
 %bhvState = 'walk+turn+pause&theta';
 %bhvState = 'walk+turn&theta';
 bhvState = 'lbhv&theta';
-unit = 104;
+unit = 25;
 rmap = plot(Pft,unit);
 pfsRadius = sqrt(sum(rmap(:)>2)*20*20/pi);
 [mxr,mxp] = Pft.maxRate(unit);
@@ -221,7 +223,7 @@ sum(within_ranges(sqrt(sum(sexy.^2,2)),radius))/(sum(within_ranges(sqrt(sum(rexy
 %              63, 65, 69
 %              77, 61, 63
 
-bhvState = 'walk+turn&theta';
+bhvState = 'pause+walk+turn&theta';
 trialIndex = [21,22,23];
 tTrial = {};
 tunits = {};
@@ -257,18 +259,17 @@ for tid = 1:numel(trialIndex)
     tpyr{tid} = tTrial{tid}.load('spk', sampleRate, bhvState, tunits{tid}, 'deburst');
 end
 
+radius = [25,150];
+%radius = [25,pfsRadius];
 % jg05-201203_(15)(16)(17)
-%eunit = {6, 13, 29};
-%              27, 41, 50 ?
-%              33, 30, 54
-%              61, 48, 72 ?
-%              63, 65, 69
-%              77, 61, 63
-%eunit = {33,30,54}; N
+%eunit = {6, 13, 29}; %NN pfaRange =[-pi/4,pi/4];
+%eunit = {27, 41, 50}; %N (m, -pi/2:pi/2)
+%eunit = {33, 30, 54}; %Y  [-pi,-3*pi/4;3*pi/4,pi];
+%eunit = {61, 48, 72};
 %eunit = {63, 65, 69}; N (m, 0:pi)
 %eunit = {77, 61, 63}; N (m,-pi:0)
-%eunit = {6, 13, 29}; NN
-%eunit = {27, 41, 50}; N (m, -pi/2:pi/2)
+
+
 exy={};
 rmap={};       mazeOcc={};    thfaVpfaOcc={};
 sts={};        xts={};
@@ -278,14 +279,23 @@ usideleng={};  ind_L={};      ind_R={};
 hfaInds_L=[];    pfaInds_L=[];
 hfaInds_R=[];    pfaInds_R=[];
 thba_L=[];     thba_R = [];
+meanFieldPosition = [];
 for tid = 1:numel(trialIndex)
     unit = eunit{tid};
     rmap{tid} = plot(tpft{tid}, unit);
     %pfsRadius = sqrt(sum(rmap(:)>2)*20*20/pi);
     [mxr,mxp] = tpft{tid}.maxRate(unit);
+    meanFieldPosition = cat(1,meanFieldPosition,mxp);
+end
+meanFieldPosition = mean(meanFieldPosition);
+
+for tid = 1:numel(trialIndex)
+    unit = eunit{tid};
+    rmap{tid} = plot(tpft{tid}, unit);
+    %pfsRadius = sqrt(sum(rmap(:)>2)*20*20/pi);
     exy{tid} = [bsxfun(@plus,                                            ...
               multiprod(bsxfun(@minus,                          ...
-                               mxp,                             ...
+                               meanFieldPosition,                             ...
                                sq(txyz{tid}(:,'hcom',[1,2]))),  ...
                         thvec{tid},2,[2,3]),                          ...
               0)];
@@ -297,12 +307,12 @@ for tid = 1:numel(trialIndex)
     xts{tid}.data = logical(xts{tid}.data);
     headAngle{tid} = sq(txyz{tid}(:,'nose',[1,2])-txyz{tid}(:,'hcom',[1,2]));
     headAngle{tid} = atan2(headAngle{tid}(:,2),headAngle{tid}(:,1));
-    fieldAngle{tid} =  bsxfun(@minus,sq(txyz{tid}(:,'hcom',[1,2])),mxp);
+    fieldAngle{tid} =  bsxfun(@minus,sq(txyz{tid}(:,'hcom',[1,2])), meanFieldPosition);
     fieldAngle{tid} = atan2(fieldAngle{tid}(:,2), fieldAngle{tid}(:,1));
     thfa{tid} = circ_dist(headAngle{tid}, fieldAngle{tid});
-    tpfa{tid} = bsxfun(@minus,sq(txyz{tid}(:,'hcom',[1,2])),mxp);
+    tpfa{tid} = bsxfun(@minus,sq(txyz{tid}(:,'hcom',[1,2])), meanFieldPosition);
     tpfa{tid} = atan2(tpfa{tid}(:,2),tpfa{tid}(:,1));
-    usideleng{tid} = sqrt(sum(bsxfun(@minus, sq(txyz{tid}(:,'hcom',[1,2])),mxp).^2, 2));
+    usideleng{tid} = sqrt(sum(bsxfun(@minus, sq(txyz{tid}(:,'hcom',[1,2])),meanFieldPosition).^2, 2));
     mazeOcc{tid} = hist2([txyz{tid}(xts{tid},'hcom',1),...
                           txyz{tid}(xts{tid},'hcom',2)], ...
                           bins.x.edges, ...
@@ -324,16 +334,12 @@ for tid = 1:numel(trialIndex)
     pfaInds_R = cat(1, pfaInds_R, discretize(fieldAngle{tid}(ind_R{tid}), bins.hfa.edges));
     thba_R  = cat(1, thba_R, thba{tid}(ind_R{tid}));
 end
-
 hbaLOcc = accumarray([hfaInds_L, pfaInds_L], ...
                      thba_L,...
                      [bins.hfa.count,bins.hfa.count],@numel);
-
 hbaROcc = accumarray([hfaInds_R,pfaInds_R],...
                      thba_R,...
                      [bins.hfa.count,bins.hfa.count],@numel);
-
-
 
 
 hbaI = 1;
@@ -358,27 +364,29 @@ set(gcf(),'Position',get(gcf(),'Position').*[1,1,3,1]);
 
 
 %pfaRange =[0,pi/2];
-%pfaRange =[-pi/3,pi/3];
+pfaRange =[-pi/3,pi/3];
 %pfaRange =[-pi,-pi/2];
-%pfaRange =[-pi/4,pi/4];
+pfaRange =[-pi/4,pi/4];
 %pfaRange =[pi/2,2];
 %pfaRange =[pi/2,pi];
-%pfaRange = [-pi,-3*pi/4;3*pi/4,pi];
+pfaRange = [-pi,-3*pi/4;3*pi/4,pi];
 %pfaRange = [-pi,pi];
 %pfaRange =[-pi/2,pi/2];
-% $$$ pfaRange = [-pi,pi/2];
-pfaRange = [-pi/2,0];
+% pfaRange = [-pi,pi/2];
+%pfaRange = [-pi/2,0];
 %pfaRange = [-pi/2,pi/2];
 %pfaRange = [-pi,pi/2];
-pfaRange = [0,pi/2];
+%pfaRange = [0,pi/2];
+%pfaRange = [pi/4,3*pi/2];
 
+ptype = 1
 figure
 phzI = 3;
 phzOS = 1;
 %pfsRadius = sqrt(sum(rmap(:)>2)*20*20/pi);
 sax = gobjects([1,3]);
 sax(1) = subplot2(3,1,1,1); hold('on');sax(2) = subplot2(3,1,2,1); hold('on');sax(3) = subplot2(3,1,3,1); hold('on');
-ermap = zeros([7,7,3]);
+ermap = zeros([5,5,3]);
 for hbaI = 1:bins.hba.count
     axes(sax(hbaI));
     poccg = {};
@@ -386,10 +394,12 @@ for hbaI = 1:bins.hba.count
         ind =   within_ranges(tpfa{tid}, pfaRange) ...
                 & within_ranges(thba{tid}, bins.hba.edges([hbaI,hbaI+1]));
         exyInd = ind & xts{tid}.data;
-        pocci = discretize([exy{tid}(exyInd,2),exy{tid}(exyInd,1)],linspace(-250,250,8));
+        pocci = discretize([exy{tid}(exyInd,2),exy{tid}(exyInd,1)],linspace(-250,250,6));
         pocci = pocci(nniz(pocci),:);
-        poccg{tid} = accumarray(pocci,ones([size(pocci,1),1]),[7,7]);        
-        %plot(exy{tid}(exyInd,2),exy{tid}(exyInd,1),'.','Color',[0.5,0.5,0.5]);    
+        poccg{tid} = accumarray(pocci,ones([size(pocci,1),1]),[5,5]); ...
+        if ptype == 1
+            plot(exy{tid}(exyInd,2),exy{tid}(exyInd,1),'.','Color', [0.5,0.5,0.5]);
+        end
     end
     soccg = {};
     for tid = 1:numel(trialIndex)
@@ -398,27 +408,60 @@ for hbaI = 1:bins.hba.count
         ures = tpyr{tid}(eunit{tid}, sts{tid});
         ures = ures(within_ranges(tphz{tid}(ures), bins.phz.edges([phzI,phzI+phzOS])));
         ures = ures(ind(ures));
-        socci = discretize([exy{tid}(ures,2),exy{tid}(ures,1)],linspace(-250,250,8));
+        socci = discretize([exy{tid}(ures,2),exy{tid}(ures,1)],linspace(-250,250,6));
         socci = socci(nniz(socci),:);
-        soccg{tid} = accumarray(socci,ones([size(socci,1),1]),[7,7]);
+        soccg{tid} = accumarray(socci,ones([size(socci,1),1]),[5,5]);
         %scatter(exy{tid}(ures,2),   exy{tid}(ures,1), 30, thba{tid}(ures), ...
         %        'Filled','MarkerEdgeColor','k');
-        %plot( exy{tid}(ures,2), exy{tid}(ures,1),'.m','MarkerSize',10);
+        if ptype == 1
+            plot( exy{tid}(ures,2), exy{tid}(ures,1),'.m', 'MarkerSize',10);
+            end
     end
     soccg = sum(cat(3,soccg{:}),3);
     poccg = sum(cat(3,poccg{:}),3);
-    poccg(poccg/sampleRate<0.75) = nan;
+    poccg(poccg/sampleRate<0.5) = nan;
     ermap(:,:,hbaI) = (soccg./(poccg/sampleRate));
-    imagescnan({1:7,1:7,ermap(:,:,hbaI)'},[0,6],'colorbarIsRequired',true);
+    if ptype == 0
+    imagescnan({1:5,1:5,ermap(:,:,hbaI)'},[0,6],'colorbarIsRequired',true);
     axis('xy');
     Lines([],0,'k');Lines(0,[],'k');
-    %colorbar(); colormap(gca(),'hsv'); caxis(gca(), [-pi,pi]);
-    %colorbar(); colormap(gca(),'jet'); caxis(gca(), [0,5]);    
-    %xlim([-250,250]); ylim([-250,250]);
-    daspect([1,1,1]); grid('on');
     axis('tight');
+    else
+        xlim([-250,250]); ylim([-250,250]);
+    end
+    daspect([1,1,1]); grid('on');    
 end
 set(gcf(),'Position',get(gcf(),'Position').*[1,0,1,3]);
+
+
+
+dermap = zeros([2,5,3]);
+figure();
+for hbaI = 1:bins.hba.count
+    dermap(:,:,hbaI) = (ermap([4,5],:,hbaI)-ermap([2,1],:,hbaI));
+    subplot2(3,1,hbaI,1);
+    imagescnan({1:2, 1:5, dermap(:,:,hbaI)'}, ...
+           [-2,2],                                   ...
+           'colorbarIsRequired',true,                ...
+           'colorMap',@jet)
+axis('xy');
+end
+set(gcf(),'Position',get(gcf(),'Position').*[1,0,1,3]);
+
+
+(ermap([4,5],2:5,1)-ermap([2,1],2:5,3))
+figure();
+dm1 = (ermap([4,5],2:5,1)-ermap([2,1],2:5,1));
+dm2 = (ermap([4,5],2:5,3)-ermap([2,1],2:5,3));
+ind = nniz(dm1(:)) & nniz(dm2(:));
+    plot(dm1(ind),...
+         dm2(ind) ,...
+         '.');
+    Lines([],0,'k');
+    Lines(0,[],'k');
+    mean(dm1(ind))
+    mean(dm2(ind))
+    
 
 
 
@@ -426,7 +469,7 @@ dermap = zeros([3,7,3]);
 figure();
 for hbaI = 1:bins.hba.count
     dermap(:,:,hbaI) = (ermap(5:7,:,hbaI)-ermap([3,2,1],:,hbaI));
-    subplot(3,1,hbaI);
+    subplot2(3,1,hbaI,1);
 imagescnan({1:3, 1:7, dermap(:,:,hbaI)'}, ...
            [-2,2],                                   ...
            'colorbarIsRequired',true,                ...
@@ -434,13 +477,28 @@ imagescnan({1:3, 1:7, dermap(:,:,hbaI)'}, ...
 axis('xy');
 end
 
+
+
+
+figure();
+dm1 = (ermap(5:7,3:7,1)-ermap([3,2,1],3:7,1));
+dm2 = (ermap(5:7,3:7,3)-ermap([3,2,1],3:7,3));
+ind = nniz(dm1(:)) & nniz(dm2(:));
+    plot(dm1(ind),...
+         dm2(ind) ,...
+         '.');
+    Lines([],0,'k');
+    Lines(0,[],'k');
+    mean(dm1(ind))
+    mean(dm2(ind))
+    
 sum(nonzeros(dermap(1:2,4:6,3)))/6;
 sum(nonzeros(dermap(1:2,4:6,1)))/6;
 
 
 %%%<<< Mean Rate HBA L
-radius = [25,200];
-hbaI  = 3;
+radius = [25,150];
+hbaI  = 1;
 phzI  = 3;
 phzOS = 1;
 sexy  = [];
@@ -451,7 +509,7 @@ ures = ures(within_ranges(tphz{tid}(ures), bins.phz.edges([phzI,phzI+phzOS])));
 ind =   within_ranges(tpfa{tid}, pfaRange) ...    
         & within_ranges(thba{tid}, bins.hba.edges([hbaI,hbaI+1])) ...
         & exy{tid}(:,2)<-25 ...
-        & exy{tid}(:,1)>-100; 
+        & exy{tid}(:,1)>-30; 
 ures = ures(ind(ures));
 exyInd = ind & xts{tid}.data;
 rexy = cat(1,rexy,[exy{tid}(exyInd,1),exy{tid}(exyInd,2)]);
@@ -466,7 +524,7 @@ ures = ures(within_ranges(tphz{tid}(ures), bins.phz.edges([phzI,phzI+phzOS])));
 ind =   within_ranges(tpfa{tid}, pfaRange) ...    
         & within_ranges(thba{tid}, bins.hba.edges([hbaI,hbaI+1])) ...
         & exy{tid}(:,2)>25 ...
-        & exy{tid}(:,1)>-100; 
+        & exy{tid}(:,1)>-30; 
 ures = ures(ind(ures));
 exyInd = ind & xts{tid}.data;
 rexy = cat(1,rexy,[exy{tid}(exyInd,1),exy{tid}(exyInd,2)]);

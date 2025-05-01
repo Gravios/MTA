@@ -428,10 +428,10 @@ classdef MTAApfs < hgsetget %< MTAAnalysis
                 
                 res = spk(unit);
                 %% Skip unit if too few spikes
-                if numel(res)>10
+                if numel(res)>21
                     
                     % SUPER annoying fix for probe shifts
-                    if ~isempty(spk.per) && any(spk.perInd(unit,:))
+                    if false%~isempty(spk.per) && any(spk.perInd(unit,:))
                         % Get the periods
                         spkPer = spk.per.copy();
                         spkPer.data(~spk.perInd(unit,:),:) = [];
@@ -447,8 +447,23 @@ classdef MTAApfs < hgsetget %< MTAAnalysis
                         sstpos = asstpos;
                         switch pfsState.type
                           case 'TimePeriods'
-                            sstres = SelectPeriods(res,pfsState.data,'d',1,1);
+                            sstend = round((mean(res(end-10:end)) - Session.sync.data(end)) .* xyz.sampleRate);
+                            sstbeg = round((mean(res(1:10)) - Session.sync.data(1)).*xyz.sampleRate);
+                            
+                            spkPer = copy(pfsState);
+                            spkPer.label = 'spikes';
+                            spkPer.sampleRate = xyz.sampleRate;
+                            spkPer.data = [sstbeg, sstend];
+                            psPer = pfsState&spkPer;
+                            
+                            sstres = SelectPeriods(res,psPer.data,'d',1,1);
+                            cast(spkPer, 'TimeSeries');
+
+                            spkPer = logical(SelectPeriods(spkPer.data,pfsState,'c',1,1));
+                            sstpos = asstpos(spkPer,:);
+                            
                           case 'TimeSeries'
+                            warning('Add previous cases modification');
                             sstres = res(pfsState.data(res));
                         end
                         

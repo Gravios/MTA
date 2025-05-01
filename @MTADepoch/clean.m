@@ -8,6 +8,10 @@ function Data = clean(Data)
 % Truncate periods which terminate after end of the sync
 %
 % Drop periods with zero or negative duration. eg([5,3] or [[10,10])
+
+if isempty(Data.data) && strcmp(Data.type, 'TimePeriods')
+    return
+end
 perDur = diff(Data.data,1,2);
 Data.data(perDur<=0,:) = [];
 Data.data = sort(Data.data);

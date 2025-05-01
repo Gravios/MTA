@@ -69,8 +69,7 @@ elseif isa(sessionList,'MTATrial'),
     Trials = {sessionList};
 else
 % LOAD Trials for behavioral labeling
-    Trials = af(@(Trial)  MTATrial.validate(Trial), get_session_list(sessionList));
-
+    Trials = af(@(Trial)  MTATrial.validate(Trial), get_session_list_v2(sessionList));
 end
 
 % LOAD xyz as a reference for synchronization
@@ -84,6 +83,7 @@ end
 
 % LOAD the state collections
 StcHL = cf(@(Trial) Trial.load('stc'),Trials);
+cf(@(stc,trial) stc.updateFilename([trial.filebase '.stc.default.mat']), StcHL, Trials);
 if ~any(cell2mat(cf(@(s) strcmp(s.mode,'default'),StcHL))),
     cf(@(stc,states) set(stc,'states',stc(states{:})),...
          StcHL,repmat({states},[1,numel(Trials)]));
@@ -135,8 +135,8 @@ features = cf(@(Trial,fetSet,sr) feval(fetSet,Trial,sr,false),...
 
 % MAP features to reference session
 if map2reference,
-    xyzls  = cf(@(Trial)  Trial.load('xyz'),        Trials);
-             cf(@(f,x)    x.resample(f),            features,xyzls);
+    xyzls  = cf(@(Trial)  Trial.load('xyz'), Trials);
+             cf(@(x,f)    x.resample(f),     xyzls, features);
     refTrial = MTATrial.validate(referenceTrial);
     cf(@(f,t,r) f.map_to_reference_session(t,r),...
        features, Trials, repmat({refTrial},[1,numTrials]));
@@ -316,14 +316,23 @@ for i = 1:numStates{1},
        sts,Stc,Trials,xyz,repmat(states{1}(i),[1,numTrials]),repmat(keys(i),[1,numTrials]))
 end
 
+for t = 1:numTrials,
+    Stc{t}.parent = Trials{t}.filebase;
+end
 % SAVE state collection
 cf(@(s) s.save(true),    Stc);
 % UPDATE state collection mode with model name
 cf(@(s,m) s.updateMode(m),Stc,repmat({'msnn'},[1,numTrials]));
+for t = 1:numTrials,
+    Stc{t}.parent = Trials{t}.filebase;
+end
 % SAVE state collection
 cf(@(s) s.save(true),    Stc);
 % UPDATE state collection mode with model name
 cf(@(s,m) s.updateMode(m),Stc,repmat({model},[1,numTrials]));
+for t = 1:numTrials,
+    Stc{t}.parent = Trials{t}.filebase;
+end
 % SAVE state collection
 cf(@(s) s.save(true),    Stc);
 

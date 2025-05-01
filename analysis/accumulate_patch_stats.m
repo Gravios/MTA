@@ -477,7 +477,7 @@ pfssMpSub = pfssMpSub(unitSubset,:,:);
 
 
 %figure,hist(nonzeros(patchArea)/100,50)
-figure,hist(sqrt(nonzeros(patchArea)),50)
+% $$$ figure,hist(sqrt(nonzeros(patchArea)),50)
 
 %% Permutations 
 
@@ -722,23 +722,23 @@ rmapPCA = nan([784,1]);
 rmapPCB = nan([784,1]);
 rmapPCA(validDims) = rmapPC(:,1);
 rmapPCB(validDims) = rmapPC(:,2);
-figure,
-subplot(121);
-pcolor(reshape(rmapPCA,[28,28])');axis('xy');
-subplot(122);
-pcolor(reshape(rmapPCB,[28,28])');axis('xy');
+% $$$ figure,
+% $$$ subplot(121);
+% $$$ pcolor(reshape(rmapPCA,[28,28])');axis('xy');
+% $$$ subplot(122);
+% $$$ pcolor(reshape(rmapPCB,[28,28])');axis('xy');
 
 % $$$ figure,
 % $$$ uid = find(ismember(cluSessionMap,[20,20],'rows'));
 % $$$ imagesc(reshape(rmapP(:,uid,1),[28,28])');
 % $$$ axis('xy');
 % $$$ 
-figure,
-plot(rmapIPDist/10,rmapIPCorr,'.')
-xlabel('Inter Patch Distance (cm)')
-ylabel('Bhv Ratemap Correlation');
-
-figure,hist(rmapIPCorr,20)
+% $$$ figure,
+% $$$ plot(rmapIPDist/10,rmapIPCorr,'.')
+% $$$ xlabel('Inter Patch Distance (cm)')
+% $$$ ylabel('Bhv Ratemap Correlation');
+% $$$ 
+% $$$ figure,hist(rmapIPCorr,20)
 
 % $$$ 
 % $$$ patchCntF = sum(~isnan(patchCntrF(:,:,1)),2);

@@ -270,7 +270,7 @@ features.resample(Trial.xyz.sampleRate);
 minimumOccupancy = 1; % seconds
 
 if isempty(rfet),
-    rfet = feval(features.label,RefTrial,features.sampleRate);
+    rfet = feval(features.label, RefTrial, features.sampleRate);
 else
     rfet.resample(features.sampleRate);
 end

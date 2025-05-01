@@ -83,10 +83,10 @@ classdef MTATrial < MTASession
                             Trial.stc.updateFilename([Trial.filebase,'.stc.' ds.stcmode '.mat']);
                             Trial.stc.updateMode(ds.stcmode);
                             if exist(Trial.stc.fpath,'file')
-                                Trial.stc.load;
+                                Trial.stc.load(Trial);
                             else
                                 Trial.stc.updateMode('default');                  
-                                Trial.stc.load;
+                                Trial.stc.load(Trial);
                             end                    
                         end
                     end
@@ -132,6 +132,8 @@ classdef MTATrial < MTASession
 
             Trial.stc.updateSync(Trial.sync.copy);
             Trial.stc.updatePath(Trial.spath);
+            Trial.stc.parent = Trial.filebase;
+            
             props = properties(Trial);
             for p = 1:numel(props),
                 if strcmp(props{p},'sync'),continue,end

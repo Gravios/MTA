@@ -93,7 +93,7 @@ end
 % COMPUTE the trajectory heading
 pfds = zeros([size(feature,1),1]);
 pfdd = zeros([size(feature,1),1]);
-for unit = units
+for unit = units'
     pfhxy = feature.data(nind,:,:);
     pfhxy = cat(2,pfhxy,permute(repmat(fieldCenter(unit==units,:),[sum(nind),1]),[1,3,2]));
     pfhxy = MTADxyz([],[],pfhxy,feature.sampleRate);

@@ -32,7 +32,7 @@ switch Data.type
         if all(Data.size(1)==DataObj.size(1)) && Data.sampleRate==DataObj.sampleRate,
             return;
         end
-        newSampleRate = DataObj.sampleRate;       
+        newSampleRate = DataObj.sampleRate;
     else
         if Data.sampleRate==DataObj,
             return;
@@ -40,6 +40,12 @@ switch Data.type
         newSampleRate = DataObj;
     end
 
+
+    if sum(Data.data(:,1))==0
+        return;
+    end
+
+    
     Data.data(~nniz(Data),:,:,:,:) = 0;
     
     if isa(Data,'MTADepoch'),
@@ -99,7 +105,11 @@ switch Data.type
         rf = @round;
     end
 
-    if newSampleRate == Data.sampleRate, return,end                
+    if newSampleRate == Data.sampleRate, return,end
+    if isempty(Data.data)
+        Data.sampleRate = newSampleRate;
+        return
+    end
     
     if newSampleRate==1&&Data.sampleRate==1,
         indshift = 0;

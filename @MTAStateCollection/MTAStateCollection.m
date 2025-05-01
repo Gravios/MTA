@@ -15,6 +15,7 @@ classdef MTAStateCollection < hgsetget
     properties (SetAccess = public)
         mode = [];
         filename = [];
+        parent = []
         path = [];
         sync = [];
         origin = [];
@@ -79,6 +80,7 @@ classdef MTAStateCollection < hgsetget
         %
             [Session,nMode] = DefaultArgs(varargin,{[],[]});
 
+            Stc.parent = Session.filebase;
 
             try % to load current state collection if nMode is empty 
                 if isempty(nMode),
@@ -91,7 +93,7 @@ classdef MTAStateCollection < hgsetget
                     
                 else,% update the state collection mode and load
                     Stc.updateMode(nMode);
-                    if exist(fullfile(Stc.path,nMode),'file')
+                    if exist(fullfile(Stc.path,Stc.filename),'file')
                         ds = load(Stc.fpath);
                     else
                         % Try to load Session stc of same mode
@@ -253,6 +255,7 @@ classdef MTAStateCollection < hgsetget
                                         else
                                             sts{i} = MTADepoch(Stc.path,[],[],[],[],[],[],[],[],stsNames{i},[]);
                                         end
+                                        sts{i}.parent = Stc.parent;
                                         try
                                             sts{i} = sts{i}.load([],Stc.sync);
                                             Stc.addState(sts{i});
@@ -262,7 +265,8 @@ classdef MTAStateCollection < hgsetget
                                         end
                                         
                                     else
-                                        sts{i} =  Stc.states{stci}.copy;
+                                        sts{i} = Stc.states{stci}.copy;
+                                        sts{i}.parent = Stc.parent;
                                     end
                                 end
                                 
@@ -272,6 +276,7 @@ classdef MTAStateCollection < hgsetget
                                 % Check that the result is MTADepoch
                                 if isa(sts{1},'MTADepoch'),
                                     sts = sts{1}.copy;
+                                    sts.parent = Stc.parent;
                                     
                                     % Resample state if necessary
                                     if ~isempty(stsSampleRate), sts.resample(stsSampleRate); end

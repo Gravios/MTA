@@ -20,14 +20,23 @@ if ~isempty(filename),
         
 % GENERATE regular expression 
         if ~isempty(filename)
-            re = ['\.' filename '\.'];                   
+            re = [ Data.ext '.' filename '.'];                   
         else
-            re = ['\.' Data.label '\.'];                   
+            re = [ Data.ext '.' Data.label '.'];                   
         end
+        re = regexptranslate('escape',re);
 
-        filename = stsFileList(~cellfun(@isempty,regexp(stsFileList,re)));
-        if ~isempty(filename),  
-            Data.filename = filename{1};  
+        foundfiles = stsFileList(~cellfun(@isempty,regexp(stsFileList,re)));
+        if ~isempty(foundfiles),
+            if numel(foundfiles)>1
+                nre = [ Session.filebase '.' ];
+                nre = regexptranslate('escape',nre);
+                re = [nre, re];
+                Data.filename = foundfiles{~cellfun(@isempty, regexp(foundfiles, re))};
+            else
+                Data.filename = foundfiles{1};
+            end
+            
         else,
             error(struct('identifier','MTA:MTAData:load:FileNotFound',...
                          'message',   'MTAData object file not found',...
@@ -47,18 +56,19 @@ end
 
 
 switch class(Session)
+  case 'MTATrial'
+    Data.sync.sync = Session.sync.copy;
+    if ~strcmp(Data.path,Session.spath),
+        Data.updatePath(Session.spath);
+    end        
+    Data.resync(Session);
   case 'MTASession'
     Data.sync.sync = Session.sync.copy;
     if ~strcmp(Data.path,Session.spath),
         Data.updatePath(Session.spath);
     end    
     Data.resync(Session);              
-  case 'MTATrial'
-    Data.sync.sync = Session.sync.copy;
-    if ~strcmp(Data.path,Session.spath),
-        Data.updatePath(Session.spath);
-    end        
-    Data.resync(Session);                    
+                    
   case 'double'
     if ~isempty(Session),
         mf = matfile(Data.fpath);

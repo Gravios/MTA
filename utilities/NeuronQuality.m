@@ -91,7 +91,10 @@ for el=GoodElectrodes
     end
     avSpk =[]; stdSpk = [];SpatLocal=[];SpkWidthC=[];SpkWidthL=[];SpkWidthR=[];posSpk=[];FirRate = [];AvSpkAll=[];
     leftmax=[]; rightmax=[];troughamp=[];troughSD=[];spkMaxchanAll=[];
+    %if el == 4; keyboard; end
+    disp(['[INFO] MTA:utilities:NeuronQuality - Processing electrode: ',num2str(el)]);
     for cnum=1:nClu
+        %if el ==4 && cnum == 3; keyboard; end
         % get spike wavesdhapes and compute SNR
         if nspk>0 % if there was a .spk file 
             SampleSize = 1000;

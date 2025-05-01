@@ -70,9 +70,11 @@ xyz.addMarker('hcom', [0.5,1,0.5],{{'head_back','hcom',[0,0,1]}},hcom);
 
 
 hmarker = 'head_left';
-if ~xyz.model.gmi(hmarker);
+if ~xyz.model.gmi(hmarker)
     hmarker = 'head_right';
     hsign = @uminus;
+else
+    hsign = @uplus;
 end
 
 

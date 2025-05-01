@@ -114,24 +114,24 @@ Res = Res ./ Session.sampleRate * sampleRate;
 if sampleRate ~= 1,  Res = ceil(Res);  end
 
 % SELECT generic periods if given
-if ~isempty( Spk.per )
-    newRes = [];
-    newClu = [];
-    for cluInd = unique(Clu)'
-        sper = copy(Spk.per);
-        sper.data = sper.data(Spk.perInd(cluInd,:),:) ...
-            ./sper.sampleRate                         ...
-            .*sampleRate;
-        
-        if isempty(sper.data),  continue;  end
-        
-        [pRes, psind] = SelectPeriods( Res, sper.data, 'd', 1, 0);
-        newRes = cat(1, newRes, pRes);
-        newClu = cat(1, newClu, cluInd*ones(size(pRes)));
-    end
-    [Res,sind] = sort(newRes);
-    Clu        = newClu(sind);
-end
+% $$$ if ~isempty( Spk.per )
+% $$$     newRes = [];
+% $$$     newClu = [];
+% $$$     for cluInd = unique(Clu)'
+% $$$         sper = copy(Spk.per);
+% $$$         sper.data = sper.data(Spk.perInd(cluInd,:),:) ...
+% $$$             ./sper.sampleRate                         ...
+% $$$             .*sampleRate;
+% $$$         
+% $$$         if isempty(sper.data),  continue;  end
+% $$$         
+% $$$         [pRes, psind] = SelectPeriods( Res, sper.data, 'd', 1, 0);
+% $$$         newRes = cat(1, newRes, pRes);
+% $$$         newClu = cat(1, newClu, cluInd*ones(size(pRes)));
+% $$$     end
+% $$$     [Res,sind] = sort(newRes);
+% $$$     Clu        = newClu(sind);
+% $$$ end
 
 % FIT to synchronization periods
 syncPeriods = Session.sync([1,end]);

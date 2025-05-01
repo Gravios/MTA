@@ -69,39 +69,38 @@
 %  
 
 
-
-%%%<<< SET default arguments -----------------------------------------------------------------------
-%MjgER2016_figure_BhvPlacefields_args();
-configure_default_args();
-% MjgER2016_figure_BhvPlacefields_args:
-%
-% Default arument overrides:
-%     fet_HB_pitchB
-%     compute_bhv_ratemaps
-%     compute_bhv_ratemaps_shuffled
-%     compute_bhv_ratemap_erpPCA
-%%%>>>
-
-%%%<<< LOAD MjgER2016 data -------------------------------------------------------------------------
-MjgER2016_load_data();
+% >>> LOAD MjgER2016 data >>> -------------------------------------------------
 %  MjgER2016_load_data:
 %
 %  Variables:
-%      Trials      units      cluSessionMap      pitchReferenceTrial      FigDir
-%      sessionListName        sessionList        states                   numStates      
-%      interpParPfsp          interpParDfs
+%      Trials      Units    cluSessionMap   pitchReferenceTrial  FigDir
+%      sessionListName      sessionList     states               numStates      
+%      interpParPfsp        interpParDfs
 %      
 %  Functions:
 %      reshape_eigen_vector
-%%%>>>
+MjgER2016_load_data();
+% <<< LOAD MjgER2016 data <<< -------------------------------------------------
 
-%%%<<< LOAD data -----------------------------------------------------------------------------------
+% >>> GLOBAL ARGS function input override >>> ---------------------------------
+% MjgER2016_figure_BhvPlacefields_args.m
+% SET global overide pramaters for the listed functions.
+% - fet_HB_pitchB
+% - compute_bhv_ratemaps
+% - compute_bhv_ratemaps_shuffled
+% - compute_ratemaps
+% - compute_bhv_ratemap_erpPCA
+MjgER2016_figure_BhvPlacefields_args();
+% <<< GLOBAL ARGS function input override <<< ---------------------------------
+
+
+% >>> LOAD data >>> -----------------------------------------------------------
 % EXAMPLE Trial : jg05-20120312
 tind = 20;
 Trial = Trials{tind};
 stc = Trials{tind}.stc.copy();
 
-% LOAD rate maps -----------------------------------------------------------------------------------
+% LOAD rate maps -------------------------------------------------------------
 % LOAD place restricted behavior fields
 bfs      = cf(@(t,u)  compute_bhv_ratemaps(t,u),          Trials, units);
 bfsEx    = bfs{tind};

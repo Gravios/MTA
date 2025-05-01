@@ -29,10 +29,10 @@ for i = 1:numel(labels),
                      'type','TimeSeries');
         cast    (Stc.states{sts},'TimePeriods');
     else        
-        resample(Stc.states{sts},Data);
-        cast    (Stc.states{sts},'TimeSeries');
+        resample(Stc.states{sts}, Data);
+        cast    (Stc.states{sts}, 'TimeSeries');
         Stc.states{sts}.data = mstc(:,i)>0;
-        cast    (Stc.states{sts},'TimePeriods');
+        cast    (Stc.states{sts}, 'TimePeriods');
     end    
 
     clean   (Stc.states{sts});
