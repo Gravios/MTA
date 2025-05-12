@@ -141,11 +141,12 @@ classdef MTAApfs < hgsetget %< MTAAnalysis
                 'spk',                            [],                                            ...
                 'compute_pfs',                    @PlotPF,                                       ...
                 'loadMethod',                     '',                                            ...
-                'posShuffleDims',                  []                                             ...
+                'posShuffleDims',                 [],                                            ...
+                'purge',                          false                                           ...
             );            
             [units,states,overwrite,tag,binDims,SmoothingWeights,type,spkShuffle,posShuffle,     ...
              numIter,xyzp,boundaryLimits,bootstrap,halfsample,shuffleBlockSize,trackingMarker,   ...
-             autoSaveFlag,spkMode,spk,compute_pfs,loadMethod,posShuffleDims] = ...
+             autoSaveFlag,spkMode,spk,compute_pfs,loadMethod,posShuffleDims, purge] = ...
                 DefaultArgs(varargin,defargs,'--struct');
 %---------------------------------------------------------------------------------------------------
                 
@@ -204,8 +205,12 @@ classdef MTAApfs < hgsetget %< MTAAnalysis
                 Pfs.adata.binSizes = round(abs(diff(boundaryLimits(1:numel(binDims),:),1,2))./binDims');
                 
                 Pfs.update_filename(Session,tag);
-             if exist(fpath(Pfs),'file') && ~overwrite
-% LOAD place fields 
+                if exist(fpath(Pfs),'file') && ~overwrite
+% LOAD place fields
+                    disp(Pfs.fpath);
+                    if purge,
+                        delete(Pfs.fpath);
+                    end
                     load(Pfs.fpath);
                     if all(ismember(units,Pfs.data.clu)),
                         return;
@@ -278,6 +283,10 @@ classdef MTAApfs < hgsetget %< MTAAnalysis
                         
             numUnits = numel(units);
             selected_units = units;
+
+            if purge,
+                delete(Pfs.fpath);
+            end
             
             pf_tmpfile = Pfs.fpath;
 

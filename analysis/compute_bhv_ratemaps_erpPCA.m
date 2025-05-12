@@ -41,8 +41,8 @@ if ~exist(filePath,'file') || overwrite,
     tlu =  cf(@(i,u) repmat(i,size(u)), mat2cell(1:numel(units),1,ones([1,numel(units)])),units);
 
     rmaps = cat(2, rmaps{:});   
-    clu = cat(2, clu{:});    
-    tlu = cat(2, tlu{:});    
+    clu = cat(2, clu{:});
+    tlu = cat(2, tlu{~cellfun(@isempty,tlu)});    
     clu = [tlu',clu'];
 
     if pfs{1}.parameters.numIter>1

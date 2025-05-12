@@ -52,7 +52,7 @@ switch Data.type
         interpMethod = 'nearest';
     end
     
-    if newSampleRate<Data.sampleRate&&~isa(Data,'MTADepoch'),
+    if newSampleRate < Data.sampleRate & ~isa(Data,'MTADepoch'),
         Data.filter('ButFilter',3,newSampleRate/2.0000001,'low');
     end
     

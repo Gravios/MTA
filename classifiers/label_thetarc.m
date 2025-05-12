@@ -5,40 +5,50 @@ function Trial = label_thetarc(Trial,varargin)
 
 % LOAD metadata and lfp
 par = LoadPar(fullfile(Trial.spath, [Trial.name '.xml'])); 
-lfp = LoadBinary(fullfile(Trial.spath, [Trial.name '.lfp']),channels,par.nChannels)';
+lfp = LoadBinary(                               ...
+    fullfile(Trial.spath, [Trial.name '.lfp']), ...
+    channels,                                   ...
+    par.nChannels)';
+
 
 % RC theta spectrum
 [ys,fs,ts] = mtchglong(diff(lfp,1,2), ...
                           2^11, ...
                           par.lfpSampleRate,...
                           2^10, ...
-                          2^10*0.5, ...
+                          2^9, ...
                           3, ...
-                          [],[],[1,25]);
+                          [],[],[1,35]);
 
-ts = ts+((2^10*0.5)/2)/par.lfpSampleRate;
+ts = ts+((2^9)/2)/par.lfpSampleRate;
 ssr = 1/diff(ts(1:2));
 gpad = round([ts(1),size(lfp,1)./par.lfpSampleRate-ts(end)].*ssr)-[1,0];
 szg = size(ys);
+gpad(gpad<0) = 0;
 
 ys = cat(1,                           ...
          zeros([gpad(1),szg(2)]), ...
-         gys,                         ...
+         ys,                         ...
          zeros([gpad(2),szg(2)]));
 
-ts = cat(2,                                    ...
-         ([1:gpad(1)]./ssr),                  ...
-         ts',                                  ...
-         ([gpad(1)+size(ts,1)]+[1:gpad(2)])./ssr)';
+ts = cat(1,                                    ...
+         ([1:gpad(1)]./ssr)',                  ...
+         ts,                                   ...
+         ([gpad(1)+size(ts,1)]+[1:gpad(2)])'./ssr);
 
+%nys = ys;
+nys = bsxfun( ...
+    @rdivide, ...
+    ys(:,:)', ...
+    sum(ys(:,:),2)')';
+
+%nys = RectFilter(RectFilter(RectFilter(nys(:,:),3,1)',3,1)',3,1);
 
 % THETA DELTA ratio 
-fqin  =  5 < fs & fs < 10;
-fqout = ( fs > 20 ) | fs<2;
-tdRatio = log10(  mean(nys(:,fqin ),2) ...
-          ./ mean(nys(:,fqout),2));
-
-nys = bsxfun(@rdivide,oys(:,:,2,2)', sum(oys(:,:,2,2),2)')';
+fqin  =  (5 < fs & fs < 8);
+fqout =  fs < 2;
+tdRatio =   log10(mean(nys(:,fqin ),2)) ...
+          -log10( mean(nys(:,fqout),2));
 
 % GENERATE theta periods via GHMM
 hmmStates = zeros(size(tdRatio));
@@ -47,22 +57,11 @@ nind = ~isnan(tdRatio) & ~isinf(tdRatio) & tdRatio~=0;
 for ii = 1:2
     tdRatioStates(ii) = mean(tdRatio(find(hmmStates==ii)));
 end
+
 [~,tdStateInd] = max(tdRatioStates);
 thetaState = zeros([numel(ts),1]);
 thetaState = hmmStates==tdStateInd;
 thetaPeriods = ThreshCross(thetaState,0.5,1);
-
-
-nhmmStates = zeros(size(tdRation));
-nind = ~isnan(tdRation) & ~isinf(tdRation) & tdRation~=0;
-[nhmmStates(nind),nthhmm,nthdec] = gausshmm(tdRation(nind),2,1,0);
-for ii = 1:2
-    ntdRatioStates(ii) = mean(tdRation(find(nhmmStates==ii)));
-end
-[~,ntdStateInd] = max(ntdRatioStates);
-nthetaState = zeros([numel(ts),1]);
-nthetaState = nhmmStates==ntdStateInd;
-nthetaPeriods = ThreshCross(nthetaState,0.5,1);
 
 % RESAMPLE to lfp sample rate
 tper = ts(thetaPeriods).*par.lfpSampleRate;
@@ -89,4 +88,5 @@ Stc{'c'}.save(1);
 Stc.save(1);
 Trial.stc = Stc;
 Trial.save;
+
 

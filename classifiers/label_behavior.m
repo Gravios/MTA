@@ -7,9 +7,6 @@ defargs = struct('featureSet','fet_mis','mode','fullbody');
 
 
 switch mode
-
-
-    
 % REQUIRES marker set: spine_lower, pelvis_root, spine_middel, spine_upper, head_back, head_left,
 %                      head_front, head_right
   case 'fullbody'

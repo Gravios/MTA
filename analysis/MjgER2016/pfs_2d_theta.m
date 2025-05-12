@@ -43,9 +43,10 @@ function pfs = pfs_2d_theta(Trial,varargin)
 defargs = struct('units',          Trial.spk.map(:,1)',                                       ...
                  'states',         'theta-sit-groom',                                         ...
                  'overwrite',      0,                                                         ...
-                 'pfsArgsOverride',[]                                                         ...
+                 'pfsArgsOverride',[],                                                        ...
+                 'purge',          false                                                      ...
 );
-[units,states,overwrite,pfsArgsOverride] = DefaultArgs(varargin,defargs,'--struct');
+[units,states,overwrite,pfsArgsOverride,purge] = DefaultArgs(varargin,defargs,'--struct');
 % END DEFARGS -----------------------------------------------------------------------------------
 
 
@@ -87,7 +88,7 @@ if ~isempty(pfsArgsOverride) && isstruct(pfsArgsOverride),
 end
 pfsArgs = struct2varargin(pargs);
 disp(['[INFO] MTA:analysis:placefields:pfs_2d_theta:processing:' Trial.filebase]);
-pfs = MTAApfs(Trial,pfsArgs{:});
+pfs = MTAApfs(Trial,'purge',purge,pfsArgs{:});
 
 
 % END MAIN -------------------------------------------------------------------------    

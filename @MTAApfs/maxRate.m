@@ -44,7 +44,11 @@ else
 end
 
 if isempty(units),
-    units = sort(Pfs.data.clu');
+    %units = sort(Pfs.data.clu');
+    mxr = [];
+    mxp = [];
+    fo = [];
+    return;
 end
 if mazeMaskFlag,
     width = numel(bins{1});

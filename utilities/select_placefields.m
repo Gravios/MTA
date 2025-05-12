@@ -8,29 +8,21 @@ function units = select_placefields(Trial,varargin)
 %    overwrite - Logical: default(false)
 %
 
-% DEFARGS ------------------------------------------------------------------------------------------
-defargs = struct('minSpkCnt',                    30,                                             ...
-                 'overwrite',                    false                                           ...
+% >>> DEFARGS >>> -------------------------------------------------------------
+defargs = struct('minSpkCnt',                    30,                        ...
+                 'overwrite',                    false                      ...
 );
 [minSpkCnt,overwrite] = DefaultArgs(varargin,defargs,'--struct');
-%---------------------------------------------------------------------------------------------------
+% <<< DEFARGS <<< -------------------------------------------------------------
 
-
-% TAG creation -------------------------------------------------------------------------------------
-% ID Vars - create hash tag
-
+% >>> TAG >>> -----------------------------------------------------------------
+% Generate filename where the place cell cluster ids will be stored.
 % $$$ tag = 'none'
 % $$$ if isempty(tag),
 % $$$     tag = DataHash(struct());
 % $$$ end
-
 filename = fullfile(Trial.spath,[Trial.filebase,'.select_placefields.mat']);
-
-%---------------------------------------------------------------------------------------------------
-
-
-
-
+% <<< TAG <<< -----------------------------------------------------------------
 
 % MAIN ---------------------------------------------------------------------------------------------
 

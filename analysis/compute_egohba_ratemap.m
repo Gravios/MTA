@@ -80,16 +80,16 @@ else
     stag = '';
 end
 
-for phase = 1:numel(binPhzc)
-    for hba = 1:numel(binHbac)
+for phzI = 1:numel(binPhzc)
+    for hbaI = 1:numel(binHbac)
 % CHECK existence of pfs object
-    pargs.tag = ['egofield_theta_phase_hba_',num2str(hba),'_',num2str(phase),stag];
+    pargs.tag = ['egofield_theta_phase_hba_',num2str(hbaI),'_',num2str(phzI),stag];
     filepath = fullfile(Trial.spath, [Trial.filebase,'.Pfs.',pargs.tag,'.mat']);
     
     if exist(filepath,'file'),
-        pfs{phase,hba} = load(filepath).Pfs;
+        pfs{phzI,hbaI} = load(filepath).Pfs;
         if overwrite
-            pfs{phase,hba}.purge_savefile();
+            pfs{phzI,hbaI}.purge_savefile();
         else
             continue;
         end;% if
@@ -99,11 +99,11 @@ for phase = 1:numel(binPhzc)
         if unit==1
             pargs.spk = copy(spk);
             pargs.states = copy(thetaState);
-            pargs.states.label = ['thetaPhz_',num2str(phase)];
-            pargs.states.data(   phz(:,1) < binPhzs(phase)             ...
-                               | phz(:,1) >= binPhzs(phase+1)          ... 
-                               | headBodyAng.data < binHbas(hba)       ...
-                               | headBodyAng.data >= binHbas(hba+1)) = 0;
+            pargs.states.label = ['thetaPhz_',num2str(phzI)];
+            pargs.states.data(   phz(:,1) < binPhzs(phzI)             ...
+                               | phz(:,1) >= binPhzs(phzI+1)          ... 
+                               | headBodyAng.data < binHbas(hbaI)       ...
+                               | headBodyAng.data >= binHbas(hbaI+1)) = 0;
             cast(pargs.states,'TimePeriods');
             resInd = WithinRanges( pargs.spk.res, pargs.states.data);
             pargs.spk.res = pargs.spk.res(resInd);
@@ -136,7 +136,7 @@ for phase = 1:numel(binPhzc)
         end% if 
     end% for unit
     pfTemp.save();
-    pfs{phase,hba} = pfTemp;    
+    pfs{phzI,hbaI} = pfTemp;    
     pfTemp = Trial;
-    end% for hba
-end% for phase
+    end% for hbaI
+end% for phzI

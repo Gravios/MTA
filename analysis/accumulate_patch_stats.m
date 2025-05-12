@@ -18,11 +18,13 @@
 cf(@(T) T.load('nq'),Trials);
 
 % ACCUMULATE place fields
-t = 20;
-[pfstats] = PlaceFieldStats(Trials{t},pfsr{t}{1},20,2,false,true);
-for t = 1:30,
+
+t = 23;
+clear('pfstats');
+[pfstats] = PlaceFieldStats(Trials{t},pfsr{t}{1},18,2,false,true);
+for t = 1:numel(Trials),
     disp(['[INFO] accumulating placefield stats: ' Trials{t}.filebase]);
-    for u = units{t},
+    for u = Units{t},
         [pfstats(end+1,1)] = PlaceFieldStats(Trials{t},pfsr{t}{1},u,2,false,true);
         [pfstats(end  ,2)] = PlaceFieldStats(Trials{t},pfsr{t}{2},u,2,false,true);
         [pfstats(end  ,3)] = PlaceFieldStats(Trials{t},pfsr{t}{3},u,2,false,true);
@@ -39,7 +41,7 @@ pfstats(1,:) = [];
 % $$$ figure,plot(rpatches(:,1),rpatches(:,2),'.')
 % $$$ line([0,30],[0,30],'Color','k');
 
-
+clear('apfstats');
 apfstats = CatStruct(pfstats(1,:),[],2);
 for field = fieldnames(pfstats)'
     field = field{1};
@@ -452,18 +454,16 @@ end
 
 
 
-uid = find(ismember(cluSessionMap,[20,20],'rows'));            
-% $$$ reshape(sq(tempPatchCenter(uid,:,:,:,:)),[],2),'rows')
-% $$$ 
-% $$$ figure,imagesc(sq(cdist(uid,:,:,1)))
-% $$$ figure,imagesc(sq(cdist(uid,:,:,1)))            
 
 % COMPUTE place field centers for each state
 pfssMr = {};
 pfssMp = {};
 uCount = 0;
 for t = 1:numel(Trials),
-    [mr,mp] = cf(@(p,u) p.maxRate(units{t},'interpPar',interpParPfs), pfsa{t});
+    if isempty(Units{t})
+        continue
+    end
+    [mr,mp] = cf(@(p,u) p.maxRate(Units{t},'interpPar',interpParPfs), pfsa{t});
     for s = 1:numel(mr),
         pfssMr{s}(1+uCount:uCount+numel(mr{1}),:) = mr{s}(:,1);
         pfssMp{s}(1+uCount:uCount+size(mp{1},1),:) = mp{s}(:,:);        
@@ -511,7 +511,7 @@ for uid = 1:numUnits
         Trial = Trials{tid};
         xyz = preproc_xyz(Trial,'trb',sampleRate);
         fet = fet_HB_pitchB(Trial,sampleRate);
-        spk  = create(copy(Trial.spk),Trial,sampleRate,pfsArgs.states,units{tid},'');
+        spk  = create(copy(Trial.spk),Trial,sampleRate,pfsArgs.states,Units{tid},'');
     end
         
     unit = cluSessionMap(uid,2);
@@ -576,9 +576,8 @@ pd = reshape(patchDistF(unitSubset,:,:),[],1)/10;
 
 % now how do I compare this to the rmapCorr?
                 
+% >>> COMPUTE the patch bhv rate maps >>> -------------------------------------
 
-
-%%%<<< COMPUTE the patch bhv rate maps -------------------------------------------------------------
 rmapP = zeros([784,numUnits,6]);
 tid = 0;
 for uid = 1:numUnits
@@ -587,7 +586,7 @@ for uid = 1:numUnits
         Trial = Trials{tid};
         xyz = preproc_xyz(Trial,'trb',sampleRate);
         fet = fet_HB_pitchB(Trial,sampleRate);
-        spk  = create(copy(Trial.spk),Trial,sampleRate,pfsArgs.states,units{tid},'');
+        spk  = create(copy(Trial.spk),Trial,sampleRate,pfsArgs.states,Units{tid},'');
     end
     unit = cluSessionMap(uid,2);
     numPatches = sum(~isnan(patchCntrF(uid,:,1)));
@@ -611,15 +610,16 @@ for uid = 1:numUnits
     end
     toc
 end
-%%%>>>
 
+% <<< COMPUTE the patch bhv rate maps <<< -------------------------------------
+
+% >>> DIAGNOSTIC FIGURE >>> ---------------------------------------------------
 
 % $$$ figure,
 % $$$ for p = 1:6,
 % $$$ subplot(1,6,p);
 % $$$ imagesc(reshape(rmapP(:,ismember(cluSessionMap,[20,31],'rows'),p).*validDims,[28,28])');axis('xy');colormap('jet');colorbar();
 % $$$ end
-
 
 % $$$ bins = bfs{1}.adata.bins
 % $$$ figure();
@@ -685,17 +685,18 @@ end
 % $$$ % $$$     waitforbuttonpress();
 % $$$ % $$$ end
 
+% <<< DIAGNOSTIC FIGURE <<< ---------------------------------------------------
 
+% >>> COMPUTE inter placecell bhv ratemap correlations >>> --------------------
 
-%%%<<< COMPUTE inter placecell bhv ratemap correlations
 % only compare units on separate electrodes
 rmapIPCorr = [];
 rmapIPDist = [];
 rmapIPBcnt = [];
 for tid = numel(Trials),
-    for u1 = units{tid}
+    for u1 = Units{tid}
         uid1 = find(ismember(cluSessionMap,[tid,u1],'rows'));
-        for u2 = units{tid}
+        for u2 = Units{tid}
             if u1 == u2 ...
                || (Trials{tid}.nq.ElNum(u1)==Trials{tid}.nq.ElNum(u2) ...
                    && abs(Trials{tid}.nq.maxAmpChan(u1)-Trials{tid}.nq.maxAmpChan(u2))<=2)
@@ -722,6 +723,11 @@ rmapPCA = nan([784,1]);
 rmapPCB = nan([784,1]);
 rmapPCA(validDims) = rmapPC(:,1);
 rmapPCB(validDims) = rmapPC(:,2);
+
+% <<< COMPUTE inter placecell bhv ratemap correlations <<< --------------------
+
+% >>> DIAGNOSTIC FIGURES >>> --------------------------------------------------
+
 % $$$ figure,
 % $$$ subplot(121);
 % $$$ pcolor(reshape(rmapPCA,[28,28])');axis('xy');
@@ -933,4 +939,6 @@ rmapPCB(validDims) = rmapPC(:,2);
 % $$$ 
 % $$$ figure
 % $$$ histogram(patchCNTF(ind),0.5:6.5);
-% $$$  
+% $$$
+
+% <<< DIAGNOSTIC FIGURES <<< --------------------------------------------------

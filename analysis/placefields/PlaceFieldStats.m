@@ -47,7 +47,7 @@ end
 % Maximum firing rate found within the normal place field
 pfstats.peakFR = pkfr;
 pfstats.rateThreshold = rateThreshold;
-pfstats.spatialCoherence = pf.spatialCoherence(unit,false);
+%pfstats.spatialCoherence = pf.spatialCoherence(unit,false);
 %pfstats.spatialInformation = nansum((map(~isnan(map))./nanmean(map(:))).*log2(map(~isnan(map))./nanmean(map(:))));
 
 
@@ -149,7 +149,7 @@ if nargout>1
     % Maximum firing rate found within the normal place field
     pfmstats.peakFR = max(nanmean(map,2));
     pfmstats.rateThreshold = rateThreshold;
-    pfmstats.spatialCoherence = pf.spatialCoherence(unit,false);
+    %pfmstats.spatialCoherence = pf.spatialCoherence(unit,false);
     %pfmstats.spatialInformation = nansum((map(~isnan(map))./nanmean(map(:))).*log2(map(~isnan(map))./nanmean(map(:))));
 
 

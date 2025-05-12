@@ -7,6 +7,7 @@
 
 EgoProCode2D_load_data();
 
+% >>> Single Trial >>> --------------------------------------------------------
 trialIndex = 20;
 
 Trial   = Trials     { trialIndex };
@@ -205,15 +206,42 @@ exyInd = ind & xts.data;
 rexy = [exy(exyInd,1),exy(exyInd,2)];
 sexy = exy(ures,:);
 sum(within_ranges(sqrt(sum(sexy.^2,2)),radius))/(sum(within_ranges(sqrt(sum(rexy.^2,2)),radius))./sampleRate)
+% <<< Single Trial <<< --------------------------------------------------------
 
-
-%%%<<< Multi-Session Directional ego field decomposition
+% >>> Multi-Session Directional ego field decomposition >>> -------------------
 % jg05-201203_10-11  49,152
 
 % jg05-201203_(11)(12)
 %              50, 21
 %              53, 35
 %              63, 31
+
+
+% jg05-201203_(09)(10)(11)(12)
+                                                         
+clear('pairs');                                              
+pairs(1).tid = 17
+pairs(1).tmap = { ...
+    'jg05-20120309.cof.all', ...
+    'jg05-20120310.cof.all', ...
+    'jg05-20120311.cof.all', ...
+    'jg05-20120312.cof.all'  ...
+};
+pairs(1).clm = [0,8];
+pairs(1).chn = 8;  pairs(1).unt = [74, 57, 150, 124];
+pairs = repmat(pairs,[9,1]);
+pairs(2).chn = 8;  pairs(2).unt = [62, 50, 141, 105]; %*%
+pairs(3).chn = 8;  pairs(3).unt = [89, 66, 144, 145]; % check 145
+pairs(4).chn = 8;  pairs(4).unt = [80, 75, 142, 102]; %*%
+pairs(5).chn = 8;  pairs(5).unt = [59, 49, 133, 128]; %*%
+pairs(6).chn = 8;  pairs(6).unt = [61, 60, 134, 115];
+pairs(7).chn = 8;  pairs(7).unt = [69, 56, 139, 114];
+pairs(8).chn = 8;  pairs(8).unt = [70, 74, 149, 103];
+
+
+bhvState = 'pause+walk+turn&theta';
+trialIndex = cellfun(@(F) find_trial_index(Trials,F), pairs(1).tmap);
+
 
 % jg05-201203_(15)(16)(17)
 %               6, 13, 29
@@ -222,9 +250,12 @@ sum(within_ranges(sqrt(sum(sexy.^2,2)),radius))/(sum(within_ranges(sqrt(sum(rexy
 %              61, 48, 72 ?
 %              63, 65, 69
 %              77, 61, 63
+% bhvState = 'pause+walk+turn&theta';
+% trialIndex = [21,22,23];
+Pft = cf(@(T)  pfs_2d_theta(T,[],'theta-groom-sit-rear'),  Trials);
 
-bhvState = 'pause+walk+turn&theta';
-trialIndex = [21,22,23];
+
+
 tTrial = {};
 tunits = {};
 tpft = {};
@@ -235,9 +266,9 @@ thba = {};
 tpyr = {};
 for tid = 1:numel(trialIndex)
     tTrial{tid} = Trials{ trialIndex(tid) };
-    tunits{tid} = units { trialIndex(tid) };
-    tpft{tid}   = pft   { trialIndex(tid) };
-    txyz{tid}   = xyz   { trialIndex(tid) };
+    tunits{tid} = Units { trialIndex(tid) };
+    tpft{tid}   = Pft   { trialIndex(tid) };
+    txyz{tid}   = Xyz   { trialIndex(tid) };
     thyc{tid} = tTrial{tid}.meta.correction.headYaw;
     headCenterCorrection = tTrial{tid}.meta.correction.headCenter;
 % COMPUTE head basis
@@ -268,6 +299,7 @@ radius = [25,150];
 %eunit = {61, 48, 72};
 %eunit = {63, 65, 69}; N (m, 0:pi)
 %eunit = {77, 61, 63}; N (m,-pi:0)
+
 
 
 exy={};
@@ -545,3 +577,4 @@ exyInd = ind & xts.data;
 rexy = [exy(exyInd,1),exy(exyInd,2)];
 sexy = exy(ures,:);
 sum(within_ranges(sqrt(sum(sexy.^2,2)),radius))/(sum(within_ranges(sqrt(sum(rexy.^2,2)),radius))./sampleRate)
+% <<< Multi-Session Directional ego field decomposition <<< -------------------

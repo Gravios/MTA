@@ -114,26 +114,38 @@ pft = pfs_2d_theta(Trial,'overwrite',true);
 Trials{28} = Trial;
 
 
+states = {'theta-groom-sit','rear&theta','hloc&theta','hpause&theta','lloc&theta','lpause&theta'};
+Pft = cf(@(T) pfs_2d_theta(T,[],'overwrite',false,'purge',false), Trials);
+Pfs = cf(@(T) pfs_2d_states(T,'all',[],states,'overwrite',true,'purge',true), Trials);
 
-pft = cf(@(T) pfs_2d_theta(T), Trials);
 
-
-
-tid = 10;
-pft{tid} = pfs_2d_theta(Trials{tid},'overwrite',true);
-
-figure();
-clf();
-ucnt = numel(Trial.spk.map(:,1));
-for unit = 1:ucnt
-    subplot(ceil(ucnt/15),15,unit);
-    plot(pft,unit,[],'text');
-    title(num2str(unit));
+for tid = 24:33
+    report_placefield_summary(Trials{tid})
 end
-axs = flipud(get(gcf,'Children'));
 
 
-for tid = [28]
+units = Trials{2}.spk.get_unit_set(Trial,'placecells');
+figure,
+for unit = units(:)'
+    plot(Pft{1}, unit, [],'text');
+    title(num2str(unit));
+    waitforbuttonpress();
+end
+
+    
+
+% $$$ figure();
+% $$$ clf();
+% $$$ ucnt = numel(Trial.spk.map(:,1));
+% $$$ for unit = 1:ucnt
+% $$$     subplot(ceil(ucnt/15),15,unit);
+% $$$     plot(pft,unit,[],'text');
+% $$$     title(num2str(unit));
+% $$$ end
+% $$$ axs = flipud(get(gcf,'Children'));
+
+
+for tid = 1:numel(Trials)
     disp(tid);
     ucnt = Trials{tid}.spk.map(:,1)';
     Trials{tid}.nq = [];
@@ -145,7 +157,7 @@ for tid = [28]
         Trials{tid}.load('nq');
         nq = Trials{tid}.nq;
     end
-    rmaps = af(@(u) plot(pft{tid},u,[],'text'), ucnt);
+    rmaps = af(@(u) plot(Pft{tid},u,[],'text'), ucnt);
     rmaps = cat(3, rmaps{:});
     mrate = pft{tid}.maxRate(ucnt)';
     mzero = sum((reshape(rmaps,[],size(rmaps,3))./mrate)<0.5,'omitnan');
@@ -157,6 +169,12 @@ for tid = [28]
                          'placecells',    ...
                          UnitsNew{tid});
 end
+
+
+
+
+
+cf(@(T) report_placefield_summary(T), Trials(2:10));
 
 for pyr = pyrId
     axs(pyr).YColor='red';
@@ -171,12 +189,12 @@ end
 xyz = Trial.load('xyz');
 cmtch = {};
 
-% >>> ER06 >>> --------------------------------------------
-% >>> 0612 - 0613 >>> -------------------------------------
-figure,plot(xyz(:,1,1),xyz(:,1,2),'.');
 
-tid1 = 3;
-tid2 = 4;
+% >>> er01 >>> ------------------------------------------
+% >>>    0719 - 0721   >>> ------------------------------
+
+tid1 = 1;
+tid2 = 2;
 
 s = MTASession.validate(Trials{tid1}.filebase);
 s.spk.create(s);
@@ -190,18 +208,19 @@ s = MTASession.validate(Trials{tid2}.filebase);
 s.spk.create(s);
 s.save();
 Trials{tid2} = MTATrial.validate(Trials{tid2}.filebase);
-pfs = pfs_2d_theta(Trials{tid1},'overwrite',false);
+pfs = pfs_2d_theta(Trials{tid2},'overwrite',false);
 pfs.purge_savefile();
 pfs = pfs_2d_theta(Trials{tid2},'overwrite',true);
 
 
 cmtch = {};
-
 shnk = 1;
+cmtch{shnk} = [ ...
+
+];
 cmtch{shnk} = [0,0];
 
-
-figure(shnk)
+figure(1)
 clf();
 ucnt = sum(Trials{tid1}.spk.map(:,2)==shnk);
 offset = sum(Trials{tid1}.spk.map(:,2)<shnk);
@@ -211,7 +230,154 @@ for k = 1:ucnt
     plot(pft,k+offset,[],'colorbar');
     title(num2str(k+offset));
 end
-figure(shnk+1);
+figure(2);
+clf();
+ucnt = sum(Trials{tid2}.spk.map(:,2)==shnk);
+offset = sum(Trials{tid2}.spk.map(:,2)<shnk);
+for k = 1:ucnt
+    if ismember(k+offset, cmtch{shnk}(:,2)); continue; end;
+    subplot(ceil(ucnt/10),10,k);
+    plot(pfs,k+offset,[],'colorbar');
+    title(num2str(k+offset));
+end
+
+
+
+Trials{tid1}.spk.map(Trials{tid1}.spk.map(:,2)==shnk,:)
+Trials{tid2}.spk.map(Trials{tid2}.spk.map(:,2)==shnk,:)
+     1     1     2                 1     1     2
+     2     1     3                 2     1     3
+     3     1     4                 3     1     4
+     4     1     5                 4     1     5
+     5     1     6                 5     1     6
+     6     1     7                 6     1     7
+     7     1     8                 7     1     8
+     8     1     9                 8     1     9
+     9     1    10                 9     1    10
+    10     1    11                10     1    11
+    11     1    12                11     1    12
+    12     1    13                12     1    13
+    13     1    14                13     1    14
+    14     1    15                14     1    15
+    15     1    16                15     1    16
+    16     1    17                16     1    17
+    17     1    18                17     1    18
+    18     1    19                18     1    19
+    19     1    20                19     1    20
+    20     1    21                20     1    21
+    21     1    22                21     1    22
+    22     1    23                22     1    23
+    23     1    24                23     1    24
+    24     1    25                24     1    25
+    25     1    26                25     1    26
+    26     1    27                26     1    27
+    27     1    28                27     1    28
+    28     1    29                28     1    29
+    29     1    30
+    30     1    31
+    31     1    32
+    32     1    33
+
+
+shnk = 2;
+cmtch{shnk} = [ ...
+    21, 16; ... ???
+];
+cmtch{shnk} = [0,0];
+
+figure(1)
+clf();
+ucnt = sum(Trials{tid1}.spk.map(:,2)==shnk);
+offset = sum(Trials{tid1}.spk.map(:,2)<shnk);
+for k = 1:ucnt
+    if ismember(k+offset, cmtch{shnk}(:,1)); continue; end;    
+    subplot(ceil(ucnt/10),10,k);
+    plot(pft,k+offset,[],'colorbar');
+    title(num2str(k+offset));
+end
+figure(2);
+clf();
+ucnt = sum(Trials{tid2}.spk.map(:,2)==shnk);
+offset = sum(Trials{tid2}.spk.map(:,2)<shnk);
+for k = 1:ucnt
+    if ismember(k+offset, cmtch{shnk}(:,2)); continue; end;
+    subplot(ceil(ucnt/10),10,k);
+    plot(pfs,k+offset,[],'colorbar');
+    title(num2str(k+offset));
+end
+
+Trials{tid1}.spk.map(Trials{tid1}.spk.map(:,2)==shnk,:)
+Trials{tid2}.spk.map(Trials{tid2}.spk.map(:,2)==shnk,:)
+
+% <<< 0719 - 0721 <<< -----------------------------------
+% >>> 0721 - 0722   >>> ------------------------------
+cmtch = {};
+shnk = 1; cmtch{shnk} = [ ];
+shnk = 2;
+cmtch{shnk} = [ ...
+    31, 37; ...
+    53, 56; ...
+];
+shnk = 3;
+cmtch{shnk} = [ ...
+    65, 91; ... p ?
+    75, 74; ... P
+    57, 92; ... P S
+    59, 76; ... I    
+];
+shnk = 4;
+cmtch{shnk} = [ ...
+    80, 111; ...
+];
+shnk = 5; cmtch{shnk} = [ ];
+shnk = 6; cmtch{shnk} = [ ];
+shnk = 7; cmtch{shnk} = [ ];
+shnk = 8; cmtch{shnk} = [ ];
+
+
+
+% <<< 0721 - 0722 <<< -----------------------------------
+% <<< er01 <<< ------------------------------------------
+% >>> ER06 >>> ------------------------------------------
+% >>> I 0612 - 0613   >>> -------------------------------
+figure,plot(xyz(:,1,1),xyz(:,1,2),'.');
+
+tid1 = 2;
+tid2 = 2;
+
+s = MTASession.validate(Trials{tid1}.filebase);
+s.spk.create(s);
+s.save();
+Trials{tid1} = MTATrial.validate(Trials{tid1}.filebase);
+pft = pfs_2d_theta(Trials{tid1},'overwrite',false);
+pft.purge_savefile();
+pft = pfs_2d_theta(Trials{tid1},'overwrite',true);
+
+s = MTASession.validate(Trials{tid2}.filebase);
+s.spk.create(s);
+s.save();
+Trials{tid2} = MTATrial.validate(Trials{tid2}.filebase);
+pfs = pfs_2d_theta(Trials{tid2},[],'thetarc-sit-groom','overwrite',false);
+pfs.purge_savefile();
+pfs = pfs_2d_theta(Trials{tid2},[],'thetarc-sit-groom','overwrite',true);
+
+
+cmtch = {};
+
+shnk = 8;
+cmtch{shnk} = [0,0];
+
+figure(1)
+clf();
+ucnt = sum(Trials{tid1}.spk.map(:,2)==shnk);
+offset = sum(Trials{tid1}.spk.map(:,2)<shnk);
+for k = 1:ucnt
+    if ismember(k+offset, cmtch{shnk}(:,1)); continue; end;    
+    subplot(ceil(ucnt/10),10,k);
+    plot(pft,k+offset,[],'colorbar');
+    title(num2str(k+offset));
+end
+figure(2);
 clf();
 ucnt = sum(Trials{tid2}.spk.map(:,2)==shnk);
 offset = sum(Trials{tid2}.spk.map(:,2)<shnk);
@@ -273,22 +439,111 @@ Trials{tid2}.spk.map(Trials{tid2}.spk.map(:,2)==shnk,:)
                               46     1    47
                               47     1    48
                               48     1    49
-% <<< 0612 - 0613 <<< ------------------------------------
-% <<< ER06 <<< ------------------------------------------
-% >>> Ed10 >>> ------------------------------------------
-% >>> 0816 - 0817 >>>------------------------------------
+% <<< 0612 - 0613 <<< -----------------------------------
+% >>> I 0624 - 0625   >>> -------------------------------
+tid1 = 2;
+tid2 = 2;
+
+s = MTASession.validate(Trials{tid1}.filebase);
+s.spk.create(s);
+s.save();
+Trials{tid1} = MTATrial.validate(Trials{tid1}.filebase);
+pft = pfs_2d_theta(Trials{tid1},'overwrite',false);
+pft.purge_savefile();
+pft = pfs_2d_theta(Trials{tid1},'overwrite',true);
+
+s = MTASession.validate(Trials{tid2}.filebase);
+s.spk.create(s);
+s.save();
+Trials{tid2} = MTATrial.validate(Trials{tid2}.filebase);
+pfs = pfs_2d_theta(Trials{tid2},[],'thetarc-sit-groom','overwrite',false);
+pfs.purge_savefile();
+pfs = pfs_2d_theta(Trials{tid2},[],'thetarc-sit-groom','overwrite',true);
+
 
 cmtch = {};
-shnk = 1;
-cmtch{shnk} = [];
 
+shnk = 8;
+cmtch{shnk} = [0,0];
+
+figure(1)
+clf();
+ucnt = sum(Trials{tid1}.spk.map(:,2)==shnk);
+offset = sum(Trials{tid1}.spk.map(:,2)<shnk);
+for k = 1:ucnt
+    if ismember(k+offset, cmtch{shnk}(:,1)); continue; end;    
+    subplot(ceil(ucnt/10),10,k);
+    plot(pft,k+offset,[],'colorbar');
+    title(num2str(k+offset));
+end
+figure(2);
+clf();
+ucnt = sum(Trials{tid2}.spk.map(:,2)==shnk);
+offset = sum(Trials{tid2}.spk.map(:,2)<shnk);
+for k = 1:ucnt
+    if ismember(k+offset, cmtch{shnk}(:,2)); continue; end;
+    subplot(ceil(ucnt/10),10,k);
+    plot(pfs,k+offset,[],'colorbar');
+    title(num2str(k+offset));
+end
+
+Trials{tid1}.spk.map(Trials{tid1}.spk.map(:,2)==shnk,:)
+Trials{tid2}.spk.map(Trials{tid2}.spk.map(:,2)==shnk,:)
+
+
+
+
+
+
+
+
+
+
+
+% <<< 0624 - 0625 <<< -----------------------------------
+% <<< ER06 <<< ------------------------------------------
+% >>> Ed10 >>> ------------------------------------------
+% >>> I 0813 - 0814   >>> -------------------------------
+% <<<   0813 - 0814   <<< -------------------------------
+% >>> I 0814 - 0815   >>> -------------------------------
+% <<<   0814 - 0815   <<< -------------------------------
+% >>>   0815 - 0816   >>> -------------------------------
+cmtch = {};
+shnk = 1;
+cmtch{shnk} = [ 9,  5];
+shnk = 2;
+cmtch{shnk} = [ 16, 35; ...
+                17, 29; ...
+                20, 30];
+shnk = 2;
+cmtch{shnk} = [ 16, 35; ...
+                17, 29; ...
+                20,  30];
+shnk = 3;
+cmtch{shnk} = [ 22, 52; ...
+                25, 47; ...
+                26, 53; ...
+                29, 48; ... ???
+                29, 41; ... ???
+                32, 66; ...
+                40, 64; ... ???
+                51, 67; ... ???
+              ];
+shnk = 4;
+cmtch{shnk} = [ 63, 82; ...
+                81, 93; ... ???
+                92, 89; ... ???
+              ]; 
+% <<< 0815 - 0816 <<< -----------------------------------
+% >>>   0816 - 0817   >>> -------------------------------
+cmtch = {};
+shnk = 1; cmtch{shnk} = [];
 shnk = 2;
 cmtch{shnk} = [ 28; 28; ... S
                 30, 31; ... I
                 36; 32; ... S
                 50, 39];
-
-shnk = 3; cmtch{shnk} = [  0, 0];
+shnk = 3; 
 cmtch{shnk} = [ 41, 51; ... 
                 45, 41; ...
                 49, 46; ...
@@ -307,55 +562,18 @@ cmtch{shnk} = [ 41, 51; ...
                 ];
 shnk = 4;
 cmtch{shnk} = [  ];
-
 % <<< 0816 - 0817 <<<------------------------------------
-% >>> 0815 - 0816 >>> -----------------------------------
-cmtch = {};
-
-shnk = 1;
-cmtch{shnk} = [ 9,  5; ...
-              ];
-shnk = 2;
-cmtch{shnk} = [ 16, 35; ...
-                17, 29; ...
-                20,  30; ...
-              ];
-
-shnk = 2;
-cmtch{shnk} = [ 16, 35; ...
-                17, 29; ...
-                20,  30; ...
-              ];
-
-shnk = 3;
-cmtch{shnk} = [ 22, 52; ...
-                25, 47; ...
-                26, 53; ...
-                29, 48; ... ???
-                29, 41; ... ???
-                32, 66; ...
-                40, 64; ... ???
-                51, 67; ... ???
-              ];
-
-
-shnk = 4;
-cmtch{shnk} = [ 63, 82; ...
-                81, 93; ... ???
-                92, 89; ... ???
-              ]; 
-% <<< 0815 - 0816 <<< -----------------------------------
 % <<< Ed10 <<< ------------------------------------------
 % >>> jg05 >>> ------------------------------------------
-% >>> 0309 - 0310 >>> -----------------------------------
+% >>>   0309 - 0310   >>> -------------------------------
 tid = 17;
 cmtch{tid} = {};
 
-shnk = 1;  cmtch{shnk} = [];
-shnk = 2;  cmtch{shnk} = [];
-shnk = 3;  cmtch{shnk} = [];
-shnk = 4;  cmtch{shnk} = [];
-shnk = 5;  cmtch{shnk} = [];
+shnk = 1;  cmtch{tid}{shnk} = [];
+shnk = 2;  cmtch{tid}{shnk} = [];
+shnk = 3;  cmtch{tid}{shnk} = [];
+shnk = 4;  cmtch{tid}{shnk} = [];
+shnk = 5;  cmtch{tid}{shnk} = [];
 
 shnk = 6;  
 cmtch{tid}{shnk} = [ ...
@@ -405,7 +623,7 @@ cmtch{tid}{shnk} = [ ...
 
 
 % <<< 0309 - 0310 <<< -----------------------------------
-% >>> 0310 - 0311 >>> -----------------------------------
+% >>>   0310 - 0311   >>> -------------------------------
 
 tid = 18;
 cmtch{tid} = {};
@@ -465,7 +683,7 @@ shnk = 10;  cmtch{tid}{shnk} = [];
 shnk = 11;  cmtch{tid}{shnk} = [];
 shnk = 12;  cmtch{tid}{shnk} = [];
 % <<< 0310 - 0311 <<< -----------------------------------
-% >>> 0310 - 0312 >>> -----------------------------------
+% >>>   0310 - 0312   >>> -------------------------------
 
 s = MTASession.validate('jg05-20120310.cof.all');
 s.spk.create(s);
@@ -522,7 +740,7 @@ rclust0312 = {[118,132], ...
               [8, 19, 33];
 
 % <<< 0310 <-> 0312 <<< ---------------------------------
-% >>> 0311 - 0312 >>> -----------------------------------
+% >>>   0311 - 0312   >>> -------------------------------
 tid = 19;
 cmtch{tid} = {};
 
@@ -605,7 +823,7 @@ shnk = 12;
 cmtch{tid}{shnk} = [];
 
 % <<< 0311 <-> 0312 <<< ---------------------------------
-% >>> 0312 - 0315 >>> -----------------------------------
+% >>>   0312 - 0315   >>> -------------------------------
 
 shnk = 1; cmtch{shnk} = [];
 shnk = 2; cmtch{shnk} = [];
@@ -634,90 +852,97 @@ cmtch{shnk} = [101, 45;...
               ];
 
 % <<< 0312 - 0315 <<< -----------------------------------
-% >>> 0315 - 0316 >>> -----------------------------------
+% >>>   0315 - 0316   >>> -------------------------------
 
-unit{1}{6}(end+1,:) = [ 3, 7];% GUESS PYR
-unit{1}{6}(end+1,:) = [ 4,14];% MATCH PYR
-unit{1}{6}(end+1,:) = [ 5,17];% MATCH INT
-unit{1}{6}(end+1,:) = [ 6,13];% MATCH PYR good
-unit{1}{6}(end+1,:) = [ 9,15];% GUESS PYR 10-EMPTY
-unit{1}{6}(end+1,:) = [12,19];% MATCH PYR LLL
-unit{1}{6}(end+1,:) = [22,16];% Partial MATCH PYR
-unit{1}{6}(end+1,:) = [23, 6];% GUESS PYR LowRate
+cmtch{21} = {};
+cmtch{21}{6} = [];
+cmtch{21}{6}(end+1,:) = [ 3, 7];% GUESS PYR
+cmtch{21}{6}(end+1,:) = [ 4,14];% MATCH PYR
+cmtch{21}{6}(end+1,:) = [ 5,17];% MATCH INT
+cmtch{21}{6}(end+1,:) = [ 6,13];% MATCH PYR good
+cmtch{21}{6}(end+1,:) = [ 9,15];% GUESS PYR 10-EMPTY
+cmtch{21}{6}(end+1,:) = [12,19];% MATCH PYR LLL
+cmtch{21}{6}(end+1,:) = [22,16];% Partial MATCH PYR
+cmtch{21}{6}(end+1,:) = [23, 6];% GUESS PYR LowRate
 
-unit{1}{7}(end+1,:) = [24,42];% GUESS PYR good Mid Loc-lloc
-unit{1}{7}(end+1,:) = [26,31];% GUESS PYR EMPTY
-unit{1}{7}(end+1,:) = [27,41];% MATCH PYR Good??
-unit{1}{7}(end+1,:) = [29,29];% MATCH INT
-unit{1}{7}(end+1,:) = [30,27];% MATCH INT
-unit{1}{7}(end+1,:) = [32,38];% MATCH PYR Good Edg Loc-All
-unit{1}{7}(end+1,:) = [33,30];% MATCH PYR Good Mid Loc-Loc
-unit{1}{7}(end+1,:) = [34,28];% MATCH INT
-unit{1}{7}(end+1,:) = [40,23];% GUESS PYR Good Mid Rear-Rear
-unit{1}{7}(end+1,:) = [42,36];% GUESS PYR Prob Edg lloc-lloc
+cmtch{21}{7} = [];
+cmtch{21}{7}(end+1,:) = [24,42];% GUESS PYR good Mid Loc-lloc
+cmtch{21}{7}(end+1,:) = [26,31];% GUESS PYR EMPTY
+cmtch{21}{7}(end+1,:) = [27,41];% MATCH PYR Good??
+cmtch{21}{7}(end+1,:) = [29,29];% MATCH INT
+cmtch{21}{7}(end+1,:) = [30,27];% MATCH INT
+cmtch{21}{7}(end+1,:) = [32,38];% MATCH PYR Good Edg Loc-All
+cmtch{21}{7}(end+1,:) = [33,30];% MATCH PYR Good Mid Loc-Loc
+cmtch{21}{7}(end+1,:) = [34,28];% MATCH INT
+cmtch{21}{7}(end+1,:) = [40,23];% GUESS PYR Good Mid Rear-Rear
+cmtch{21}{7}(end+1,:) = [42,36];% GUESS PYR Prob Edg lloc-lloc
 
-unit{1}{8}(end+1,:) = [45,56];% GUESS PYR
-unit{1}{8}(end+1,:) = [48,59];% MATCH PYR good rear
-unit{1}{8}(end+1,:) = [51,46];% GUESS PYR unkn
-unit{1}{8}(end+1,:) = [53,62];% GUESS PYRunkn
-unit{1}{8}(end+1,:) = [57,64];% GUESS PYR unkn
-unit{1}{8}(end+1,:) = [58,49];% MATCH INT
-unit{1}{8}(end+1,:) = [59,60];% GUESS PYR
-unit{1}{8}(end+1,:) = [60,55];% MATCH INT
-unit{1}{8}(end+1,:) = [61,48];% MATCH PYR good loc loc
-unit{1}{8}(end+1,:) = [62,54];% GUESS PYR
-unit{1}{8}(end+1,:) = [63,65];% MATCH PYR good
-unit{1}{8}(end+1,:) = [65,47];% GUESS PYR remapping or no match
-unit{1}{8}(end+1,:) = [70,53];% MATCH PYR unkn S S ?
-unit{1}{8}(end+1,:) = [72,57];% MATCH PYR unkn S R
-unit{1}{8}(end+1,:) = [73,51];% MATCH PYR good R R
-unit{1}{8}(end+1,:) = [74,50];% GUESS PYR good S L
-unit{1}{8}(end+1,:) = [75,58];% MATCH PYR unkn S S??
-unit{1}{8}(end+1,:) = [77,61];% GUESS PYR good L L
+cmtch{21}{8} = [];
+cmtch{21}{8}(end+1,:) = [45,56];% GUESS PYR
+cmtch{21}{8}(end+1,:) = [48,59];% MATCH PYR good rear
+cmtch{21}{8}(end+1,:) = [51,46];% GUESS PYR unkn
+cmtch{21}{8}(end+1,:) = [53,62];% GUESS PYRunkn
+cmtch{21}{8}(end+1,:) = [57,64];% GUESS PYR unkn
+cmtch{21}{8}(end+1,:) = [58,49];% MATCH INT
+cmtch{21}{8}(end+1,:) = [59,60];% GUESS PYR
+cmtch{21}{8}(end+1,:) = [60,55];% MATCH INT
+cmtch{21}{8}(end+1,:) = [61,48];% MATCH PYR good loc loc
+cmtch{21}{8}(end+1,:) = [62,54];% GUESS PYR
+cmtch{21}{8}(end+1,:) = [63,65];% MATCH PYR good
+cmtch{21}{8}(end+1,:) = [65,47];% GUESS PYR remapping or no match
+cmtch{21}{8}(end+1,:) = [70,53];% MATCH PYR unkn S S ?
+cmtch{21}{8}(end+1,:) = [72,57];% MATCH PYR unkn S R
+cmtch{21}{8}(end+1,:) = [73,51];% MATCH PYR good R R
+cmtch{21}{8}(end+1,:) = [74,50];% GUESS PYR good S L
+cmtch{21}{8}(end+1,:) = [75,58];% MATCH PYR unkn S S??
+cmtch{21}{8}(end+1,:) = [77,61];% GUESS PYR good L L
 
 
 % <<< 0315 - 0316 <<< -----------------------------------
-% >>> 0316 - 0317 >>> -----------------------------------
+% >>>   0316 - 0317   >>> -------------------------------
 
 
+cmtch{22} = {}
+cmtch{22}{6} = [];
+cmtch{22}{6}(end+1,:) = [3,11]; % Maybe
+%cmtch{22}{6}(end+1,:) = [4,11]; % Maybe
+cmtch{22}{6}(end+1,:) = [5,10]; % Probably
+cmtch{22}{6}(end+1,:) = [12,12];% Maybe PYR
+%cmtch{22}{6}(end+1,:) = [12,20];% Maybe PYR
+cmtch{22}{6}(end+1,:) = [13,29];% MATCH PYR
+cmtch{22}{6}(end+1,:) = [18,26];% MATCH PYR
+cmtch{22}{6}(end+1,:) = [19,22];% MATCH PYR
+%cmtch{22}{6}(end+1,:) = [19,8]; % maybe PYR
+cmtch{22}{6}(end+1,:) = [21,18];% MATCH PYR
+cmtch{22}{6}(end+1,:) = [22,31];% MATCH PYR
+%cmtch{22}{6}(end+1,:) = [22,30];% MATCH PYR
 
-unit{2}{6}(end+1,:) = [3,11]; % Maybe
-%unit{2}{6}(end+1,:) = [4,11]; % Maybe
-unit{2}{6}(end+1,:) = [5,10]; % Probably
-unit{2}{6}(end+1,:) = [12,12];% Maybe PYR
-%unit{2}{6}(end+1,:) = [12,20];% Maybe PYR
-unit{2}{6}(end+1,:) = [13,29];% MATCH PYR
-unit{2}{6}(end+1,:) = [18,26];% MATCH PYR
-unit{2}{6}(end+1,:) = [19,22];% MATCH PYR
-%unit{2}{6}(end+1,:) = [19,8]; % maybe PYR
-unit{2}{6}(end+1,:) = [21,18];% MATCH PYR
-unit{2}{6}(end+1,:) = [22,31];% MATCH PYR
-%unit{2}{6}(end+1,:) = [22,30];% MATCH PYR
+cmtch{22}{7} = [];
+cmtch{22}{7}(end+1,:) = [23,58];% MATCH PYR
+cmtch{22}{7}(end+1,:) = [27,49];% maybe INT 
+cmtch{22}{7}(end+1,:) = [28,52];% MATCH INT
+cmtch{22}{7}(end+1,:) = [29,44];% MATCH INT
+cmtch{22}{7}(end+1,:) = [30,54];% MATCH PYR  56 xcorr 41
+cmtch{22}{7}(end+1,:) = [32,60];% maybe PYR sleep/immobile?
+cmtch{22}{7}(end+1,:) = [38,48];% probably PYR
+cmtch{22}{7}(end+1,:) = [40,42];% maybe PYR sleep/immobile?
+cmtch{22}{7}(end+1,:) = [41,50];% MATCH PYR 
+cmtch{22}{7}(end+1,:) = [42,51];% MATCH PYR 
+cmtch{22}{7}(end+1,:) = [43,36];% MATCH PYR
 
-unit{2}{7}(end+1,:) = [23,58];% MATCH PYR
-unit{2}{7}(end+1,:) = [27,49];% maybe INT 
-unit{2}{7}(end+1,:) = [28,52];% MATCH INT
-unit{2}{7}(end+1,:) = [29,44];% MATCH INT
-unit{2}{7}(end+1,:) = [30,54];% MATCH PYR  56 xcorr 41
-unit{2}{7}(end+1,:) = [32,60];% maybe PYR sleep/immobile?
-unit{2}{7}(end+1,:) = [38,48];% probably PYR
-unit{2}{7}(end+1,:) = [40,42];% maybe PYR sleep/immobile?
-unit{2}{7}(end+1,:) = [41,50];% MATCH PYR 
-unit{2}{7}(end+1,:) = [42,51];% MATCH PYR 
-unit{2}{7}(end+1,:) = [43,36];% MATCH PYR
-
-
-unit{2}{8}(end+1,:) = [47,66];% MATCH PYR  
-unit{2}{8}(end+1,:) = [48,72];% MATCH PYR  T
-unit{2}{8}(end+1,:) = [50,70];% MATCH PYR  T
-unit{2}{8}(end+1,:) = [51,67];% MATCH PYR  T
-unit{2}{8}(end+1,:) = [59,71];% MATCH PYR  T
-unit{2}{8}(end+1,:) = [65,69];% MATCH PYR  T
-unit{2}{8}(end+1,:) = [61,63];% MATCH PYR? T
-unit{2}{8}(end+1,:) = [64,75];% EMPTY PYR?
+cmtch{22}{8} = [];
+cmtch{22}{8}(end+1,:) = [47,66];% MATCH PYR  
+cmtch{22}{8}(end+1,:) = [48,72];% MATCH PYR  T
+cmtch{22}{8}(end+1,:) = [50,70];% MATCH PYR  T
+cmtch{22}{8}(end+1,:) = [51,67];% MATCH PYR  T
+cmtch{22}{8}(end+1,:) = [59,71];% MATCH PYR  T
+cmtch{22}{8}(end+1,:) = [65,69];% MATCH PYR  T
+cmtch{22}{8}(end+1,:) = [61,63];% MATCH PYR? T
+cmtch{22}{8}(end+1,:) = [64,75];% EMPTY PYR?
 
 % <<< 0316 - 0317 <<< -----------------------------------
-
+% >>> I 0324 - 0325   >>> -------------------------------
+% <<< I 0324 - 0325   <<< -------------------------------
 % <<< jg05 <<< ------------------------------------------
 
 configure_default_args();
@@ -739,3 +964,14 @@ data_paths = struct( ...
 );
 link_session( session_name, data_paths);
 
+
+
+
+figure,
+for unit = units(:)'
+for sts = 1:numel(Pfs{1})
+    subplot(1,numel(Pfs{1}),sts)
+    plot(Pfs{1}{sts},unit,[],'text');
+end
+waitforbuttonpress();
+end

@@ -1,4 +1,7 @@
 
+% drift tracking using the phase difference between channels in
+% the theta band
+
 %%%<<< Load Data ---------------------------------------------------------------
 ThetaRC_load_data();
 % - sampleRate
@@ -9,7 +12,7 @@ ThetaRC_load_data();
 convolution = @conv;
 segment = @MTAData.segs;
 
-trialIndex = 18;
+trialIndex = 19;
 
 Trial   = Trials     { trialIndex };
 units   = Units      { trialIndex };
@@ -27,6 +30,56 @@ lfp_hpc = Trial.load('lfp', [65:96]);
 
 figure();
 plot(bsxfun(@minus, lfp_hpc.data(1:1e5,:)./10, linspace(0,16000,size(lfp_hpc,2))))
+
+
+lfp_shank = Trial.load('lfp', 55:64);
+
+phz_shank = lfp_shank.phase();
+
+figure();
+hold('on');
+plot(circ_dist(phz_shank(:,1),phz_shank(:,8)))
+
+pdiff = [];
+for c1 = 1:8
+    for c2 = (c1+1):8
+        pdiff(:,c1,c2) = circ_dist(phz_shank(:,c1),phz_shank(:,c2));
+    end
+end
+
+figure,imagesc(pdiff')
+
+figure,
+hold on
+imagesc([mean(pdiff(:,1,2),2),...
+ mean(pdiff(:,2,3),2),...
+mean(pdiff(:,3,4),2),...
+mean(pdiff(:,4,5),2),...
+mean(pdiff(:,5,6),2),...
+mean(pdiff(:,6,7),2),...
+mean(pdiff(:,7,8),2)]')
+
+
+figure,
+hold on
+imagesc([mean(pdiff(:,1,4),2),...
+ mean(pdiff(:,2,5),2),...
+mean(pdiff(:,4,7),2),...
+mean(pdiff(:,5,8),2)]')
+
+figure,
+plot([mean(pdiff(:,1,4),2),...
+ mean(pdiff(:,2,5),2)])
+
+figure
+plot([mean(pdiff(:,4,7),2),...
+mean(pdiff(:,5,8),2)]);
+
+figure,
+plot(mean(pdiff(:,2,6),2)-mean(pdiff(:,5,8),2));
+ylim([0,2.2])
+Lines([],0,'r');
+
 
 lfp_trc = Trial.load('lfp', meta.subject.channelGroup.thetarc);
 lfp_trc.data = diff(lfp_trc.data, 1, 2);
