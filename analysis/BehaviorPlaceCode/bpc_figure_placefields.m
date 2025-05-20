@@ -1,4 +1,4 @@
-% BehaviorPlaceCode BhvPlacefields
+% >>> BehaviorPlaceCode - placefields: Documentation >>> ----------------------
 %
 % HP:= Head Pitch
 % BP:= Body Pitch
@@ -20,7 +20,7 @@
 %      Mean Firing rate within field 
 %        1. definition of field - Contiguous patch whos boarders are half the maximum firing rate
 %
-%  Results:
+% >>> Results >>> -------------------------------------------------------------
 %   -  Mean peak firing rate of cells within the primary theta patch
 %   -  
 %   -  The firing rate of several place cells change significantly depending upon behavioral state
@@ -34,8 +34,10 @@
 %         3. 
 % 
 % 2. Intra field firing maps onto the
-% 
-% Subplots:
+%
+% <<< Results <<< -------------------------------------------------------------
+
+% >>> Subplots >>> ------------------------------------------------------------
 %    A. Place field examples
 %        1. ratemaps maze theta
 %        2. ratemaps maze rear & theta
@@ -53,21 +55,22 @@
 %    B. Eigenvectors of PFD decomposition of HPxBP space
 %    C. t-SNE mapping of fscores within HPxBP of first 3 eigenvectors
 %    D. Empirical CDF of zscores
-%
-% Suplementary plots
+% <<< Subplots <<< ------------------------------------------------------------
+
+% >>> Suplementary plots >>> --------------------------------------------------
 %    Place field centers for each state where the max rate is greater than 3 Hz.
 %    For each cell get max rate in each state
 %    Plot position of place field
 %        rear vs low
 %        rear vs high
 %        high vs low
-%    
-%    
-%    
+% <<< Suplementary plots <<< --------------------------------------------------
+
 % TODO 
 %       Better differentiate behavior space rate maps from maze space rate maps
 %  
 
+% <<< BehaviorPlaceCode - placefields: Documentation <<< ----------------------
 
 % >>> LOAD BehaviorPlaceCode data >>> -----------------------------------------
 
@@ -105,16 +108,26 @@ exunit = 18;
 % >>> LOAD rate maps >>> ------------------------------------------------------
 % LOAD rate maps --------------------------------------------------------------
 % LOAD place restricted behavior fields
-Bfs      = cf(@(T,U)  compute_bhv_ratemaps(T,U),          Trials, Units);
+overwrite = false;
+purge = false
+Bfs      = cf(@(T,U)  compute_bhv_ratemaps(T,U), Trials, Units);
 bfsEx    = bfs{tind};
-BfsShuff = cf(@(T,U)  compute_bhv_ratemaps_shuffled(T,U), Trials, Units);
+BfsShuff = cf(                                                              ...
+    @(T,U)                                                                  ...
+    compute_bhv_ratemaps_shuffled(                                          ...
+        T, U, 'overwrite', overwrite, 'purge', purge),                      ...
+    Trials, Units                                                           ...
+);
 
 % LOAD all place fields
 pfst = cf(@(T,U)  pfs_2d_theta(T,U),    Trials,Units);
 pfss = cf(@(T,U)  pfs_2d_states(T,U),   Trials,Units);
-pfsr = cf(@(T,U)  pfs_2d_states(T,U,'', ...
-                                {'rear&theta','hbhv&theta','lbhv&theta'}),  ...
-          Trials,Units);
+pfsr = cf(                                                                  ...
+    @(T,U)                                                                  ...
+    pfs_2d_states(                                                          ...
+        T, U, '', {'rear&theta','hbhv&theta','lbhv&theta'}),                ...
+    Trials, Units                                                           ...
+);
 pfsa = cf(@(s,t)  cat(2,{t},s),       pfss,pfst);
 
 % <<< LOAD rate maps <<< ------------------------------------------------------
@@ -356,22 +369,25 @@ bsi = sum(1/size(rmaps,1).*bsxfun(@rdivide,rmaps,mean(rmaps)) ...
 
 
 sigUnits = any(abs(fsrcz(:,1:3))>=1.96,2);
-sigUnits = any(abs(fsrcz(:,1:3))>=2.58,2);
-sigUnitsSB = sum(fsrcz(:,1:3)>=2.58,2)==1;
-sigUnitsDB = sum(fsrcz(:,1:3)>=2.58,2)==2;
-sigUnitsTB = sum(fsrcz(:,1:3)>=2.58,2)==3;
-sigUnitsNB = sum(abs(fsrcz(:,1:3))>=2.58,2)==0;
+sigUnits = any(abs(fsrcz(:,1:3))>=2.32,2);
+sigUnitsSB = sum(fsrcz(:,1:3)>=1.96,2)==1;
+sigUnitsSB = sum(fsrcz(:,1:3)>=2.32,2)==1;
+sigUnitsDB = sum(fsrcz(:,1:3)>=2.32,2)==2;
+sigUnitsTB = sum(fsrcz(:,1:3)>=2.32,2)==3;
+sigUnitsNB = sum(abs(fsrcz(:,1:3))>=2.32,2)==0;
 
-sum(fsrcz(:,2)<=-2.58 &fsrcz(:,1)>=2.58)./numel(unitSubset)
-sum(fsrcz(:,3)<=-2.58 &fsrcz(:,1)>=2.58)./numel(unitSubset)
-sum(fsrcz(:,3)<=-2.58 & fsrcz(:,2)<=-2.58 &fsrcz(:,1)>=2.58)./size(fsrcz,1)
-sum(fsrcz(:,1)<=-2.58 & fsrcz(:,2)<=-2.58 &fsrcz(:,3)>=2.58)./size(fsrcz,1)
-sum(fsrcz(:,1)<=-2.58 & fsrcz(:,3)<=-2.58 &fsrcz(:,2)>=2.58)./size(fsrcz,1)
+sum(fsrcz(:,2)<=-2.32 &fsrcz(:,1)>=2.32)./numel(unitSubset)
+sum(fsrcz(:,3)<=-2.32 &fsrcz(:,1)>=2.32)./numel(unitSubset)
+sum(fsrcz(:,3)<=-2.32 & fsrcz(:,2)<=-2.32 &fsrcz(:,1)>=2.32)./size(fsrcz,1)
+sum(fsrcz(:,1)<=-2.32 & fsrcz(:,2)<=-2.32 &fsrcz(:,3)>=2.32)./size(fsrcz,1)
+sum(fsrcz(:,1)<=-2.32 & fsrcz(:,3)<=-2.32 &fsrcz(:,2)>=2.32)./size(fsrcz,1)
 
-find(fsrcz(:,1)<=-2.58 & fsrcz(:,3)<=-2.58 &fsrcz(:,2)>=2.58)
-find(fsrcz(:,1)<=-2.58 & fsrcz(:,2)<=-2.58 &fsrcz(:,3)>=2.58)
+find(fsrcz(:,1)<=-2.32 & fsrcz(:,3)<=-2.32 &fsrcz(:,2)>=2.32)
+find(fsrcz(:,1)<=-2.32 & fsrcz(:,2)<=-2.32 &fsrcz(:,3)>=2.32)
 
-sigUnitsAB = sum(fsrcz(:,1:3)<=-2.58,2)==1;
+find(fsrcz(:,1)<=-2.32 & fsrcz(:,2)>=-2.32 &fsrcz(:,3)>=2.32)
+
+sigUnitsAB = sum(fsrcz(:,1:3)<=-2.32,2)==1;
 sum(sigUnitsAB)./numel(sigUnitsNB)
 
 sum(sigUnitsSB)./numel(sigUnitsNB)
@@ -381,10 +397,13 @@ sum(sigUnitsTB)./numel(sigUnitsNB)
 (sum(sigUnitsDB))./numel(sigUnitsNB) 
 
 find(sigUnitsTB)
-u = 281;
-figure,plot(bfs{cluSessionMap(unitSubset(u),1)},cluSessionMap(unitSubset(u),2),1,'text',[],false);
 
-cluSessionSubset = cluSessionMap(unitSubset,:);
+u = 376;
+t = cluSessionMap(unitSubset(u),1);
+x = cluSessionMap(unitSubset(u),2);
+figure,plot(Bfs{t},x,1,'text',[],true,'mazeMask',bhvMask);
+figure,plot(BfsShuff{t},x,5,'text',[],true,'mazeMask',bhvMask);
+
 % $$$ for u = cluMap'
 % $$$     uind = find(ismember(cluSessionSubset,u','rows'));
 % $$$     sigUnits(uind);
@@ -399,7 +418,7 @@ if ~exist('mapa','var'),
     mapn = tsne([FSrC(:,1:3)],[],2,3,15);    
     %figure,scatter(mapn(:,1),mapn(:,2),10,cc,'Filled')    
     mapa = tsne([FSrC(:,1:3)],[],2,3,40);
-    mapa = tsne([FSrC(:,1:3)],[],2,3,15);
+    mapa = tsne([FSrC(:,1:3)],[],2,3,18);
 
 figure();
 mi = [1,2];
@@ -853,7 +872,7 @@ end
 
 
 
-%%%<<< BehaviorPlaceCode-BhvPlaceFields: patch cntyind = size(cluMap,1)+4;
+% >>> BehaviorPlaceCode-BhvPlaceFields: patch cnt >>> -------------------------
 yind = size(cluMap,1)+2;
 sax(end+1) = axes('Units','centimeters',                     ...
                   'Position',[fig.page.xpos(1),              ...
@@ -870,31 +889,14 @@ anatCA3Id = [1:3,7:13,16:19,29];
 outCA1 = histcounts(patchCntF(ismember(cluSessionSubset(:,1),anatCA1Id)),0.5:4.5,'Normalization','count');
 outCA3 = histcounts(patchCntF(ismember(cluSessionSubset(:,1),anatCA3Id)),0.5:4.5,'Normalization','count');
 
-
 bar(1:4,[outCA1;outCA3],'stacked')
 legend({'CA1','CA3'});
 xlabel('# of Patches');
 ylabel('Count');
 xlim([0.35,4.65]);
+% <<< BehaviorPlaceCode-BhvPlaceFields: patch cnt <<< -------------------------
 
-% $$$ unitSubset
-% $$$ pieh = pie(out);
-% $$$ pieLbls = pieh(2:2:end);
-% $$$ extraS = ' sss';
-% $$$ for pl = 1:numel(pieLbls)-1,
-% $$$     %pieLbls(pl).String = [num2str(pl),' field',extraS(pl),': ',pieLbls(pl).String];
-% $$$     pieLbls(pl).String = [num2str(pl)];
-% $$$     pieLbls(pl).Position = pieLbls(pl).Position./3+[0,0.05,0];
-% $$$     pieLbls(pl).Color = [1,1,1];
-% $$$     pieLbls(pl).FontSize = 10;
-% $$$     pieLbls(pl).FontWeight = 'bold';
-% $$$ end
-% $$$ pieLbls(pl+1).String = [num2str(pl+1)];
-% $$$ pieLbls(pl+1).FontWeight = 'bold';
-
-%%%>>>
-
-%%%<<< BehaviorPlaceCode-BhvPlaceFields: inter pfs patch correlation
+% >>> BehaviorPlaceCode-BhvPlaceFields: inter pfs patch correlation >>> -------
 yind = size(cluMap,1)+2;
 sax(end+1) = axes('Units','centimeters',                     ...
                   'Position',[fig.page.xpos(3)+0.5,              ...
@@ -905,19 +907,24 @@ sax(end+1) = axes('Units','centimeters',                     ...
 plot(rmapIPDist/10,rmapIPCorr,'.')
 xlabel('Patch Distance (cm)')
 ylabel('Bhv Ratemap Corr');
-%%%>>>
+% <<< BehaviorPlaceCode-BhvPlaceFields: inter pfs patch correlation <<< -------
 
-
-%%%<<< BehaviorPlaceCode-BhvPlaceFields: inter pfs patch correlation
+% >>> BehaviorPlaceCode-BhvPlaceFields: inter pfs patch correlation >>> -------
 yind = size(cluMap,1)+2;
-sax(end+1) = axes('Units','centimeters',                     ...
-                  'Position',[fig.page.xpos(5)+0.5,              ...
-                              fig.page.ypos(yind),           ...
-                              fig.subplot.width*1.5,             ...
-                              fig.subplot.height*1.5],           ...
-                  'FontSize', 8);    
+sax(end+1) = axes( ...
+    'Units','centimeters',                         ...
+    'Position',[fig.page.xpos(5)+0.5,              ...
+                fig.page.ypos(yind),               ...
+                fig.subplot.width*1.5,             ...
+                fig.subplot.height*1.5],           ...
+    'FontSize', 8);    
 hold('on');
-ph = patch([10.1,10.1,20.0,20.0],[-1,1,1,-1],[0.5,0.5,0.5],'EdgeColor','none','FaceAlpha',0.3);
+ph = patch([10.1,10.1,20.0,20.0],                  ...
+           [-1, 1, 1, -1],                         ...
+           [0.5, 0.5, 0.5],                        ...
+           'EdgeColor', 'none',                    ...
+           'FaceAlpha', 0.3                        ...
+);
 pd = reshape(patchDistF(unitSubset,:,:),[],1)/10;
 rcorr = reshape(rmapCorr(1,unitSubset,:,:),[],1);
 nind = nniz(pd) & nniz(rcorr) & pd>10;
@@ -927,7 +934,8 @@ xlabel('Patch Distance (cm)')
 ylabel('');
 xlim([10,75])
 sax(end).YTickLabel = {};
-%%%>>>
+% <<< BehaviorPlaceCode-BhvPlaceFields: inter pfs patch correlation <<< -------
+
 
 
 %%%<<< BehaviorPlaceCode-F2-B: behavior field erpPCA eigenvectors
@@ -1033,31 +1041,17 @@ sax(end).YTick  = [0,0.2,0.4,0.6,0.8,1];
 
 
 % low loc cells
-sum(fsrcz(:,3)>2.58 & fsrcz(:,2)<2.58 & fsrcz(:,1)<2.58)/size(fsrcz,1)
+sum(fsrcz(:,3)>2.32 & fsrcz(:,2)<2.32 & fsrcz(:,1)<2.32)/size(fsrcz,1)
 % 12.4 percent 61 of 492
 % high loc cells
-sum(fsrcz(:,2)>2.58 & fsrcz(:,3)<2.58 & fsrcz(:,1)<2.58)/size(fsrcz,1)
-sum(fsrcz(:,1)>2.58 &  fsrcz(:,3)<2.58)/size(fsrcz,1)
+sum(fsrcz(:,2)>2.32 & fsrcz(:,3)<2.32 & fsrcz(:,1)<2.32)/size(fsrcz,1)
+sum(fsrcz(:,1)>2.32 &  fsrcz(:,3)<2.32)/size(fsrcz,1)
 
 1-(1-0.99).^(1/size(fsrcz,1))
 
 
-u = find((fsrcz(:,3)>2.58 & fsrcz(:,2)<2.58 & fsrcz(:,1)<2.58));
+u = find((fsrcz(:,3)>2.32 & fsrcz(:,2)<2.32 & fsrcz(:,1)<2.32));
 
-anatomicalLocation = [0,0,0,                        ... er01
-                      1,1,1,0,0,                    ... ER06
-                      0,0,0,0,0,                    ... Ed10
-                      1,1,0,0,0,0,                  ... jg04                      
-                      1,1,1,1,1,1,1,1,1,0           ... jg05
-                      1];% new units - FS03
-
-
-anatomicalLocation = [0,0,                          ... er01
-                      1,1,1,                        ... ER06
-                      0,0,                          ... Ed10
-                      0,0,0,0,0,1,1,1,1             ... jg04                      
-                      1,1,1,1,1,1,1,                ... jg05
-                      1,1,0,0,0];% new units - jg05, jg05, ER06, Ed10, er01                    
 
 
 inCA1 = anatomicalLocation(cluSessionSubset(:,1))==1;
@@ -1065,38 +1059,38 @@ inCA3 = ~inCA1;
 
 
 % 3.6% (14 of 380) CA1 cells were restricted to rearing exploration
-sum(fsrcz(inCA1,1)>2.58 & fsrcz(inCA1,2)<-2.58 & fsrcz(inCA1,2)<-2.58)/sum(inCA1)
+sum(fsrcz(inCA1,1)>2.32 & fsrcz(inCA1,2)<-2.32 & fsrcz(inCA1,2)<-2.32)/sum(inCA1)
 % 4.2% (16 of 380) CA1 cells were 
-sum(fsrcz(inCA1,3)>2.58 & fsrcz(inCA1,2)<-2.58 & fsrcz(inCA1,1)<-2.58)/sum(inCA1)
+sum(fsrcz(inCA1,3)>2.32 & fsrcz(inCA1,2)<-2.32 & fsrcz(inCA1,1)<-2.32)/sum(inCA1)
 % 5.3% (20 of 380) CA1 cells were 
-sum(fsrcz(inCA1,2)>2.58 & fsrcz(inCA1,3)<-2.58 & fsrcz(inCA1,1)<-2.58)/sum(inCA1)
+sum(fsrcz(inCA1,2)>2.32 & fsrcz(inCA1,3)<-2.32 & fsrcz(inCA1,1)<-2.32)/sum(inCA1)
 
-sum(find(fsrcz(inCA1,1)<-2.58))/sum(inCA1)
+sum(find(fsrcz(inCA1,1)<-2.32))/sum(inCA1)
 
 
 figure,bar(linspace(0,40,40),histc(sqrt(sum(fsrcz(:,1:3).^2,2)),linspace(0,40,40)),'histc');
 
 
 % 7.1% (27 of 380) CA1 cells were selective for rearing exploration
-sum(fsrcz(inCA1,1)>2.58 & fsrcz(inCA1,2)<2.58 & fsrcz(inCA1,3)<2.58)/sum(inCA1)
+sum(fsrcz(inCA1,1)>2.32 & fsrcz(inCA1,2)<2.32 & fsrcz(inCA1,3)<2.32)/sum(inCA1)
 % 22.1% (84 of 380) CA1 cells were selective high exploration
-sum(fsrcz(inCA1,2)>2.58 & fsrcz(inCA1,1)<2.58 & fsrcz(inCA1,1)<2.58)/sum(inCA1)
+sum(fsrcz(inCA1,2)>2.32 & fsrcz(inCA1,1)<2.32 & fsrcz(inCA1,1)<2.32)/sum(inCA1)
 % 12.4% (47 of 380) CA1 cells were selective for low exploration
-sum(fsrcz(inCA1,3)>2.58 & fsrcz(inCA1,2)<2.58 & fsrcz(inCA1,1)<2.58)/sum(inCA1)
+sum(fsrcz(inCA1,3)>2.32 & fsrcz(inCA1,2)<2.32 & fsrcz(inCA1,1)<2.32)/sum(inCA1)
 
 
-sum(fsrcz(inCA1,1)<-2.58)/sum(inCA1)
+sum(fsrcz(inCA1,1)<-2.32)/sum(inCA1)
 
 % 4.5% (5 of 112) CA1 cells were selective for rearing exploration
-sum(fsrcz(inCA3,1)>2.58 & fsrcz(inCA3,2)<2.58 & fsrcz(inCA3,3)<2.58)/sum(inCA3)
+sum(fsrcz(inCA3,1)>2.32 & fsrcz(inCA3,2)<2.32 & fsrcz(inCA3,3)<2.32)/sum(inCA3)
 % 17.9% (20 of 112) CA3 cells are dominantly active during high exploration
-sum(fsrcz(inCA3,2)>2.58 & fsrcz(inCA3,1)<2.58 & fsrcz(inCA3,1)<2.58)/sum(inCA3)
+sum(fsrcz(inCA3,2)>2.32 & fsrcz(inCA3,1)<2.32 & fsrcz(inCA3,1)<2.32)/sum(inCA3)
 % 12.5% (14 of 112) CA3 cells are dominantly active during low exploration
-sum(fsrcz(inCA3,3)>2.58 & fsrcz(inCA3,2)<2.58 & fsrcz(inCA3,1)<2.58)/sum(inCA3)
+sum(fsrcz(inCA3,3)>2.32 & fsrcz(inCA3,2)<2.32 & fsrcz(inCA3,1)<2.32)/sum(inCA3)
 
 
 
-u = find(fsrcz(:,1)<-2.58 & fsrcz(:,2)<2.58 & fsrcz(:,3)<2.58);
+u = find(fsrcz(:,1)<-2.32 & fsrcz(:,2)<2.32 & fsrcz(:,3)<2.32);
 u = 407;
 figure();
 for i = u',
@@ -1165,7 +1159,7 @@ bsiZ = ((bsi) - mean((bsiShuffled),2))./std((bsiShuffled),[],2);
 
 
 (log2(bsi(i)) - mean(log2(bsiShuffled(i,:)),2))./std(log2(bsiShuffled(i,:)),[],2)
- 
+
 u = 1:numel(unitSubset);
 figure();
 for i = u,

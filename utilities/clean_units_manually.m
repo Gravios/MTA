@@ -3,17 +3,18 @@
 Bfs      = cf(@(T,U)  compute_bhv_ratemaps(T,U),          Trials, Units);
 mask_bhv =load('/storage/gravio/data/project/general/analysis/pfsHB_mask.mat');
 
-tid = 33;
+units = Trial.spk.get_unit_set(Trial,'bhv');
+
+bfs = compute_bhv_ratemaps(Trial,Trial.spk.map(:,1)');
+tid = 32;
 Trial = Trials{tid};
 Trials{tid}.load('nq');
 nq = Trials{tid}.nq;
-units = Units{tid};
-units = UnitsInts{tid};
+
 
 [mccg,tbin] = autoccg(Trial, [], 'theta-sit-groom', 10, 64, 'hz');
 
 filter_edist = nq.eDist(units) < 15;
-
 
 bd = [];
 hfig = figure(14);
@@ -24,10 +25,10 @@ for unit = units(:)'
     subplot2(2,7,1,2);
         plot( nq.AvSpk(unit,:));
     subplot2(2,7,1,3);
-    %Bfs{tid}.plot(unit,1,'colorbar',[],true,[],false,[],@jet,mask_bhv.mask);
-    for sts = 1:6
-        subplot2(2,7,2,sts);
-        Pfs{tid}{sts}.plot(unit, 1, 'text','colorMap',@jet);
+    bfs.plot(unit,1,'colorbar',[],true,[],false,[],@jet,mask_bhv.mask);
+    for sts = 1:numStates
+        subplot2(2,numStates,2,sts);
+        pfs{sts}.plot(unit, 1, 'text','colorMap',@jet);
     end
     waitforbuttonpress();
     switch hfig.CurrentCharacter

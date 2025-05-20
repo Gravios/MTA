@@ -53,7 +53,6 @@ function label_lfp_states(FileBase,varargin)
 % NOTE: A toolbox chronux_2_12 shadows some unknown yet function used in CheckEegtates.
 %
 
-
 [State,AuxData,FreqRange,Channels,Window,Action, Overwrite] = ...
     DefaultArgs(varargin,{[],[],[1 100],[],1,'display',0});
 

@@ -1264,15 +1264,29 @@ switch sessionList
     Sessions(end).subject.channelGroup.theta     = 70;
     Sessions(end).subject.channelGroup.thetarc   = [57,64];        
     Sessions(end).subject.channelGroup.ripple    = [49:56];
-    Sessions(end).offsets      = [12,0];
     
     Sessions(end+1) =   Sessions(end);
     Sessions(end).sessionName  = 'jg05-20120324';
     Sessions(end).subject.channelGroup.theta     = 71;
     Sessions(end).subject.channelGroup.thetarc   = [57,64];        
     Sessions(end).subject.channelGroup.ripple    = [49:56];
-    Sessions(end).offsets      = [12,0];
-    
+
+    Sessions(end+1) =   Sessions(end);
+    Sessions(end).sessionName  = 'jg05-20120325';
+    Sessions(end).subject.channelGroup.theta     = 71;
+    Sessions(end).subject.channelGroup.thetarc   = [57,64];        
+    Sessions(end).subject.channelGroup.ripple    = [49:56];
+    Sessions(end).subject.correction.thetaPhase  = pi/4;
+    Sessions(end).subject.CA1 = false;
+    Sessions(end).subject.CA3 = true;
+    Sessions(end).subject.DG  = false;
+
+% $$$     Sessions(end+1) =   Sessions(end);
+% $$$     Sessions(end).sessionName  = 'jg05-20120326';
+% $$$     Sessions(end).subject.channelGroup.theta     = 71;
+% $$$     Sessions(end).subject.channelGroup.thetarc   = [57,64];        
+% $$$     Sessions(end).subject.channelGroup.ripple    = [49:56];
+
     Sessions(end+1) =                                                        ...
         struct('sessionName',  'jg05-20120329',                              ...
                'subjects',     {{'jg05'}},                                   ...

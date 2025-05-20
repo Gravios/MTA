@@ -2,17 +2,19 @@ function [mxr,mxp,fo] = maxRate(Pfs,varargin)
 % function [mxr,mxp] = maxRate(Pfs,varargin)
 % return the maximum firing rate and location of a unit(s)
 %
-%  IN:
-%
-%    units - NumericArray: { [] } list of unit clu numbers associated with the rate maps in Pfs
+%    units - NumericArray: { [] } list of unit clu numbers associated
+%                                 with the rate maps in Pfs
 %    mazeMaskFlag - Logical: { true } Apply 
-%    mode - String: { 'mean' }                                               ...
-%                 'sigThresh',              [],                                                   ...
-%                 'interpPar',              [],                                                   ...
-%                 'fitStartPoint',          [],                                                   ...
-%                 'mask',                   1                                                     ...
+%    mode - String: { 'mean' }
+%    sigThresh - Numeric: for Bootstrap data ???
+%    interpPar - struct: interpolation parameters
+%    fitStartPoint - Numeric: location where to estimate max rate
+%                              with a gaussian model
+%    mask - BooleanMatrix: convert bins outside mask to NaN values
 %
-% interpolaiton only makes sense with extra filtering
+% Note: interpolaiton only makes sense with extra filtering
+%
+% Example: interpPar
 %
 % interpPar - struct: ('bins',{{linspace(-500,500,200)',              ...
 %                                                           linspace(-500,500,200)'}},            ...
@@ -50,7 +52,7 @@ if isempty(units),
     fo = [];
     return;
 end
-if mazeMaskFlag,
+if mazeMaskFlag & mask==1
     width = numel(bins{1});
     height = numel(bins{2});
     radius = round(numel(bins{1})/2)-find(bins{1}<-420,1,'last');
@@ -62,14 +64,13 @@ if mazeMaskFlag,
     if numel(Pfs.parameters.type)>2,
         mask = repmat(mask,[1,1,numel(bins{3})]);
     end
-    mask = reshape(mask,[],1);
 end
+
+mask = reshape(mask,[],1);
 
 switch mode
   case 'COM' % make bin grid
 end
-
-    
 
 mxr = nan(numel(units),1);
 mxp = nan(numel(units),1);

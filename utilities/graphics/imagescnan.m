@@ -84,14 +84,17 @@ switch dataType
   case 'linear'
     cm = colorMap(1000);
     if colorMapFlipFlag, cm = flipud(cm); end
-    bins = discretize(imageData,linspace([colorLimits,1000]));
-    bins(~isnan(imageData)&imageData>=colorLimits(2)) = 1000-1;    
-    bins(~isnan(imageData)&imageData<=colorLimits(1)) = 1;        
-    finalImage = reshape(repmat(bins,[1,1,3]),[],3);
-    finalImage(nniz(finalImage),:) = cm(finalImage(nniz(finalImage),1),:);
-    finalImage(isnan(imageData(:)),:) = repmat(nanRGB,[sum(isnan(imageData(:))),1]);
-    finalImage = reshape(finalImage,[numel(Yax),numel(Xax),3]);
-
+    if sum(nonzeros(imageData),'omitnan')~=0;
+        bins = discretize(imageData,linspace([colorLimits,1000]));
+        bins(~isnan(imageData)&imageData>=colorLimits(2)) = 1000-1;    
+        bins(~isnan(imageData)&imageData<=colorLimits(1)) = 1;        
+        finalImage = reshape(repmat(bins,[1,1,3]),[],3);
+        finalImage(nniz(finalImage),:) = cm(finalImage(nniz(finalImage),1),:);
+        finalImage(isnan(imageData(:)),:) = repmat(nanRGB,[sum(isnan(imageData(:))),1]);
+        finalImage = reshape(finalImage,[numel(Yax),numel(Xax),3]);
+    else
+        finalImage=imageData;
+    end
 
   case 'circular'
     cm = colorMap(1000);

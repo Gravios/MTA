@@ -1,4 +1,5 @@
-% EgoProCode2D_load_data() - loads the folowing variables and functions
+% >>> epc_load_data.m >>> -----------------------------------------------------
+% epc_load_data() - loads the folowing variables and functions
 %
 %  Variables:
 %
@@ -23,13 +24,13 @@
 %
 %  Functions:
 %      reshape_eigen_vector
+%
+% <<< epc_load_data.m <<< -----------------------------------------------------
 
-
-project.name = 'EgoProCode2d';
-
-configure_default_args();
 
 % >>> GLOBAL VARIABLES >>> ----------------------------------------------------
+project.name = 'EgoProCode2d';
+configure_default_args();
 global MTA_FIGURES_PATH
 global PROJECT_FIGURE_PATH
 PROJECT_FIGURE_PATH = ...

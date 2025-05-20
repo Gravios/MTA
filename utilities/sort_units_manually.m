@@ -1,11 +1,13 @@
 
-
-tid = 33;
+Trials = af(@(s) MTATrial.validate(s), get_session_list_v3('BehaviorPlaceCode'));
+tid = 32;
 Trial = Trials{tid};
 Trial.load('stc','msnn_ppsvd_raux');
+pft = pfs_2d_theta(Trial);
+pfs = pfs_2d_states(Trial,Trial.spk.map(:,1)');
 
 
-
+numStates = numel(pfs);
 % SELECT placefields based on Visual Characteristics
 su = [];
 bu = [];
@@ -17,12 +19,12 @@ eg = [];
 hfig = figure(7);
 for u = Trial.spk.map(:,1)'
     clf(hfig);
-    subplot(1,7,1);
-    plot(Pft{tid},u,1,'text');
+    subplot(1,numStates+1,1);
+    plot(pft,u,1,'text');
     title(['Unit: ',num2str(u)])
-    for sts = 1:6,
-        subplot(1,7,sts+1);
-        plot(Pfs{tid}{sts},u,1,'text');
+    for sts = 1:numStates,
+        subplot(1,numStates+1,sts+1);
+        plot(pfs{sts},u,1,'text');
     end
     waitforbuttonpress();
     switch hfig.CurrentCharacter

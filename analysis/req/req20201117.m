@@ -1,4 +1,4 @@
-function [pfs] = req20201117(Trial,unitsInt,tag,displayFlag,waitFlag,overwrite)
+function [pfs] = req20201117(Trial, unitsInt, tag, displayFlag, waitFlag, overwrite, purge)
 % req20201117(Trial)
 %  Tags: interneuron ratemaps
 %  Status: active
@@ -44,6 +44,7 @@ pargs.units            = unitsInt;
 pargs.numIter          = 1;
 pargs.halfsample       = false;
 pargs.overwrite        = overwrite;
+pargs.purge            = purge;
 pargs.boundaryLimits   = [-600,600;-600,600;-2,0.8;-0.8,2];
 pargs.binDims          = [200,200,0.1,0.1];
 pargs.SmoothingWeights = [0.5,0.5,1.8,1.8];

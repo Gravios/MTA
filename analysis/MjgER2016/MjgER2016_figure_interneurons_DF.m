@@ -3,7 +3,7 @@
 
 
 
-%%%<<< LOAD DATA -----------------------------------------------------------------------------------
+% >>> LOAD DATA -----------------------------------------------------------------------------------
 
 
 configure_default_args();
@@ -24,79 +24,89 @@ AP.compute_bhv_ratemaps_shuffled =                                              
            'threshDist',                1000                                                     ...
            );
 %---------------------------------------------------------------------------------------------------
-n
-MjgER2016_load_data();
+
+bpc_load_data();
 
 pargs = struct('numIter'   , 1000,...
                'halfsample', true,...
                'posShuffle', true);
 
-bfs   = cf(@(t,u)  compute_bhv_ratemaps(t,u,'overwrite',false),          Trials, units);
-pftin = cf(@(t,u)  pfs_2d_theta(t,u),                                    Trials, unitsInts);
-pftis = cf(@(t,u)  pfs_2d_theta(t,u,'pfsArgsOverride',pargs),            Trials, unitsInts);
-pfsin = cf(@(t,u)  pfs_2d_states(t,u),                                   Trials, unitsInts);
-pfsis = cf(@(t,u)  pfs_2d_states(t,u, 'pfsArgsOverride',pargs),          Trials, unitsInts);
-bfsin = cf(@(t,u)  compute_bhv_ratemaps(t,u,'overwrite',false),          Trials, unitsInts);
-bfsis = cf(@(t,u)  compute_bhv_ratemaps_shuffled(t,u,'overwrite',false), Trials, unitsInts);
+Bfs   = cf(@(T,U)  compute_bhv_ratemaps(T,U),                            Trials, Units);
+Pftin = cf(@(T,U)  pfs_2d_theta(T,U),                                    Trials, UnitsInt);
+pftis = cf(@(T,U)  pfs_2d_theta(T,U,'pfsArgsOverride',pargs),            Trials, UnitsInt);
+Pfsin = cf(@(T,U)  pfs_2d_states(T,U),                                   Trials, UnitsInt);
+pfsis = cf(@(T,U)  pfs_2d_states(T,U, 'pfsArgsOverride',pargs),          Trials, UnitsInt);
+Bfsin = cf(@(T,U)  compute_bhv_ratemaps(T,U,'overwrite',false),          Trials, UnitsInt);
+bfsis = cf(@(T,U)  compute_bhv_ratemaps_shuffled(T,U,'overwrite',false), Trials, UnitsInt);
 
-
+bfsin = Bfsin;
+pftin = Pftin;
+% >>> LOAD Cluster Stats >>> --------------------------------------------------
+% >>> Clusters - AmpSym >>> ---------------------------------------------------
 cf(@(t) t.load('nq'), Trials);
-ampSymInt = cf(@(t,u) t.nq.AmpSym(u), Trials,unitsInts);
+ampSymInt = cf(@(T,U) T.nq.AmpSym(U), Trials,UnitsInt);
 ampSymInt = cat(1,ampSymInt{:});
-ampSymPyr = cf(@(t,u) t.nq.AmpSym(u), Trials,units);
+ampSymPyr = cf(@(T,U) T.nq.AmpSym(U), Trials,Units);
 ampSymPyr = cat(1,ampSymPyr{:});
-
-spkWidthRInt = cf(@(t,u) t.nq.SpkWidthR(u), Trials,unitsInts);
+% <<< Clusters - AmpSym <<< ---------------------------------------------------
+% >>> Clusters - SpkWidthR >>> ------------------------------------------------
+spkWidthRInt = cf(@(T,U) T.nq.SpkWidthR(U), Trials,UnitsInt);
 spkWidthRInt = cat(1,spkWidthRInt{:});
-spkWidthRPyr = cf(@(t,u) t.nq.SpkWidthR(u), Trials,units);
+spkWidthRPyr = cf(@(T,U) T.nq.SpkWidthR(U), Trials,Units);
 spkWidthRPyr = cat(1,spkWidthRPyr{:});
-
-centerMaxInt = cf(@(t,u) t.nq.CenterMax(u), Trials,unitsInts);
+% <<< Clusters - SpkWidthR <<< ------------------------------------------------
+% >>> Clusters - CenterMax >>> ------------------------------------------------
+centerMaxInt = cf(@(T,U) T.nq.CenterMax(U), Trials,UnitsInt);
 centerMaxInt = cat(1,centerMaxInt{:});
-centerMaxPyr = cf(@(t,u) t.nq.CenterMax(u), Trials,units);
+centerMaxPyr = cf(@(T,U) T.nq.CenterMax(U), Trials,Units);
 centerMaxPyr = cat(1,centerMaxPyr{:});
-
-figure,
-hold('on');
-scatter(spkWidthRPyr,ampSymPyr,10,log10(abs(centerMaxPyr)),'filled');
-scatter(spkWidthRInt,ampSymInt,10,log10(abs(centerMaxInt)),'filled');
-colormap('jet');
-colorbar();
-
-
-figure,
-hold('on');
-plot(spkWidthRPyr,ampSymPyr,'.');
-plot(spkWidthRInt,ampSymInt,'.r');
-
+% <<< Clusters - CenterMax <<< ------------------------------------------------
+% >>> Clusters - DEBUG FIG >>> ------------------------------------------------
+% $$$ figure,
+% $$$ hold('on');
+% $$$ scatter(spkWidthRPyr,ampSymPyr,10,log10(abs(centerMaxPyr)),'filled');
+% $$$ scatter(spkWidthRInt,ampSymInt,10,log10(abs(centerMaxInt)),'filled');
+% $$$ colormap('jet');
+% $$$ colorbar();
+% $$$ figure,
+% $$$ hold('on');
+% $$$ plot(spkWidthRPyr,ampSymPyr,'.');
+% $$$ plot(spkWidthRInt,ampSymInt,'.r');
+% <<< Clusters - DEBUG FIG <<< ------------------------------------------------
+% <<< LOAD Cluster Stats <<< --------------------------------------------------
 
 % reorder state fields and concat with theta state
-pfs = cf(@(t,s) cat(2,{t},{s{[4,3,7,2,6]}}), pftin, pfsin);
+pfs = pfsin;
 
-
-[eigVecs, eigScrs, eigVars, unitSubset, validDims, zrmMean, zrmStd] = ...
-                    compute_bhv_ratemaps_erpPCA(bfs, units, [], [], false);
+[eigVecs, eigScrs, eigVars, unitSubset, validDims, zrmMean, zrmStd] =       ...
+                    compute_bhv_ratemaps_erpPCA(Bfs, Units, [], [], false);
 
 overwrite = false;
+purge = false;
 % SPACE X BHV
-tag = 'interneurons_xyhb_2020';
-tag = 'interneurons_xyhb_2020_final';    
-tag = 'interneurons_xyhb_2020_loc';      
+% $$$ tag = 'interneurons_xyhb_2020';
+% $$$ tag = 'interneurons_xyhb_2020_final';    
+% $$$ tag = 'interneurons_xyhb_2020_loc';      
 
-tag = 'interneurons_xyhb_2020_theta';    
-pfi = cf(@(t,u) req20201117(t,u,tag,false,false,overwrite), Trials,unitsInts);
-tag = 'interneurons_xyhb_2020_loc_rear'; 
-pfiLR = cf(@(t,u) req20201117(t,u,tag,false,false,overwrite), Trials,unitsInts);
-tag = 'interneurons_xyhb_2020_pause_rear'; 
-pfiPR = cf(@(t,u) req20201117(t,u,tag,false,false,overwrite), Trials,unitsInts);
+tag = 'interneurons_xyhb_2025_theta';    
+Pfi   = cf(@(T,U)                                                           ...
+           req20201117( T, U, tag, false, false, overwrite, purge),         ...
+           Trials,UnitsInt);
+tag = 'interneurons_xyhb_2025_loc_rear'; 
+pfiLR = cf(@(T,U)                                                           ...
+           req20201117( T, U, tag, false, false, overwrite, purge),         ...
+           Trials, UnitsInts);
+tag = 'interneurons_xyhb_2025_pause_rear'; 
+pfiPR = cf(@(T,U)                                                           ...
+           req20201117( T, U, tag, false, false, overwrite, purge),         ...
+           Trials, UnitsInts);
 
-%%%>>>
+% <<< LOAD DATA <<< -----------------------------------------------------------
 
+% >>> COMPUTE SI from behavior ratemaps ---------------------------------------
 
-
-%%%<<< COMPUTE SI from behavior ratemaps -----------------------------------------------------------
-[rmapNB,cmap] = decapsulate_and_concatenate_mtaapfs(bfsin,unitsInts);
-[rmapSB] = decapsulate_and_concatenate_mtaapfs(bfsis,unitsInts);
+[rmapNB,cmap] = decapsulate_and_concatenate_mtaapfs(bfsin,UnitsInt);
+[rmapSB] = decapsulate_and_concatenate_mtaapfs(bfsis,UnitsInt);
 % MASK 
 maskBhv = validDims;
 
@@ -115,14 +125,13 @@ sinfSB = sq(sum(bsxfun(@times,                                                  
                        1./sum(double(bsxfun(@times,validDims,~isnan(rmapSB))),'omitnan')    ...
                        ,        bsxfun(@rdivide,rmapSB,mean(rmapSB,'omitnan'))              ... 
                          .*log2(bsxfun(@rdivide,rmapSB,mean(rmapSB,'omitnan')))),'omitnan'));
-%%%>>>
 
+% <<<
 
-
-%%%<<< COMPUTE SI from place ratemaps --------------------------------------------------------------
+% >>> COMPUTE SI from place ratemaps --------------------------------------------------------------
 % rmapNP -> rate map normal place field
-rmapNP = decapsulate_and_concatenate_mtaapfs(pftin,unitsInts);
-rmapSP = decapsulate_and_concatenate_mtaapfs(pftis,unitsInts);
+rmapNP = decapsulate_and_concatenate_mtaapfs(pftin,UnitsInt);
+rmapSP = decapsulate_and_concatenate_mtaapfs(pftis,UnitsInt);
 % MASK 
 width = pftin{1}.adata.binSizes(1);
 height = pftin{1}.adata.binSizes(2);
@@ -147,17 +156,15 @@ sinfSP = sq(sum(bsxfun(@times,...
                        1./sum(double(bsxfun(@times,maskPlace(:),~isnan(rmapSP))),'omitnan') ...
                        ,bsxfun(@rdivide,rmapSP,mean(rmapSP,'omitnan'))                      ... 
                 .*log2(bsxfun(@rdivide,rmapSP,mean(rmapSP,'omitnan')))),'omitnan'));
-%%%>>>
+% <<<
 
-
-
-%%%<<< COMPUTE mean rate from ratemaps -------------------------------------------------------------
+% >>> COMPUTE mean rate from ratemaps -------------------------------------------------------------
 
 % TODO Interneuron bhv score ratio (rear/walk) vs theta phase preference
-rmapNT = decapsulate_and_concatenate_mtaapfs(cf(@(p) p{1}, pfs),unitsInts);
-rmapNR = decapsulate_and_concatenate_mtaapfs(cf(@(p) p{2}, pfs),unitsInts);
-rmapNH = decapsulate_and_concatenate_mtaapfs(cf(@(p) p{3}, pfs),unitsInts);
-rmapNL = decapsulate_and_concatenate_mtaapfs(cf(@(p) p{5}, pfs),unitsInts);
+rmapNT = decapsulate_and_concatenate_mtaapfs(cf(@(p) p{1}, pfs),UnitsInt);
+rmapNR = decapsulate_and_concatenate_mtaapfs(cf(@(p) p{2}, pfs),UnitsInt);
+rmapNH = decapsulate_and_concatenate_mtaapfs(cf(@(p) p{3}, pfs),UnitsInt);
+rmapNL = decapsulate_and_concatenate_mtaapfs(cf(@(p) p{5}, pfs),UnitsInt);
 
 
 mrateNR = mean(rmapNR,'omitnan')';
@@ -166,11 +173,9 @@ mrateNL = mean(rmapNL,'omitnan')';
 mrateNB = mean(rmapNB,'omitnan')';
 mrateNT = mean(rmapNT,'omitnan')';
 
-%%%>>>
+% <<<
 
-
-
-%%%<<< COMPUTE zscore of SI ------------------------------------------------------------------------
+% >>> COMPUTE zscore of SI ------------------------------------------------------------------------
 
 % ZSCORE 
 zsinfNP = (sinfNP-mean(sinfSP,2))./std(sinfSP,[],2);
@@ -192,17 +197,15 @@ zsinfNB = (sinfNB-mean(sinfSB,2))./std(sinfSB,[],2);
 % $$$ line([-4,0],[-4,0]);
 
 
-%%%>>>
+% <<<
 
+% >>> DECOMPOSE factors of BhvPos ratemaps --------------------------------------------------------
 
+% >>> DECAPSULATE rate mapsSPACE X BHV
 
-%%%<<< DECOMPOSE factors of BhvPos ratemaps --------------------------------------------------------
-
-%%%<<< DECAPSULATE rate mapsSPACE X BHV
-
-[rmaps,cluSessionMap] = decapsulate_and_concatenate_mtaapfs(pfi,unitsInts);
-[rmapsLR,~] = decapsulate_and_concatenate_mtaapfs(pfiLR,unitsInts);
-[rmapsPR,~] = decapsulate_and_concatenate_mtaapfs(pfiPR,unitsInts);
+[rmaps,cluSessionMap] = decapsulate_and_concatenate_mtaapfs(Pfi,UnitsInt);
+[rmapsLR,~] = decapsulate_and_concatenate_mtaapfs(pfiLR,UnitsInt);
+[rmapsPR,~] = decapsulate_and_concatenate_mtaapfs(pfiPR,UnitsInt);
 
 bhvMask = false(size(validDims));
 bhvMask(validDims) = true;
@@ -210,8 +213,8 @@ bhvMask = reshape_eigen_vector(bhvMask,bfs)';
 bhvLims = [-1.6, 0.6; ...
            -0.5, 1.7];
 
-bins = pfi{1}.adata.bins;
-binDims = pfi{1}.adata.binSizes';
+bins = Pfi{1}.adata.bins;
+binDims = Pfi{1}.adata.binSizes';
 
 % RESHAPE rmaps into [ xPosition, yPosition, headPitch, bodyPitch, unit ]
 rmapa = nan([binDims,size(rmaps,2)]);
@@ -221,12 +224,12 @@ for u = 1:size(rmaps,2),rmapa(:,:,:,:,u) = reshape(rmaps(:,u),binDims); end
 for u = 1:size(rmapsLR,2),rmapaLR(:,:,:,:,u) = reshape(rmapsLR(:,u),binDims); end
 for u = 1:size(rmapsPR,2),rmapaPR(:,:,:,:,u) = reshape(rmapsPR(:,u),binDims); end
 
-%%%>>>
-[bmaps,cluSessionMap] = decapsulate_and_concatenate_mtaapfs(bfsin,unitsInts);
+% <<<
+[bmaps,cluSessionMap] = decapsulate_and_concatenate_mtaapfs(bfsin,UnitsInt);
 
-%%%<<< DIAGNOSTIC PLOT - bhv rate map
+% >>> DIAGNOSTIC PLOT - bhv rate map
 % PLOT example
-% $$$ mind = find(ismember(cluSessionMap,[20,106],'rows'))
+ mind = find(ismember(cluSessionMap,[21,7],'rows'))
 cluSessionMap(mind,:)
 rmapLR = rmapaLR(:,:,:,:,mind);
 rmapPR = rmapaPR(:,:,:,:,mind);
@@ -246,13 +249,13 @@ cax.Position(1) = 0.01;
 drawnow();
 pause(0.1);
 cax.Position(1) = sum(hfig.CurrentAxes.Position([1,3]))+cax.Position(1);
-%%%>>>
+% <<<
 
 % bmaps = reshape(rmapa(3,4,:,:,:),[],size(rmapa,length(binDims)+1));
 
 
 
-%%%<<< COLLECT inner spatial bins -> bmaps
+% >>> COLLECT inner spatial bins -> bmaps
 % $$$ bmaps = [];
 % $$$ for k = 2:5,
 % $$$     for j = 2:5,
@@ -261,7 +264,7 @@ cax.Position(1) = sum(hfig.CurrentAxes.Position([1,3]))+cax.Position(1);
 % $$$ end
 % $$$ bmaps(:,:,[1,4,9,16]) =[];
 % $$$ bmaps = reshape(bmaps,[size(bmaps,1),prod(size(bmaps))/size(bmaps,1)]);
-%%%>>>
+% <<<
 
 % COMPRESS bmaps to only valid behavior space elements
 vmaps = bmaps(validDims,:);
@@ -291,11 +294,9 @@ plot(VT(1:5,4),'-+')
 % $$$ figure();
 % $$$ scatter(FSr(:,1),FSr(:,2),10,mrateNT','Filled');
 
-%%%>>>
+% <<<
 
-
-
-%%%<<< COMPUTE intra units bhv ratemap rank correlation --------------------------------------------
+% >>> COMPUTE intra units bhv ratemap rank correlation --------------------------------------------
 
 % COLLECT inner spatial bins
 imaps = [];
@@ -409,11 +410,9 @@ plot(dst(:),rho(165,:),'.')
 % $$$     end
 % $$$ end
 
-%%%>>>
+% <<<
 
-
-
-%%%<<< PLOT examples of bhv rate correlations ------------------------------------------------------
+% >>> PLOT examples of bhv rate correlations ------------------------------------------------------
 
 % INTERACTIVE figure of inter map rank correlations ------------------------------------------------
 sax = gobjects([1,5]);
@@ -489,44 +488,43 @@ drawnow()
 waitforbuttonpress();
 end    
 
-%%%>>> 
+% <<< 
 
-
-
-%%%<<< COMPUTE interneuron theta phase preference --------------------------------------------------
+% >>> COMPUTE interneuron theta phase preference --------------------------------------------------
 
 % COMPUTE theta phase preference for run and rem states
-nUnits = sum(cellfun(@numel,unitsInts));
+nUnits = sum(cellfun(@numel,UnitsInt));
 nBins = 36;
-% $$$ tphRUN = nan([nUnits,nBins]);
-% $$$ tppRUN = nan([nUnits,1]);
-% $$$ tprRUN = nan([nUnits,1]);
+tphRUN = nan([nUnits,nBins]);
+tppRUN = nan([nUnits,1]);
+tprRUN = nan([nUnits,1]);
 tptRUN = nan([nUnits,1]);
 
 for t = 1:numel(Trials)
     Trial = Trials{t};    
     disp(Trial.name);
 % LOAD theta phase
-    phz = load_theta_phase(Trial,[],sessionList(t).thetaRefGeneral,phzCorrection(t));
+    phz = load_theta_phase(Trial);
 % LOAD spike groups
-    spk = Trial.load('spk', phz.sampleRate, 'theta-groom-sit', unitsInts{t});
+    spk = Trial.load('spk', phz.sampleRate, 'theta-groom-sit', UnitsInt{t});
 % COLLECT unit theta phase stats
     for u = find(cluSessionMap(:,1) == t)',
-        res = spk(cluSessionMap(u,2));               
+        res = spk(cluSessionMap(u,2));
+        res(res>size(phz,1)) =[];
         if numel(res)>3
             tphz = phz(res);
-% $$$             tphRUN(u,:) = histcounts(tphz,linspace(0,2*pi,nBins+1));
-% $$$             tppRUN(u,1) = circ_mean (tphz);
-% $$$             tprRUN(u,1) = circ_r    (tphz);
+            tphRUN(u,:) = histcounts(tphz,linspace(0,2*pi,nBins+1));
+            tppRUN(u,1) = circ_mean (tphz);
+            tprRUN(u,1) = circ_r    (tphz);
             tptRUN(u,1) = circ_rtest(tphz);
         end%if
     end%for u
 end%for t
-%%%>>>
+% <<<
 
 
 
-%%%<<< COMPUTE speed vs rate corr ------------------------------------------------------------------
+% >>> COMPUTE speed vs rate corr ------------------------------------------------------------------
 
 %vrCorr = nan([nUnits,1]);
 vrCorrLog = nan([nUnits,1]);
@@ -537,8 +535,8 @@ for t = 1:numel(Trials)
     vxy = vel(filter(copy(xyz),'ButFilter',4,1.5),'hcom',[1,2]);
     vxy.data(vxy.data<0.01) = 0.01;
 % LOAD spike groups
-    spk = Trial.load('spk', xyz.sampleRate, 'theta-groom-sit', unitsInts{t});
-    ufr = Trial.load('ufr', xyz,spk,unitsInts{t},0.3);
+    spk = Trial.load('spk', xyz.sampleRate, 'theta-groom-sit', UnitsInt{t});
+    ufr = Trial.load('ufr', xyz,spk,UnitsInt{t},0.3);
 % COLLECT unit theta phase stats
     uset = find(cluSessionMap(:,1) == t);
     for u = uset',
@@ -551,11 +549,11 @@ for t = 1:numel(Trials)
     end%for u
 end%for t
 
-%%%>>>
+% <<<
 
 
 
-%%%<<< DECOMPOSE (erpPCA) interneuron autocorrelogram ----------------------------------------------
+% >>> DECOMPOSE (erpPCA) interneuron autocorrelogram ----------------------------------------------
 
 halfBins = 100;
 accgScale = nan([nUnits,2*halfBins+1]);
@@ -564,7 +562,7 @@ for t = 1:numel(Trials)
     Trial = Trials{t};    
     disp(Trial.name);
 % LOAD spike groups
-    spk = Trial.load('spk', Trial.lfp.sampleRate, 'theta-groom-sit', unitsInts{t});
+    spk = Trial.load('spk', Trial.lfp.sampleRate, 'theta-groom-sit', UnitsInt{t});
     for u = find(cluSessionMap(:,1) == t)',    
         res = spk(cluSessionMap(u,2));
         [accgHz(u,:),tbin] = CCG(res,u,1,halfBins,Trial.lfp.sampleRate,u,'hz');
@@ -636,18 +634,18 @@ subplot(224);
     ylim([-3,3]);        
     grid('on');
 
-%%%>>>
+% <<<
 
 
 
-%%%<<< MAIN FIGURE portrait ------------------------------------------------------------------------
+% >>> MAIN FIGURE portrait ------------------------------------------------------------------------
 
 % bhvState spatial ratemap examples (placefields)
 % place-bhehavior ratemaps          (space binned behaviorRatemaps)
 % spatial and behavioral variation 
 % Factors and explained variance
 
-%%%<<< setup
+% >>> setup
 
 [hfig,fig,fax,sax] = set_figure_layout(figure(666001),'A4','portrait',[],1.5,1.5,0.1,0.2);
 expUnitsPP = {[ 3],[124];...
@@ -671,10 +669,10 @@ axOpts = {'Units',                 'centimeters',...
           'LineWidth',             1,            ...
           'PlotBoxAspectRatioMode','manual'};
 
-%%%>>>
+% <<<
 
 
-%%%<<< Panel - Example Interneuorns by Behavior State
+% >>> Panel - Example Interneuorns by Behavior State
 
 [yind, yOffSet, xind, xOffSet] = deal(1, 0, 1, 0);
 for tind = 1:size(expUnitsPP,1),
@@ -824,7 +822,7 @@ for tind = 1:size(expUnitsPP,1),
                                       fig.page.ypos(yind)+yOffSet,              ...
                                       fig.subplot.width,                        ...
                                       fig.subplot.height]);
-        bar(linspace(0,360,36),tphRUN(ismember(cluSessionMap,[t,unit],'rows'),:),'EdgeColor','none');
+        bar(linspace(0,360,36),tphRUN(ismember(cluSessionMap,[T,unit],'rows'),:),'EdgeColor','none');
         sax(end).YTick = [];
         sax(end).XTick = [];
         if yind==1,
@@ -839,7 +837,7 @@ for tind = 1:size(expUnitsPP,1),
                                       fig.page.ypos(yind)+yOffSet,              ...
                                       fig.subplot.width,                        ...
                                       fig.subplot.height]);
-        bar(tbin,accgHz(ismember(cluSessionMap,[t,unit],'rows'),:),'EdgeColor','none');
+        bar(tbin,accgHz(ismember(cluSessionMap,[T,unit],'rows'),:),'EdgeColor','none');
         sax(end).YTick = [];
         sax(end).XTick = [];
         xlim([-20,20]);
@@ -907,10 +905,10 @@ text(0,  -0.25, '0', 'HorizontalAlignment','center',        ...
      'FontSize', 8, 'VerticalAlignment',  'middle');                    
 
 
-%%%>>>
+% <<<
 
 
-%%%<<< GRAPHIC - erpPCA 
+% >>> GRAPHIC - erpPCA 
 
 % $$$ sectionXind = 1;
 % $$$ sectionYind = 5;
@@ -957,11 +955,9 @@ text(0,  -0.25, '0', 'HorizontalAlignment','center',        ...
 % $$$       'k');
 % $$$           
 
-%%%>>>
+% <<<
 
-
-
-%%%<<< Panel - bhvRmap factor decomposition 
+% >>> Panel - bhvRmap factor decomposition 
 % PLOT first 3 eigen vectors
 sectionXind = 2;
 sectionYind = 7;
@@ -1001,12 +997,9 @@ xlim([0,6]);
 xlabel('Factor');
 ylabel('Exp Var');
 
-%%%>>>
+% <<<
 
-
-
-
-%%%<<< Panel - Asc vs Dsc factor score
+% >>> Panel - Asc vs Dsc factor score
 
 sectionXind = 2;
 sectionYind = 8;
@@ -1070,11 +1063,9 @@ for f = 1:3,
     
 end
 
-%%%>>>
+% <<<
 
-
-
-%%%<<< Panel - Theta Phase Preference (TPP)
+% >>> Panel - Theta Phase Preference (TPP)
 sectionXind = 6;
 sectionYind = 8;
 
@@ -1117,11 +1108,9 @@ end
 % $$$ hold('on');
 % $$$ polarplot([0,circ_mean(tppRUN(ind))],[0,circ_r(tppRUN(ind))],'-r')
 % $$$ title({'TPP CA3'})
-%%%>>>
+% <<<
 
-
-
-%%%<<< Panel - zscrBhvInfo vs zscrPosInfo
+% >>> Panel - zscrBhvInfo vs zscrPosInfo
 sectionXind = 9;
 sectionYind = 8;
 
@@ -1146,11 +1135,9 @@ for e = 1:3,
 end
 box(sax(end),'on');
 
-%%%>>>
+% <<<
 
-
-
-%%%<<< Panel - Example Interneurons by Behavior States and Maze Postition
+% >>> Panel - Example Interneurons by Behavior States and Maze Postition
 
 sectionXind = 1;
 sectionYind = 12;
@@ -1208,11 +1195,28 @@ for  e = 1:size(eupInd,1),
 % $$$     rectangle('Position',sax(end).Position,'LineWidth',1);
 end
 
+% $$$ mind = find(ismember(cluSessionMap,[23,41],'rows'));
+% $$$ mind = find(ismember(cluSessionMap,[22,68],'rows'));
+% $$$ mind = find(ismember(cluSessionMap,[23,43],'rows'));
+% $$$ mind = find(ismember(cluSessionMap,[22,69],'rows'));
+% $$$ 
+% $$$ mind = find(ismember(cluSessionMap,[20,33],'rows'));
+% $$$ mind = find(ismember(cluSessionMap,[21,43],'rows'));
+% $$$ 
+% $$$ figure,
+% $$$ for x = 1:6;
+% $$$     for y= 1:6;
+% $$$         subplot2(6,6,7-y,x);
+% $$$         imagesc(sq(rmapa(x,y,:,:,mind))');
+% $$$         caxis([10,40]);
+% $$$         colormap('jet');
+% $$$         axis('xy');
+% $$$     end
+% $$$ end
 
+% <<<
 
-%%%>>>
-
-%%%<<< Panel - example map corr vs distance
+% >>> Panel - example map corr vs distance
 sectionXind = 1;
 sectionYind = 15;
 [yind, yOffSet, xind, xOffSet] = deal(sectionYind, 0.75, sectionXind, 0);
@@ -1243,10 +1247,9 @@ ylabel('map correlation');
 xlabel('map distance (cm)');
 grid('on');        
 
-%%%>>>
+% <<<
 
-
-%%%<<< Panel - cdf dist
+% >>> Panel - cdf dist
 sectionXind = 4;
 sectionYind = 15;
 [yind, yOffSet, xind, xOffSet] = deal(sectionYind, 0.75, sectionXind, 0);
@@ -1281,11 +1284,7 @@ box(sax(end),'on');
 % $$$ axes(fax);
 % $$$ rectangle('Position',sax(end).Position,'LineWidth',1);
 
-%%%>>>
-
-
-
-
+% <<<
 
 
 
@@ -1299,18 +1298,18 @@ set_figure_layout_mode(hfig,'fixedaspect');
 
 reset_figure_layout(hfig);
 
-%%%>>>
+% <<<
 
 
 
-%%%<<< MAIN FIGURE landscape -----------------------------------------------------------------------
+% >>> MAIN FIGURE landscape -----------------------------------------------------------------------
 
 % bhvState spatial ratemap examples (placefields)
 % place-bhehavior ratemaps          (space binned behaviorRatemaps)
 % spatial and behavioral variation 
 % Factors and explained variance
 
-%%%<<< setup
+% >>> setup
 
 [hfig,fig,fax,sax] = set_figure_layout(figure(666002),'A4','landscape',[],1.5,1.5,0.1,0.2);
 expUnitsPP = {[ 3],[124];...
@@ -1334,10 +1333,10 @@ axOpts = {'Units',                 'centimeters',...
           'LineWidth',             1,            ...
           'PlotBoxAspectRatioMode','manual'};
 
-%%%>>>
+% <<<
 
 
-%%%<<< Panel - Example Interneuorns by Behavior State
+% >>> Panel - Example Interneuorns by Behavior State
 
 [yind, yOffSet, xind, xOffSet] = deal(1, 0, 1, 0);
 for tind = 1:size(expUnitsPP,1),
@@ -1499,7 +1498,7 @@ for tind = 1:size(expUnitsPP,1),
                                       fig.page.ypos(yind)+yOffSet,              ...
                                       fig.subplot.width,                        ...
                                       fig.subplot.height]);
-        bar(linspace(0,360,36),tphRUN(ismember(cluSessionMap,[t,unit],'rows'),:),'EdgeColor','none');
+        bar(linspace(0,360,36),tphRUN(ismember(cluSessionMap,[T,Unit],'rows'),:),'EdgeColor','none');
         sax(end).YTick = [];
         sax(end).XTick = [];
         if yind==1,
@@ -1514,7 +1513,7 @@ for tind = 1:size(expUnitsPP,1),
                                       fig.page.ypos(yind)+yOffSet,              ...
                                       fig.subplot.width,                        ...
                                       fig.subplot.height]);
-        bar(tbin,accgHz(ismember(cluSessionMap,[t,unit],'rows'),:),'EdgeColor','none');
+        bar(tbin,accgHz(ismember(cluSessionMap,[T,unit],'rows'),:),'EdgeColor','none');
         sax(end).YTick = [];
         sax(end).XTick = [];
         xlim([-20,20]);
@@ -1582,10 +1581,10 @@ text(0,  -0.25, '0', 'HorizontalAlignment','center',        ...
      'FontSize', 8, 'VerticalAlignment',  'middle');                    
 
 
-%%%>>>
+% <<<
 
 
-%%%<<< GRAPHIC - erpPCA 
+% >>> GRAPHIC - erpPCA 
 
 % $$$ sectionXind = 1;
 % $$$ sectionYind = 5;
@@ -1632,11 +1631,11 @@ text(0,  -0.25, '0', 'HorizontalAlignment','center',        ...
 % $$$       'k');
 % $$$           
 
-%%%>>>
+% <<<
 
 
 
-%%%<<< Panel - bhvRmap factor decomposition 
+% >>> Panel - bhvRmap factor decomposition 
 % PLOT first 3 eigen vectors
 sectionXind = 13;
 sectionYind = 1;
@@ -1676,11 +1675,11 @@ xlim([0,6]);
 xlabel('Factor');
 ylabel('Exp Var');
 
-%%%>>>
+% <<<
 
 
 
-%%%<<< Panel - Asc vs Dsc factor score
+% >>> Panel - Asc vs Dsc factor score
 
 sectionXind = 13;
 sectionYind = 2;
@@ -1744,11 +1743,11 @@ for f = 1:3,
     
 end
 
-%%%>>>
+% <<<
 
 
 
-%%%<<< Panel - Theta Phase Preference (TPP)
+% >>> Panel - Theta Phase Preference (TPP)
 sectionXind = 12;
 sectionYind = 5;
 
@@ -1791,11 +1790,11 @@ end
 % $$$ hold('on');
 % $$$ polarplot([0,circ_mean(tppRUN(ind))],[0,circ_r(tppRUN(ind))],'-r')
 % $$$ title({'TPP CA3'})
-%%%>>>
+% <<<
 
 
 
-%%%<<< Panel - zscrBhvInfo vs zscrPosInfo
+% >>> Panel - zscrBhvInfo vs zscrPosInfo
 sectionXind = 14;
 sectionYind = 5;
 
@@ -1820,11 +1819,11 @@ for e = 1:3,
 end
 box(sax(end),'on');
 
-%%%>>>
+% <<<
 
 
 
-%%%<<< Panel - Example Interneurons by Behavior States and Maze Postition
+% >>> Panel - Example Interneurons by Behavior States and Maze Postition
 
 sectionXind = 1;
 sectionYind = 9;
@@ -1895,11 +1894,11 @@ end
 
 
 
-%%%>>>
+% <<<
 
 
 
-%%%<<< Panel - example map corr vs distance
+% >>> Panel - example map corr vs distance
 sectionXind = 11;
 sectionYind = 9;
 [yind, yOffSet, xind, xOffSet] = deal(sectionYind, 0, sectionXind, 0);
@@ -1930,11 +1929,11 @@ ylabel('map correlation');
 xlabel('map distance (cm)');
 grid('on');        
 
-%%%>>>
+% <<<
 
 
 
-%%%<<< Panel - cdf dist
+% >>> Panel - cdf dist
 sectionXind = 14;
 sectionYind = 9;
 [yind, yOffSet, xind, xOffSet] = deal(sectionYind, 0, sectionXind, 0.5);
@@ -1981,7 +1980,7 @@ fill([1,1-ySix.*5,1],x([1,1:end,end]),'c');
 % $$$ axes(fax);
 % $$$ rectangle('Position',sax(end).Position,'LineWidth',1);
 
-%%%>>>
+% <<<
 
 
 
@@ -1994,11 +1993,11 @@ fill([1,1-ySix.*5,1],x([1,1:end,end]),'c');
 % $$$ reset_figure_layout(hfig);
 
 % END MAIN FIGURE landscape
-%%%>>>
+% <<<
 
 
 
-%%%<<< SUPFIG interneuron intermap correlation change with distance ------------------------------- 
+% >>> SUPFIG interneuron intermap correlation change with distance ------------------------------- 
 
 % $$$ 
 % $$$ [hfig,fig,fax,sax] = set_figure_layout(figure(666002),'A4','portrait',[],3,3,2,2);
@@ -2033,7 +2032,7 @@ axOpts = {'Units',                 'centimeters',...
           'PlotBoxAspectRatioMode','manual'};
 
 
-%%%<<< Panel - place and behavior rate maps
+% >>> Panel - place and behavior rate maps
 supExampleUnits = [115,134,194];
 gridSax = gobjects([1,3]);
 for e = 1:3;
@@ -2124,10 +2123,10 @@ for e = 1:3;
     end
             
 end
-%%%>>>
+% <<<
 
 
-%%%<<< Panel - Example Interneurons by Behavior States and Maze Postition
+% >>> Panel - Example Interneurons by Behavior States and Maze Postition
 
 sectionXind = 1;
 sectionYind = 3;
@@ -2194,11 +2193,11 @@ end
 
 
 
-%%%>>>
+% <<<
 
 
 
-%%%<<< Panel - Rate correlation
+% >>> Panel - Rate correlation
 
 sectionXind = 1;
 sectionYind = 5;
@@ -2230,10 +2229,10 @@ for  e = 1:numel(supExampleUnits),
 end    
     
 
-%%%>>>
+% <<<
 
 
-%%%<<< Panel - Rate correlation
+% >>> Panel - Rate correlation
 
 sectionXind = 1;
 sectionYind = 7;
@@ -2257,7 +2256,7 @@ for  e = 1:numel(supExampleUnits),
 end    
     
 
-%%%>>>
+% <<<
 
 
 sectionXind = 1;
@@ -2292,10 +2291,10 @@ subplot2(2,3,2,3);
 
 % proportion of map correlations greater than 0.4
 
-%%%>>>
+% <<<
 
 
-%%%<<< SUPFIG interneuron details ------------------------------------------------------------------
+% >>> SUPFIG interneuron details ------------------------------------------------------------------
 
 ind = ismember(cluSessionMap(:,1),[3,4,5,8:12,17:25]);
 figure,
@@ -2408,11 +2407,11 @@ end
 120
 115
 
-%%%>>>
+% <<<
 
 
 
-%%%<<< SUPFIG THETA phase preference vs Factor Scores ----------------------------------------------
+% >>> SUPFIG THETA phase preference vs Factor Scores ----------------------------------------------
 
 [hfig,fig,fax,sax] = set_figure_layout(figure(666002),'A4','portrait',[],3,3,2,2);
 axOpts = {'Units',                 'centimeters',...
@@ -2563,11 +2562,11 @@ set_figure_layout_mode(hfig,'normalized');
 set_figure_layout_mode(hfig,'fixedaspect');
 reset_figure_layout(hfig);
 
-%%%>>>
+% <<<
 
 
 
-%%%<<< SUPFIG Spatial Vs Behavioral Information ----------------------------------------------------
+% >>> SUPFIG Spatial Vs Behavioral Information ----------------------------------------------------
 
 [hfig,fig,fax,sax] = set_figure_layout(figure(666003),'A4','portrait',[],2,2,2,2);
 axOpts = {'Units',                 'centimeters',...
@@ -2618,11 +2617,11 @@ circle(0,0,3.1)
 xlim([-10,100]);
 ylim([-10,100]);
 
-%%%>>>
+% <<<
 
 
 
-%%%<<< supplemental panel - inter bhv-map(pos-mapCorre) by distance
+% >>> supplemental panel - inter bhv-map(pos-mapCorre) by distance
 
 xOffSet = -1;
 for  e = 1:size(eupInd,1),
@@ -2642,11 +2641,11 @@ for  e = 1:size(eupInd,1),
     ylim([-1,1]);
 end
 
-%%%>>>
+% <<<
 
 
 
-%%%<<< TODO compute the theta phase preference for each interneuron
+% >>> TODO compute the theta phase preference for each interneuron
 
 
 
@@ -2815,11 +2814,11 @@ end
 
 % TODO COMPUTE the phase resolved 
 
-%%%>>>
+% <<<
 
 
 
-%%%<<< TESTING  ------------------------------------------------------------------------------------
+% >>> TESTING  ------------------------------------------------------------------------------------
 
 ind = tprRUN>0.25;
 thetaVec = linspace(-2*pi,4*pi,200);
@@ -2879,13 +2878,13 @@ colorbar();
 xlim([-pi,3*pi]);    
 ylim([-7,7]);
 
-%%%>>>
+% <<<
 
 
 
-%%%<<< OLD parts -----------------------------------------------------------------------------------
+% >>> OLD parts -----------------------------------------------------------------------------------
 
-%%%<<< Panel - ThetaPhasePreference vs factor score (or) rear/non-rear state rate diff
+% >>> Panel - ThetaPhasePreference vs factor score (or) rear/non-rear state rate diff
 
 ind = tprRUN>0.25;
 thetaVec = linspace(-2*pi,4*pi,200);
@@ -2930,9 +2929,9 @@ xlim([-pi,3*pi]);
 ylim([-7,7]);
 xlabel ('Theta Phase')
 
-%%%>>>
+% <<<
 
-%%%>>>
+% <<<
 
 
 

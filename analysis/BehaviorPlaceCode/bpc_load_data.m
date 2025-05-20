@@ -39,9 +39,12 @@ sessionList = get_session_list_v3(sessionListName);
 Trials = af(@(s) MTATrial.validate(s), sessionList);
 
 % LOAD place cells for each Trial into cellarray
+%Units = cf(@(T)  T.spk.get_unit_set(T,'placecells'),  Trials);
 Units = cf(@(T)  T.spk.get_unit_set(T,'bhv'),  Trials);
 Units = cf(@(T,U) remove_bad_units(T,U), Trials, Units);
 UnitsInt = cf(@(T)  T.spk.get_unit_set(T,'inteneurons'),  Trials);
+UnitsInt = cf(@(T,U) remove_bad_units(T,U), Trials, UnitsInt);
+
 % electrode anatomical location
 AnatLocCA1 = cell2mat(cf(@(T) T.meta.anat_loc.CA1, Trials));
 AnatLocCA3 = cell2mat(cf(@(T) T.meta.anat_loc.CA3, Trials));
@@ -52,6 +55,7 @@ AnatLocCA1(noUnits) = [];
 AnatLocCA1(noUnits) = [];
 Trials(noUnits) = [];
 Units(noUnits) = [];
+UnitsInt(noUnits) = [];
 % <<< LOAD all Trials and cells into cellarray <<< ----------------------------
 
 pitchReferenceTrial = 'Ed05-20140529.ont.all';

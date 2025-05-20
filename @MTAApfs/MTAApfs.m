@@ -611,6 +611,8 @@ methods (Static)
             status = exist(fullfile(Trial.spath,[Trial.filebase,'.Pfs.' varargin{1} '.mat']),'file');
         elseif isa(Trial,'MTAApfs'),
             status = exist(fullfile(pfs.path,pfs.filename),'file');
+        elseif ischar(varargin{1}),
+            status = exist(fullfile(Trial.spath,[Trial.filebase,'.',pfsTag,'.mat']),'file');
         end
     end
 end % methods (Static)

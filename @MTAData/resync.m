@@ -75,8 +75,9 @@ if isa(Data,'MTADepoch'),
     end
     syncp = Data.sync.sync.copy;
     syncp.resample(Data.sampleRate);
-    
-    Data.data = IntersectRanges(Data.data+indShift,syncp.data-syncp.data(1)+1);
+
+    % REWRITE IntersectRanges -> MTA:utilities:intersect_ranges
+    Data.data = intersect_ranges(Data.data+indShift, syncp.data-syncp.data(1)+1);
     Data.origin = Data.sync.sync.data(1);
 
     
