@@ -1,3 +1,13 @@
+% req20230930
+%    Tags: ccg theta power estimation lfp state
+%    Status: Active
+%    Type: Analysis
+%    Author: Justin Graboski
+%    Final_Forms: N/A
+%    Project: General
+%    Description: lfp correlation MEC LEC HPC
+
+
 % question: a sentence worded or expressed so as to elicit information.
 %
 % What hyptheseses are possible given the available information?
@@ -37,18 +47,85 @@ ts_xyz = ts_lfp;
 xyz = load(path_xyz);
 
 fvxy = ButFilter(sq(xyz.XYZ(:,1,[1,2])),4, 2.4./(sampleRate/2), 'low');
-fvxy = log10(sqrt((sum(((circshift(fvxy,-1)-circshift(fvxy,1)).* (sampleRate/2)).^2,2))));
+fvxy = (sqrt((sum(((circshift(fvxy,-1)-circshift(fvxy,1)).* (sampleRate/2)).^2,2))));
 fvxy = interp1(ts_xyz, fvxy, lts);
 
 
 channelLEC = 121;
 channelsLEC = [121,113,98,85,65]
-channelMEC = 305;
+channelsMEC = [257:320];
 channelHIP = 150;
 
 channelsAll = [132,147,159,167,178,182,191,...
                128,119,114, 98, 85, 65,...
                320,311,299,284,271,257,];
+
+lfpMEC =  diff(LoadBinary(path_lfp,channelsMEC,par.nChannels,[],[],[],[])',1,2);
+
+figure,plot(bsxfun(@plus,MedianFilter(lfpMEC(1:230000,:),10000),1:50:3150))
+
+figure(); hold('on');
+ind = 1:2e6;
+plot(xyz.XYZ(ind,1,3)./100);
+plot(nunity(lfpMEC(ind,[end-12,end])))
+plot(nunity(diff(lfpMEC(ind,[end-10,end]),1,2))-4)
+
+plot(nunity(lfpMEC(ind,[end-4,end]))-8)
+plot(nunity(diff(lfpMEC(ind,[end-4,end]),1,2))-12)
+
+plot(nunity(lfpMEC(ind,[end-15,end-10]))-18)
+plot(nunity(diff(lfpMEC(ind,[end-15,end-10]),1,2))-22)
+figure();
+plot(bsxfun(@plus,MedianFilter(lfpMEC(ind,[1:end]),10000),[1:100:6300]))
+
+
+figure();hold('on');
+plot(MedianFilter(lfpMEC(ind,[54,56]),10000)+100)
+plot(diff(MedianFilter(lfpMEC(ind,[54,56]),10000),1,2))
+
+figure();hold('on');
+plot(bsxfun(@plus,MedianFilter(lfpMEC(ind,[end-15,end-13]),10000),[1,100]))
+plot(diff(MedianFilter(lfpMEC(ind,[end-15,end-13]),10000),1,2)-200);
+
+parspec = struct('nFFT',2^12,...
+                 'Fs',  par.lfpSampleRate,...
+                 'WinLength',2^11,...
+                 'nOverlap',2^11*0.5,...
+                 'NW',3,...
+                 'Detrend',[],...
+                 'nTapers',[],...
+                 'FreqRange',[1,20]);
+lind = [12000001:12800001];
+lind = [ 1000001:2800001 ];
+lind = ':';
+%wlfpLEC = [lfpHpcDD(lind,:),lfpAll(lind,[2,5]),lfpMCD(lind),lfpHRCM(lind)];
+wlfpLEC =  [MedianFilter(lfpMEC(1:end,[end-14,end-12]),10000), ...
+            MedianFilter(lfpMEC(1:end,[end-10,end-7]), 10000), ...
+            diff(MedianFilter(lfpMEC(1:end,[end-14,end-12]),10000),1,2) ...
+           ];
+
+%wlfpLEC =  WhitenSignal(wlfpLEC,[],true);
+flagCrossSpec = true;
+mode = 'mtcsdglong';
+[lys,lfs,lts] = spec(str2func(mode), wlfpLEC, parspec, flagCrossSpec);
+lts = lts + (parspec.WinLength/2) / par.lfpSampleRate;
+
+ny = 6;
+figure,
+subplot(ny,1,1);
+imagesc(lts,lfs,log10(lys(:,:,1,1))'); axis('xy'); colormap(gca(),'jet'); caxis([-1,3]); ylim([0,20]); colorbar();
+subplot(ny,1,2);
+imagesc(lts,lfs,log10(lys(:,:,2,2))'); axis('xy'); colormap(gca(),'jet'); caxis([-1,2]); ylim([0,20]); colorbar();
+subplot(ny,1,3);
+imagesc(lts,lfs,log10(lys(:,:,4,4))'); axis('xy'); colormap(gca(),'jet'); caxis([-1,2]); ylim([0,20]); colorbar();
+subplot(ny,1,4);
+imagesc(lts,lfs,log10(lys(:,:,3,3))'); axis('xy'); colormap(gca(),'jet'); caxis([-1,2]); ylim([0,20]); colorbar();
+subplot(ny,1,5);
+imagesc(lts,lfs,circ_dist(angle(lys(:,:,3,4)),0)'); axis('xy'); colormap(gca(),'hsv'); caxis([-2,1]); colorbar();
+subplot(ny,1,6);
+plot(lts,fvxy); colorbar();
+linkx();
+
 
 lfpHpcD =  diff(LoadBinary(filepath,channelsHpc,par.nChannels,[],[], [],[])',1,2);
 lfpHpcDD =  diff(LoadBinary(filepath,152:2:168,par.nChannels,[],[], [],[])',1,2);

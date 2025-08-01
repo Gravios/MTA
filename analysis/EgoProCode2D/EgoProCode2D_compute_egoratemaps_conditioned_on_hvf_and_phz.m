@@ -68,7 +68,7 @@ for tind = 1:numel(Trials)
     phz = load_theta_phase(Trial,xyz);
 
     
-    rmap{tind} = nan([numel(xpos),numel(ypos),numel(unitSubset),numel(phzBin.centers),numel(hvfBin.centers)]);
+    rmap{tind} = nan([numel(xpos),numel(ypos),numel(unitSubset),numel(bins.phz.centers),numel(hvfBin.centers)]);
     %% cell array version
     for u = 1:numel(unitSubset)
         tic
@@ -115,14 +115,14 @@ for tind = 1:numel(Trials)
                 mapOcc{xind,yind} = tempPos(pind,:);
                 mapInd{xind,yind} = find(pind);
                 mapHvf{xind,yind} = discretize(thvf(pind),hvfBin.edges);
-                mapPhz{xind,yind} = discretize(tphz(pind),phzBin.edges);
+                mapPhz{xind,yind} = discretize(tphz(pind),bins.phz.edges);
             end
         end
         
         occ = zeros([numel(mapOcc),3]);
         for lind = 1:numel(mapOcc)
             for hvfInd = 1:numel(hvfBin.centers)
-                for phzInd = 1:numel(phzBin.centers)
+                for phzInd = 1:numel(bins.phz.centers)
                     occ(lind,phzInd,hvfInd) = sum(exp(-sum(mapOcc{lind}(mapHvf{lind}==hvfInd&mapPhz{lind}==phzInd,:).^2,2)./(sigmaDS)));
                 end
             end
@@ -154,7 +154,7 @@ for tind = 1:numel(Trials)
         spos(tres,:) = tpos(tres,:);
         % assume tres is monotonically increasing
         for hvfInd = 1:numel(hvfBin.centers)
-            for phzInd = 1:numel(phzBin.centers)
+            for phzInd = 1:numel(bins.phz.centers)
                 for xind = 1:latticeSize(1)
                     for yind = 1:latticeSize(2)
                         tempPos = bsxfun(@minus,spos,[xpos(xind),ypos(yind)]);
@@ -177,7 +177,7 @@ for tind = 1:numel(Trials)
 
     %%%<<< permuted hvf
 
-    rmapShuff{tind} = nan([numel(xpos),numel(ypos),numel(unitSubset),numel(phzBin.centers),numel(hvfBin.centers),100]);
+    rmapShuff{tind} = nan([numel(xpos),numel(ypos),numel(unitSubset),numel(bins.phz.centers),numel(hvfBin.centers),100]);
     %% cell array version
     for u = 1:numel(unitSubset)
         tic
@@ -229,17 +229,17 @@ for tind = 1:numel(Trials)
                 mapOcc{xind,yind} = tempPos(pind,:);
                 mapInd{xind,yind} = find(pind);
                 mapHvf{xind,yind} = discretize(thvf(pind),hvfBin.edges);
-                mapPhz{xind,yind} = discretize(tphz(pind),phzBin.edges);
+                mapPhz{xind,yind} = discretize(tphz(pind),bins.phz.edges);
             end
         end
 
         for iter = 1:100
             tMHvf = mapHvf;
-            occ = zeros([numel(mapOcc),numel(phzBin.centers),numel(hvfBin.centers)]);
+            occ = zeros([numel(mapOcc),numel(bins.phz.centers),numel(hvfBin.centers)]);
             for lind = 1:numel(mapOcc)
                 tMHvf{lind} = mapHvf{lind}(randperm(numel(mapHvf{lind})));
                 for hvfInd = 1:numel(hvfBin.centers)
-                    for phzInd = 1:numel(phzBin.centers)
+                    for phzInd = 1:numel(bins.phz.centers)
                         occ(lind,phzInd,hvfInd) = sum(exp(-sum(mapOcc{lind}(tMHvf{lind}==hvfInd&mapPhz{lind}==phzInd,:).^2,2)./(sigmaDS)));
                     end
                 end
@@ -273,7 +273,7 @@ for tind = 1:numel(Trials)
             spos(tres,:) = tpos(tres,:);
             % assume tres is monotonically increasing
             for hvfInd = 1:numel(hvfBin.centers)
-                for phzInd = 1:numel(phzBin.centers)                
+                for phzInd = 1:numel(bins.phz.centers)                
                     for xind = 1:latticeSize(1)
                         for yind = 1:latticeSize(2)
                             tempPos = bsxfun(@minus,spos,[xpos(xind),ypos(yind)]);
@@ -281,7 +281,7 @@ for tind = 1:numel(Trials)
                             mapW{xind,yind} = wpos(mapInd{xind,yind}(tMHvf{xind,yind}==hvfInd&mapPhz{xind,yind}==phzInd));
                     end
                 end
-                scc = zeros([numel(mapOcc),numel(phzBin.centers),numel(hvfBin.centers)]);
+                scc = zeros([numel(mapOcc),numel(bins.phz.centers),numel(hvfBin.centers)]);
                 for lind = 1:numel(mapOcc)
                     if ~isempty(mapW{lind}) && ~isempty(mapSpk{lind})
                         scc(lind,phzInd,hvfInd) = sum(mapW{lind}.*exp(-sum(mapSpk{lind}.^2,2)./(sigmaDS)),'omitnan');
@@ -368,8 +368,8 @@ mask(~mask) = nan;
 % $$$ u = find(unitsEgo{tind}==31);
 % $$$ figure,
 % $$$ for hvfInd = 1:hvfBin.count
-% $$$     for phzInd = 1:phzBin.count
-% $$$         subplot2(phzBin.count,hvfBin.count,phzBin.count+1-phzInd,hvfInd);
+% $$$     for phzInd = 1:bins.phz.count
+% $$$         subplot2(bins.phz.count,hvfBin.count,bins.phz.count+1-phzInd,hvfInd);
 % $$$         shading(gca(),'flat');
 % $$$         set(pcolor(xpos-diff(xpos(1:2))/2,ypos-diff(ypos(1:2))/2,fliplr(rot90(rmap{tind}(:,:,u,phzInd,hvfInd)',-1)).*mask),'EdgeColor','none');
 % $$$         axis('xy');
@@ -384,8 +384,8 @@ mask(~mask) = nan;
 % $$$ 
 % $$$ figure,
 % $$$ for hvfInd = 1:numel(hvfBin.centers)
-% $$$     for phzInd = 1:numel(phzBin.centers)
-% $$$         subplot2(phzBin.count,hvfBin.count,phzBin.count+1-phzInd,hvfInd);
+% $$$     for phzInd = 1:numel(bins.phz.centers)
+% $$$         subplot2(bins.phz.count,hvfBin.count,bins.phz.count+1-phzInd,hvfInd);
 % $$$         shading(gca(),'flat');
 % $$$         set(pcolor(xpos-diff(xpos(1:2))/2,ypos-diff(ypos(1:2))/2,fliplr(rot90(rmapShuff{tind}(:,:,u,phzInd,hvfInd,iter)',-1)).*mask),'EdgeColor','none');
 % $$$         caxis([2,12])

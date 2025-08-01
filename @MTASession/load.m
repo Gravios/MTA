@@ -16,18 +16,21 @@ if numel(varargin)>1,
 end
 [field] = DefaultArgs(varargin,{[]});
 if ~isempty(field),
-    pattern = {'MTAData';'MTASpk';'MTAStateCollection'};
-    F_classes = cat(2,superclasses(Session.(field))',{class(Session.(field))});
+    pattern = {'MTAPar';'MTAData';'MTASpk';'MTAStateCollection'};
+    F_classes = cat(2, ...
+                    superclasses(Session.(field))', ...
+                    {class(Session.(field))});
     if any(subsref(~cellfun(@isempty,regexp(repmat(F_classes,[numel(pattern),1]),...
                                             repmat(pattern,[1,numel(F_classes)]))),...
                    substruct('()',{':'}))),
         %if isa(Session.(field),'MTAData')||isa(Session.(field),'MTASpk'),      
         if nargout==1,
             Data = Session.(field).copy;
-            Data = Data.load(Session,fvarargin{:}); 
+            Data = Data.load(Session,fvarargin{:});
+            Data.parent = Session;
             Session = Data;
         else
-            Session.(field).load(Session,fvarargin{:}); 
+            Session.(field).load(Session,fvarargin{:});
         end
     else
         switch varargin{1}

@@ -137,7 +137,7 @@ classdef MTAApfs < hgsetget %< MTAAnalysis
                 'shuffleBlockSize',               1,                                             ...
                 'trackingMarker',                 'hcom',                                        ...
                 'autoSaveFlag',                   true,                                          ...
-                'spkMode',                        'deburst',                                     ...
+                'spkMode',                        '',                                            ...
                 'spk',                            [],                                            ...
                 'compute_pfs',                    @PlotPF,                                       ...
                 'loadMethod',                     '',                                            ...
@@ -191,7 +191,7 @@ classdef MTAApfs < hgsetget %< MTAAnalysis
 % SET the epochs
                 if ischar(states),
                     Pfs.parameters.states = states;
-                    pfsState = Session.stc{states};
+                    pfsState = [Session.stc{states}];
                 elseif isa(states,'MTAData'),
                     pfsState = states.copy;
                     Pfs.parameters.states = pfsState.label;                       
@@ -247,10 +247,10 @@ classdef MTAApfs < hgsetget %< MTAAnalysis
                                    Obj.session.mazeName,...
                                    Obj.session.trialName);
 % RESET the independent variabels
-                if xyzp.isempty,
-                    try,
+                if isempyt(xyzp)
+                    try
                         xyz = preproc_xyz(Session,'trb');
-                    catch err,
+                    catch err
                         disp(err)
                         xyz = preproc_xyz(Session);
                         trackingMarker = 'hcom';
@@ -264,7 +264,7 @@ classdef MTAApfs < hgsetget %< MTAAnalysis
 % RESET the epochs
                 if ischar(states),
                     Pfs.parameters.states = states;
-                    pfsState = Session.stc{states};
+                    pfsState = [Session.stc{states}];
                     resample(pfsState,xyz);
                 elseif isa(states,'MTAData'),
                     pfsState = states.copy;
@@ -437,7 +437,7 @@ classdef MTAApfs < hgsetget %< MTAAnalysis
                 
                 res = spk(unit);
                 %% Skip unit if too few spikes
-                if numel(res)>21
+                if numel(res)>11
                     
                     % SUPER annoying fix for probe shifts
                     if false%~isempty(spk.per) && any(spk.perInd(unit,:))
@@ -456,16 +456,16 @@ classdef MTAApfs < hgsetget %< MTAAnalysis
                         sstpos = asstpos;
                         switch pfsState.type
                           case 'TimePeriods'
-                            sstend = round((mean(res(end-10:end)) - Session.sync.data(end)) .* xyz.sampleRate);
-                            sstbeg = round((mean(res(1:10)) - Session.sync.data(1)).*xyz.sampleRate);
+                            %sstend = round((mean(res(end-5:end)) - Session.sync.data(end)) .* xyz.sampleRate);
+                            %sstbeg = round((mean(res(1:5)) - Session.sync.data(1)).*xyz.sampleRate);
                             
                             spkPer = copy(pfsState);
-                            spkPer.label = 'spikes';
-                            spkPer.sampleRate = xyz.sampleRate;
-                            spkPer.data = [sstbeg, sstend];
-                            psPer = pfsState&spkPer;
+                            %spkPer.label = 'spikes';
+                            %spkPer.sampleRate = xyz.sampleRate;
+                            %spkPer.data = [sstbeg, sstend];
+                            %psPer = pfsState&spkPer;
                             
-                            sstres = SelectPeriods(res,psPer.data,'d',1,1);
+                            sstres = SelectPeriods(res,spkPer.data,'d',1,1);
                             cast(spkPer, 'TimeSeries');
 
                             spkPer = logical(SelectPeriods(spkPer.data,pfsState,'c',1,1));
@@ -561,7 +561,7 @@ classdef MTAApfs < hgsetget %< MTAAnalysis
                                     xyz.sampleRate                   ... Sample Rate
                     );
                     toc
-
+                    
 % COMPUTE Bootstrap
                     if numIter>1,
                         tic

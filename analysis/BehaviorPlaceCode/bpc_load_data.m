@@ -20,9 +20,8 @@
 
 % >>> GLOBAL VARS >>> ---------------------------------------------------------
 configure_default_args();
-% MjgER2016_figure_BhvPlacefields_args:
 %
-% Default arument overrides:
+% GLOBAL - Default Function Argument Overrides:
 %     fet_HB_pitchB
 %     compute_bhv_ratemaps
 %     compute_bhv_ratemaps_shuffled
@@ -34,21 +33,19 @@ global MTA_FIGURES_PATH
 % >>> LOCAL VARS >>> ----------------------------------------------------------
 sessionListName = 'BehaviorPlaceCode';
 sessionList = get_session_list_v3(sessionListName);
-
-% >>> LOAD all Trials and cells into cellarray >>> ----------------------------
+% >>>   LOAD Trials >>> -------------------------------------------------------
 Trials = af(@(s) MTATrial.validate(s), sessionList);
-
-% LOAD place cells for each Trial into cellarray
-%Units = cf(@(T)  T.spk.get_unit_set(T,'placecells'),  Trials);
+cf(@(T)  T.load('par'),  Trials);
+cf(@(T)  T.load('nq'),  Trials);
+% <<<   LOAD Trials <<< -------------------------------------------------------
+% >>>   LOAD Neurons >>> ------------------------------------------------------
 Units = cf(@(T)  T.spk.get_unit_set(T,'bhv'),  Trials);
 Units = cf(@(T,U) remove_bad_units(T,U), Trials, Units);
 UnitsInt = cf(@(T)  T.spk.get_unit_set(T,'inteneurons'),  Trials);
 UnitsInt = cf(@(T,U) remove_bad_units(T,U), Trials, UnitsInt);
-
 % electrode anatomical location
 AnatLocCA1 = cell2mat(cf(@(T) T.meta.anat_loc.CA1, Trials));
 AnatLocCA3 = cell2mat(cf(@(T) T.meta.anat_loc.CA3, Trials));
-
 % This only works with this data set 
 noUnits = cellfun(@isempty,Units);
 AnatLocCA1(noUnits) = [];
@@ -56,17 +53,37 @@ AnatLocCA1(noUnits) = [];
 Trials(noUnits) = [];
 Units(noUnits) = [];
 UnitsInt(noUnits) = [];
-% <<< LOAD all Trials and cells into cellarray <<< ----------------------------
+% <<<   LOAD Neurons <<< ------------------------------------------------------
+% >>>   GENERATE MAPS between Neurons and Trials >>> --------------------------
+% ADD global unit id colum
+cluSessionMap = [];
+for u = 1:numel(Units)
+    cluSessionMap = cat( 1,                              ...
+                         cluSessionMap,                  ...
+                         [u * ones([numel(Units{u}),1]), ...
+                          Units{u}(:)]                   ...
+    );
+end
+% ADD global unit id colum
+cluSessionMapInt = [];
+for u = 1:numel(Units)
+    cluSessionMapInt = cat( 1,                              ...
+                         cluSessionMapInt,                  ...
+                         [u * ones([numel(UnitsInt{u}),1]), ...
+                          UnitsInt{u}(:)]                   ...
+    );
+end
+% <<<   GENERATE MAPS between Neurons and Trials <<< --------------------------
 
-pitchReferenceTrial = 'Ed05-20140529.ont.all';
-
-% SET helper function to reshape eigenvectors
-reshape_eigen_vector =                                   ...
+% >>> SETUP helper functions >>> ----------------------------------------------
+reshape_eigen_vector =                                                      ...
     @(V,p)  reshape(V(:,1),p{1}.adata.binSizes')';
- 
-% 
-figBasePath =  ...
-    create_directory('/storage/gravio/figures/analysis/BehaviorPlaceCode/');
+% <<< SETUP helper functions <<< ----------------------------------------------
+
+% >>> SETUP helper paths >>> --------------------------------------------------
+paths.figure = fullfile(MTA_FIGURES_PATH,'BehaviorPlaceCode');
+create_directory(paths.figure);
+% <<< SETUP helper paths <<< --------------------------------------------------
 
 % >>> Behavioral states >>> ---------------------------------------------------
 % SET states to plot
@@ -80,6 +97,7 @@ states = {'theta-groom-sit', ...
 };
 
 numStates = numel(states);
+stsN = numStates;
 % <<< Behavioral states <<< ---------------------------------------------------
 
 % >>> Place Field interpolation definition >>> --------------------------------
@@ -99,28 +117,5 @@ interpParDfs = struct(                              ...
 % <<< Place Field interpolation definition <<< --------------------------------
 
 % <<< LOCAL VARS <<< ----------------------------------------------------------
-
-% >>> CONCATENATE all maps >>> ------------------------------------------------
-% ADD global unit id colum
-cluSessionMap = [];
-for u = 1:numel(Units)
-    cluSessionMap = cat( 1,                              ...
-                         cluSessionMap,                  ...
-                         [u * ones([numel(Units{u}),1]), ...
-                          Units{u}(:)]                   ...
-    );
-end
-
-% ADD global unit id colum
-cluSessionMapInt = [];
-for u = 1:numel(Units)
-    cluSessionMapInt = cat( 1,                              ...
-                         cluSessionMapInt,                  ...
-                         [u * ones([numel(UnitsInt{u}),1]), ...
-                          UnitsInt{u}(:)]                   ...
-    );
-end
-% <<< CONCATENATE all maps <<< ------------------------------------------------
-
 
 

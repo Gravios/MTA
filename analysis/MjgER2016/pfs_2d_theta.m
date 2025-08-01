@@ -65,18 +65,15 @@ if isempty(Trial.stc.gsi('t')),Trial = labelTheta(Trial);end
 % MAIN -------------------------------------------------------------------------    
 %% compute 2d place fields for the theta state
 
-try, 
-    Trial.stc{states};
-catch err
-    disp(err)
-    Trial.stc{'walk&gper&theta'};
-    states = 'walk&gper&theta';
+if ischar(states)
+    states = Trial.stc{states};
 end
 
 pargs = get_default_args('MjgER2016','MTAApfs','struct');
 pargs.units = units;
 pargs.states = states;
 pargs.overwrite = overwrite;
+pargs.purge = purge;
 pargs.binDims = [20,20];
 pargs.SmoothingWeights = [3,3];
 pargs.numIter = 1;

@@ -28,9 +28,10 @@ defargs = struct('sampleRate',  1,                                           ...
                      'states', [],                                           ...
                       'units', [],                                           ...
                        'mode', '',                                           ...
-                  'loadField', {{}}                                          ...
+                   'incld_fet', false,                                       ...
+                   'incld_spk', false                                        ...
 );
-[sampleRate, states, units, mode, loadField] =                               ...
+[sampleRate, states, units, mode, incld_fet, incld_spk] =                    ...
     DefaultArgs(varargin,defargs,'--struct');
 %-------------------------------------------------------------------------------
 
@@ -38,137 +39,121 @@ defargs = struct('sampleRate',  1,                                           ...
 % MAIN -------------------------------------------------------------------------
 filebase = fullfile(Session.spath, Session.name);
 
-[Res, Clu, Map] = LoadCluRes( filebase );
+Spk.load_clu_res( [], incld_fet, incld_spk);
 
-% SELECT specific units
+% >>> SELECT specific units >>> -----------------------------------------------
 if isempty(units)
-    cind = true( [numel(Res),1] );
+    cind = true( [numel(Spk.res),1] );
 elseif isnumeric(units)
-    cind = find( ismember( Clu, units ));
+    cind = find( ismember( Spk.clu, units ));
 elseif ischar(units)
     units = get_unit_set( Spk, Session, units);
-    cind = find( ismember( Clu, units ));
+    cind = find( ismember( Spk.clu, units ));
 end            
-Res = Res(cind);
-Clu = Clu(cind);
+Spk.res = Spk.res(cind);
+Spk.clu = Spk.clu(cind);
+if incld_fet, Spk.fet = Spk.fet(cind,:); end
+if incld_spk, Spk.spk = Spk.spk(cind,:,:);end    
+% >>> SELECT specific units >>> -----------------------------------------------
 
+% >>> FILTER mode >>> ---------------------------------------------------------
 switch mode
-    
-% REMOVE burst tail spikes
   case 'deburst'
+  % >>> REMOVE burst tail spikes >>> ------------------------------------------
     nRes = [];
     nClu = [];
+    nFet = [];
+    nSpk = [];
     thresh = round(0.008*Session.sampleRate);
-    for u = unique(Clu)'
+    for u = unique(Spk.clu)'
         try                            
-            tRes   = Res( Clu==u );
+            tRes   = Spk.res( Spk.Clu==u );
             burstResInd = SplitIntoBursts( tRes, thresh);
             nRes   = [nRes; tRes(burstResInd)];
             nClu   = [nClu; u.*ones(numel(burstResInd),1)];
+            if incld_fet,  nFet = [nFet; tFet(burstResInd,:)];   end
+            if incld_spk,  nSpk = [nSpk; tSpk(burstResInd,:,:)]; end
         end
     end
-    Res = nRes;
-    Clu = nClu;
-
-  case 'blge2'
-    nRes = [];
-    nClu = [];
-    thresh = round(0.008*Session.sampleRate);
-    blThresh = 2;    
-    for u = unique(Clu)'
-        try
-            tRes   = Res(Clu==u);
-            [burstResInd,burstLength] = SplitIntoBursts(tRes,thresh);
-            nRes   = [nRes; tRes(burstResInd(burstLength>=blThresh))];
-            nClu   = [nClu; u.*ones([sum(burstLength>=blThresh),1])];
-        end        
-    end
-    Res = nRes;
-    Clu = nClu;    
-
-  case 'blge3'
-    nRes = [];
-    nClu = [];
-    thresh = round(0.008*Session.sampleRate);
-    blThresh = 3;
-    for u = unique(Clu)'
-        try
-            tRes   = Res(Clu==u);
-            [burstResInd,burstLength] = SplitIntoBursts(tRes,thresh);
-            nRes   = [nRes; tRes(burstResInd(burstLength>=blThresh))];
-            nClu   = [nClu; u.*ones([sum(burstLength>=blThresh),1])];
-        end        
-    end
-    Res = nRes;
-    Clu = nClu;
-
+    Spk.res = nRes;
+    Spk.clu = nClu;
+    if incld_fet,  Spk.fet = nFet; end
+    if incld_spk,  Spk.spk = nSpk; end
+  % <<< REMOVE burst tail spikes <<< ------------------------------------------  
+  % >>> other modes >>> -------------------------------------------------------
+% $$$   case 'blge2'
+% $$$     nRes = [];
+% $$$     nClu = [];
+% $$$     thresh = round(0.008*Session.sampleRate);
+% $$$     blThresh = 2;    
+% $$$     for u = unique(Clu)'
+% $$$         try
+% $$$             tRes   = Spk.res(Spk.clu==u);
+% $$$             [burstResInd,burstLength] = SplitIntoBursts(tRes,thresh);
+% $$$             nRes   = [nRes; tRes(burstResInd(burstLength>=blThresh))];
+% $$$             nClu   = [nClu; u.*ones([sum(burstLength>=blThresh),1])];
+% $$$         end        
+% $$$     end
+% $$$     Spk.res = nRes;
+% $$$     Spk.clu = nClu;    
+% $$$ 
+% $$$   case 'blge3'
+% $$$     nRes = [];
+% $$$     nClu = [];
+% $$$     thresh = round(0.008*Session.sampleRate);
+% $$$     blThresh = 3;
+% $$$     for u = unique(Clu)'
+% $$$         try
+% $$$             tRes   = Spk.res(Spk.clu==u);
+% $$$             [burstResInd,burstLength] = SplitIntoBursts(tRes,thresh);
+% $$$             nRes   = [nRes; tRes(burstResInd(burstLength>=blThresh))];
+% $$$             nClu   = [nClu; u.*ones([sum(burstLength>=blThresh),1])];
+% $$$         end        
+% $$$     end
+% $$$     Spk.res = nRes;
+% $$$     Spk.clu = nClu;
+  % <<< other modes <<< -------------------------------------------------------
   case 'first_spike_theta'
     % get first spike of each theta cycle
-
   otherwise % default
-    % NOTHING
+    % NOTHING for now
 end
+% <<< FILTER mode <<< ---------------------------------------------------------
 
-% RESAMPLE to target sampleRate
-Res = Res ./ Session.sampleRate * sampleRate;
-if sampleRate ~= 1,  Res = ceil(Res);  end
+% >>> RESAMPLE to target sampleRate >>> ---------------------------------------
+Spk.res = Spk.res ./ Session.sampleRate * sampleRate;
+if sampleRate ~= 1,  Spk.res = ceil(Spk.res);  end
+Spk.sampleRate = sampleRate;
+% <<< RESAMPLE to target sampleRate <<< ---------------------------------------
 
-% SELECT generic periods if given
-% $$$ if ~isempty( Spk.per )
-% $$$     newRes = [];
-% $$$     newClu = [];
-% $$$     for cluInd = unique(Clu)'
-% $$$         sper = copy(Spk.per);
-% $$$         sper.data = sper.data(Spk.perInd(cluInd,:),:) ...
-% $$$             ./sper.sampleRate                         ...
-% $$$             .*sampleRate;
-% $$$         
-% $$$         if isempty(sper.data),  continue;  end
-% $$$         
-% $$$         [pRes, psind] = SelectPeriods( Res, sper.data, 'd', 1, 0);
-% $$$         newRes = cat(1, newRes, pRes);
-% $$$         newClu = cat(1, newClu, cluInd*ones(size(pRes)));
-% $$$     end
-% $$$     [Res,sind] = sort(newRes);
-% $$$     Clu        = newClu(sind);
-% $$$ end
-
-% FIT to synchronization periods
+% >>> FIT to Trial synchronization periods >>> --------------------------------
 syncPeriods = Session.sync([1,end]);
 if sampleRate ~= 1
-    syncPeriods =                                     ...
-        ceil(syncPeriods                              ...
-         * sampleRate                                 ...
-         + 1 * double( sampleRate~=1 ));
-
+    syncPeriods = ceil(syncPeriods * sampleRate + 1 * double( sampleRate~=1 ));
 end
+[Spk.res, ind] = SelectPeriods( Spk.res, syncPeriods, 'd', 1, 1 );
+Spk.clu = Spk.clu(ind);
+if incld_fet,  Spk.fet = Spk.fet(ind,:);   end
+if incld_spk,  Spk.spk = Spk.spk(ind,:,:); end
 
-% $$$ for per = 1:size( syncPeriods, 1)
-% $$$     
-% $$$ end
+% <<< FIT to Trial synchronization periods <<< --------------------------------
 
-[Res, ind] = SelectPeriods( Res, syncPeriods, 'd', 1, 1 );
-Clu = Clu(ind);
-
-
-% SELECT state periods if given
+% >>> SELECT state periods if given >>> ---------------------------------------
 if ~isempty( states );
     if ischar( states ),
         states = [Session.stc{ states, sampleRate }.data];
-        [Res, sind] = SelectPeriods( Res, states, 'd', 1, 0);
+        [Spk.res, sind] = SelectPeriods( Spk.res, states, 'd', 1, 0);
     else
         sst = states.copy;
         sst.resample(sampleRate);
-        [Res, sind] = SelectPeriods(Res, sst.data, 'd', 1, 0);                   
+        [Spk.res, sind] = SelectPeriods(Spk.res, sst.data, 'd', 1, 0);                   
     end
-    Clu = Clu(sind);    
+    Spk.clu = Spk.clu(sind);
+    if incld_fet,  Spk.fet = Spk.fet(sind,:);   end
+    if incld_spk,  Spk.spk = Spk.spk(sind,:,:); end
 end
-
-Spk.clu = Clu;
-Spk.res = Res;
-Spk.map = Map;
-Spk.sampleRate = sampleRate;
+% <<< SELECT state periods if given <<< ---------------------------------------
 
 Spk.update_hash(sampleRate,mode);
 
-% END MAIN -----------------------------------------------------------------------------------------
+% END MAIN --------------------------------------------------------------------

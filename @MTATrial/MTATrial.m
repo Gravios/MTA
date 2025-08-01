@@ -120,7 +120,10 @@ classdef MTATrial < MTASession
                             error(msg),
                         else
                             Trial.sync.resample(1);
-                            Trial.sync = MTADepoch(Trial.spath,[Trial.filebase '.sync.mat'],sync,1,Trial.sync.sync,0);
+                            Trial.sync = MTADepoch(Trial.spath,...
+                                                   [Trial.filebase,'.sync.mat'], ...
+                                                   sync,1,...
+                                                   Trial.sync.sync,0);
                         end
                         
                     otherwise

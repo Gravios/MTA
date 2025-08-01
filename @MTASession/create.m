@@ -9,6 +9,9 @@ function Session = create(Session,varargin)
 if     all(~cellfun(@isempty,regexpi(dataLoggers,{'nlx','vicon'})))
     Session = sync_nlx_vicon(Session, TTLValue, xyzSampleRate);
     
+elseif     all(~cellfun(@isempty,regexpi(dataLoggers,{'nlx','spots'})))
+    Session = sync_nlx_spots(Session, TTLValue, xyzSampleRate);
+    
 elseif     all(~cellfun(@isempty,regexpi(dataLoggers,{'ephys','vicon'})))
     Session = sync_ephys_vicon(Session, TTLValue, xyzSampleRate);
     

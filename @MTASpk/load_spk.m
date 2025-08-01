@@ -1,99 +1,67 @@
-function Spk = load_spk(Spk,Session,varargin)
-% function Spk = create(Spk,Session,varargin)
-% Function used to load spiking data from {clu,res,fet,spk} file
-% and synchronize with the Session
-%   
-%   varargin:
-%     [sampleRate,states,units,mode,loadField] 
-%
-%     sampleRate: double, the sampleRate in Hertz
-%
-%     states:     string, state label or expression to select for a
-%                         subset of spikes
-%
-%     units:       array, Cluster identities to select for a subset
-%                         of spikes. The default [] will return all
-%                         Clusters.
-%
-%     mode:       string, {'','deburst'}, only keep 1st spk of each
-%                         burst.
-%
-%     loadField: cellarry, Auxillary options for LoadCluResSpk
-%
-% See also MTAStateCollection for more information on selecting
-% states
-%
-%% Load and resample Res             
-defargs = struct('sampleRate',               1,   ...
-                 'states',                   [],...
-                 'units',                    [],...
-                 'mode',                     '',...
-                 'loadField',                 {{}} ...
-                 );
-[sampleRate,states,units,mode,loadField] = DefaultArgs(varargin,defargs,'--struct');
-Spk.sampleRate = sampleRate;
-[clu,res,spk,map] = LoadCluResSpk(fullfile(Session.spath, Session.name),loadField{:});
+function spk = load_spk(Spk, cluster_group)
+% function Spk = load_spk(Spk, cluster_group)
 
-Spk.map = map;
-res = res/Session.sampleRate*Spk.sampleRate;
-if Spk.sampleRate~=1
-    res = ceil(res);
+
+Par = Spk.parent.par;
+
+EXT = 'spk';
+
+maxChanCount = max(cellfun(@numel,Par.ElecGp));
+maxSampleCount = max([Par.SpkGrps(:).nSamples]);
+
+filepath = fullfile(Spk.parent.spath,...
+                    [Spk.parent.name,'.',EXT,'.',num2str(cluster_group)]);
+
+% >>> LOAD spike waveform file >>> -------------------------------------------
+spk = bload(                                                               ...
+    filepath,                                                              ...
+    [numel(Par.SpkGrps(cluster_group).Channels), inf],                     ...
+    0,                                                                     ...
+    'short=>single'                                                        ...
+);
+% <<< LOAD spike waveform file <<< -------------------------------------------
+
+% >>> RESHAPE spike waveform to (res, channel, sample) >>> --------------------
+nSpikes = size(spk, 2)/Par.SpkGrps(cluster_group).nSamples;
+spk = reshape(                                                              ...
+    spk,                                                                    ...
+    [                                                                       ...
+        numel(Par.SpkGrps(cluster_group).Channels),                         ...
+        Par.SpkGrps(cluster_group).nSamples,                                ...
+        nSpikes]                                                            ...
+);
+spk = permute(spk, [3,1,2]);
+% <<< RESHAPE spike waveform to (res, channel, sample) <<< --------------------
+
+% >>> PAD Spike Waveform >>> --------------------------------------------------
+if size(spk,2) ~= maxChanCount
+    % >>> PAD Spike Waveform Channels >>> -------------------------------------
+    spk = cat( 2,                                                           ...
+                spk,                                                        ...
+                zeros(                                                      ...
+                    [                                                       ...
+                        size(spk,1),                                        ...
+                        maxChanCount-size(spk,2),                           ...
+                        size(spk,3)                                         ...
+                    ]                                                       ...
+                )                                                           ...
+            );
+    % <<< PAD Spike Waveform Channels <<< -------------------------------------
 end
-
-[res, ind] = SelectPeriods(res,ceil(Session.sync([1,end])*Spk.sampleRate+1),'d',1,1);
-clu = clu(ind);
-spk = spk(ind,:,:);
-
-%% Select specific units
-if isempty(units),
-    cind = true(numel(res),1);
-else
-    cind = find(ismember(clu,units));
-end            
-
-res = res(cind);
-clu = clu(cind);
-spk = spk(cind,:,:);
-
-%% Select specific states
-if ~isempty(states);
-    if ischar(states),
-        [res,sind] = SelectPeriods(res,[Session.stc{states,Spk.sampleRate}.data],'d',1,0);
-    else
-        sst = states.copy;
-        sst.resample(Spk.sampleRate);
-        [res,sind] = SelectPeriods(res,sst.data,'d',1,0);                   
-    end
-    clu = clu(sind);
-    spk = spk(sind,:,:);
+if size(spk,3) ~= maxSampleCount
+    % >>> PAD Spike Waveform Samples >>> --------------------------------------
+    spk = cat( 3,                                                           ...
+                spk,                                                        ...
+                zeros(                                                      ...
+                    [                                                       ...
+                        size(spk,1),                                        ...
+                        maxChanCount,                                       ...
+                        maxSampleCount-size(spk,3)                          ...
+                    ]                                                       ...
+                )                                                           ...
+            );
+    % <<< PAD Spike Waveform Samples <<< --------------------------------------
 end
-
-%% Extra Modifications
-switch mode
-  case 'deburst'
-    nRes = [];
-    nClu = [];
-    nSpk = [];
-    thresh = round(10/1000*sampleRate);
-    if thresh==0,thresh =1;end
-    for u = unique(clu)'
-        try                            
-            tRes = res(clu==u);
-            tSpk = spk(clu==u,:,:);
-            bresind = SplitIntoBursts(tRes,thresh);
-            nRes = [nRes; tRes(bresind)];                        
-            nClu = [nClu; u.*ones(numel(bresind),1)];
-            nSpk = cat(1,nSpk,tSpk(bresind,:,:));
-        end
-    end
-    res = nRes;
-    clu = nClu;
-    spk = nSpk;
-
-end
+% <<< PAD Spike Waveform <<< --------------------------------------------------
 
 
-Spk.clu = clu;
-Spk.res = res;
-Spk.spk = spk;            
-   

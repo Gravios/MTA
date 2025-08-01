@@ -1478,3 +1478,28 @@
     Final_Forms: N/A
     Project: General
     Description: lfp state segmentation
+
+** 2023 09 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+
+*** req20230930
+    Tags: ccg theta power estimation lfp state
+    Status: Active
+    Type: Analysis
+    Author: Justin Graboski
+    Final_Forms: N/A
+    Project: General
+    Description: lfp correlation
+    
+
+** 2023 10 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+
+*** req20231006
+    Tags: ccg theta power estimation lfp state
+    Status: Active
+    Type: Utility
+    Author: Justin Graboski
+    Final_Forms: N/A
+    Project: General
+    Description: lfp state segmentation
+
+    

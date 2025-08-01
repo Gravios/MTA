@@ -65,7 +65,8 @@ pfsArgs.units = units;
 % MAYBE overwrite all values
 pfsArgs.overwrite = overwrite;
 pfsArgs.units  = units;
-pfsArgs.autoSaveFlag = true;
+pfsArgs.purge = overwrite;
+pfsArgs.autoSaveFlag = overwrite;
 pfsArgs.xyzp = fet;
 pfsArgsArray = struct2varargin(pfsArgs);
 pfs = MTAApfs(Trial,pfsArgsArray{:});

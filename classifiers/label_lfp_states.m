@@ -53,8 +53,16 @@ function label_lfp_states(FileBase,varargin)
 % NOTE: A toolbox chronux_2_12 shadows some unknown yet function used in CheckEegtates.
 %
 
-[State,AuxData,FreqRange,Channels,Window,Action, Overwrite] = ...
-    DefaultArgs(varargin,{[],[],[1 100],[],1,'display',0});
+% DEFARGS ------------------------------------------------------------------------------------------
+    defargs = struct('State', [],...
+                     AuxData, [],...
+                      FreqRange, Channels, Window, Action, Overwrite
+    {[],[],[1 100],[],1,'display',0}...
+);
+[State, AuxData, FreqRange, Channels, Window, Action, Overwrite] = DefaultArgs(varargin,defargs,'--struct');
+%--------------------------------------------------------------------------------------------------- struct
+[] = ...
+    DefaultArgs(varargin,);
 
 % auxil. struct for gui
 global gCheckEegStates

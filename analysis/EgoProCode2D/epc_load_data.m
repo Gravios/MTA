@@ -224,9 +224,7 @@ EgoProCode2D_load_ratemaps();
 hbaBin.edges = [-1.2,-0.2,0.2,1.2];
 hbaBin.centers = mean([hbaBin.edges(1:end-1);hbaBin.edges(2:end)]);
 hbaBin.count = numel(hbaBin.centers);
-hbaBin.color = [0,1,0;...
-                0,0,1;...
-                1,0,0];
+hbaBin.color = [0,1,0;  0,0,1;  1,0,0];
 hbaBin.key = 'LCR';
 hbaBin.label = {'Left','Center','Right'};
 
@@ -250,9 +248,7 @@ bins.hba.description = 'Head Body Angle';
 bins.hba.edges = [-1.2,-0.2,0.2,1.2];
 bins.hba.centers = mean([bins.hba.edges(1:end-1);bins.hba.edges(2:end)]);
 bins.hba.count = numel(bins.hba.centers);
-bins.hba.color = [0.0, 0.7, 0.0;...
-                  0.0, 0.0, 0.9;...
-                  0.9, 0.0, 0.0];
+bins.hba.color = [0.0, 0.7, 0.0;  0.0, 0.0, 0.9;  0.9, 0.0, 0.0];
 bins.hba.key = 'LCR';
 bins.hba.label = {'Left','Center','Right'};
 
@@ -262,14 +258,11 @@ bins.phz.description = 'CA1 Theta Phase';
 bins.phz.edges = linspace(0.5,2*pi-0.5,4);
 bins.phz.centers = (bins.phz.edges(1:end-1)+bins.phz.edges(2:end))./2;
 bins.phz.count = numel(bins.phz.centers);
-bins.phz.color = [0.0, 0.9, 0.9 ; ...
-                  0.4, 0.4, 0.9 ; ...
-                  0.9, 0.0, 0.9];
-%bins.phz.color = cool(3);
+bins.phz.color = [0.0, 0.9, 0.9 ;  0.4, 0.4, 0.9 ;  0.9, 0.0, 0.9];
 bins.phz.key = 'DTA';
 bins.phz.label = {'Descending','Trough','Ascending'};
 
-% Speed along the Anteroposterior Axis
+% FWD Speed along the Anteroposterior Axis
 bins.hvf.name = 'hvf';
 bins.hvf.description = 'Speed along Anteroposterior Axis of the Head';
 bins.hvf.edges = [-25,-5,5,25,80];
@@ -279,8 +272,7 @@ bins.hvf.color = bone(3);
 bins.hvf.key = 'RISF';
 bins.hvf.label = {'Reverse','Immobile','Slow','Fast'};
 
-
-% Head Speed along the Lateral Axis
+% LAT Head Speed along the Lateral Axis
 bins.hvl.name = 'hvl';
 bins.hvl.description = 'Head Speed along Lateral Axis of the Head';
 bins.hvl.edges = [-40,-5,5,40];
@@ -290,8 +282,7 @@ bins.hvl.color = bone(3);
 bins.hvl.key = 'LIR';
 bins.hvl.label = {'Leftward',{'Laterally','Immobile'},'Rightward'};
 
-
-% Head angvel along the Lateral Axis
+% ANGVEL Head angular velocity within the horizontal plane
 bins.hav.name = 'hav';
 bins.hav.description = 'Head angular vel along Lateral Axis of the Head';
 bins.hav.edges = [-0.3,-0.09,0.09,0.3];
@@ -303,7 +294,7 @@ bins.hav.color = [0.0, 0.7, 0.0;...
 bins.hav.key = 'LIR';
 bins.hav.label = {'Leftward',{'Laterally','Immobile'},'Rightward'};
 
-% Head Speed along the Lateral Axis
+% LAT Head Speed along the Lateral Axis (Fine Grain)
 bins.hlatSpd.name = 'lhs';
 bins.hlatSpd.description = 'Lateral Head Speed';
 bins.hlatSpd.edges = linspace(-60, 60, 40);
@@ -314,7 +305,7 @@ bins.hlatSpd.key = '';
 bins.hlatSpd.label = {};
 
 
-% Head Speed along the Lateral Axis
+% LAT Head Speed along the Lateral Axis (Medium Grain)
 bins.hbang.name = 'hhba';
 bins.hbang.description = 'Head Body Angle';
 bins.hbang.edges = linspace(-1.2, 1.2, 20);
@@ -323,7 +314,45 @@ bins.hbang.count = numel(bins.hbang.centers);
 bins.hbang.color = 'k';
 bins.hbang.key = '';
 bins.hbang.label = {};
+
+% Head Speed along the Lateral Axis
+bins.ego.name = 'ego';
+bins.ego.description = 'Ego Placefield';
+bins.ego.edges = linspace(-300,300, 25);
+bins.ego.centers = (bins.ego.edges(1:end-1)+bins.ego.edges(2:end))./2;
+bins.ego.count = numel(bins.ego.centers);
+bins.ego.color = 'k';
+bins.ego.key = '';
+bins.ego.label = {};
+
+bins.swf.name = 'swf';
+bins.swf.description = 'Spike Waveforme Feature';
+bins.swf.edges = [-4,-0.4,0.4,4];
+bins.swf.centers = mean([bins.swf.edges(2:end);bins.swf.edges(1:end-1)]);
+bins.swf.count = numel(bins.swf.centers);
+bins.swf.color = [220, 180, 40 ; ...
+                   40, 220, 40 ; ...
+                  160,  40, 220]./255;
+bins.swf.key = 'LMH';
+bins.swf.label = {'Low', 'Med', 'High'};
+
+
+bins.har.name = 'har';
+bins.har.description = 'HB Yaw and H roll';
+bins.har.edges = [-1,-0.1,0.1,1];
+bins.har.centers = mean([bins.har.edges(2:end);bins.har.edges(1:end-1)]);
+bins.har.count = numel(bins.har.centers);
+bins.har.color = [220, 180, 40 ; ...
+                   40, 220, 40 ; ...
+                  160,  40, 220]./255;
+bins.har.key = 'LCR';
+bins.har.label = {'Left', 'Center', 'Right'};
+harN = bins.har.count;
+
 % <<< Partition Bins <<< ------------------------------------------------------
+
+
+
 
 % >>> Helper Functions >>> ----------------------------------------------------
 % SET helper function to reshape eigenvectors

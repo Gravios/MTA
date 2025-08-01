@@ -41,15 +41,16 @@ sigmaDS = 2*sigma^2;
 tag = DataHash({});
 
 rmap = [];
-pc = bins.phz.count;
-hc = bins.hba.count;
+
+hbaN = bins.hba.count;
+phzN = bins.phz.count;
 
 idx = 1;
 odx = 0;
 
 % [fwd, lat, unit, phz, hba]
 rmap = nan([numel(xpos), numel(ypos), size(eunits,1),...
-            numel(bins.phz.centers), numel(bins.hba.centers)]);
+            phzN, hbaN]);
 
 for unit = cat(1,1:size(eunits)',eunits')
         
@@ -123,8 +124,8 @@ for unit = cat(1,1:size(eunits)',eunits')
     
     occ = zeros([numel(mapOcc),3]);
     for lind = 1:numel(mapOcc)
-        for hbaI = 1:hc
-            for phzI = 1:pc
+        for hbaI = 1:hbaN
+            for phzI = 1:phzN
                 occ(lind,phzI,hbaI) = sum(exp(-sum(mapOcc{lind}(mapHba{lind}==hbaI&mapPhz{lind}==phzI,:).^2,2)./(sigmaDS)));
             end
         end
@@ -155,8 +156,8 @@ for unit = cat(1,1:size(eunits)',eunits')
     spos = nan([size(tpos,1),2]);
     spos(tres,:) = tpos(tres,:);
     % assume tres is monotonically increasing
-    for hbaI = 1:hc
-        for phzI = 1:pc
+    for hbaI = 1:hbaN
+        for phzI = 1:phzN
             for xind = 1:latticeSize(1)
                 for yind = 1:latticeSize(2)
                     tempPos = bsxfun(@minus,spos,[xpos(xind),ypos(yind)]);
@@ -217,8 +218,8 @@ mask(~mask) = nan;
 u = find(units==20);
 tind = 20;
 figure,
-for hbaI = 1:numel(bins.hba.centers)
-subplot2(2,numel(bins.hba.centers),1,hbaI);
+for hbaI = 1:hbaN
+subplot2(2,hbaN,1,hbaI);
 shading(gca(),'flat');
 set(pcolor(xpos-diff(xpos(1:2))/2,ypos-diff(ypos(1:2))/2,fliplr(rot90(rmap{tind}(:,:,u,hbaI)',-1)).*mask),'EdgeColor','none');
 axis('xy');
@@ -228,7 +229,7 @@ ylim([ypos([1,end])+[-1,1].*diff(ypos(1:2))/2])
 xlim([xpos([1,end])+[-1,1].*diff(xpos(1:2))/2])
 Lines([],0,'k');
 Lines(0,[],'k');
-subplot2(2,numel(bins.hba.centers),2,hbaI);
+subplot2(2,hbaN,2,hbaI);
 shading(gca(),'flat');
 set(pcolor(xpos-diff(xpos(1:2))/2,ypos-diff(ypos(1:2))/2, ...
            fliplr(rot90(rmapShuff{tind}(:,:,u,hbaI,iter)',-1)).*mask),'EdgeColor','none');
@@ -246,9 +247,9 @@ end
 tind = 20;
 u = find(unitsEgo{tind}==21);
 figure,
-for hbaI = 1:bins.hba.count
-    for phzI = 1:bins.phz.count
-        subplot2(numel(bins.phz.centers),numel(bins.hba.centers),bins.hba.count+1-phzI,hbaI);
+for hbaI = 1:hbaN
+    for phzI = 1:phzN
+        subplot2( phzN, hbaN, hbaN+1-phzI, hbaI);
         shading(gca(),'flat');
         set(pcolor(xpos-diff(xpos(1:2))/2,ypos-diff(ypos(1:2))/2,fliplr(rot90(rmap{tind}(:,:,u,phzI,hbaI)',-1)).*mask),'EdgeColor','none');
         axis('xy');
@@ -263,11 +264,12 @@ end
 
 
 figure,
-for hbaI = 1:hc
-    for phzI = 1:pc
-        subplot2(pc, hc, phzI, hbaI);
+for hbaI = 1:hbaN
+    for phzI = 1:phzN
+        subplot2(phzN, hbaN, phzI, hbaI);
         
-        maskedRatemap = fliplr(rot90(rmapShuff{tind}(:,:,u,phzI,hbaI,iter)',-1)).*mask;
+        maskedRatemap = ...
+            fliplr(rot90(rmapShuff{tind}( :, :, u, phzI, hbaI, iter)',-1)).*mask;
         set(pcolor(xbinc, ybinc, maskedRatemap),'EdgeColor','none');
 
         shading(gca(),'flat');

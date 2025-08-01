@@ -57,10 +57,15 @@ classdef MTASpk < hgsetget
         
         %hash - string: hash modified by functions acting upon MTAData objects        
         hash = 'zzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzz';
+
+        %parent - string: MTATrial filebase
+        parent
+        
     end
     
     properties
-        %map - matrix: Cluster/electrode mapping
+        
+        %map - matrix: Cluster/electrode mapping        
         map
         
         %per - matrix: (nx2) numeric: computational periods of major shift events

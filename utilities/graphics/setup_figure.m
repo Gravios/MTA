@@ -64,25 +64,17 @@ switch format,
     figOpts.subplot.height            = subplotHeight;
     figOpts.subplot.horizontalPadding = subplotPaddingHorizontal;
     figOpts.subplot.verticalPadding   = subplotVerticalPadding;
-
-    
     
   case 'A4'
     hfig.PaperType    = format;
-    
     switch layout
-        
       case 'portrait'
         figOpts.page.width    = 21.0;
         figOpts.page.height   = 29.7;
-        
       case 'landscape'
         figOpts.page.width    = 29.7;
         figOpts.page.height   = 21.0;
-        
     end
-
-    
     figOpts.page.units                = units;
     figOpts.page.PaperPositionMode    = 'auto';
     figOpts.page.marginLeft           = 2.54;
@@ -93,7 +85,50 @@ switch format,
     figOpts.subplot.horizontalPadding = subplotPaddingHorizontal;
     figOpts.subplot.verticalPadding   = subplotVerticalPadding;
 
+  case 'A3'
+    hfig.PaperType    = format;
+    switch layout
+      case 'portrait'
+        figOpts.page.width    = 42.0;
+        figOpts.page.height   = 29.7;
+      case 'landscape'
+        figOpts.page.width    = 29.7;
+        figOpts.page.height   = 42.0;    
+    end
+    figOpts.page.units                = units;
+    figOpts.page.PaperPositionMode    = 'auto';
+    figOpts.page.marginLeft           = 2.54;
+    figOpts.page.marginTop            = 2.54;
+    figOpts.subplot.units             = units;    
+    figOpts.subplot.width             = subplotWidth;
+    figOpts.subplot.height            = subplotHeight;
+    figOpts.subplot.horizontalPadding = subplotPaddingHorizontal;
+    figOpts.subplot.verticalPadding   = subplotVerticalPadding;
+    
+  case 'A2'
+    hfig.PaperType    = format;
+    switch layout
+      case 'portrait'
+        figOpts.page.width    = 42.0;
+        figOpts.page.height   = 59.4;
+      case 'landscape'
+        figOpts.page.width    = 59.4;
+        figOpts.page.height   = 42.0;    
+    end
+    figOpts.page.units                = units;
+    figOpts.page.PaperPositionMode    = 'auto';
+    figOpts.page.marginLeft           = 2.54;
+    figOpts.page.marginTop            = 2.54;
+    figOpts.subplot.units             = units;    
+    figOpts.subplot.width             = subplotWidth;
+    figOpts.subplot.height            = subplotHeight;
+    figOpts.subplot.horizontalPadding = subplotPaddingHorizontal;
+    figOpts.subplot.verticalPadding   = subplotVerticalPadding;
+    
+
+
 end
+
 figOpts.page.xpos = figOpts.page.marginLeft                                                  ...
                     : (figOpts.subplot.width  + figOpts.subplot.horizontalPadding)           ...
                     : figOpts.page.width;
@@ -112,8 +147,8 @@ end
 clf(hfig);
 
 hfig.Units = figOpts.page.units;
-hfig.Position = [1,                                   ...
-                 1,                                   ...
+hfig.Position = [0,                                   ...
+                 0,                                   ...
                  figOpts.page.width,                  ...
                  figOpts.page.height];
 

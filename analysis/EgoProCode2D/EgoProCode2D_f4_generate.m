@@ -409,18 +409,6 @@ Lines(0,[],'w');
 Lines([],0,'w');
 colormap('jet');
 
-binPhzs = linspace(0.5,2*pi-0.5,4);
-binPhzc = (binPhzs(1:end-1)+binPhzs(2:end))./2;
-hbaBinEdg = [-1.2,-0.2,0.2,1.2];
-hbaBinCtr = mean([hbaBinEdg(1:end-1);hbaBinEdg(2:end)]);
-                          
-hbaBin.edges = [-1.2,-0.2,0.2,1.2];
-hbaBin.centers = mean([hbaBin.edges(1:end-1);hbaBin.edges(2:end)]);
-hbaBin.count = numel(hbaBin.centers);        
-
-phzBin.edges = linspace(0.5,2*pi-0.5,4);
-phzBin.centers = (binPhzs(1:end-1)+binPhzs(2:end))./2;
-phzBin.count = numel(phzBin.centers);
 
 
 hbaBnds = {[0.2,1.2],[-0.2,0.2],[-1.2,-0.2]};
@@ -495,13 +483,13 @@ clims = [0,0.4];
 out = zeros([7,3,3,3]);
 for h = 1:numel(hbaBnds)
     for p = 1:3;    
-    subplot2(phzBin.count,hbaBin.count,phzBin.count+1-p,h);
+    subplot2(bins.phz.count,bins.hba.count,bins.phz.count+1-p,h);
     hold('on');
     for v = 1:numel(hvlBnds)
         ind = WithinRanges(decoded.hba,hbaBnds{h}) & ...
               WithinRanges(decoded.hvl,hvlBnds{v}) & ...
               randn(size(decoded.hvl))>0.5;
-        pind = WithinRanges(decoded.phz,phzBin.edges(p:p+1));
+        pind = WithinRanges(decoded.phz,bins.phz.edges(p:p+1));
         cdfplot(decoded.lat(ind&pind));
     end
     xlim([-300,300]);
@@ -590,7 +578,7 @@ ind = WithinRanges(decoded.phz,binPhzs(1:2)) & randn(size(decoded.hba))>0.5;
 [B,BINT,R,RINT,STATS] = regress(decoded.lat(ind),[ones([sum(ind),1]),decoded.hba(ind),decoded.hvl(ind)]);
 [B,BINT,R,RINT,STATS] = regress(decoded.lat(ind),[ones([sum(ind),1]),decoded.hav(ind)]);
 
-ind = WithinRanges(decoded.phz,phzBin.edges(3:4)) ...
+ind = WithinRanges(decoded.phz,bins.phz.edges(3:4)) ...
       & randn(size(decoded.hba))>0.5 ...
       & abs(decoded.hba)<1.2;
 [B,BINT,R,RINT,STATS] = regress(decoded.lat(ind),[ones([sum(ind),1]),decoded.hba(ind)]);

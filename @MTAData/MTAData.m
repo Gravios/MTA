@@ -69,8 +69,6 @@ classdef MTAData < hgsetget
         %filename - string: the file name of the .mat file which contains the objects data
         filename
 
-        parent = [];
-
         %name - object name (i.e. a subject name jg05)
         name
 
@@ -100,8 +98,9 @@ classdef MTAData < hgsetget
     end
     
     properties( Transient=true )
+        parent = [];
+        
         treatmentRecord = {};
-
     end
     
     properties (Abstract)

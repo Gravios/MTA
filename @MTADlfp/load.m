@@ -14,20 +14,19 @@ function Data = load(Data,Session,varargin)
 
 % MAIN ---------------------------------------------------------------------------------------------
 
-% REMOVE AFTER UPDATE ---------------------------------------------
-% LOAD parameter file                                             %
-par = LoadPar(fullfile(Session.spath, [Session.name '.xml']));    %
-if isempty(channels)                                              %
-    channels = par.(gselect{1})(gselect{2}).Channels(gselect{3}); %
-end                                                               %
-                                                                  %
-switch Data.ext                                                   %
-  case 'lfp'                                                      %
-    Data.sampleRate = par.lfpSampleRate;                          %
-  case 'dat'                                                      %
-    Data.sampleRate = par.SampleRate;                             %
-end                                                               %
-%------------------------------------------------------------------
+par = Session.par.data;
+
+if isempty(channels)                                              
+    channels = par.(gselect{1})(gselect{2}).Channels(gselect{3}); 
+end                                                               
+                                                                  
+switch Data.ext                                                   
+  case 'lfp'                                                      
+    Data.sampleRate = par.lfpSampleRate;                          
+  case 'dat'                                                      
+    Data.sampleRate = par.SampleRate;                             
+end                                                               
+
 
 if isempty(periods),
     if Session.sync.sampleRate~=1,Session.sync.resample(1);end

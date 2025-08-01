@@ -29,14 +29,15 @@ project.name = 'EgoProCode2d';
 
 configure_default_args();
 
-%%%<<< GLOBAL VARIABLES ---------------------------------------------------------
+% >>> Global Vars >>> ---------------------------------------------------------
 global MTA_FIGURES_PATH
 global PROJECT_FIGURE_PATH
 PROJECT_FIGURE_PATH = ...
     create_directory(getenv(['MTA_PROJECT_' upper(project.name)]));
-%%%>>>---------------------------------------------------------------------------
+% <<< Global Vars <<< ---------------------------------------------------------
 
-%%%<<< GENERAL VARS -------------------------------------------------------------
+
+% >>> General Vars >>> --------------------------------------------------------
 sessionListName = 'BehaviorPlaceCode';
 stateCollection = 'msnn_ppsvd_raux';
 pitchReferenceTrial = 'Ed05-20140529.ont.all';
@@ -44,10 +45,8 @@ pfsState = 'theta-groom-sit-rear';
 sampleRate = 250;
 halfSpikeWindow = 0.020;
 
-fwd = 1;
-lat = 2;
-FWD = 1;
-LAT = 2;
+fwd = 1; FWD = 1;
+lat = 2; LAT = 2;
 
 % Egofield offset
 offset = [-2,0.5];
@@ -55,16 +54,17 @@ offset = [-2,0.5];
 % SET states
 clear('states')
 states.name = stateCollection;
-states.labels =                                                               ...
-    {{'theta-groom-sit', 'rear&theta',                                        ...
-           'hloc&theta', 'hpause&theta',                                      ...
+states.labels =                                                             ...
+    {{'theta-groom-sit', 'rear&theta',                                      ...
+           'hloc&theta', 'hpause&theta',                                    ...
            'lloc&theta', 'lpause&theta'}};
 
 % RATEMAP INTERPOLATION ARGS
-interpParPfs = struct( ...
-                'bins' , {{linspace(-500,500,100)', linspace(-500,500,100)'}}, ...
-    'nanMaskThreshold' , 0,                                                    ...
-        'methodNanMap' , 'linear',                                             ...
+interpParPfs = struct(                                                      ...
+                'bins' , {{linspace(-500,500,100)',                         ...
+                           linspace(-500,500,100)'}},                       ...
+    'nanMaskThreshold' , 0,                                                 ...
+        'methodNanMap' , 'linear',                                          ...
        'methodRateMap' ,    'linear');
 interpParDfs = struct('bins',{{linspace(-2,2,100)',linspace(-2,2,100)'}},...
                    'nanMaskThreshold', 0,...
@@ -72,15 +72,16 @@ interpParDfs = struct('bins',{{linspace(-2,2,100)',linspace(-2,2,100)'}},...
                    'methodRateMap',    'linear');
 
 %headCenterCorrection = [-25,-8];
-%%%>>>---------------------------------------------------------------------------
+% <<< General Vars <<< --------------------------------------------------------
 
-%%%<<< Trial List ---------------------------------------------------------------
+% >>> Trial List >>> ----------------------------------------------------------
 % LOAD Trials and metadata
 sessionList = get_session_list_v2(sessionListName);
 Trials = af(@(s) MTATrial.validate(s), sessionList);
-%%%>>>---------------------------------------------------------------------------
+% <<< Trial List <<< ----------------------------------------------------------
 
-%%%<<< Unit Groups --------------------------------------------------------------
+
+% >>> Unit Groups >>> ---------------------------------------------------------
 % Cellarray: one cell per Trial
 Units     = cf(@(T)   T.spk.get_unit_set( T,'ego'),    Trials);
 Units     = cf(@(T, U)  remove_bad_units( T, U),       Trials, units);
@@ -88,7 +89,6 @@ Units     = cf(@(T, U)  remove_bad_units( T, U),       Trials, units);
 %unitsEgo  = cf(@(T)   T.spk.get_unit_set( T, 'egocentric'),   Trials); 
 
 % EGOHVF place cells - ALL
-%%%<<< Enumerated List of units for head velocity analysis ----------------------
 % er01-20110719
 unitsEgoHvf{1} = [15,42,99];
 % er01-20110721
@@ -151,22 +151,19 @@ unitsEgoHvf{28} = [15,45,74,90];
 unitsEgoHvf{29} = [11,12,24,27,33,43,63,64,65,69,70,71,76,116,120,126];
 % jg05-20120329
 unitsEgoHvf{30} = [20,23,29,30,55,56,63,82,83,84,97,102,107];
-%%%>>>---------------------------------------------------------------------------                   
-%%%>>>---------------------------------------------------------------------------
+% <<< Unit Groups <<< ---------------------------------------------------------
 
-%%%<<< Future Stuff -------------------------------------------------------------
+%
 %location = 'CA1'
 %isInCA1 = any(arrayfun(@(probe) strcmp(probe.location,location),subject.probe));
 sessionsCA1 = [3:5,8:12,17:25,29];
 uehCount = cellfun(@numel,unitsEgoHvf);
 uehCsum = [0,cumsum(uehCount)];
 
-
 unitsEgoHvfCA1 = [];
 for up = [uehCsum(sessionsCA1)'+1,uehCsum(sessionsCA1+1)']'
     unitsEgoHvfCA1 = cat(1,unitsEgoHvfCA1,[up(1):up(2)]');
 end
-
 
 sessionsCA3 = [1,2,6,7,13:16,26:28,30];
 unitsEgoHvfCA3 = [];
@@ -174,18 +171,18 @@ for up = [uehCsum(sessionsCA3)'+1,uehCsum(sessionsCA3+1)']'
     unitsEgoHvfCA3 = cat(1,unitsEgoHvfCA3,[up(1):up(2)]');
 end
 
-%%%>>>---------------------------------------------------------------------------
 
-%%%<<< Units Anat Location ------------------------------------------------------
+
+% >>> Units Anat Location >>> -------------------------------------------------
 % SET index arry for each anatomical location in oder of cumulative
 % index within cells
 % $$$ unitsEgoCA1 = [1:19,44:149];
 % $$$ unitsEgoCA3 = [20:41,123:127,150:164];
 unitsEgoCA1 = [1:19,44:122,134:149];
 unitsEgoCA3 = [20:43,123:133,150:164];
-%%%>>>---------------------------------------------------------------------------
+% <<< Units Anat Location <<< -------------------------------------------------
 
-%%%<<< Unit Maps ----------------------------------------------------------------
+% >>> Unit Mappings >>> -------------------------------------------------------
 % ALL 
 cluSessionMap = [];
 for u = 1:numel(units)
@@ -204,23 +201,25 @@ for u = 1:numel(unitsEgo)
     egoHvfCluSessionMap = ...
         cat(1,egoHvfCluSessionMap,[u*ones([numel(unitsEgoHvf{u}),1]),unitsEgoHvf{u}(:)]);
 end
-%%%>>>---------------------------------------------------------------------------
+% <<< Unit Mappings <<< -------------------------------------------------------
 
-%%%<<< Position Data ------------------------------------------------------------
+% >>> Position Data >>> -------------------------------------------------------
 xyz = cf(@(t) preproc_xyz(t,'trb'),             Trials);
       cf(@(x) x.filter('ButFilter',3,30,'low'), xyz);    
       cf(@(x) x.resample(sampleRate),           xyz);
-%%%>>>---------------------------------------------------------------------------
+% <<< Position Data <<< -------------------------------------------------------
 
-%%%<<< Spike Data ---------------------------------------------------------------
+
+% >>> Spike Data >>> ----------------------------------------------------------
 spk = cf(@(t,u) t.load('spk',sampleRate,'gper',u,'deburst'),Trials,units);    
-%%%>>>---------------------------------------------------------------------------
+% <<< Spike Data <<< ----------------------------------------------------------
 
-%%%<<< Ratemaps -----------------------------------------------------------------
+% >>> Ratemaps >>> ------------------------------------------------------------
 EgoProCode2D_load_ratemaps();
-%%%>>>---------------------------------------------------------------------------
+% <<< Ratemaps <<< ------------------------------------------------------------
 
-%%%<<< Partition Bins -----------------------------------------------------------
+
+% >>> Bins --------------------------------------------------------------------
 % SET bins for HBA PHZ HVA HVL HVF
 hbaBin.edges = [-1.2,-0.2,0.2,1.2];
 hbaBin.centers = mean([hbaBin.edges(1:end-1);hbaBin.edges(2:end)]);
@@ -231,15 +230,12 @@ hbaBin.color = [0,1,0;...
 hbaBin.key = 'LCR';
 hbaBin.label = {'Left','Center','Right'};
 
-
-
 phzBin.edges = linspace(0.5,2*pi-0.5,4);
 phzBin.centers = (phzBin.edges(1:end-1)+phzBin.edges(2:end))./2;
 phzBin.count = numel(phzBin.centers);
 phzBin.color = cool(3);
 phzBin.key = 'DTA';
 phzBin.label = {'Descending','Trough','Ascending'};
-
 
 hvfBin.edges = [-25,-5,5,25,80];
 hvfBin.centers = (hvfBin.edges(1:end-1)+hvfBin.edges(2:end))./2;
@@ -248,8 +244,8 @@ hvfBin.color = bone(3);
 hvfBin.key = 'RISF';
 hvfBin.label = {'Reverse','Immobile','Slow','Fast'};
 
-
-% HBA 
+% BINS  
+% >>> Head Body Angle >>> ----------------------------------------------------- 
 bins.hba.name = 'hba';
 bins.hba.description = 'Head Body Angle';
 bins.hba.edges = [-1.2,-0.2,0.2,1.2];
@@ -260,10 +256,11 @@ bins.hba.color = [0.0, 0.7, 0.0;...
                   0.9, 0.0, 0.0];
 bins.hba.key = 'LCR';
 bins.hba.label = {'Left','Center','Right'};
+% <<< Head Body Angle <<< ----------------------------------------------------- 
 
-% THETA 
+% >>> Theta phase >>> ---------------------------------------------------------
 bins.phz.name = 'phz';
-bins.phz.description = 'CA1 Theta Phase';
+bins.phz.description = 'Local Field Potential Theta Phase';
 bins.phz.edges = linspace(0.5,2*pi-0.5,4);
 bins.phz.centers = (bins.phz.edges(1:end-1)+bins.phz.edges(2:end))./2;
 bins.phz.count = numel(bins.phz.centers);
@@ -273,6 +270,21 @@ bins.phz.color = [0.0, 0.9, 0.9 ; ...
 %bins.phz.color = cool(3);
 bins.phz.key = 'DTA';
 bins.phz.label = {'Descending','Trough','Ascending'};
+% <<< Theta phase <<< ---------------------------------------------------------
+
+% >>> BINS: spike waveform feature >>> ----------------------------------------
+bins.swf.name = 'swf';
+bins.swf.description = 'Spike Waveforme Feature';
+bins.swf.edges = [-4,-0.4,0.4,4];
+bins.swf.centers = mean([sedges(2:end);sedges(1:end-1)]);
+bins.swf.count = nemel(bins.swf.centers);
+bins.swf.color = [220, 180, 40 ; ...
+                   40, 220, 40 ; ...
+                  160,  40, 220]./255;
+bins.swf.key = 'LMH';
+bins.swf.label = {'Spike', 'Waveforme', 'Feature'};
+% <<< BINS: spike waveform feature <<< ----------------------------------------
+
 
 % Speed along the Anteroposterior Axis
 bins.hvf.name = 'hvf';
@@ -328,11 +340,13 @@ bins.hbang.count = numel(bins.hbang.centers);
 bins.hbang.color = 'k';
 bins.hbang.key = '';
 bins.hbang.label = {};
-%%%>>>---------------------------------------------------------------------------
+% <<< Bins <<< ----------------------------------------------------------------
 
-%%%<<< Helper Functions ---------------------------------------------------------
+% >>> Helper Functions >>> ----------------------------------------------------
 % SET helper function to reshape eigenvectors
 reshape_eigen_vector = @(V,p) reshape(V(:,1),p{1}.adata.binSizes')';
-%%%>>>---------------------------------------------------------------------------
+% <<< Helper Functions <<< ----------------------------------------------------
+
+
 
 

@@ -80,8 +80,7 @@ classdef MTAStateCollection < hgsetget
         %
             [Session,nMode] = DefaultArgs(varargin,{[],[]});
 
-            Stc.parent = Session.filebase;
-
+            Stc.parent = Session;
             try % to load current state collection if nMode is empty 
                 if isempty(nMode),
                     ds = load(Stc.fpath);

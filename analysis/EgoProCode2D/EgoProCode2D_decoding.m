@@ -282,13 +282,13 @@ figure, hist2([decoded.lat(ind),decoded.hav(ind)],linspace(-400,400,8),-.5:0.1:.
 
 figure,
 hold('on');
-for hbaInd = 1:hbaBin.count
+for hbaI = 1:bins.hba.count
     %ind = WithinRanges(decoded.phz,[4.5,5.5]) ...
 ind = WithinRanges(decoded.phz,[1.5,2]) ...           
       & randn(size(decoded.hba))>0 ...
-      & WithinRanges(decoded.hba,hbaBin.edges(hbaInd+[0,1]));      
+      & WithinRanges(decoded.hba,bins.hba.edges(hbaI+[0,1]));      
 [F,xi] = ksdensity(decoded.clt(ind)/10);
-plot(xi,F,'-','Color',hbaBin.color(hbaInd,:),'LineWidth',1);
+plot(xi,F,'-','Color',bins.hba.color(hbaI,:),'LineWidth',1);
 end
 xlim([-40,40]);
 legend(mat2cell(bins.hba.key,1,ones(size(bins.hba.key))));
@@ -324,7 +324,7 @@ ind = WithinRanges(decoded.phz,[1.5,2.5]) ...
       & randn(size(decoded.hba))>0 ...
       & WithinRanges(decoded.hvf,hvfBin.edges(hvfInd+[1,2]));      
 [F,xi] = ksdensity(decoded.fwd(ind)/10);
-plot(xi,F,'-','Color',hbaBin.color(hvfInd,:));
+plot(xi,F,'-','Color',bins.hba.color(hvfInd,:));
 end
 xlim(gca(),[-30,30]);
 
@@ -534,7 +534,7 @@ sax(end).YTickLabel=[];
 d = 1;
 subject = struct(rat);
 subject = update_subject_patch(subject,'head',[], false,hbaBinEdg,hbaBinCtr);
-subject = update_subject_patch(subject,'body', hbaBin.count+1-d,  true,hbaBin.edges,hbaBin.centers);
+subject = update_subject_patch(subject,'body', bins.hba.count+1-d,  true,bins.hba.edges,bins.hba.centers);
 patch(subject.body.patch.vert{:},   [0.75,0.75,0.75],'FaceAlpha',0.3);
 patch(subject.head.patch.vert{:},   [0.75,0.75,0.75],'FaceAlpha',0.3);
 patch(subject.body.overlay.vert{:},[0.75,0.50,0.50],'FaceAlpha',0.3);
@@ -554,7 +554,7 @@ set(gca(),'XTickLabel',[]);        set(gca(),'YTickLabel',[]);
 d = 2;
 subject = struct(rat);
 subject = update_subject_patch(subject,'head',[], false,hbaBinEdg,hbaBinCtr);
-subject = update_subject_patch(subject,'body', hbaBin.count+1-d,  true,hbaBin.edges,hbaBin.centers);
+subject = update_subject_patch(subject,'body', bins.hba.count+1-d,  true,bins.hba.edges,bins.hba.centers);
 patch(subject.body.patch.vert{:},   [0.75,0.75,0.75],'FaceAlpha',0.3);
 patch(subject.head.patch.vert{:},   [0.75,0.75,0.75],'FaceAlpha',0.3);
 patch(subject.body.overlay.vert{:},[0.75,0.50,0.50],'FaceAlpha',0.3);
@@ -573,7 +573,7 @@ set(gca(),'XTickLabel',[]);        set(gca(),'YTickLabel',[]);
 d = 3;
 subject = struct(rat);
 subject = update_subject_patch(subject,'head',[], false,hbaBinEdg,hbaBinCtr);
-subject = update_subject_patch(subject,'body', hbaBin.count+1-d,  true,hbaBin.edges,hbaBin.centers);
+subject = update_subject_patch(subject,'body', bins.hba.count+1-d,  true,bins.hba.edges,bins.hba.centers);
 patch(subject.body.patch.vert{:},   [0.75,0.75,0.75],'FaceAlpha',0.3);
 patch(subject.head.patch.vert{:},   [0.75,0.75,0.75],'FaceAlpha',0.3);
 patch(subject.body.overlay.vert{:},[0.75,0.50,0.50],'FaceAlpha',0.3);
@@ -598,7 +598,7 @@ sax(end).YTickLabel=[];
 d = 1;
 subject = struct(rat);
 subject = update_subject_patch(subject,'head',[], false,hbaBinEdg,hbaBinCtr);
-subject = update_subject_patch(subject,'body', hbaBin.count+1-d,  true,hbaBin.edges,hbaBin.centers);
+subject = update_subject_patch(subject,'body', bins.hba.count+1-d,  true,bins.hba.edges,bins.hba.centers);
 patch(subject.body.patch.vert{:},   [0.75,0.75,0.75],'FaceAlpha',0.3);
 patch(subject.head.patch.vert{:},   [0.75,0.75,0.75],'FaceAlpha',0.3);
 patch(subject.body.overlay.vert{:},[0.75,0.50,0.50],'FaceAlpha',0.3);
@@ -618,7 +618,7 @@ set(gca(),'XTickLabel',[]);        set(gca(),'YTickLabel',[]);
 d = 2;
 subject = struct(rat);
 subject = update_subject_patch(subject,'head',[], false,hbaBinEdg,hbaBinCtr);
-subject = update_subject_patch(subject,'body', hbaBin.count+1-d,  true,hbaBin.edges,hbaBin.centers);
+subject = update_subject_patch(subject,'body', bins.hba.count+1-d,  true,bins.hba.edges,bins.hba.centers);
 patch(subject.body.patch.vert{:},   [0.75,0.75,0.75],'FaceAlpha',0.3);
 patch(subject.head.patch.vert{:},   [0.75,0.75,0.75],'FaceAlpha',0.3);
 patch(subject.body.overlay.vert{:},[0.75,0.50,0.50],'FaceAlpha',0.3);
@@ -637,7 +637,7 @@ set(gca(),'XTickLabel',[]);        set(gca(),'YTickLabel',[]);
 d = 3;
 subject = struct(rat);
 subject = update_subject_patch(subject,'head',[], false,hbaBinEdg,hbaBinCtr);
-subject = update_subject_patch(subject,'body', hbaBin.count+1-d,  true,hbaBin.edges,hbaBin.centers);
+subject = update_subject_patch(subject,'body', bins.hba.count+1-d,  true,bins.hba.edges,bins.hba.centers);
 patch(subject.body.patch.vert{:},   [0.75,0.75,0.75],'FaceAlpha',0.3);
 patch(subject.head.patch.vert{:},   [0.75,0.75,0.75],'FaceAlpha',0.3);
 patch(subject.body.overlay.vert{:},[0.75,0.50,0.50],'FaceAlpha',0.3);
@@ -1184,24 +1184,24 @@ decLat.hba.res.all.ttest.stats = [];
 figure,
 subplot(222);
 hold('on');
-for hbaInd = 1:bins.hba.count
+for hbaI = 1:bins.hba.count
 ind = WithinRanges(decoded.phz,[4.5,5.5]) ... 
       & randn(size(decoded.hba))>0.0 ...
-      & WithinRanges(decoded.hba,hbaBin.edges(hbaInd+[0,1])) ...
+      & WithinRanges(decoded.hba,bins.hba.edges(hbaI+[0,1])) ...
       & WithinRanges(decoded.dst,[0,200]);      
 [F,xi] = ksdensity((decoded.lat(ind)-decoded.correction.lat(ind))/10);
-plot(xi,F,'-','Color',hbaBin.color(hbaInd,:));
+plot(xi,F,'-','Color',bins.hba.color(hbaI,:));
 % STATS 
-decLat.hba(hbaInd).res.cntr.mean = mean((decoded.lat(ind))/10);
-decLat.hba(hbaInd).res.cntr.median = median((decoded.lat(ind))/10);
-decLat.hba(hbaInd).res.cntr.std  = std( (decoded.lat(ind))/10);
-[decLat.hba(hbaInd).res.cntr.ttest.h,...
- decLat.hba(hbaInd).res.cntr.ttest.pval,...
- decLat.hba(hbaInd).res.cntr.ttest.ci,...
- decLat.hba(hbaInd).res.cntr.ttest.stats] = ttest((decoded.lat(ind)-decoded.correction.lat(ind))/10);
+decLat.hba(hbaI).res.cntr.mean = mean((decoded.lat(ind))/10);
+decLat.hba(hbaI).res.cntr.median = median((decoded.lat(ind))/10);
+decLat.hba(hbaI).res.cntr.std  = std( (decoded.lat(ind))/10);
+[decLat.hba(hbaI).res.cntr.ttest.h,...
+ decLat.hba(hbaI).res.cntr.ttest.pval,...
+ decLat.hba(hbaI).res.cntr.ttest.ci,...
+ decLat.hba(hbaI).res.cntr.ttest.stats] = ttest((decoded.lat(ind)-decoded.correction.lat(ind))/10);
 
-% $$$ [~,xi] = NearestNeighbour(dxi,decLat.hba(hbaInd).res.cntr.median);
-% $$$ line(dxi(xi)*[1,1],[0,ehpcmpKDE(xi)],'color',bins.hba.color(hbaInd,:));
+% $$$ [~,xi] = NearestNeighbour(dxi,decLat.hba(hbaI).res.cntr.median);
+% $$$ line(dxi(xi)*[1,1],[0,ehpcmpKDE(xi)],'color',bins.hba.color(hbaI,:));
 
 end
 xlim([-40,40]);
@@ -1209,62 +1209,62 @@ title('Corrected: head-maze-distance < 20cm')
 
 subplot(224)
 hold('on');
-for hbaInd = 1:bins.hba.count
+for hbaI = 1:bins.hba.count
 ind = WithinRanges(decoded.phz,[4.5,5.5]) ... 
       & randn(size(decoded.hba))>0.5 ...
-      & WithinRanges(decoded.hba,hbaBin.edges(hbaInd+[0,1])) ...
+      & WithinRanges(decoded.hba,bins.hba.edges(hbaI+[0,1])) ...
       & WithinRanges(decoded.dst,[200,500]);      
 [F,xi] = ksdensity((decoded.lat(ind)-decoded.correction.lat(ind))/10);
-plot(xi,F,'-','Color',hbaBin.color(hbaInd,:));
+plot(xi,F,'-','Color',bins.hba.color(hbaI,:));
 % STATS 
-decLat.hba(hbaInd).res.peri.mean = mean((decoded.lat(ind))/10);
-decLat.hba(hbaInd).res.peri.std  = std( (decoded.lat(ind))/10);
-[decLat.hba(hbaInd).res.peri.ttest.h,...
- decLat.hba(hbaInd).res.peri.ttest.pval,...
- decLat.hba(hbaInd).res.peri.ttest.ci,...
- decLat.hba(hbaInd).res.peri.ttest.stats] = ttest((decoded.lat(ind)-decoded.correction.lat(ind))/10);
+decLat.hba(hbaI).res.peri.mean = mean((decoded.lat(ind))/10);
+decLat.hba(hbaI).res.peri.std  = std( (decoded.lat(ind))/10);
+[decLat.hba(hbaI).res.peri.ttest.h,...
+ decLat.hba(hbaI).res.peri.ttest.pval,...
+ decLat.hba(hbaI).res.peri.ttest.ci,...
+ decLat.hba(hbaI).res.peri.ttest.stats] = ttest((decoded.lat(ind)-decoded.correction.lat(ind))/10);
 end
 xlim([-40,40]);
 title('Corrected: head-maze-distance > 20cm')
 
 subplot(221);
 hold('on');
-for hbaInd = 1:bins.hba.count
+for hbaI = 1:bins.hba.count
 ind = WithinRanges(decoded.phz,[4.5,5.5]) ... 
       & randn(size(decoded.hba))>0.5 ...
-      & WithinRanges(decoded.hba,hbaBin.edges(hbaInd+[0,1])) ...
+      & WithinRanges(decoded.hba,bins.hba.edges(hbaI+[0,1])) ...
       & WithinRanges(decoded.dst,[0,200]);      
 %set(histogram(decoded.lat(ind),linspace(-300,300,40)),'EdgeColor','none','FaceAlpha',.3); 
 [F,xi] = ksdensity((decoded.lat(ind))/10);
-plot(xi,F,'-','Color',hbaBin.color(hbaInd,:));
+plot(xi,F,'-','Color',bins.hba.color(hbaI,:));
 % STATS 
-decLat.hba(hbaInd).raw.cntr.mean = mean((decoded.lat(ind))/10);
-decLat.hba(hbaInd).raw.cntr.std  = std( (decoded.lat(ind))/10);
-[decLat.hba(hbaInd).raw.cntr.ttest.h,...
- decLat.hba(hbaInd).raw.cntr.ttest.pval,...
- decLat.hba(hbaInd).raw.cntr.ttest.ci,...
- decLat.hba(hbaInd).raw.cntr.ttest.stats] = ttest((decoded.lat(ind)-decoded.correction.lat(ind))/10);
+decLat.hba(hbaI).raw.cntr.mean = mean((decoded.lat(ind))/10);
+decLat.hba(hbaI).raw.cntr.std  = std( (decoded.lat(ind))/10);
+[decLat.hba(hbaI).raw.cntr.ttest.h,...
+ decLat.hba(hbaI).raw.cntr.ttest.pval,...
+ decLat.hba(hbaI).raw.cntr.ttest.ci,...
+ decLat.hba(hbaI).raw.cntr.ttest.stats] = ttest((decoded.lat(ind)-decoded.correction.lat(ind))/10);
 end
 xlim([-40,40]);
 title('Uncorrected: head-maze-distance < 20cm')
 
 subplot(223);
 hold('on');
-for hbaInd = 1:bins.hba.count
+for hbaI = 1:bins.hba.count
 ind = WithinRanges(decoded.phz,[4.5,5.5]) ... 
       & randn(size(decoded.hba))>.5 ...
-      & WithinRanges(decoded.hba,hbaBin.edges(hbaInd+[0,1])) ...
+      & WithinRanges(decoded.hba,bins.hba.edges(hbaI+[0,1])) ...
       & WithinRanges(decoded.dst,[200,500]);      
 %set(histogram(decoded.lat(ind),linspace(-300,300,40)),'EdgeColor','none','FaceAlpha',.3); 
 [F,xi] = ksdensity((decoded.lat(ind))/10);
-plot(xi,F,'-','Color',hbaBin.color(hbaInd,:));
+plot(xi,F,'-','Color',bins.hba.color(hbaI,:));
 % STATS 
-decLat.hba(hbaInd).raw.peri.mean = mean((decoded.lat(ind))/10);
-decLat.hba(hbaInd).raw.peri.std  = std( (decoded.lat(ind))/10);
-[decLat.hba(hbaInd).raw.peri.ttest.h,...
- decLat.hba(hbaInd).raw.peri.ttest.pval,...
- decLat.hba(hbaInd).raw.peri.ttest.ci,...
- decLat.hba(hbaInd).raw.peri.ttest.stats] = ttest((decoded.lat(ind))/10);
+decLat.hba(hbaI).raw.peri.mean = mean((decoded.lat(ind))/10);
+decLat.hba(hbaI).raw.peri.std  = std( (decoded.lat(ind))/10);
+[decLat.hba(hbaI).raw.peri.ttest.h,...
+ decLat.hba(hbaI).raw.peri.ttest.pval,...
+ decLat.hba(hbaI).raw.peri.ttest.ci,...
+ decLat.hba(hbaI).raw.peri.ttest.stats] = ttest((decoded.lat(ind))/10);
 end
 xlim([-40,40]);
 title('Uncorrected: head-maze-distance > 20cm')
@@ -1274,27 +1274,27 @@ title('Uncorrected: head-maze-distance > 20cm')
 
 figure()
 subplot(221);hold('on');
-for hbaInd = 1:bins.hba.count
-ind = WithinRanges(decoded.phz,[4.5,5.5]) & randn(size(decoded.hba))>.5 & WithinRanges(decoded.hba,hbaBin.edges(hbaInd+[0,1])) & WithinRanges(decoded.dst,[0,200]);      
-[F] = cdfplot((decoded.lat(ind))/10);  F.Color = hbaBin.color(hbaInd,:);
+for hbaI = 1:bins.hba.count
+ind = WithinRanges(decoded.phz,[4.5,5.5]) & randn(size(decoded.hba))>.5 & WithinRanges(decoded.hba,bins.hba.edges(hbaI+[0,1])) & WithinRanges(decoded.dst,[0,200]);      
+[F] = cdfplot((decoded.lat(ind))/10);  F.Color = bins.hba.color(hbaI,:);
 end, xlim([-40,40]); title('Uncorrected: head-maze-distance > 20cm');
 
 subplot(222); hold('on');
-for hbaInd = 1:bins.hba.count
-ind = WithinRanges(decoded.phz,[4.5,5.5]) & randn(size(decoded.hba))>.5 & WithinRanges(decoded.hba,hbaBin.edges(hbaInd+[0,1])) & WithinRanges(decoded.dst,[0,200]);      
-[F] = cdfplot((decoded.lat(ind)-decoded.correction.lat(ind))/10);  F.Color = hbaBin.color(hbaInd,:);
+for hbaI = 1:bins.hba.count
+ind = WithinRanges(decoded.phz,[4.5,5.5]) & randn(size(decoded.hba))>.5 & WithinRanges(decoded.hba,bins.hba.edges(hbaI+[0,1])) & WithinRanges(decoded.dst,[0,200]);      
+[F] = cdfplot((decoded.lat(ind)-decoded.correction.lat(ind))/10);  F.Color = bins.hba.color(hbaI,:);
 end, xlim([-20,20]); title('corrected: head-maze-distance > 20cm');
 
 subplot(223); hold('on');
-for hbaInd = 1:bins.hba.count
-ind = WithinRanges(decoded.phz,[4.5,5.5]) & randn(size(decoded.hba))>.5 & WithinRanges(decoded.hba,hbaBin.edges(hbaInd+[0,1])) & WithinRanges(decoded.dst,[200,500]);      
-[F] = cdfplot((decoded.lat(ind))/10);  F.Color = hbaBin.color(hbaInd,:);
+for hbaI = 1:bins.hba.count
+ind = WithinRanges(decoded.phz,[4.5,5.5]) & randn(size(decoded.hba))>.5 & WithinRanges(decoded.hba,bins.hba.edges(hbaI+[0,1])) & WithinRanges(decoded.dst,[200,500]);      
+[F] = cdfplot((decoded.lat(ind))/10);  F.Color = bins.hba.color(hbaI,:);
 end, xlim([-40,40]); title('Uncorrected: head-maze-distance > 20cm');
 
 subplot(224); hold('on');
-for hbaInd = 1:bins.hba.count
-ind = WithinRanges(decoded.phz,[4.5,5.5]) & randn(size(decoded.hba))>.5 & WithinRanges(decoded.hba,hbaBin.edges(hbaInd+[0,1])) & WithinRanges(decoded.dst,[200,500]);      
-[F] = cdfplot((decoded.lat(ind)-decoded.correction.lat(ind))/10);  F.Color = hbaBin.color(hbaInd,:);
+for hbaI = 1:bins.hba.count
+ind = WithinRanges(decoded.phz,[4.5,5.5]) & randn(size(decoded.hba))>.5 & WithinRanges(decoded.hba,bins.hba.edges(hbaI+[0,1])) & WithinRanges(decoded.dst,[200,500]);      
+[F] = cdfplot((decoded.lat(ind)-decoded.correction.lat(ind))/10);  F.Color = bins.hba.color(hbaI,:);
 end, xlim([-20,20]); title('corrected: head-maze-distance > 20cm');
 
 
@@ -1302,9 +1302,9 @@ end, xlim([-20,20]); title('corrected: head-maze-distance > 20cm');
 
 
 figure(); hold('on');
-for hbaInd = 1:bins.hba.count
-ind = WithinRanges(decoded.phz,[4.5,5.5]) & randn(size(decoded.hba))>.5 & WithinRanges(decoded.hba,hbaBin.edges(hbaInd+[0,1]));      
-[F,stats] = cdfplot((decoded.lat(ind)-decoded.correction.lat(ind))/10-1.8); F.Color = hbaBin.color(hbaInd,:);
+for hbaI = 1:bins.hba.count
+ind = WithinRanges(decoded.phz,[4.5,5.5]) & randn(size(decoded.hba))>.5 & WithinRanges(decoded.hba,bins.hba.edges(hbaI+[0,1]));      
+[F,stats] = cdfplot((decoded.lat(ind)-decoded.correction.lat(ind))/10-1.8); F.Color = bins.hba.color(hbaI,:);
 end, xlim([-30,30]); 
 
 
@@ -1330,24 +1330,24 @@ sax =
                                         
 
 figure(); hold('on');
-for hbaInd = 1:bins.hba.count
-ind = WithinRanges(decoded.phz,[4.5,5.5]) & randn(size(decoded.hba))>0.5 & WithinRanges(decoded.hba,hbaBin.edges(hbaInd+[0,1]));      
+for hbaI = 1:bins.hba.count
+ind = WithinRanges(decoded.phz,[4.5,5.5]) & randn(size(decoded.hba))>0.5 & WithinRanges(decoded.hba,bins.hba.edges(hbaI+[0,1]));      
 [F,xi] = ksdensity((decoded.lat(ind)-decoded.correction.lat(ind))/10-0.8);
-decLat.hba(hbaInd).res.all.mean = mean((decoded.lat(ind)-decoded.correction.lat(ind))/10-0.8);
-decLat.hba(hbaInd).res.all.std  = std( (decoded.lat(ind))/10);
-[decLat.hba(hbaInd).res.all.ttest.h,...
- decLat.hba(hbaInd).res.all.ttest.pval,...
- decLat.hba(hbaInd).res.all.ttest.ci,...
- decLat.hba(hbaInd).res.all.ttest.stats] = ttest((decoded.lat(ind)-decoded.correction.lat(ind))/10-0.8);
-plot(xi,F,'-','Color',hbaBin.color(hbaInd,:));
-[~,xid] = NearestNeighbour(xi,decLat.hba(hbaInd).res.all.mean);
-line(xi(xid)*[1,1],[0,F(xid)],'color',bins.hba.color(hbaInd,:));
+decLat.hba(hbaI).res.all.mean = mean((decoded.lat(ind)-decoded.correction.lat(ind))/10-0.8);
+decLat.hba(hbaI).res.all.std  = std( (decoded.lat(ind))/10);
+[decLat.hba(hbaI).res.all.ttest.h,...
+ decLat.hba(hbaI).res.all.ttest.pval,...
+ decLat.hba(hbaI).res.all.ttest.ci,...
+ decLat.hba(hbaI).res.all.ttest.stats] = ttest((decoded.lat(ind)-decoded.correction.lat(ind))/10-0.8);
+plot(xi,F,'-','Color',bins.hba.color(hbaI,:));
+[~,xid] = NearestNeighbour(xi,decLat.hba(hbaI).res.all.mean);
+line(xi(xid)*[1,1],[0,F(xid)],'color',bins.hba.color(hbaI,:));
 end, xlim([-30,30]); 
 title('Decoded Lateral Position');
 
-hbaInd = 1; indL = WithinRanges( decoded.phz, [4.5,5.5]) & randn(size(decoded.hba))>1 & WithinRanges( decoded.hba, bins.hba.edges(hbaInd+[0,1]));
-hbaInd = 2; indC = WithinRanges( decoded.phz, [4.5,5.5]) & randn(size(decoded.hba))>1 & WithinRanges( decoded.hba, bins.hba.edges(hbaInd+[0,1]));
-hbaInd = 3; indR = WithinRanges( decoded.phz, [4.5,5.5]) & randn(size(decoded.hba))>1 & WithinRanges( decoded.hba, bins.hba.edges(hbaInd+[0,1]));
+hbaI = 1; indL = WithinRanges( decoded.phz, [4.5,5.5]) & randn(size(decoded.hba))>1 & WithinRanges( decoded.hba, bins.hba.edges(hbaI+[0,1]));
+hbaI = 2; indC = WithinRanges( decoded.phz, [4.5,5.5]) & randn(size(decoded.hba))>1 & WithinRanges( decoded.hba, bins.hba.edges(hbaI+[0,1]));
+hbaI = 3; indR = WithinRanges( decoded.phz, [4.5,5.5]) & randn(size(decoded.hba))>1 & WithinRanges( decoded.hba, bins.hba.edges(hbaI+[0,1]));
 
 [h,p,r,s] =ttest2((decoded.lat(indC)-decoded.correction.lat(indC))/10,(decoded.lat(indR)-decoded.correction.lat(indR))/10);
 
@@ -1427,9 +1427,9 @@ set(gcf(),'PaperOrientation','landscape');
 
 
 figure(); hold('on');
-for hbaInd = 1:bins.hba.count
-ind = WithinRanges(decoded.phz,[4.5,5.5]) & randn(size(decoded.hba))>.5 & WithinRanges(decoded.hba,hbaBin.edges(hbaInd+[0,1]));      
-[F,stats] = cdfplot((decoded.lat(ind)-decoded.correction.lat(ind))/10-1.8); F.Color = hbaBin.color(hbaInd,:);
+for hbaI = 1:bins.hba.count
+ind = WithinRanges(decoded.phz,[4.5,5.5]) & randn(size(decoded.hba))>.5 & WithinRanges(decoded.hba,bins.hba.edges(hbaI+[0,1]));      
+[F,stats] = cdfplot((decoded.lat(ind)-decoded.correction.lat(ind))/10-1.8); F.Color = bins.hba.color(hbaI,:);
 end, xlim([-30,30]); 
 
 
@@ -1454,18 +1454,30 @@ title(sax(end),{'Place Field'});
 
 
 figure(); hold('on');
-for hbaInd = 1:bins.hba.count
-ind = WithinRanges(decoded.phz,[4.5,5.5]) & randn(size(decoded.hba))>0.5 & WithinRanges(decoded.hba,hbaBin.edges(hbaInd+[0,1]));      
-[F,xi] = ksdensity((decoded.lat(ind)-decoded.correction.lat(ind))/10-0.8);
-decLat.hba(hbaInd).res.all.mean = mean((decoded.lat(ind)-decoded.correction.lat(ind))/10-0.8);
-decLat.hba(hbaInd).res.all.std  = std( (decoded.lat(ind))/10);
-[decLat.hba(hbaInd).res.all.ttest.h,...
- decLat.hba(hbaInd).res.all.ttest.pval,...
- decLat.hba(hbaInd).res.all.ttest.ci,...
- decLat.hba(hbaInd).res.all.ttest.stats] = ttest((decoded.lat(ind)-decoded.correction.lat(ind))/10-0.8);
-plot(xi,F,'-','Color',hbaBin.color(hbaInd,:));
-[~,xid] = NearestNeighbour(xi,decLat.hba(hbaInd).res.all.mean);
-line(xi(xid)*[1,1],[0,F(xid)],'color',bins.hba.color(hbaInd,:));
+for hbaI = 1:bins.hba.count
+    ind =   WithinRanges(decoded.phz,[4.5,5.5]) ...
+            & randn(size(decoded.hba))>0.5        ...
+            & WithinRanges(decoded.hba,bins.hba.edges(hbaI+[0,1]));
+    
+    [F,xi] = ksdensity((decoded.lat(ind)-decoded.correction.lat(ind))/10-0.8);
+    decLat.hba(hbaI).res.all.mean = mean((decoded.lat(ind)-decoded.correction.lat(ind))/10-0.8);
+    decLat.hba(hbaI).res.all.std  = std( (decoded.lat(ind))/10);
+
+    [decLat.hba(hbaI).res.all.ttest.h,                                      ...
+     decLat.hba(hbaI).res.all.ttest.pval,                                   ...
+     decLat.hba(hbaI).res.all.ttest.ci,                                     ...
+     decLat.hba(hbaI).res.all.ttest.stats] =                                ...
+        ttest((decoded.lat(ind)-decoded.correction.lat(ind))/10-0.8);
+
+    plot(xi, F, '-', ...
+         'Color',bins.hba.color(hbaI,:) ...
+    );
+    
+    [~,xid] = NearestNeighbour( xi, decLat.hba(hbaI).res.all.mean);
+    line( xi(xid)*[1,1],                 ...
+          [0,F(xid)],                    ...
+          'color',bins.hba.color(hbaI,:) ...
+);
 end, xlim([-30,30]); 
 title('Decoded Lateral Position');
 

@@ -58,7 +58,7 @@ classdef MTASession < hgsetget
         trialName = '';
         
         %par - struct: contains parameter information regarding the recording systems, units ect...
-        parameters
+        par
         
         %sampleRate - double: Sample Rate of electrophysiological recording system
         sampleRate     
@@ -138,16 +138,23 @@ classdef MTASession < hgsetget
             Session.path = load('MTAPaths.mat');
             
             
-            if isa(name,'MTASession'),
+            if isa( name, 'MTASession'),
             % COPY MTASession object from 'name' to 'Session'
                 prop = properties('MTASession');
+                name.par = MTAPar(name);
+                name.load('par');
+
                 for i = 1:length(prop)
-                    if ismethod(name.(prop{i}),'copy')
-                        Session.(prop{i})=name.(prop{i}).copy;
+                    if ismethod( name.(prop{i}), 'copy')
+                        Session.(prop{i}) = name.(prop{i}).copy;
                     else
-                    Session.(prop{i})=name.(prop{i});
+                        Session.(prop{i})=name.(prop{i});
+                    end
+                    if isfield(Session.(prop{i}),'parent')
+                        Session.(prop{i}).parent = Session;
                     end
                 end
+                
             elseif isempty(name), return;                 
             else
             % CREATE new session object

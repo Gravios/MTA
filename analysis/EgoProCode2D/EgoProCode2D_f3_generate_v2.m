@@ -30,6 +30,8 @@ subject = update_subject_patch(subject,'head', [], false);
 subject = update_subject_patch(subject,'body',[],false);
               
 
+hbaN = bins.hba.count;
+
 % CA1
 tind = [3,4,5,17,18,19,20,21,22,23,29];
 %tind = [6,7,26,27,30];
@@ -331,13 +333,13 @@ colormap('jet');
 
 figure,
 hold('on');
-for hbaInd = 1:hbaBin.count
+for hbaI = 1:hbaN
 ind = WithinRanges(decoded.phz,[5,6]) ... 
       & randn(size(decoded.hba))>0.5 ...
-      & WithinRanges(decoded.hba,hbaBin.edges(hbaInd+[0,1]));      
+      & WithinRanges(decoded.hba,hbaBin.edges(hbaI+[0,1]));      
 %set(histogram(decoded.lat(ind),linspace(-300,300,40)),'EdgeColor','none','FaceAlpha',.3); 
 [F,xi] = ksdensity(decoded.lat(ind)/10)
-plot(xi,F,'-','Color',hbaBin.color(hbaInd,:));
+plot(xi,F,'-','Color',hbaBin.color(hbaI,:));
 end
 
 figure();
@@ -558,7 +560,7 @@ sax(end).YTickLabel=[];
 d = 1;
 subject = struct(rat);
 subject = update_subject_patch(subject,'head',[], false,hbaBinEdg,hbaBinCtr);
-subject = update_subject_patch(subject,'body', hbaBin.count+1-d,  true,hbaBin.edges,hbaBin.centers);
+subject = update_subject_patch(subject,'body', hbaN+1-d,  true,hbaBin.edges,hbaBin.centers);
 patch(subject.body.patch.vert{:},   [0.75,0.75,0.75],'FaceAlpha',0.3);
 patch(subject.head.patch.vert{:},   [0.75,0.75,0.75],'FaceAlpha',0.3);
 patch(subject.body.overlay.vert{:},[0.75,0.50,0.50],'FaceAlpha',0.3);
@@ -578,7 +580,7 @@ set(gca(),'XTickLabel',[]);        set(gca(),'YTickLabel',[]);
 d = 2;
 subject = struct(rat);
 subject = update_subject_patch(subject,'head',[], false,hbaBinEdg,hbaBinCtr);
-subject = update_subject_patch(subject,'body', hbaBin.count+1-d,  true,hbaBin.edges,hbaBin.centers);
+subject = update_subject_patch(subject,'body', hbaN+1-d,  true,hbaBin.edges,hbaBin.centers);
 patch(subject.body.patch.vert{:},   [0.75,0.75,0.75],'FaceAlpha',0.3);
 patch(subject.head.patch.vert{:},   [0.75,0.75,0.75],'FaceAlpha',0.3);
 patch(subject.body.overlay.vert{:},[0.75,0.50,0.50],'FaceAlpha',0.3);
@@ -597,7 +599,7 @@ set(gca(),'XTickLabel',[]);        set(gca(),'YTickLabel',[]);
 d = 3;
 subject = struct(rat);
 subject = update_subject_patch(subject,'head',[], false,hbaBinEdg,hbaBinCtr);
-subject = update_subject_patch(subject,'body', hbaBin.count+1-d,  true,hbaBin.edges,hbaBin.centers);
+subject = update_subject_patch(subject,'body', hbaN+1-d,  true,hbaBin.edges,hbaBin.centers);
 patch(subject.body.patch.vert{:},   [0.75,0.75,0.75],'FaceAlpha',0.3);
 patch(subject.head.patch.vert{:},   [0.75,0.75,0.75],'FaceAlpha',0.3);
 patch(subject.body.overlay.vert{:},[0.75,0.50,0.50],'FaceAlpha',0.3);
@@ -622,7 +624,7 @@ sax(end).YTickLabel=[];
 d = 1;
 subject = struct(rat);
 subject = update_subject_patch(subject,'head',[], false,hbaBinEdg,hbaBinCtr);
-subject = update_subject_patch(subject,'body', hbaBin.count+1-d,  true,hbaBin.edges,hbaBin.centers);
+subject = update_subject_patch(subject,'body', hbaN+1-d,  true,hbaBin.edges,hbaBin.centers);
 patch(subject.body.patch.vert{:},   [0.75,0.75,0.75],'FaceAlpha',0.3);
 patch(subject.head.patch.vert{:},   [0.75,0.75,0.75],'FaceAlpha',0.3);
 patch(subject.body.overlay.vert{:},[0.75,0.50,0.50],'FaceAlpha',0.3);
@@ -642,7 +644,7 @@ set(gca(),'XTickLabel',[]);        set(gca(),'YTickLabel',[]);
 d = 2;
 subject = struct(rat);
 subject = update_subject_patch(subject,'head',[], false,hbaBinEdg,hbaBinCtr);
-subject = update_subject_patch(subject,'body', hbaBin.count+1-d,  true,hbaBin.edges,hbaBin.centers);
+subject = update_subject_patch(subject,'body', hbaN+1-d,  true,hbaBin.edges,hbaBin.centers);
 patch(subject.body.patch.vert{:},   [0.75,0.75,0.75],'FaceAlpha',0.3);
 patch(subject.head.patch.vert{:},   [0.75,0.75,0.75],'FaceAlpha',0.3);
 patch(subject.body.overlay.vert{:},[0.75,0.50,0.50],'FaceAlpha',0.3);
@@ -661,7 +663,7 @@ set(gca(),'XTickLabel',[]);        set(gca(),'YTickLabel',[]);
 d = 3;
 subject = struct(rat);
 subject = update_subject_patch(subject,'head',[], false,hbaBinEdg,hbaBinCtr);
-subject = update_subject_patch(subject,'body', hbaBin.count+1-d,  true,hbaBin.edges,hbaBin.centers);
+subject = update_subject_patch(subject,'body', hbaN+1-d,  true,hbaBin.edges,hbaBin.centers);
 patch(subject.body.patch.vert{:},   [0.75,0.75,0.75],'FaceAlpha',0.3);
 patch(subject.head.patch.vert{:},   [0.75,0.75,0.75],'FaceAlpha',0.3);
 patch(subject.body.overlay.vert{:},[0.75,0.50,0.50],'FaceAlpha',0.3);

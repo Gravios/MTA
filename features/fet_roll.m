@@ -7,7 +7,7 @@ function [roll,fs,ts] = fet_roll(Trial,varargin)
 
 fs = []; ts = [];
 
-xyz = Trial.load('xyz');
+xyz = Trial.load('xyz','trb');
 
 % if xyz sampling rat e is greater than 120 Hz then resample it to 120 Hz
 % $$$ if xyz.sampleRate > 120, 

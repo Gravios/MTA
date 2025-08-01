@@ -32,12 +32,12 @@ function Data = resync(Data,varargin)
 switch class(Data)
   case 'MTADepoch'
     if ~isempty(Session),
-        if ~strcmp(Data.path,Session.spath),
+        if ~strcmp( Data.path, Session.spath),
             Data.updatePath(Session.spath);
         end
     end
     
-    if exist(Data.fpath,'file')&&~isempty(Data.filename),
+    if exist(Data.fpath,'file') && ~isempty(Data.filename),
         Data.load;
     end
   
@@ -77,7 +77,8 @@ if isa(Data,'MTADepoch'),
     syncp.resample(Data.sampleRate);
 
     % REWRITE IntersectRanges -> MTA:utilities:intersect_ranges
-    Data.data = intersect_ranges(Data.data+indShift, syncp.data-syncp.data(1)+1);
+    %Data.data = intersect_ranges(Data.data+indShift, syncp.data-syncp.data(1)+1);
+    Data.data = IntersectRanges(Data.data+indShift, syncp.data-syncp.data(1)+1);
     Data.origin = Data.sync.sync.data(1);
 
     

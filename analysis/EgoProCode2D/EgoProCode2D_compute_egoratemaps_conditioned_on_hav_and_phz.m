@@ -9,11 +9,6 @@ sampleRate = 128;
 state = 'theta-groom-sit-rear';
 stcMode = 'msnn_ppsvd_raux';
 
-hbaBin.edges = [-1.2,-0.2,0.2,1.2];
-hbaBin.centers = mean([hbaBin.edges(1:end-1);hbaBin.edges(2:end)]);
-
-phzBin.edges = linspace(0.5,2*pi-0.5,4);
-phzBin.centers = (binPhzs(1:end-1)+binPhzs(2:end))./2;
 
 latticeInterval = 40;
 xpos = -500:latticeInterval:500;
@@ -61,7 +56,7 @@ for tind = 1:numel(Trials)
     phz = load_theta_phase(Trial,xyz);
     tphz = sq(phz(tper));
     
-    rmap{tind} = nan([numel(xpos),numel(ypos),numel(units),numel(phzBin.centers),numel(hbaBin.centers)]);
+    rmap{tind} = nan([numel(xpos),numel(ypos),numel(units),phzN,hbaN]);
     %% cell array version
     for u = 1:numel(units)
         tic
@@ -96,15 +91,15 @@ for tind = 1:numel(Trials)
                 mapOcc{xind,yind} = tempPos(pind,:);
                 mapInd{xind,yind} = find(pind);
                 mapHba{xind,yind} = discretize(thba(pind),hbaBin.edges);
-                mapPhz{xind,yind} = discretize(tphz(pind),phzBin.edges);
+                mapPhz{xind,yind} = discretize(tphz(pind),bins.phz.edges);
             end
         end
         
         occ = zeros([numel(mapOcc),3]);
         for lind = 1:numel(mapOcc)
-            for hbaInd = 1:numel(hbaBin.centers)
-                for phzInd = 1:numel(phzBin.centers)
-                    occ(lind,phzInd,hbaInd) = sum(exp(-sum(mapOcc{lind}(mapHba{lind}==hbaInd&mapPhz{lind}==phzInd,:).^2,2)./(sigmaDS)));
+            for hbaI = 1:hbaN
+                for phzI = 1:phzN
+                    occ(lind,phzI,hbaI) = sum(exp(-sum(mapOcc{lind}(mapHba{lind}==hbaI&mapPhz{lind}==phzI,:).^2,2)./(sigmaDS)));
                 end
             end
         end
@@ -134,20 +129,20 @@ for tind = 1:numel(Trials)
         spos = nan([size(tpos,1),2]);
         spos(tres,:) = tpos(tres,:);
         % assume tres is monotonically increasing
-        for hbaInd = 1:numel(hbaBin.centers)
-            for phzInd = 1:numel(phzBin.centers)
+        for hbaI = 1:hbaN
+            for phzI = 1:phzN
                 for xind = 1:latticeSize(1)
                     for yind = 1:latticeSize(2)
                         tempPos = bsxfun(@minus,spos,[xpos(xind),ypos(yind)]);
-                        mapSpk{xind,yind} = tempPos(mapInd{xind,yind}(mapHba{xind,yind}==hbaInd&mapPhz{xind,yind}==phzInd),:);
-                        mapW{xind,yind} = wpos(mapInd{xind,yind}(mapHba{xind,yind}==hbaInd&mapPhz{xind,yind}==phzInd));
+                        mapSpk{xind,yind} = tempPos(mapInd{xind,yind}(mapHba{xind,yind}==hbaI&mapPhz{xind,yind}==phzI),:);
+                        mapW{xind,yind} = wpos(mapInd{xind,yind}(mapHba{xind,yind}==hbaI&mapPhz{xind,yind}==phzI));
                     end
                 end
                 scc = zeros([numel(mapOcc),1]);
                 for lind = 1:numel(mapOcc)
-                    scc(lind,phzInd,hbaInd) = sum(mapW{lind}.*exp(-sum(mapSpk{lind}.^2,2)./(sigmaDS)),'omitnan');
+                    scc(lind,phzI,hbaI) = sum(mapW{lind}.*exp(-sum(mapSpk{lind}.^2,2)./(sigmaDS)),'omitnan');
                 end
-                rmap{tind}(:,:,u,phzInd,hbaInd) = reshape(scc(:,phzInd,hbaInd)./(occ(:,phzInd,hbaInd)./sampleRate),latticeSize);
+                rmap{tind}(:,:,u,phzI,hbaI) = reshape(scc(:,phzI,hbaI)./(occ(:,phzI,hbaI)./sampleRate),latticeSize);
             end            
         end
         
@@ -158,7 +153,7 @@ for tind = 1:numel(Trials)
 
     %%%<<< permuted hba
 
-    rmapShuff{tind} = nan([numel(xpos),numel(ypos),numel(units),numel(phzBin.centers),numel(hbaBin.centers),100]);
+    rmapShuff{tind} = nan([numel(xpos),numel(ypos),numel(units),phzN,hbaN,100]);
     %% cell array version
     for u = 1:numel(units)
         tic
@@ -198,18 +193,18 @@ for tind = 1:numel(Trials)
                 mapOcc{xind,yind} = tempPos(pind,:);
                 mapInd{xind,yind} = find(pind);
                 mapHba{xind,yind} = discretize(thba(pind),hbaBin.edges);
-                mapPhz{xind,yind} = discretize(tphz(pind),phzBin.edges);
+                mapPhz{xind,yind} = discretize(tphz(pind),bins.phz.edges);
             end
         end
 
         for iter = 1:100
             tMHba = mapHba;
-            occ = zeros([numel(mapOcc),numel(phzBin.centers),numel(hbaBin.centers)]);
+            occ = zeros([numel(mapOcc),phzN,hbaN]);
             for lind = 1:numel(mapOcc)
                 tMHba{lind} = mapHba{lind}(randperm(numel(mapHba{lind})));
-                for hbaInd = 1:numel(hbaBin.centers)
-                    for phzInd = 1:numel(phzBin.centers)
-                        occ(lind,phzInd,hbaInd) = sum(exp(-sum(mapOcc{lind}(tMHba{lind}==hbaInd&mapPhz{lind}==phzInd,:).^2,2)./(sigmaDS)));
+                for hbaI = 1:hbaN
+                    for phzI = 1:phzN
+                        occ(lind,phzI,hbaI) = sum(exp(-sum(mapOcc{lind}(tMHba{lind}==hbaI&mapPhz{lind}==phzI,:).^2,2)./(sigmaDS)));
                     end
                 end
             end
@@ -241,23 +236,23 @@ for tind = 1:numel(Trials)
             spos = nan([size(tpos,1),2]);
             spos(tres,:) = tpos(tres,:);
             % assume tres is monotonically increasing
-            for hbaInd = 1:numel(hbaBin.centers)
-                for phzInd = 1:numel(phzBin.centers)                
+            for hbaI = 1:hbaN
+                for phzI = 1:phzN                
                     for xind = 1:latticeSize(1)
                         for yind = 1:latticeSize(2)
                             tempPos = bsxfun(@minus,spos,[xpos(xind),ypos(yind)]);
-                            mapSpk{xind,yind} = tempPos(mapInd{xind,yind}(tMHba{xind,yind}==hbaInd&mapPhz{xind,yind}==phzInd),:);
-                            mapW{xind,yind} = wpos(mapInd{xind,yind}(tMHba{xind,yind}==hbaInd&mapPhz{xind,yind}==phzInd));
+                            mapSpk{xind,yind} = tempPos(mapInd{xind,yind}(tMHba{xind,yind}==hbaI&mapPhz{xind,yind}==phzI),:);
+                            mapW{xind,yind} = wpos(mapInd{xind,yind}(tMHba{xind,yind}==hbaI&mapPhz{xind,yind}==phzI));
                     end
                 end
-                scc = zeros([numel(mapOcc),numel(phzBin.centers),numel(hbaBin.centers)]);
+                scc = zeros([numel(mapOcc),phzN,hbaN]);
                 for lind = 1:numel(mapOcc)
-                    scc(lind,phzInd,hbaInd) = sum(mapW{lind}.*exp(-sum(mapSpk{lind}.^2,2)./(sigmaDS)),'omitnan');
+                    scc(lind,phzI,hbaI) = sum(mapW{lind}.*exp(-sum(mapSpk{lind}.^2,2)./(sigmaDS)),'omitnan');
                 end
-                rmapShuff{tind}(:,:,u,phzInd,hbaInd,iter) = reshape(scc(:,phzInd,hbaInd)./(occ(:,phzInd,hbaInd)./sampleRate),latticeSize);
+                rmapShuff{tind}(:,:,u,phzI,hbaI,iter) = reshape(scc(:,phzI,hbaI)./(occ(:,phzI,hbaI)./sampleRate),latticeSize);
 
-                end% phzInd
-            end% hbaInd
+                end% phzI
+            end% hbaI
         end% iter
         toc
     end% u
@@ -297,10 +292,10 @@ mask(~mask) = nan;
 u = find(units==20);
 tind = 20;
 figure,
-for hbaInd = 1:numel(hbaBin.centers)
-subplot2(2,numel(hbaBin.centers),1,hbaInd);
+for hbaI = 1:hbaN
+subplot2(2,hbaN,1,hbaI);
 shading(gca(),'flat');
-set(pcolor(xpos-diff(xpos(1:2))/2,ypos-diff(ypos(1:2))/2,fliplr(rot90(rmap{tind}(:,:,u,hbaInd)',-1)).*mask),'EdgeColor','none');
+set(pcolor(xpos-diff(xpos(1:2))/2,ypos-diff(ypos(1:2))/2,fliplr(rot90(rmap{tind}(:,:,u,hbaI)',-1)).*mask),'EdgeColor','none');
 axis('xy');
 colormap('jet');
 colorbar();
@@ -308,10 +303,10 @@ ylim([ypos([1,end])+[-1,1].*diff(ypos(1:2))/2])
 xlim([xpos([1,end])+[-1,1].*diff(xpos(1:2))/2])
 Lines([],0,'k');
 Lines(0,[],'k');
-subplot2(2,numel(hbaBin.centers),2,hbaInd);
+subplot2(2,hbaN,2,hbaI);
 shading(gca(),'flat');
 set(pcolor(xpos-diff(xpos(1:2))/2,ypos-diff(ypos(1:2))/2, ...
-           fliplr(rot90(rmapShuff{tind}(:,:,u,hbaInd,iter)',-1)).*mask),'EdgeColor','none');
+           fliplr(rot90(rmapShuff{tind}(:,:,u,hbaI,iter)',-1)).*mask),'EdgeColor','none');
 caxis([2,12])
 axis('xy');
 colormap('jet');
@@ -325,11 +320,11 @@ end
 u = find(units==20);
 tind = 20;
 figure,
-for hbaInd = 1:numel(hbaBin.centers)
-    for phzInd = 1:numel(phzBin.centers)
-        subplot2(numel(phzBin.centers),numel(hbaBin.centers),phzInd,hbaInd);
+for hbaI = 1:hbaN
+    for phzI = 1:phzN
+        subplot2( phzN, hbaN, phzI, hbaI);
         shading(gca(),'flat');
-        set(pcolor(xpos-diff(xpos(1:2))/2,ypos-diff(ypos(1:2))/2,fliplr(rot90(rmap{tind}(:,:,u,phzInd,hbaInd)',-1)).*mask),'EdgeColor','none');
+        set(pcolor(xpos-diff(xpos(1:2))/2,ypos-diff(ypos(1:2))/2,fliplr(rot90(rmap{tind}(:,:,u,phzI,hbaI)',-1)).*mask),'EdgeColor','none');
         axis('xy');
         colormap('jet');
         colorbar();
@@ -341,11 +336,11 @@ for hbaInd = 1:numel(hbaBin.centers)
 end
 
 figure,
-for hbaInd = 1:numel(hbaBin.centers)
-    for phzInd = 1:numel(phzBin.centers)
-        subplot2(numel(phzBin.centers),numel(hbaBin.centers),phzInd,hbaInd);
+for hbaI = 1:hbaN
+    for phzI = 1:phzN
+        subplot2( phzN, hbaN, phzI, hbaI);
         shading(gca(),'flat');
-        set(pcolor(xpos-diff(xpos(1:2))/2,ypos-diff(ypos(1:2))/2,fliplr(rot90(rmapShuff{tind}(:,:,u,phzInd,hbaInd,iter)',-1)).*mask),'EdgeColor','none');
+        set(pcolor(xpos-diff(xpos(1:2))/2,ypos-diff(ypos(1:2))/2,fliplr(rot90(rmapShuff{tind}(:,:,u,phzI,hbaI,iter)',-1)).*mask),'EdgeColor','none');
         caxis([2,12])
         axis('xy');
         colormap('jet');
