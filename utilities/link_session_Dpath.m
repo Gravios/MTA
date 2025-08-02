@@ -11,7 +11,7 @@ function link_session_Dpath(sessionName,Dpaths)
 
 
 Session = MTASession([]);
-sessionPath = fullfile(Session.path.project,sessionName);
+sessionPath = fullfile(Session.path.project, sessionName);
 create_directory(sessionPath);
 
 cwd = pwd();
