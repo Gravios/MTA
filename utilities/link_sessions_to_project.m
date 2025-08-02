@@ -1,4 +1,4 @@
-function link_sessions_to_project(sessionList,varargin)
+function link_sessions_to_project(sessionlist,varargin)
 %function link_sessions_to_project(sessionList,varargin)
 %
 % link data of multiple sessions to project folder
@@ -17,20 +17,13 @@ function link_sessions_to_project(sessionList,varargin)
 
 % MAIN ---------------------------------------------------------------------------------------------
 
-datPath = getenv('MTA_DATA')
-projectPath = struct('xyz','','nlx','');
-projectPath.xyz = fullfile(datPath,'processed','xyz');
-projectPath.nlx = fullfile(datPath,'processed','nlx');
-
-
-if ischar(slist),
-    slist = get_session_list(slist,projectPath.xyz,projectPath.nlx);
+if ischar(sessionlist),
+    sessionlist = query_session_list(session);
 end
 
-assert(isstruct(slist),'MTA:utilities:link_sessions_to_project:SessionListNotFound');
 
-for s = slist,
-    liskSession(s.sessionName,s.xyz_host,s.nlx_host);
+for ses = sessionlist,
+    link_session_Dpath(ses.sessionName, ses.dPaths);
 end
 
 %---------------------------------------------------------------------------------------------------
