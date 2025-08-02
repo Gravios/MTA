@@ -15,6 +15,7 @@ sedges = bins.swf.edges;
 scntrs = bins.swf.centers;
 % <<< Project Vars <<< --------------------------------------------------------
 % >>> Trial Ids >>>
+
 tid = find_trial_index(sessionlist,'jg05-20120309.cof.all');
 tid = find_trial_index(sessionlist,'jg05-20120310.cof.all');
 tid = find_trial_index(sessionlist,'jg05-20120312.cof.all');
@@ -31,6 +32,7 @@ tid = find_trial_index(sessionlist,'Ed10-20140816.cof.all');
 tid = find_trial_index(sessionlist,'Ed10-20140817.cof.gnd');
 
 tid = find_trial_index(sessionlist,'ER06-20130612.cof.all');
+
 % <<< Trial Ids <<<
 % >>> LOAD Trial >>>
 
@@ -69,9 +71,12 @@ end
 % <<< LOAD Trial <<<
 
 % >>> PYRAMIDAL CELLS >>> -----------------------------------------------------
+otid = tid;
 unit = {};
 % >>> PYR ER06 >>> ------------------
+
 % >>> PYR ER06-20130612 >>> ---------
+
 tid = find_trial_index(sessionlist,'ER06-20130612.cof.all');
 
 unit{tid}(1).id = 132;
@@ -89,6 +94,7 @@ unit{tid}(end).fset = [3, 4, 6, 8, 10, 11, 12];
 unit{tid}(end+1).id = 173;
 unit{tid}(end).tid = tid;
 unit{tid}(end).fset = [1,3,4,6,10];
+
 % <<< PYR ER06-20130612 <<< ---------
 % >>> PYR ER06-20130613 >>> ---------
 tid = find_trial_index(sessionlist,'ER06-20130613.cof.all');
@@ -135,6 +141,7 @@ unit{tid}(end).fset = [10,12,16];
 
 
 % <<< PYR ER06-20130613 <<< ---------
+
 % <<< PYR ER06 >>> ------------------
 % >>> PYR Ed10 >>> ------------------
 % >>>   PYR Ed10-20140814 >>> ---------
@@ -933,27 +940,28 @@ unit{tid}(end).fset = [];
 
 % <<< PYR jg05-20120329 <<< ---------
 % <<< PYR jg05 <<< ------------------
+tid = otid;
 % <<< PYRAMIDAL CELLS <<< -----------------------------------------------------
 
 
 % >>> GENERATE automatic spike feature >>> ------------------------------------
-normalization = '';
-uid = unit{tid}(end).id;
-res = spk(uid);
-cind = spk.clu==uid&ismember(spk.res,res);
-pz = phz(res);
-k = 1;
-sfet_rho =[];
-sfet_pval = [];
-for chn = 1:3:22
-    for nfet = 0:2
-        sfet = spk.fet(cind,chn+nfet);
-        [sfet_rho(chn+nfet), sfet_pval(chn+nfet)] = circ_corrcl(pz, sfet);
-    end
-    k = k + 1;
-end
-unit{tid}(end).fset = find(sfet_rho>0.15);
-unit{tid}(end)
+% $$$ normalization = '';
+% $$$ uid = unit{tid}(end).id;
+% $$$ res = spk(uid);
+% $$$ cind = spk.clu==uid&ismember(spk.res,res);
+% $$$ pz = phz(res);
+% $$$ k = 1;
+% $$$ sfet_rho =[];
+% $$$ sfet_pval = [];
+% $$$ for chn = 1:3:22
+% $$$     for nfet = 0:2
+% $$$         sfet = spk.fet(cind,chn+nfet);
+% $$$         [sfet_rho(chn+nfet), sfet_pval(chn+nfet)] = circ_corrcl(pz, sfet);
+% $$$     end
+% $$$     k = k + 1;
+% $$$ end
+% $$$ unit{tid}(end).fset = find(sfet_rho>0.15);
+% $$$ unit{tid}(end)
 % <<< GENERATE automatic spike feature <<< ------------------------------------
 % >>> PLOT SPK PCA FEATURES >>> -----------------------------------------------
 
@@ -1012,6 +1020,7 @@ int =       ...
 
 % <<< INT Ed10-20140815 <<< ---------
 % >>> INT Ed10-20140816 >>> ---------
+
 int = ...
     [ ...
         29; ... DSC_TRH_---
@@ -1024,6 +1033,7 @@ int = ...
         52; ... ---_---_ASC
         53; ... DSC_---_---
     ];
+
 % <<< INT Ed10-20140816 <<< ---------
 % >>> INT Ed10-20140817 >>> ---------
 int = ...
@@ -1213,11 +1223,13 @@ ur  = ufr(res);
 
 % <<< RECOMPUTE vars for theta RUN state <<< ----------------------------------
 % >>> INIT: ARGUMENTSS, ccg >>> -----------------------------------------------
+
 accg = [];
 bin_size = 2;
 bin_halfwidth = 100;
 grps = [1,2];
 normalization = 'hz';
+
 % <<< INIT: ARGUMENTSS, ccg <<< -----------------------------------------------
 % >>> SP: IMAGESC, INT ratemap >>> --------------------------------------------
 subplot2(4,4,1,1);
@@ -2326,6 +2338,9 @@ fvxy = vel(filter(copy(xyz),'ButFilter',4,2.5,'low'),'hcom',[1,2]);
 roll = fet_roll(Trial,samplerate); % -:right, +:left
 % VAR - har
 % >>> hba roll feature >>> ---------------------------------------------------
+
+theta = pi/3;
+Vr = [cos(theta),-sin(theta); sin(theta),cos(theta)]
 har = copy(hba);
 har.data = [hba.data, roll.data];
 har.data = har.data * Vr;
@@ -2347,7 +2362,6 @@ mspk = Trial.load('spk', samplerate,'',arrayfun(@(u) u.id, unit{tid}),'', true, 
 u = 3;
 unit{tid}(u)
 figure,plot(pft,unit{tid}(u).id);
-
 nchan = 8;
 uid = unit{tid}(u).id
 xbins = 36;
@@ -2885,7 +2899,6 @@ roll = fet_roll(Trial,samplerate); % -:right, +:left
 
 theta = pi/3;
 Vr = [cos(theta),-sin(theta); sin(theta),cos(theta)];
-
 har = copy(hba);
 har.data = [hba.data, roll.data];
 har.data = har.data * Vr;
@@ -3010,13 +3023,19 @@ end
 
 % >>> TFET >>> ----------------------------------------------------------------
 
+
+
 u = 8;
 uid = unit{tid}(u).id
+mspk = Trial.load('spk', samplerate,'',arrayfun(@(u) u.id, unit{tid}),'', false, true);
+nchan = 8;
+theta = 0;
 figure();
 plot(pft,uid,[],'colorbar',[],false);
 
 [field_mrate, field_center] = pft.maxRate(uid);
-ego=fet_ego(Trial,xyz,{'head_right','head_left'},field_center,theta);
+
+ego=fet_ego(Trial,xyz,{'head_right','head_left'}, field_center, 0);
 
 mres=mspk(uid);
 sind = mspk.clu==uid & ismember( mspk.res, mres);
@@ -3055,7 +3074,7 @@ for sid = 1:size(sc,2);
     subplot(1, size(sc,2), sid);
     plot(fd,sc(:,sid),'.');
 end
-sid = [1,3,4];
+
 
 
 sid = 1;
@@ -3110,6 +3129,7 @@ axis('tight');
 
 dind=edist<400;
 figure();
+subplot(121);
 scatter( repmat(tfet(dind,1),[3,1]),...
          [phz(mres(dind))-2*pi;phz(mres(dind));2*pi+phz(mres(dind))],...
          20,repmat(sfet(dind),[3,1]),'Filled');
@@ -3117,6 +3137,14 @@ colormap('jet');
 ylim([-2*pi,4*pi]);
 caxis([-3,3]);
 xlim([-100,-20]);
+subplot(122);
+scatter( repmat(tfet(dind,2),[3,1]),...
+         [phz(mres(dind))-2*pi;phz(mres(dind));2*pi+phz(mres(dind))],...
+         20,repmat(sfet(dind),[3,1]),'Filled');
+colormap('jet');
+ylim([-2*pi,4*pi]);
+caxis([-3,3]);
+xlim([-40,40]);
 
 
 % distance 

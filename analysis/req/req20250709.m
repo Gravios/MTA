@@ -167,6 +167,30 @@ for c = unique(spk.clu)'
     zfet(spk.clu==c,:) = zscore(zfet(spk.clu==c,:));
 end
 
+                                                                                                                                                                                                                                           
+uid = unit{tid}(ind).id;                                                                                                                                                                                                                      
+sfet = unit{tid}(ind).fset;                                                                                                                                                                                                                   
+res = spk(uid);                                                                                                                                                                                                                               
+cind = spk.clu==uid&ismember(spk.res,res);                                                                                                                                                                                                    
+pz = phz(res);                                                                                                                                                                                                                                
+hfig = figure();                                                                                                                                                                                                                              
+k = 1;                                                                                                                                                                                                                                        
+for chn = 1:3:22,                                                                                                                                                                                                                             
+    subplot2(3,8,1,k);                                                                                                                                                                                                                        
+        sfet = spk.fet(cind,chn);                                                                                                                                                                                                             
+        hist2([pz, sfet],12,12,norm);                                                                                                                                                                                                         
+        Lines([],1500,'k');                                                                                                                                                                                                                   
+    subplot2(3,8,2,k);                                                                                                                                                                                                                        
+        sfet = spk.fet(cind,chn+1);                                                                                                                                                                                                           
+        hist2([pz, sfet],12,12,norm);                                                                                                                                                                                                         
+        Lines([],1500,'k');                                                                                                                                                                                                                   
+    subplot2(3,8,3,k);                                                                                                                                                                                                                        
+        sfet = spk.fet(cind,chn+2);                                                                                                                                                                                                           
+        hist2([pz, sfet],12,12,norm);                                                                                                                                                                                                         
+        Lines([],1500,'k');                                                                                                                                                                                                                   
+    k = k + 1;                                                                                                                                                                                                                                
+end                                                                                                                                                                                                                                           
+hfig.Position(3) = hfig.Position(3)*2;    
 
 
 uid = groups('g').data(6);
