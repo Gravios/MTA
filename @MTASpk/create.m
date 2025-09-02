@@ -1,4 +1,4 @@
-function Spk = create(Spk,Session,varargin)
+function Spk = create(Spk,Session)
 % Spk = create(Spk,Session,varargin)
 % Function used to load spiking data from {clu,res,fet,spk} file
 % and synchronize with the Session
@@ -21,25 +21,39 @@ function Spk = create(Spk,Session,varargin)
 % See also MTAStateCollection for more information on selecting
 % states
 %
-%% Load and resample Res
+% TODO : change name to generate
+%
 
-% DEFARGS ----------------------------------------------------------------------
-defargs = struct('sampleRate',  1,                                           ...
-                     'states', [],                                           ...
-                      'units', [],                                           ...
-                       'mode', '',                                           ...
-                   'incld_fet', false,                                       ...
-                   'incld_spk', false                                        ...
-);
-[sampleRate, states, units, mode, incld_fet, incld_spk] =                    ...
-    DefaultArgs(varargin,defargs,'--struct');
-%-------------------------------------------------------------------------------
+% >>> DEFARGS >>> -------------------------------------------------------------
+inp = inputParser();
+
+inp.addRequired ( 'Spk'                );
+inp.addRequired ( 'Session'            );
+
+inp.addParameter(  'sampleRate', 1     );
+inp.addParameter(      'states', []    );
+inp.addParameter(       'units', 'all' );
+inp.addParameter(        'mode', ''    );
+inp.addParameter(   'incld_fet', false );
+inp.addParameter(   'incld_swf', false );
+inp.parse(varargin{:});
+[Spk, Session, sampleRate, states, units, mode, incld_fet, incld_swf] = deal ...
+    (                                                                        ...
+        inp.Results.Spk,                                                    ...
+        inp.Results.Session,                                                ...
+        inp.Results.sampleRate,                                             ...
+        inp.Results.states,                                                 ...
+        inp.Results.units,                                                  ...
+        inp.Results.mode,                                                   ...
+        inp.Results.incld_fet,                                              ...
+        inp.Results.incld_swf                                               ...
+    );
+% <<< DEFARGS <<< -------------------------------------------------------------
 
 
-% MAIN -------------------------------------------------------------------------
-filebase = fullfile(Session.spath, Session.name);
+% >>> MAIN >>> ----------------------------------------------------------------
 
-Spk.load_clu_res( [], incld_fet, incld_spk);
+Spk.load_clu_res();
 
 % >>> SELECT specific units >>> -----------------------------------------------
 if isempty(units)
@@ -135,7 +149,6 @@ end
 Spk.clu = Spk.clu(ind);
 if incld_fet,  Spk.fet = Spk.fet(ind,:);   end
 if incld_spk,  Spk.spk = Spk.spk(ind,:,:); end
-
 % <<< FIT to Trial synchronization periods <<< --------------------------------
 
 % >>> SELECT state periods if given >>> ---------------------------------------
@@ -146,7 +159,7 @@ if ~isempty( states );
     else
         sst = states.copy;
         sst.resample(sampleRate);
-        [Spk.res, sind] = SelectPeriods(Spk.res, sst.data, 'd', 1, 0);                   
+        [Spk.res, sind] = SelectPeriods(Spk.res, sst.data, 'd', 1, 0);
     end
     Spk.clu = Spk.clu(sind);
     if incld_fet,  Spk.fet = Spk.fet(sind,:);   end
@@ -156,4 +169,4 @@ end
 
 Spk.update_hash(sampleRate,mode);
 
-% END MAIN --------------------------------------------------------------------
+% <<< MAIN <<< ----------------------------------------------------------------

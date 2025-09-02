@@ -1,9 +1,22 @@
 % req20250528
 %
 
+configure_default_args();
+
 % >>> Project Vars >>> --------------------------------------------------------
-sessionlist = get_session_list_v3('BehaviorPlaceCode');
+%sessionlist = get_session_list_v3('BehaviorPlaceCode');
+sessionlist = query_session_list('BehaviorPlaceCode');
+
+sessionlist(14:22) = []; % remove jg04 for this analysis
+
 samplerate = 250;% Hz
+
+Trials = af(@(s) MTATrial.validate(s), sessionlist);
+
+Trials = {};
+for s = 1:numel(sessionlist)
+    Trials{s} = MTATrial.validate(sessionlist(s));
+end
 
 swfN = bins.swf.count;
 hbaN = bins.hba.count;
@@ -34,7 +47,7 @@ tid = find_trial_index(sessionlist,'Ed10-20140817.cof.gnd');
 tid = find_trial_index(sessionlist,'ER06-20130612.cof.all');
 
 % <<< Trial Ids <<<
-% >>> LOAD Trial >>>
+
 
 % >>> LOAD Trial >>> ----------------------------------------------------------
 
@@ -48,27 +61,31 @@ Trial.spk.parent = Trial; % TODO : load in class
 % >>> LOAD Ephys and Bhv Vars >>> ---------------------------------------------
 
 stc = Trial.load('stc','msnn_ppsvd_raux');
-spk = Trial.load('spk', samplerate, '', [], '', true);
-phz = load_theta_phase(Trial,samplerate,Trial.meta.channelGroup.theta);
-pft = pfs_2d_theta(Trial);
+spk = Trial.load('spk', samplerate, '', 'placecells', '', true, false);
+phz = load_theta_phase(Trial, samplerate, Trial.meta.channelGroup.theta);
+pft = pfs_2d_theta(Trial,[],'theta-groom-sit-rear',true,[],true);
 xyz = preproc_xyz(Trial,'trb',samplerate);
 hba = fet_hba(Trial,samplerate);
 hvfl = fet_hvfl(Trial,samplerate);
 fvxy = vel(filter(copy(xyz),'ButFilter',4,2.5,'low'),'hcom',[1,2]);
 roll = fet_roll(Trial,samplerate); % -:right, +:left
+%pch = fet_HB_pitch(Trial,samplerate);
 
 % VAR : zfet 
 % >>> Normalized spike wave form features >>> ---------------------------------
 
 zfet = spk.fet;
 for c = unique(spk.clu)'
-    zfet(spk.clu==c,:) = zscore(zfet(spk.clu==c,:));
+    zfet(spk.clu==c,:) = p_zscore(zfet(spk.clu==c,:));
 end
 
 % <<< Normalized spike wave form features <<< ---------------------------------
 
 % <<< LOAD Ephys and Bhv Vars <<< ---------------------------------------------
-% <<< LOAD Trial <<<
+
+
+
+
 
 % >>> PYRAMIDAL CELLS >>> -----------------------------------------------------
 otid = tid;
@@ -172,7 +189,7 @@ unit{tid}(end+1).id = 70;
 unit{tid}(end).tid = tid;
 unit{tid}(end).fset = [1,4,7,10];
 
-unit{tid}(end+1).id = 77;
+unit{tid}(end+1).id = 77; % STAR
 unit{tid}(end).tid = tid;
 unit{tid}(end).fset = [10,13,16,18];
 
@@ -180,7 +197,7 @@ unit{tid}(end+1).id = 95;
 unit{tid}(end).tid = tid;
 unit{tid}(end).fset = [19,22,23,24];
 
-unit{tid}(end+1).id = 103;
+unit{tid}(end+1).id = 103; % STAR;
 unit{tid}(end).tid = tid;
 unit{tid}(end).fset = [4,7,9,10,12,13,15];
 
@@ -192,7 +209,7 @@ unit{tid}(end+1).id = 108;
 unit{tid}(end).tid = tid;
 unit{tid}(end).fset = [10,11];
 
-unit{tid}(end+1).id = 111;
+unit{tid}(end+1).id = 111; % STAR
 unit{tid}(end).tid = tid;
 unit{tid}(end).fset = [19,21,22,24]; % MEH
 
@@ -231,19 +248,31 @@ unit{tid}(end+1).id = 44;
 unit{tid}(end).tid = tid;
 unit{tid}(end).fset = [1,3,4,7];
 
-unit{tid}(end+1).id = 47;
+unit{tid}(end+1).id = 47; % STAR
 unit{tid}(end).tid = tid;
 unit{tid}(end).fset = [10,13,14,16,17];
 
-unit{tid}(end+1).id = 48;
+unit{tid}(end+1).id = 48; % STAR
 unit{tid}(end).tid = tid;
 unit{tid}(end).fset = [1,3];
 
-unit{tid}(end+1).id = 92;
+unit{tid}(end+1).id = 51; % STAR
+unit{tid}(end).tid = tid;
+unit{tid}(end).fset = [1,4,7,10,18];
+
+unit{tid}(end+1).id = 77;
+unit{tid}(end).tid = tid;
+unit{tid}(end).fset = [16,18];
+
+unit{tid}(end+1).id = 86;
+unit{tid}(end).tid = tid;
+unit{tid}(end).fset = [16,19];
+
+unit{tid}(end+1).id = 92; % STAR
 unit{tid}(end).tid = tid;
 unit{tid}(end).fset = [4,6,10];
 
-unit{tid}(end+1).id = 94;
+unit{tid}(end+1).id = 94; % STAR
 unit{tid}(end).tid = tid;
 unit{tid}(end).fset = [7,10,11];
 
@@ -251,29 +280,17 @@ unit{tid}(end+1).id = 96;
 unit{tid}(end).tid = tid;
 unit{tid}(end).fset = [4,7,10];
 
-unit{tid}(end+1).id = 86;
-unit{tid}(end).tid = tid;
-unit{tid}(end).fset = [16,19];
-
-unit{tid}(end+1).id = 77;
-unit{tid}(end).tid = tid;
-unit{tid}(end).fset = [16,18];
-
-unit{tid}(end+1).id = 51;
-unit{tid}(end).tid = tid;
-unit{tid}(end).fset = [1,4,7,10,18];
-
 
 % <<< PYR Ed10-20140815 >>> ---------
 % >>>   PYR Ed10-20140816 >>> ---------
 
 tid = find_trial_index(sessionlist,'Ed10-20140816.cof.all');
 
-unit{tid}(1).id = 7;
+unit{tid}(1).id = 7; % STAR
 unit{tid}(end).tid = tid;
 unit{tid}(end).fset = [16,18,21];
 
-unit{tid}(end+1).id = 10;
+unit{tid}(end+1).id = 10; % STAR
 unit{tid}(end).tid = tid;
 unit{tid}(end).fset = [5,7,10,11,16,21];
 
@@ -297,7 +314,7 @@ unit{tid}(end+1).id = 33;
 unit{tid}(end).tid = tid;
 unit{tid}(end).fset = [13,16,19]; % 
 
-unit{tid}(end+1).id = 38;
+unit{tid}(end+1).id = 38; % STAR
 unit{tid}(end).tid = tid;
 unit{tid}(end).fset = [13,14,16,17,19,22]; % 
 
@@ -309,15 +326,15 @@ unit{tid}(end+1).id = 45;
 unit{tid}(end).tid = tid;
 unit{tid}(end).fset = [13,14,16,17,19,22]; % Nope
 
-unit{tid}(end+1).id = 66;
+unit{tid}(end+1).id = 66; % STAR
 unit{tid}(end).tid = tid;
 unit{tid}(end).fset = [7,10,16,17,19]; %
 
-unit{tid}(end+1).id = 67;
+unit{tid}(end+1).id = 67; % STAR
 unit{tid}(end).tid = tid;
 unit{tid}(end).fset = [1,2,3]; %
 
-unit{tid}(end+1).id = 74;
+unit{tid}(end+1).id = 74; % STAR
 unit{tid}(end).tid = tid;
 unit{tid}(end).fset = [1,2,3]; % 
 
@@ -447,10 +464,10 @@ tid = find_trial_index(sessionlist,'jg05-20120310.cof.all');
 unit{tid}(1).id = 11;
 unit{tid}(end).tid = tid;
 unit{tid}(end).fset = [10,13,14,16]; % !!!
-%  CHOOSE
+%  CHOOSE 
 unit{tid}(end+1).id = 11;
 unit{tid}(end).tid = tid;
-unit{tid}(end).fset = [10,13,16,19]
+unit{tid}(end).fset = [10,13,16,19];
 
 unit{tid}(end+1).id = 13;
 unit{tid}(end).tid = tid;
@@ -821,11 +838,16 @@ unit{tid}(end).fset = [4,10,13];
 tid = find_trial_index(sessionlist,'jg05-20120323.cof.all');
 
 %CHOOSE
-unit{tid}(1).id = 18;
+unit{tid}(1).id = 17; % STAR
+unit{tid}(end).tid = tid;
+unit{tid}(end).fset = [10,13,16,19];
+
+%CHOOSE
+unit{tid}(1).id = 18; % STAR
 unit{tid}(end).tid = tid;
 unit{tid}(end).fset = [19,20,22];
 %CHOOSE
-unit{tid}(end+1).id = 18;
+unit{tid}(end+1).id = 18; % STAR
 unit{tid}(end).tid = tid;
 unit{tid}(end).fset = [13,16,19];
 
@@ -903,7 +925,7 @@ unit{tid}(end).fset = [ 4,5,7,9,10,12,13,15,16,19];
 
 unit{tid}(end+1).id = 29;
 unit{tid}(end).tid = tid;
-unit{tid}(end).fset = [ 3,9,11];
+unit{tid}(end).fset = [ 3, 9, 11];
 
 unit{tid}(end+1).id = 62;
 unit{tid}(end).tid = tid;
@@ -915,7 +937,7 @@ unit{tid}(end).fset = [];
 
 unit{tid}(end+1).id = 71;
 unit{tid}(end).tid = tid;
-unit{tid}(end).fset = [2,4,5,7,9,10,11,12,13,15,16,18,19,21,22,24]
+unit{tid}(end).fset = [2,4,5,7,9,10,11,12,13,15,16,18,19,21,22,24];
 
 unit{tid}(end+1).id = 76;
 unit{tid}(end).tid = tid;
@@ -1021,7 +1043,7 @@ int =       ...
 % <<< INT Ed10-20140815 <<< ---------
 % >>> INT Ed10-20140816 >>> ---------
 
-int = ...
+interneurons = ...
     [ ...
         29; ... DSC_TRH_---
         30; ... DSC_---_---
@@ -1162,11 +1184,14 @@ int = ...
 % <<< jg05 <<< ----------------------
 % <<< INTERNEURONS <<< --------------------------------------------------------
 
-int1 = spk(33, [stc{statesSel{sts}, samplerate}]);
-uint = 36;
+spki = Trial.load('spk', samplerate, '', interneurons, '', true, false);
+int1 = spki(35, [stci{statesSel{sts}, samplerate}]);
+uint = 52;
 int = spk(uint, [stc{statesSel{sts}, samplerate}]);
 
+u = 13;
 uid = unit{tid}(end).id;
+statesSel = {'theta-groom-sit-rear','sit-theta','groom'};
 % >>> FIGURE: ccg, PC X Interneuron >>> ---------------------------------------
 figure
 sts = 1;
@@ -1313,12 +1338,14 @@ subplot2(4,4,1,4);
 % <<< SP: SCATTER of theta phase VS distance VS spike feature <<< -------------    
 
 % <<< FIGURE: ccg, PC X Interneuron <<< ---------------------------------------
+
 % >>> DIAGNOSTIC >>>
 % $$$ figure();
 % $$$ scatter(fd,pz,20,sc(:,1),'Filled');
 % $$$ caxis([-2.5,2.5]);
 % $$$ colormap('jet');
 % <<< DIAGNOSTIC <<<
+
 % >>> FIGURE: isi vs sfet >>> -------------------------------------------------
 
 ufr = Trial.ufr.create(Trial,xyz,spk,uid,0.1,'boxcar',true);
@@ -1629,18 +1656,19 @@ ar = [hba([stc{cstate}], 1),roll([stc{cstate}], 1)];
 theta = pi/2.8;
 theta = pi/2.5;
 theta = pi/2.3;
-Vr = [cos(theta),-sin(theta); sin(theta),cos(theta)]
+Vr = [cos(theta),-sin(theta); sin(theta),cos(theta)];
 
 theta = pi/3;
-Vr = [cos(theta),-sin(theta); sin(theta),cos(theta)]
+theta = pi/2.8;
+Vr = [cos(theta),-sin(theta); sin(theta),cos(theta)];
 har = copy(hba);
-har.data = [hba.data, roll.data] 
+har.data = [hba.data, roll.data];
 har.data = har.data *Vr;
 ar = har([stc{cstate}],:);
 har.data = har(:,1);
 
 
-%u =13
+u = 1;
 uid = unit{tid}(u).id
 [field_mrate, field_center] = pft.maxRate(uid);
 ego = fet_ego( Trial, xyz, [], field_center);
@@ -1833,7 +1861,7 @@ for u = 1:numel(uset)
     [S,U,V] = svd(sfet);
     sc = sfet * V;
     [~,pscrI] = max(abs(corr(fd(fd<300),sc(fd<300,:))));
-    unit(u).sfet = zscore(MedianFilter(sc(:,pscrI),50));
+    unit(u).sfet = p_zscore(MedianFilter(sc(:,pscrI),50));
     % <<< COMP: SPK feature <<< ---------------------------------------------------    
 end
 
@@ -2073,7 +2101,7 @@ fd = sqrt(sum(ego(res,:).^2,2));
 [S,U,V] = svd(sfet);
 sc = sfet * V;
 [~,pscrI] = max(abs(corr(fd(fd<300),sc(fd<300,:))));
-sfet = zscore(MedianFilter(sc(:,pscrI),50));
+sfet = p_zscore(median_filter(sc(:,pscrI),50));
 % <<< COMPUTE sfet <<< --------------------------------------------------------
 
 
@@ -2113,7 +2141,8 @@ axis('xy');
 % $$$ rmap(mazeMask(:)) = nan;
 % $$$ rmap(ocnt(:)<(samplerate.*0.02)) = nan;
 % $$$ rmap = reshape(rmap,[numel(xb),numel(yb)]);
-% <<< COMPUTE ALLO ratemap <<< ------------------------------------------------% >>> COMPUTE ego ratemap >>> -------------------------------------------------
+% <<< COMPUTE ALLO ratemap <<< ------------------------------------------------
+% >>> COMPUTE ego ratemap >>> -------------------------------------------------
 % >>> SCATTER (x=dist, y=phz, c=sfet) >>> -------------------------------------
 sax = setup_axes(hfig,3,0,1,0,0,0,2,2);
 scatter(fd, phz(res), 6, sfet, 'Filled');
@@ -2328,8 +2357,14 @@ Trial.spk.parent = Trial; % TODO : load in class
 % >>> LOAD Ephys and Bhv Vars >>> ---------------------------------------------
 
 stc = Trial.load('stc','msnn_ppsvd_raux');
-spk = Trial.load('spk', samplerate, '', [], '', true);
-phz = load_theta_phase(Trial,samplerate,Trial.meta.channelGroup.theta);
+spk = Trial.load('spk', ...
+                 samplerate, ...
+                 '', ...
+                 arrayfun(@(u) u.id, unit{tid}), ...
+                 '', ...
+                 true, ...
+                 true);
+phz = load_theta_phase( Trial, samplerate, Trial.meta.channelGroup.theta);
 pft = pfs_2d_theta(Trial);
 xyz = preproc_xyz(Trial,'trb',samplerate);
 hba = fet_hba(Trial,samplerate);
@@ -2339,8 +2374,9 @@ roll = fet_roll(Trial,samplerate); % -:right, +:left
 % VAR - har
 % >>> hba roll feature >>> ---------------------------------------------------
 
-theta = pi/3;
-Vr = [cos(theta),-sin(theta); sin(theta),cos(theta)]
+theta = pi/3; %Ed10
+theta = pi/2.8; %jg05
+Vr = [cos(theta),-sin(theta); sin(theta),cos(theta)];
 har = copy(hba);
 har.data = [hba.data, roll.data];
 har.data = har.data * Vr;
@@ -2350,16 +2386,14 @@ har.data = har(:,1);
 % >>> Normalized spike wave form features >>> ---------------------------------
 zfet = spk.fet;
 for c = unique(spk.clu)'
-    zfet(spk.clu==c,:) = zscore(zfet(spk.clu==c,:));
+    zfet(spk.clu==c,:) = p_zscore(zfet(spk.clu==c,:));
 end
 % <<< Normalized spike wave form features <<< ---------------------------------
 
 % <<< LOAD Ephys and Bhv Vars <<< ---------------------------------------------
 
-mspk = Trial.load('spk', samplerate,'',arrayfun(@(u) u.id, unit{tid}),'', true, true);
 
-
-u = 3;
+u = 1;
 unit{tid}(u)
 figure,plot(pft,unit{tid}(u).id);
 nchan = 8;
@@ -2367,8 +2401,9 @@ uid = unit{tid}(u).id
 xbins = 36;
 ybins = 36;
 bhv_state = 'theta-groom-sit-rear-hpause';
-res = spk(unit{tid}(u).id, [stc{bhv_state, samplerate}]);
-cind = mspk.clu==uid&ismember(mspk.res,res);
+%res = spk(unit{tid}(u).id, [stc{bhv_state, samplerate}]);
+[res, fet, swf] = spk(unit{tid}(u).id, [stc{bhv_state, samplerate}]);
+cind = spk.clu==uid & ismember(spk.res,res);
 
 % >>> SETUP figure >>> --------------------------------------------------------
 
@@ -2387,6 +2422,8 @@ hfig = setup_figure(figure(23849843), ...
 unit{tid}(u).mrate = field_mrate;
 unit{tid}(u).mpos = field_center;
 ego = fet_ego( Trial, xyz, [], field_center, 0);
+fd = sqrt(sum(ego(res,:).^2,2));
+
 
 % <<< COMPUTE EGO postion <<< -------------------------------------------------
 % >>> COMPUTE allo occupancy map >>> ------------------------------------------
@@ -2426,16 +2463,10 @@ for hbaI = 1:hbaN
 end
 
 % <<< COMPUTE ego occupancy map <<< -------------------------------------------
-% >>> COMPUTE sfet >>> --------------------------------------------------------
+% >>> COMPUTE ffet >>> --------------------------------------------------------
 
-sfet = zfet( spk.clu==unit{tid}(u).id & ismember(spk.res,res), unit{tid}(u).fset);
-fd = sqrt(sum(ego(res,:).^2,2));
-[S,U,V] = svd(sfet);
-sc = sfet * V;
-[~,pscrI] = max(abs(corr(fd(fd<300),sc(fd<300,:))));
-sfet = zscore(MedianFilter(sc(:,1),100));
 
-% <<< COMPUTE sfet <<< --------------------------------------------------------
+% <<< COMPUTE ffet <<< --------------------------------------------------------
 % >>> Unit Information >>> ----------------------------------------------------
     FigInfo = uicontrol('Parent',hfig,...
                         'Style','text',...
@@ -2457,7 +2488,7 @@ tpnts = [res];
 gpnts = [ones(size(res))];
 grps =  [1];
 [mccg,tbins,pairs] = CCG(tpnts, gpnts,                                      ...
-                         1, 25,                                             ...
+                         1, 35,                                             ...
                          samplerate, grps,                                  ...
                          'hz2'                                              ...
 );
@@ -2480,7 +2511,7 @@ grid(sax, 'on');
 scnt = hist2(sq(xyz(res,'hcom',[1,2])), ...
              linspace(-500,500,xbins),...
              linspace(-500,500,ybins));
-rmap = (imgaussfilt( scnt, 1.2) ./ imgaussfilt( ocnt, 1.2));
+rmap = (p_imgaussfilt( scnt, 1.2) ./ p_imgaussfilt( ocnt, 1.2));
 rmap = rmap(:);
 rmap(mazeMaskAllo(:)) = nan;
 rmap(ocnt(:)<(samplerate.*0.02)) = nan;
@@ -2504,7 +2535,7 @@ axis('xy');
 scnt = hist2(ego(res,:), ...
              linspace(-500,500,xbins),...
              linspace(-500,500,ybins));
-rmap = imgaussfilt( scnt, 1.2) ./ imgaussfilt( ecnt, 1.2);
+rmap = p_imgaussfilt( scnt, 1.2) ./ p_imgaussfilt( ecnt, 1.2);
 rmap = rmap(:);
 rmap(mazeMaskEgo(:)) = nan;
 rmap(ocnt(:)<(samplerate.*0.02)) = nan;
@@ -2531,18 +2562,22 @@ axis('xy');
 % <<< IMAGESC ALLO ratemap <<< ------------------------------------------------
 % >>> SCATTER (x=dist, y=phz, c=sfet) >>> -------------------------------------
 sax = setup_axes(hfig,9,0,1,0,0,0,4.5,2);
-scatter([fd;fd], [phz(res);phz(res)+2*pi], 3, [sfet;sfet], 'Filled');
+scatter([fd;fd], [phz(res);phz(res)+2*pi], 3, [ffet;ffet], 'Filled');
 colormap(sax, 'jet');
 caxis   (sax, [-2,2]);
 xlim    (sax, [0,350]);
 ylim    (sax, [0,4*pi]);
+Lines([],bins.phz.edges,'k');
+Lines([],bins.phz.edges+2*pi,'k');
+
 % <<< SCATTER (x=dist, y=phz, c=sfet) <<< -------------------------------------
 % >>> CCG >>> -----------------------------------------------------------------
 tpnts = [];
 gpnts = [];
 grps =  [];
+dthresh = 600;
 for s = 1:3
-    pid =  within_ranges(sfet, sedges([s,s+1])) ...
+    pid =  within_ranges(ffet, sedges([s,s+1])) ...
            & abs(ego(res,2)) < dthresh ...
            ;% = pid
     tres = res(pid);
@@ -2551,7 +2586,7 @@ for s = 1:3
     grps = [grps,s];
 end
 bin_size = 2;
-bin_halfwidth = 15;
+bin_halfwidth = 35;
 [mccg,tbins,pairs] = CCG(tpnts,      gpnts,                             ...
                          bin_size,   bin_halfwidth,                     ...
                          samplerate, grps,                              ...
@@ -2587,10 +2622,10 @@ for phzI = 1:phzN
         3, 1.5);
     hold(gca(), 'on');
     % <<< SETUP subplot <<<
-    spk_waveforms = diff(mspk.spk(cind, 1:nchan, :), 1, 3);
+    spk_waveforms = diff(swf(:, 1:nchan, :), 1, 3);
     sax.Color = [0.75,0.75,0.75];
     for s = 1:numel(scntrs)
-        ind = within_ranges(sfet, sedges([s,s+1])) & ...
+        ind = within_ranges(ffet, sedges([s,s+1])) & ...
               within_ranges(phz(res),  bins.phz.edges([phzI,phzI+1]));
         plot(bsxfun(                                                        ...
                  @minus,                                                    ...
@@ -2604,7 +2639,7 @@ for phzI = 1:phzN
 end
 
 % <<< spike waveforms by phase <<< --------------------------------------------
-cmax = 5;
+cmax = 20;
 % >>> EGO ratemaps ( hba X phz) >>> -------------------------------------------
 
 % $$$ for swfI = 1:swfN
@@ -2659,7 +2694,7 @@ for swfI = 1:swfN
             dm = res(  ...
                   within_ranges(har(res),  bins.har.edges([harI, harI+1]))  ...
                 & within_ranges(phz(res),  bins.phz.edges([phzI, phzI+1]))  ...
-                & within_ranges(sfet,      bins.swf.edges([swfI, swfI+1]))  ...
+                & within_ranges(ffet,      bins.swf.edges([swfI, swfI+1]))  ...
                 & within_ranges(hba(res),  bins.hba.edges([1,end]))  ...
                 );
 
@@ -2670,8 +2705,8 @@ for swfI = 1:swfN
                              linspace(-500,500,xbins),                      ...
                              linspace(-500,500,ybins));
                 
-                rmap =(imgaussfilt(scnt,1.4)                                ...
-                       ./imgaussfilt(ecnt_har{harI},1.4));
+                rmap =(p_imgaussfilt(scnt,1.4)                                ...
+                       ./p_imgaussfilt(ecnt_har{harI},1.4));
                 rmap = rmap(:);
 
                 occMaskEgo = ecnt_har{harI}(:) < (samplerate.*0.02)/3 ;
@@ -2732,11 +2767,28 @@ print(hfig, '-dpng', fullfile(trlDir, [FigName,'.png']));
 % <<< PRINT figure <<< --------------------------------------------------------
 
 
+figure();
+subplot(1,4,1)
+scatter([fd;fd], [phz(res);phz(res)+2*pi], 10, [ffet;ffet], 'Filled');
+colormap('jet'); caxis   ([-3,3]); ylim    ([0,4*pi]);
+Lines([],bins.phz.edges,'k'); Lines([],bins.phz.edges+2*pi,'k');
+for s = 1:3
+    subplot(1,4,s+1)
+    ind = within_ranges(ffet, bins.swf.edges(s+[0,1]));
+    ires = res(ind);
+    ifd = fd(ind);
+    ifet = ffet(ind);
+    scatter([ifd;ifd], [phz(ires);phz(ires)+2*pi], 10, [ifet;ifet], 'Filled');
+    colormap('jet'); caxis   ([-3,3]); ylim    ([0,4*pi]);
+    Lines([],bins.phz.edges,'k'); Lines([],bins.phz.edges+2*pi,'k');
+end
+
+
 cmax = 25; 
 % >>> FIGURE ego har >>>
 figure();
 for harI = 1:harN
-    for phzI = 1:phzI
+    for phzI = 1:phzN
         dm = res( within_ranges(har(res),  bins.har.edges([harI, harI+ 1])) ...
                 & within_ranges(phz(res),  bins.phz.edges([phzI, phzI+1])));
         subplot2(3,3,phzN-phzI+1,harI);
@@ -2744,8 +2796,8 @@ for harI = 1:harN
         scnt = hist2(sq(ego(dm,:)),                                 ...
                      linspace(-500,500,xbins),                      ...
                      linspace(-500,500,ybins));
-        rmap =(imgaussfilt(scnt,1.2)                                ...
-               ./imgaussfilt(ecnt_har{harI},1.2));
+        rmap =(p_imgaussfilt(scnt,1.2)                                ...
+               ./p_imgaussfilt(ecnt_har{harI},1.2));
         rmap = rmap(:);
         rmap(mazeMaskEgo(:)) = nan;
         rmap(ecnt_har{harI}(:)<(samplerate.*0.02)) = nan;
@@ -2782,7 +2834,7 @@ end
 % >>> FIGURE ego hba >>>
 figure();
 for hbaI = 1:hbaN
-    for phzI = 1:phzI
+    for phzI = 1:phzN
         dm = res( within_ranges(hba(res),  bins.hba.edges([hbaI, hbaI+ 1])) ...
                 & within_ranges(phz(res),  bins.phz.edges([phzI, phzI+1])));
         subplot2(3,3,phzN-phzI+1,hbaI);
@@ -2790,8 +2842,8 @@ for hbaI = 1:hbaN
         scnt = hist2(sq(ego(dm,:)),                                 ...
                      linspace(-500,500,xbins),                      ...
                      linspace(-500,500,ybins));
-        rmap =(imgaussfilt(scnt,1.4)                                ...
-               ./imgaussfilt(ecnt_hba{hbaI},1.4));
+        rmap =(p_imgaussfilt(scnt,1.4)                                ...
+               ./p_imgaussfilt(ecnt_hba{hbaI},1.4));
         rmap = rmap(:);
         rmap(mazeMaskEgo(:)) = nan;
         rmap(ecnt_hba{hbaI}(:)<(samplerate.*0.02)) = nan;
@@ -2950,7 +3002,7 @@ for swfI = 1:swfN
             dm = res(  ...
                   within_ranges(hba(res),  bins.hba.edges([hbaI, hbaI+1]))  ...
                 & within_ranges(phz(res),  bins.phz.edges([phzI, phzI+1]))  ...
-                & within_ranges(sfet,      bins.swf.edges([swfI, swfI+1]))  ...
+                & within_ranges(ffet,      bins.swf.edges([swfI, swfI+1]))  ...
                 );
 
             % <<< QUERY partition indicies <<<
@@ -2986,7 +3038,7 @@ for swfI = 1:swfN
             dm = res(  ...
                   within_ranges(har(res),  bins.har.edges([harI, harI+1]))  ...
                 & within_ranges(phz(res),  bins.phz.edges([phzI, phzI+1]))  ...
-                & within_ranges(sfet,      bins.swf.edges([swfI, swfI+1]))  ...
+                & within_ranges(ffet,      bins.swf.edges([swfI, swfI+1]))  ...
                 & within_ranges(hba(res),  bins.hba.edges([1,end]))  ...
                 );
 
@@ -3021,81 +3073,79 @@ end
 
 
 
-% >>> TFET >>> ----------------------------------------------------------------
-
-
-
-u = 8;
+% >>> bhv_state = 'theta-groom-sit-rear-hpause';
+u = 2;
 uid = unit{tid}(u).id
-mspk = Trial.load('spk', samplerate,'',arrayfun(@(u) u.id, unit{tid}),'', false, true);
 nchan = 8;
-theta = 0;
 figure();
 plot(pft,uid,[],'colorbar',[],false);
 
 [field_mrate, field_center] = pft.maxRate(uid);
 
 ego=fet_ego(Trial,xyz,{'head_right','head_left'}, field_center, 0);
+[res, fet, swf] = spk( uid, [ stc{bhv_state, samplerate}]);
 
-mres=mspk(uid);
-sind = mspk.clu==uid & ismember( mspk.res, mres);
-cind =  spk.clu==uid & ismember(  spk.res, mres);
+cind = spk.clu==uid & ismember(spk.res,res);
 
-figure,histcirc(phz(mres));
+figure,histcirc(phz(res));
 
 
-swf=mspk.spk(sind,:,:);
 mswf=sq(mean(swf));
+swf_fetI = unit{tid}(u).fset;
+
 figure,
-plot((mswf-repmat([1:1000:8000]',[1,52]))')
+plot((mswf-repmat([1:1000:nchan*1000]',[1,size(mswf,2)]))')
 
+sfet = p_zscore( median_filter(fet(:,unit{tid}(u).fset),250));
+%rfet = p_zscore( fet(:, swf_fet));
 
-sfet = zfet( cind, unit{tid}(u).fset);
-fd = sqrt(sum(ego(mres,:).^2,2));
+fd = sqrt(sum(ego(res,:).^2,2));
+fdist = sqrt(sum(ego(:,:).^2,2));
 [S,U,V] = svd(sfet,0);
 sc = sfet * V;
-[~,pscrI] = max(abs(corr(fd(fd<300),sc(fd<300,:))));
+[~,pscrI] = max(abs(p_corr(fd(fd<300),sc(fd<300,:))));
 
+ 
 figure,
 for sid = 1:size(sc,2);
     subplot(1, size(sc,2), sid);
     plot(fd,sc(:,sid),'.');
 end
-sid = [1,3,4];
-
-[Ss,Us,Vs] = svd(sc(:,sid),0);
-sc = sc(:,sid) * Vs;
-[~,pscrI] = max(abs(corr(fd(fd<300),sc(fd<300,:))));
-
+%sid = [1,3,4];
+sid = [1,2];
+sid = [1,3]; % Ed-17
+sid = [1,4]; % Ed-16-10
 
 
-figure,
-for sid = 1:size(sc,2);
-    subplot(1, size(sc,2), sid);
-    plot(fd,sc(:,sid),'.');
-end
-
-
-
-sid = 1;
-sfet = zscore(MedianFilter(sc(:,sid),100));
-
+sid = 1; % Ed-17
+sfet = p_zscore(sc(:,sid));
 figure
-scatter(fd,phz(mres),10,sfet,'filled');
+scatter(fd,phz(res),10,sfet,'filled');
 colormap('jet');
 caxis([-2.5,2.5]);
 
-
+%xswf=sq(swf(:,3,:))';
+xswf=sq(swf(:,1,:))';
+xswf=sq(swf(:,7,:))';
+xswf=sq(swf(:,5,:))';
+xswf=sq(swf(:,4,:))';
 xswf=sq(swf(:,3,:))';
+xswf=sq(swf(:,8,:))';
+xswf=sq(swf(:,6,:))';
 mispk_ind=[];
 mispk_max=[];
 mispk_half=[];
 mispk_dhalf=[];
 for s=1:size(xswf,2)
-    ixswf=interp1(1:52,-xswf(:,s),linspace(1,52,520));
+    ixswf=interp1(1:size(xswf,1),-xswf(:,s),linspace(1,size(xswf,1),size(xswf,1)*10));
     [mispk_max(s),mispk_ind(s)]=max(ixswf(100:end-100));
     mispk_ind(s) = mispk_ind(s)+100;
-    mispk_half(s) = find(ixswf(mispk_ind(s):end)<mispk_max(s)/2,1,'first');
+    mfh = find(ixswf(mispk_ind(s):end)<mispk_max(s)/2,1,'first');
+    if ~isempty(mfh)
+        mispk_half(s) = mfh;
+    else
+        mispk_half(s) = 0;
+    end
     mdh = find(ixswf([mispk_ind(s)+mispk_half(s)]:end)<ixswf(mispk_ind(s)+mispk_half(s))/2,1,'first');
     if ~isempty(mdh)
         mispk_dhalf(s) = mdh;
@@ -3104,47 +3154,85 @@ for s=1:size(xswf,2)
     end
 end
 
-tfet=[(mispk_half+randn([1,size(xswf,2)])/5)',...
-      (mispk_dhalf+randn([1,size(xswf,2)])/5)'];
+figure,
+plot(m5ind+randn(size(m5ind))*2,mispk_ind+randn(size(m5ind))*2,'.');
+
+figure,
+scatter(m5ind+randn(size(m5ind))*2,...
+        mispk_ind+randn(size(m5ind))*2,...
+        10,...
+        fd,...
+       'Filled');
+colormap('jet');
+caxis([0,200]);
+
+figure,plot(mispk_ind+randn(size(m5ind))*2,sfet,'.');
+figure,plot(m5ind+randn(size(m5ind))*2,sfet,'.');
+
+figure,
+scatter(m5ind+randn(size(m5ind))*2,...
+        mispk_ind+randn(size(m5ind))*2,...
+        10,...
+        mispk_max,...
+       'Filled');
+colormap('jet');
+%caxis([0,300]);
+
+
+
+tfet=p_zscore([(mispk_half+randn([1,size(xswf,2)])/5)',...
+      (mispk_dhalf+randn([1,size(xswf,2)])/5)',...
+      (mispk_ind+randn([1,size(xswf,2)])*2)' - mean(mispk_ind)']);
 [St,Ut,Vt]=svd(tfet);
 tfet=tfet*Vt;
-edist=sqrt(sum(ego(mres,:).^2,2));
+edist=sqrt(sum(ego(res,:).^2,2));
 dind=edist<600;
 
 
-isiR = log10(diff([1;mres]./samplerate+0.0001));
-isiL = log10(diff([mres;1]./samplerate+0.0001));
+isiR = log10(diff([1;res]./samplerate+0.0001));
+isiL = log10(diff([res;1]./samplerate+0.0001));
 
 
 normalization='xprob';
 normalization='';
 
 figure();
-subplot(121);
-hist2([repmat(tfet(:,1),[3,1]),[phz(mres)-2*pi;phz(mres);2*pi+phz(mres)]],linspace(-80,-30,15),linspace(-2*pi,4*pi,30),normalization);
-subplot(122);
-hist2([repmat(tfet(:,2),[3,1]),[phz(mres)-2*pi;phz(mres);2*pi+phz(mres)]],linspace(-20,20,15),linspace(-2*pi,4*pi,30),normalization);
+for s = 1:size(tfet,2)
+subplot(1,size(tfet,2),s);
+histogram2(repmat(tfet(:,s),[3,1]),...
+           [phz(res)-2*pi;phz(res);2*pi+phz(res)],...
+           'BinWidth',[5,1],...
+          'DisplayStyle','Tile');
 colormap('jet');
 axis('tight');
+end
 
 dind=edist<400;
 figure();
-subplot(121);
+subplot(131);
 scatter( repmat(tfet(dind,1),[3,1]),...
-         [phz(mres(dind))-2*pi;phz(mres(dind));2*pi+phz(mres(dind))],...
+         [phz(res(dind))-2*pi;phz(res(dind));2*pi+phz(res(dind))],...
          20,repmat(sfet(dind),[3,1]),'Filled');
 colormap('jet');
 ylim([-2*pi,4*pi]);
 caxis([-3,3]);
-xlim([-100,-20]);
-subplot(122);
+xlim([-30,80]);
+subplot(132);
 scatter( repmat(tfet(dind,2),[3,1]),...
-         [phz(mres(dind))-2*pi;phz(mres(dind));2*pi+phz(mres(dind))],...
+         [phz(res(dind))-2*pi;phz(res(dind));2*pi+phz(res(dind))],...
          20,repmat(sfet(dind),[3,1]),'Filled');
 colormap('jet');
 ylim([-2*pi,4*pi]);
 caxis([-3,3]);
-xlim([-40,40]);
+xlim([-100,0]);
+subplot(133);
+scatter( repmat(tfet(dind,3),[3,1]),...
+         [phz(res(dind))-2*pi;phz(res(dind));2*pi+phz(res(dind))],...
+         20,repmat(sfet(dind),[3,1]),'Filled');
+colormap('jet');
+ylim([-2*pi,4*pi]);
+caxis([-3,3]);
+xlim([-30,30]);
 
 
 % distance 
@@ -3159,47 +3247,56 @@ subplot(121); scatter( tfet(:,1), tfet(:,2), 15, fd, 'Filled'); caxis([5,250]); 
 subplot(122); scatter( tfet(:,1), tfet(:,2), 15, sfet, 'Filled'); caxis([-2.5,2.5]); colormap(gca(), 'jet');
 
 nind = nniz(fd);
-[Ub,Sb,Vb] = svd(nunity([tfet(nind,1), tfet(nind,2), sfet(nind)]),0);
-lfet = nunity([tfet(:,1), tfet(:,2), sfet(:)])*Vb;
+[Ub,Sb,Vb] = svd([tfet(nind,:), sfet(nind,:)],0);
+lfet = nunity([tfet(:,1), tfet(:,2),tfet(:,3), sfet(:,:)])*Vb;
 
 
 figure
-subplot(131); plot(lfet(:,1),log10(fd(:,1)),'.');
-subplot(132); plot(lfet(:,2),log10(fd(:,1)),'.');
-subplot(133); plot(lfet(:,3),log10(fd(:,1)),'.');
+for s = 1:size(lfet,2),
+    subplot(1,size(lfet,2),s); plot(lfet(:,s),log10(fd(:,1)),'.');
+end
 ForAllSubplots('xlim([-3,3]);ylim([1,3])');
 
-
+lid = [1,3];
+lid = [1,2,3];
+lid = [1,2,4];
+lid = [2,3];
 lid = [1];
+lid = [1,3,4];
+%lid = [3,4];
 nind = nniz(fd);
-[Uf,Sf,Vf] = svd([lfet(nind,lid), sfet(nind)],0);
-ffet = [lfet(:,lid), sfet(:)] * Vf;
+[Uf,Sf,Vf] = svd([lfet(nind,lid), sfet(nind,:)],0);
+ffet = [lfet(:,lid), sfet(:,:)] * Vf;
 
 figure
-subplot(131); plot(ffet(:,1),log10(fd(:,1)),'.');
-subplot(132); plot(ffet(:,2),log10(fd(:,1)),'.');
-subplot(133); plot(ffet(:,3),log10(fd(:,1)),'.');
+for s = 1:size(ffet,2),
+subplot(1,size(ffet,2),s); plot(ffet(:,s),log10(fd(:,1)),'.');
+end
 ForAllSubplots('xlim([-3,3]);ylim([1,3])');
 
 
 fid = 1;
+fid = 2;
     
 figure();
 subplot(221);
-    scatter( ego(mres,2), ego(mres,1), 20, phz(mres),'Filled'); 
+    scatter( ego(res,2), ego(res,1), 20, phz(res),'Filled'); 
     colormap(gca(),'hsv'); caxis([0,2*pi]); xlim([-300,300]); ylim([-300,300]);
 subplot(222);
-    scatter( ego(mres,2), ego(mres,1), 20, ffet(:,fid),'Filled');
+    scatter( ego(res,2), ego(res,1), 20, ffet(:,fid),'Filled');
     colormap(gca(),'jet'); caxis(gca(),[-2.5,2.5]); xlim([-300,300]); ylim([-300,300]);
 subplot(223);
-    scatter( ego(mres,2), ego(mres,1), 20, sfet(:,1),'Filled');
+    scatter( ego(res,2), ego(res,1), 20, sfet(:,1),'Filled');
     colormap(gca(),'jet'); caxis(gca(),[-2.5,2.5]); xlim([-300,300]); ylim([-300,300]);
 subplot(224);
-    scatter( ego(mres,2), ego(mres,1), 20, lfet(:,1),'Filled');
+    scatter( ego(res,2), ego(res,1), 20, lfet(:,1),'Filled');
     colormap(gca(),'jet'); caxis(gca(),[-2.5,2.5]); xlim([-300,300]); ylim([-300,300]);
 
+
+ffet = ffet(:,fid);
 %EOF
 
+    
 figure();
 nind = nniz(fd);
 scatter3(lfet(:,1),lfet(:,2),lfet(:,3),10,fd(:),'filled');
@@ -3500,6 +3597,8 @@ caxis([0,300]);colormap('jet');
 
 
 
+
+
 figure();
 subplot(121);
 nind = nniz(fd) & fd<100;
@@ -3511,6 +3610,33 @@ nind = nniz(fd) & fd>100;
 hist2([lfet(nind,1),lfet(nind,2)],linspace(-3,3,20),linspace(-3,3,20));
 Lines([],0,'w');Lines(0,[],'w');
 colormap('jet');
+
+
+pz = phz(res);
+figure();
+scatter( fd, ffet, 10, pz, 'Filled');
+xlim([ 0, 300]);
+ylim([-3,  3]);
+colormap('hsv');
+caxis([0, 2*pi]);
+
+
+pz = phz(res);
+figure();
+scatter( fd, sfet, 10, pz, 'Filled');
+xlim([ 0, 600]);
+ylim([-3,  3]);
+colormap('hsv');
+caxis([0, 2*pi]);
+
+pz = phz(res);
+figure();
+scatter( ego(res,1), sfet, 10, pz, 'Filled');
+xlim([ -300, 300]);
+ylim([-3,  3]);
+colormap('hsv');
+caxis([0, 2*pi]);
+
 
 
 figure();
@@ -3535,4 +3661,11 @@ Lines([],0,'w');Lines(0,[],'w');
 
 
 
+
+% Finer grain phase bins for comparison between spike waveform features.
+% 
+% Inputs to the hippocampus are known to be temporally se
+
+% Hippocampus
+% inputs
 

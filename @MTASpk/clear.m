@@ -4,3 +4,4 @@ Data.clu = [];
 Data.fet = [];
 Data.spk = [];
 Data.sampleRate = [];
+Data.locs = [];

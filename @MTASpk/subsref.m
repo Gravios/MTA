@@ -12,21 +12,15 @@ if strcmp(S(1).type,'()') && ni==1,
     else
         cid = ismember(Data.clu,S.subs{1});
         out = Data.res(cid);
-        if nargout > 1
-            varargout{end+1} = Data.fet(cid,:);
-        elseif nargout > 2
-            varargout{end+1} = Data.spk(cid,:,:);
-        end
+        if nargout >= 2,  varargout{end+1} = Data.fet(cid,:);  end
+        if nargout == 3,  varargout{end+1} = Data.spk(cid,:,:);end
     end
     if numel(S.subs) == 2
         state = S.subs{2};
-        ind = within_ranges(out,state.data);
+        ind = within_ranges( out, state.data);
         out = out(ind);
-        if nargout > 1
-            varargout{1} = varargout{1}(ind,:)
-        elseif nargout > 2
-            varargout{2} = varargout{2}(ind,:,:)            
-        end
+        if nargout >= 2, varargout{1} = varargout{1}(ind,:);   end
+        if nargout == 3, varargout{2} = varargout{2}(ind,:,:); end
     end    
     return
 end

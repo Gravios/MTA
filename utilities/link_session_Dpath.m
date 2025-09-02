@@ -16,22 +16,26 @@ create_directory(sessionPath);
 
 cwd = pwd();
 cd(sessionPath);
-
 for field = fieldnames(Dpaths)'
     field = field{1};
     
-    create_directory(fullfile(Session.path.project,field));
-    create_directory(fullfile(Session.path.project,field,sessionName));
-    cd(fullfile(Session.path.project,field,sessionName));
+    create_directory( fullfile( Session.path.project, field));
+    create_directory( fullfile( Session.path.project, field, sessionName));
 
-% REMOVE all links if they exist    
+
+    cd(fullfile( Session.path.project, field, sessionName));
+% REMOVE all links if they exist
     system(['find . -type l -delete'])
 % LINK source files recursively
-    system(['cp -rs ', fullfile(Dpaths.(field),sessionName),' ',...
-                       fullfile(Session.path.project,field)]);    
+    system(['cp -rs ', fullfile(Dpaths.(field),sessionName),' ',fullfile(Session.path.project, field)]);
+
+    
 % LINK interstitial files recursively
-    system(['find . -type d -exec mkdir ',fullfile(sessionPath,'{}'),' \;']);
-    system(['find . -type l -exec ln -s {} ',fullfile(sessionPath,'{}'),' \;']);
+    cd(sessionPath);
+    % REMOVE existing links in the session's project directory
+    system(['find ',sessionPath,' -type l -exec rm {}  \;']);
+    % LINK symbolically the interstitial data directory to the project
+    system(['ln -s ../',field,'/',sessionName,'/*  .']);
 end
 
 cd(cwd);

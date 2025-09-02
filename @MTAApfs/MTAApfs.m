@@ -406,7 +406,8 @@ classdef MTAApfs < hgsetget %< MTAAnalysis
 % LOAD Units into spk object;
                 if isempty(spk)
                     spk = Session.spk.copy;
-                    spk.create(Session, xyz.sampleRate, pfsState, ...
+                    spk.parent = Session;
+                    spk.load(Session, xyz.sampleRate, pfsState, ...
                                units, spkMode);
                 end
             else

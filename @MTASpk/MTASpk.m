@@ -60,6 +60,9 @@ classdef MTASpk < hgsetget
 
         %parent - string: MTATrial filebase
         parent
+
+        %locs - NumericArray: current file location index
+        locs
         
     end
     

@@ -146,12 +146,12 @@ MRate = sum(spikeCount(gtind))/totalOcc;
 
 if nargout >= 3,  
 % COMPUTE Spatial Information    
-    spatialInformation = nansum(1/sum(double(gtind(:))).*(ratemap(gtind)./MRate)...
-                                .*log2(ratemap(gtind)./MRate));
+    spatialInformation = sum(1/sum(double(gtind(:))).*(ratemap(gtind)./MRate)...
+                                .*log2(ratemap(gtind)./MRate),'omitnan');
     if nargout == 4,
 % COMPUTE Sparsity        
-        sparsity = nansum(1/sum(double(gtind(:))).*ratemap(gtind)).^2 ...
-            ./nansum(1/sum(double(gtind(:))).*ratemap(gtind).^2);
+        sparsity = sum(1/sum(double(gtind(:))).*ratemap(gtind), 'omitnan').^2 ...
+            ./sum(1/sum(double(gtind(:))).*ratemap(gtind).^2, 'omitnan');
     end    
 end
 
